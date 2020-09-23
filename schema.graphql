@@ -1,0 +1,85 @@
+type Query {
+    user(id: ID!): User
+    users: [User]
+    organization(id: ID!): Organization
+    organizations: [Organization]
+}
+
+type Mutation {
+    user(
+        id: ID!
+        name: String
+        email: String
+        avatar: String
+    ): User
+    newUser(
+        name: String
+        email: String
+        avatar: String
+    ): User
+
+    organization(
+        id: ID!
+        name: String
+        address1: String
+        address2: String
+        phone: String
+        shortCode: String
+    ): Organization
+    newOrganization(
+        name: String
+        address1: String
+        address2: String
+        phone: String
+        shortCode: String
+    ): Organization
+}
+
+# type Subscription {
+# }
+
+type User {
+    id: ID!
+
+    name: String
+    email: String
+    avatar: String 
+
+    organizations: [Organization]
+
+    joinOrganization(id: ID!): Boolean
+    leaveOrganization(id: ID!): Boolean
+}
+
+type Organization {
+    id: ID!
+
+    name: String
+    address1: String
+    address2: String
+    phone: String
+    shortCode: String
+
+    users: [User]
+    classes: [Class]
+
+    addUser(id: ID!): Boolean
+    removeUser(id: ID!): Boolean
+}
+
+type Role {
+    id: ID!
+    name: String
+}
+
+type Class {
+    id: ID!
+    teachers: [User]
+    students: [User]
+    schedule: [ScheduleEntry]
+}
+
+type ScheduleEntry {
+    id: ID!
+
+}
