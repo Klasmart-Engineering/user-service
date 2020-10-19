@@ -3,7 +3,9 @@ import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { checkToken } from "./token";
 import { importSchema } from 'graphql-import'
-import { Model } from "./model";
+import { Model } from "./model/model";
+import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
+import { GraphQLResolveInfo } from "graphql";
 
 Sentry.init({
     dsn: "https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815",
@@ -35,15 +37,25 @@ async function main() {
             resolvers: {
                 Query: {
                     users: () => model.getUsers(),
+                    user: (_parent, { user_id }, _context, _info) => model.getUser(user_id),
                     organizations: () => model.getOrganizations(),
-                    user: (_parent, {id}, _context, _info) => model.getUser(id),
-                    organization: (_parent, {id}, _context, _info) => model.getOrganization(id),
+                    organization: (_parent, { organization_id }, _context, _info) => model.getOrganization(organization_id),
+                    roles: () => model.getRoles(),
+                    role: (_parent, args, _context, _info) => model.setRole(args),
+                    classes: () => model.getClasses(),
+                    class: (_parent, args, _context, _info) => model.getClass(args)
+
                 },
                 Mutation: {
                     user: (_parent, args, _context, _info) => model.setUser(args),
                     newUser: (_parent, args, _context, _info) => model.newUser(args),
                     organization: (_parent, args, _context, _info) => model.setOrganization(args),
                     newOrganization: (_parent, args, _context, _info) => model.newOrganization(args),
+                    roles: () => model.getRoles(),
+                    role: (_parent, args, _context, _info) => model.setRole(args),
+                    classes: () => model.getClasses(),
+                    class: (_parent, args, _context, _info) => model.getClass(args)
+
                 },
             },
             context: async ({ req, connection }) => {

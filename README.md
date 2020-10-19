@@ -1,7 +1,7 @@
 #Setup
-docker run -d --name=cassandra1 --net=host cassandra
+docker run --name postgres --net=host -e POSTGRES_PASSWORD=kidsloop -d postgres
 npm i
 
 #Restart
-docker start cassandra1
+docker start postgres
 npm start

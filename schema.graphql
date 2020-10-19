@@ -1,85 +1,208 @@
 type Query {
-    user(id: ID!): User
+    user(user_id: ID!): User
     users: [User]
-    organization(id: ID!): Organization
+
+    organization(organizaiton_id: ID!): Organization
     organizations: [Organization]
+
+    role(role_id: ID!): Role
+    roles: [Role]
+
+    classes: [Class]
+    class(class_id: ID!): Class
 }
 
 type Mutation {
     user(
-        id: ID!
-        name: String
+        user_id: ID!
+        user_name: String
         email: String
         avatar: String
     ): User
     newUser(
-        name: String
+        user_name: String
         email: String
         avatar: String
     ): User
 
     organization(
-        id: ID!
-        name: String
+        organization_id: ID!
+        organization_name: String
         address1: String
         address2: String
         phone: String
         shortCode: String
     ): Organization
     newOrganization(
-        name: String
+        organization_name: String
+        email: String
         address1: String
         address2: String
         phone: String
         shortCode: String
     ): Organization
+
+    role(role_id: ID!): Role
+    roles: [Role]
+
+    classes: [Class]
+    class(class_id: ID!): Class
 }
 
-# type Subscription {
-# }
-
 type User {
-    id: ID!
+    user_id: ID!
 
-    name: String
+    #properties
+    user_name: String
     email: String
     avatar: String 
 
-    organizations: [Organization]
+    #connections
+    memberships: [OrganizationMembership]
+    membership(organizaiton_id: ID!): OrganizationMembership
+    classesTeaching: [Class]
+    classesStudying: [Class]
 
-    joinOrganization(id: ID!): Boolean
-    leaveOrganization(id: ID!): Boolean
+    #query
+    permission(permission_name: String!, organization_id: ID!, school_id: ID, object_id: ID): Boolean
+    
+    #mutations
+    addOrganization(organization_id: ID!): OrganizationMembership
 }
 
 type Organization {
-    id: ID!
+    organization_id: ID!
 
-    name: String
+    #properties
+    organization_name: String
     address1: String
     address2: String
     phone: String
     shortCode: String
 
-    users: [User]
+    #connections
+    roles: [Role]
+    memberships: [OrganizationMembership]
+    teachers: [OrganizationMembership]
+    students: [OrganizationMembership]
+    schools: [School]
     classes: [Class]
 
-    addUser(id: ID!): Boolean
-    removeUser(id: ID!): Boolean
+
+    #mutations
+    addUser(user_id: ID!, role_ids: [ID]): OrganizationMembership
+    addRole(role_name: String): Role
+    addClass(class_name: String): Class
+}
+
+scalar Date
+type OrganizationMembership {
+    #properties
+    user_id: ID!
+    organization_id: ID!
+    join_timestamp: Date
+
+    #connections
+    organization: Organization
+    user: User
+    roles: [Role]
+    classes: [Class]
+
+    #query
+    checkAllowed(permission_name: ID!): Boolean
+
+    #mutations
+    addRole(role_id: ID!): Role
+    leave(_:Int): Boolean
 }
 
 type Role {
-    id: ID!
-    name: String
+    role_id: ID!
+
+    #properties
+    role_name: String
+
+    #connections
+    organization: Organization
+    memberships: [OrganizationMembership]
+    permissions: [Permission]
+    permission(permission_name: String!): Permission
+
+    #mutations
+    grant(permission_name: String!): Permission
+    revoke(permission_name: String!): Boolean
+    deny(permission_name: String!): Permission
+
+    delete_role(_:Int): Boolean
+}
+
+type Permission {
+    role_id: ID!
+    permission_name: ID!
+    allow: Boolean
+    
+    #connections
+    role: Role
+}
+
+type School {
+    school_id: ID!
+
+    #properties
+    school_name: String
+
+    #connections
+    organization: Organization
+    memberships: [SchoolMembership]
+    membership(user_id: ID!): SchoolMembership
+    classes: [Class]
+
+    #mutations
+    addUser(id: ID!): SchoolMembership
+    addSchool(school_name: String): SchoolMembership
+}
+
+type SchoolMembership {
+    #properties
+    user_id: ID!
+    school_id: ID!
+    join_timestamp: Date
+
+    #connections
+    user: User
+    school: School
+    roles: [Role]
+
+    #query
+    checkAllowed(permission_name: ID!): Boolean
+
+    #mutations
+    addRole(role_id: ID!): Role
+    leave(_:Int): Boolean
 }
 
 type Class {
-    id: ID!
+    class_id: ID!
+
+    #properties
+    class_name: String
+
+    #connections
+    organization: Organization
     teachers: [User]
     students: [User]
-    schedule: [ScheduleEntry]
+    # schedule: [ScheduleEntry]
+
+    #mutations
+    addTeacher(user_id: ID!): User
+    addStudent(user_id: ID!): User
+    addSchool(school_id: ID!): School
+    delete(_:Int): Boolean
+    # addSchedule(id: ID!, timestamp: Date): Boolean
+    # removeSchedule(id: ID!): Boolean
 }
 
 type ScheduleEntry {
     id: ID!
-
+    timestamp: Date
 }

@@ -39,6 +39,8 @@
     "graphql": "^15.1.0",
     "graphql-import": "^1.0.2",
     "jsonwebtoken": "^8.5.1",
+    "pg": "^8.4.1",
+    "typeorm": "^0.2.28",
     "uuid": "^8.1.0"
   }
 }
