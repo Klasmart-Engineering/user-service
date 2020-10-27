@@ -2,7 +2,7 @@ type Query {
     user(user_id: ID!): User
     users: [User]
 
-    organization(organizaiton_id: ID!): Organization
+    organization(organization_id: ID!): Organization
     organizations: [Organization]
 
     role(role_id: ID!): Role
@@ -59,7 +59,7 @@ type User {
 
     #connections
     memberships: [OrganizationMembership]
-    membership(organizaiton_id: ID!): OrganizationMembership
+    membership(organization_id: ID!): OrganizationMembership
     classesTeaching: [Class]
     classesStudying: [Class]
 
