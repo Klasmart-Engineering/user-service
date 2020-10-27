@@ -1,0 +1,6 @@
+{
+  "watch": ["schema.graphql", ".env", "src"],
+  "ext": ".ts,.graphql",
+  "ignore": [],
+  "exec": "ts-node src/main.ts"
+}
