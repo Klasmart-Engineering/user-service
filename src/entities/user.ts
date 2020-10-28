@@ -6,6 +6,13 @@ import { Organization } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
 
+export const OrganizationStatus = {
+    "PENDING": "PENDING",
+    "ACTIVE": "ACTIVE",
+    "SUSPENDED": "SUSPENDED",
+    "INACTIVE": "INACTIVE",
+}
+
 @Entity()
 export class User extends BaseEntity {
 

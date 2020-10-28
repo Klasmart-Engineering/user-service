@@ -1,8 +1,14 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
+import { UserInputError } from 'apollo-server'
+import { GraphQLResolveInfo } from 'graphql';
+import { validate } from 'class-validator';
 import { User } from '../entities/user';
-import { Organization } from "../entities/organization";
+import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
+import { AWSS3 } from "../entities/s3";
+import { ApolloServerFileUploads } from "../entities/types";
+import { OrganizationHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -67,16 +73,40 @@ export class Model {
         return this.userRepository.find()
     }
 
-    public async newOrganization({organization_name, address1, address2, phone, shortCode}:Organization) {
-        const organization = new Organization()
-        organization.organization_name = organization_name
-        organization.address1 = address1
-        organization.address2 = address2
-        organization.phone = phone
-        organization.shortCode = shortCode
-        await this.manager.save(organization)
+    public GetShortCode({name}: {name: string}) {
+        return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
+    }
+    public async newOrganization(args:OrganizationInput) {
 
-        return organization
+        const organization = new Organization()
+        organization.organization_name = args.organization_name
+        organization.address1 = args.address1
+        organization.address2 = args.address2
+        organization.email = args.email.trim().toLowerCase()
+        organization.phone = args.phone
+        organization.shortCode = args.shortCode
+        organization.color = args.color
+        organization.primaryContact = args.primaryContact
+        organization.status = OrganizationStatus.ACTIVE
+
+        const errs = await validate(organization)
+        if (errs.length > 0) {
+            throw new UserInputError(JSON.stringify(errs))
+        }
+        const savedOrg = await this.manager.save(organization)
+
+        const s3 = AWSS3.getInstance({ 
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+            destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+            region: process.env.AWS_DEFAULT_REGION as string,
+        })
+        const upload = await s3.singleFileUpload({file: args.logo as ApolloServerFileUploads.File, path: savedOrg.organization_id, type: 'image'})
+
+        savedOrg.logoKey = upload.key
+        await this.manager.save(savedOrg)
+
+        return savedOrg
     }
     public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
         const organization = await this.organizationRepository.findOneOrFail(organization_id)

@@ -6,6 +6,8 @@ import { importSchema } from 'graphql-import'
 import { Model } from "./model/model";
 import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
 import { GraphQLResolveInfo } from "graphql";
+import * as dotenv from "dotenv";
+dotenv.config({ path: __dirname+'/../.env' });
 
 Sentry.init({
     dsn: "https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815",
@@ -43,7 +45,8 @@ async function main() {
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),
-                    class: (_parent, args, _context, _info) => model.getClass(args)
+                    class: (_parent, args, _context, _info) => model.getClass(args),
+                    shortCode: (_parent, args, _context, _info) => model.GetShortCode(args),
 
                 },
                 Mutation: {
