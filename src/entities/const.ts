@@ -1,0 +1,36 @@
+
+
+// these avatars must be available in the bucket in the given key
+export var DefaultAvatarKeys = [
+    "default/Admin_01.jpg",
+    "default/Admin_02.jpg",
+    "default/Admin_03.jpg",
+    "default/Student_01.jpg",
+    "default/Student_02.jpg",
+    "default/Student_03.jpg",
+    "default/Student_04.jpg",
+    "default/Student_05.jpg",
+    "default/Student_06.jpg",
+    "default/Student_07.jpg",
+    "default/Student_08.jpg",
+    "default/Student_09.jpg",
+    "default/Student_10.jpg",
+    "default/Student_11.jpg",
+    "default/Student_12.jpg",
+    "default/Student_13.jpg",
+    "default/Student_14.jpg",
+    "default/Student_15.jpg",
+    "default/Student_16.jpg",
+    "default/Student_17.jpg",
+    "default/Student_18.jpg",
+    "default/Teacher_01.jpg",
+    "default/Teacher_02.jpg",
+    "default/Teacher_03.jpg",
+    "default/Teacher_04.jpg",
+    "default/Teacher_05.jpg",
+    "default/Teacher_06.jpg",
+    "default/Teacher_07.jpg",
+    "default/Teacher_08.jpg",
+    "default/Teacher_09.jpg",
+    "default/Teacher_10.jpg"
+]
