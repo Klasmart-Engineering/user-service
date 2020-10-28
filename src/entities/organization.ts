@@ -89,7 +89,7 @@ export class Organization {
         }
     }
 
-    public async addRole({role_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createRole({role_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const manager = getManager()
@@ -104,7 +104,7 @@ export class Organization {
         }
     }
 
-    public async addClass({class_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createClass({class_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const manager = getManager()
@@ -120,7 +120,7 @@ export class Organization {
         }
     }
 
-    public async addSchool({school_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createSchool({school_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             
