@@ -54,6 +54,12 @@ type Mutation {
     class(class_id: ID!): Class
 }
 
+union OrganizationResult = Organization | ValidationErrors
+
+type ValidationErrors {
+    errors: [ValidationError]
+}
+
 type ValidationError {
     property: String!,
     value: String!, 
