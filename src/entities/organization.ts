@@ -1,5 +1,5 @@
 import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToOne, ManyToMany, JoinTable, OneToOne, CreateDateColumn, Not } from 'typeorm';
-import { Length, IsEmail, IsDate, IsHexColor, IsOptional, IsIn, Matches } from 'class-validator'
+import { Length, IsEmail, IsHexColor, IsOptional, IsIn, IsUppercase, Matches } from 'class-validator'
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
@@ -67,7 +67,8 @@ export class Organization {
     public phone?: string
     
     @Column({nullable: true})
-    @Length(8)
+    @IsUppercase()
+    @Length(8,8)
     @UniqueOnDatabase(Organization, (self: EntityId) => (self.organization_id ? { organization_id: Not(self.organization_id as string) } : {}))
     public shortCode?: string
 

@@ -46,13 +46,25 @@ type Mutation {
         logo: Upload!
         color: String!
         primaryContact: String!
-    ): Organization
+    ): OrganizationResult!
 
     role(role_id: ID!): Role
     roles: [Role]
 
     classes: [Class]
     class(class_id: ID!): Class
+}
+
+union OrganizationResult = Organization | ValidationErrors
+
+type ValidationErrors {
+    errors: [ValidationError]
+}
+
+type ValidationError {
+    property: String!,
+    value: String!, 
+    constraint: String!
 }
 
 type User {
