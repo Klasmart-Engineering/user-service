@@ -1,9 +1,15 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
+import { UserInputError } from 'apollo-server'
+import { GraphQLResolveInfo } from 'graphql';
+import { validate } from 'class-validator';
 import { User } from '../entities/user';
-import { Organization } from "../entities/organization";
+import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
+import { AWSS3 } from "../entities/s3";
+import { ApolloServerFileUploads } from "../entities/types";
+import { OrganizationHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -83,6 +89,10 @@ export class Model {
     }    
     public async getUsers() {
         return this.userRepository.find()
+    }
+
+    public GetShortCode({name}: {name: string}) {
+        return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
     }
 
     public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
