@@ -1,9 +1,11 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
+import { GraphQLResolveInfo } from 'graphql';
 import { User } from '../entities/user';
 import { Organization } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
+import { OrganizationHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -83,6 +85,10 @@ export class Model {
     }    
     public async getUsers() {
         return this.userRepository.find()
+    }
+
+    public GetShortCode({name}: {name: string}) {
+        return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
     }
 
     public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
