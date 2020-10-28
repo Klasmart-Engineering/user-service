@@ -49,7 +49,9 @@ export class User extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const membership = new OrganizationMembership()
+            membership.organization_id = organization_id
             membership.organization = getRepository(Organization).findOneOrFail(organization_id)
+            membership.user_id = this.user_id
             membership.user = Promise.resolve(this)
             await getManager().save(membership)
             return membership
