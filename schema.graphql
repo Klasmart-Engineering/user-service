@@ -81,6 +81,7 @@ type Organization {
     shortCode: String
 
     #connections
+    primary_contact: User
     roles: [Role]
     memberships: [OrganizationMembership]
     teachers: [OrganizationMembership]
@@ -90,6 +91,7 @@ type Organization {
 
 
     #mutations
+    setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
     addRole(role_name: String): Role
     addClass(class_name: String): Class

@@ -1,4 +1,4 @@
-import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToMany, JoinTable, OneToOne, ManyToOne } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
@@ -39,6 +39,9 @@ export class Organization {
         }
     }
 
+    @ManyToOne(() => User)
+    @JoinColumn()
+    public primary_contact?: Promise<User>
     
     @OneToMany(() => Role, role => role.organization)
     @JoinColumn()
@@ -54,6 +57,20 @@ export class Organization {
     @OneToMany(() => Class, class_ => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    public async setPrimaryContact({user_id}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            
+            const user = await getRepository(User).findOneOrFail({user_id})
+            this.primary_contact = Promise.resolve(user)
+            await getManager().save(this)
+            
+            return user
+        } catch(e) {
+            console.error(e)
+        }
+    }
 
     public async addUser({user_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
