@@ -39,7 +39,7 @@ export class Organization {
     @PrimaryGeneratedColumn("uuid")
     public readonly organization_id!: string;
     
-    @Column({nullable: false})
+    @Column({nullable: true})
     @Length(3, 30)
     public organization_name?: string
     
