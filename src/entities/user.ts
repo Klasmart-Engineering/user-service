@@ -13,7 +13,7 @@ export const UserStatus = {
     "ACTIVE": "ACTIVE",
     "SUSPENDED": "SUSPENDED",
     "INACTIVE": "INACTIVE",
-}
+} 
 
 @Entity()
 export class User extends BaseEntity {
