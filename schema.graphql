@@ -45,19 +45,14 @@ type Mutation {
         shortCode: String!
         logo: Upload!
         color: String!
-    ): OrganizationResult!
+        primaryContact: String!
+    ): Organization
 
     role(role_id: ID!): Role
     roles: [Role]
 
     classes: [Class]
     class(class_id: ID!): Class
-}
-
-union OrganizationResult = Organization | ValidationErrors
-
-type ValidationErrors {
-    errors: [ValidationError]
 }
 
 type ValidationError {
