@@ -3,6 +3,7 @@ type Query {
     user(user_id: ID!): User
     users: [User]
 
+    shortCode(name: String!): String
     organization(organization_id: ID!): Organization
     organizations(organization_ids: [ID!]): [Organization]
 
@@ -34,6 +35,17 @@ type Mutation {
         address2: String
         phone: String
         shortCode: String
+    ): Organization
+    newOrganization(
+        organization_name: String!
+        address1: String!
+        address2: String
+        email: String!
+        phone: String!
+        shortCode: String!
+        logo: Upload!
+        color: String!
+        primaryContact: String!
     ): Organization
 
     role(role_id: ID!): Role
@@ -89,8 +101,15 @@ type Organization {
     organization_name: String
     address1: String
     address2: String
+    email: String
     phone: String
     shortCode: String
+    logo: String
+    color: String
+    primaryContact: String
+    status: String
+    createdAt: Date
+    updatedAt: Date
 
     #connections
 
