@@ -91,7 +91,7 @@ type User {
 }
 
 type Organization {
-    organization_id: ID!
+    organization_id: ID
 
     #properties
     organization_name: String
