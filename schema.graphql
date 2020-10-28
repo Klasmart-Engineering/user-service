@@ -90,7 +90,7 @@ type Organization {
 
 
     #mutations
-    addUser(user_id: ID!, role_ids: [ID]): OrganizationMembership
+    addUser(user_id: ID!): OrganizationMembership
     addRole(role_name: String): Role
     addClass(class_name: String): Class
 }

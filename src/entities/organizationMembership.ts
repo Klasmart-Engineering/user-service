@@ -39,12 +39,12 @@ export class OrganizationMembership extends BaseEntity {
     public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
-            const newRole = await getRepository(Role).findOneOrFail({role_id})
-            const roles = (await this.roles) || []
-            roles.push(newRole)
-            this.roles = Promise.resolve(roles)
-            await this.save()
-            return newRole
+            const role = await getRepository(Role).findOneOrFail({role_id})
+            const memberships = (await role.memberships) || []
+            memberships.push(this)
+            role.memberships = Promise.resolve(memberships)
+            await role.save()
+            return role
         } catch(e) {
             console.error(e)
         }
