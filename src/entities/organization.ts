@@ -76,6 +76,13 @@ export class Organization {
     public __req__: EntityId | null = {}
 
     @Column({nullable: true})
+    public shortCode?: string
+
+    // pass arguments for validation of UniqueOnDatabase constraint 
+    // columns on updating the entity
+    public __req__: EntityId | null = {}
+
+    @Column({nullable: true})
     public logoKey?: string
 
     public async logo() {
