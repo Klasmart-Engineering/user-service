@@ -9,7 +9,7 @@ import { Class } from "../entities/class";
 import { Context } from "../main";
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
-import { OrganizationHelpers } from '../entities/helpers'
+import { OrganizationHelpers, ErrorHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
