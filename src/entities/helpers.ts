@@ -1,4 +1,5 @@
-import { Repository, Like } from 'typeorm'
+import { Repository } from 'typeorm'
+import { ValidationError } from 'class-validator'
 import { AWSS3 } from './s3'
 import { DefaultAvatarKeys } from './const'
 import { Organization } from './organization'
@@ -19,8 +20,6 @@ export namespace OrganizationHelpers {
             .where("organization.shortCode LIKE :name", {name: `${cleanedName}%`})
             .orderBy("organization.shortCode", "DESC")
             .getOne();
-
-        console.log(foundOrg)
 
         if(!foundOrg) {
             cleanedName = cleanedName+'000'
@@ -61,5 +60,28 @@ export namespace UserHelpers {
                 "key": key
             }
         })
+    }
+}
+
+interface BasicValidationError {
+    property: string;
+    value: string;
+    constraint: string;
+}
+
+export namespace ErrorHelpers {
+
+    export const GetValidationError = (errors: ValidationError[]) => {
+        return {
+            errors: errors.map(error => {
+                const keys = Object.keys(error.constraints as object)
+                const constraint = error.constraints? error.constraints[keys[0]] : ""
+                return {
+                    "property": error.property,
+                    "value": error.value,
+                    "constraint": constraint
+                }
+            })
+        }
     }
 }
