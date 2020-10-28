@@ -8,7 +8,7 @@ import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
-import { OrganizationHelpers } from '../entities/helpers'
+import { OrganizationHelpers, ErrorHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -91,7 +91,7 @@ export class Model {
 
         const errs = await validate(organization)
         if (errs.length > 0) {
-            throw new UserInputError(JSON.stringify(errs))
+            return ErrorHelpers.GetValidationError(errs)
         }
         const savedOrg = await this.manager.save(organization)
 
