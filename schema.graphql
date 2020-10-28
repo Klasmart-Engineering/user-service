@@ -45,16 +45,6 @@ type Mutation {
         phone: String
         shortCode: String
     ): Organization
-    newOrganization(
-        organization_name: String!
-        address1: String!
-        address2: String
-        email: String!
-        phone: String!
-        shortCode: String!
-        logo: Upload!
-        color: String!
-    ): Organization
 
     role(role_id: ID!): Role
     roles: [Role]
