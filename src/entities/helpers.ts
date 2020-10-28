@@ -10,11 +10,10 @@ export namespace OrganizationHelpers {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         let cleanedName = name.replace(/[^a-zA-Z]/g, "").toUpperCase().substring(0,5)
         if (cleanedName.length<5) {
-            for(let i = 5 - cleanedName.length; i >= 0; i--) {
+            for(let i = 4 - cleanedName.length; i >= 0; i--) {
                 cleanedName += chars.charAt(Math.floor(Math.random() * chars.length))
             }
         }
-        console.log(cleanedName)
         const foundOrg = await client
             .createQueryBuilder("organization")
             .where("organization.shortCode LIKE :name", {name: `${cleanedName}%`})
