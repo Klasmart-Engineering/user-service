@@ -86,7 +86,6 @@ export class Model {
         organization.phone = args.phone
         organization.shortCode = args.shortCode
         organization.color = args.color
-        organization.primaryContact = args.primaryContact
         organization.status = OrganizationStatus.ACTIVE
 
         const errs = await validate(organization)

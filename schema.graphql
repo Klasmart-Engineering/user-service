@@ -43,7 +43,6 @@ type Mutation {
         shortCode: String!
         logo: Upload!
         color: String!
-        primaryContact: String!
     ): OrganizationResult!
 
     role(role_id: ID!): Role

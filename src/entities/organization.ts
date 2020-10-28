@@ -16,8 +16,6 @@ export const OrganizationStatus = {
     "INACTIVE": "INACTIVE",
 }
 
-export const Roles = ['Seed Admin', 'Admin', 'Teacher', 'Parent', 'Student']
-
 export interface OrganizationInput {
     userId: string
     organization_id?: string
@@ -28,7 +26,6 @@ export interface OrganizationInput {
     phone: string
     shortCode: string
     color: string
-    primaryContact: string
     logo?: ApolloServerFileUploads.File
 }
 
@@ -93,10 +90,6 @@ export class Organization {
     @Column({nullable: true})
     @IsHexColor()
     public color?: string
-
-    @Column({nullable: false})
-    @IsIn(Roles)
-    public primaryContact?: string
 
     @Column({nullable: false})
     @IsIn([OrganizationStatus.ACTIVE, OrganizationStatus.INACTIVE])
