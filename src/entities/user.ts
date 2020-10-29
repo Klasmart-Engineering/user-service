@@ -45,6 +45,33 @@ export class User extends BaseEntity {
     @JoinTable()
     public classesStudying?: Promise<Class[]>
 
+    @OneToOne(() => Organization, organization => organization.owner)
+    @JoinColumn()
+    public my_organization?: Promise<Organization>
+
+    public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            if(this.my_organization) { throw new Error("Only one organization per user") }
+            
+            const organization = new Organization()
+
+            organization.organization_name = organization_name
+            organization.address1 = address1
+            organization.address2 = address2
+            organization.phone = phone
+            organization.shortCode = shortCode
+            organization.owner = Promise.resolve(this)
+            organization.primary_contact = Promise.resolve(this)
+
+            await getManager().save(organization)
+    
+            return organization
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     public async addOrganization({ organization_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }

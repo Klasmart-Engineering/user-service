@@ -58,6 +58,10 @@ type User {
     avatar: String 
 
     #connections
+    """
+    'my_organization' is the Organization that this user has created
+    """
+    my_organization: Organization
     memberships: [OrganizationMembership]
     membership(organization_id: ID!): OrganizationMembership
     classesTeaching: [Class]
@@ -67,6 +71,14 @@ type User {
     permission(permission_name: String!, organization_id: ID!, school_id: ID, object_id: ID): Boolean
     
     #mutations
+    createOrganization(
+        organization_name: String
+        email: String
+        address1: String
+        address2: String
+        phone: String
+        shortCode: String
+    ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
 }
 
@@ -81,6 +93,11 @@ type Organization {
     shortCode: String
 
     #connections
+
+    """
+    'owner' is the User that created this Organization
+    """
+    owner: User
     primary_contact: User
     roles: [Role]
     memberships: [OrganizationMembership]
