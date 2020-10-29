@@ -8,6 +8,8 @@ import { loadTypedefsSync } from '@graphql-tools/load';
 import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 import cookieParser from 'cookie-parser'
 
+const routePrefix = process.env.ROUTE_PREFIX || ""
+
 Sentry.init({
     dsn: "https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815",
     environment: process.env.NODE_ENV || "not-specified",
@@ -68,7 +70,7 @@ async function main() {
 
         const app = express()
         app.use(cookieParser())
-        server.applyMiddleware({app})
+        server.applyMiddleware({app, path: routePrefix})
         const port = process.env.PORT || 8080;
         app.listen(port, () => console.log(`🌎 Server ready at http://localhost:${port}${server.graphqlPath}`));
     } catch (e) {
