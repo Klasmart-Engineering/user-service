@@ -34,6 +34,7 @@ async function main() {
             },
             resolvers: {
                 Query: {
+                    me: (_parent, _args, context, _info) => model.getMyUser(context),
                     users: () => model.getUsers(),
                     user: (_parent, { user_id }, _context, _info) => model.getUser(user_id),
                     organizations: (_parent, { organization_ids }, _context, _info) => model.getOrganizations(organization_ids),
@@ -45,6 +46,7 @@ async function main() {
 
                 },
                 Mutation: {
+                    me: (_parent, _args, context, _info) => model.getMyUser(context),
                     user: (_parent, args, _context, _info) => model.setUser(args),
                     newUser: (_parent, args, _context, _info) => model.newUser(args),
                     organization: (_parent, args, _context, _info) => model.setOrganization(args),

@@ -1,4 +1,5 @@
 type Query {
+    me: User
     user(user_id: ID!): User
     users: [User]
 
@@ -13,6 +14,7 @@ type Query {
 }
 
 type Mutation {
+    me: User
     user(
         user_id: ID!
         user_name: String

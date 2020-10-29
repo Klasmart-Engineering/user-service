@@ -3,6 +3,7 @@ import { User } from '../entities/user';
 import { Organization } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
+import { Context } from "../main";
 
 export class Model {
     public static async create() {
@@ -40,6 +41,23 @@ export class Model {
         this.classRepository = getRepository(Class, connection.name)
     }
 
+    public async getMyUser({token}: Context) {
+        try {
+            if(!token) {return null}
+            let user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
+            
+            let modified = false
+            if(user.user_id !== token.id)     { user.user_id = token.id;     modified = true }
+            if(user.user_name !== token.name) { user.user_name = token.name; modified = true }
+            if(user.email !== token.email)    { user.email = token.email;    modified = true }
+            
+            if(modified) { await this.manager.save(user) }
+                
+            return user
+        } catch(e) {
+            console.error(e)
+        }
+    }
     public async newUser({user_name, email, avatar}: User) {
         const newUser = new User()
         newUser.user_name = user_name
