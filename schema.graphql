@@ -3,7 +3,7 @@ type Query {
     users: [User]
 
     organization(organization_id: ID!): Organization
-    organizations: [Organization]
+    organizations(organization_ids: [ID!]): [Organization]
 
     role(role_id: ID!): Role
     roles: [Role]

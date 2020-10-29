@@ -36,7 +36,7 @@ async function main() {
                 Query: {
                     users: () => model.getUsers(),
                     user: (_parent, { user_id }, _context, _info) => model.getUser(user_id),
-                    organizations: () => model.getOrganizations(),
+                    organizations: (_parent, { organization_ids }, _context, _info) => model.getOrganizations(organization_ids),
                     organization: (_parent, { organization_id }, _context, _info) => model.getOrganization(organization_id),
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),

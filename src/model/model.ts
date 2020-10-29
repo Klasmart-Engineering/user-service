@@ -94,8 +94,16 @@ export class Model {
         const organization = await this.organizationRepository.findOne(organization_id)
         return organization
     }
-    public async getOrganizations() {
-        return this.organizationRepository.find()
+    public async getOrganizations(organization_ids: string[]) {
+        try {
+            if (organization_ids) {
+                return await this.organizationRepository.findByIds(organization_ids)
+            } else {
+                return await this.organizationRepository.find()
+            }
+        } catch(e) {
+            console.error(e)
+        }
     }
 
     public async setRole({role_id, role_name}: Role) {
