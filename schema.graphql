@@ -119,7 +119,6 @@ type Organization {
     status: String
     createdAt: Date
     updatedAt: Date
-
     errors: [ValidationError!]
 
     #connections
