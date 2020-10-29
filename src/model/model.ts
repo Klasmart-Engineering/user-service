@@ -1,11 +1,13 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { User } from '../entities/user';
-import { Organization } from "../entities/organization";
+import { Organization, OrganizationInput } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
 import { OrganizationHelpers } from '../entities/helpers'
+import { AWSS3 } from "../entities/s3";
+import { ApolloServerFileUploads } from "../entities/types";
 
 export class Model {
     public static async create() {
@@ -91,16 +93,47 @@ export class Model {
         return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
     }
 
-    public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
+    public async setOrganization({ organization_id, organization_name, address1, address2, phone, email, logo, color, shortCode}:OrganizationInput) {
         const organization = await this.organizationRepository.findOneOrFail(organization_id)
 
-        if(organization_name !== undefined) { organization.organization_name = organization_name }
-        if(address1 !== undefined) { organization.address1 = address1 }
-        if(address2 !== undefined) { organization.address2 = address2 }
-        if(phone !== undefined) { organization.phone = phone }
-        if(shortCode !== undefined) { organization.shortCode = shortCode }
+        const isUpdated = 
+            organization_name !== undefined ||
+            address1 !== undefined ||
+            address2 !== undefined ||
+            email !== undefined ||
+            phone !== undefined ||
+            color !== undefined ||
+            shortCode !== undefined ||
+            (logo !== undefined && null !== logo && typeof logo === 'object')
 
-        await this.manager.save(organization)
+        if(isUpdated) {
+            if(organization_name !== undefined) { organization.organization_name = organization_name }
+            if(address1 !== undefined) { organization.address1 = address1 }
+            if(address2 !== undefined) { organization.address2 = address2 }
+            if(email !== undefined) { organization.email = email }
+            if(phone !== undefined) { organization.phone = phone }
+            if(color !== undefined) { organization.color = color }
+            if(shortCode !== undefined) { organization.shortCode = shortCode }
+            
+            if(!await organization.isValid()) { return organization }
+    
+            if(logo !== undefined && null !== logo && typeof logo === 'object') { 
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                if(organization.logoKey && !organization.logoKey.startsWith("default/")) {
+                    await s3.deleteObject(organization.logoKey as string)
+                }
+                const upload = await s3.singleFileUpload({file: logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
+        
+                organization.logoKey = upload.key
+            }
+            await this.manager.save(organization)
+        }
+
         return organization
     }
     public async getOrganization(organization_id: string) {
