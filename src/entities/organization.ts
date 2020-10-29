@@ -1,5 +1,3 @@
-// ORGANIZATION.TS
-
 import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToOne, ManyToMany, JoinTable, OneToOne, CreateDateColumn, Not } from 'typeorm';
 import { Length, IsEmail, IsHexColor, IsOptional, IsIn, IsUppercase, Matches, validate } from 'class-validator'
 import { GraphQLResolveInfo } from 'graphql';
