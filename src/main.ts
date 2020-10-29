@@ -48,7 +48,6 @@ async function main() {
                     user: (_parent, args, _context, _info) => model.setUser(args),
                     newUser: (_parent, args, _context, _info) => model.newUser(args),
                     organization: (_parent, args, _context, _info) => model.setOrganization(args),
-                    newOrganization: (_parent, args, _context, _info) => model.newOrganization(args),
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),

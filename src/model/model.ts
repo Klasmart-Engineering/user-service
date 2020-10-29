@@ -67,17 +67,6 @@ export class Model {
         return this.userRepository.find()
     }
 
-    public async newOrganization({organization_name, address1, address2, phone, shortCode}:Organization) {
-        const organization = new Organization()
-        organization.organization_name = organization_name
-        organization.address1 = address1
-        organization.address2 = address2
-        organization.phone = phone
-        organization.shortCode = shortCode
-        await this.manager.save(organization)
-
-        return organization
-    }
     public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
         const organization = await this.organizationRepository.findOneOrFail(organization_id)
 
