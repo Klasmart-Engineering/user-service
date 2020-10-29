@@ -1,4 +1,4 @@
-import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
 import { Role } from "./role";
@@ -85,9 +85,5 @@ export class User extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
-    }
-
-    public async permission({permission_name, organization_id, school_id, object_id}: any, context: any, info: GraphQLResolveInfo) {
-        return true
     }
 }
