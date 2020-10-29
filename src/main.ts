@@ -1,10 +1,12 @@
-import { ApolloServer } from "apollo-server";
+import express from "express"
+import { ApolloServer } from "apollo-server-express";
 import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { checkToken } from "./token";
 import { Model } from "./model/model";
 import { loadTypedefsSync } from '@graphql-tools/load';
 import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
+import cookieParser from 'cookie-parser'
 
 Sentry.init({
     dsn: "https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815",
@@ -58,13 +60,17 @@ async function main() {
             },
             context: async ({ req, connection }) => {
                 if (connection) { return connection.context }
-                const token = await checkToken(req.headers.authorization)
+                const encodedToken = req.headers.authorization||req.cookies.access
+                const token = await checkToken(encodedToken)
                 return { token };
             }
         });
 
+        const app = express()
+        app.use(cookieParser())
+        server.applyMiddleware({app})
         const port = process.env.PORT || 8080;
-        server.listen({ port }, () => console.log(`🌎 Server ready at http://localhost:${port}${server.graphqlPath}`));
+        app.listen(port, () => console.log(`🌎 Server ready at http://localhost:${port}${server.graphqlPath}`));
     } catch (e) {
         console.error(e);
         process.exit(-1);
