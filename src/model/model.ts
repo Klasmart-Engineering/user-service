@@ -133,7 +133,6 @@ export class Model {
             }
             await this.manager.save(organization)
         }
-
         return organization
     }
     public async getOrganization(organization_id: string) {
