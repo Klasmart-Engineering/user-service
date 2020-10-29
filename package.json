@@ -34,10 +34,11 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
+    "@graphql-tools/graphql-file-loader": "^6.2.5",
+    "@graphql-tools/load": "^6.2.5",
     "@sentry/node": "^5.20.1",
     "apollo-server": "^2.14.3",
     "graphql": "^15.1.0",
-    "graphql-import": "^1.0.2",
     "jsonwebtoken": "^8.5.1",
     "pg": "^8.4.1",
     "typeorm": "^0.2.28",

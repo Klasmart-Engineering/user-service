@@ -2,10 +2,9 @@ import { ApolloServer } from "apollo-server";
 import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { checkToken } from "./token";
-import { importSchema } from 'graphql-import'
 import { Model } from "./model/model";
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
-import { GraphQLResolveInfo } from "graphql";
+import { loadTypedefsSync } from '@graphql-tools/load';
+import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 
 Sentry.init({
     dsn: "https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815",
@@ -22,10 +21,9 @@ export interface Context {
 
 async function main() {
     try {
-        const typeDefs = importSchema('./schema.graphql')
         const model = await Model.create()
         const server = new ApolloServer({
-            typeDefs,
+            typeDefs: loadTypedefsSync('./schema.graphql', { loaders: [new GraphQLFileLoader()] })[0].document,
             subscriptions: {
                 keepAlive: 1000,
                 onConnect: async ({ authToken, sessionId }: any, websocket, connectionData: any): Promise<Context> => {
