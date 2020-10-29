@@ -119,7 +119,6 @@ type Organization {
     status: String
     createdAt: Date
     updatedAt: Date
-    errors: [ValidationError!]
 
     #connections
 
@@ -143,6 +142,8 @@ type Organization {
     createRole(role_name: String): Role
     createSchool(school_name: String): SchoolMembership
     createClass(class_name: String): Class
+
+    errors: [ValidationError!]
 }
 
 scalar Date
