@@ -7,6 +7,24 @@ const issuers = new Map<
         secretOrPublicKey: Secret,
     }>([
     [
+        "kidsloop",
+        {
+            options: {
+                issuer: "kidsloop",
+                algorithms: ["RS512"],
+            },
+            secretOrPublicKey:  `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxdHMYTqFobj3oGD/JDYb
+DN07icTH/Dj7jBtJSG2clM6hQ1HRLApQUNoqcrcJzA0A7aNqELIJuxMovYAoRtAT
+E1pYMWpVyG41inQiJjKFyAkuHsVzL+t2C778BFxlXTC/VWoR6CowWSWJaYlT5fA/
+krUew7/+sGW6rjV2lQqxBN3sQsfaDOdN5IGkizsfMpdrETbc5tKksNs6nL6SFRDe
+LoS4AH5KI4T0/HC53iLDjgBoka7tJuu3YsOBzxDX22FbYfTFV7MmPyq++8ANbzTL
+sgaD2lwWhfWO51cWJnFIPc7gHBq9kMqMK3T2dw0jCHpA4vYEMjsErNSWKjaxF8O/
+FwIDAQAB
+-----END PUBLIC KEY-----`
+        },
+    ],
+    [
         "calmid-debug",
         {
             options: {
