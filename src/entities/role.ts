@@ -4,6 +4,7 @@ import { OrganizationMembership } from "./organizationMembership";
 import { Permission } from "./permission";
 import { Organization } from "./organization";
 import { SchoolMembership } from "./schoolMembership";
+import { RoleAccess } from "./object";
 
 @Entity()
 export class Role extends BaseEntity {
@@ -28,6 +29,10 @@ export class Role extends BaseEntity {
     @OneToMany(() => Permission, permission => permission.role)
     @JoinColumn()
     public permissions?: Promise<Permission[]>
+
+    @OneToMany(() => RoleAccess, access => access.role)
+    @JoinColumn({name: "role_id", referencedColumnName: "role_id"})
+    public access?: Promise<RoleAccess[]>
     
     public async permission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {

@@ -5,6 +5,7 @@ import { Role } from './role';
 import { User } from './user';
 import { Class } from './class';
 import { School } from './school';
+import { OrganizationAccess } from './object';
 
 @Entity()
 export class Organization {
@@ -38,6 +39,10 @@ export class Organization {
             console.error(e)
         }
     }
+
+    @OneToMany(() => OrganizationAccess, access => access.organization)
+    @JoinColumn({name: "organization_id", referencedColumnName: "organization_id"})
+    public access?: Promise<OrganizationAccess[]>
 
     @OneToOne(() => User, user => user.my_organization)
     public owner?: Promise<User>

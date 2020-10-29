@@ -5,6 +5,7 @@ import { Role } from "./role";
 import { Organization } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
+import { UserAccess } from "./object";
 
 @Entity()
 export class User extends BaseEntity {
@@ -36,6 +37,10 @@ export class User extends BaseEntity {
     @OneToMany(() => SchoolMembership, schoolMembership => schoolMembership.user)
     @JoinColumn({name: "school_id", referencedColumnName: "school_id"})
     public school_memberships?: Promise<SchoolMembership[]>
+
+    @OneToMany(() => UserAccess, access => access.user)
+    @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
+    public access?: Promise<UserAccess[]>
 
     @ManyToMany(() => Class, class_ => class_.teachers)
     @JoinTable()
