@@ -31,8 +31,11 @@ type Mutation {
         organization_name: String
         address1: String
         address2: String
+        email: String
         phone: String
         shortCode: String
+        logo: Upload
+        color: String
     ): Organization
     newOrganization(
         organization_name: String!
@@ -43,7 +46,7 @@ type Mutation {
         shortCode: String!
         logo: Upload!
         color: String!
-    ): OrganizationResult!
+    ): Organization
 
     role(role_id: ID!): Role
     roles: [Role]
@@ -52,16 +55,10 @@ type Mutation {
     class(class_id: ID!): Class
 }
 
-union OrganizationResult = Organization | ValidationErrors
-
-type ValidationErrors {
-    errors: [ValidationError]
-}
-
 type ValidationError {
     property: String!,
-    value: String!, 
-    constraint: String!
+    value: String, 
+    constraint: [String!]!
 }
 
 type User {
@@ -86,7 +83,7 @@ type User {
 }
 
 type Organization {
-    organization_id: ID!
+    organization_id: ID
 
     #properties
     organization_name: String
@@ -101,6 +98,8 @@ type Organization {
     status: String
     createdAt: Date
     updatedAt: Date
+
+    errors: [ValidationError!]
 
     #connections
     primary_contact: User

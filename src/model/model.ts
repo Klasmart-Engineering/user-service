@@ -1,14 +1,12 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
-import { UserInputError } from 'apollo-server'
 import { GraphQLResolveInfo } from 'graphql';
-import { validate } from 'class-validator';
 import { User } from '../entities/user';
 import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
-import { OrganizationHelpers, ErrorHelpers } from '../entities/helpers'
+import { OrganizationHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -87,12 +85,12 @@ export class Model {
         organization.shortCode = args.shortCode
         organization.color = args.color
         organization.status = OrganizationStatus.ACTIVE
+        
+        if(!await organization.isValid()) {
+            return organization
+        } 
 
-        const errs = await validate(organization)
-        if (errs.length > 0) {
-            return ErrorHelpers.GetValidationError(errs)
-        }
-        const savedOrg = await this.manager.save(organization)
+        await this.manager.save(organization)
 
         const s3 = AWSS3.getInstance({ 
             accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
@@ -100,23 +98,55 @@ export class Model {
             destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
             region: process.env.AWS_DEFAULT_REGION as string,
         })
-        const upload = await s3.singleFileUpload({file: args.logo as ApolloServerFileUploads.File, path: savedOrg.organization_id, type: 'image'})
 
-        savedOrg.logoKey = upload.key
-        await this.manager.save(savedOrg)
+        const upload = await s3.singleFileUpload({file: args.logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
 
-        return savedOrg
+        organization.logoKey = upload.key
+        await this.manager.save(organization)
+
+        return organization
     }
-    public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
+    public async setOrganization({ organization_id, organization_name, address1, address2, phone, email, logo, color, shortCode}:OrganizationInput) {
         const organization = await this.organizationRepository.findOneOrFail(organization_id)
 
-        if(organization_name !== undefined) { organization.organization_name = organization_name }
-        if(address1 !== undefined) { organization.address1 = address1 }
-        if(address2 !== undefined) { organization.address2 = address2 }
-        if(phone !== undefined) { organization.phone = phone }
-        if(shortCode !== undefined) { organization.shortCode = shortCode }
+        const isUpdated = 
+            organization_name !== undefined ||
+            address1 !== undefined ||
+            address2 !== undefined ||
+            email !== undefined ||
+            phone !== undefined ||
+            color !== undefined ||
+            shortCode !== undefined ||
+            (logo !== undefined && null !== logo && typeof logo === 'object')
 
-        await this.manager.save(organization)
+        if(isUpdated) {
+            if(organization_name !== undefined) { organization.organization_name = organization_name }
+            if(address1 !== undefined) { organization.address1 = address1 }
+            if(address2 !== undefined) { organization.address2 = address2 }
+            if(email !== undefined) { organization.email = email }
+            if(phone !== undefined) { organization.phone = phone }
+            if(color !== undefined) { organization.color = color }
+            if(shortCode !== undefined) { organization.shortCode = shortCode }
+            
+            if(!await organization.isValid()) { return organization }
+    
+            if(logo !== undefined && null !== logo && typeof logo === 'object') { 
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                if(organization.logoKey && !organization.logoKey.startsWith("default/")) {
+                    await s3.deleteObject(organization.logoKey as string)
+                }
+                const upload = await s3.singleFileUpload({file: logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
+        
+                organization.logoKey = upload.key
+            }
+            await this.manager.save(organization)
+        }
+
         return organization
     }
     public async getOrganization(organization_id: string) {
