@@ -65,7 +65,12 @@ async function main() {
                 const encodedToken = req.headers.authorization||req.cookies.access
                 const token = await checkToken(encodedToken)
                 return { token };
-            }
+            },
+            playground: {
+                settings: {
+                    "request.credentials": "same-origin"
+                }
+            },
         });
 
         const app = express()
