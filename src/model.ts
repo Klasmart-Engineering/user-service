@@ -1,6 +1,6 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
 import { User } from './entities/user';
-import { Organization, OrganizationInput, OrganizationStatus } from "./entities/organization";
+import { Organization, OrganizationInput } from "./entities/organization";
 import { Role } from "./entities/role";
 import { Class } from "./entities/class";
 import { Context } from "./main";
@@ -146,7 +146,6 @@ export class Model {
             }
             await this.manager.save(organization)
         }
-
         return organization
     }
     public async getOrganization(organization_id: string) {
