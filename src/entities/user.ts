@@ -10,7 +10,7 @@ import { SchoolMembership } from "./schoolMembership";
 import { ApolloServerFileUploads } from "../entities/types";
 import { BasicValidationError, ErrorHelpers } from '../entities/helpers'
 import { UniqueOnDatabase } from '../decorators/unique';
-import { EntityId } from './organization'
+import { EntityId } from './organization' 
 import { DefaultAvatarKeys } from './const'
 
 export const UserStatus = {
