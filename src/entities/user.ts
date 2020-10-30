@@ -52,7 +52,8 @@ export class User extends BaseEntity {
     public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
-            if(this.my_organization) { throw new Error("Only one organization per user") }
+            const my_organization = await this.my_organization
+            if(my_organization) { throw new Error("Only one organization per user") }
             
             const organization = new Organization()
 
