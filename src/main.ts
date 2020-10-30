@@ -65,7 +65,7 @@ async function main() {
                     classes: () => model.getClasses(),
                     class: (_parent, args, _context, _info) => model.getClass(args)
 
-                },
+                }
             },
             context: async ({ req, connection }) => {
                 if (connection) { return connection.context }
