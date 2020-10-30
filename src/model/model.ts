@@ -70,7 +70,7 @@ export class Model {
         newUser.suffix_name = suffix_name
         newUser.is_child = is_child
         newUser.birth_year_month = birth_year_month
-        newUser.email = email
+        newUser.email = email.trim().toLowerCase()
         if(default_avatar !== undefined) { newUser.default_avatar = default_avatar }
 
         if(!await newUser.isValid()) { return newUser }
@@ -95,14 +95,49 @@ export class Model {
 
         return newUser
     }
-    public async setUser({user_id, first_name, email, avatar}: UserInput) {
+    public async setUser({user_id, first_name, last_name, middle_name, suffix_name, email,default_avatar, avatar, is_child, birth_year_month}: UserInput) {
         const user = await this.userRepository.findOneOrFail(user_id)
 
-        if(first_name !== undefined) {user.first_name = first_name}
-        if(email !== undefined) { user.email = email }
-        // if(avatar !== undefined) { user.avatar = avatar }
+        const isUpdated = 
+            first_name !== undefined ||
+            last_name !== undefined ||
+            middle_name !== undefined ||
+            suffix_name !== undefined ||
+            email !== undefined ||
+            default_avatar !== undefined ||
+            is_child !== undefined ||
+            birth_year_month !== undefined ||
+            (avatar !== undefined && null !== avatar && typeof avatar === 'object')
 
-        await this.manager.save(user)
+        if(isUpdated) { 
+            if (first_name !== undefined) { user.first_name = first_name }
+            if (last_name !== undefined) { user.last_name = last_name }
+            if (middle_name !== undefined) { user.middle_name = middle_name }
+            if (suffix_name !== undefined) { user.suffix_name = suffix_name }
+            if (is_child !== undefined) { user.is_child = is_child }
+            if (birth_year_month !== undefined) { user.birth_year_month = birth_year_month }
+            if (email !== undefined) { user.email = email.trim().toLowerCase() }
+            if(default_avatar !== undefined) { user.default_avatar = default_avatar }
+    
+            if(!await user.isValid()) { return user }
+
+            if(default_avatar) {
+                user.avatarKey = default_avatar
+            // Pending: also validate to only allow custom avatars if user is not a student: group !== 'Student'
+            } else if(undefined !== avatar && null !== avatar && typeof avatar === 'object'){
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                const upload = await s3.singleFileUpload({file: avatar as ApolloServerFileUploads.File, path: `users/${user.user_id}`, type: 'image'})
+                user.avatarKey = upload.key
+            }
+    
+            await this.manager.save(user)
+        }
+
         return user
     }
     public async getUser(user_id: string) {
@@ -137,7 +172,7 @@ export class Model {
             if(organization_name !== undefined) { organization.organization_name = organization_name }
             if(address1 !== undefined) { organization.address1 = address1 }
             if(address2 !== undefined) { organization.address2 = address2 }
-            if(email !== undefined) { organization.email = email }
+            if(email !== undefined) { organization.email = email.trim().toLowerCase() }
             if(phone !== undefined) { organization.phone = phone }
             if(color !== undefined) { organization.color = color }
             if(shortCode !== undefined) { organization.shortCode = shortCode }
