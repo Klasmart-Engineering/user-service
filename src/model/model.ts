@@ -1,5 +1,4 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
-import { UserInputError } from 'apollo-server'
 import { GraphQLResolveInfo } from 'graphql';
 import { validate } from 'class-validator';
 import { User, UserInput } from '../entities/user';
@@ -54,7 +53,7 @@ export class Model {
             
             let modified = false
             if(user.user_id !== token.id)     { user.user_id = token.id;     modified = true }
-            if(user.user_name !== token.name) { user.user_name = token.name; modified = true }
+            if(user.first_name !== token.first_name) { user.first_name = token.first_name; modified = true }
             if(user.email !== token.email)    { user.email = token.email;    modified = true }
             
             if(modified) { await this.manager.save(user) }

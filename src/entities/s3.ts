@@ -1,7 +1,7 @@
 import AWS from "aws-sdk"
 import stream from "stream"
 import { ApolloServerFileUploads } from "./types"
-import { ApolloError } from 'apollo-server'
+import { ApolloError } from 'apollo-server-express'
 import { generate } from 'shortid';
 
 type S3Config = {
