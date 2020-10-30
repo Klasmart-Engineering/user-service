@@ -63,9 +63,8 @@ async function main() {
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),
-                    class: (_parent, args, _context, _info) => model.getClass(args)
-
-                }
+                    class: (_parent, args, _context, _info) => model.getClass(args),
+                },
             },
             context: async ({ req, connection }) => {
                 if (connection) { return connection.context }
