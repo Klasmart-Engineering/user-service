@@ -1,7 +1,8 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
+import { validate } from 'class-validator';
 import { User, UserInput } from '../entities/user';
-import { Organization, OrganizationInput } from "../entities/organization";
+import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
