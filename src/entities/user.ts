@@ -2,15 +2,15 @@ import {Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, getReposito
 import { Length, IsEmail, IsOptional, IsDateString, IsIn, Matches, validate } from 'class-validator'
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
-import { AWSS3 } from "../entities/s3";
 import { Role } from "./role";
 import { Organization, OrganizationInput, OrganizationStatus } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
-import { ApolloServerFileUploads } from "../entities/types";
+import { ApolloServerFileUploads } from "./types"
+import { AWSS3 } from "../entities/s3";
 import { UniqueOnDatabase } from '../decorators/unique';
-import { BasicValidationError, ErrorHelpers } from '../entities/helpers'
-import { EntityId } from './organization' 
+import { ErrorHelpers, BasicValidationError } from '../entities/helpers'
+import { EntityId } from './organization'
 import { DefaultAvatarKeys } from './const'
 
 export const UserStatus = {
