@@ -52,6 +52,7 @@ async function main() {
                     classes: () => model.getClasses(),
                     class: (_parent, args, _context, _info) => model.getClass(args),
                     shortCode: (_parent, args, _context, _info) => model.GetShortCode(args),
+                    defaultAvatars: () => model.GetDefaultAvatars(),
 
                 },
                 Mutation: {
