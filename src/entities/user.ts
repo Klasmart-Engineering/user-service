@@ -1,5 +1,5 @@
-import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, CreateDateColumn, Not} from "typeorm";
-import { Length, IsOptional, IsEmail, IsIn, IsDateString, validate } from 'class-validator'
+import {Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, CreateDateColumn, Not} from "typeorm";
+import { Length, IsEmail, IsOptional, IsDateString, IsIn, Matches, validate } from 'class-validator'
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
 import { AWSS3 } from "../entities/s3";
@@ -8,8 +8,8 @@ import { Organization, OrganizationInput, OrganizationStatus } from "./organizat
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
 import { ApolloServerFileUploads } from "../entities/types";
-import { BasicValidationError, ErrorHelpers } from '../entities/helpers'
 import { UniqueOnDatabase } from '../decorators/unique';
+import { BasicValidationError, ErrorHelpers } from '../entities/helpers'
 import { EntityId } from './organization' 
 import { DefaultAvatarKeys } from './const'
 

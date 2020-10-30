@@ -1,12 +1,12 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
 import { User, UserInput } from '../entities/user';
-import { Organization, OrganizationInput } from "../entities/organization";
+import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
-import { OrganizationHelpers, UserHelpers } from '../entities/helpers'
+import { OrganizationHelpers, UserHelpers, ErrorHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
