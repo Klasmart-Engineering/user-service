@@ -4,7 +4,6 @@ import WebSocket from "ws";
 import { checkToken } from "./token";
 import { importSchema } from 'graphql-import'
 import { Model } from "./model/model";
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
 import { GraphQLResolveInfo } from "graphql";
 import * as dotenv from "dotenv";
 dotenv.config({ path: __dirname+'/../.env' });
@@ -47,6 +46,7 @@ async function main() {
                     classes: () => model.getClasses(),
                     class: (_parent, args, _context, _info) => model.getClass(args),
                     shortCode: (_parent, args, _context, _info) => model.GetShortCode(args),
+                    defaultAvatars: () => model.GetDefaultAvatars(),
 
                 },
                 Mutation: {
@@ -57,8 +57,8 @@ async function main() {
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),
-                    class: (_parent, args, _context, _info) => model.getClass(args)
-
+                    class: (_parent, args, _context, _info) => model.getClass(args),
+                    
                 },
             },
             context: async ({ req, connection }) => {

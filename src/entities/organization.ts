@@ -11,7 +11,6 @@ import { AWSS3 } from "../entities/s3";
 import { UniqueOnDatabase } from '../decorators/unique';
 import { ErrorHelpers, BasicValidationError } from '../entities/helpers'
 
-// validation missing for phone
 export const OrganizationStatus = {
     "ACTIVE": "ACTIVE",
     "INACTIVE": "INACTIVE",
@@ -38,6 +37,7 @@ export interface EntityId {
 @Entity()
 export class Organization {
     private _errors: null | undefined | BasicValidationError[]
+
     @PrimaryGeneratedColumn("uuid")
     public readonly organization_id!: string;
     

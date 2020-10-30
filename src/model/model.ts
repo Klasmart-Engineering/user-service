@@ -1,12 +1,12 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
-import { User } from '../entities/user';
+import { User, UserInput } from '../entities/user';
 import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
-import { OrganizationHelpers } from '../entities/helpers'
+import { OrganizationHelpers, UserHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -44,21 +44,45 @@ export class Model {
         this.classRepository = getRepository(Class, connection.name)
     }
 
-    public async newUser({user_name, email, avatar}: User) {
+    public async newUser({first_name, middle_name, last_name, suffix_name,  email, avatar, is_child, default_avatar, birth_year_month}: UserInput) {
         const newUser = new User()
-        newUser.user_name = user_name
+        newUser.first_name = first_name
+        newUser.last_name = last_name
+        newUser.middle_name = middle_name
+        newUser.suffix_name = suffix_name
+        newUser.is_child = is_child
+        newUser.birth_year_month = birth_year_month
         newUser.email = email
-        newUser.avatar = avatar
+        if(default_avatar !== undefined) { newUser.default_avatar = default_avatar }
+
+        if(!await newUser.isValid()) { return newUser }
 
         await this.manager.save(newUser)
+
+        if(default_avatar) {
+            newUser.avatarKey = default_avatar
+            await this.manager.save(newUser)
+        // Pending: also validate to only allow custom avatars if user is not a student: group !== 'Student'
+        } else if(undefined !== avatar && null !== avatar && typeof avatar === 'object'){
+            const s3 = AWSS3.getInstance({ 
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                region: process.env.AWS_DEFAULT_REGION as string,
+            })
+            const upload = await s3.singleFileUpload({file: avatar as ApolloServerFileUploads.File, path: `users/${newUser.user_id}`, type: 'image'})
+            newUser.avatarKey = upload.key
+            await this.manager.save(newUser)
+        }
+
         return newUser
     }
-    public async setUser({user_id, user_name, email, avatar}: User) {
+    public async setUser({user_id, first_name, email, avatar}: UserInput) {
         const user = await this.userRepository.findOneOrFail(user_id)
 
-        if(user_name !== undefined) {user.user_name = user_name}
+        if(first_name !== undefined) {user.first_name = first_name}
         if(email !== undefined) { user.email = email }
-        if(avatar !== undefined) { user.avatar = avatar }
+        // if(avatar !== undefined) { user.avatar = avatar }
 
         await this.manager.save(user)
         return user
@@ -74,6 +98,10 @@ export class Model {
     public GetShortCode({name}: {name: string}) {
         return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
     }
+    public GetDefaultAvatars() {
+        return UserHelpers.GetDefaultAvatars()
+    }
+
     public async newOrganization(args:OrganizationInput) {
 
         const organization = new Organization()

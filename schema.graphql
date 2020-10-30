@@ -1,4 +1,6 @@
 type Query {
+    defaultAvatars: [DefaultAvatar]
+
     user(user_id: ID!): User
     users: [User]
 
@@ -16,14 +18,25 @@ type Query {
 type Mutation {
     user(
         user_id: ID!
-        user_name: String
+        middle_name: String
+        last_name: String
+        suffix_name: String
         email: String
-        avatar: String
+        is_child: Boolean
+        avatar: Upload
+        default_avatar: String
+        birth_year_month: Date
     ): User
     newUser(
-        user_name: String
-        email: String
-        avatar: String
+        first_name: String!
+        middle_name: String
+        last_name: String!
+        suffix_name: String
+        email: String!
+        is_child: Boolean
+        avatar: Upload 
+        default_avatar: String 
+        birth_year_month: Date!
     ): User
 
     organization(
@@ -62,12 +75,21 @@ type ValidationError {
 }
 
 type User {
-    user_id: ID!
+    user_id: ID
 
     #properties
-    user_name: String
+    first_name: String
+    middle_name: String
+    last_name: String
+    suffix_name: String
+    is_child: Boolean
+    birth_year_month: Date
     email: String
     avatar: String 
+    createdAt: Date
+    updatedAt: Date
+
+    errors: [ValidationError!]
 
     #connections
     memberships: [OrganizationMembership]
@@ -119,7 +141,13 @@ type Organization {
     createClass(class_name: String): Class
 }
 
+type DefaultAvatar {
+    url: String
+    key: String
+}
+
 scalar Date
+
 type OrganizationMembership {
     #properties
     user_id: ID!
