@@ -1,10 +1,11 @@
 type Query {
+    me: User
     user(user_id: ID!): User
     users: [User]
 
     shortCode(name: String!): String
     organization(organization_id: ID!): Organization
-    organizations: [Organization]
+    organizations(organization_ids: [ID!]): [Organization]
 
     role(role_id: ID!): Role
     roles: [Role]
@@ -14,6 +15,7 @@ type Query {
 }
 
 type Mutation {
+    me: User
     user(
         user_id: ID!
         user_name: String
@@ -70,15 +72,24 @@ type User {
     avatar: String 
 
     #connections
+    """
+    'my_organization' is the Organization that this user has created
+    """
+    my_organization: Organization
     memberships: [OrganizationMembership]
     membership(organization_id: ID!): OrganizationMembership
     classesTeaching: [Class]
     classesStudying: [Class]
-
-    #query
-    permission(permission_name: String!, organization_id: ID!, school_id: ID, object_id: ID): Boolean
     
     #mutations
+    createOrganization(
+        organization_name: String
+        email: String
+        address1: String
+        address2: String
+        phone: String
+        shortCode: String
+    ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
 }
 
@@ -102,6 +113,11 @@ type Organization {
     errors: [ValidationError!]
 
     #connections
+
+    """
+    'owner' is the User that created this Organization
+    """
+    owner: User
     primary_contact: User
     roles: [Role]
     memberships: [OrganizationMembership]

@@ -140,6 +140,9 @@ export class Organization {
         }
     }
 
+    @OneToOne(() => User, user => user.my_organization)
+    public owner?: Promise<User>
+
     @ManyToOne(() => User)
     @JoinColumn()
     public primary_contact?: Promise<User>

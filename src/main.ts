@@ -1,13 +1,18 @@
-import { ApolloServer } from "apollo-server";
+import express from "express"
+import { ApolloServer } from "apollo-server-express";
 import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { checkToken } from "./token";
-import { importSchema } from 'graphql-import'
 import { Model } from "./model/model";
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
-import { GraphQLResolveInfo } from "graphql";
+import { loadTypedefsSync } from '@graphql-tools/load';
+import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
+import cookieParser from 'cookie-parser'
+import cors, { CorsOptions } from "cors"
 import * as dotenv from "dotenv";
 dotenv.config({ path: __dirname+'/../.env' });
+
+
+const routePrefix = process.env.ROUTE_PREFIX || ""
 
 Sentry.init({
     dsn: "https://b78d8510ecce48dea32a0f6a6f345614@o412774.ingest.sentry.io/5388815",
@@ -24,10 +29,9 @@ export interface Context {
 
 async function main() {
     try {
-        const typeDefs = importSchema('./schema.graphql')
         const model = await Model.create()
         const server = new ApolloServer({
-            typeDefs,
+            typeDefs: loadTypedefsSync('./schema.graphql', { loaders: [new GraphQLFileLoader()] })[0].document,
             subscriptions: {
                 keepAlive: 1000,
                 onConnect: async ({ authToken, sessionId }: any, websocket, connectionData: any): Promise<Context> => {
@@ -38,9 +42,10 @@ async function main() {
             },
             resolvers: {
                 Query: {
+                    me: (_parent, _args, context, _info) => model.getMyUser(context),
                     users: () => model.getUsers(),
                     user: (_parent, { user_id }, _context, _info) => model.getUser(user_id),
-                    organizations: () => model.getOrganizations(),
+                    organizations: (_parent, { organization_ids }, _context, _info) => model.getOrganizations(organization_ids),
                     organization: (_parent, { organization_id }, _context, _info) => model.getOrganization(organization_id),
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
@@ -50,10 +55,10 @@ async function main() {
 
                 },
                 Mutation: {
+                    me: (_parent, _args, context, _info) => model.getMyUser(context),
                     user: (_parent, args, _context, _info) => model.setUser(args),
                     newUser: (_parent, args, _context, _info) => model.newUser(args),
                     organization: (_parent, args, _context, _info) => model.setOrganization(args),
-                    newOrganization: (_parent, args, _context, _info) => model.newOrganization(args),
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),
@@ -63,13 +68,40 @@ async function main() {
             },
             context: async ({ req, connection }) => {
                 if (connection) { return connection.context }
-                const token = await checkToken(req.headers.authorization)
-                return { token: req.headers.authorization };
-            }
+                const encodedToken = req.headers.authorization||req.cookies.access
+                const token = await checkToken(encodedToken)
+                return { token };
+            },
+            playground: {
+                settings: {
+                    "request.credentials": "same-origin"
+                }
+            },
         });
 
+        const app = express()
+        const corsConfiguration: CorsOptions = {
+            allowedHeaders: ["Authorization","Content-Type"],
+            credentials: true,
+            origin: (origin, callback) => {
+                try {
+                    if(!origin) {callback(null, false); return}
+                    const match = origin.match(/\.kidsloop\.net$/)
+                    callback(null, Boolean(match))
+                } catch(e) {
+                    callback(e)
+                }
+            }
+        }
+        app.options('*',cors(corsConfiguration))
+        app.use(cookieParser())
+        server.applyMiddleware({
+            app,
+            cors: corsConfiguration,
+            path: routePrefix
+        })
         const port = process.env.PORT || 8080;
-        server.listen({ port }, () => console.log(`🌎 Server ready at http://localhost:${port}${server.graphqlPath}`));
+        app.listen(port, () => console.log(`🌎 Server ready at http://localhost:${port}${server.graphqlPath}`));
     } catch (e) {
         console.error(e);
         process.exit(-1);

@@ -1,12 +1,15 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
+import { UserInputError } from 'apollo-server'
 import { GraphQLResolveInfo } from 'graphql';
+import { validate } from 'class-validator';
 import { User } from '../entities/user';
 import { Organization, OrganizationInput, OrganizationStatus } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
+import { Context } from "../main";
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
-import { OrganizationHelpers } from '../entities/helpers'
+import { OrganizationHelpers, ErrorHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
@@ -44,6 +47,23 @@ export class Model {
         this.classRepository = getRepository(Class, connection.name)
     }
 
+    public async getMyUser({token}: Context) {
+        try {
+            if(!token) {return null}
+            let user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
+            
+            let modified = false
+            if(user.user_id !== token.id)     { user.user_id = token.id;     modified = true }
+            if(user.user_name !== token.name) { user.user_name = token.name; modified = true }
+            if(user.email !== token.email)    { user.email = token.email;    modified = true }
+            
+            if(modified) { await this.manager.save(user) }
+                
+            return user
+        } catch(e) {
+            console.error(e)
+        }
+    }
     public async newUser({user_name, email, avatar}: User) {
         const newUser = new User()
         newUser.user_name = user_name
@@ -74,41 +94,9 @@ export class Model {
     public GetShortCode({name}: {name: string}) {
         return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
     }
-    public async newOrganization(args:OrganizationInput) {
 
-        const organization = new Organization()
-        organization.organization_name = args.organization_name
-        organization.address1 = args.address1
-        organization.address2 = args.address2
-        organization.email = args.email.trim().toLowerCase()
-        organization.phone = args.phone
-        organization.shortCode = args.shortCode
-        organization.color = args.color
-        organization.status = OrganizationStatus.ACTIVE
-        
-        if(!await organization.isValid()) {
-            return organization
-        } 
-
-        await this.manager.save(organization)
-
-        const s3 = AWSS3.getInstance({ 
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-            destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
-            region: process.env.AWS_DEFAULT_REGION as string,
-        })
-
-        const upload = await s3.singleFileUpload({file: args.logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
-
-        organization.logoKey = upload.key
-        await this.manager.save(organization)
-
-        return organization
-    }
     public async setOrganization({ organization_id, organization_name, address1, address2, phone, email, logo, color, shortCode}:OrganizationInput) {
         const organization = await this.organizationRepository.findOneOrFail(organization_id)
-
         const isUpdated = 
             organization_name !== undefined ||
             address1 !== undefined ||
@@ -118,7 +106,6 @@ export class Model {
             color !== undefined ||
             shortCode !== undefined ||
             (logo !== undefined && null !== logo && typeof logo === 'object')
-
         if(isUpdated) {
             if(organization_name !== undefined) { organization.organization_name = organization_name }
             if(address1 !== undefined) { organization.address1 = address1 }
@@ -153,8 +140,16 @@ export class Model {
         const organization = await this.organizationRepository.findOne(organization_id)
         return organization
     }
-    public async getOrganizations() {
-        return this.organizationRepository.find()
+    public async getOrganizations(organization_ids: string[]) {
+        try {
+            if (organization_ids) {
+                return await this.organizationRepository.findByIds(organization_ids)
+            } else {
+                return await this.organizationRepository.find()
+            }
+        } catch(e) {
+            console.error(e)
+        }
     }
 
     public async setRole({role_id, role_name}: Role) {
