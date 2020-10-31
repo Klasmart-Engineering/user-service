@@ -44,6 +44,20 @@ export class School extends BaseEntity {
     @Column({nullable: true})
     public logoKey?: string
 
+    public async logo() {
+        if(this.logoKey) {
+            const s3 = AWSS3.getInstance({ 
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                region: process.env.AWS_DEFAULT_REGION as string,
+            })
+            
+            return s3.getSignedUrl(this.logoKey as string)
+        }
+        return ""
+    }
+
     @Column({nullable: true})
     public color?: string
     
