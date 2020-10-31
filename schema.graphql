@@ -18,6 +18,8 @@ type Query {
 type Mutation {
     user(
         user_id: ID!
+        role_id: ID
+        organization_id: ID
         first_name: String
         middle_name: String
         last_name: String
