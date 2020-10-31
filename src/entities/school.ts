@@ -4,6 +4,21 @@ import { User } from './user';
 import { Class } from './class';
 import { SchoolMembership } from './schoolMembership';
 import { Organization } from './organization';
+import { AWSS3 } from './s3';
+import { ApolloServerFileUploads } from './types';
+
+export interface SchoolInput {
+    school_name: string
+    address: string
+    phone: string
+    email: string
+    contactName: string
+    startDate: string
+    endDate: string
+    grades: string[]
+    color: string
+    logo?: ApolloServerFileUploads.File
+}
 
 @Entity()
 export class School extends BaseEntity {
@@ -12,6 +27,25 @@ export class School extends BaseEntity {
     
     @Column({nullable: true})
     public school_name?: string
+    @Column({nullable: true})
+    public address?: string
+    @Column({nullable: true})
+    public phone?: string
+    @Column({nullable: true})
+    public email?: string
+    @Column({nullable: true})
+    public contactName?: string
+    @Column({nullable: true})
+    public startDate?: string
+    @Column({nullable: true})
+    public endDate?: string
+    @Column("varchar",{ nullable: true, array: true})
+    public grades?: string[]
+    @Column({nullable: true})
+    public logoKey?: string
+
+    @Column({nullable: true})
+    public color?: string
     
     @OneToMany(() => SchoolMembership, membership => membership.school)
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})

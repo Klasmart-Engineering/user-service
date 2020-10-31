@@ -5,7 +5,7 @@ import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
 import { User } from './user';
 import { Class } from './class';
-import { School } from './school';
+import { School, SchoolInput } from './school';
 import { ApolloServerFileUploads } from "./types"
 import { AWSS3 } from "../entities/s3";
 import { UniqueOnDatabase } from '../decorators/unique';
@@ -221,16 +221,39 @@ export class Organization {
         }
     }
 
-    public async createSchool({school_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createSchool(args: SchoolInput, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
-            
-            const school = new School()
-            school.school_name = school_name
-            school.organization = Promise.resolve(this)
-            await school.save()
+            const manager = getManager()
 
-            return school
+            const school = new School()
+            school.school_name = args.school_name
+            school.address = args.address
+            school.email = args.email
+            school.phone = args.phone
+            school.contactName = args.contactName
+            school.startDate = args.startDate
+            school.endDate = args.endDate
+            school.grades = args.grades
+            school.color = args.color
+            school.organization = Promise.resolve(this)
+
+            let savedSchool = await manager.save(school)
+
+            if (undefined !== args.logo && null !== args.logo && typeof args.logo === 'object') {
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })    
+                const upload = await s3.singleFileUpload({file: args.logo as ApolloServerFileUploads.File, path: savedSchool.school_id, type: 'image'})
+
+                savedSchool.logoKey = upload.key
+                await manager.save(savedSchool)
+            }
+
+            return savedSchool
         } catch(e) {
             console.error(e)
         }
