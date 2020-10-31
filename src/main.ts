@@ -7,6 +7,7 @@ import { Model } from "./model/model";
 import { loadTypedefsSync } from '@graphql-tools/load';
 import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 import cookieParser from 'cookie-parser'
+import cors, { CorsOptions } from "cors"
 
 const routePrefix = process.env.ROUTE_PREFIX || ""
 
@@ -74,8 +75,26 @@ async function main() {
         });
 
         const app = express()
+        const corsConfiguration: CorsOptions = {
+            allowedHeaders: ["Authorization","Content-Type"],
+            credentials: true,
+            origin: (origin, callback) => {
+                try {
+                    if(!origin) {callback(null, false); return}
+                    const match = origin.match(/\.kidsloop\.net$/)
+                    callback(null, Boolean(match))
+                } catch(e) {
+                    callback(e)
+                }
+            }
+        }
+        app.options('*',cors(corsConfiguration))
         app.use(cookieParser())
-        server.applyMiddleware({app, path: routePrefix})
+        server.applyMiddleware({
+            app,
+            cors: corsConfiguration,
+            path: routePrefix
+        })
         const port = process.env.PORT || 8080;
         app.listen(port, () => console.log(`🌎 Server ready at http://localhost:${port}${server.graphqlPath}`));
     } catch (e) {
