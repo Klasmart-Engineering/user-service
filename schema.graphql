@@ -20,6 +20,8 @@ type Mutation {
     me: User
     user(
         user_id: ID!
+        role_id: ID
+        organization_id: ID
         first_name: String
         middle_name: String
         last_name: String
