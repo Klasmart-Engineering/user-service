@@ -1,7 +1,6 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
-import { Role } from "./role";
 import { Organization } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";

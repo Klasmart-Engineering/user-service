@@ -3,7 +3,7 @@ import { ApolloServer } from "apollo-server-express";
 import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { checkToken } from "./token";
-import { Model } from "./model/model";
+import { Model } from "./model";
 import { loadTypedefsSync } from '@graphql-tools/load';
 import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 import cookieParser from 'cookie-parser'
