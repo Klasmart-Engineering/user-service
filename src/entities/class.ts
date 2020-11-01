@@ -1,16 +1,63 @@
+import { IsHexColor, IsOptional, Length } from "class-validator";
 import { GraphQLResolveInfo } from "graphql";
-import { BaseEntity, Column, Entity, getRepository, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, getRepository, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Organization } from "./organization";
 import { School } from "./school";
 import { User } from "./user";
 
+export interface ClassInput {
+    class_name: string,
+    status: boolean,
+    program: string,
+    schools: string[],
+    subjects: string[],
+    grades: string[],
+    startDate: string,
+    endDate: string,
+    createdAt: string,
+    color: string,
+}
+
 @Entity()
 export class Class extends BaseEntity {    
+
     @PrimaryGeneratedColumn("uuid")
     public class_id!: string
 
     @Column()
     public class_name?: String
+
+    @Column({nullable: false, default: true})
+    @IsOptional()
+    public status?: boolean
+
+    @Column({nullable: true})
+    @IsOptional()
+    public program?: string
+
+    @Column("varchar",{ nullable: true, array: true})
+    @IsOptional()
+    public subjects?: string[]
+
+    @Column("varchar",{ nullable: true, array: true})
+    @IsOptional()
+    public grades?: string[]
+
+    @Column({nullable: true})
+    @IsOptional()
+    public startDate?: string
+
+    @Column({nullable: true})
+    @IsOptional()
+    public endDate?: string
+
+    @CreateDateColumn()
+    public createdAt?: Date
+
+    @Column({nullable: true})
+    @IsOptional()
+    @IsHexColor()
+    public color?: string
 
     @ManyToOne(() => Organization, organization => organization.classes)
     public organization?: Promise<Organization>
