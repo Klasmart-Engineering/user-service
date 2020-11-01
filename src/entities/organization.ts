@@ -1,5 +1,7 @@
+// ORGANIZATION.TS
+
 import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToOne, ManyToMany, JoinTable, OneToOne, CreateDateColumn, Not } from 'typeorm';
-import { Length, IsEmail, IsDate, IsHexColor, IsOptional, IsIn, IsUppercase, Matches } from 'class-validator'
+import { Length, IsEmail, IsHexColor, IsOptional, IsIn, IsUppercase, Matches, validate } from 'class-validator'
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
@@ -9,15 +11,15 @@ import { School } from './school';
 import { ApolloServerFileUploads } from "./types"
 import { AWSS3 } from "../entities/s3";
 import { UniqueOnDatabase } from '../decorators/unique';
+import { ErrorHelpers, BasicValidationError } from '../entities/helpers'
 
-// validation missing for phone
 export const OrganizationStatus = {
     "ACTIVE": "ACTIVE",
     "INACTIVE": "INACTIVE",
 }
 
 export interface OrganizationInput {
-    userId: string
+    userId?: string
     organization_id?: string
     organization_name: string
     address1: string
@@ -36,6 +38,8 @@ export interface EntityId {
 
 @Entity()
 export class Organization {
+    private _errors: null | undefined | BasicValidationError[]
+
     @PrimaryGeneratedColumn("uuid")
     public readonly organization_id!: string;
     
@@ -44,12 +48,12 @@ export class Organization {
     public organization_name?: string
     
     @Column({nullable: false})
-    @Length(3, 30)
+    @Length(15, 60)
     public address1?: string
     
     @Column({nullable: true})
     @IsOptional()
-    @Length(3, 30)
+    @Length(15, 60)
     public address2?: string
     
     @Column({nullable: false, unique: true})
@@ -69,22 +73,25 @@ export class Organization {
     @UniqueOnDatabase(Organization, (self: EntityId) => (self.organization_id ? { organization_id: Not(self.organization_id as string) } : {}))
     public shortCode?: string
 
-    // pass arguments for validation of UniqueOnDatabase constraint 
-    // columns on updating the entity
+    // pass arguments for validation of UniqueOnDatabase  
+    // constraint columns on updating the entity
     public __req__: EntityId | null = {}
 
     @Column({nullable: true})
     public logoKey?: string
 
     public async logo() {
-        const s3 = AWSS3.getInstance({ 
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-            destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
-            region: process.env.AWS_DEFAULT_REGION as string,
-        })
-        
-        return s3.getSignedUrl(this.logoKey as string)
+        if(this.logoKey) {
+            const s3 = AWSS3.getInstance({ 
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                region: process.env.AWS_DEFAULT_REGION as string,
+            })
+            
+            return s3.getSignedUrl(this.logoKey as string)
+        }
+        return ''
     }
 
     @Column({nullable: true})
@@ -100,6 +107,27 @@ export class Organization {
 
     @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
     public updatedAt?: Date
+
+    public async errors() {
+        if(undefined !== this._errors) { return this._errors }
+
+        const info: EntityId = {
+            organization_id: this.organization_id
+        }
+        this.__req__ = info
+        
+        this._errors = null
+        const errs = await validate(this)
+        if(errs.length > 0) {
+            this._errors = ErrorHelpers.GetValidationError(errs)
+        }
+        return this._errors
+    }
+
+    public async isValid() {
+        await this.errors()
+        return (this._errors === null)
+    }
 
     @OneToMany(() => OrganizationMembership, membership => membership.organization)
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})

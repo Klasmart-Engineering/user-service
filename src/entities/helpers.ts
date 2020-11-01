@@ -62,25 +62,22 @@ export namespace UserHelpers {
     }
 }
 
-interface BasicValidationError {
+export interface BasicValidationError {
     property: string;
-    value: string;
-    constraint: string;
+    value: string | null | undefined;
+    constraint: string[];
 }
 
 export namespace ErrorHelpers {
 
-    export const GetValidationError = (errors: ValidationError[]) => {
-        return {
-            errors: errors.map(error => {
-                const keys = Object.keys(error.constraints as object)
-                const constraint = error.constraints? error.constraints[keys[0]] : ""
-                return {
-                    "property": error.property,
-                    "value": error.value,
-                    "constraint": constraint
-                }
-            })
-        }
+    export const GetValidationError = (errors: ValidationError[]): BasicValidationError[] => {
+        return errors.map(error => {
+            const err: BasicValidationError = {
+                "property": error.property,
+                "value": error.value,
+                "constraint": Object.values(error.constraints as object)
+            }
+            return err
+        })
     }
 }

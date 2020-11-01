@@ -65,17 +65,6 @@ async function main() {
                     class: (_parent, args, _context, _info) => model.getClass(args)
 
                 },
-                OrganizationResult: {
-                    __resolveType(obj: any) {
-                        if(obj.errors){
-                            return 'ValidationErrors'
-                        }
-                        if(obj.shortCode){
-                            return "Organization"
-                        }
-                        return null;
-                    }
-                }
             },
             context: async ({ req, connection }) => {
                 if (connection) { return connection.context }
