@@ -9,7 +9,7 @@ import { School } from './school';
 import { ApolloServerFileUploads } from "./types"
 import { AWSS3 } from "../entities/s3";
 import { UniqueOnDatabase } from '../decorators/unique';
-import { ErrorHelpers, BasicValidationError } from './helpers'
+import { ErrorHelpers, BasicValidationError } from '../entities/helpers'
 
 export const OrganizationStatus = {
     "ACTIVE": "ACTIVE",
