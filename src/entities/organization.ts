@@ -4,7 +4,7 @@ import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
 import { User } from './user';
-import { Class } from './class';
+import { Class, ClassInput } from './class';
 import { School, SchoolInput } from './school';
 import { ApolloServerFileUploads } from "./types"
 import { AWSS3 } from "../entities/s3";
@@ -222,13 +222,19 @@ export class Organization {
         }
     }
 
-    public async createClass({class_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createClass(args: ClassInput, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const manager = getManager()
             
             const _class = new Class()
-            _class.class_name = class_name
+            _class.class_name = args.class_name
+            _class.program = args.program
+            _class.subjects = args.subjects
+            _class.grades = args.grades
+            _class.startDate = args.startDate
+            _class.endDate = args.endDate
+            _class.color = args.color
             _class.organization = Promise.resolve(this)
             await manager.save(_class)
 

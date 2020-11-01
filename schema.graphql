@@ -169,7 +169,18 @@ type Organization {
         logo: Upload,
         color: String,
     ): SchoolMembership
-    createClass(class_name: String): Class
+    createClass(
+        class_name: String,
+        status: Boolean,
+        program: String,
+        schools: [String],
+        subjects: [String],
+        grades: [String],
+        startDate: String,
+        endDate: String,
+        createdAt: Date,
+        color: String,
+    ): Class
 }
 
 type DefaultAvatar {
@@ -277,6 +288,15 @@ type Class {
 
     #properties
     class_name: String
+    status: Boolean
+    program: String
+    schools: [String]
+    subjects: [String]
+    grades: [String]
+    startDate: String
+    endDate: String
+    createdAt: Date
+    color: String
 
     #connections
     organization: Organization
