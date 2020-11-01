@@ -5,9 +5,9 @@ import { Organization, OrganizationInput } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
-import { OrganizationHelpers } from '../entities/helpers'
 import { AWSS3 } from "../entities/s3";
 import { ApolloServerFileUploads } from "../entities/types";
+import { OrganizationHelpers } from '../entities/helpers'
 
 export class Model {
     public static async create() {
