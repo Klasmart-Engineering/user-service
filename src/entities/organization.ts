@@ -54,9 +54,10 @@ export class Organization {
     @Length(15, 60)
     public address2?: string
     
-    @Column({nullable: false})
+    @Column({nullable: false, unique: true})
     @IsEmail()
     @Length(1, 50)
+    @UniqueOnDatabase(Organization, (self: EntityId) => (self.organization_id ? { organization_id: Not(self.organization_id as string) } : {}))
     public email?: string
 
     @Column({nullable: false, unique: true})
