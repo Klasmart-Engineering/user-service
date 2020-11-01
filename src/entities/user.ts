@@ -1,12 +1,14 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
+import { AWSS3 } from "../entities/s3";
 import { Role } from "./role";
-import { Organization } from "./organization";
+import { Organization, OrganizationInput, OrganizationStatus } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
+import { ApolloServerFileUploads } from "../entities/types";
 
-export const OrganizationStatus = {
+export const UserStatus = {
     "PENDING": "PENDING",
     "ACTIVE": "ACTIVE",
     "SUSPENDED": "SUSPENDED",
@@ -56,7 +58,7 @@ export class User extends BaseEntity {
     @JoinColumn()
     public my_organization?: Promise<Organization>
 
-    public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
+    public async createOrganization({organization_name, address1, address2, email, phone, shortCode, color, logo}: OrganizationInput, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const my_organization = await this.my_organization
@@ -67,11 +69,29 @@ export class User extends BaseEntity {
             organization.organization_name = organization_name
             organization.address1 = address1
             organization.address2 = address2
+            organization.email = email.trim().toLowerCase()
             organization.phone = phone
             organization.shortCode = shortCode
+            organization.color = color
+            organization.status = OrganizationStatus.ACTIVE
             organization.owner = Promise.resolve(this)
             organization.primary_contact = Promise.resolve(this)
 
+            if(!await organization.isValid()) {
+                return organization
+            }
+
+            await getManager().save(organization)
+
+            const s3 = AWSS3.getInstance({ 
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                region: process.env.AWS_DEFAULT_REGION as string,
+            })
+            const upload = await s3.singleFileUpload({file: logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
+        
+            organization.logoKey = upload.key
             await getManager().save(organization)
     
             return organization
