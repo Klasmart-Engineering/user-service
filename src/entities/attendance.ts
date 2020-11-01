@@ -1,6 +1,5 @@
 import { BaseEntity, Column, Entity, PrimaryColumn } from "typeorm";
 
-
 @Entity()
 export class Attendance extends BaseEntity {    
     @PrimaryColumn()

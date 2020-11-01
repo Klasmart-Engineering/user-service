@@ -3,7 +3,6 @@ import { User } from "./user";
 import { Role } from "./role";
 import { GraphQLResolveInfo } from "graphql";
 import { School } from "./school";
-import { Class } from "./class";
 
 @Entity()
 export class SchoolMembership extends BaseEntity {

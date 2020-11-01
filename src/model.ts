@@ -1,9 +1,9 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
-import { User } from '../entities/user';
-import { Organization } from "../entities/organization";
-import { Role } from "../entities/role";
-import { Class } from "../entities/class";
-import { Context } from "../main";
+import { User } from './entities/user';
+import { Organization } from "./entities/organization";
+import { Role } from "./entities/role";
+import { Class } from "./entities/class";
+import { Context } from "./main";
 
 export class Model {
     public static async create() {
