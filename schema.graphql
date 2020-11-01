@@ -21,6 +21,15 @@ type Mutation {
         user_name: String
         email: String
         avatar: String
+
+        organization_name: String
+        address1: String
+        address2: String
+        email: String
+        phone: String
+        shortCode: String
+        logo: Upload
+        color: String
     ): User
     newUser(
         user_name: String
@@ -54,16 +63,14 @@ type Mutation {
     class(class_id: ID!): Class
 }
 
-union OrganizationResult = Organization | ValidationErrors
-
 type ValidationErrors {
     errors: [ValidationError]
 }
 
 type ValidationError {
     property: String!,
-    value: String!, 
-    constraint: String!
+    value: String, 
+    constraint: [String]
 }
 
 type User {
@@ -95,12 +102,14 @@ type User {
         avatar: String
     ): User
     createOrganization(
-        organization_name: String
-        email: String
-        address1: String
+        organization_name: String!
+        address1: String!
         address2: String
-        phone: String
-        shortCode: String
+        email: String!
+        phone: String!
+        shortCode: String!
+        logo: Upload!
+        color: String!
     ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
 }
@@ -121,6 +130,7 @@ type Organization {
     status: String
     createdAt: Date
     updatedAt: Date
+    errors: [ValidationError!]
 
     #connections
 
