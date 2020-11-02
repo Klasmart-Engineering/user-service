@@ -1,11 +1,12 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
-import { GraphQLResolveInfo } from 'graphql';
 import { User } from '../entities/user';
 import { Organization, OrganizationInput } from "../entities/organization";
 import { Role } from "../entities/role";
 import { Class } from "../entities/class";
 import { Context } from "../main";
 import { OrganizationHelpers } from '../entities/helpers'
+import { AWSS3 } from '../entities/s3'
+import { ApolloServerFileUploads } from "../entities/types"
 
 export class Model {
     public static async create() {
