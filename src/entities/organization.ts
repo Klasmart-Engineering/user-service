@@ -1,4 +1,4 @@
-import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToMany, JoinTable, OneToOne, ManyToOne } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, OneToOne, ManyToOne } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
@@ -50,9 +50,6 @@ export class Organization {
     @JoinColumn()
     public roles?: Promise<Role[]>
 
-    public async teachers() { }
-    public async students() { }
-
     @OneToMany(() => School, school => school.organization)
     @JoinColumn()
     public schools?: Promise<School[]>
@@ -60,6 +57,23 @@ export class Organization {
     @OneToMany(() => Class, class_ => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    public async membersWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {        
+        try {
+            const results = await getRepository(OrganizationMembership)
+            .createQueryBuilder()
+            .innerJoin("OrganizationMembership.roles","Role")
+            .innerJoin("Role.permissions","Permission")
+            .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id")
+            .where("OrganizationMembership.organization_id = :organization_id", this)
+            .andWhere("Permission.permission_name = :permission_name", {permission_name})
+            .having("bool_and(Permission.allow) = :allowed", {allowed: true})
+            .getMany()
+            return results
+        } catch(e) {
+            console.error(e)
+        }
+    }
 
     public async setPrimaryContact({user_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
