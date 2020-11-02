@@ -15,6 +15,12 @@ export class User extends BaseEntity {
     public user_name?: string
 
     @Column({nullable: true})
+    public given_name?: string
+
+    @Column({nullable: true})
+    public family_name?: string
+
+    @Column({nullable: true})
     public email?: string
 
     @Column({nullable: true})
@@ -48,6 +54,26 @@ export class User extends BaseEntity {
     @JoinColumn()
     public my_organization?: Promise<Organization>
 
+    public async set({
+        user_name,
+        given_name,
+        family_name,
+        avatar,
+    }: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+
+            if(typeof user_name === "string")   { this.user_name = user_name }
+            if(typeof given_name === "string")  { this.given_name = given_name }
+            if(typeof family_name === "string") { this.family_name = family_name }
+            if(typeof avatar === "string")      { this.avatar = avatar }
+            
+            await this.save()
+            return this
+        } catch(e) {
+            console.error(e)
+        }
+    }
     public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }

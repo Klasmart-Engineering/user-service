@@ -69,7 +69,7 @@ async function main() {
             },
             playground: {
                 settings: {
-                    "request.credentials": "same-origin"
+                    "request.credentials": "include"
                 }
             },
         });
@@ -78,15 +78,8 @@ async function main() {
         const corsConfiguration: CorsOptions = {
             allowedHeaders: ["Authorization","Content-Type"],
             credentials: true,
-            origin: (origin, callback) => {
-                try {
-                    if(!origin) {callback(null, false); return}
-                    const match = origin.match(/\.kidsloop\.net$/)
-                    callback(null, Boolean(match))
-                } catch(e) {
-                    callback(e)
-                }
-            }
+            preflightContinue: false,
+            origin: true
         }
         app.options('*',cors(corsConfiguration))
         app.use(cookieParser())

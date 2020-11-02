@@ -48,6 +48,8 @@ type User {
 
     #properties
     user_name: String
+    given_name: String
+    family_name: String
     email: String
     avatar: String 
 
@@ -62,6 +64,13 @@ type User {
     classesStudying: [Class]
     
     #mutations
+    set(
+        user_name: String
+        given_name: String
+        family_name: String
+        email: String
+        avatar: String
+    ): User
     createOrganization(
         organization_name: String
         email: String

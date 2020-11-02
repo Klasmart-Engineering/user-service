@@ -47,9 +47,23 @@ export class Model {
             let user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
             
             let modified = false
-            if(user.user_id !== token.id)     { user.user_id = token.id;     modified = true }
-            if(user.user_name !== token.name) { user.user_name = token.name; modified = true }
-            if(user.email !== token.email)    { user.email = token.email;    modified = true }
+            
+            //Ensure fields match
+            if(user.user_id !== token.id)
+            { user.user_id = token.id; modified = true }
+
+            if(user.email !== token.email)
+            { user.email = token.email; modified = true }
+
+            //Set unset-fields 
+            if(!user.user_name && token.name)
+            { user.user_name = token.name; modified = true }
+
+            if(!user.given_name && token.given_name)
+            { user.given_name = token.given_name; modified = true }
+
+            if(!user.family_name && token.family_name)
+            { user.family_name = token.family_name; modified = true }
             
             if(modified) { await this.manager.save(user) }
                 
