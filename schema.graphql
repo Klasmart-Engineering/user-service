@@ -96,7 +96,8 @@ type Organization {
     students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
-
+    
+    membersWithPermission(permission_name: String!): [OrganizationMembership]
 
     #mutations
     setPrimaryContact(user_id: ID!): User
