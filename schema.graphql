@@ -15,17 +15,8 @@ type Query {
 
 type Mutation {
     me: User
-    user(
-        user_id: ID!
-        user_name: String
-        email: String
-        avatar: String
-    ): User
-    newUser(
-        user_name: String
-        email: String
-        avatar: String
-    ): User
+    user(user_id: ID!, user_name: String, email: String, avatar: String): User
+    newUser(user_name: String, email: String, avatar: String): User
 
     organization(
         organization_id: ID!
@@ -49,7 +40,7 @@ type User {
     #properties
     user_name: String
     email: String
-    avatar: String 
+    avatar: String
 
     #connections
     """
@@ -60,17 +51,19 @@ type User {
     membership(organization_id: ID!): OrganizationMembership
     classesTeaching: [Class]
     classesStudying: [Class]
-    
+
     #mutations
-    createOrganization(
-        organization_name: String
-        email: String
-        address1: String
-        address2: String
-        phone: String
-        shortCode: String
-    ): Organization
+    createOrganization(input: OrganizationInput!): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
+}
+
+input OrganizationInput {
+    organization_name: String
+    email: String
+    address1: String
+    address2: String
+    phone: String
+    shortCode: String
 }
 
 type Organization {
@@ -96,7 +89,6 @@ type Organization {
     students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
-
 
     #mutations
     setPrimaryContact(user_id: ID!): User
@@ -124,7 +116,7 @@ type OrganizationMembership {
 
     #mutations
     addRole(role_id: ID!): Role
-    leave(_:Int): Boolean
+    leave(_: Int): Boolean
 }
 
 type Role {
@@ -144,14 +136,14 @@ type Role {
     revoke(permission_name: String!): Boolean
     deny(permission_name: String!): Permission
 
-    delete_role(_:Int): Boolean
+    delete_role(_: Int): Boolean
 }
 
 type Permission {
     role_id: ID!
     permission_name: ID!
     allow: Boolean
-    
+
     #connections
     role: Role
 }
@@ -188,7 +180,7 @@ type SchoolMembership {
 
     #mutations
     addRole(role_id: ID!): Role
-    leave(_:Int): Boolean
+    leave(_: Int): Boolean
 }
 
 type Class {
@@ -207,7 +199,7 @@ type Class {
     addTeacher(user_id: ID!): User
     addStudent(user_id: ID!): User
     addSchool(school_id: ID!): School
-    delete(_:Int): Boolean
+    delete(_: Int): Boolean
     # addSchedule(id: ID!, timestamp: Date): Boolean
     # removeSchedule(id: ID!): Boolean
 }

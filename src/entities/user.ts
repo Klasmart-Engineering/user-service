@@ -49,7 +49,7 @@ export class User extends BaseEntity {
     @JoinColumn()
     public my_organization?: Promise<Organization>
 
-    public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
+    public async createOrganization({organization_name, address1, address2, phone, shortCode}: Organization, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const my_organization = await this.my_organization
