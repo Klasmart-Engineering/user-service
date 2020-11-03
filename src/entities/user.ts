@@ -84,6 +84,7 @@ export class User extends BaseEntity {
             console.error(e)
         }
     }
+
     public async createOrganization({organization_name, address1, address2, email, phone, shortCode, color, logo}: OrganizationInput, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
