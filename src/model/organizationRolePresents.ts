@@ -1,23 +1,23 @@
-export enum Permissions {
-    cms_create = "cms_create",
+export enum Permission {
+    CmsCreate = "cms_create",
     
-    class_teach = "class_teach",
-    class_attend = "class_attend",
+    ClassTeach = "class_teach",
+    ClassAttend = "class_attend",
 
-    user_add = "user_add",
-    user_remove = "user_remove",
+    UserAdd = "user_add",
+    UserRemove = "user_remove",
 }
 
-export const presets = new Map<string, Permissions[]>([
+export const presets = new Map<string, Permission[]>([
     ["Admin",[
-        Permissions.user_add,
-        Permissions.user_remove,
+        Permission.UserAdd,
+        Permission.UserRemove,
     ]],
     ["Teacher",[
-        Permissions.class_teach,
+        Permission.ClassTeach,
     ]],
     ["Student",[
-        Permissions.class_attend,
+        Permission.ClassAttend,
     ]],
     ["Parent",[
     ]],
