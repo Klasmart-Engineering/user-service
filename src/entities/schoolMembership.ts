@@ -39,12 +39,28 @@ export class SchoolMembership extends BaseEntity {
     public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
-            const newRole = await getRepository(Role).findOneOrFail({role_id})
-            const roles = (await this.roles) || []
-            roles.push(newRole)
-            this.roles = Promise.resolve(roles)
-            await this.save()
-            return newRole
+            const role = await getRepository(Role).findOneOrFail({role_id})
+            const memberships = (await role.schoolMemberships) || []
+            memberships.push(this)
+            role.schoolMemberships = Promise.resolve(memberships)
+            await role.save()
+            return role
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            const role = await getRepository(Role).findOneOrFail({role_id})
+            const memberships = await role.schoolMemberships
+            if(memberships) {   
+                const newMemberships = memberships.filter((membership) => membership.user_id !== this.user_id)
+                role.schoolMemberships = Promise.resolve(newMemberships)
+                await role.save()
+            }
+            return this
         } catch(e) {
             console.error(e)
         }
