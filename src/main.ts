@@ -1,13 +1,12 @@
 import express from "express"
-import { ApolloServer } from "apollo-server-express";
 import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
-import { checkToken } from "./token";
 import { Model } from "./model";
-import { loadTypedefsSync } from '@graphql-tools/load';
-import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 import cookieParser from 'cookie-parser'
 import cors, { CorsOptions } from "cors"
+import * as dotenv from "dotenv";
+import { createServer } from "./utils/createServer";
+dotenv.config({ path: __dirname+'/../.env' });
 
 const routePrefix = process.env.ROUTE_PREFIX || ""
 
@@ -23,56 +22,10 @@ export interface Context {
     websocket?: WebSocket
 }
 
-
 async function main() {
     try {
-        const model = await Model.create()
-        const server = new ApolloServer({
-            typeDefs: loadTypedefsSync('./schema.graphql', { loaders: [new GraphQLFileLoader()] })[0].document,
-            subscriptions: {
-                keepAlive: 1000,
-                onConnect: async ({ authToken, sessionId }: any, websocket, connectionData: any): Promise<Context> => {
-                    const token = await checkToken(authToken)
-                    return { sessionId, token, websocket };
-                },
-                onDisconnect: (websocket, connectionData) => {  }
-            },
-            resolvers: {
-                Query: {
-                    me: (_parent, _args, context, _info) => model.getMyUser(context),
-                    users: () => model.getUsers(),
-                    user: (_parent, { user_id }, _context, _info) => model.getUser(user_id),
-                    organizations: (_parent, { organization_ids }, _context, _info) => model.getOrganizations(organization_ids),
-                    organization: (_parent, { organization_id }, _context, _info) => model.getOrganization(organization_id),
-                    roles: () => model.getRoles(),
-                    role: (_parent, args, _context, _info) => model.setRole(args),
-                    classes: () => model.getClasses(),
-                    class: (_parent, args, _context, _info) => model.getClass(args)
-
-                },
-                Mutation: {
-                    me: (_parent, _args, context, _info) => model.getMyUser(context),
-                    user: (_parent, args, _context, _info) => model.setUser(args),
-                    newUser: (_parent, args, _context, _info) => model.newUser(args),
-                    organization: (_parent, args, _context, _info) => model.setOrganization(args),
-                    roles: () => model.getRoles(),
-                    role: (_parent, args, _context, _info) => model.setRole(args),
-                    classes: () => model.getClasses(),
-                    class: (_parent, args, _context, _info) => model.getClass(args)
-                },
-            },
-            context: async ({ req, connection }) => {
-                if (connection) { return connection.context }
-                const encodedToken = req.headers.authorization||req.cookies.access
-                const token = await checkToken(encodedToken)
-                return { token };
-            },
-            playground: {
-                settings: {
-                    "request.credentials": "include"
-                }
-            },
-        });
+        const model = await Model.create();
+        const server = await createServer(model);
 
         const app = express()
         const corsConfiguration: CorsOptions = {

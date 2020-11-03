@@ -96,7 +96,7 @@ export class Model {
         return user
     }    
     public async getUsers() {
-        return this.userRepository.find()
+        return await this.userRepository.find()
     }
 
     public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
