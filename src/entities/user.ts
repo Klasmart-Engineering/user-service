@@ -1,4 +1,5 @@
-import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne} from "typeorm";
+import { ApolloError } from 'apollo-server-express'
+import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, getConnection} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
 import { AWSS3 } from "../entities/s3";
@@ -86,11 +87,16 @@ export class User extends BaseEntity {
     }
 
     public async createOrganization({organization_name, address1, address2, email, phone, shortCode, color, logo}: OrganizationInput, context: any, info: GraphQLResolveInfo) {
+        
+        const queryRunner = getConnection().createQueryRunner()
+        await queryRunner.connect()
+        await queryRunner.startTransaction()
+        
         try {
             if(info.operation.operation !== "mutation") { return null }
             const my_organization = await this.my_organization
-            if(my_organization) { throw new Error("Only one organization per user") }
-            
+            if(my_organization) { throw new ApolloError("Only one organization per user") }
+
             const organization = new Organization()
 
             organization.organization_name = organization_name
@@ -115,8 +121,7 @@ export class User extends BaseEntity {
                 return organization
             }
 
-            await getManager().save(organization)
-
+            await queryRunner.manager.save(organization)
             const s3 = AWSS3.getInstance({ 
                 accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
                 secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
@@ -126,11 +131,16 @@ export class User extends BaseEntity {
             const upload = await s3.singleFileUpload({file: logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
         
             organization.logoKey = upload.key
-            await getManager().save(organization)
-    
+            await queryRunner.manager.save(organization)
+            await queryRunner.commitTransaction()
+
             return organization
         } catch(e) {
+            await queryRunner.rollbackTransaction();
             console.error(e)
+            throw new ApolloError(e)
+        } finally {
+            await queryRunner.release();
         }
     }
 
