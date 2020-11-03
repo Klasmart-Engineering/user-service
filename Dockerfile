@@ -1,7 +1,7 @@
 FROM node:14
 WORKDIR /usr/src/app
 COPY ./package*.json ./
-RUN npm i
+RUN npm install --unsafe-perm
 COPY ./src ./src
 COPY ./tsconfig.json .
 COPY ./schema.graphql .
