@@ -67,7 +67,7 @@ export class User extends BaseEntity {
             if(typeof given_name === "string")  { this.given_name = given_name }
             if(typeof family_name === "string") { this.family_name = family_name }
             if(typeof avatar === "string")      { this.avatar = avatar }
-            
+
             await this.save()
             return this
         } catch(e) {
@@ -90,6 +90,13 @@ export class User extends BaseEntity {
             organization.owner = Promise.resolve(this)
             organization.primary_contact = Promise.resolve(this)
 
+            const membership = new OrganizationMembership()
+            membership.user = Promise.resolve(this)
+            membership.user_id = this.user_id
+            membership.organization = Promise.resolve(organization)
+            membership.organization_id = organization.organization_id
+            organization.memberships = Promise.resolve([membership])
+            
             await getManager().save(organization)
     
             return organization
