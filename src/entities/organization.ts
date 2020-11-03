@@ -96,7 +96,7 @@ export class Organization {
     @IsHexColor()
     public color?: string
 
-    @Column({nullable: false})
+    @Column({nullable: true})
     @IsIn([OrganizationStatus.ACTIVE, OrganizationStatus.INACTIVE])
     public status?: string
 
