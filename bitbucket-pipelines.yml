@@ -4,17 +4,22 @@
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
 image: node:14
-
+definitions:
+  services:
+    postgres:
+      image: postgres
+      environment:
+        POSTGRES_DB: testdb
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
 pipelines:
   branches:
-    custom:
+    master:
       - step:
           services:
-            - docker
+            - postgres
           caches:
             - node
           script:
             - npm install
-            - docker start postgres || docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres
-            - docker container exec -it postgres psql -U postgres -c "create database testdb;"
             - npm test
