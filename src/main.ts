@@ -8,6 +8,9 @@ import { loadTypedefsSync } from '@graphql-tools/load';
 import { GraphQLFileLoader } from '@graphql-tools/graphql-file-loader';
 import cookieParser from 'cookie-parser'
 import cors, { CorsOptions } from "cors"
+import * as dotenv from "dotenv";
+dotenv.config({ path: __dirname+'/../.env' });
+
 
 const routePrefix = process.env.ROUTE_PREFIX || ""
 
@@ -47,7 +50,8 @@ async function main() {
                     roles: () => model.getRoles(),
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),
-                    class: (_parent, args, _context, _info) => model.getClass(args)
+                    class: (_parent, args, _context, _info) => model.getClass(args),
+                    shortCode: (_parent, args, _context, _info) => model.GetShortCode(args),
 
                 },
                 Mutation: {
@@ -59,6 +63,7 @@ async function main() {
                     role: (_parent, args, _context, _info) => model.setRole(args),
                     classes: () => model.getClasses(),
                     class: (_parent, args, _context, _info) => model.getClass(args)
+
                 },
             },
             context: async ({ req, connection }) => {

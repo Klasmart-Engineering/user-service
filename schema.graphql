@@ -3,6 +3,7 @@ type Query {
     user(user_id: ID!): User
     users: [User]
 
+    shortCode(name: String!): String
     organization(organization_id: ID!): Organization
     organizations(organization_ids: [ID!]): [Organization]
 
@@ -20,6 +21,15 @@ type Mutation {
         user_name: String
         email: String
         avatar: String
+
+        organization_name: String
+        address1: String
+        address2: String
+        email: String
+        phone: String
+        shortCode: String
+        logo: Upload
+        color: String
     ): User
     newUser(
         user_name: String
@@ -41,6 +51,12 @@ type Mutation {
 
     classes: [Class]
     class(class_id: ID!): Class
+}
+
+type ValidationError {
+    property: String!,
+    value: String, 
+    constraint: [String]
 }
 
 type User {
@@ -73,24 +89,34 @@ type User {
     ): User
     createOrganization(
         organization_name: String
-        email: String
         address1: String
         address2: String
+        email: String
         phone: String
         shortCode: String
+        logo: Upload
+        color: String
     ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
 }
 
 type Organization {
-    organization_id: ID!
+    organization_id: ID
 
     #properties
     organization_name: String
     address1: String
     address2: String
+    email: String
     phone: String
     shortCode: String
+    logo: String
+    color: String
+    primaryContact: String
+    status: String
+    createdAt: Date
+    updatedAt: Date
+    errors: [ValidationError!]
 
     #connections
 
