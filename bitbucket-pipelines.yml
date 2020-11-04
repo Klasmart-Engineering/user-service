@@ -1,0 +1,20 @@
+# This is a sample build configuration for JavaScript.
+# Check our guides at https://confluence.atlassian.com/x/14UWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: node:14
+
+pipelines:
+  branches:
+    custom:
+      - step:
+          services:
+            - docker
+          caches:
+            - node
+          script:
+            - npm install
+            - docker start postgres || docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres
+            - docker container exec -it postgres psql -U postgres -c "create database testdb;"
+            - npm test
