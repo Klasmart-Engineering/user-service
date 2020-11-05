@@ -5,7 +5,7 @@ import { Context } from "../main";
 import { Model } from "../model";
 import { checkToken } from "../token";
 
-export const createServer = async (model: Model, context: any = null) =>
+export const createServer = (model: Model, context: any = null) =>
     new ApolloServer({
         typeDefs: loadTypedefsSync('./schema.graphql', { loaders: [new GraphQLFileLoader()] })[0].document,
         resolvers: {
@@ -19,6 +19,7 @@ export const createServer = async (model: Model, context: any = null) =>
                 role: (_parent, args, _context, _info) => model.setRole(args),
                 classes: () => model.getClasses(),
                 class: (_parent, args, _context, _info) => model.getClass(args),
+                school: (_parent, args, _context, _info) => model.getSchool(args),
             },
             Mutation: {
                 me: (_parent, _args, context, _info) => model.getMyUser(context),
@@ -29,6 +30,7 @@ export const createServer = async (model: Model, context: any = null) =>
                 role: (_parent, args, _context, _info) => model.setRole(args),
                 classes: () => model.getClasses(),
                 class: (_parent, args, _context, _info) => model.getClass(args),
+                school: (_parent, args, _context, _info) => model.getSchool(args),
             },
         },
         subscriptions: {

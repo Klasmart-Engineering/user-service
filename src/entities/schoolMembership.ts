@@ -18,10 +18,10 @@ export class SchoolMembership extends BaseEntity {
     @ManyToOne(() => User, user => user.memberships)
     public user?: Promise<User>
     
-    @ManyToOne(() => School, organization => organization.memberships)
+    @ManyToOne(() => School, school => school.memberships)
     public school?: Promise<School>
 
-    @ManyToMany(() => Role, role => role.memberships)
+    @ManyToMany(() => Role, role => role.schoolMemberships)
     public roles?: Promise<Role[]>
 
     public async checkAllowed({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
@@ -29,7 +29,7 @@ export class SchoolMembership extends BaseEntity {
         .innerJoinAndSelect("SchoolMembership.roles", "Role")
         .innerJoinAndSelect("Role.permissions", "Permission")
         .where("SchoolMembership.user_id = :user_id", this)
-        .andWhere("SchoolMembership.organization_id = :organization_id", this)
+        .andWhere("SchoolMembership.school_id = :school_id", this)
         .andWhere("Permission.permission_name = :permission_name", { permission_name })
         .getRawMany()
         if(results.length === 0) { return false }

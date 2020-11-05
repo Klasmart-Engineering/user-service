@@ -27,7 +27,7 @@ describe("getRoles", () => {
     });
 
     it("should get roles", async () => {
-        const server = await createServer(new Model(connection), () => { });
+        const server = createServer(new Model(connection), () => { });
         const { query } = createTestClient(server);
 
         const res = await query({

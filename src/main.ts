@@ -25,7 +25,7 @@ export interface Context {
 async function main() {
     try {
         const model = await Model.create();
-        const server = await createServer(model);
+        const server = createServer(model);
 
         const app = express()
         const corsConfiguration: CorsOptions = {

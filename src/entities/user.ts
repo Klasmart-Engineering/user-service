@@ -29,6 +29,7 @@ export class User extends BaseEntity {
     @OneToMany(() => OrganizationMembership, membership => membership.user)
     @JoinColumn({name: "organization_id", referencedColumnName: "organization_id"})
     public memberships?: Promise<OrganizationMembership[]>
+
     public async membership({organization_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
             const membership = await getRepository(OrganizationMembership).findOneOrFail({where: {user_id: this.user_id, organization_id}})
@@ -53,6 +54,38 @@ export class User extends BaseEntity {
     @OneToOne(() => Organization, organization => organization.owner)
     @JoinColumn()
     public my_organization?: Promise<Organization>
+
+    public async organizationsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(OrganizationMembership)
+                .createQueryBuilder()
+                .innerJoin("OrganizationMembership.roles","Role")
+                .innerJoin("Role.permissions","Permission")
+                .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id")
+                .where("OrganizationMembership.user_id = :user_id", this)
+                .andWhere("Permission.permission_name = :permission_name", {permission_name})
+                .having("bool_and(Permission.allow) = :allowed", {allowed: true})
+                .getMany()
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async schoolsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(SchoolMembership)
+                .createQueryBuilder()
+                .innerJoin("SchoolMembership.roles","Role")
+                .innerJoin("Role.permissions","Permission")
+                .groupBy("SchoolMembership.school_id, Permission.permission_name, SchoolMembership.user_id")
+                .where("SchoolMembership.user_id = :user_id", this)
+                .andWhere("Permission.permission_name = :permission_name", {permission_name})
+                .having("bool_and(Permission.allow) = :allowed", {allowed: true})
+                .getMany()
+        } catch(e) {
+            console.error(e)
+        }
+    }
 
     public async set({
         user_name,

@@ -4,6 +4,7 @@ import { Organization } from "./entities/organization";
 import { Role } from "./entities/role";
 import { Class } from "./entities/class";
 import { Context } from "./main";
+import { School } from "./entities/school";
 
 export class Model {
     public static async create() {
@@ -17,6 +18,8 @@ export class Model {
                 entities: ["src/entities/*.ts"],
             })
             const model = new Model(connection)
+            await getManager(connection.name).query("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+            await getManager(connection.name).query(`SELECT set_limit(${Model.SIMILARITY_THRESHOLD})`)
             console.log("🐘 Connected to postgres")
             return model
         } catch(e) {
@@ -33,6 +36,7 @@ export class Model {
     private organizationRepository: Repository<Organization>
     private roleRepository: Repository<Role>
     private classRepository: Repository<Class>
+    private schoolRepository: Repository<School>
 
     constructor(connection: Connection) {
         this.connection = connection
@@ -41,9 +45,7 @@ export class Model {
         this.organizationRepository = getRepository(Organization, connection.name)
         this.roleRepository = getRepository(Role, connection.name)
         this.classRepository = getRepository(Class, connection.name)
-
-        this.manager.query("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-        this.manager.query(`SELECT set_limit(${Model.SIMILARITY_THRESHOLD})`)
+        this.schoolRepository = getRepository(School, connection.name)
     }
 
     public async getMyUser({token}: Context) {
@@ -172,6 +174,15 @@ export class Model {
         try {
             const classes = await this.classRepository.find()
             return classes
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async getSchool({school_id}: School) {
+        try {
+            const school = await this.schoolRepository.findOneOrFail({school_id})
+            return school
         } catch(e) {
             console.error(e)
         }

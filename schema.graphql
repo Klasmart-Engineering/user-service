@@ -11,6 +11,8 @@ type Query {
 
     classes: [Class]
     class(class_id: ID!): Class
+
+    school(school_id: ID!): School
 }
 
 type Mutation {
@@ -41,6 +43,8 @@ type Mutation {
 
     classes: [Class]
     class(class_id: ID!): Class
+    
+    school(school_id: ID!): School
 }
 
 type User {
@@ -62,6 +66,10 @@ type User {
     membership(organization_id: ID!): OrganizationMembership
     classesTeaching: [Class]
     classesStudying: [Class]
+
+    #query
+    organizationsWithPermission(permission_name: String!): [OrganizationMembership]
+    schoolsWithPermission(permission_name: String!): [SchoolMembership]
     
     #mutations
     set(
@@ -182,7 +190,7 @@ type School {
     classes: [Class]
 
     #mutations
-    addUser(id: ID!): SchoolMembership
+    addUser(user_id: ID!): SchoolMembership
 }
 
 type SchoolMembership {

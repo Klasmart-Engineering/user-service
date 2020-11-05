@@ -85,7 +85,7 @@ describe("model.user", () => {
                 email: faker.internet.email(),
             };
 
-            const server = await createServer(new Model(connection), () => { });
+            const server = createServer(new Model(connection), () => { });
             const { mutate } = createTestClient(server);
 
             const res = await mutate({
@@ -112,7 +112,7 @@ describe("model.user", () => {
                 avatar: "my avatar",
             };
 
-            const server = await createServer(new Model(connection), () => { });
+            const server = createServer(new Model(connection), () => { });
             const { mutate } = createTestClient(server);
 
             await mutate({
@@ -152,7 +152,7 @@ describe("model.user", () => {
                 email: faker.internet.email(),
             };
 
-            const server = await createServer(new Model(connection), () => { });
+            const server = createServer(new Model(connection), () => { });
             const { query, mutate } = createTestClient(server);
 
             await mutate({
@@ -179,7 +179,7 @@ describe("model.user", () => {
                 avatar: "my avatar",
             };
 
-            const server = await createServer(new Model(connection), () => { });
+            const server = createServer(new Model(connection), () => { });
             const { query, mutate } = createTestClient(server);
 
             await mutate({
