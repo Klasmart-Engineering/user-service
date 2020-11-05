@@ -106,7 +106,9 @@ type Organization {
     schools: [School]
     classes: [Class]
     
-    membersWithPermission(permission_name: String!): [OrganizationMembership]
+    #query
+    membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
+    findMembers(search_query: String!): [OrganizationMembership]
 
     #mutations
     setPrimaryContact(user_id: ID!): User

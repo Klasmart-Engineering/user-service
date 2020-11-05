@@ -58,18 +58,44 @@ export class Organization {
     @JoinColumn()
     public classes?: Promise<Class[]>
 
-    public async membersWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {        
+    public async membersWithPermission({permission_name, search_query}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            const results = await getRepository(OrganizationMembership)
-            .createQueryBuilder()
-            .innerJoin("OrganizationMembership.roles","Role")
-            .innerJoin("Role.permissions","Permission")
-            .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id")
-            .where("OrganizationMembership.organization_id = :organization_id", this)
-            .andWhere("Permission.permission_name = :permission_name", {permission_name})
-            .having("bool_and(Permission.allow) = :allowed", {allowed: true})
-            .getMany()
+            const query = getRepository(OrganizationMembership)
+                .createQueryBuilder()
+                .innerJoin("OrganizationMembership.user","User")
+                .innerJoin("OrganizationMembership.roles","Role")
+                .innerJoin("Role.permissions","Permission")
+                .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id, User.user_name")
+                .where("OrganizationMembership.organization_id = :organization_id", this)
+                .andWhere("Permission.permission_name = :permission_name", {permission_name})
+                .having("bool_and(Permission.allow) = :allowed", {allowed: true})
+            
+            if(search_query) {
+                query
+                    .addSelect("similarity(User.user_name, :user_name)", "similarity")
+                    .andWhere("User.user_name % :user_name")
+                    .orderBy("similarity", "DESC")
+                    .setParameter("user_name", search_query)
+            }
+            
+            const results = await query.getMany()
             return results
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async findMembers({search_query}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(OrganizationMembership)
+                .createQueryBuilder()
+                .innerJoin("OrganizationMembership.user", "User")
+                .where("OrganizationMembership.organization_id = :organization_id", this)
+                .andWhere("User.user_name % :user_name")
+                .addSelect("similarity(User.user_name, :user_name)", "similarity")
+                .orderBy("similarity", "DESC")
+                .setParameter("user_name", search_query)
+                .getMany();
         } catch(e) {
             console.error(e)
         }

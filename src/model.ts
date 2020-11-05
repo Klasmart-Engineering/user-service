@@ -24,6 +24,8 @@ export class Model {
             throw e
         }
     }
+
+    public static readonly SIMILARITY_THRESHOLD = process.env.POSTGRES_TRGM_LIMIT || 0.1;
     
     private connection: Connection
     private manager: EntityManager
@@ -39,6 +41,9 @@ export class Model {
         this.organizationRepository = getRepository(Organization, connection.name)
         this.roleRepository = getRepository(Role, connection.name)
         this.classRepository = getRepository(Class, connection.name)
+
+        this.manager.query("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+        this.manager.query(`SELECT set_limit(${Model.SIMILARITY_THRESHOLD})`)
     }
 
     public async getMyUser({token}: Context) {
