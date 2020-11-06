@@ -1,5 +1,5 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
-import { User } from './entities/user';
+import { User, accountUUID } from './entities/user';
 import { Organization } from "./entities/organization";
 import { Role } from "./entities/role";
 import { Class } from "./entities/class";
@@ -81,6 +81,8 @@ export class Model {
     }
     public async newUser({user_name, email, avatar}: User) {
         const newUser = new User()
+
+        newUser.user_id = accountUUID(email)
         newUser.user_name = user_name
         newUser.email = email
         newUser.avatar = avatar

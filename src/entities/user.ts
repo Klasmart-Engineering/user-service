@@ -4,6 +4,8 @@ import { OrganizationMembership } from "./organizationMembership";
 import { Organization } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
+import { v5 } from "uuid";
+import { createHash } from "crypto"
 
 @Entity()
 export class User extends BaseEntity {
@@ -161,4 +163,11 @@ export class User extends BaseEntity {
             console.error(e)
         }
     }
+}
+
+const accountNamespace = v5("kidsloop.net", v5.DNS)
+export function accountUUID(email?: string) {
+    const hash = createHash('sha256');
+    if(email) { hash.update(email) }
+    return v5(hash.digest(), accountNamespace)
 }
