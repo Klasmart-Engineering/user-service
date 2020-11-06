@@ -31,7 +31,7 @@ export class School extends BaseEntity {
     public organization?: Promise<Organization>
 
     @ManyToMany(() => Class, class_ => class_.schools)
-    @JoinColumn()
+    @JoinTable()
     public classes?: Promise<Class[]>
 
     public async addUser({user_id}: any, context: any, info: GraphQLResolveInfo) {
