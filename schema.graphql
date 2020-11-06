@@ -66,6 +66,7 @@ type User {
     membership(organization_id: ID!): OrganizationMembership
     classesTeaching: [Class]
     classesStudying: [Class]
+    contentPermissions: [ContentPermission]
 
     #query
     organizationsWithPermission(permission_name: String!): [OrganizationMembership]
@@ -113,6 +114,7 @@ type Organization {
     students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
+    contentPermissions: [ContentPermission]
     
     #query
     membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
@@ -237,4 +239,12 @@ type Class {
 type ScheduleEntry {
     id: ID!
     timestamp: Date
+}
+
+type ContentPermission {
+    contentPermissionId: ID!
+    documentId: ID!
+    organization: Organization
+    user: User
+    permission: Permission
 }

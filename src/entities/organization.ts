@@ -5,6 +5,7 @@ import { Role } from './role';
 import { User } from './user';
 import { Class } from './class';
 import { School } from './school';
+import { ContentPermission } from './contentPermission';
 
 @Entity()
 export class Organization {
@@ -57,6 +58,12 @@ export class Organization {
     @OneToMany(() => Class, class_ => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    @OneToMany(() => ContentPermission, contentPermisison=> contentPermisison.organization)
+    @JoinColumn({
+        name: "content_permissions",
+    })
+    public contentPermissions?: Promise<ContentPermission[]>;
 
     public async membersWithPermission({permission_name, search_query}: any, context: any, info: GraphQLResolveInfo) {
         try {
