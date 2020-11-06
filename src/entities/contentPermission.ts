@@ -28,7 +28,7 @@ import { User } from "./user";
 })
 @Check("organization_id IS NOT NULL OR user_id IS NOT NULL")
 export class ContentPermission {
-    @PrimaryGeneratedColumn({ type: "uuid", name: "content_permission_id" })
+    @PrimaryGeneratedColumn("uuid", { name: "content_permission_id" })
     contentPermissionId!: string;
 
     @Column({ name: "document_id", update: false })
