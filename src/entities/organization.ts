@@ -5,17 +5,21 @@ import {
     OneToMany,
     getRepository,
     getManager,
+    getConnection,
     JoinColumn,
     OneToOne,
     ManyToOne,
     BaseEntity,
 } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
+import { ApolloError } from 'apollo-server-express'
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
+import { Permission } from './permission';
 import { User } from './user';
 import { Class } from './class';
 import { School } from './school';
+import { DefaultRoles, DefaultPermissions } from '../utils/defaultRolesPermissions'
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -68,30 +72,6 @@ export class Organization extends BaseEntity {
     @OneToMany(() => Class, class_ => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
-
-    public async set({
-        organization_name,
-        address1,
-        address2,
-        phone,
-        shortCode,
-    }: any, context: any, info: GraphQLResolveInfo) {
-        try {
-            if(info.operation.operation !== "mutation") { return null }
-            
-            if(typeof organization_name === "string") { this.organization_name = organization_name }
-            if(typeof address1 === "string") { this.address1 = address1 }
-            if(typeof address2 === "string") { this.address2 = address2 }
-            if(typeof phone === "string") { this.phone = phone }
-            if(typeof shortCode === "string") { this.shortCode = shortCode }
-
-            await this.save()
-
-            return this
-        } catch(e) {
-            console.error(e)
-        }
-    } 
 
     public async membersWithPermission({permission_name, search_query}: any, context: any, info: GraphQLResolveInfo) {
         try {
@@ -210,6 +190,43 @@ export class Organization extends BaseEntity {
             return school
         } catch(e) {
             console.error(e)
+        }
+    }
+
+    public async setDefaultRolesPermissions({}: any, context: any, info: GraphQLResolveInfo) {
+        const queryRunner = getConnection().createQueryRunner()
+        await queryRunner.connect()
+        await queryRunner.startTransaction()
+        
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            for(let i = 0; i < DefaultRoles.length; i++) {
+                let role = await getRepository(Role).findOne({where: {role_name: DefaultRoles[i], organization: this}})
+                if(!role) { 
+                    role = new Role()
+                    role.role_name = DefaultRoles[i]
+                    role.organization = Promise.resolve(this)
+                    await queryRunner.manager.save(role)
+                }
+                for(let j = 0; j < DefaultPermissions.length; j++ ) {
+                    let permission = await getRepository(Permission).findOne({where: { permission_name: DefaultPermissions[j], role_id: role.role_id }})
+                    if(!permission) { 
+                        permission = new Permission()
+                        permission.role_id = role.role_id
+                        permission.permission_name = DefaultPermissions[j].name
+                    }
+                    permission.allow = DefaultPermissions[j].roles.includes(role.role_name as string)
+                    await queryRunner.manager.save(permission)
+                }
+            }
+            await queryRunner.commitTransaction()
+            return this
+        } catch(e) {
+            await queryRunner.rollbackTransaction();
+            console.error(e)
+            throw new ApolloError(e)
+        } finally {
+            await queryRunner.release();
         }
     }
 }
