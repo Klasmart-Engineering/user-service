@@ -64,6 +64,10 @@ type User {
     my_organization: Organization
     memberships: [OrganizationMembership]
     membership(organization_id: ID!): OrganizationMembership
+
+    school_memberships: [SchoolMembership]
+    school_membership(organization_id: ID!): SchoolMembership
+
     classesTeaching: [Class]
     classesStudying: [Class]
 

@@ -43,6 +43,15 @@ export class User extends BaseEntity {
     @JoinColumn({name: "school_id", referencedColumnName: "school_id"})
     public school_memberships?: Promise<SchoolMembership[]>
 
+    public async school_membership({school_id}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            const membership = await getRepository(OrganizationMembership).findOneOrFail({where: {user_id: this.user_id, school_id}})
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     @ManyToMany(() => Class, class_ => class_.teachers)
     @JoinTable()
     public classesTeaching?: Promise<Class[]>
