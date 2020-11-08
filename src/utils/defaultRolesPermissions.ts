@@ -73,10 +73,22 @@ export const DefaultPermissions = [
     { "name": "view_org_published__215", "roles": ["Organization Admin", "Teacher", "School Admin", "Parent", "Student"] },
 
     { "name": "view_my_archived_216", "roles": ["Organization Admin", "Teacher", "School Admin"] },
+
     { "name": "view_org_archived__217", "roles": ["Organization Admin", "School Admin"] },
+    { "name": "view_my_school_published_218", "roles": ["School Admin"] },
+
     { "name": "create_lesson_material_220", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "create_lesson_plan_221", "roles": ["Organization Admin"] },
     { "name": "copy_content_222", "roles": ["Organization Admin", "School Admin"] },
+
+    { "name": "create_my_schools_content_223", "roles": ["School Admin"] },
+    { "name": "create_all_schools_content_224", "roles": ["Organization Admin"] },
+    { "name": "view_my_school_pending_225", "roles": ["School Admin"] },
+    { "name": "view_my_school_archived_226", "roles": ["School Admin"] },
+    { "name": "view_all_schools_published_227", "roles": ["Organization Admin"] },
+    { "name": "view_all_schools_pending_228", "roles": ["Organization Admin"] },
+    { "name": "view_all_schools_archived_229", "roles": ["Organization Admin"] },
+    
     { "name": "edit_my_unpublished_content_230", "roles": ["Organization Admin", "Teacher", "School Admin"] },
 
     { "name": "edit_org_unpublished_content_231", "roles": [] },
@@ -91,6 +103,20 @@ export const DefaultPermissions = [
     { "name": "download_lesson_plan_239", "roles": ["Organization Admin"] },
 
     { "name": "delete_my_unpublished_content_240", "roles": ["Organization Admin", "Teacher", "School Admin"] },
+
+    { "name": "delete_my_schools_pending_241", "roles": ["Teacher"] },
+    { "name": "remove_my_schools_published_242", "roles": ["Teacher"] },
+    { "name": "delete_my_schools_archived_243", "roles": ["Teacher"] },
+
+    { "name": "delete_all_schools_pending_244", "roles": ["Organization Admin"] },
+    { "name": "remove_all_schools_published_245", "roles": ["Organization Admin"] },
+    { "name": "delete_all_schools_archived_246", "roles": ["Organization Admin"] },
+
+    { "name": "edit_my_schools_published_247", "roles": ["School Admin"] },
+    { "name": "edit_my_schools_pending_248", "roles": ["School Admin"] },
+    { "name": "edit_all_schools_published_249", "roles": ["Organization Admin"] },
+    { "name": "edit_all_schools_pending_250", "roles": ["Organization Admin"] },
+
     { "name": "library_settings_270", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     
     { "name": "approve_pending_content_271", "roles": ["Organization Admin", "School Admin"] },
@@ -137,7 +163,7 @@ export const DefaultPermissions = [
     { "name": "view_org_unpublished_learning_outcome_411", "roles": [] },
 
     { "name": "view_my_pending_learning_outcome_412", "roles": ["Organization Admin", "Teacher", "School Admin"] },
-    { "name": "view_org_pending_learning_outcome_413", "roles": ["Organization Admin", "Teacher", "School Admin"] },
+    { "name": "view_org_pending_learning_outcome_413", "roles": ["Organization Admin", "School Admin"] },
     { "name": "view_completed_assessments__414", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "view_in_progress_assessments_415", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "view_published_learning_outcome__416", "roles": ["Organization Admin", "Teacher", "School Admin"] },
@@ -188,6 +214,7 @@ export const DefaultPermissions = [
     { "name": "create_schedule_paage_501", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "view_my_calendar_510", "roles": ["Organization Admin", "Teacher", "School Admin", "Parent", "Student"] },
     { "name": "view_org_calendar__511", "roles": ["Organization Admin", "School Admin"] },
+    { "name": "view_school_calendar_512", "roles": ["Organization Admin", "School Admin"] },
     { "name": "create_event__520", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "edit_event__530", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "override_live_classroom_recording_setting_531", "roles": ["Organization Admin"] },
@@ -195,6 +222,7 @@ export const DefaultPermissions = [
 
     { "name": "schedule_settings_580", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "schedule_quick_start_581", "roles": ["Organization Admin", "Teacher", "School Admin"] },
+    { "name": "schedule_search_582", "roles": ["Organization Admin", "School Admin"] },
     { "name": "reports_600", "roles": ["Organization Admin", "Teacher", "School Admin"] },
     { "name": "org_reports_601", "roles": ["Organization Admin"] },
     { "name": "school_reports_602", "roles": ["Organization Admin", "School Admin"] },
@@ -204,6 +232,10 @@ export const DefaultPermissions = [
     { "name": "student_reports_605", "roles": ["Organization Admin", "Teacher", "School Admin", "Parent", "Student"] },
 
     { "name": "view_reports_610", "roles": ["Organization Admin", "Teacher", "School Admin"] },
+    { "name": "view_my_school_reports_611", "roles": ["School Admin"] },
+    { "name": "view_my_organizations_reports_612", "roles": ["Organization Admin"] },
+    { "name": "view_all_organizations_reports_613", "roles": [] },
+    { "name": "view_my_reports_614", "roles": ["Teacher", "Parent", "Student"] },
     { "name": "share_report_630", "roles": ["Organization Admin", "School Admin"] },
     { "name": "download_report_631", "roles": ["Organization Admin", "School Admin"] },
     { "name": "report_settings_680", "roles": ["Organization Admin", "School Admin"] },
