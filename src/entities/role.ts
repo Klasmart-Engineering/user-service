@@ -28,6 +28,20 @@ export class Role extends BaseEntity {
     @OneToMany(() => Permission, permission => permission.role)
     @JoinColumn()
     public permissions?: Promise<Permission[]>
+
+    public async set({role_name}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            
+            if(typeof role_name === "string") { this.role_name = role_name }
+            
+            await this.save()
+
+            return this
+        } catch(e) {
+            console.error(e)
+        }
+    } 
     
     public async permission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {

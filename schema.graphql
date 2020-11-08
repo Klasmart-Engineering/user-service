@@ -123,6 +123,13 @@ type Organization {
     findMembers(search_query: String!): [OrganizationMembership]
 
     #mutations
+    set(
+        organization_name: String
+        address1: String
+        address2: String
+        phone: String
+        shortCode: String
+    ): Organization
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
     createRole(role_name: String): Role
@@ -165,6 +172,7 @@ type Role {
     permission(permission_name: String!): Permission
 
     #mutations
+    set(role_name: String): Role
     grant(permission_name: String!): Permission
     revoke(permission_name: String!): Boolean
     deny(permission_name: String!): Permission
@@ -194,6 +202,7 @@ type School {
     classes: [Class]
 
     #mutations
+    set(school_name: String): School
     addUser(user_id: ID!): SchoolMembership
 }
 
@@ -230,6 +239,7 @@ type Class {
     # schedule: [ScheduleEntry]
 
     #mutations
+    set(class_name: String): Class
     addTeacher(user_id: ID!): User
     addStudent(user_id: ID!): User
     addSchool(school_id: ID!): School

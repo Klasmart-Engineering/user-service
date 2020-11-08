@@ -24,6 +24,20 @@ export class Class extends BaseEntity {
     @ManyToMany(() => User, user => user.classesStudying)
     public students?: Promise<User[]>
 
+    public async set({class_name}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            
+            if(typeof class_name === "string") { this.class_name = class_name }
+            
+            await this.save()
+
+            return this
+        } catch(e) {
+            console.error(e)
+        }
+    } 
+
     public async addTeacher({user_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }

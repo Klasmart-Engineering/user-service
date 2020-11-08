@@ -1,4 +1,15 @@
-import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, OneToOne, ManyToOne } from 'typeorm';
+import { 
+    Column,
+    PrimaryGeneratedColumn,
+    Entity,
+    OneToMany,
+    getRepository,
+    getManager,
+    JoinColumn,
+    OneToOne,
+    ManyToOne,
+    BaseEntity,
+} from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
@@ -7,7 +18,7 @@ import { Class } from './class';
 import { School } from './school';
 
 @Entity()
-export class Organization {
+export class Organization extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     public readonly organization_id!: string;
     
@@ -57,6 +68,30 @@ export class Organization {
     @OneToMany(() => Class, class_ => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    public async set({
+        organization_name,
+        address1,
+        address2,
+        phone,
+        shortCode,
+    }: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            
+            if(typeof organization_name === "string") { this.organization_name = organization_name }
+            if(typeof address1 === "string") { this.address1 = address1 }
+            if(typeof address2 === "string") { this.address2 = address2 }
+            if(typeof phone === "string") { this.phone = phone }
+            if(typeof shortCode === "string") { this.shortCode = shortCode }
+
+            await this.save()
+
+            return this
+        } catch(e) {
+            console.error(e)
+        }
+    } 
 
     public async membersWithPermission({permission_name, search_query}: any, context: any, info: GraphQLResolveInfo) {
         try {

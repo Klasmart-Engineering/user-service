@@ -34,6 +34,20 @@ export class School extends BaseEntity {
     @JoinTable()
     public classes?: Promise<Class[]>
 
+    public async set({school_name}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            
+            if(typeof school_name === "string") { this.school_name = school_name }
+            
+            await this.save()
+
+            return this
+        } catch(e) {
+            console.error(e)
+        }
+    } 
+
     public async addUser({user_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
