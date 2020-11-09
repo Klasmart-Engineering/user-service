@@ -234,6 +234,7 @@ type Class {
 
     #connections
     organization: Organization
+    schools: [School]
     teachers: [User]
     students: [User]
     # schedule: [ScheduleEntry]
