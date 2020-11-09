@@ -104,7 +104,7 @@ export const teacherRole = {
         PermissionName.delete_my_pending_learning_outcome_446,
         PermissionName.add_learning_outcome_to_content_485,
         PermissionName.schedule_500,
-        // PermissionName.create_schedule_paage_501,
+        PermissionName.create_schedule_page_501,
         PermissionName.view_my_calendar_510,
         PermissionName.create_event__520,
         PermissionName.edit_event__530,
