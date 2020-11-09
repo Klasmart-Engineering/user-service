@@ -220,7 +220,7 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async setDefaultRolesPermissions({}: any, context: any, info: GraphQLResolveInfo) {
+    public async createDefaultRoles({}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
@@ -250,13 +250,15 @@ export class Organization extends BaseEntity {
             role.role_name = role_name
             role.organization = Promise.resolve(this)
             await manager.save(role)
+            const permissionEntities = [] as Permission[]
             for(const permission_name of permissions) {
                 const permission = new Permission()
                 permission.permission_name = permission_name
                 permission.allow = true
                 permission.role = Promise.resolve(role)
-                await manager.save(permission)
+                permissionEntities.push(permission)
             }
+            await manager.save(permissionEntities)
         }
 
         return roles

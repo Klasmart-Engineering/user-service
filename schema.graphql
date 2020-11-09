@@ -130,10 +130,10 @@ type Organization {
         phone: String
         shortCode: String
     ): Organization
-    setDefaultRolesPermissions(_: Int): [Role]
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
     createRole(role_name: String): Role
+    createDefaultRoles(_: Int): [Role]
     createSchool(school_name: String): School
     createClass(class_name: String): Class
 }
