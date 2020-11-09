@@ -227,4 +227,26 @@ export class Organization extends BaseEntity {
             console.error(e)
         }
     }
+
+    public async setContentControl({ documentId, accessLevel}: any, context: any, info: GraphQLResolveInfo) {
+        if(info.operation.operation !== "mutation") { return null }
+        try {
+            let contentControl = await getRepository(ContentControl).findOne({
+                where: [
+                  { organization: this.organization_id, documentId },
+                ]
+              })
+
+            if (!contentControl) {
+                contentControl = new ContentControl()
+                contentControl.organization= await getRepository(Organization).findOneOrFail(this.organization_id)
+            }
+            contentControl.documentId = documentId
+            contentControl.accessLevel = accessLevel
+            await getManager().save(contentControl)
+            return contentControl
+        } catch(e) {
+            console.error(e)
+        }
+    }
 }

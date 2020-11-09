@@ -140,6 +140,7 @@ type Organization {
     createRole(role_name: String): Role
     createSchool(school_name: String): School
     createClass(class_name: String): Class
+    setContentControl(documentId: ID!, accessLevel: AccessLevel!): ContentControl
 }
 
 scalar Date
