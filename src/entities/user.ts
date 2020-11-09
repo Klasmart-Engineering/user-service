@@ -4,6 +4,7 @@ import { OrganizationMembership } from "./organizationMembership";
 import { Organization } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
+import { ContentControl} from "./contentControl";
 import { v5 } from "uuid";
 import { createHash } from "crypto"
 
@@ -65,6 +66,12 @@ export class User extends BaseEntity {
     @OneToOne(() => Organization, organization => organization.owner)
     @JoinColumn()
     public my_organization?: Promise<Organization>
+
+    @OneToMany(() => ContentControl, contentControl => contentControl.user)
+    @JoinColumn({
+        name: "content_controls",
+    })
+    public contentControls?: Promise<ContentControl[]>
 
     public async organizationsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
@@ -159,6 +166,28 @@ export class User extends BaseEntity {
             membership.user = Promise.resolve(this)
             await getManager().save(membership)
             return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async setContentControl({ documentId, accessLevel}: any, context: any, info: GraphQLResolveInfo) {
+        if(info.operation.operation !== "mutation") { return null }
+        try {
+            let contentControl = await getRepository(ContentControl).findOne({
+                where: [
+                  { user: this.user_id, documentId },
+                ]
+              })
+
+            if (!contentControl) {
+                contentControl = new ContentControl()
+                contentControl.user = await getRepository(User).findOneOrFail(this.user_id)
+            }
+            contentControl.documentId = documentId
+            contentControl.accessLevel = accessLevel
+            await getManager().save(contentControl)
+            return contentControl
         } catch(e) {
             console.error(e)
         }

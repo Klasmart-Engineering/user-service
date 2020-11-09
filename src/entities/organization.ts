@@ -16,6 +16,7 @@ import { Role } from './role';
 import { User } from './user';
 import { Class } from './class';
 import { School } from './school';
+import { ContentControl } from './contentControl';
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -68,6 +69,12 @@ export class Organization extends BaseEntity {
     @OneToMany(() => Class, class_ => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    @OneToMany(() => ContentControl, contentControl => contentControl.organization)
+    @JoinColumn({
+        name: "content_controls",
+    })
+    public contentControls?: Promise<ContentControl[]>;
 
     public async set({
         organization_name,

@@ -70,6 +70,7 @@ type User {
 
     classesTeaching: [Class]
     classesStudying: [Class]
+    contentControls: [ContentControl]
 
     #query
     organizationsWithPermission(permission_name: String!): [OrganizationMembership]
@@ -92,6 +93,7 @@ type User {
         shortCode: String
     ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
+    setContentControl(documentId: ID!, accessLevel: AccessLevel!): ContentControl
 }
 
 type Organization {
@@ -117,6 +119,7 @@ type Organization {
     students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
+    contentControls: [ContentControl]
     
     #query
     membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
@@ -251,4 +254,19 @@ type Class {
 type ScheduleEntry {
     id: ID!
     timestamp: Date
+}
+
+type ContentControl {
+    contentControlId: ID!
+    documentId: ID!
+    organization: Organization
+    user: User
+    accessLevel: AccessLevel
+}
+
+enum AccessLevel {
+    READ,
+    WRITE,
+    DELETE,
+    ADMIN,
 }
