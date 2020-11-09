@@ -42,6 +42,14 @@ export class User extends BaseEntity {
         }
     }
 
+    public async contentControl({documentId}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(ContentControl).findOneOrFail({where: {user: this.user_id, documentId}})
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     @OneToMany(() => SchoolMembership, schoolMembership => schoolMembership.user)
     @JoinColumn({name: "school_id", referencedColumnName: "school_id"})
     public school_memberships?: Promise<SchoolMembership[]>

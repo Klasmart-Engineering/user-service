@@ -51,6 +51,14 @@ export class Organization extends BaseEntity {
         }
     }
 
+    public async contentControl({documentId}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(ContentControl).findOneOrFail({where: {organization: this.organization_id, documentId}})
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     @OneToOne(() => User, user => user.my_organization)
     public owner?: Promise<User>
 

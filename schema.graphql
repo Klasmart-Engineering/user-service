@@ -71,6 +71,7 @@ type User {
     classesTeaching: [Class]
     classesStudying: [Class]
     contentControls: [ContentControl]
+    contentControl(documentId: ID!): ContentControl
 
     #query
     organizationsWithPermission(permission_name: String!): [OrganizationMembership]
@@ -120,6 +121,7 @@ type Organization {
     schools: [School]
     classes: [Class]
     contentControls: [ContentControl]
+    contentControl(documentId: ID!): ContentControl
     
     #query
     membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
