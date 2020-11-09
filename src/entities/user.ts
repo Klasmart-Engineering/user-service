@@ -6,6 +6,13 @@ import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
 import { v5 } from "uuid";
 import { createHash } from "crypto"
+import { Permission } from "./permission";
+import { Role } from "./role";
+import { schoolAdminRole } from "../permissions/schoolAdmin";
+import { organizationAdminRole } from "../permissions/organizationAdmin";
+import { parentRole } from "../permissions/parent";
+import { studentRole } from "../permissions/student";
+import { teacherRole } from "../permissions/teacher";
 
 @Entity()
 export class User extends BaseEntity {
@@ -123,25 +130,50 @@ export class User extends BaseEntity {
             if(info.operation.operation !== "mutation") { return null }
             const my_organization = await this.my_organization
             if(my_organization) { throw new Error("Only one organization per user") }
-            
+
             const organization = new Organization()
+            await getManager().transaction(async (manager) => {
+                organization.organization_name = organization_name
+                organization.address1 = address1
+                organization.address2 = address2
+                organization.phone = phone
+                organization.shortCode = shortCode
+                organization.owner = Promise.resolve(this)
+                organization.primary_contact = Promise.resolve(this)
+                await manager.save(organization)
 
-            organization.organization_name = organization_name
-            organization.address1 = address1
-            organization.address2 = address2
-            organization.phone = phone
-            organization.shortCode = shortCode
-            organization.owner = Promise.resolve(this)
-            organization.primary_contact = Promise.resolve(this)
+                let adminRole: Role | undefined
+                for(const {role_name, permissions} of [
+                    organizationAdminRole,
+                    schoolAdminRole,
+                    parentRole,
+                    studentRole,
+                    teacherRole,
+                ]) {
+                    const role = new Role()
+                    if(!adminRole) { adminRole = role }
+                    role.role_name = role_name
+                    role.organization = Promise.resolve(organization)
+                    await manager.save(role)
+                    for(const permission_name of permissions) {
+                        const permission = new Permission()
+                        permission.permission_name = permission_name
+                        permission.allow = true
+                        permission.role = Promise.resolve(role)
+                        await manager.save(permission)
+                    }
+                }
 
-            const membership = new OrganizationMembership()
-            membership.user = Promise.resolve(this)
-            membership.user_id = this.user_id
-            membership.organization = Promise.resolve(organization)
-            membership.organization_id = organization.organization_id
-            organization.memberships = Promise.resolve([membership])
-            
-            await getManager().save(organization)
+                
+                const membership = new OrganizationMembership()
+                membership.user = Promise.resolve(this)
+                membership.user_id = this.user_id
+                membership.organization = Promise.resolve(organization)
+                membership.organization_id = organization.organization_id
+                if(adminRole) { membership.roles = Promise.resolve([adminRole]) }
+                organization.memberships = Promise.resolve([membership])
+                await manager.save(membership)
+            })
     
             return organization
         } catch(e) {
