@@ -1,4 +1,4 @@
-import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
 import { Organization } from "./organization";
@@ -141,36 +141,16 @@ export class User extends BaseEntity {
                 organization.owner = Promise.resolve(this)
                 organization.primary_contact = Promise.resolve(this)
                 await manager.save(organization)
-
-                let adminRole: Role | undefined
-                for(const {role_name, permissions} of [
-                    organizationAdminRole,
-                    schoolAdminRole,
-                    parentRole,
-                    studentRole,
-                    teacherRole,
-                ]) {
-                    const role = new Role()
-                    if(!adminRole) { adminRole = role }
-                    role.role_name = role_name
-                    role.organization = Promise.resolve(organization)
-                    await manager.save(role)
-                    for(const permission_name of permissions) {
-                        const permission = new Permission()
-                        permission.permission_name = permission_name
-                        permission.allow = true
-                        permission.role = Promise.resolve(role)
-                        await manager.save(permission)
-                    }
-                }
-
+                
+                const roles = await organization._createDefaultRoles(manager)
+                const adminRoles = roles.get("Organization Admin")
                 
                 const membership = new OrganizationMembership()
                 membership.user = Promise.resolve(this)
                 membership.user_id = this.user_id
                 membership.organization = Promise.resolve(organization)
                 membership.organization_id = organization.organization_id
-                if(adminRole) { membership.roles = Promise.resolve([adminRole]) }
+                if(adminRoles) { membership.roles = Promise.resolve(adminRoles) }
                 organization.memberships = Promise.resolve([membership])
                 await manager.save(membership)
             })

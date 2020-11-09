@@ -9,6 +9,7 @@ import {
     OneToOne,
     ManyToOne,
     BaseEntity,
+    EntityManager,
 } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
@@ -16,6 +17,12 @@ import { Role } from './role';
 import { User } from './user';
 import { Class } from './class';
 import { School } from './school';
+import { organizationAdminRole } from '../permissions/organizationAdmin';
+import { schoolAdminRole } from '../permissions/schoolAdmin';
+import { parentRole } from '../permissions/parent';
+import { studentRole } from '../permissions/student';
+import { teacherRole } from '../permissions/teacher';
+import { Permission } from './permission';
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -211,5 +218,47 @@ export class Organization extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
+    }
+
+    public async setDefaultRolesPermissions({}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+
+            const roles = await this._createDefaultRoles()
+            return [...roles.values()].flat()
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async _createDefaultRoles(manager: EntityManager = getManager()) {
+        const roles = new Map<string, Role[]>()
+
+        for(const {role_name, permissions} of [
+            organizationAdminRole,
+            schoolAdminRole,
+            parentRole,
+            studentRole,
+            teacherRole,
+        ]) {
+            const role = new Role()
+
+            const key = role.role_name||""
+            const value = roles.get(key)
+            if(value) { value.push(role) } else { roles.set(key, [role])  }
+
+            role.role_name = role_name
+            role.organization = Promise.resolve(this)
+            await manager.save(role)
+            for(const permission_name of permissions) {
+                const permission = new Permission()
+                permission.permission_name = permission_name
+                permission.allow = true
+                permission.role = Promise.resolve(role)
+                await manager.save(permission)
+            }
+        }
+
+        return roles
     }
 }
