@@ -9,7 +9,7 @@ export class Permission extends BaseEntity {
     @PrimaryColumn()
     public permission_name!: string
 
-    @ManyToOne(() => Role, role => role.permission)
+    @ManyToOne(() => Role, role => role.permission, {onDelete: "CASCADE"})
     @JoinColumn({name: "role_id"})
     public role?: Promise<Role>
 
