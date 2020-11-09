@@ -1,0 +1,99 @@
+@startuml
+class User {
+  user_id : uuid
+  user_name : string
+  given_name : string
+  family_name: string
+  email : string
+  avatar : string
+  myOrganizationOrganizationId : uuid
+}
+
+class Class {
+  class_id : uuid
+  class_name : string
+  organizationOrganizationId : uuid
+}
+
+class Organization {
+  organization_id : uuid
+  organization_name : string
+  address1 : string
+  address2 : string
+  phone : string
+  shortCode : string
+  primaryContactUserId : uuid
+}
+
+class OrganizationMembership {
+  user_id : string
+  organization_id : string
+  join_timestamp : timestamp
+  userUserId : uuid
+  organizationOrganizationId : uuid
+}
+
+class Permission {
+  role_id : uuid
+  permission_name : string
+  allow : boolean
+}
+
+class Role {
+  role_id : uuid
+  role_name : string
+  organizationOrganizationId : uuid
+}
+
+class School {
+  school_id : uuid
+  school_name : string
+  organizationOrganizationId : uuid
+}
+
+class SchoolMembership {
+  user_id : string
+  school_id : string
+  join_timestamp : timestamp
+  userUserId : uuid
+  schoolSchoolId : uuid
+}
+
+class Attendance {
+  user_id : string
+  room_id : string
+  session_id : string
+  join_timestamp : timestamp
+  leave_timestamp : timestamp
+}
+
+class RoleMembershipsOrganizationMembership {
+  roleRoleId : uuid
+  organizationMembershipUserId : string
+  organizationMembershipOrganizationId : string
+}
+
+class RoleSchoolMembershipsSchoolMembership {
+  roleRoleId : uuid
+  schoolMembershipUserId : string
+  schoolMembershipSchoolId : string
+}
+
+Role -- "*" Organization
+User -- "0..1" Organization
+User "0..1" *-- "*" OrganizationMembership
+OrganizationMembership "*" --* "0..1" Organization
+Class -- "0..1" Organization
+Permission --* "0..1" Role
+School -- "0..1" Organization
+User "0..1" *-- "*" SchoolMembership
+SchoolMembership "*" --* "0..1" School
+RoleMembershipsOrganizationMembership "*" --* "1" Role
+RoleMembershipsOrganizationMembership "*" --* "1" User
+RoleMembershipsOrganizationMembership "*" --* "1" Organization
+RoleSchoolMembershipsSchoolMembership "*" --* "1" Role
+RoleSchoolMembershipsSchoolMembership "*" --* "1" User
+RoleSchoolMembershipsSchoolMembership "*" --* "1" School
+
+@enduml
+
