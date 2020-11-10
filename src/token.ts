@@ -68,7 +68,7 @@ export async function checkToken(token?: string) {
         const issuerOptions = issuers.get(issuer)
         if(!issuerOptions) { return }
         const { options, secretOrPublicKey } = issuerOptions
-        const verifiedToken = await new Promise((resolve, reject) => {
+        const verifiedToken = await new Promise<any>((resolve, reject) => {
             verify(token, secretOrPublicKey, options, (err, decoded) => {
                 if(err) { reject(err) }
                 if(decoded) { resolve(decoded) }

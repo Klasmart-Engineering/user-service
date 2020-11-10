@@ -4,8 +4,9 @@ import { ApolloServer } from "apollo-server-express";
 import { Context } from "../main";
 import { Model } from "../model";
 import { checkToken } from "../token";
+import { UserPermissions } from "../permissions/userPermissions";
 
-export const createServer = (model: Model, context: any = null) =>
+export const createServer = (model: Model, context?: any) =>
     new ApolloServer({
         typeDefs: loadTypedefsSync('./schema.graphql', { loaders: [new GraphQLFileLoader()] })[0].document,
         resolvers: {
@@ -37,15 +38,17 @@ export const createServer = (model: Model, context: any = null) =>
             keepAlive: 1000,
             onConnect: async ({ authToken, sessionId }: any, websocket, connectionData: any): Promise<Context> => {
                 const token = await checkToken(authToken)
-                return { sessionId, token, websocket };
+                const permissions = new UserPermissions(token && token.id)
+                return { sessionId, token, websocket, permissions };
             },
             onDisconnect: (websocket, connectionData) => {  }
         },
         context: context ?? (async ({ req, connection }) => {
             if (connection) { return connection.context }
             const encodedToken = req.headers.authorization||req.cookies.access
-            const token = await checkToken(encodedToken)
-            return { token };
+            const token = await checkToken(encodedToken) as any
+            const permissions = new UserPermissions(token && token.id)
+            return { token, permissions };
         }),
         playground: {
             settings: {
