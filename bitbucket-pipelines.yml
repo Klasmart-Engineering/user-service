@@ -13,6 +13,16 @@ definitions:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
 pipelines:
+  pull-requests:
+    '**': # This runs as default for any branch not elsewhere defined.
+      - step:
+          services:
+            - postgres
+          caches:
+            - node
+          script:
+            - npm install
+            - npm test
   branches:
     master:
       - step:
@@ -23,3 +33,16 @@ pipelines:
           script:
             - npm install
             - npm test
+  tags:
+    v*:
+      - step:
+          name: Build and deploy
+          services:
+            - postgres
+            - docker
+          caches:
+            - node
+          script:
+            - npm install
+            - npm test
+            - ./deploy.sh
