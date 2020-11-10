@@ -1,4 +1,5 @@
 import {verify, decode, VerifyOptions, Secret} from "jsonwebtoken"
+import { Token } from './utils/createServer'
 
 const issuers = new Map<
     string,
@@ -58,7 +59,7 @@ FwIDAQAB
     ]
 ]);
 
-export async function checkToken(token?: string) {
+export async function checkToken(token?: string): Promise<Token | undefined> {
     try {
         if(!token) { return }
         const payload = decode(token)
@@ -68,10 +69,10 @@ export async function checkToken(token?: string) {
         const issuerOptions = issuers.get(issuer)
         if(!issuerOptions) { return }
         const { options, secretOrPublicKey } = issuerOptions
-        const verifiedToken = await new Promise((resolve, reject) => {
+        const verifiedToken: Token = await new Promise((resolve, reject) => {
             verify(token, secretOrPublicKey, options, (err, decoded) => {
                 if(err) { reject(err) }
-                if(decoded) { resolve(decoded) }
+                if(decoded) { resolve(decoded as Token) }
                 reject(new Error("Unexpected authorization error")) 
             })
         })

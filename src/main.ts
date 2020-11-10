@@ -3,9 +3,10 @@ import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { Model } from "./model";
 import cookieParser from 'cookie-parser'
+import { User } from './entities/user';
 import cors, { CorsOptions } from "cors"
 import * as dotenv from "dotenv";
-import { createServer } from "./utils/createServer";
+import { createServer, Token } from "./utils/createServer";
 dotenv.config({ path: __dirname+'/../.env' });
 
 const routePrefix = process.env.ROUTE_PREFIX || ""
@@ -17,9 +18,10 @@ Sentry.init({
 });
 
 export interface Context {
-    token?: any
+    token?: Token
     sessionId?: string
     websocket?: WebSocket
+    user?: User
 }
 
 async function main() {

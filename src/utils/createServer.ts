@@ -1,9 +1,21 @@
 import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { loadTypedefsSync } from "@graphql-tools/load";
 import { ApolloServer } from "apollo-server-express";
+import { getConnection, getRepository } from "typeorm";
+import { User } from '../entities/user';
 import { Context } from "../main";
 import { Model } from "../model";
 import { checkToken } from "../token";
+
+export interface Token {
+    id: string,
+    email: string,
+    exp: number,
+    iss: string,
+    name?: string,
+    given_name?: string,
+    family_name?: string
+}
 
 export const createServer = (model: Model, context: any = null) =>
     new ApolloServer({
@@ -45,7 +57,11 @@ export const createServer = (model: Model, context: any = null) =>
             if (connection) { return connection.context }
             const encodedToken = req.headers.authorization||req.cookies.access
             const token = await checkToken(encodedToken)
-            return { token };
+            if(!token) { 
+                return { token, user: null}
+            }
+            const user = (await getRepository(User, getConnection().name).findOne({ user_id: token.id })) || null
+            return { token, user };
         }),
         playground: {
             settings: {
