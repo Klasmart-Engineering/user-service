@@ -1,4 +1,4 @@
-import { PermissionName } from "../utils/permissionNames";
+import { PermissionName } from "./permissionNames";
 
 export const studentRole = {
     role_name: "Student",

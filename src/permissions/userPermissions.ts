@@ -1,7 +1,12 @@
 import { getRepository } from "typeorm";
 import { OrganizationMembership } from "../entities/organizationMembership";
 import { SchoolMembership } from "../entities/schoolMembership";
-import { PermissionName } from '../permissions/permissionNames';
+import { PermissionName } from './permissionNames';
+
+interface PermissionContext {
+    school_id?: string
+    organization_id?: string
+}
 
 export class UserPermissions {
     private _organizationPermissions?: Promise<Map<string, Set<string>>>
@@ -12,20 +17,35 @@ export class UserPermissions {
         this.user_id = user_id
     }
 
-    public async rejectIfNotAllowedByOrganization(organization_id: string, permission_name: PermissionName) {
-        const allOrganizationPermisions = await this.organizationPermissions()
-        const organizationPermissions = allOrganizationPermisions.get(organization_id)
-        if(!organizationPermissions || !organizationPermissions.has(permission_name)) {
-            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`) 
+    public async rejectIfNotAllowed({school_id, organization_id}: PermissionContext, permission_name: PermissionName) {
+        if(organization_id) {
+            const allOrganizationPermisions = await this.organizationPermissions()
+            const organizationPermissions = allOrganizationPermisions.get(organization_id)
+            if(!organizationPermissions || !organizationPermissions.has(permission_name)) {
+                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`) 
+            }
+        }
+        if(school_id) {
+            const allSchoolPermissions = await this.schoolPermissions()
+            const schoolPermissions = allSchoolPermissions.get(school_id)
+            if(!schoolPermissions || !schoolPermissions.has(permission_name) ) {
+                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`) 
+            }
         }
     }
 
-    public async rejectIfNotAllowedBySchool(school_id: string, permission_name: PermissionName) {
-        const allSchoolPermissions = await this.schoolPermissions()
-        const schoolPermissions = allSchoolPermissions.get(school_id)
-        if(!schoolPermissions || !schoolPermissions.has(permission_name) ) {
-            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`) 
+    public async allowed({school_id, organization_id}: PermissionContext, permission_name: PermissionName) {
+        if(organization_id) {
+            const allOrganizationPermisions = await this.organizationPermissions()
+            const organizationPermissions = allOrganizationPermisions.get(organization_id)
+            if(!organizationPermissions || !organizationPermissions.has(permission_name)) { return false }
         }
+        if(school_id) {
+            const allSchoolPermissions = await this.schoolPermissions()
+            const schoolPermissions = allSchoolPermissions.get(school_id)
+            if(!schoolPermissions || !schoolPermissions.has(permission_name)) { return false }
+        }
+        return true
     }
 
     private async organizationPermissions(): Promise<Map<string, Set<string>>> {
@@ -34,6 +54,7 @@ export class UserPermissions {
                 try {
                     const organizationPermissions = new Map<string, Set<string>>()
                     if(!this.user_id) { return organizationPermissions }
+                    //TODO: Adjust for returning explicity denial
                     const organizationPermissionResults = await getRepository(OrganizationMembership)
                     .createQueryBuilder()
                     .innerJoin("OrganizationMembership.roles", "Role")
@@ -67,6 +88,7 @@ export class UserPermissions {
                 try {
                     const schoolPermissions = new Map<string, Set<string>>()
                     if(!this.user_id) { return schoolPermissions }
+                    //TODO: Adjust for returning explicity denial
                     const schoolPermissionResults = await getRepository(SchoolMembership)
                     .createQueryBuilder()
                     .innerJoin("SchoolMembership.roles", "Role")

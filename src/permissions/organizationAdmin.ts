@@ -1,4 +1,4 @@
-import { PermissionName } from "../utils/permissionNames";
+import { PermissionName } from "./permissionNames";
 
 export const organizationAdminRole = {
     role_name: "Organization Admin",
