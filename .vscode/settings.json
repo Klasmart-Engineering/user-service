@@ -1,3 +1,6 @@
+// Place your settings in this file to overwrite the default settings
 {
-    "typescript.tsdk": "/home/owen/kidsloop-user-service/node_modules/typescript/lib"
+    "mochaExplorer.files": "tests/**/*.test.ts",
+    "mochaExplorer.require": "ts-node/register",
+    "mochaExplorer.timeout": 0,
 }
