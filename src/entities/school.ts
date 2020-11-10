@@ -4,6 +4,8 @@ import { User } from './user';
 import { Class } from './class';
 import { SchoolMembership } from './schoolMembership';
 import { Organization } from './organization';
+import { Context } from '../main';
+import { PermissionName } from '../permissions/permissionNames';
 
 @Entity()
 export class School extends BaseEntity {
@@ -17,7 +19,7 @@ export class School extends BaseEntity {
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
     public memberships?: Promise<SchoolMembership[]>
 
-    public async membership({user_id}: any, context: any, info: GraphQLResolveInfo) {
+    public async membership({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const membership = await getRepository(SchoolMembership).findOneOrFail({where: {user_id, school_id: this.school_id}})
             return membership
@@ -34,8 +36,19 @@ export class School extends BaseEntity {
     @JoinTable()
     public classes?: Promise<Class[]>
 
-    public async set({school_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async set({school_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+
+            const permisionContext = { school_id: this.school_id }
+
+            await context.permissions.rejectIfNotAllowed(
+
+              permisionContext,
+
+              PermissionName.edit_school_20330
+
+            )
+
             if(info.operation.operation !== "mutation") { return null }
             
             if(typeof school_name === "string") { this.school_name = school_name }
@@ -48,8 +61,18 @@ export class School extends BaseEntity {
         }
     } 
 
-    public async addUser({user_id}: any, context: any, info: GraphQLResolveInfo) {
+    public async addUser({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { school_id: this.school_id }
+
+            await context.permissions.rejectIfNotAllowed(
+
+              permisionContext,
+
+              PermissionName.edit_school_20330
+
+            )
+
             if(info.operation.operation !== "mutation") { return null }
 
             const membership = new SchoolMembership()
