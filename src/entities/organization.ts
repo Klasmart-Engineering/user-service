@@ -1,4 +1,4 @@
-import { 
+import {
     Column,
     PrimaryGeneratedColumn,
     Entity,
@@ -23,24 +23,26 @@ import { parentRole } from '../permissions/parent';
 import { studentRole } from '../permissions/student';
 import { teacherRole } from '../permissions/teacher';
 import { Permission } from './permission';
+import { Context } from '../main';
+import { PermissionName } from '../permissions/permissionNames';
 
 @Entity()
 export class Organization extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     public readonly organization_id!: string;
-    
+
     @Column({nullable: true})
     public organization_name?: string
-    
+
     @Column({nullable: true})
     public address1?: string
-    
+
     @Column({nullable: true})
     public address2?: string
-    
+
     @Column({nullable: true})
     public phone?: string
-    
+
     @Column({nullable: true})
     public shortCode?: string
 
@@ -48,7 +50,7 @@ export class Organization extends BaseEntity {
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
     public memberships?: Promise<OrganizationMembership[]>
 
-    public async membership({user_id}: any, context: any, info: GraphQLResolveInfo) {
+    public async membership({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const membership = await getRepository(OrganizationMembership).findOneOrFail({where: {user_id, organization_id: this.organization_id}})
             return membership
@@ -63,7 +65,7 @@ export class Organization extends BaseEntity {
     @ManyToOne(() => User)
     @JoinColumn()
     public primary_contact?: Promise<User>
-    
+
     @OneToMany(() => Role, role => role.organization)
     @JoinColumn()
     public roles?: Promise<Role[]>
@@ -82,10 +84,16 @@ export class Organization extends BaseEntity {
         address2,
         phone,
         shortCode,
-    }: any, context: any, info: GraphQLResolveInfo) {
+    }: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_an_organization_details_5
+            )
+
             if(info.operation.operation !== "mutation") { return null }
-            
+
             if(typeof organization_name === "string") { this.organization_name = organization_name }
             if(typeof address1 === "string") { this.address1 = address1 }
             if(typeof address2 === "string") { this.address2 = address2 }
@@ -98,9 +106,9 @@ export class Organization extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
-    } 
+    }
 
-    public async membersWithPermission({permission_name, search_query}: any, context: any, info: GraphQLResolveInfo) {
+    public async membersWithPermission({permission_name, search_query}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const query = getRepository(OrganizationMembership)
                 .createQueryBuilder()
@@ -111,7 +119,7 @@ export class Organization extends BaseEntity {
                 .where("OrganizationMembership.organization_id = :organization_id", this)
                 .andWhere("Permission.permission_name = :permission_name", {permission_name})
                 .having("bool_and(Permission.allow) = :allowed", {allowed: true})
-            
+
             if(search_query) {
                 query
                     .addSelect("similarity(User.user_name, :user_name)", "similarity")
@@ -119,7 +127,7 @@ export class Organization extends BaseEntity {
                     .orderBy("similarity", "DESC")
                     .setParameter("user_name", search_query)
             }
-            
+
             const results = await query.getMany()
             return results
         } catch(e) {
@@ -127,7 +135,7 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async findMembers({search_query}: any, context: any, info: GraphQLResolveInfo) {
+    public async findMembers({search_query}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
@@ -143,21 +151,27 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async setPrimaryContact({user_id}: any, context: any, info: GraphQLResolveInfo) {
+    public async setPrimaryContact({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_an_organization_details_5
+            )
+
             if(info.operation.operation !== "mutation") { return null }
-            
+
             const user = await getRepository(User).findOneOrFail({user_id})
             this.primary_contact = Promise.resolve(user)
             await getManager().save(this)
-            
+
             return user
         } catch(e) {
             console.error(e)
         }
     }
 
-    public async addUser({user_id}: any, context: any, info: GraphQLResolveInfo) {
+    public async addUser({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
@@ -174,11 +188,11 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async createRole({role_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createRole({role_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const manager = getManager()
-            
+
             const role = new Role()
             role.role_name = role_name
             role.organization = Promise.resolve(this)
@@ -189,11 +203,17 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async createClass({class_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createClass({class_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.create_class_20224
+            )
+
             if(info.operation.operation !== "mutation") { return null }
             const manager = getManager()
-            
+
             const _class = new Class()
             _class.class_name = class_name
             _class.organization = Promise.resolve(this)
@@ -205,10 +225,16 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async createSchool({school_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async createSchool({school_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.create_school_20220
+            )
+
             if(info.operation.operation !== "mutation") { return null }
-            
+
             const school = new School()
             school.school_name = school_name
             school.organization = Promise.resolve(this)
@@ -220,7 +246,7 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async createDefaultRoles({}: any, context: any, info: GraphQLResolveInfo) {
+    public async createDefaultRoles({}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
