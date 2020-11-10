@@ -5,7 +5,6 @@ import { Role } from "./entities/role";
 import { Class } from "./entities/class";
 import { Context } from "./main";
 import { School } from "./entities/school";
-import { Token } from './utils/createServer'
 
 export class Model {
     public static async create() {
@@ -49,7 +48,7 @@ export class Model {
         this.schoolRepository = getRepository(School, connection.name)
     }
 
-    public async getMyUser({ token }: {token: Token}) {
+    public async getMyUser({ token }: Context) {
         try {
             if(!token) {return null}
             let user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
