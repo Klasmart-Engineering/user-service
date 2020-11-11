@@ -137,6 +137,12 @@ export class Organization extends BaseEntity {
 
     public async findMembers({search_query}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.view_users_40110
+            )
+
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.user", "User")
@@ -173,6 +179,12 @@ export class Organization extends BaseEntity {
 
     public async addUser({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.send_invitation_40882
+            )
+
             if(info.operation.operation !== "mutation") { return null }
 
             const membership = new OrganizationMembership()
@@ -190,6 +202,12 @@ export class Organization extends BaseEntity {
 
     public async createRole({role_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.create_role_with_permissions_30222
+            )
+
             if(info.operation.operation !== "mutation") { return null }
             const manager = getManager()
 
