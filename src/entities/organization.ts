@@ -202,6 +202,12 @@ export class Organization extends BaseEntity {
 
     public async inviteUser({email, given_name, family_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.send_invitation_40882
+            )
+
             if(info.operation.operation !== "mutation") { return null }
 
             const user_id = accountUUID(email)
