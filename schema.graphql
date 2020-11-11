@@ -132,6 +132,7 @@ type Organization {
     ): Organization
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
+    inviteUser(email: String!, given_name: String, family_name: String): OrganizationMembership
     createRole(role_name: String): Role
     createDefaultRoles(_: Int): [Role]
     createSchool(school_name: String): School

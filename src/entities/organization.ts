@@ -14,7 +14,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { Role } from './role';
-import { User } from './user';
+import { User, accountUUID } from './user';
 import { Class } from './class';
 import { School } from './school';
 import { organizationAdminRole } from '../permissions/organizationAdmin';
@@ -194,6 +194,31 @@ export class Organization extends BaseEntity {
             membership.user = getRepository(User).findOneOrFail(user_id)
 
             await getManager().save(membership)
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async inviteUser({email, given_name, family_name}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+
+            const user_id = accountUUID(email)
+            const newUser = await getRepository(User).findOne({email}) || new User()
+            newUser.email = email
+            newUser.user_id = user_id
+            newUser.given_name = given_name
+            newUser.family_name = family_name
+
+            const organization_id = this.organization_id
+            const membership = await getRepository(OrganizationMembership).findOne({organization_id, user_id}) || new OrganizationMembership()
+            membership.organization_id = this.organization_id
+            membership.user_id = newUser.user_id
+            membership.organization = Promise.resolve(this)
+            membership.user = Promise.resolve(newUser)
+
+            await getManager().save([newUser, membership])
             return membership
         } catch(e) {
             console.error(e)
