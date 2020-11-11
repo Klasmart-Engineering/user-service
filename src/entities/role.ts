@@ -4,6 +4,8 @@ import { OrganizationMembership } from "./organizationMembership";
 import { Permission } from "./permission";
 import { Organization } from "./organization";
 import { SchoolMembership } from "./schoolMembership";
+import { Context } from '../main';
+import { PermissionName } from '../permissions/permissionNames';
 
 @Entity()
 export class Role extends BaseEntity {
@@ -29,41 +31,76 @@ export class Role extends BaseEntity {
     @JoinColumn()
     public permissions?: Promise<Permission[]>
 
-    public async set({role_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async set({role_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
-            
+            const organization = await this.organization as Organization
+
+            if(info.operation.operation !== "mutation" || !organization) { return null }
+
+            const permisionContext = { organization_id: organization.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_groups_30330
+            )
+
             if(typeof role_name === "string") { this.role_name = role_name }
-            
+
             await this.save()
 
             return this
         } catch(e) {
             console.error(e)
         }
-    } 
-    
-    public async permission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+    }
+
+    public async permission({permission_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            const organization = await this.organization as Organization
+
+            if(info.operation.operation !== "mutation" || !organization) { return null }
+
+            const permisionContext = { organization_id: organization.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.view_role_permissions_30112
+            )
+
             const permission = await getRepository(Permission).findOneOrFail({role_id: this.role_id, permission_name, })
             return permission
         } catch(e) {
             console.error(e)
         }
     }
-    public async grant({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async grant({permission_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            const organization = await this.organization as Organization
+
+            if(info.operation.operation !== "mutation" || !organization) { return null }
+
+            const permisionContext = { organization_id: organization.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_role_permissions_30332
+            )
+
             const permission = await getRepository(Permission).save({role_id: this.role_id, permission_name, allow: true})
             return permission
         } catch(e) {
             console.error(e)
         }
     }
-    public async revoke({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async revoke({permission_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            const organization = await this.organization as Organization
+
+            if(info.operation.operation !== "mutation" || !organization) { return null }
+
+            const permisionContext = { organization_id: organization.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_role_permissions_30332
+            )
+
             await (Permission).delete({role_id: this.role_id, permission_name})
             return true
         } catch(e) {
@@ -71,9 +108,18 @@ export class Role extends BaseEntity {
         }
         return false
     }
-    public async deny({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async deny({permission_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            const organization = await this.organization as Organization
+
+            if(info.operation.operation !== "mutation" || !organization) { return null }
+
+            const permisionContext = { organization_id: organization.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_role_permissions_30332
+            )
+
             const permission = await getRepository(Permission).save({role_id: this.role_id, permission_name, allow: false})
             return permission
         } catch(e) {
@@ -81,9 +127,18 @@ export class Role extends BaseEntity {
         }
     }
 
-    public async delete_role({}: any, context: any, info: GraphQLResolveInfo) {
+    public async delete_role({}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            const organization = await this.organization as Organization
+
+            if(info.operation.operation !== "mutation" || !organization) { return null }
+
+            const permisionContext = { organization_id: organization.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.delete_groups_30440
+            )
+
             await this.remove()
             return true
         } catch(e) {
