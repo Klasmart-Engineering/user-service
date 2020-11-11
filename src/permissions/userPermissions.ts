@@ -22,14 +22,14 @@ export class UserPermissions {
             const allOrganizationPermisions = await this.organizationPermissions()
             const organizationPermissions = allOrganizationPermisions.get(organization_id)
             if(!organizationPermissions || !organizationPermissions.has(permission_name)) {
-                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`) 
+                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`)
             }
         }
         if(school_id) {
             const allSchoolPermissions = await this.schoolPermissions()
             const schoolPermissions = allSchoolPermissions.get(school_id)
             if(!schoolPermissions || !schoolPermissions.has(permission_name) ) {
-                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`) 
+                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`)
             }
         }
     }
@@ -64,7 +64,7 @@ export class UserPermissions {
                     .groupBy("OrganizationMembership.user_id, OrganizationMembership.organization_id, Permission.permission_name")
                     .having("bool_and(Permission.allow) = :allowed", {allowed: true})
                     .getRawMany()
-                    
+
                     for(const {organization_id, permission_name} of organizationPermissionResults) {
                         const permissions = organizationPermissions.get(organization_id)
                         if(permissions) {
@@ -98,7 +98,7 @@ export class UserPermissions {
                     .groupBy("SchoolMembership.user_id, SchoolMembership.school_id, Permission.permission_name")
                     .having("bool_and(Permission.allow) = :allowed", {allowed: true})
                     .getRawMany()
-                    
+
                     for(const {school_id, permission_name} of schoolPermissionResults) {
                         const permissions = schoolPermissions.get(school_id)
                         if(permissions) {
