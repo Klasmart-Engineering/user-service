@@ -54,7 +54,7 @@ export class User extends BaseEntity {
 
     public async school_membership({school_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            const membership = await getRepository(OrganizationMembership).findOneOrFail({where: {user_id: this.user_id, school_id}})
+            const membership = await getRepository(SchoolMembership).findOneOrFail({where: {user_id: this.user_id, school_id}})
             return membership
         } catch(e) {
             console.error(e)
