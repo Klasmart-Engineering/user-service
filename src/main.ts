@@ -3,7 +3,6 @@ import * as Sentry from "@sentry/node";
 import WebSocket from "ws";
 import { Model } from "./model";
 import cookieParser from 'cookie-parser'
-import cors, { CorsOptions } from "cors"
 import * as dotenv from "dotenv";
 import { createServer } from "./utils/createServer";
 import { UserPermissions } from "./permissions/userPermissions";
@@ -30,17 +29,14 @@ async function main() {
         const server = createServer(model);
 
         const app = express()
-        const corsConfiguration: CorsOptions = {
-            allowedHeaders: ["Authorization","Content-Type"],
-            credentials: true,
-            preflightContinue: false,
-            origin: true
-        }
-        app.options('*',cors(corsConfiguration))
         app.use(cookieParser())
         server.applyMiddleware({
             app,
-            cors: corsConfiguration,
+            cors: {
+                allowedHeaders: ["Authorization","Content-Type"],
+                credentials: true,
+                origin: true,
+            },
             path: routePrefix
         })
         const port = process.env.PORT || 8080;
