@@ -318,7 +318,7 @@ export class Organization extends BaseEntity {
         ]) {
             const role = new Role()
 
-            const key = role.role_name||""
+            const key = role_name||""
             const value = roles.get(key)
             if(value) { value.push(role) } else { roles.set(key, [role])  }
 
