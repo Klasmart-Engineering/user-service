@@ -158,6 +158,7 @@ type OrganizationMembership {
 
     #mutations
     addRole(role_id: ID!): Role
+    addRoles(role_ids: [ID!]!): [Role]
     removeRole(role_id: ID!): OrganizationMembership
     leave(_:Int): Boolean
 }
@@ -225,6 +226,7 @@ type SchoolMembership {
 
     #mutations
     addRole(role_id: ID!): Role
+    addRoles(role_ids: [ID!]!): [Role]
     removeRole(role_id: ID!): OrganizationMembership
     leave(_:Int): Boolean
 }

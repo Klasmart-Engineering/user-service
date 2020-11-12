@@ -1,4 +1,4 @@
-import {Entity, ManyToOne, PrimaryColumn, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder} from "typeorm";
+import {Entity, ManyToOne, PrimaryColumn, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager} from "typeorm";
 import { User } from "./user";
 import { Organization } from "./organization";
 import { Role } from "./role";
@@ -45,6 +45,26 @@ export class OrganizationMembership extends BaseEntity {
             role.memberships = Promise.resolve(memberships)
             await role.save()
             return role
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    public async addRoles({ role_ids }: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            if(!(role_ids instanceof Array)) { return null }
+            
+            const rolePromises = role_ids.map(async (role_id) => {
+                const role = await getRepository(Role).findOneOrFail({role_id})
+                const memberships = (await role.memberships) || []
+                memberships.push(this)
+                role.memberships = Promise.resolve(memberships)
+                return role
+            })
+            const roles = await Promise.all(rolePromises)
+            await getManager().save(roles)
+            return roles
         } catch(e) {
             console.error(e)
         }
