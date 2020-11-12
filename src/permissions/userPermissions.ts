@@ -18,37 +18,34 @@ export class UserPermissions {
     }
 
     public async rejectIfNotAllowed({school_id, organization_id}: PermissionContext, permission_name: PermissionName) {
-        const isAllowed = await this.allowed({school_id, organization_id}, permission_name)
-
-        if(!isAllowed && organization_id) {
-            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`)
+        if(organization_id) {
+            const allOrganizationPermisions = await this.organizationPermissions()
+            const organizationPermissions = allOrganizationPermisions.get(organization_id)
+            if(!organizationPermissions || !organizationPermissions.has(permission_name)) {
+                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`)
+            }
         }
-        if(!isAllowed && school_id) {
-            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`)
+        if(school_id) {
+            const allSchoolPermissions = await this.schoolPermissions()
+            const schoolPermissions = allSchoolPermissions.get(school_id)
+            if(!schoolPermissions || !schoolPermissions.has(permission_name) ) {
+                throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`)
+            }
         }
     }
 
     public async allowed({school_id, organization_id}: PermissionContext, permission_name: PermissionName) {
-        let output = false
-
         if(organization_id) {
             const allOrganizationPermisions = await this.organizationPermissions()
             const organizationPermissions = allOrganizationPermisions.get(organization_id)
-
-            if(organizationPermissions && organizationPermissions.has(permission_name)) {
-              output = true
-            }
+            if(!organizationPermissions || !organizationPermissions.has(permission_name)) { return false }
         }
-        if(!output && school_id) {
+        if(school_id) {
             const allSchoolPermissions = await this.schoolPermissions()
             const schoolPermissions = allSchoolPermissions.get(school_id)
-
-            if(schoolPermissions && schoolPermissions.has(permission_name)) {
-              output = true
-            }
+            if(!schoolPermissions || !schoolPermissions.has(permission_name)) { return false }
         }
-
-        return output
+        return true
     }
 
     private async organizationPermissions(): Promise<Map<string, Set<string>>> {
