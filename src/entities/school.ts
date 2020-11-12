@@ -11,10 +11,10 @@ import { PermissionName } from '../permissions/permissionNames';
 export class School extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     public readonly school_id!: string;
-    
+
     @Column({nullable: true})
     public school_name?: string
-    
+
     @OneToMany(() => SchoolMembership, membership => membership.school)
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
     public memberships?: Promise<SchoolMembership[]>
@@ -39,7 +39,10 @@ export class School extends BaseEntity {
     public async set({school_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
 
-            const permisionContext = { school_id: this.school_id }
+            const permisionContext = {
+              organization_id: (await this.organization as Organization).organization_id,
+              school_id: this.school_id
+            }
 
             await context.permissions.rejectIfNotAllowed(
 
@@ -50,20 +53,23 @@ export class School extends BaseEntity {
             )
 
             if(info.operation.operation !== "mutation") { return null }
-            
+
             if(typeof school_name === "string") { this.school_name = school_name }
-            
+
             await this.save()
 
             return this
         } catch(e) {
             console.error(e)
         }
-    } 
+    }
 
     public async addUser({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
-            const permisionContext = { school_id: this.school_id }
+            const permisionContext = {
+              organization_id: (await this.organization as Organization).organization_id,
+              school_id: this.school_id
+            }
 
             await context.permissions.rejectIfNotAllowed(
 
