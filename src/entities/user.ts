@@ -13,6 +13,7 @@ import { organizationAdminRole } from "../permissions/organizationAdmin";
 import { parentRole } from "../permissions/parent";
 import { studentRole } from "../permissions/student";
 import { teacherRole } from "../permissions/teacher";
+import { School } from "./school";
 
 @Entity()
 export class User extends BaseEntity {
@@ -175,7 +176,21 @@ export class User extends BaseEntity {
             console.error(e)
         }
     }
-}
+
+    public async addSchool({ school_id }: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            const membership = new SchoolMembership()
+            membership.school_id = school_id
+            membership.school = getRepository(School).findOneOrFail(school_id)
+            membership.user_id = this.user_id
+            membership.user = Promise.resolve(this)
+            await getManager().save(membership)
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }}
 
 const accountNamespace = v5("kidsloop.net", v5.DNS)
 export function accountUUID(email?: string) {

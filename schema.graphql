@@ -92,6 +92,7 @@ type User {
         shortCode: String
     ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
+    addSchool(school_id: ID!): OrganizationMembership
 }
 
 type Organization {
