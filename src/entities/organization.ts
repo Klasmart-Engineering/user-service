@@ -53,7 +53,7 @@ export class Organization extends BaseEntity {
 
     public async contentControl({documentId}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            return await getRepository(ContentControl).findOneOrFail({where: {organization: this.organization_id, documentId}})
+            return await getRepository(ContentControl).findOne({where: {organization: this.organization_id, documentId}})
         } catch(e) {
             console.error(e)
         }

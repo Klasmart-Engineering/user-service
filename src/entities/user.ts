@@ -44,7 +44,7 @@ export class User extends BaseEntity {
 
     public async contentControl({documentId}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            return await getRepository(ContentControl).findOneOrFail({where: {user: this.user_id, documentId}})
+            return await getRepository(ContentControl).findOne({where: {user: this.user_id, documentId}})
         } catch(e) {
             console.error(e)
         }
