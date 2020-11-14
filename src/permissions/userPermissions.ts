@@ -56,7 +56,7 @@ export class UserPermissions {
             this._organizationPermissions = new Promise<Map<string, Set<string>>>(async (resolve,reject) => {
                 try {
                     const organizationPermissions = new Map<string, Set<string>>()
-                    if(!this.user_id) { return organizationPermissions }
+                    if(!this.user_id) { resolve(organizationPermissions); return }
                     //TODO: Adjust for returning explicity denial
                     const organizationPermissionResults = await getRepository(OrganizationMembership)
                     .createQueryBuilder()
@@ -90,7 +90,7 @@ export class UserPermissions {
             this._schoolPermissions = new Promise<Map<string, Set<string>>>(async (resolve,reject) => {
                 try {
                     const schoolPermissions = new Map<string, Set<string>>()
-                    if(!this.user_id) { return schoolPermissions }
+                    if(!this.user_id) { resolve(schoolPermissions); return }
                     //TODO: Adjust for returning explicity denial
                     const schoolPermissionResults = await getRepository(SchoolMembership)
                     .createQueryBuilder()
