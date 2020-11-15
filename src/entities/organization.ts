@@ -25,6 +25,7 @@ import { teacherRole } from '../permissions/teacher';
 import { Permission } from './permission';
 import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
+import { SchoolMembership } from './schoolMembership';
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -187,48 +188,104 @@ export class Organization extends BaseEntity {
 
             if(info.operation.operation !== "mutation") { return null }
 
+            const user = await getRepository(User).findOneOrFail(user_id)
+
             const membership = new OrganizationMembership()
             membership.organization_id = this.organization_id
             membership.organization = Promise.resolve(this)
             membership.user_id = user_id
-            membership.user = getRepository(User).findOneOrFail(user_id)
+            membership.user = Promise.resolve(user)
+            await membership.save()
 
-            await getManager().save(membership)
             return membership
         } catch(e) {
             console.error(e)
         }
     }
 
-    public async inviteUser({email, given_name, family_name}: any, context: any, info: GraphQLResolveInfo) {
+    public async inviteUser({email, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
+        await context.permissions.rejectIfNotAllowed(this, PermissionName.send_invitation_40882)
         try {
-            const permisionContext = { organization_id: this.organization_id }
-            await context.permissions.rejectIfNotAllowed(
-              permisionContext,
-              PermissionName.send_invitation_40882
-            )
-
             if(info.operation.operation !== "mutation") { return null }
+            const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            return result
+        } catch(e) {
+            console.error(e)
+        }
+    }
 
+    public async editMembership({email, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
+        await context.permissions.rejectIfNotAllowed(this, PermissionName.edit_users__40330)
+        try {
+            if(info.operation.operation !== "mutation") { return null }
+            const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            return result
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
+    private async _setMembership(
+        email: string,
+        given_name?: string,
+        family_name?: string,
+        organization_role_ids: string[] = [],
+        school_ids: string[] = [],
+        school_role_ids: string[] = []
+        ) {        
+        return getManager().transaction(async (manager) => {
+            console.log("_setMembership", email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            const role_repo = getRepository(Role)
+            const roleLookup = async (role_id: string) => {
+                const role = await role_repo.findOneOrFail(role_id)
+                const checkOrganization = await role.organization
+                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
+                    throw new Error(`Can not assign Organization(${checkOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
+                }
+                return role
+            }
+            const organizationRoles = await Promise.all(organization_role_ids.map((role_id) => roleLookup(role_id)))            
+            const schoolRoles = await Promise.all(school_role_ids.map((role_id) => roleLookup(role_id)))
+            
             const user_id = accountUUID(email)
-            const newUser = await getRepository(User).findOne({email}) || new User()
-            newUser.email = email
-            newUser.user_id = user_id
-            newUser.given_name = given_name
-            newUser.family_name = family_name
+            const user = await getRepository(User).findOne({user_id}) || new User()
+            user.email = email
+            user.user_id = user_id
+            if(given_name !== undefined) { user.given_name = given_name }
+            if(family_name !== undefined) { user.family_name = family_name }
+            
 
             const organization_id = this.organization_id
             const membership = await getRepository(OrganizationMembership).findOne({organization_id, user_id}) || new OrganizationMembership()
             membership.organization_id = this.organization_id
-            membership.user_id = newUser.user_id
+            membership.user_id = user.user_id
+            membership.user = Promise.resolve(user)
             membership.organization = Promise.resolve(this)
-            membership.user = Promise.resolve(newUser)
+            membership.roles = Promise.resolve(organizationRoles)
 
-            await getManager().save([newUser, membership])
-            return membership
-        } catch(e) {
-            console.error(e)
-        }
+            
+            const schoolRepo = getRepository(School)
+            const schoolMembershipRepo = getRepository(SchoolMembership)
+            const schoolMemberships = await Promise.all(school_ids.map(async (school_id) => {
+                const school = await schoolRepo.findOneOrFail({school_id})
+                const checkOrganization = await school.organization
+                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
+                    throw new Error(`Can not add Organization(${checkOrganization?.organization_id}).School(${school_id}) to membership in Organization(${this.organization_id})`)
+                }
+                const schoolMembership = await schoolMembershipRepo.findOne({school_id, user_id}) || new SchoolMembership()
+                schoolMembership.user_id = user_id
+                schoolMembership.user = Promise.resolve(user)
+                schoolMembership.school_id = school_id
+                schoolMembership.school = Promise.resolve(school)
+                schoolMembership.roles = Promise.resolve(schoolRoles)
+                
+                return schoolMembership
+            }))
+            
+            await manager.save([user, membership, ...schoolMemberships])
+            return {user, membership, schoolMemberships}
+        })
+
     }
 
     public async createRole({role_name}: any, context: Context, info: GraphQLResolveInfo) {
