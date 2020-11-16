@@ -251,6 +251,10 @@ type Class {
     students: [User]
     # schedule: [ScheduleEntry]
 
+    # query
+    eligibleTeachers: [User]
+    eligibleStudents: [User]
+
     #mutations
     set(class_name: String): Class
     addTeacher(user_id: ID!): User

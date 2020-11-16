@@ -3,8 +3,8 @@ import { BaseEntity, Column, Entity, getRepository, ManyToMany, ManyToOne, Prima
 import { Organization } from "./organization";
 import { School } from "./school";
 import { User } from "./user";
-import { Context } from '../main';
-import { PermissionName } from '../permissions/permissionNames';
+import { Context } from "../main";
+import { PermissionName } from "../permissions/permissionNames";
 
 @Entity()
 export class Class extends BaseEntity {
@@ -45,7 +45,52 @@ export class Class extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
-    } 
+    }
+    
+    public async eligibleTeachers({}: any, context: Context, info: GraphQLResolveInfo) {
+        return this._membersWithPermission(PermissionName.attend_live_class_as_a_teacher_186)
+    }
+    
+    public  async eligibleStudents({}: any, context: Context, info: GraphQLResolveInfo) {
+        return this._membersWithPermission(PermissionName.attend_live_class_as_a_student_187)
+    }
+    
+    public async _membersWithPermission(permission_name: PermissionName) {
+        const results = new Map<string, User>()
+        const userRepo = getRepository(User)
+        const organizationPromise = userRepo
+            .createQueryBuilder()
+            .innerJoin("User.memberships", "OrganizationMembership")
+            .innerJoin("OrganizationMembership.organization", "Organization")
+            .innerJoin("OrganizationMembership.roles", "Role")
+            .innerJoin("Role.permissions", "Permission")
+            .innerJoin("Organization.classes", "Class")
+            .where("Class.class_id = :class_id", this)
+            .andWhere("Permission.permission_name = :permission_name", {permission_name})
+            .groupBy("User.user_id, OrganizationMembership.organization_id, Permission.permission_name")
+            .having("bool_and(Permission.allow) = :allowed", {allowed: true})
+            .getMany();
+
+        const schoolPromise = userRepo
+            .createQueryBuilder()
+            .innerJoin("User.school_memberships", "SchoolMembership")
+            .innerJoin("SchoolMembership.school", "School")
+            .innerJoin("SchoolMembership.roles", "Role")
+            .innerJoin("Role.permissions", "Permission")
+            .innerJoin("School.classes", "Class")
+            .where("Class.class_id = :class_id", this)
+            .andWhere("Permission.permission_name = :permission_name", {permission_name})
+            .groupBy("User.user_id, SchoolMembership.school_id, Permission.permission_name")
+            .having("bool_and(Permission.allow) = :allowed", {allowed: true})
+            .getMany();
+
+        const [organizationUsers, schoolUsers] = await Promise.all([organizationPromise, schoolPromise])
+
+        for(const organizationUser of organizationUsers) { results.set(organizationUser.user_id, organizationUser) }
+        for(const schoolUser of schoolUsers) { results.set(schoolUser.user_id, schoolUser) }
+        
+        return results.values()
+    }
 
     public async addTeacher({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
