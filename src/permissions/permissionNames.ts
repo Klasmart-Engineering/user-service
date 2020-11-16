@@ -152,7 +152,7 @@ export enum PermissionName {
     view_school_completed_assessments_426 = "view_school_completed_assessments_426",
     view_school_in_progress_assessments_427 = "view_school_in_prsogress_assessments_427",
     edit_my_unpublished_learning_outcome_430 = "edit_my_unpublished_learning_outcome_430",
-    edit_org_unpublished_learning_outcome__431 = "edit_org_unpublisheds_learning_outcome__431",
+    edit_org_unpublished_learning_outcome__431 = "edit_org_unpublished_learning_outcome__431",
     remove_content_learning_outcomes_cart_432 = "remove_content_learning_outcomes_cart_432",
     add_content_learning_outcomes_433 = "add_content_learning_outcomes_433",
     edit_my_pending_learning_outcome_434 = "edit_my_pending_learning_outcome_434",
