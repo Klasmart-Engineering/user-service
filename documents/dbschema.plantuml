@@ -79,6 +79,16 @@ class RoleSchoolMembershipsSchoolMembership {
   schoolMembershipSchoolId : string
 }
 
+class UserClassesStudyingcClass {
+  userUserId : uuid
+  classClassId : uuid
+}
+
+class UserClassesTeachingClass {
+  userUserId : uuid
+  classClassId : uuid
+}
+
 Role -- "*" Organization
 User -- "0..1" Organization
 User "0..1" *-- "*" OrganizationMembership
@@ -89,11 +99,13 @@ School -- "0..1" Organization
 User "0..1" *-- "*" SchoolMembership
 SchoolMembership "*" --* "0..1" School
 RoleMembershipsOrganizationMembership "*" --* "1" Role
-RoleMembershipsOrganizationMembership "*" --* "1" User
-RoleMembershipsOrganizationMembership "*" --* "1" Organization
+RoleMembershipsOrganizationMembership "*" --* "1" OrganizationMembership
 RoleSchoolMembershipsSchoolMembership "*" --* "1" Role
-RoleSchoolMembershipsSchoolMembership "*" --* "1" User
-RoleSchoolMembershipsSchoolMembership "*" --* "1" School
+RoleSchoolMembershipsSchoolMembership "*" --* "1" SchoolMembership
+UserClassesStudyingcClass "*" --* "1" User
+UserClassesStudyingcClass "*" --* "1" Class
+UserClassesTeachingClass "*" --* "1" User
+UserClassesTeachingClass "*" --* "1" Class
 
 @enduml
 
