@@ -3,32 +3,32 @@ import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { Role } from "../../src/entities/role";
-import { createRole } from "../utils/operations/organizationOps";
+import { Class } from "../../src/entities/class";
+import { createClass } from "../utils/operations/organizationOps";
 import { createOrganization } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/operations/modelOps";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
-const GET_ROLES = `
-    query getRoles {
-        roles {
-            role_id
-            role_name
+const GET_CLASSES = `
+    query getClasses {
+        classes {
+            class_id
+            class_name
         }
     }
 `;
 
-const GET_ROLE = `
-    query myQuery($role_id: ID!) {
-        role(role_id: $role_id) {
-            role_id
-            role_name
+const GET_CLASS = `
+    query myQuery($class_id: ID!) {
+        class(class_id: $class_id) {
+            class_id
+            class_name
         }
     }
 `;
 
-describe("model.role", () => {
+describe("model.class", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
 
@@ -37,12 +37,12 @@ describe("model.role", () => {
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
-
+    
     after(async () => {
         await connection?.close();
     });
 
-    describe("getRoles", () => {
+    describe("getClasses", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
@@ -52,13 +52,13 @@ describe("model.role", () => {
                 const { query } = testClient;
         
                 const res = await query({
-                    query: GET_ROLES,
+                    query: GET_CLASSES,
                 });
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
-                const roles = res.data?.roles as Role[];
-                expect(roles).to.exist;
-                expect(roles).to.be.empty;
+                const classes = res.data?.classes as Class[];
+                expect(classes).to.exist;
+                expect(classes).to.be.empty;
             });
         });
 
@@ -66,27 +66,25 @@ describe("model.role", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganization(testClient, user.user_id);
-                await createRole(testClient, organization.organization_id);
+                await createClass(testClient, organization.organization_id);
             });
 
-            it("should return an array containing the default roles", async () => {
+            it("should return an array containing one class", async () => {
                 const { query } = testClient;
         
                 const res = await query({
-                    query: GET_ROLES,
+                    query: GET_CLASSES,
                 });
-
-                const dbRoles = await Role.find();
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
-                const roles = res.data?.roles as Role[];
-                expect(roles).to.exist;
-                expect(roles).to.have.lengthOf(dbRoles.length);
+                const classes = res.data?.classes as Class[];
+                expect(classes).to.exist;
+                expect(classes).to.have.lengthOf(1);
             });
         });
     });
 
-    describe("getRole", () => {
+    describe("getClass", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
@@ -96,36 +94,36 @@ describe("model.role", () => {
                 const { query } = testClient;
         
                 const res = await query({
-                    query: GET_ROLE,
-                    variables: { role_id: accountUUID() },
+                    query: GET_CLASS,
+                    variables: { class_id: accountUUID() },
                 });
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
-                expect(res.data?.role).to.be.null;
+                expect(res.data?.class).to.be.null;
             });
         });
 
         context("when one", () => {
-            let role: Role;
+            let cls: Class;
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganization(testClient, user.user_id);
-                role = await createRole(testClient, organization.organization_id);
+                cls = await createClass(testClient, organization.organization_id);
             });
 
-            it("should return an array containing the default roles", async () => {
+            it("should return the class associated with the specified ID", async () => {
                 const { query } = testClient;
         
                 const res = await query({
-                    query: GET_ROLE,
-                    variables: { role_id: role.role_id },
+                    query: GET_CLASS,
+                    variables: { class_id: cls.class_id },
                 });
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
-                const gqlRole = res.data?.role as Role;
-                expect(gqlRole).to.exist;
-                expect(role).to.include(gqlRole);
+                const gqlClass = res.data?.class as Class;
+                expect(gqlClass).to.exist;
+                expect(cls).to.include(gqlClass);
             });
         });
     });

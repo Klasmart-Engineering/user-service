@@ -8,10 +8,11 @@
     "start:dev": "nodemon",
     "build": "webpack",
     "test:unit": "mocha --require ts-node/register tests/unit/**/*.test.ts",
-    "test:integration": "mocha --require ts-node/register --require tests/utils/setup.ts tests/integration/**/*.test.ts",
+    "test:integration": "mocha --require ts-node/register tests/integration/**/*.test.ts --timeout 5000",
     "test": "npm run test:unit && npm run test:integration",
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
-    "make-badges": "istanbul-badges-readme"
+    "make-badges": "istanbul-badges-readme",
+    "test:file": "mocha --require ts-node/register tests/integration/model.class.test.ts --timeout 5000"
   },
   "repository": {
     "type": "git",
@@ -43,6 +44,7 @@
     "faker": "^5.1.0",
     "istanbul-badges-readme": "^1.0.5",
     "mocha": "^8.2.1",
+    "node-mocks-http": "^1.9.0",
     "nodemon": "^2.0.6",
     "nyc": "^15.1.0",
     "ts-node": "^8.10.2",
