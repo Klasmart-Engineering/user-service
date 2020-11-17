@@ -215,7 +215,7 @@ export class Organization extends BaseEntity {
     }
 
     public async editMembership({email, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
-        await context.permissions.rejectIfNotAllowed(this, PermissionName.edit_users__40330)
+        await context.permissions.rejectIfNotAllowed(this, PermissionName.edit_users_40330)
         try {
             if(info.operation.operation !== "mutation") { return null }
             const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
@@ -232,7 +232,7 @@ export class Organization extends BaseEntity {
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = []
-        ) {        
+        ) {
         return getManager().transaction(async (manager) => {
             console.log("_setMembership", email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             const role_repo = getRepository(Role)
@@ -244,16 +244,16 @@ export class Organization extends BaseEntity {
                 }
                 return role
             }
-            const organizationRoles = await Promise.all(organization_role_ids.map((role_id) => roleLookup(role_id)))            
+            const organizationRoles = await Promise.all(organization_role_ids.map((role_id) => roleLookup(role_id)))
             const schoolRoles = await Promise.all(school_role_ids.map((role_id) => roleLookup(role_id)))
-            
+
             const user_id = accountUUID(email)
             const user = await getRepository(User).findOne({user_id}) || new User()
             user.email = email
             user.user_id = user_id
             if(given_name !== undefined) { user.given_name = given_name }
             if(family_name !== undefined) { user.family_name = family_name }
-            
+
 
             const organization_id = this.organization_id
             const membership = await getRepository(OrganizationMembership).findOne({organization_id, user_id}) || new OrganizationMembership()
@@ -263,7 +263,7 @@ export class Organization extends BaseEntity {
             membership.organization = Promise.resolve(this)
             membership.roles = Promise.resolve(organizationRoles)
 
-            
+
             const schoolRepo = getRepository(School)
             const schoolMembershipRepo = getRepository(SchoolMembership)
             const schoolMemberships = await Promise.all(school_ids.map(async (school_id) => {
@@ -278,10 +278,10 @@ export class Organization extends BaseEntity {
                 schoolMembership.school_id = school_id
                 schoolMembership.school = Promise.resolve(school)
                 schoolMembership.roles = Promise.resolve(schoolRoles)
-                
+
                 return schoolMembership
             }))
-            
+
             await manager.save([user, membership, ...schoolMemberships])
             return {user, membership, schoolMemberships}
         })
