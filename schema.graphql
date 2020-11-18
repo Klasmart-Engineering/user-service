@@ -259,8 +259,11 @@ type Class {
     #mutations
     set(class_name: String): Class
     addTeacher(user_id: ID!): User
+    removeTeacher(user_id: ID!): Boolean
     addStudent(user_id: ID!): User
+    removeStudent(user_id: ID!): Boolean
     addSchool(school_id: ID!): School
+    removeSchool(school_id: ID!): Boolean
     delete(_:Int): Boolean
     # addSchedule(id: ID!, timestamp: Date): Boolean
     # removeSchedule(id: ID!): Boolean
