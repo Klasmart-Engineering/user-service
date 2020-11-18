@@ -43,7 +43,7 @@ type Mutation {
 
     classes: [Class]
     class(class_id: ID!): Class
-    
+
     school(school_id: ID!): School
 }
 
@@ -55,7 +55,7 @@ type User {
     given_name: String
     family_name: String
     email: String
-    avatar: String 
+    avatar: String
 
     #connections
     """
@@ -74,7 +74,7 @@ type User {
     #query
     organizationsWithPermission(permission_name: String!): [OrganizationMembership]
     schoolsWithPermission(permission_name: String!): [SchoolMembership]
-    
+
     #mutations
     set(
         user_name: String
@@ -118,7 +118,7 @@ type Organization {
     students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
-    
+
     #query
     membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
     findMembers(search_query: String!): [OrganizationMembership]
@@ -137,6 +137,7 @@ type Organization {
     editMembership(email: String!, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
     createRole(role_name: String): Role
     createDefaultRoles(_: Int): [Role]
+    resetDefaultRolesPermissions(_: Int): [Role]
     createSchool(school_name: String): School
     createClass(class_name: String): Class
 }
@@ -195,7 +196,7 @@ type Permission {
     role_id: ID!
     permission_name: ID!
     allow: Boolean
-    
+
     #connections
     role: Role
 }

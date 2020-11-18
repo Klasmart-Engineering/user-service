@@ -147,7 +147,7 @@ export class Organization extends BaseEntity {
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.user", "User")
-                .where("OrganizationMembership.organization_id = :organization_id", this)
+                .where("organizationmembership.organization_id = :organization_id", this)
                 .andWhere("User.user_name % :user_name")
                 .addSelect("similarity(User.user_name, :user_name)", "similarity")
                 .orderBy("similarity", "DESC")
@@ -361,6 +361,47 @@ export class Organization extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
+    }
+
+    public async resetDefaultRolesPermissions({}: any, context: Context, infoL: GraphQLResolveInfo) {
+        try {
+            for(const {role_name, permissions} of [
+              organizationAdminRole,
+              schoolAdminRole,
+              parentRole,
+              studentRole,
+              teacherRole,
+            ]) {
+                const manager = getManager()
+                const role = await Role.findOne({
+                  where: {
+                    organization: this.organization_id,
+                    role_name: role_name
+                  }
+                })
+
+                if(!role) { continue }
+
+                const oldPermissions = await role.permissions || []
+
+                const permissionEntities = [] as Permission[]
+                for(const permission_name of permissions) {
+                  const permission = new Permission()
+                  permission.permission_name = permission_name
+                  permission.allow = true
+                  permission.role = Promise.resolve(role)
+                  permissionEntities.push(permission)
+                }
+
+                await manager.remove(oldPermissions)
+                await manager.save(permissionEntities)
+            }
+
+        } catch(e) {
+            console.error(e)
+        }
+
+        return this.roles
     }
 
     public async _createDefaultRoles(manager: EntityManager = getManager()) {
