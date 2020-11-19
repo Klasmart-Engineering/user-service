@@ -1,7 +1,7 @@
 import { ApolloServerTestClient } from "../createTestClient";
 import { expect } from "chai";
 import { School } from "../../../src/entities/school";
-import { AuthToken } from "../testConfig";
+import { JoeAuthToken } from "../testConfig";
 
 const ADD_USER_TO_SCHOOL = `
     mutation myMutation(
@@ -22,7 +22,7 @@ export async function addUserToSchool(testClient: ApolloServerTestClient, userId
     const res = await mutate({
         mutation: ADD_USER_TO_SCHOOL,
         variables: { user_id: userId, school_id: schoolId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;

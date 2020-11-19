@@ -5,7 +5,7 @@ import { OrganizationMembership } from "../../../src/entities/organizationMember
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
-import { AuthToken } from "../testConfig";
+import { JoeAuthToken } from "../testConfig";
 
 const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String) {
@@ -130,7 +130,7 @@ export async function createOrganization(
     const res = await mutate({
         mutation: CREATE_ORGANIZATION,
         variables: { user_id: userId, organization_name: organizationName },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -150,7 +150,7 @@ export async function addOrganizationToUser(testClient: ApolloServerTestClient, 
     const res = await mutate({
         mutation: ADD_ORGANIZATION_TO_USER,
         variables: { user_id: userId, organization_id: organizationId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -183,7 +183,7 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User)
     const res = await mutate({
         mutation: SET,
         variables: { user_id: user.user_id, ...userMods },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -197,7 +197,7 @@ export async function getOrganizationMemberships(testClient: ApolloServerTestCli
     const res = await query({
         query: GET_ORGANIZATION_MEMBERSHIPS,
         variables: { user_id: user.user_id },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -211,7 +211,7 @@ export async function getOrganizationMembership(testClient: ApolloServerTestClie
     const res = await query({
         query: GET_ORGANIZATION_MEMBERSHIP,
         variables: { user_id: userId, organization_id: organizationId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -225,7 +225,7 @@ export async function getSchoolMemberships(testClient: ApolloServerTestClient, u
     const res = await query({
         query: GET_SCHOOL_MEMBERSHIPS,
         variables: { user_id: userId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -239,7 +239,7 @@ export async function getSchoolMembership(testClient: ApolloServerTestClient, us
     const res = await query({
         query: GET_SCHOOL_MEMBERSHIP,
         variables: { user_id: userId, school_id: schoolId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -253,7 +253,7 @@ export async function getClassesTeaching(testClient: ApolloServerTestClient, use
     const res = await query({
         query: GET_CLASSES_TEACHING,
         variables: { user_id: userId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
     
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -267,7 +267,7 @@ export async function getClassesStudying(testClient: ApolloServerTestClient, use
     const res = await query({
         query: GET_CLASSES_STUDYING,
         variables: { user_id: userId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
     
     expect(res.errors, res.errors?.toString()).to.be.undefined;

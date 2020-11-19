@@ -5,10 +5,10 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Organization } from "../../src/entities/organization";
 import { createOrganization } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/operations/modelOps";
+import { createUserJoe } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { AuthToken } from "../utils/testConfig";
+import { JoeAuthToken } from "../utils/testConfig";
 
 const GET_ORGANIZATIONS = `
     query getOrganizations {
@@ -53,9 +53,7 @@ describe("model.organization", () => {
     
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: {
-                        authorization: AuthToken,
-                    },
+                    headers: { authorization: JoeAuthToken },
                 });
     
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -76,9 +74,7 @@ describe("model.organization", () => {
     
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: {
-                        authorization: AuthToken,
-                    },
+                    headers: { authorization: JoeAuthToken },
                 });
     
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -101,9 +97,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: accountUUID() },
-                    headers: {
-                        authorization: AuthToken,
-                    },
+                    headers: { authorization: JoeAuthToken },
                 });
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -125,9 +119,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: organization.organization_id },
-                    headers: {
-                        authorization: AuthToken,
-                    },
+                    headers: { authorization: JoeAuthToken },
                 });
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;

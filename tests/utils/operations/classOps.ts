@@ -3,7 +3,8 @@ import { Class } from "../../../src/entities/class";
 import { School } from "../../../src/entities/school";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
-import { AuthToken } from "../testConfig";
+import { JoeAuthToken } from "../testConfig";
+import { Headers } from 'node-mocks-http';
 
 const UPDATE_CLASS = `
     mutation myMutation(
@@ -55,28 +56,27 @@ const ADD_STUDENT_TO_CLASS = `
     }
 `;
 
-export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string) {
+export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const res = await mutate({
         mutation: UPDATE_CLASS,
         variables: { class_id: classId, class_name: className },
-        headers: { authorization: AuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
     const gqlClass = res.data?.class.set as Class;
-
     return gqlClass;
 }
 
-export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string) {
+export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
     
     const res = await mutate({
         mutation: ADD_SCHOOL_TO_CLASS,
         variables: { class_id: classId, school_id: schoolId },
-        headers: { authorization: AuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -84,13 +84,13 @@ export async function addSchoolToClass(testClient: ApolloServerTestClient, class
     return school;
 }
 
-export async function addTeacherToClass(testClient: ApolloServerTestClient, classId: string, userId: string) {
+export async function addTeacherToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
     
     const res = await mutate({
         mutation: ADD_TEACHER_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
-        headers: { authorization: AuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -98,13 +98,13 @@ export async function addTeacherToClass(testClient: ApolloServerTestClient, clas
     return teacher;
 }
 
-export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string) {
+export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
     
     const res = await mutate({
         mutation: ADD_STUDENT_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
-        headers: { authorization: AuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;

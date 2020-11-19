@@ -4,7 +4,8 @@ import { User } from "../../src/entities/user";
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { createUserJoe, getUser, getUsers, updateUser } from "../utils/operations/modelOps";
+import { getUser, getUsers, updateUser } from "../utils/operations/modelOps";
+import { createUserJoe } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
 describe("model.user", () => {

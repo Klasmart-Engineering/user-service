@@ -6,13 +6,14 @@ import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
 import { createOrganization, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, updateUser } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/operations/modelOps";
+import { createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addOrganizationToUser } from "../utils/operations/userOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
+import { JoeAuthToken } from "../utils/testConfig";
 
 describe("user", () => {
     let connection: Connection;
@@ -173,7 +174,7 @@ describe("user", () => {
             beforeEach(async () =>{
                 const organization = await createOrganization(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
-                await addTeacherToClass(testClient, cls.class_id, user.user_id);
+                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
 
             it("should return an array containing one class", async () => {
@@ -202,7 +203,7 @@ describe("user", () => {
             beforeEach(async () =>{
                 const organization = await createOrganization(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
-                await addStudentToClass(testClient, cls.class_id, user.user_id);
+                await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
 
             it("should return an array containing one class", async () => {

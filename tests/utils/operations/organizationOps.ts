@@ -6,7 +6,7 @@ import { Role } from "../../../src/entities/role";
 import { School } from "../../../src/entities/school";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
-import { AuthToken } from "../testConfig";
+import { JoeAuthToken } from "../testConfig";
 
 const CREATE_CLASS = `
     mutation myMutation(
@@ -65,7 +65,7 @@ export async function createClass(testClient: ApolloServerTestClient, organizati
     const res = await mutate({
         mutation: CREATE_CLASS,
         variables: { organization_id: organizationId, class_name: className },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -83,14 +83,14 @@ export async function createClassAndValidate(testClient: ApolloServerTestClient,
     return gqlClass;
 }
 
-export async function createRole(testClient: ApolloServerTestClient, organizationId: string) {
+export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string) {
     const { mutate } = testClient;
-    const roleName = "My Class";
+    roleName = roleName ?? "My Role";
 
     const res = await mutate({
         mutation: CREATE_ROLE,
         variables: { organization_id: organizationId, role_name: roleName },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -105,7 +105,7 @@ export async function createSchool(testClient: ApolloServerTestClient, organizat
     const res = await mutate({
         mutation: CREATE_SCHOOL,
         variables: { organization_id: organizationId, school_name: schoolName },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -119,7 +119,7 @@ export async function addUserToOrganization(testClient: ApolloServerTestClient, 
     const res = await mutate({
         mutation: ADD_USER_TO_ORGANIZATION,
         variables: { user_id: userId, organization_id: organizationId },
-        headers: { authorization: AuthToken },
+        headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -128,7 +128,7 @@ export async function addUserToOrganization(testClient: ApolloServerTestClient, 
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
     const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId } });
     
-    const organizationMembership = res.data?.user.addOrganization as OrganizationMembership;
+    const organizationMembership = res.data?.organization.addUser as OrganizationMembership;
     const userMemberships = await dbUser.memberships;
     const organizationMemberships = await dbOrganization.memberships;
 

@@ -6,7 +6,7 @@ import { createServer } from "../../src/utils/createServer";
 import { Role } from "../../src/entities/role";
 import { createRole } from "../utils/operations/organizationOps";
 import { createOrganization } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/operations/modelOps";
+import { createUserJoe } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
