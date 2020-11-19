@@ -81,11 +81,12 @@ export class School extends BaseEntity {
 
             if(info.operation.operation !== "mutation") { return null }
 
+            const user = await getRepository(User).findOneOrFail(user_id)
             const membership = new SchoolMembership()
             membership.school_id = this.school_id
             membership.school = Promise.resolve(this)
             membership.user_id = user_id
-            membership.user = getRepository(User).findOneOrFail(user_id)
+            membership.user = Promise.resolve(user)
 
             await getManager().save(membership)
             return membership

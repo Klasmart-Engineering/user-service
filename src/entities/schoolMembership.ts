@@ -15,7 +15,7 @@ export class SchoolMembership extends BaseEntity {
     @CreateDateColumn()
     public join_timestamp?: Date
     
-    @ManyToOne(() => User, user => user.memberships)
+    @ManyToOne(() => User, user => user.school_memberships)
     public user?: Promise<User>
     
     @ManyToOne(() => School, school => school.memberships)

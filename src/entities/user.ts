@@ -165,9 +165,11 @@ export class User extends BaseEntity {
     public async addOrganization({ organization_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
+
+            const organization = await getRepository(Organization).findOneOrFail(organization_id)
             const membership = new OrganizationMembership()
             membership.organization_id = organization_id
-            membership.organization = getRepository(Organization).findOneOrFail(organization_id)
+            membership.organization = Promise.resolve(organization)
             membership.user_id = this.user_id
             membership.user = Promise.resolve(this)
             await getManager().save(membership)
@@ -180,9 +182,11 @@ export class User extends BaseEntity {
     public async addSchool({ school_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
+
+            const school = await getRepository(School).findOneOrFail(school_id)
             const membership = new SchoolMembership()
             membership.school_id = school_id
-            membership.school = getRepository(School).findOneOrFail(school_id)
+            membership.school = Promise.resolve(school)
             membership.user_id = this.user_id
             membership.user = Promise.resolve(this)
             await getManager().save(membership)
