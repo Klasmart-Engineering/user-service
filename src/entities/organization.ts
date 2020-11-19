@@ -363,8 +363,16 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async resetDefaultRolesPermissions({}: any, context: Context, infoL: GraphQLResolveInfo) {
+    public async resetDefaultRolesPermissions({}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_role_permissions_30332
+            )
+
+            if(info.operation.operation !== "mutation") { return null }
+
             for(const {role_name, permissions} of [
               organizationAdminRole,
               schoolAdminRole,

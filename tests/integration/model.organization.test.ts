@@ -258,15 +258,10 @@ describe("model.organization", () => {
                   const permissions = await role.permissions || [];
 
                   defaultPermissions.push(...permissions.map(permissionInfoFunc))
+
+                  if(role.role_name === "Organization Admin") { continue }
+
                   await connection.manager.remove(permissions);
-                }
-
-                organization = await Organization.findOneOrFail(organization.organization_id);
-                dbRoles = await organization.roles || []
-                for(const role of dbRoles){
-                  const permissions = await role.permissions || [];
-
-                  expect(permissions).to.be.empty;
                 }
 
                 const res = await mutate({
