@@ -147,7 +147,7 @@ export class Organization extends BaseEntity {
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.user", "User")
-                .where("organizationmembership.organization_id = :organization_id", this)
+                .where("OrganizationMembership.organization_id = :organization_id", this)
                 .andWhere("User.user_name % :user_name")
                 .addSelect("similarity(User.user_name, :user_name)", "similarity")
                 .orderBy("similarity", "DESC")
