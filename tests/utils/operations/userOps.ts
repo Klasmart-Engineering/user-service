@@ -29,6 +29,7 @@ const ADD_ORGANIZATION_TO_USER = `
     }
 `;
 
+//TODO: replace user_name with given_name and family_name
 const SET = `
     mutation myMutation(
             $user_id: ID!

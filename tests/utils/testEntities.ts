@@ -12,14 +12,16 @@ export function createUserBilly(testClient: ApolloServerTestClient) {
 
 const joe = {
     user_id: "c6d4feed-9133-5529-8d72-1003526d1b13",
-    user_name: "JoeBrown",
+    given_name: "Joe",
+    family_name: "Brown",
     email: "joe@gmail.com",
     avatar: "joe_avatar",
 } as User;
 
 const billy = {
     user_id: "fcf922e5-25c9-5dce-be9f-987a600c1356",
-    user_name: "BillyBob",
+    given_name: "Billy",
+    family_name: "Bob",
     email: "billy@gmail.com",
     avatar: "billy_avatar",
 } as User;
