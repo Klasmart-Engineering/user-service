@@ -21,8 +21,7 @@ export class User extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     public user_id!: string
 
-    @Column({nullable: true})
-    public user_name?: string
+    public user_name = () => `${this.given_name} ${this.family_name}`
 
     @Column({nullable: true})
     public given_name?: string
@@ -106,8 +105,9 @@ export class User extends BaseEntity {
         }
     }
 
+    
     public async set({
-        user_name,
+        user_name, // TODO: DEPRECATE `user_name`
         given_name,
         family_name,
         avatar,
@@ -115,7 +115,7 @@ export class User extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
-            if(typeof user_name === "string")   { this.user_name = user_name }
+            if(user_name) { console.error(`Using deprecated field user_name`) }
             if(typeof given_name === "string")  { this.given_name = given_name }
             if(typeof family_name === "string") { this.family_name = family_name }
             if(typeof avatar === "string")      { this.avatar = avatar }

@@ -4,6 +4,8 @@ import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 
+
+//TODO: replace user_name with given_name and family_name
 const NEW_USER = `
     mutation myMutation(
             $user_name: String
@@ -22,6 +24,7 @@ const NEW_USER = `
     }
 `;
 
+//TODO: replace user_name with given_name and family_name
 const SET_USER = `
     mutation myMutation(
             $user_id: ID!
@@ -42,6 +45,7 @@ const SET_USER = `
     }
 `;
 
+//TODO: replace user_name with given_name and family_name
 const GET_USERS = `
     query myQuery {
         users {
@@ -79,6 +83,7 @@ export async function createUser(
     expect(res.errors, res.errors?.toString()).to.be.undefined;
 
     const gqlUser = res.data?.newUser as User;
+    //TODO: replace user_name with given_name and family_name
     const dbUser = await User.findOneOrFail({ where: { user_name: user.user_name } });
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);

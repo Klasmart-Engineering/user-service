@@ -62,10 +62,6 @@ export class Model {
             if(user.email !== token.email)
             { user.email = token.email; modified = true }
 
-            //Set unset-fields 
-            if(!user.user_name && token.name)
-            { user.user_name = token.name; modified = true }
-
             if(!user.given_name && token.given_name)
             { user.given_name = token.given_name; modified = true }
 
@@ -79,21 +75,23 @@ export class Model {
             console.error(e)
         }
     }
-    public async newUser({user_name, email, avatar}: User) {
+    public async newUser({user_name, email, avatar}: any) {
         const newUser = new User()
 
+        if(user_name) { console.error(`Using deprecated field user_name`) }
+
         newUser.user_id = accountUUID(email)
-        newUser.user_name = user_name
         newUser.email = email
         newUser.avatar = avatar
 
         await this.manager.save(newUser)
         return newUser
     }
-    public async setUser({user_id, user_name, email, avatar}: User) {
+    public async setUser({user_id, user_name, email, avatar}: any) {
         const user = await this.userRepository.findOneOrFail(user_id)
 
-        if(user_name !== undefined) {user.user_name = user_name}
+        if(user_name) { console.error(`Using deprecated field user_name`) }
+
         if(email !== undefined) { user.email = email }
         if(avatar !== undefined) { user.avatar = avatar }
 

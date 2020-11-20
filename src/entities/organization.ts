@@ -122,6 +122,8 @@ export class Organization extends BaseEntity {
                 .having("bool_and(Permission.allow) = :allowed", {allowed: true})
 
             if(search_query) {
+                //TODO: search by given_name and family_name instead of user_name
+                console.error(`Using deprecated field user_name`)
                 query
                     .addSelect("similarity(User.user_name, :user_name)", "similarity")
                     .andWhere("User.user_name % :user_name")
@@ -144,6 +146,7 @@ export class Organization extends BaseEntity {
               PermissionName.view_users_40110
             )
 
+            //TODO: search by given_name and family_name instead of user_name
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.user", "User")

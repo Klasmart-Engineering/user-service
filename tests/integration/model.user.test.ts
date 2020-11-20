@@ -63,7 +63,11 @@ describe("model.user", () => {
 
             expect(gqlUsers).to.exist;
             expect(gqlUsers.length).to.equal(1);
-            expect(gqlUsers[0]).to.deep.include({user_id: user.user_id, user_name: user.user_name});
+            expect(gqlUsers[0]).to.deep.include({
+                user_id: user.user_id,
+                given_name: user.given_name,
+                family_name: user.family_name,
+            });
             expect(user).to.include(gqlUsers[0]);
         });
     });
