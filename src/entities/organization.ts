@@ -26,6 +26,7 @@ import { Permission } from './permission';
 import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
 import { SchoolMembership } from './schoolMembership';
+import { Model } from '../model';
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -116,19 +117,19 @@ export class Organization extends BaseEntity {
                 .innerJoin("OrganizationMembership.user","User")
                 .innerJoin("OrganizationMembership.roles","Role")
                 .innerJoin("Role.permissions","Permission")
-                .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id, User.user_name")
+                .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id, User.given_name, User.family_name")
                 .where("OrganizationMembership.organization_id = :organization_id", {organization_id: this.organization_id})
                 .andWhere("Permission.permission_name = :permission_name", {permission_name})
                 .having("bool_and(Permission.allow) = :allowed", {allowed: true})
 
             if(search_query) {
-                //TODO: search by given_name and family_name instead of user_name
-                console.error(`Using deprecated field user_name`)
+                await getManager().query(`SET pg_trgm.word_similarity_threshold = ${Model.SIMILARITY_THRESHOLD}`)
+
                 query
-                    .addSelect("similarity(User.user_name, :user_name)", "similarity")
-                    .andWhere("User.user_name % :user_name")
+                    .andWhere("concat(User.given_name, ' ', User.family_name) %> :search_query")
+                    .addSelect("word_similarity(concat(User.given_name, ' ', User.family_name), :search_query)", "similarity")
                     .orderBy("similarity", "DESC")
-                    .setParameter("user_name", search_query)
+                    .setParameter("search_query", search_query)
             }
 
             const results = await query.getMany()
@@ -146,15 +147,16 @@ export class Organization extends BaseEntity {
               PermissionName.view_users_40110
             )
 
-            //TODO: search by given_name and family_name instead of user_name
+            await getManager().query(`SET pg_trgm.word_similarity_threshold = ${Model.SIMILARITY_THRESHOLD}`)
+
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.user", "User")
                 .where("OrganizationMembership.organization_id = :organization_id", {organization_id: this.organization_id})
-                .andWhere("User.user_name % :user_name")
-                .addSelect("similarity(User.user_name, :user_name)", "similarity")
+                .andWhere("concat(User.given_name, ' ', User.family_name) %> :search_query")
+                .addSelect("word_similarity(concat(User.given_name, ' ', User.family_name), :search_query)", "similarity")
                 .orderBy("similarity", "DESC")
-                .setParameter("user_name", search_query)
+                .setParameter("search_query", search_query)
                 .getMany();
         } catch(e) {
             console.error(e)

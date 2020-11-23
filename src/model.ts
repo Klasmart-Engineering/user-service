@@ -19,7 +19,6 @@ export class Model {
             })
             const model = new Model(connection)
             await getManager(connection.name).query("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-            await getManager(connection.name).query(`SELECT set_limit(${Model.SIMILARITY_THRESHOLD})`)
             console.log("🐘 Connected to postgres")
             return model
         } catch(e) {
