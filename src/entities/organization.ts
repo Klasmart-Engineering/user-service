@@ -117,7 +117,7 @@ export class Organization extends BaseEntity {
                 .innerJoin("OrganizationMembership.roles","Role")
                 .innerJoin("Role.permissions","Permission")
                 .groupBy("OrganizationMembership.organization_id, Permission.permission_name, OrganizationMembership.user_id, User.user_name")
-                .where("OrganizationMembership.organization_id = :organization_id", this)
+                .where("OrganizationMembership.organization_id = :organization_id", {organization_id: this.organization_id})
                 .andWhere("Permission.permission_name = :permission_name", {permission_name})
                 .having("bool_and(Permission.allow) = :allowed", {allowed: true})
 
@@ -150,7 +150,7 @@ export class Organization extends BaseEntity {
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.user", "User")
-                .where("OrganizationMembership.organization_id = :organization_id", this)
+                .where("OrganizationMembership.organization_id = :organization_id", {organization_id: this.organization_id})
                 .andWhere("User.user_name % :user_name")
                 .addSelect("similarity(User.user_name, :user_name)", "similarity")
                 .orderBy("similarity", "DESC")
