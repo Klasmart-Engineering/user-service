@@ -28,8 +28,8 @@ export class OrganizationMembership extends BaseEntity {
         const results = await createQueryBuilder("OrganizationMembership")
         .innerJoinAndSelect("OrganizationMembership.roles", "Role")
         .innerJoinAndSelect("Role.permissions", "Permission")
-        .where("OrganizationMembership.user_id = :user_id", this)
-        .andWhere("OrganizationMembership.organization_id = :organization_id", this)
+        .where("OrganizationMembership.user_id = :user_id", {user_id: this.user_id})
+        .andWhere("OrganizationMembership.organization_id = :organization_id", {organization_id: this.organization_id})
         .andWhere("Permission.permission_name = :permission_name", { permission_name })
         .getRawMany()
         if(results.length === 0) { return false }
