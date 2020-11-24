@@ -291,5 +291,58 @@ describe("model.organization", () => {
                 expect(defaultPermissions).to.deep.members(resetPermissions)
             });
         });
+
+        context("when outdated duplicated default permissions exists", () => {
+            let organization: Organization;
+
+            beforeEach(async () => {
+                const user = await createUserJoe(testClient);
+                organization = await createOrganization(testClient, user.user_id);
+                await organization._createDefaultRoles();
+            });
+
+            it("updates the all default roles permissions", async () => {
+                const { mutate } = testClient;
+                let dbRoles = await organization.roles || []
+                let defaultPermissions = []
+                expect(dbRoles).not.to.be.empty;
+
+                for(const role of dbRoles){
+                  const permissions = await role.permissions || [];
+
+                  defaultPermissions.push(...permissions.map(permissionInfoFunc))
+
+                  if(role.role_name === "Organization Admin") { continue }
+
+                  await connection.manager.remove(permissions);
+                }
+
+                const res = await mutate({
+                    mutation: RESET_ORGANIZATION_ROLES_PERMISSIONS,
+                    variables: { organization_id: organization.organization_id },
+                    headers: {
+                        authorization: JoeAuthToken,
+                    },
+                });
+
+                organization = await Organization.findOneOrFail(organization.organization_id);
+                dbRoles = await organization.roles || []
+                expect(dbRoles).not.to.be.empty;
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const gqlRoles = res.data?.organization?.resetDefaultRolesPermissions as Role[];
+                expect(gqlRoles.map(roleInfoFunc)).to.deep.equal(dbRoles?.map(roleInfoFunc));
+                let resetPermissions = []
+
+                for(const role of gqlRoles){
+                  const permissions = await role.permissions || [];
+
+                  expect(permissions).not.to.be.empty
+                  resetPermissions.push(...permissions?.map(permissionInfoFunc))
+                }
+
+                expect(defaultPermissions).to.deep.members(resetPermissions)
+            });
+        });
     });
 });

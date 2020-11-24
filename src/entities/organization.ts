@@ -380,28 +380,28 @@ export class Organization extends BaseEntity {
               teacherRole,
             ]) {
                 const manager = getManager()
-                const role = await Role.findOne({
+                const roles = await Role.find({
                   where: {
                     organization: this.organization_id,
                     role_name: role_name
                   }
                 })
 
-                if(!role) { continue }
+                for(const role of roles){
+                  const oldPermissions = await role.permissions || []
 
-                const oldPermissions = await role.permissions || []
+                  const permissionEntities = [] as Permission[]
+                  for(const permission_name of permissions) {
+                    const permission = new Permission()
+                    permission.permission_name = permission_name
+                    permission.allow = true
+                    permission.role = Promise.resolve(role)
+                    permissionEntities.push(permission)
+                  }
 
-                const permissionEntities = [] as Permission[]
-                for(const permission_name of permissions) {
-                  const permission = new Permission()
-                  permission.permission_name = permission_name
-                  permission.allow = true
-                  permission.role = Promise.resolve(role)
-                  permissionEntities.push(permission)
+                  await manager.remove(oldPermissions)
+                  await manager.save(permissionEntities)
                 }
-
-                await manager.remove(oldPermissions)
-                await manager.save(permissionEntities)
             }
 
         } catch(e) {
