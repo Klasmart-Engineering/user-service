@@ -29,22 +29,18 @@ const ADD_ORGANIZATION_TO_USER = `
     }
 `;
 
-//TODO: replace user_name with given_name and family_name
 const SET = `
     mutation myMutation(
             $user_id: ID!
-            $user_name: String,
             $given_name: String,
             $family_name: String,
             $avatar: String) {
         user(user_id: $user_id) {
             set(
-                user_name: $user_name
                 given_name: $given_name
                 family_name: $family_name
                 avatar: $avatar
             ) {
-                user_name
                 given_name
                 family_name
                 avatar
@@ -175,7 +171,6 @@ export async function addOrganizationToUser(testClient: ApolloServerTestClient, 
 export async function updateUser(testClient: ApolloServerTestClient, user: User) {
     const { mutate } = testClient;
     const userMods = {
-        user_name: "BillyBob",
         given_name: "Billy",
         family_name: "Bob",
         avatar: "new_avatar",

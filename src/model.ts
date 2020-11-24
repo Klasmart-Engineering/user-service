@@ -74,23 +74,23 @@ export class Model {
             console.error(e)
         }
     }
-    public async newUser({user_name, email, avatar}: any) {
+    public async newUser({given_name, family_name, email, avatar}: any) {
         const newUser = new User()
 
-        if(user_name) { console.error(`Using deprecated field user_name`) }
-
         newUser.user_id = accountUUID(email)
+        newUser.given_name = given_name
+        newUser.family_name = family_name
         newUser.email = email
         newUser.avatar = avatar
 
         await this.manager.save(newUser)
         return newUser
     }
-    public async setUser({user_id, user_name, email, avatar}: any) {
+    public async setUser({user_id, given_name, family_name, email, avatar}: any) {
         const user = await this.userRepository.findOneOrFail(user_id)
 
-        if(user_name) { console.error(`Using deprecated field user_name`) }
-
+        if(given_name !== undefined) { user.given_name = given_name }
+        if(family_name !== undefined) { user.family_name = family_name }
         if(email !== undefined) { user.email = email }
         if(avatar !== undefined) { user.avatar = avatar }
 

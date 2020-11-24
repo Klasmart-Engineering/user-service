@@ -6,13 +6,6 @@ import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
 import { v5 } from "uuid";
 import { createHash } from "crypto"
-import { Permission } from "./permission";
-import { Role } from "./role";
-import { schoolAdminRole } from "../permissions/schoolAdmin";
-import { organizationAdminRole } from "../permissions/organizationAdmin";
-import { parentRole } from "../permissions/parent";
-import { studentRole } from "../permissions/student";
-import { teacherRole } from "../permissions/teacher";
 import { School } from "./school";
 
 @Entity()
@@ -107,7 +100,6 @@ export class User extends BaseEntity {
 
     
     public async set({
-        user_name, // TODO: DEPRECATE `user_name`
         given_name,
         family_name,
         avatar,
@@ -115,7 +107,6 @@ export class User extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
-            if(user_name) { console.error(`Using deprecated field user_name`) }
             if(typeof given_name === "string")  { this.given_name = given_name }
             if(typeof family_name === "string") { this.family_name = family_name }
             if(typeof avatar === "string")      { this.avatar = avatar }

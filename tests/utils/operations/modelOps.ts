@@ -4,53 +4,56 @@ import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 
-
-//TODO: replace user_name with given_name and family_name
 const NEW_USER = `
     mutation myMutation(
-            $user_name: String
+            $given_name: String
+            $family_name: String
             $email: String
             $avatar: String) {
         newUser(
-            user_name: $user_name
+            given_name: $given_name
+            family_name: $family_name
             email: $email
             avatar: $avatar
         ) {
             user_id
-            user_name
+            given_name
+            family_name
             email
             avatar
         }
     }
 `;
 
-//TODO: replace user_name with given_name and family_name
 const SET_USER = `
     mutation myMutation(
             $user_id: ID!
-            $user_name: String
+            $given_name: String
+            $family_name: String
             $email: String
             $avatar: String) {
         user(
             user_id: $user_id
-            user_name: $user_name
+            given_name: $given_name
+            family_name: $family_name
             email: $email
             avatar: $avatar
         ) {
             user_id
-            user_name
+            given_name
+            family_name
             email
             avatar
         }
     }
 `;
 
-//TODO: replace user_name with given_name and family_name
 const GET_USERS = `
     query myQuery {
         users {
             user_id
-            user_name
+            given_name
+            family_name
             email
             avatar
         }
@@ -61,7 +64,8 @@ const GET_USER = `
     query myQuery($user_id: ID!) {
         user(user_id: $user_id) {
             user_id
-            user_name
+            given_name
+            family_name
             email
             avatar
         }
@@ -83,8 +87,7 @@ export async function createUser(
     expect(res.errors, res.errors?.toString()).to.be.undefined;
 
     const gqlUser = res.data?.newUser as User;
-    //TODO: replace user_name with given_name and family_name
-    const dbUser = await User.findOneOrFail({ where: { user_name: user.user_name } });
+    const dbUser = await User.findOneOrFail({ where: { email: user.email } });
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
     expect(dbUser).to.include(user);
@@ -95,7 +98,8 @@ export async function createUser(
 export async function updateUser(testClient: ApolloServerTestClient, user: User) {
     const modifiedUser = {
         user_id: user.user_id,
-        user_name: faker.internet.userName(),
+        given_name: faker.name.firstName(),
+        family_name: faker.name.lastName(),
         email: faker.internet.email(),
         avatar: "my new avatar",
     };
