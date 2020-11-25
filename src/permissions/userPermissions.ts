@@ -4,7 +4,7 @@ import { SchoolMembership } from "../entities/schoolMembership";
 import { PermissionName } from './permissionNames';
 
 interface PermissionContext {
-    school_id?: string
+    school_ids?: string[]
     organization_id?: string
 }
 
@@ -17,18 +17,18 @@ export class UserPermissions {
         this.user_id = user_id
     }
 
-    public async rejectIfNotAllowed({school_id, organization_id}: PermissionContext, permission_name: PermissionName) {
-        const isAllowed = await this.allowed({school_id, organization_id}, permission_name)
+    public async rejectIfNotAllowed({school_ids, organization_id}: PermissionContext, permission_name: PermissionName) {
+        const isAllowed = await this.allowed({school_ids, organization_id}, permission_name)
 
         if(!isAllowed && organization_id) {
             throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`)
         }
-        if(!isAllowed && school_id) {
-            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in School(${school_id})`)
+        if(!isAllowed && school_ids) {
+            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Schools(${school_ids?.toString()})`)
         }
     }
 
-    public async allowed({school_id, organization_id}: PermissionContext, permission_name: PermissionName) {
+    public async allowed({school_ids, organization_id}: PermissionContext, permission_name: PermissionName) {
         let output = false
 
         if(organization_id) {
@@ -39,12 +39,14 @@ export class UserPermissions {
               output = true
             }
         }
-        if(!output && school_id) {
+        if(!output && school_ids) {
             const allSchoolPermissions = await this.schoolPermissions()
-            const schoolPermissions = allSchoolPermissions.get(school_id)
-
-            if(schoolPermissions && schoolPermissions.has(permission_name)) {
-              output = true
+            for(const id of school_ids) {
+                const schoolPermissions = allSchoolPermissions.get(id)
+                if(schoolPermissions && schoolPermissions.has(permission_name)) {
+                  output = true
+                  break;
+                }
             }
         }
 

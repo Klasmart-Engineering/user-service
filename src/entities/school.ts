@@ -41,15 +41,12 @@ export class School extends BaseEntity {
 
             const permisionContext = {
               organization_id: (await this.organization as Organization).organization_id,
-              school_id: this.school_id
+              school_ids: [this.school_id]
             }
 
             await context.permissions.rejectIfNotAllowed(
-
               permisionContext,
-
               PermissionName.edit_school_20330
-
             )
 
             if(info.operation.operation !== "mutation") { return null }
@@ -68,15 +65,12 @@ export class School extends BaseEntity {
         try {
             const permisionContext = {
               organization_id: (await this.organization as Organization).organization_id,
-              school_id: this.school_id
+              school_ids: [this.school_id]
             }
 
             await context.permissions.rejectIfNotAllowed(
-
               permisionContext,
-
               PermissionName.edit_school_20330
-
             )
 
             if(info.operation.operation !== "mutation") { return null }
