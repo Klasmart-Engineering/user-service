@@ -271,12 +271,15 @@ export class Organization extends BaseEntity {
 
             const schoolRepo = getRepository(School)
             const schoolMembershipRepo = getRepository(SchoolMembership)
+
+            const oldSchoolMemberships = await schoolMembershipRepo.find({user_id})
             const schoolMemberships = await Promise.all(school_ids.map(async (school_id) => {
                 const school = await schoolRepo.findOneOrFail({school_id})
                 const checkOrganization = await school.organization
                 if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
                     throw new Error(`Can not add Organization(${checkOrganization?.organization_id}).School(${school_id}) to membership in Organization(${this.organization_id})`)
                 }
+
                 const schoolMembership = await schoolMembershipRepo.findOne({school_id, user_id}) || new SchoolMembership()
                 schoolMembership.user_id = user_id
                 schoolMembership.user = Promise.resolve(user)
@@ -287,6 +290,7 @@ export class Organization extends BaseEntity {
                 return schoolMembership
             }))
 
+            await manager.remove(oldSchoolMemberships);
             await manager.save([user, membership, ...schoolMemberships])
             return {user, membership, schoolMemberships}
         })
