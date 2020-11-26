@@ -118,8 +118,8 @@ describe("user", () => {
         context("when one", () => {
             beforeEach(async () =>{
                 const organization = await createOrganization(testClient, user.user_id);
-                const school = await createSchool(testClient, organization.organization_id);
-                await addUserToSchool(testClient, user.user_id, school.school_id)
+                const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+                await addUserToSchool(testClient, user.user_id, school.school_id, { authorization: JoeAuthToken })
             });
 
             it("should return an array containing one school membership", async () => {
@@ -137,9 +137,9 @@ describe("user", () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
             const organization = await createOrganization(testClient, user.user_id);
-            const school = await createSchool(testClient, organization.organization_id);
+            const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
             schoolId = school.school_id;
-            await addUserToSchool(testClient, user.user_id, schoolId);
+            await addUserToSchool(testClient, user.user_id, schoolId, { authorization: JoeAuthToken });
         });
 
         it("should get school membership", async () => {

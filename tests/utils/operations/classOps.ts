@@ -3,7 +3,6 @@ import { Class } from "../../../src/entities/class";
 import { School } from "../../../src/entities/school";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
-import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 
 const UPDATE_CLASS = `

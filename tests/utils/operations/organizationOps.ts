@@ -7,6 +7,7 @@ import { School } from "../../../src/entities/school";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
+import { Headers } from 'node-mocks-http';
 
 const CREATE_CLASS = `
     mutation myMutation(
@@ -98,28 +99,27 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
     return await Role.findOneOrFail({ where: { role_name: roleName } });
 }
 
-export async function createSchool(testClient: ApolloServerTestClient, organizationId: string) {
+export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, headers?: Headers) {
     const { mutate } = testClient;
-    const schoolName = "My School";
+    schoolName = schoolName ?? "My School";
 
     const res = await mutate({
         mutation: CREATE_SCHOOL,
         variables: { organization_id: organizationId, school_name: schoolName },
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
-
-    return await School.findOneOrFail({ where: { school_name: schoolName } });
+    return res.data?.organization.createSchool as School;
 }
 
-export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
+export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
     const { mutate } = testClient;
     
     const res = await mutate({
         mutation: ADD_USER_TO_ORGANIZATION,
         variables: { user_id: userId, organization_id: organizationId },
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;

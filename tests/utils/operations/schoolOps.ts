@@ -1,6 +1,6 @@
 import { ApolloServerTestClient } from "../createTestClient";
 import { expect } from "chai";
-import { School } from "../../../src/entities/school";
+import { Headers } from "node-mocks-http"
 import { JoeAuthToken } from "../testConfig";
 
 const ADD_USER_TO_SCHOOL = `
@@ -16,13 +16,13 @@ const ADD_USER_TO_SCHOOL = `
     }
 `;
 
-export async function addUserToSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string) {
+export async function addUserToSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
     
     const res = await mutate({
         mutation: ADD_USER_TO_SCHOOL,
         variables: { user_id: userId, school_id: schoolId },
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;

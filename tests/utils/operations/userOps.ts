@@ -119,10 +119,11 @@ const GET_CLASSES_STUDYING = `
 
 export async function createOrganization(
     testClient: ApolloServerTestClient,
-    userId: string
+    userId: string,
+    organizationName?: string
 ): Promise<Organization> {
     const { mutate } = testClient;
-    const organizationName = "My Organization";
+    organizationName = organizationName ?? "My Organization";
 
     const res = await mutate({
         mutation: CREATE_ORGANIZATION,

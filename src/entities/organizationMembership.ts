@@ -3,6 +3,8 @@ import { User } from "./user";
 import { Organization } from "./organization";
 import { Role } from "./role";
 import { GraphQLResolveInfo } from "graphql";
+import { Context } from "../main";
+import { SchoolMembership } from "./schoolMembership";
 
 @Entity()
 export class OrganizationMembership extends BaseEntity {
@@ -21,8 +23,22 @@ export class OrganizationMembership extends BaseEntity {
     @ManyToOne(() => Organization, organization => organization.memberships)
     public organization?: Promise<Organization>
 
-    @ManyToMany(() => Role, role => role.memberships,)
+    @ManyToMany(() => Role, role => role.memberships)
     public roles?: Promise<Role[]>
+
+    public async schoolMemberships({}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(SchoolMembership)
+                .createQueryBuilder()
+                .innerJoin("SchoolMembership.school", "School")
+                .innerJoin("School.organization", "SchoolOrganization")
+                .where("SchoolMembership.user_id = :user_id", {user_id: this.user_id})
+                .andWhere("SchoolOrganization.organization_id = :organization_id", {organization_id: this.organization_id})
+                .getMany()
+        } catch(e) {
+            console.error(e)
+        }
+    }
 
     public async checkAllowed({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
         const results = await createQueryBuilder("OrganizationMembership")

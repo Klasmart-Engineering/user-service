@@ -11,7 +11,7 @@ import { User } from "../../src/entities/user";
 import { addUserToOrganization, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { BillyAuthToken } from "../utils/testConfig";
+import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
@@ -64,7 +64,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
@@ -87,7 +87,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const editClassRole = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334);
@@ -144,7 +144,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
@@ -170,7 +170,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226);
@@ -232,7 +232,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
@@ -258,7 +258,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225);
@@ -294,7 +294,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                school = await createSchool(testClient, organization.organization_id);
+                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
@@ -321,8 +321,8 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
-                school = await createSchool(testClient, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
@@ -348,8 +348,8 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id);
-                school = await createSchool(testClient, organization.organization_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
