@@ -115,8 +115,6 @@ type Organization {
     primary_contact: User
     roles: [Role]
     memberships: [OrganizationMembership]
-    teachers: [OrganizationMembership]
-    students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
 
@@ -236,7 +234,7 @@ type SchoolMembership {
     #mutations
     addRole(role_id: ID!): Role
     addRoles(role_ids: [ID!]!): [Role]
-    removeRole(role_id: ID!): OrganizationMembership
+    removeRole(role_id: ID!): SchoolMembership
     leave(_:Int): Boolean
 }
 
