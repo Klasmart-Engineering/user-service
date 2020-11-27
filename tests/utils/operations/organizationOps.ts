@@ -115,7 +115,7 @@ export async function createSchool(testClient: ApolloServerTestClient, organizat
 
 export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
     const { mutate } = testClient;
-    
+
     const res = await mutate({
         mutation: ADD_USER_TO_ORGANIZATION,
         variables: { user_id: userId, organization_id: organizationId },
@@ -126,8 +126,8 @@ export async function addUserToOrganization(testClient: ApolloServerTestClient, 
 
     const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
-    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId } });
-    
+    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { organization_id: organizationId, user_id: userId } });
+
     const organizationMembership = res.data?.organization.addUser as OrganizationMembership;
     const userMemberships = await dbUser.memberships;
     const organizationMemberships = await dbOrganization.memberships;

@@ -21,7 +21,7 @@ describe("organizationMembership", () => {
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
-    
+
     after(async () => {
         await connection?.close();
     });
@@ -30,7 +30,7 @@ describe("organizationMembership", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
-        
+
         context("when user is a member of schools in different organizations", () => {
             let userId: string;
             let organization1Id: string;
