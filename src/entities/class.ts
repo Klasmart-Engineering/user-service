@@ -1,18 +1,89 @@
+import { 
+    BaseEntity, 
+    Column, 
+    Entity, 
+    getRepository, 
+    ManyToMany, 
+    ManyToOne, 
+    PrimaryGeneratedColumn, 
+    CreateDateColumn
+} from "typeorm";
 import { GraphQLResolveInfo } from "graphql";
-import { BaseEntity, Column, Entity, getRepository, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Length, IsHexColor, IsOptional, IsDateString, Matches, validate } from 'class-validator'
 import { Organization } from "./organization";
 import { School } from "./school";
 import { User } from "./user";
 import { Context } from "../main";
 import { PermissionName } from "../permissions/permissionNames";
+import { ErrorHelpers, BasicValidationError } from '../entities/helpers'
+
+export interface ClassInput {
+    class_name: string,
+    grades: string[],
+    startDate: Date,
+    endDate: Date,
+    color: string,
+}
 
 @Entity()
 export class Class extends BaseEntity {
+    private _errors: null | undefined | BasicValidationError[]
+
     @PrimaryGeneratedColumn("uuid")
     public class_id!: string
 
-    @Column()
+    @Column({nullable: true})
+    @Length(1, 35)
     public class_name?: String
+
+    @Column("varchar",{ nullable: true, array: true})
+    @IsOptional()
+    public grades?: string[]
+
+    @Column({nullable: true})
+    @IsOptional()
+    @IsDateString()
+    public startDate?: Date
+
+    @Column({nullable: true})
+    @IsOptional()
+    @IsDateString()
+    public endDate?: Date
+
+    @Column({nullable: true})
+    @IsOptional()
+    @IsHexColor()
+    public color?: string
+
+    @CreateDateColumn()
+    public createdAt?: Date
+
+    @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
+    public updatedAt?: Date
+
+    public async status() {
+        const now = new Date()
+        if(this.startDate && this.endDate && now > this.endDate) {
+            return "Inactive"
+        }
+        return "Active"
+    }
+
+    public async errors() {
+        if(undefined !== this._errors) { return this._errors }
+        
+        this._errors = null
+        const errs = await validate(this)
+        if(errs.length > 0) {
+            this._errors = ErrorHelpers.GetValidationError(errs)
+        }
+        return this._errors
+    }
+
+    public async isValid() {
+        await this.errors()
+        return (this._errors === null)
+    }
 
     @ManyToOne(() => Organization, organization => organization.classes)
     public organization?: Promise<Organization>
@@ -26,7 +97,13 @@ export class Class extends BaseEntity {
     @ManyToMany(() => User, user => user.classesStudying)
     public students?: Promise<User[]>
 
-    public async set({class_name}: any, context: Context, info: GraphQLResolveInfo) {
+    public async set({
+        class_name,
+        grades,
+        startDate,
+        endDate,
+        color
+    }: ClassInput, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization
             if(info.operation.operation !== "mutation" || !organization) { return null }
@@ -37,8 +114,16 @@ export class Class extends BaseEntity {
               PermissionName.edit_class_20334
             )
             
-            if(typeof class_name === "string") { this.class_name = class_name }
-            
+            if(typeof class_name === "string")  { this.class_name = class_name }
+            if(startDate instanceof Date)       { this.startDate = startDate }
+            if(endDate instanceof Date)         { this.endDate = endDate }
+            if(Array.isArray(grades))           { this.grades = grades }
+            if(typeof color === "string")       { this.color = color }
+
+            if(!await this.isValid()) {
+                return this
+            }
+
             await this.save()
 
             return this

@@ -1,10 +1,13 @@
 import {createConnection, Connection, getManager, EntityManager, getRepository, Repository} from "typeorm";
-import { User, accountUUID } from './entities/user';
-import { Organization } from "./entities/organization";
+import { User, UserInput, accountUUID } from './entities/user';
+import { Organization, OrganizationInput } from "./entities/organization";
 import { Role } from "./entities/role";
 import { Class } from "./entities/class";
 import { Context } from "./main";
 import { School } from "./entities/school";
+import { AWSS3 } from "./entities/s3";
+import { ApolloServerFileUploads } from "./entities/types";
+import { OrganizationHelpers, UserHelpers } from './entities/helpers'
 
 export class Model {
     public static async create() {
@@ -74,27 +77,79 @@ export class Model {
             console.error(e)
         }
     }
-    public async newUser({given_name, family_name, email, avatar}: any) {
+    public async newUser({given_name, family_name, suffix_name, email, avatar, default_avatar, birth_year_month}: UserInput) {
         const newUser = new User()
 
-        newUser.user_id = accountUUID(email)
-        newUser.given_name = given_name
-        newUser.family_name = family_name
-        newUser.email = email
-        newUser.avatar = avatar
+        try {
+            newUser.email = email?.trim().toLowerCase()
+            newUser.user_id = accountUUID(newUser.email)
+            newUser.given_name = given_name
+            newUser.family_name = family_name
+            newUser.suffix_name = suffix_name
+            newUser.birth_year_month = birth_year_month
+            if(default_avatar !== undefined) { newUser.default_avatar = default_avatar }
 
-        await this.manager.save(newUser)
-        return newUser
+            if(!await newUser.isValid()) { return newUser }
+
+            if(default_avatar) {
+                newUser.avatarKey = default_avatar
+            } else if(undefined !== avatar && null !== avatar && typeof avatar === 'object') {
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                const upload = await s3.singleFileUpload({file: avatar as ApolloServerFileUploads.File, path: `users/${newUser.user_id}`, type: 'image'})
+                newUser.avatarKey = upload.key
+            }
+            await this.manager.save(newUser)
+
+            return newUser
+        } catch(e) {
+            console.error(e)
+        }
+
+
     }
-    public async setUser({user_id, given_name, family_name, email, avatar}: any) {
+    public async setUser({user_id, given_name, family_name, suffix_name, email, default_avatar, avatar, birth_year_month}: UserInput) {
         const user = await this.userRepository.findOneOrFail(user_id)
 
-        if(given_name !== undefined) { user.given_name = given_name }
-        if(family_name !== undefined) { user.family_name = family_name }
-        if(email !== undefined) { user.email = email }
-        if(avatar !== undefined) { user.avatar = avatar }
+        const isUpdated = 
+            given_name !== undefined ||
+            family_name !== undefined ||
+            suffix_name !== undefined ||
+            email !== undefined ||
+            default_avatar !== undefined ||
+            birth_year_month !== undefined ||
+            (avatar !== undefined && null !== avatar && typeof avatar === 'object')
 
-        await this.manager.save(user)
+        if(isUpdated) { 
+            if(given_name !== undefined) { user.given_name = given_name }
+            if(family_name !== undefined) { user.family_name = family_name }
+            if(suffix_name !== undefined) { user.suffix_name = suffix_name }
+            if(birth_year_month !== undefined) { user.birth_year_month = birth_year_month }
+            if(email !== undefined) { user.email = email }
+            if(default_avatar !== undefined) { user.default_avatar = default_avatar }
+
+            if(!await user.isValid()) { return user }
+
+            if(default_avatar) {
+                user.avatarKey = default_avatar
+            } else if(undefined !== avatar && null !== avatar && typeof avatar === 'object'){
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                const upload = await s3.singleFileUpload({file: avatar as ApolloServerFileUploads.File, path: `users/${user.user_id}`, type: 'image'})
+                user.avatarKey = upload.key
+            }
+
+            await this.manager.save(user)
+        }
+
         return user
     }
     public async getUser(user_id: string) {
@@ -105,16 +160,55 @@ export class Model {
         return await this.userRepository.find()
     }
 
-    public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
+    public GetShortCode({name}: {name: string}) {
+        return OrganizationHelpers.GetShortCode(this.organizationRepository, {name})
+    }
+    public GetDefaultAvatars() {
+        return UserHelpers.GetDefaultAvatars()
+    }
+
+    public async setOrganization({organization_id, organization_name, address1, address2, phone, email, logo, color, shortCode}:OrganizationInput) {
         const organization = await this.organizationRepository.findOneOrFail(organization_id)
 
-        if(organization_name !== undefined) { organization.organization_name = organization_name }
-        if(address1 !== undefined) { organization.address1 = address1 }
-        if(address2 !== undefined) { organization.address2 = address2 }
-        if(phone !== undefined) { organization.phone = phone }
-        if(shortCode !== undefined) { organization.shortCode = shortCode }
+        const isUpdated = 
+            organization_name !== undefined ||
+            address1 !== undefined ||
+            address2 !== undefined ||
+            email !== undefined ||
+            phone !== undefined ||
+            color !== undefined ||
+            shortCode !== undefined ||
+            (logo !== undefined && null !== logo && typeof logo === 'object')
+        
+        if(isUpdated) {
 
-        await this.manager.save(organization)
+            if(organization_name !== undefined) { organization.organization_name = organization_name }
+            if(address1 !== undefined) { organization.address1 = address1 }
+            if(address2 !== undefined) { organization.address2 = address2 }
+            if(email !== undefined) { organization.email = email.trim().toLowerCase() }
+            if(phone !== undefined) { organization.phone = phone }
+            if(color !== undefined) { organization.color = color }
+            if(shortCode !== undefined) { organization.shortCode = shortCode }
+
+            if(!await organization.isValid()) { return organization }
+
+            if(logo !== undefined && null !== logo && typeof logo === 'object') { 
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                if(organization.logoKey && !organization.logoKey.startsWith("default/")) {
+                    await s3.deleteObject(organization.logoKey as string)
+                }
+                const upload = await s3.singleFileUpload({file: logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
+        
+                organization.logoKey = upload.key
+            }
+
+            await this.manager.save(organization)
+        }
         return organization
     }
     public async getOrganization(organization_id: string) {

@@ -1,15 +1,34 @@
-import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager, Not, CreateDateColumn} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
+import { Length, IsOptional, IsEmail, IsIn, IsDateString, validate } from 'class-validator'
 import { OrganizationMembership } from "./organizationMembership";
-import { Organization } from "./organization";
+import { Organization, OrganizationInput } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
 import { v5 } from "uuid";
 import { createHash } from "crypto"
 import { School } from "./school";
+import { AWSS3 } from "../entities/s3";
+import { ApolloServerFileUploads } from "./types";
+import { UniqueOnDatabase } from '../decorators/unique';
+import { ErrorHelpers, BasicValidationError } from '../entities/helpers'
+import { EntityId } from './organization'
+import { DefaultAvatarKeys } from './const'
+
+export interface UserInput {
+    user_id?: string
+    given_name: string
+    family_name: string
+    suffix_name: string
+    email: string
+    default_avatar?: string
+    avatar?: ApolloServerFileUploads.File
+    birth_year_month: Date
+}
 
 @Entity()
 export class User extends BaseEntity {
+    private _errors: null | undefined | BasicValidationError[]
 
     @PrimaryGeneratedColumn("uuid")
     public user_id!: string
@@ -17,16 +36,79 @@ export class User extends BaseEntity {
     public user_name = () => `${this.given_name} ${this.family_name}`
 
     @Column({nullable: true})
+    @Length(3, 15)
     public given_name?: string
 
     @Column({nullable: true})
+    @Length(3, 15)
     public family_name?: string
 
     @Column({nullable: true})
-    public email?: string
+    @IsOptional()
+    @Length(0, 8)
+    public suffix_name?: string
 
     @Column({nullable: true})
-    public avatar?: string
+    @IsEmail()
+    @Length(1, 50)
+    @UniqueOnDatabase(User, (self: EntityId) => (self.user_id ? { user_id: Not(self.user_id as string) } : {}))
+    public email?: string
+
+    @IsOptional()
+    @IsIn(DefaultAvatarKeys)
+    public default_avatar?: string
+
+    @Column({nullable: true})
+    public avatarKey?: string
+
+    public async avatar() {
+        if(this.avatarKey) {
+            const s3 = AWSS3.getInstance({ 
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                region: process.env.AWS_DEFAULT_REGION as string,
+            })
+            
+            return s3.getSignedUrl(this.avatarKey as string)
+        }
+        return ''
+    }
+
+    @Column({nullable: true})
+    @IsDateString()
+    public birth_year_month?: Date
+
+    @CreateDateColumn()
+    public createdAt?: Date
+
+    @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
+    public updatedAt?: Date
+
+    // pass arguments for validation of UniqueOnDatabase  
+    // constraint columns on updating the entity
+    public __req__: EntityId | null = {}
+
+    public async errors() {
+        if(undefined !== this._errors) { return this._errors }
+
+        const info: EntityId = {
+            user_id: this.user_id
+        }
+        this.__req__ = info
+        
+        this._errors = null
+        const errs = await validate(this)
+        if(errs.length > 0) {
+            this._errors = ErrorHelpers.GetValidationError(errs)
+        }
+        return this._errors
+    }
+
+    public async isValid() {
+        await this.errors()
+        return (this._errors === null)
+    }
 
     @OneToMany(() => OrganizationMembership, membership => membership.user)
     @JoinColumn({name: "organization_id", referencedColumnName: "organization_id"})
@@ -100,24 +182,56 @@ export class User extends BaseEntity {
 
     
     public async set({
-        given_name,
-        family_name,
-        avatar,
+        given_name, 
+        family_name, 
+        suffix_name, 
+        email, 
+        default_avatar, 
+        avatar, 
+        birth_year_month
     }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
-            if(typeof given_name === "string")  { this.given_name = given_name }
-            if(typeof family_name === "string") { this.family_name = family_name }
-            if(typeof avatar === "string")      { this.avatar = avatar }
+            if(typeof given_name === "string")          { this.given_name = given_name }
+            if(typeof family_name === "string")         { this.family_name = family_name }
+            if(typeof suffix_name === "string")         { this.suffix_name = suffix_name }
+            if(typeof email === "string")               { this.email = email?.trim().toLowerCase() }
+            if(typeof default_avatar === "string")      { this.default_avatar = default_avatar }
+            if(typeof birth_year_month !== "undefined") { this.birth_year_month = birth_year_month }
+            this.birth_year_month = birth_year_month ?? this.birth_year_month?.toISOString()
+
+            if(!await this.isValid()) { return this }
+
+            if(default_avatar) {
+                this.avatarKey = default_avatar
+            } else if(undefined !== avatar && null !== avatar && typeof avatar === 'object'){
+                const s3 = AWSS3.getInstance({ 
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                    destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                    region: process.env.AWS_DEFAULT_REGION as string,
+                })
+                const upload = await s3.singleFileUpload({file: avatar as ApolloServerFileUploads.File, path: `users/${this.user_id}`, type: 'image'})
+                this.avatarKey = upload.key
+            }
 
             await this.save()
+
             return this
         } catch(e) {
             console.error(e)
         }
     }
-    public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
+    public async createOrganization({
+        organization_name, 
+        address1, 
+        address2, 
+        email, 
+        phone, 
+        shortCode, 
+        color, 
+        logo}: OrganizationInput, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const my_organization = await this.my_organization
@@ -128,10 +242,28 @@ export class User extends BaseEntity {
                 organization.organization_name = organization_name
                 organization.address1 = address1
                 organization.address2 = address2
+                organization.email = email?.trim().toLowerCase()
                 organization.phone = phone
                 organization.shortCode = shortCode
+                organization.color = color
                 organization.owner = Promise.resolve(this)
                 organization.primary_contact = Promise.resolve(this)
+
+                if(!await organization.isValid()) {
+                    return organization
+                }
+
+                if(undefined !== logo && null !== logo && typeof logo === 'object') {
+                    const s3 = AWSS3.getInstance({ 
+                        accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+                        destinationBucketName: process.env.AWS_DEFAULT_BUCKET as string,
+                        region: process.env.AWS_DEFAULT_REGION as string,
+                    })
+                    const upload = await s3.singleFileUpload({file: logo as ApolloServerFileUploads.File, path: organization.organization_id, type: 'image'})
+                
+                    organization.logoKey = upload.key
+                }
                 await manager.save(organization)
                 
                 const roles = await organization._createDefaultRoles(manager)

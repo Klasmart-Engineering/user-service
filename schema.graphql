@@ -3,6 +3,9 @@ type Query {
     user(user_id: ID!): User
     users: [User]
 
+    defaultAvatars: [DefaultAvatar]
+    shortCode(name: String!): String
+
     organization(organization_id: ID!): Organization
     organizations(organization_ids: [ID!]): [Organization]
 
@@ -21,14 +24,29 @@ type Mutation {
         user_id: ID!
         given_name: String
         family_name: String
+        suffix_name: String
         email: String
-        avatar: String
+        avatar: Upload
+        default_avatar: String
+        birth_year_month: Date
+
+        organization_name: String
+        address1: String
+        address2: String
+        email: String
+        phone: String
+        shortCode: String
+        logo: Upload
+        color: String
     ): User
     newUser(
         given_name: String
         family_name: String
+        suffix_name: String
         email: String
-        avatar: String
+        avatar: Upload 
+        default_avatar: String 
+        birth_year_month: Date
     ): User
 
     organization(
@@ -36,8 +54,11 @@ type Mutation {
         organization_name: String
         address1: String
         address2: String
+        email: String
         phone: String
         shortCode: String
+        logo: Upload
+        color: String
     ): Organization
 
     role(role_id: ID!): Role
@@ -50,14 +71,20 @@ type Mutation {
 }
 
 type User {
-    user_id: ID!
+    user_id: ID
 
     #properties
     user_name: String
     given_name: String
     family_name: String
+    suffix_name: String
+    birth_year_month: Date
     email: String
     avatar: String
+    createdAt: Date
+    updatedAt: Date
+
+    errors: [ValidationError!]
 
     #connections
     """
@@ -81,30 +108,42 @@ type User {
     set(
         given_name: String
         family_name: String
+        suffix_name: String
         email: String
-        avatar: String
+        avatar: Upload
+        default_avatar: String
+        birth_year_month: Date
     ): User
     createOrganization(
         organization_name: String
-        email: String
         address1: String
         address2: String
+        email: String
         phone: String
         shortCode: String
+        logo: Upload
+        color: String
     ): Organization
     addOrganization(organization_id: ID!): OrganizationMembership
     addSchool(school_id: ID!): OrganizationMembership
 }
 
 type Organization {
-    organization_id: ID!
+    organization_id: ID
 
     #properties
     organization_name: String
     address1: String
     address2: String
+    email: String
     phone: String
     shortCode: String
+    logo: String
+    color: String
+    createdAt: Date
+    updatedAt: Date
+
+    errors: [ValidationError!]
 
     #connections
 
@@ -129,8 +168,11 @@ type Organization {
         organization_name: String
         address1: String
         address2: String
+        email: String
         phone: String
         shortCode: String
+        logo: Upload
+        color: String
     ): Organization
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
@@ -139,8 +181,35 @@ type Organization {
     createRole(role_name: String): Role
     createDefaultRoles(_: Int): [Role]
     resetDefaultRolesPermissions(_: Int): [Role]
-    createSchool(school_name: String): School
-    createClass(class_name: String): Class
+    createSchool(
+        school_name: String
+        address: String
+        phone: String
+        email: String
+        startDate: Date
+        endDate: Date
+        grades: [String]
+        color: String
+        logo: Upload
+    ): School
+    createClass(
+        class_name: String
+        grades: [String]
+        startDate: Date
+        endDate: Date
+        color: String
+    ): Class
+}
+
+type DefaultAvatar {
+    url: String
+    key: String
+}
+
+type ValidationError {
+    property: String!,
+    value: String, 
+    constraint: [String]
 }
 
 type MembershipUpdate {
@@ -204,10 +273,20 @@ type Permission {
 }
 
 type School {
-    school_id: ID!
+    school_id: ID
 
     #properties
     school_name: String
+    address: String
+    phone: String
+    email: String
+    startDate: Date
+    endDate: Date
+    grades: [String]
+    color: String
+    logo: String
+
+    errors: [ValidationError!]
 
     #connections
     organization: Organization
@@ -216,7 +295,17 @@ type School {
     classes: [Class]
 
     #mutations
-    set(school_name: String): School
+    set(
+        school_name: String
+        address: String
+        phone: String
+        email: String
+        startDate: Date
+        endDate: Date
+        grades: [String]
+        color: String
+        logo: Upload
+    ): School
     addUser(user_id: ID!): SchoolMembership
 }
 
@@ -242,10 +331,16 @@ type SchoolMembership {
 }
 
 type Class {
-    class_id: ID!
+    class_id: ID
 
     #properties
     class_name: String
+    grades: [String]
+    startDate: Date
+    endDate: Date
+    color: String
+
+    errors: [ValidationError!]
 
     #connections
     organization: Organization
@@ -259,7 +354,13 @@ type Class {
     eligibleStudents: [User]
 
     #mutations
-    set(class_name: String): Class
+    set(
+        class_name: String
+        grades: [String]
+        startDate: Date
+        endDate: Date
+        color: String
+    ): Class
     addTeacher(user_id: ID!): User
     removeTeacher(user_id: ID!): Boolean
     addStudent(user_id: ID!): User

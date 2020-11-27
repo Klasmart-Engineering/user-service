@@ -21,6 +21,8 @@ export const createServer = (model: Model, context?: any) =>
                 classes: () => model.getClasses(),
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 school: (_parent, args, _context, _info) => model.getSchool(args),
+                shortCode: (_parent, args, _context, _info) => model.GetShortCode(args),
+                defaultAvatars: () => model.GetDefaultAvatars(),
             },
             Mutation: {
                 me: (_parent, _args, context, _info) => model.getMyUser(context),
