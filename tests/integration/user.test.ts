@@ -44,7 +44,11 @@ describe("user", () => {
             const gqlUpdatedUser = await updateUser(testClient, user);
             const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
             expect(gqlUpdatedUser).to.exist;
-            expect(dbUser).to.include(gqlUpdatedUser);
+            const dbUserG = JSON.parse(JSON.stringify(dbUser));
+            const gqlUpdatedUserG = JSON.parse(JSON.stringify(gqlUpdatedUser));
+            dbUserG.avatar = "";
+            dbUserG.errors = null;
+            expect(dbUserG).to.include(gqlUpdatedUserG);
         });
     });
 

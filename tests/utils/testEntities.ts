@@ -2,11 +2,11 @@ import { User } from "../../src/entities/user";
 import { ApolloServerTestClient } from "./createTestClient";
 import { createUser } from "./operations/modelOps";
 
-export function createUserJoe(testClient: ApolloServerTestClient) {
+export async function createUserJoe(testClient: ApolloServerTestClient) {
     return createUser(testClient, joe);
 }
 
-export function createUserBilly(testClient: ApolloServerTestClient) {
+export async function createUserBilly(testClient: ApolloServerTestClient) {
     return createUser(testClient, billy);
 }
 
@@ -15,7 +15,7 @@ const joe = {
     given_name: "Joe",
     family_name: "Brown",
     email: "joe@gmail.com",
-    avatar: "joe_avatar",
+    birth_year_month: new Date("2016-01-22T18:25:43.511Z")
 } as User;
 
 const billy = {
@@ -23,5 +23,5 @@ const billy = {
     given_name: "Billy",
     family_name: "Bob",
     email: "billy@gmail.com",
-    avatar: "billy_avatar",
+    birth_year_month: new Date("2014-09-13T12:25:20.331Z")
 } as User;

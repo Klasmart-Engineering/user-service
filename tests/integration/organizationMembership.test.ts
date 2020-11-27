@@ -43,7 +43,7 @@ describe("organizationMembership", () => {
                 const org2Owner = await createUserBilly(testClient);
                 userId = org1Owner.user_id;
                 organization1Id = (await createOrganization(testClient, org1Owner.user_id, "org 1")).organization_id;
-                organization2Id = (await createOrganization(testClient, org2Owner.user_id, "org 2")).organization_id;
+                organization2Id = (await createOrganization(testClient, org2Owner.user_id, "org 2", "second@email.net", "TESTA100", "1111444222")).organization_id;
                 school1Id = (await createSchool(testClient, organization1Id, "school 1", { authorization: JoeAuthToken })).school_id;
                 school2Id = (await createSchool(testClient, organization2Id, "school 2", { authorization: BillyAuthToken })).school_id;
                 await addUserToOrganization(testClient, userId, organization1Id, { authorization: JoeAuthToken });

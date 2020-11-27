@@ -8,6 +8,7 @@ import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
+import faker from "faker";
 
 const CREATE_CLASS = `
     mutation myMutation(
@@ -38,11 +39,21 @@ const CREATE_ROLE = `
 const CREATE_SCHOOL = `
     mutation myMutation(
             $organization_id: ID!
-            $school_name: String) {
+            $school_name: String
+            $address: String
+            $phone: String
+            $color: String
+            $email: String
+            ) {
         organization(organization_id: $organization_id) {
-            createSchool(school_name: $school_name) {
+            createSchool(school_name: $school_name, address: $address, phone: $phone, color: $color, email: $email) {
                 school_id
                 school_name
+                errors {
+                    property
+                    value
+                    constraint
+                }
             }
         }
     }
@@ -102,10 +113,14 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
 export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, headers?: Headers) {
     const { mutate } = testClient;
     schoolName = schoolName ?? "My School";
+    const address = "Fictional Streer 122";
+    const phone = "3335551234";
+    const color = "ffffff";
+    const email = faker.internet.email()
 
     const res = await mutate({
         mutation: CREATE_SCHOOL,
-        variables: { organization_id: organizationId, school_name: schoolName },
+        variables: { organization_id: organizationId, school_name: schoolName, address, phone, color, email },
         headers: headers,
     });
 

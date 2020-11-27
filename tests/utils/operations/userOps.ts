@@ -8,14 +8,42 @@ import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 
 const CREATE_ORGANIZATION = `
-    mutation myMutation($user_id: ID!, $organization_name: String) {
-        user(user_id: $user_id) {
-            createOrganization(organization_name: $organization_name) {
-                organization_id
-                organization_name
+    mutation myMutation(
+        $user_id: ID!, 
+        $organization_name: String,
+        $address1: String,
+        $address2: String,
+        $email: String
+        $shortCode: String
+        $phone: String
+        $color: String
+        ) {
+            user(user_id: $user_id) {
+                createOrganization(
+                    organization_name: $organization_name
+                    address1: $address1
+                    address2: $address2
+                    email: $email
+                    shortCode: $shortCode
+                    phone: $phone
+                    color: $color
+                ) {
+                    organization_id
+                    organization_name
+                    email
+                    address1
+                    phone
+                    shortCode
+                    color
+                    logo
+                    errors {
+                        property
+                        value
+                        constraint
+                    }
+                }
             }
         }
-    }
 `;
 
 const ADD_ORGANIZATION_TO_USER = `
@@ -32,18 +60,22 @@ const ADD_ORGANIZATION_TO_USER = `
 const SET = `
     mutation myMutation(
             $user_id: ID!
-            $given_name: String,
-            $family_name: String,
-            $avatar: String) {
+            $given_name: String
+            $family_name: String) {
         user(user_id: $user_id) {
             set(
                 given_name: $given_name
                 family_name: $family_name
-                avatar: $avatar
             ) {
                 given_name
                 family_name
                 avatar
+                birth_year_month
+                errors {
+                    property
+                    value
+                    constraint
+                }
             }
         }
     }
@@ -120,24 +152,52 @@ const GET_CLASSES_STUDYING = `
 export async function createOrganization(
     testClient: ApolloServerTestClient,
     userId: string,
-    organizationName?: string
+    organizationName?: string,
+    email?: string,
+    shortCode?: string,
+    phone?: string,
+    address1?: string,
+    address2?: string,
+    color?: string
 ): Promise<Organization> {
     const { mutate } = testClient;
     organizationName = organizationName ?? "My Organization";
+    address1 = address1 ?? "Known street 10 known city";
+    address2 = address2 ?? undefined;
+    email = email ?? "myorganization@mail.net";
+    shortCode = shortCode ?? "ABCDE000";
+    phone = phone ?? "2223336666";
+    color = color ?? "ffffff";
+
+    const orgVars = { 
+        user_id: userId, 
+        organization_name: organizationName,
+        address1: address1,
+        address2: address2,
+        email: email,
+        shortCode: shortCode,
+        phone: phone,
+        color: color
+    }
 
     const res = await mutate({
         mutation: CREATE_ORGANIZATION,
-        variables: { user_id: userId, organization_name: organizationName },
+        variables: orgVars,
         headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
+    expect(res.data?.user.createOrganization.errors).to.be.null;
 
     const gqlOrganization = res.data?.user.createOrganization as Organization;
     expect(gqlOrganization).to.exist;
 
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
-    expect(dbOrganization).to.include(gqlOrganization);
+    const genericOrg = JSON.parse(JSON.stringify(dbOrganization))
+    genericOrg.logo = ''
+    genericOrg.errors = null
+
+    expect(genericOrg).to.include(gqlOrganization);
 
     return dbOrganization;
 }
@@ -172,18 +232,19 @@ export async function addOrganizationToUser(testClient: ApolloServerTestClient, 
 export async function updateUser(testClient: ApolloServerTestClient, user: User) {
     const { mutate } = testClient;
     const userMods = {
+        user_id: user.user_id,
         given_name: "Billy",
-        family_name: "Bob",
-        avatar: "new_avatar",
+        family_name: "Bob"
     };
 
     const res = await mutate({
         mutation: SET,
-        variables: { user_id: user.user_id, ...userMods },
+        variables: userMods,
         headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
+    expect(res.data?.user.set.errors).to.be.null;
     const gqlUser = res.data?.user.set as User;
     return gqlUser;
 }

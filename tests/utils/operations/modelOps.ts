@@ -9,18 +9,26 @@ const NEW_USER = `
             $given_name: String
             $family_name: String
             $email: String
-            $avatar: String) {
+            $avatar: Upload
+            $birth_year_month: Date) {
         newUser(
             given_name: $given_name
             family_name: $family_name
             email: $email
             avatar: $avatar
+            birth_year_month: $birth_year_month
         ) {
             user_id
             given_name
             family_name
             email
             avatar
+            birth_year_month
+            errors {
+                property
+                value
+                constraint
+            }
         }
     }
 `;
@@ -31,19 +39,25 @@ const SET_USER = `
             $given_name: String
             $family_name: String
             $email: String
-            $avatar: String) {
+            $birth_year_month: Date) {
         user(
             user_id: $user_id
             given_name: $given_name
             family_name: $family_name
             email: $email
-            avatar: $avatar
+            birth_year_month: $birth_year_month
         ) {
             user_id
             given_name
             family_name
             email
             avatar
+            birth_year_month
+            errors {
+                property
+                value
+                constraint
+            }
         }
     }
 `;
@@ -80,17 +94,20 @@ export async function createUser(
 
     const res = await mutate({
         mutation: NEW_USER,
-        variables: user as any,
+        variables: JSON.parse(JSON.stringify(user)),
         headers: { authorization: JoeAuthToken },
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
+    expect(res.data?.newUser.errors).to.be.null;
 
     const gqlUser = res.data?.newUser as User;
     const dbUser = await User.findOneOrFail({ where: { email: user.email } });
+
     expect(gqlUser).to.exist;
-    expect(gqlUser).to.include(user);
-    expect(dbUser).to.include(user);
+
+    expect(gqlUser).to.include(JSON.parse(JSON.stringify(user)));
+    expect(JSON.parse(JSON.stringify(dbUser))).to.include(JSON.parse(JSON.stringify(user)));
 
     return dbUser;
 }
@@ -101,7 +118,7 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User)
         given_name: faker.name.firstName(),
         family_name: faker.name.lastName(),
         email: faker.internet.email(),
-        avatar: "my new avatar",
+        birth_year_month: user.birth_year_month?.toISOString()
     };
 
     const { mutate } = testClient;
@@ -113,6 +130,7 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User)
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
+    expect(res.data?.user.errors).to.be.null;
     const gqlUser = res.data?.user as User;
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(modifiedUser);
@@ -127,7 +145,7 @@ export async function getUsers(testClient: ApolloServerTestClient) {
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
-    const gqlUsers = res.data?.users as User[];
+    const gqlUsers = res.data?.users;
     return gqlUsers;
 }
 

@@ -46,7 +46,10 @@ describe("model.user", () => {
         it("should modify an existing user", async () => {
             const gqlUpdatedUser = await updateUser(testClient, user);
             const dbUser = await User.findOneOrFail(user.user_id);
-            expect(dbUser).to.include(gqlUpdatedUser);
+            const dbUserGen = JSON.parse(JSON.stringify(dbUser));
+            dbUserGen.avatar = ''
+            dbUserGen.errors = null
+            expect(dbUserGen).to.include(gqlUpdatedUser);
         });
     });
 
@@ -68,7 +71,10 @@ describe("model.user", () => {
                 given_name: user.given_name,
                 family_name: user.family_name,
             });
-            expect(user).to.include(gqlUsers[0]);
+            const dbUserGen = JSON.parse(JSON.stringify(user));
+            dbUserGen.avatar = ''
+            dbUserGen.errors = null
+            expect(dbUserGen).to.include(gqlUsers[0]);
         });
     });
 
@@ -83,7 +89,10 @@ describe("model.user", () => {
         it("should get user by ID", async () => {
             const gqlUser = await getUser(testClient, user.user_id);
             expect(gqlUser).to.exist;
-            expect(user).to.include(gqlUser);
+            const dbUserGen = JSON.parse(JSON.stringify(user));
+            dbUserGen.avatar = ''
+            dbUserGen.errors = null
+            expect(dbUserGen).to.include(gqlUser);
         });
     });
 });
