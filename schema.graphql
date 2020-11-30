@@ -161,7 +161,7 @@ type OrganizationMembership {
     user: User
     roles: [Role]
     classes: [Class]
-    schoolMemberships: [SchoolMembership]
+    schoolMemberships(permission_name:String): [SchoolMembership]
 
     #query
     checkAllowed(permission_name: ID!): Boolean

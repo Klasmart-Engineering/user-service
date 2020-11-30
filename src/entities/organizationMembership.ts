@@ -26,17 +26,37 @@ export class OrganizationMembership extends BaseEntity {
     @ManyToMany(() => Role, role => role.memberships)
     public roles?: Promise<Role[]>
 
-    public async schoolMemberships({}: any, context: Context, info: GraphQLResolveInfo) {
-        try {
-            return await getRepository(SchoolMembership)
-                .createQueryBuilder()
-                .innerJoin("SchoolMembership.school", "School")
-                .innerJoin("School.organization", "SchoolOrganization")
-                .where("SchoolMembership.user_id = :user_id", {user_id: this.user_id})
-                .andWhere("SchoolOrganization.organization_id = :organization_id", {organization_id: this.organization_id})
-                .getMany()
-        } catch(e) {
-            console.error(e)
+    public async schoolMemberships({ permission_name }: any, context: Context, info: GraphQLResolveInfo) {
+        if (permission_name === undefined) {
+            try {
+                return await getRepository(SchoolMembership)
+                    .createQueryBuilder()
+                    .innerJoin("SchoolMembership.school", "School")
+                    .innerJoin("School.organization", "SchoolOrganization")
+                    .where("SchoolMembership.user_id = :user_id", { user_id: this.user_id })
+                    .andWhere("SchoolOrganization.organization_id = :organization_id", { organization_id: this.organization_id })
+                    .getMany()
+            } catch (e) {
+                console.error(e)
+            }
+        }
+        else {
+            try {
+                return await getRepository(SchoolMembership)
+                    .createQueryBuilder()
+                    .innerJoin("SchoolMembership.school", "School")
+                    .innerJoin("School.organization", "SchoolOrganization")
+                    .innerJoin("SchoolMembership.roles","Role")
+                    .innerJoin("Role.permissions","Permission")
+                    .groupBy("SchoolMembership.school_id, Permission.permission_name, SchoolMembership.user_id")
+                    .where("SchoolMembership.user_id = :user_id", { user_id: this.user_id })
+                    .andWhere("SchoolOrganization.organization_id = :organization_id", { organization_id: this.organization_id })
+                    .andWhere("Permission.permission_name = :permission_name", { permission_name })
+                    .having("bool_and(Permission.allow) = :allowed", { allowed: true })
+                    .getMany()
+            } catch (e) {
+                console.error(e)
+            }
         }
     }
 

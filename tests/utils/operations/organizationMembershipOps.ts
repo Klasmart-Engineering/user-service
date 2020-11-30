@@ -22,10 +22,11 @@ const ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP = `
 const GET_SCHOOL_MEMBERSHIPS = `
     query myQuery(
             $user_id: ID!
-            $organization_id: ID!) {
+            $organization_id: ID!
+            $permission_name: String) {
         user(user_id: $user_id) {
             membership(organization_id: $organization_id) {
-                schoolMemberships {
+                schoolMemberships(permission_name: $permission_name) {
                     school_id
                     school {
                         school_name
@@ -48,16 +49,33 @@ export async function addRoleToOrganizationMembership(testClient: ApolloServerTe
     expect(res.errors, res.errors?.toString()).to.be.undefined;
 }
 
-export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
+export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string) {
     const { mutate } = testClient;
     
-    const res = await mutate({
-        mutation: GET_SCHOOL_MEMBERSHIPS,
-        variables: { user_id: userId, organization_id: organizationId },
-        headers: { authorization: JoeAuthToken },
-    });
+    
+    if (permission_name !== undefined){
+        
+        const res = await mutate({
+            mutation: GET_SCHOOL_MEMBERSHIPS,
+            variables: { user_id: userId, organization_id: organizationId, permission_name: permission_name },
+            headers: { authorization: JoeAuthToken },
+        });
 
-    expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
+        expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
 
-    return res.data?.user.membership.schoolMemberships as SchoolMembership[];
+        return res.data?.user.membership.schoolMemberships as SchoolMembership[];
+    }
+    else{
+        const res = await mutate({
+            mutation: GET_SCHOOL_MEMBERSHIPS,
+            variables: { user_id: userId, organization_id: organizationId},
+            headers: { authorization: JoeAuthToken },
+        });
+    
+        expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
+    
+        return res.data?.user.membership.schoolMemberships as SchoolMembership[];
+    }
+    
 }
+
