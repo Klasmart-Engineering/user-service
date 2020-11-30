@@ -230,6 +230,76 @@ export class Organization extends BaseEntity {
         }
     }
 
+    private async getRoleLookup():Promise<(roleId: string)=>Promise<Role>> {
+            const role_repo = getRepository(Role)
+            const roleLookup = async (role_id: string) => {
+                const role = await role_repo.findOneOrFail(role_id)
+                const checkOrganization = await role.organization
+                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
+                    throw new Error(`Can not assign Organization(${checkOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
+                }
+                return role
+            }
+            return roleLookup            
+    }
+
+    private async findOrCreateUser(
+        email: string,
+        given_name?: string,
+        family_name?: string,
+        ):Promise<User> {
+            const user_id = accountUUID(email)
+            const user = await getRepository(User).findOne({user_id}) || new User()
+            user.email = email
+            user.user_id = user_id
+            if(given_name !== undefined) { user.given_name = given_name }
+            if(family_name !== undefined) { user.family_name = family_name }
+            return user
+        }
+
+    private async membershipOrganization(
+        user: User,
+        organizationRoles: Role[]
+         ):Promise<OrganizationMembership>{
+            const user_id = user.user_id
+            const organization_id = this.organization_id
+            const membership = await getRepository(OrganizationMembership).findOne({organization_id, user_id}) || new OrganizationMembership()
+            membership.organization_id = this.organization_id
+            membership.user_id = user.user_id
+            membership.user = Promise.resolve(user)
+            membership.organization = Promise.resolve(this)
+            membership.roles = Promise.resolve(organizationRoles)
+        return membership   
+    
+    }
+
+    private async membershipSchools(
+        user: User,
+        school_ids: string[] = [],
+        schoolRoles: Role[]
+        ):Promise<[SchoolMembership[],SchoolMembership[]]>{
+            const schoolRepo = getRepository(School)
+            const user_id = user.user_id
+            const schoolMembershipRepo = getRepository(SchoolMembership)
+            const oldSchoolMemberships = await schoolMembershipRepo.find({user_id})
+            const schoolMemberships = await Promise.all(school_ids.map(async (school_id) => {
+                const school = await schoolRepo.findOneOrFail({school_id})
+                const checkOrganization = await school.organization
+                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
+                    throw new Error(`Can not add Organization(${checkOrganization?.organization_id}).School(${school_id}) to membership in Organization(${this.organization_id})`)
+                }
+                const schoolMembership = await schoolMembershipRepo.findOne({school_id, user_id}) || new SchoolMembership()
+                schoolMembership.user_id = user_id
+                schoolMembership.user = Promise.resolve(user)
+                schoolMembership.school_id = school_id
+                schoolMembership.school = Promise.resolve(school)
+                schoolMembership.roles = Promise.resolve(schoolRoles)
+
+                return schoolMembership
+            }))
+        return [schoolMemberships,oldSchoolMemberships]
+    }
+
     private async _setMembership(
         email: string,
         given_name?: string,
@@ -240,62 +310,19 @@ export class Organization extends BaseEntity {
         ) {
         return getManager().transaction(async (manager) => {
             console.log("_setMembership", email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
-            const role_repo = getRepository(Role)
-            const roleLookup = async (role_id: string) => {
-                const role = await role_repo.findOneOrFail(role_id)
-                const checkOrganization = await role.organization
-                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
-                    throw new Error(`Can not assign Organization(${checkOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
-                }
-                return role
-            }
+            const roleLookup = await this.getRoleLookup()
             const organizationRoles = await Promise.all(organization_role_ids.map((role_id) => roleLookup(role_id)))
             const schoolRoles = await Promise.all(school_role_ids.map((role_id) => roleLookup(role_id)))
-
-            const user_id = accountUUID(email)
-            const user = await getRepository(User).findOne({user_id}) || new User()
-            user.email = email
-            user.user_id = user_id
-            if(given_name !== undefined) { user.given_name = given_name }
-            if(family_name !== undefined) { user.family_name = family_name }
-
-
-            const organization_id = this.organization_id
-            const membership = await getRepository(OrganizationMembership).findOne({organization_id, user_id}) || new OrganizationMembership()
-            membership.organization_id = this.organization_id
-            membership.user_id = user.user_id
-            membership.user = Promise.resolve(user)
-            membership.organization = Promise.resolve(this)
-            membership.roles = Promise.resolve(organizationRoles)
-
-
-            const schoolRepo = getRepository(School)
-            const schoolMembershipRepo = getRepository(SchoolMembership)
-
-            const oldSchoolMemberships = await schoolMembershipRepo.find({user_id})
-            const schoolMemberships = await Promise.all(school_ids.map(async (school_id) => {
-                const school = await schoolRepo.findOneOrFail({school_id})
-                const checkOrganization = await school.organization
-                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
-                    throw new Error(`Can not add Organization(${checkOrganization?.organization_id}).School(${school_id}) to membership in Organization(${this.organization_id})`)
-                }
-
-                const schoolMembership = await schoolMembershipRepo.findOne({school_id, user_id}) || new SchoolMembership()
-                schoolMembership.user_id = user_id
-                schoolMembership.user = Promise.resolve(user)
-                schoolMembership.school_id = school_id
-                schoolMembership.school = Promise.resolve(school)
-                schoolMembership.roles = Promise.resolve(schoolRoles)
-
-                return schoolMembership
-            }))
-
+            const user = await this.findOrCreateUser(email,given_name,family_name)
+            const membership = await this.membershipOrganization(user,  organizationRoles)
+            const [schoolMemberships,oldSchoolMemberships] = await this.membershipSchools(user,school_ids,schoolRoles)
             await manager.remove(oldSchoolMemberships);
             await manager.save([user, membership, ...schoolMemberships])
             return {user, membership, schoolMemberships}
         })
 
     }
+
 
     public async createRole({role_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
