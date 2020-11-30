@@ -28,6 +28,15 @@ export class School extends BaseEntity {
         }
     }
 
+    public async membership_new({user_profile_id}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            const membership = await getRepository(SchoolMembership).findOneOrFail({where: {user_profile_id, school_id: this.school_id}})
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     @ManyToOne(() => Organization, organization => organization.schools)
     @JoinColumn()
     public organization?: Promise<Organization>
