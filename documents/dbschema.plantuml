@@ -95,6 +95,11 @@ class UserClassesTeachingClass {
   classClassId : uuid
 }
 
+class SchoolClassesClass {
+  schoolSchoolId : uuid
+  classClassId : uuid
+}
+
 Role -- "*" Organization
 UserProfile -- "0..1" Organization
 UserProfile "0..1" *-- "*" OrganizationMembership
@@ -113,6 +118,8 @@ UserClassesStudyingcClass "*" --* "1" UserProfile
 UserClassesStudyingcClass "*" --* "1" Class
 UserClassesTeachingClass "*" --* "1" UserProfile
 UserClassesTeachingClass "*" --* "1" Class
+SchoolClassesClass "*" --* "1" School
+SchoolClassesClass "*" --* "1" Class
 
 @enduml
 
