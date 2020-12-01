@@ -50,19 +50,15 @@ export async function addRoleToOrganizationMembership(testClient: ApolloServerTe
 }
 
 export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string) {
-    const { mutate } = testClient;
+    const { mutate } = testClient;   
     
-    
-    if (permission_name !== undefined){
-        
+    if (permission_name !== undefined){    
         const res = await mutate({
             mutation: GET_SCHOOL_MEMBERSHIPS,
             variables: { user_id: userId, organization_id: organizationId, permission_name: permission_name },
             headers: { authorization: JoeAuthToken },
         });
-
         expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
-
         return res.data?.user.membership.schoolMemberships as SchoolMembership[];
     }
     else{
@@ -70,12 +66,9 @@ export async function getSchoolMembershipsForOrganizationMembership(testClient: 
             mutation: GET_SCHOOL_MEMBERSHIPS,
             variables: { user_id: userId, organization_id: organizationId},
             headers: { authorization: JoeAuthToken },
-        });
-    
+        });    
         expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
-    
         return res.data?.user.membership.schoolMemberships as SchoolMembership[];
     }
-    
 }
 
