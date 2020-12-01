@@ -13,8 +13,10 @@ import {
 } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
+import { ProfileOrganizationMembership } from './profileOrganizationMembership';
 import { Role } from './role';
 import { User, accountUUID } from './user';
+import { UserProfile } from "./userprofile";
 import { Class } from './class';
 import { School } from './school';
 import { organizationAdminRole } from '../permissions/organizationAdmin';
@@ -60,6 +62,20 @@ export class Organization extends BaseEntity {
             console.error(e)
         }
     }
+
+    @OneToMany(() => ProfileOrganizationMembership, membership => membership.organization)
+    @JoinColumn({name: "user_profile_id", referencedColumnName: "user_profile_id"})
+    public profileMemberships?: Promise<ProfileOrganizationMembership[]>
+
+    public async profileMembership({user_profile_id}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            const membership = await getRepository(ProfileOrganizationMembership).findOneOrFail({where: {user_profile_id, organization_id: this.organization_id}})
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
 
     @OneToOne(() => User, user => user.my_organization)
     public owner?: Promise<User>
@@ -208,6 +224,30 @@ export class Organization extends BaseEntity {
         }
     }
 
+    public async addUserProfile({user_profile_id}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.send_invitation_40882
+            )
+
+            if(info.operation.operation !== "mutation") { return null }
+
+            const userProfile = await getRepository(UserProfile).findOneOrFail(user_profile_id)
+
+            const membership = new ProfileOrganizationMembership()
+            membership.organization_id = this.organization_id
+            membership.organization = Promise.resolve(this)
+            membership.user_profile_id = user_profile_id
+            membership.user_profile = Promise.resolve(userProfile)
+            await membership.save()
+
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
     public async inviteUser({email, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.send_invitation_40882)
         try {

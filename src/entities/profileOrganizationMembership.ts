@@ -1,35 +1,35 @@
 import {Entity, ManyToOne, PrimaryColumn, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager} from "typeorm";
 import { UserProfile } from "./userprofile";
+import { Organization } from "./organization";
 import { Role } from "./role";
 import { GraphQLResolveInfo } from "graphql";
-import { School } from "./school";
 
 @Entity()
-export class SchoolMembershipNew extends BaseEntity {
+export class ProfileOrganizationMembership extends BaseEntity {
     @PrimaryColumn()
     public user_profile_id!: string
     
     @PrimaryColumn()
-    public school_id!: string
+    public organization_id!: string
     
     @CreateDateColumn()
     public join_timestamp?: Date
     
-    @ManyToOne(() => UserProfile, user_profile => user_profile.school_memberships)
+    @ManyToOne(() => UserProfile, userprofile => userprofile.memberships)
     public user_profile?: Promise<UserProfile>
-    
-    @ManyToOne(() => School, school => school.memberships)
-    public school?: Promise<School>
 
-    @ManyToMany(() => Role, role => role.schoolMemberships)
+    @ManyToOne(() => Organization, organization => organization.memberships)
+    public organization?: Promise<Organization>
+
+    @ManyToMany(() => Role, role => role.memberships,)
     public roles?: Promise<Role[]>
 
     public async checkAllowed({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
-        const results = await createQueryBuilder("SchoolMembership")
-        .innerJoinAndSelect("SchoolMembership.roles", "Role")
+        const results = await createQueryBuilder("OrganizationMembership")
+        .innerJoinAndSelect("OrganizationMembership.roles", "Role")
         .innerJoinAndSelect("Role.permissions", "Permission")
-        .where("SchoolMembership.user_profile_id = :user_profile_id", this)
-        .andWhere("SchoolMembership.school_id = :school_id", this)
+        .where("OrganizationMembershipNew.user_profile_id = :user_profile_id", this)
+        .andWhere("OrganizationMembershipNew.organization_id = :organization_id", this)
         .andWhere("Permission.permission_name = :permission_name", { permission_name })
         .getRawMany()
         if(results.length === 0) { return false }
@@ -40,9 +40,9 @@ export class SchoolMembershipNew extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const role = await getRepository(Role).findOneOrFail({role_id})
-            const memberships = (await role.schoolMemberships) || []
+            const memberships = (await role.profileMemberships) || []
             memberships.push(this)
-            role.schoolMemberships = Promise.resolve(memberships)
+            role.profileMemberships = Promise.resolve(memberships)
             await role.save()
             return role
         } catch(e) {
@@ -57,9 +57,9 @@ export class SchoolMembershipNew extends BaseEntity {
             
             const rolePromises = role_ids.map(async (role_id) => {
                 const role = await getRepository(Role).findOneOrFail({role_id})
-                const schoolMemberships = (await role.schoolMemberships) || []
-                schoolMemberships.push(this)
-                role.schoolMemberships = Promise.resolve(schoolMemberships)
+                const memberships = (await role.profileMemberships) || []
+                memberships.push(this)
+                role.profileMemberships = Promise.resolve(memberships)
                 return role
             })
             const roles = await Promise.all(rolePromises)
@@ -73,11 +73,12 @@ export class SchoolMembershipNew extends BaseEntity {
     public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
+            
             const role = await getRepository(Role).findOneOrFail({role_id})
-            const memberships = await role.schoolMemberships
+            const memberships = await role.profileMemberships
             if(memberships) {   
-                const newMemberships = memberships.filter((membership) => membership.user_id !== this.user_id)
-                role.schoolMemberships = Promise.resolve(newMemberships)
+                const newMemberships = memberships.filter((membership) => membership.user_profile_id !== this.user_profile_id)
+                role.profileMemberships = Promise.resolve(newMemberships)
                 await role.save()
             }
             return this
@@ -85,7 +86,6 @@ export class SchoolMembershipNew extends BaseEntity {
             console.error(e)
         }
     }
-
     public async leave({}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }

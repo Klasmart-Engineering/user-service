@@ -1,9 +1,9 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToOne, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
-import { OrganizationMembershipNew } from "./organizationMembership_new";
+import { ProfileOrganizationMembership } from "./profileOrganizationMembership";
 import { Organization } from "./organization";
 import { Class } from "./class";
-import { SchoolMembershipNew } from "./schoolMembership_new";
+import { ProfileSchoolMembership } from "./profileSchoolMembership";
 import { v5 } from "uuid";
 import { createHash } from "crypto"
 import { Permission } from "./permission";
@@ -28,26 +28,26 @@ export class UserProfile extends BaseEntity {
     @ManyToOne(() => User, user => user.user_id)
     public user_profile_user_id?: Promise<User>
 
-    @OneToMany(() => OrganizationMembershipNew, membership => membership.user_profile)
+    @OneToMany(() => ProfileOrganizationMembership, membership => membership.user_profile)
     @JoinColumn({name: "organization_id", referencedColumnName: "organization_id"})
-    public memberships?: Promise<OrganizationMembershipNew[]>
+    public memberships?: Promise<ProfileOrganizationMembership[]>
 
     public async membership({organization_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            const membership = await getRepository(OrganizationMembershipNew).findOneOrFail({where: {user_id: this.user_profile_id, organization_id}})
+            const membership = await getRepository(ProfileOrganizationMembership).findOneOrFail({where: {user_id: this.user_profile_id, organization_id}})
             return membership
         } catch(e) {
             console.error(e)
         }
     }
 
-    @OneToMany(() => SchoolMembershipNew, schoolMembership_new => schoolMembership_new.user_profile)
+    @OneToMany(() => ProfileSchoolMembership, profileSchoolMembership => profileSchoolMembership.user_profile)
     @JoinColumn({name: "school_id", referencedColumnName: "school_id"})
-    public school_memberships?: Promise<SchoolMembershipNew[]>
+    public school_memberships?: Promise<ProfileSchoolMembership[]>
 
     public async school_membership({school_id}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            const membership = await getRepository(SchoolMembershipNew).findOneOrFail({where: {user_id: this.user_profile_id, school_id}})
+            const membership = await getRepository(ProfileSchoolMembership).findOneOrFail({where: {user_id: this.user_profile_id, school_id}})
             return membership
         } catch(e) {
             console.error(e)
@@ -68,7 +68,7 @@ export class UserProfile extends BaseEntity {
 
     public async organizationsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            return await getRepository(OrganizationMembershipNew)
+            return await getRepository(ProfileOrganizationMembership)
                 .createQueryBuilder()
                 .innerJoin("OrganizationMembership.roles","Role")
                 .innerJoin("Role.permissions","Permission")
@@ -84,7 +84,7 @@ export class UserProfile extends BaseEntity {
 
     public async schoolsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            return await getRepository(SchoolMembershipNew)
+            return await getRepository(ProfileSchoolMembership)
                 .createQueryBuilder()
                 .innerJoin("SchoolMembership.roles","Role")
                 .innerJoin("Role.permissions","Permission")
@@ -132,13 +132,13 @@ export class UserProfile extends BaseEntity {
                 const roles = await organization._createDefaultRoles(manager)
                 const adminRoles = roles.get("Organization Admin")
                 
-                const membership = new OrganizationMembershipNew()
+                const membership = new ProfileOrganizationMembership()
                 membership.user_profile = Promise.resolve(this)
                 membership.user_profile_id = this.user_profile_id
                 membership.organization = Promise.resolve(organization)
                 membership.organization_id = organization.organization_id
                 if(adminRoles) { membership.roles = Promise.resolve(adminRoles) }
-                organization.memberships = Promise.resolve([membership])
+                organization.profileMemberships = Promise.resolve([membership])
                 await manager.save(membership)
             })
     
@@ -153,7 +153,7 @@ export class UserProfile extends BaseEntity {
             if(info.operation.operation !== "mutation") { return null }
 
             const organization = await getRepository(Organization).findOneOrFail(organization_id)
-            const membership = new OrganizationMembershipNew()
+            const membership = new ProfileOrganizationMembership()
             membership.organization_id = organization_id
             membership.organization = Promise.resolve(organization)
             membership.user_profile_id = this.user_profile_id
@@ -170,7 +170,7 @@ export class UserProfile extends BaseEntity {
             if(info.operation.operation !== "mutation") { return null }
 
             const school = await getRepository(School).findOneOrFail(school_id)
-            const membership = new SchoolMembershipNew()
+            const membership = new ProfileSchoolMembership()
             membership.school_id = school_id
             membership.school = Promise.resolve(school)
             membership.user_profile_id = this.user_profile_id

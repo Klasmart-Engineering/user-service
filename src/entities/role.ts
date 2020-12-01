@@ -1,9 +1,11 @@
 import {Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinColumn, JoinTable, OneToMany, ManyToOne, getManager, getRepository, BaseEntity} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
+import { ProfileOrganizationMembership } from "./profileOrganizationMembership";
 import { Permission } from "./permission";
 import { Organization } from "./organization";
 import { SchoolMembership } from "./schoolMembership";
+import { ProfileSchoolMembership } from "./profileSchoolMembership";
 import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
 
@@ -23,9 +25,17 @@ export class Role extends BaseEntity {
     @JoinTable()
     public memberships?: Promise<OrganizationMembership[]>
 
+    @ManyToMany(() => ProfileOrganizationMembership, membership => membership.roles)
+    @JoinTable()
+    public profileMemberships?: Promise<ProfileOrganizationMembership[]>
+
     @ManyToMany(() => SchoolMembership, membership => membership.roles)
     @JoinTable()
     public schoolMemberships?: Promise<SchoolMembership[]>
+
+    @ManyToMany(() => ProfileSchoolMembership, membership => membership.roles)
+    @JoinTable()
+    public profileSchoolMemberships?: Promise<ProfileSchoolMembership[]>
 
     @OneToMany(() => Permission, permission => permission.role)
     @JoinColumn()

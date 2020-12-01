@@ -1,8 +1,10 @@
 import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToMany, JoinTable, ManyToOne, BaseEntity } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { User } from './user';
+import { UserProfile } from './userprofile';
 import { Class } from './class';
 import { SchoolMembership } from './schoolMembership';
+import { ProfileSchoolMembership } from './profileSchoolMembership';
 import { Organization } from './organization';
 import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
@@ -97,4 +99,32 @@ export class School extends BaseEntity {
             console.error(e)
         }
     }
+    public async addUserProfile({user_profile_id}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            const permisionContext = {
+              organization_id: (await this.organization as Organization).organization_id,
+              school_ids: [this.school_id]
+            }
+
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.edit_school_20330
+            )
+
+            if(info.operation.operation !== "mutation") { return null }
+
+            const userProfile = await getRepository(UserProfile).findOneOrFail(user_profile_id)
+            const membership = new ProfileSchoolMembership()
+            membership.school_id = this.school_id
+            membership.school = Promise.resolve(this)
+            membership.user_profile_id = user_profile_id
+            membership.user_profile = Promise.resolve(userProfile)
+
+            await getManager().save(membership)
+            return membership
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
 }

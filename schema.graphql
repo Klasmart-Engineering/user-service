@@ -117,12 +117,19 @@ type Organization {
     memberships: [OrganizationMembership]
     teachers: [OrganizationMembership]
     students: [OrganizationMembership]
+    profilememberships: [ProfileOrganizationMembership]
+    profileteachers: [ProfileOrganizationMembership]
+    profilestudents: [ProfileOrganizationMembership]
     schools: [School]
     classes: [Class]
 
     #query
     membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
     findMembers(search_query: String!): [OrganizationMembership]
+
+    profileMembersWithPermission(permission_name: String!, search_query: String): [ProfileOrganizationMembership]
+    findProfileMembers(search_query: String!): [ProfileOrganizationMembership]
+
 
     #mutations
     set(
@@ -149,6 +156,12 @@ type MembershipUpdate {
     schoolMemberships: [SchoolMembership]
 }
 
+type ProfileMembershipUpdate {
+    user_profile: UserProfile
+    membership: ProfileOrganizationMembership
+    schoolMemberships: [ProfileSchoolMembership]
+}
+
 scalar Date
 type OrganizationMembership {
     #properties
@@ -173,6 +186,30 @@ type OrganizationMembership {
     leave(_:Int): Boolean
 }
 
+type ProfileOrganizationMembership {
+    #properties
+    user_profile_id: ID!
+    organization_id: ID!
+    join_timestamp: Date
+
+    #connections
+    organization: Organization
+    user_profile: UserProfile
+    roles: [Role]
+    classes: [Class]
+    profileSchoolMemberships: [ProfileSchoolMembership]
+
+    #query
+    checkAllowed(permission_name: ID!): Boolean
+
+    #mutations
+    addRole(role_id: ID!): Role
+    addRoles(role_ids: [ID!]!): [Role]
+    removeRole(role_id: ID!): ProfileOrganizationMembership
+    leave(_:Int): Boolean
+}
+
+
 type Role {
     role_id: ID!
 
@@ -182,6 +219,7 @@ type Role {
     #connections
     organization: Organization
     memberships: [OrganizationMembership]
+    profile_memberships: [ProfileOrganizationMembership]
     permissions: [Permission]
     permission(permission_name: String!): Permission
 
@@ -213,11 +251,13 @@ type School {
     organization: Organization
     memberships: [SchoolMembership]
     membership(user_id: ID!): SchoolMembership
+    membership(user_profile_id: ID!): ProfileSchoolMembership
     classes: [Class]
 
     #mutations
     set(school_name: String): School
     addUser(user_id: ID!): SchoolMembership
+    addUserProfile(user_profile: ID!): ProfileSchoolMembership
 }
 
 type SchoolMembership {
@@ -238,6 +278,27 @@ type SchoolMembership {
     addRole(role_id: ID!): Role
     addRoles(role_ids: [ID!]!): [Role]
     removeRole(role_id: ID!): SchoolMembership
+    leave(_:Int): Boolean
+}
+
+type ProfileSchoolMembership {
+    #properties
+    user_profile_id: ID!
+    school_id: ID!
+    join_timestamp: Date
+
+    #connections
+    user_profile: UserProfile
+    school: School
+    roles: [Role]
+
+    #query
+    checkAllowed(permission_name: ID!): Boolean
+
+    #mutations
+    addRole(role_id: ID!): Role
+    addRoles(role_ids: [ID!]!): [Role]
+    removeRole(role_id: ID!): ProfileSchoolMembership
     leave(_:Int): Boolean
 }
 
