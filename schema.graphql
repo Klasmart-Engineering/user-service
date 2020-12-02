@@ -111,6 +111,7 @@ type UserProfile{
     #mutations
     set(
         user_profile_user_id: String
+        user_profile_name: String
     ): UserProfile
    
     addOrganization(organization_id: ID!): ProfileOrganizationMembership

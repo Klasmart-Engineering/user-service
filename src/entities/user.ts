@@ -7,6 +7,7 @@ import { SchoolMembership } from "./schoolMembership";
 import { v5 } from "uuid";
 import { createHash } from "crypto"
 import { School } from "./school";
+import { UserProfile } from "./userprofile";
 
 @Entity()
 export class User extends BaseEntity {
@@ -28,6 +29,11 @@ export class User extends BaseEntity {
     @Column({nullable: true})
     public avatar?: string
 
+    @OneToMany(() => UserProfile, userProfile => userProfile.user_profile_user_id)
+    @JoinColumn({name: "user_profile_id", referencedColumnName: "user_profile_id"})
+    public userProfiles?: Promise<UserProfile[]>
+
+    
     @OneToMany(() => OrganizationMembership, membership => membership.user)
     @JoinColumn({name: "organization_id", referencedColumnName: "organization_id"})
     public memberships?: Promise<OrganizationMembership[]>
@@ -112,11 +118,26 @@ export class User extends BaseEntity {
             if(typeof avatar === "string")      { this.avatar = avatar }
 
             await this.save()
+            await this.createDefaultProfile()
             return this
         } catch(e) {
             console.error(e)
         }
     }
+    private async createDefaultProfile() {
+        try {
+            const defaultProfile = new UserProfile()
+            await getManager().transaction(async (manager) => {
+                defaultProfile.user_profile_name = "default"
+                defaultProfile.user_profile_user_id = this.user_id
+                await manager.save(defaultProfile)
+            })
+            return defaultProfile
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
     public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }

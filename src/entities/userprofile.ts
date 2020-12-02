@@ -25,8 +25,9 @@ export class UserProfile extends BaseEntity {
     @Column({nullable: true})
     public user_profile_name?: string
 
-    @ManyToOne(() => User, user => user.user_id)
-    public user_profile_user_id?: Promise<User>
+    @ManyToOne(() => User, user => user.userProfiles)
+    @Column({nullable:false})
+    public user_profile_user_id?: string
 
     @OneToMany(() => ProfileOrganizationMembership, membership => membership.user_profile)
     @JoinColumn({name: "organization_id", referencedColumnName: "organization_id"})
@@ -100,12 +101,13 @@ export class UserProfile extends BaseEntity {
 
     public async set({
         user_profile_user_id,
+        user_profile_name,
     }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if(info.operation.operation !== "mutation") { return null }
 
-            if(typeof user_profile_user_id === "string")   { this.user_profile_id = user_profile_user_id }
-        
+            if(typeof user_profile_user_id === "string")   { this.user_profile_user_id = user_profile_user_id }
+            if(typeof user_profile_name === "string")   { this.user_profile_name = user_profile_name }
             await this.save()
             return this
         } catch(e) {
