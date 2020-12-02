@@ -96,6 +96,27 @@ type User {
     addSchool(school_id: ID!): OrganizationMembership
 }
 
+type UserProfile{
+    user_profile_id: ID!
+    user_profile_user_id: String!
+    memberships: [ProfileOrganizationMembership]
+    membership(organization_id: ID!): ProfileOrganizationMembership
+
+    school_memberships: [ProfileSchoolMembership]
+    school_membership(school_id: ID!): ProfileSchoolMembership
+
+    classesTeaching: [Class]
+    classesStudying: [Class]
+
+    #mutations
+    set(
+        user_profile_user_id: String
+    ): UserProfile
+   
+    addOrganization(organization_id: ID!): ProfileOrganizationMembership
+    addSchool(school_id: ID!): ProfileOrganizationMembership
+}
+
 type Organization {
     organization_id: ID!
 
@@ -251,7 +272,8 @@ type School {
     organization: Organization
     memberships: [SchoolMembership]
     membership(user_id: ID!): SchoolMembership
-    membership(user_profile_id: ID!): ProfileSchoolMembership
+    profilememberships: [ProfileSchoolMembership]
+    profilemembership(user_profile_id: ID!): ProfileSchoolMembership
     classes: [Class]
 
     #mutations
