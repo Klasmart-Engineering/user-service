@@ -299,7 +299,7 @@ export class Organization extends BaseEntity {
             return user
         }
 
-    private async findOrCreateUserProfile(
+    private async findOrCreateDefaultUserProfile(
         user: User
     ): Promise<UserProfile>
     {
@@ -419,7 +419,7 @@ export class Organization extends BaseEntity {
             const [schoolMemberships,oldSchoolMemberships] = await this.membershipSchools(user,school_ids,schoolRoles)
             await manager.remove(oldSchoolMemberships);
             await manager.save([user, membership, ...schoolMemberships])
-            const userProfile = await this.findOrCreateUserProfile(user)
+            const userProfile = await this.findOrCreateDefaultUserProfile(user)
             const profileMembership = await this.profileMembershipOrganization(userProfile,  organizationRoles)
             const [profileSchoolMemberships,oldProfileSchoolMemberships] = await this.profileMembershipSchools(userProfile,school_ids,schoolRoles)
             await manager.remove(oldProfileSchoolMemberships);  

@@ -73,7 +73,7 @@ describe("organization", () => {
         });
         it("should assign the old user to the exsting user", async () => {
             let oldUserProfile: UserProfile
-            oldUserProfile = await organization["findOrCreateUserProfile"](user)
+            oldUserProfile = await organization["findOrCreateDefaultUserProfile"](user)
             expect(oldUserProfile).to.exist
             expect(oldUserProfile.user_profile_user_id).to.equal(user.user_id)    
             
@@ -84,7 +84,7 @@ describe("organization", () => {
             newUser = await organization["findOrCreateUser"]("bob@nowhere.com", "Bob", "Smith")
             expect(newUser).to.exist
             expect(newUser.email).to.equal("bob@nowhere.com")
-            newUserProfile = await organization["findOrCreateUserProfile"](newUser)
+            newUserProfile = await organization["findOrCreateDefaultUserProfile"](newUser)
             expect(newUserProfile).to.exist
             expect(newUserProfile.user_profile_user_id).to.equal(newUser.user_id)                        
         });
@@ -130,7 +130,7 @@ describe("organization", () => {
                 role = await createRole(testClient, organization.organization_id, "student");
             })
             it("Should set the userprofile as a member of the organization", async () => {
-                let userProfile = await organization["findOrCreateUserProfile"](user)
+                let userProfile = await organization["findOrCreateDefaultUserProfile"](user)
                 let membership = await organization["profileMembershipOrganization"](userProfile, new Array(role))
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
@@ -157,8 +157,7 @@ describe("organization", () => {
             });
 
             it("should set the school in the schools membership for the user", async () => {
-                let userProfile = await organization["findOrCreateUserProfile"](user)
-                let membership = await organization["profileMembershipOrganization"](userProfile, new Array(role))
+                let userProfile = await organization["findOrCreateDefaultUserProfile"](user)
                 let schoolmemberships: ProfileSchoolMembership[]
                 let oldSchoolMemberships: ProfileSchoolMembership[]
                 [schoolmemberships, oldSchoolMemberships] = await organization["profileMembershipSchools"](userProfile, new Array(schoolId), new Array(role))
