@@ -37,7 +37,7 @@ describe("model.class", () => {
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
-    
+
     after(async () => {
         await connection?.close();
     });
@@ -46,15 +46,15 @@ describe("model.class", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
-    
+
         context("when none", () => {
             it("should return an empty array", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_CLASSES,
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const classes = res.data?.classes as Class[];
                 expect(classes).to.exist;
@@ -71,11 +71,11 @@ describe("model.class", () => {
 
             it("should return an array containing one class", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_CLASSES,
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const classes = res.data?.classes as Class[];
                 expect(classes).to.exist;
@@ -88,16 +88,16 @@ describe("model.class", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
-    
+
         context("when none", () => {
             it("should return null", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_CLASS,
                     variables: { class_id: accountUUID() },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 expect(res.data?.class).to.be.null;
             });
@@ -114,12 +114,12 @@ describe("model.class", () => {
 
             it("should return the class associated with the specified ID", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_CLASS,
                     variables: { class_id: cls.class_id },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const gqlClass = res.data?.class as Class;
                 expect(gqlClass).to.exist;

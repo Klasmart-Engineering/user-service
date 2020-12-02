@@ -261,6 +261,7 @@ type Class {
     #mutations
     set(class_name: String): Class
     addTeacher(user_id: ID!): User
+    editTeachers(teacher_ids : [ID!]): [User]
     removeTeacher(user_id: ID!): Boolean
     addStudent(user_id: ID!): User
     removeStudent(user_id: ID!): Boolean

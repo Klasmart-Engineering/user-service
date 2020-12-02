@@ -55,6 +55,18 @@ const ADD_STUDENT_TO_CLASS = `
     }
 `;
 
+const EDIT_TEACHERS_IN_CLASS = `
+    mutation myEditTeachers(
+            $class_id: ID!
+            $teacher_ids: [ID!]) {
+        class(class_id: $class_id) {
+            editTeachers(teacher_ids: $teacher_ids) {
+                user_id
+            }
+        }
+    }
+`;
+
 export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers) {
     const { mutate } = testClient;
 
@@ -71,7 +83,7 @@ export async function updateClass(testClient: ApolloServerTestClient, classId: s
 
 export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
-    
+
     const res = await mutate({
         mutation: ADD_SCHOOL_TO_CLASS,
         variables: { class_id: classId, school_id: schoolId },
@@ -83,9 +95,22 @@ export async function addSchoolToClass(testClient: ApolloServerTestClient, class
     return school;
 }
 
+export async function editTeachersInClass(testClient: ApolloServerTestClient, classId: string, teacherIds: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const res = await mutate({
+        mutation: EDIT_TEACHERS_IN_CLASS,
+        variables: { class_id: classId, teacher_ids: teacherIds },
+        headers: headers,
+    });
+
+    const teachers = res.data?.class.editTeachers as User[];
+    return teachers;
+}
+
 export async function addTeacherToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
-    
+
     const res = await mutate({
         mutation: ADD_TEACHER_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
@@ -99,7 +124,7 @@ export async function addTeacherToClass(testClient: ApolloServerTestClient, clas
 
 export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
-    
+
     const res = await mutate({
         mutation: ADD_STUDENT_TO_CLASS,
         variables: { class_id: classId, user_id: userId },

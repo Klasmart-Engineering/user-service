@@ -1,5 +1,5 @@
 import { GraphQLResolveInfo } from "graphql";
-import { BaseEntity, Column, Entity, getRepository, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, getManager, getRepository, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Organization } from "./organization";
 import { School } from "./school";
 import { User } from "./user";
@@ -36,9 +36,9 @@ export class Class extends BaseEntity {
               permisionContext,
               PermissionName.edit_class_20334
             )
-            
+
             if(typeof class_name === "string") { this.class_name = class_name }
-            
+
             await this.save()
 
             return this
@@ -46,15 +46,16 @@ export class Class extends BaseEntity {
             console.error(e)
         }
     }
-    
+
+
     public async eligibleTeachers({}: any, context: Context, info: GraphQLResolveInfo) {
         return this._membersWithPermission(PermissionName.attend_live_class_as_a_teacher_186)
     }
-    
+
     public  async eligibleStudents({}: any, context: Context, info: GraphQLResolveInfo) {
         return this._membersWithPermission(PermissionName.attend_live_class_as_a_student_187)
     }
-    
+
     public async _membersWithPermission(permission_name: PermissionName) {
         const results = new Map<string, User>()
         const userRepo = getRepository(User)
@@ -88,8 +89,55 @@ export class Class extends BaseEntity {
 
         for(const organizationUser of organizationUsers) { results.set(organizationUser.user_id, organizationUser) }
         for(const schoolUser of schoolUsers) { results.set(schoolUser.user_id, schoolUser) }
-        
+
         return results.values()
+    }
+
+    public async editTeachers({teacher_ids}: any, context: Context, info: GraphQLResolveInfo) {
+        const organization = await this.organization as Organization
+        if(info.operation.operation !== "mutation" || !organization) { return null }
+
+        const permisionContext = { organization_id: organization.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.add_teachers_to_class_20226
+        )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.delete_teacher_from_class_20446
+        )
+
+        var oldTeachers = await this.teachers || []
+        oldTeachers = await Promise.all(oldTeachers.map(async (teacher : User) => {
+            if(!teacher_ids.includes(teacher.user_id)){
+                const classes  = (await teacher.classesTeaching) || []
+                teacher.classesTeaching = Promise.resolve(
+                    classes.filter(({class_id}) => class_id !== this.class_id)
+                )
+            }
+
+            return teacher
+        }))
+
+         const newTeachers = await Promise.all(teacher_ids.map(async (teacher_id : string) => {
+            const teacher = await getRepository(User).findOneOrFail({user_id: teacher_id})
+            const classes  = (await teacher.classesTeaching) || []
+            classes.push(this)
+            teacher.classesTeaching = Promise.resolve(classes)
+
+            return teacher
+        }))
+
+        try {
+            await getManager().transaction(async (manager) => {
+                await manager.save(oldTeachers)
+                await manager.save(newTeachers)
+            })
+
+            return newTeachers
+        } catch(e) {
+            console.error(e)
+        }
     }
 
     public async addTeacher({user_id}: any, context: Context, info: GraphQLResolveInfo) {
