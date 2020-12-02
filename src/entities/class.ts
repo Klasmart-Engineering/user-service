@@ -184,6 +184,53 @@ export class Class extends BaseEntity {
         return false
     }
 
+    public async editStudents({student_ids}: any, context: Context, info: GraphQLResolveInfo) {
+        const organization = await this.organization as Organization
+        if(info.operation.operation !== "mutation" || !organization) { return null }
+
+        const permisionContext = { organization_id: organization.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.add_students_to_class_20225
+        )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.delete_student_from_class_roster_20445
+        )
+
+        var oldStudents = await this.students || []
+        oldStudents = await Promise.all(oldStudents.map(async (student : User) => {
+            if(!student_ids.includes(student.user_id)){
+                const classes  = (await student.classesStudying) || []
+                student.classesStudying = Promise.resolve(
+                    classes.filter(({class_id}) => class_id !== this.class_id)
+                )
+            }
+
+            return student
+        }))
+
+         const newStudents = await Promise.all(student_ids.map(async (student_id : string) => {
+            const student = await getRepository(User).findOneOrFail({user_id: student_id})
+            const classes  = (await student.classesStudying) || []
+            classes.push(this)
+            student.classesStudying = Promise.resolve(classes)
+
+            return student
+        }))
+
+        try {
+            await getManager().transaction(async (manager) => {
+                await manager.save(oldStudents)
+                await manager.save(newStudents)
+            })
+
+            return newStudents
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     public async addStudent({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization

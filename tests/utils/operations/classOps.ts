@@ -67,6 +67,18 @@ const EDIT_TEACHERS_IN_CLASS = `
     }
 `;
 
+const EDIT_STUDENTS_IN_CLASS = `
+    mutation myEditStudents(
+            $class_id: ID!
+            $student_ids: [ID!]) {
+        class(class_id: $class_id) {
+            editStudents(student_ids: $student_ids) {
+                user_id
+            }
+        }
+    }
+`;
+
 export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers) {
     const { mutate } = testClient;
 
@@ -120,6 +132,19 @@ export async function addTeacherToClass(testClient: ApolloServerTestClient, clas
     expect(res.errors, res.errors?.toString()).to.be.undefined;
     const teacher = res.data?.class.addTeacher as User;
     return teacher;
+}
+
+export async function editStudentsInClass(testClient: ApolloServerTestClient, classId: string, studentIds: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const res = await mutate({
+        mutation: EDIT_STUDENTS_IN_CLASS,
+        variables: { class_id: classId, student_ids: studentIds },
+        headers: headers,
+    });
+
+    const students = res.data?.class.editStudents as User[];
+    return students;
 }
 
 export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
