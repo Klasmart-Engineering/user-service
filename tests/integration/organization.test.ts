@@ -4,6 +4,7 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
+import { UserProfile } from "../../src/entities/userprofile";
 import { createOrganization } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -11,9 +12,12 @@ import { addUserToOrganization, createSchool, createRole } from "../utils/operat
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
+import { ProfileOrganizationMembership } from '../../src/entities/profileOrganizationMembership';
+import { ProfileSchoolMembership } from '../../src/entities/profileSchoolMembership';
 import { JoeAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
+
 
 describe("organization", () => {
     let connection: Connection;
@@ -59,6 +63,34 @@ describe("organization", () => {
 
     });
 
+
+
+    describe("findOrCreateUserProfile", async () => {
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+            organization = await createOrganization(testClient, user.user_id);
+        });
+        it("should assign the old user to the exsting user", async () => {
+            let oldUserProfile: UserProfile
+            oldUserProfile = await organization["findOrCreateUserProfile"](user)
+            expect(oldUserProfile).to.exist
+            expect(oldUserProfile.user_profile_user_id).to.equal(user.user_id)    
+            
+        });
+        it("should assign the new user to a new user", async () => {
+            let newUser: User
+            let newUserProfile: UserProfile
+            newUser = await organization["findOrCreateUser"]("bob@nowhere.com", "Bob", "Smith")
+            expect(newUser).to.exist
+            expect(newUser.email).to.equal("bob@nowhere.com")
+            newUserProfile = await organization["findOrCreateUserProfile"](newUser)
+            expect(newUserProfile).to.exist
+            expect(newUserProfile.user_profile_user_id).to.equal(newUser.user_id)                        
+        });
+
+    });
+
     describe("membershipOrganization", async () => {
         context("we have a user and an organization", () => {
             let userId: string;
@@ -82,7 +114,65 @@ describe("organization", () => {
         });
     })
 
-    describe("membershipSchools", async () => {
+    describe("profileMembershipOrganization", async () => {
+        context("we have a userprofile and an organization", () => {
+            let userId: string;
+            let userProfileId: string;
+            let organizationId: string;
+            let schoolId: string;
+            
+            beforeEach(async () => {
+                await reloadDatabase();
+                user = await createUserJoe(testClient);
+                userId = user.user_id
+                organization = await createOrganization(testClient, user.user_id);
+                organizationId = organization.organization_id
+                role = await createRole(testClient, organization.organization_id, "student");
+            })
+            it("Should set the userprofile as a member of the organization", async () => {
+                let userProfile = await organization["findOrCreateUserProfile"](user)
+                let membership = await organization["profileMembershipOrganization"](userProfile, new Array(role))
+                expect(membership).to.exist
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_profile_id).to.equal(userProfile.user_profile_id)               
+            });
+
+        });
+    })
+
+    describe("profilemembershipSchools", async () => {
+        context("when user is a member of an organization", () => {
+            let userId: string;
+            let organizationId: string;
+            let schoolId: string;
+            beforeEach(async () => {
+                await reloadDatabase();
+                user = await createUserJoe(testClient);
+                userId = user.user_id
+                organization = await createOrganization(testClient, user.user_id);
+                organizationId = organization.organization_id
+                role = await createRole(testClient, organization.organization_id, "student");
+                schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+                await addUserToOrganization(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            });
+
+            it("should set the school in the schools membership for the user", async () => {
+                let userProfile = await organization["findOrCreateUserProfile"](user)
+                let membership = await organization["profileMembershipOrganization"](userProfile, new Array(role))
+                let schoolmemberships: ProfileSchoolMembership[]
+                let oldSchoolMemberships: ProfileSchoolMembership[]
+                [schoolmemberships, oldSchoolMemberships] = await organization["profileMembershipSchools"](userProfile, new Array(schoolId), new Array(role))
+                expect(oldSchoolMemberships).to.exist
+                expect(oldSchoolMemberships).to.be.empty
+                expect(schoolmemberships).to.exist
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_profile_id).to.equal(userProfile.user_profile_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+            });
+        });
+    });
+
+    describe("MembershipSchools", async () => {
         context("when user is a member of an organization", () => {
             let userId: string;
             let organizationId: string;
@@ -112,6 +202,9 @@ describe("organization", () => {
             });
         });
     });
+
+    
+
 
     describe("_setMembership", async () => {
         context("We have an email, given_name, family_name, organization_role_ids, school_ids and school_role_ids", () => {

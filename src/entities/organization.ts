@@ -11,9 +11,11 @@ import {
     BaseEntity,
     EntityManager,
 } from 'typeorm';
+import { uuid } from 'uuidv4';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
 import { ProfileOrganizationMembership } from './profileOrganizationMembership';
+import { ProfileSchoolMembership } from './profileSchoolMembership';
 import { Role } from './role';
 import { User, accountUUID } from './user';
 import { UserProfile } from "./userprofile";
@@ -297,6 +299,21 @@ export class Organization extends BaseEntity {
             return user
         }
 
+    private async findOrCreateUserProfile(
+        user: User
+    ): Promise<UserProfile>
+    {
+        const userProfiles = await getRepository(UserProfile).find({ where: { user_profile_user_id: user.user_id, user_profile_name: "default" } });
+        if (userProfiles.length < 1) {
+            let defaultProfile = new UserProfile()
+            defaultProfile.user_profile_id = uuid()
+            defaultProfile.user_profile_name = "default"
+            defaultProfile.user_profile_user_id = user.user_id
+            return defaultProfile
+        }
+        return userProfiles[0]     
+    }
+
     private async membershipOrganization(
         user: User,
         organizationRoles: Role[]
@@ -312,6 +329,23 @@ export class Organization extends BaseEntity {
         return membership   
     
     }
+
+    private async profileMembershipOrganization(
+        userprofile: UserProfile,
+        organizationRoles: Role[]
+         ):Promise<ProfileOrganizationMembership>{
+            const user_profile_id = userprofile.user_profile_id
+            const organization_id = this.organization_id
+            const membership = await getRepository(ProfileOrganizationMembership).findOne({organization_id, user_profile_id}) || new ProfileOrganizationMembership()
+            membership.organization_id = this.organization_id
+            membership.user_profile_id = userprofile.user_profile_id
+            membership.user_profile = Promise.resolve(userprofile)
+            membership.organization = Promise.resolve(this)
+            membership.roles = Promise.resolve(organizationRoles)
+        return membership   
+    
+    }
+
 
     private async membershipSchools(
         user: User,
@@ -340,6 +374,33 @@ export class Organization extends BaseEntity {
         return [schoolMemberships,oldSchoolMemberships]
     }
 
+    private async profileMembershipSchools(
+        userprofile: UserProfile,
+        school_ids: string[] = [],
+        schoolRoles: Role[]
+        ):Promise<[ProfileSchoolMembership[],ProfileSchoolMembership[]]>{
+            const schoolRepo = getRepository(School)
+            const user_profile_id = userprofile.user_profile_id
+            const schoolMembershipRepo = getRepository(ProfileSchoolMembership)
+            const oldSchoolMemberships = await schoolMembershipRepo.find({user_profile_id})
+            const schoolMemberships = await Promise.all(school_ids.map(async (school_id) => {
+                const school = await schoolRepo.findOneOrFail({school_id})
+                const checkOrganization = await school.organization
+                if(!checkOrganization || checkOrganization.organization_id !== this.organization_id) {
+                    throw new Error(`Can not add Organization(${checkOrganization?.organization_id}).School(${school_id}) to membership in Organization(${this.organization_id})`)
+                }
+                const schoolMembership = await schoolMembershipRepo.findOne({school_id, user_profile_id}) || new ProfileSchoolMembership()
+                schoolMembership.user_profile_id = user_profile_id
+                schoolMembership.user_profile = Promise.resolve(userprofile)
+                schoolMembership.school_id = school_id
+                schoolMembership.school = Promise.resolve(school)
+                schoolMembership.roles = Promise.resolve(schoolRoles)
+
+                return schoolMembership
+            }))
+        return [schoolMemberships,oldSchoolMemberships]
+    }
+
     private async _setMembership(
         email: string,
         given_name?: string,
@@ -358,6 +419,12 @@ export class Organization extends BaseEntity {
             const [schoolMemberships,oldSchoolMemberships] = await this.membershipSchools(user,school_ids,schoolRoles)
             await manager.remove(oldSchoolMemberships);
             await manager.save([user, membership, ...schoolMemberships])
+            const userProfile = await this.findOrCreateUserProfile(user)
+            const profileMembership = await this.profileMembershipOrganization(userProfile,  organizationRoles)
+            const [profileSchoolMemberships,oldProfileSchoolMemberships] = await this.profileMembershipSchools(userProfile,school_ids,schoolRoles)
+            await manager.remove(oldProfileSchoolMemberships);  
+            await manager.save([userProfile, profileMembership, ...profileSchoolMemberships])      
+            
             return {user, membership, schoolMemberships}
         })
 

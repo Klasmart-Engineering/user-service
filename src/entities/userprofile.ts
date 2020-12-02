@@ -16,6 +16,7 @@ import { teacherRole } from "../permissions/teacher";
 import { School } from "./school";
 import { User } from "./user";
 
+
 @Entity()
 export class UserProfile extends BaseEntity {
 
@@ -184,9 +185,10 @@ export class UserProfile extends BaseEntity {
         }
     }}
 
-const accountNamespace = v5("kidsloop.net", v5.DNS)
+/*const accountNamespace = v5("kidsloop.net", v5.DNS)
 export function accountUUID(email?: string) {
     const hash = createHash('sha256');
     if(email) { hash.update(email) }
     return v5(hash.digest(), accountNamespace)
 }
+*/

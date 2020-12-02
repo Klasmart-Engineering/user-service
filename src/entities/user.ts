@@ -1,5 +1,6 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
+import { uuid } from 'uuidv4';
 import { OrganizationMembership } from "./organizationMembership";
 import { Organization } from "./organization";
 import { Class } from "./class";
@@ -124,18 +125,24 @@ export class User extends BaseEntity {
             console.error(e)
         }
     }
-    private async createDefaultProfile() {
+    private async createDefaultProfile() {      
         try {
-            const defaultProfile = new UserProfile()
-            await getManager().transaction(async (manager) => {
-                defaultProfile.user_profile_name = "default"
-                defaultProfile.user_profile_user_id = this.user_id
-                await manager.save(defaultProfile)
-            })
-            return defaultProfile
+            const userProfiles = await UserProfile.find({ where: { user_profile_user_id: this.user_id, user_profile_name: "default" } });
+            if (userProfiles.length < 1) {
+                let defaultProfile = new UserProfile()
+                await getManager().transaction(async (manager) => {
+                    defaultProfile.user_profile_id = uuid()
+                    defaultProfile.user_profile_name = "default"
+                    defaultProfile.user_profile_user_id = this.user_id
+                    await manager.save(defaultProfile)
+                })
+            } else {
+                return userProfiles[0]
+            }
         } catch (e) {
             console.error(e)
         }
+
     }
 
     public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
