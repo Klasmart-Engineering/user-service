@@ -4,13 +4,14 @@ import { School } from "../../src/entities/school";
 import { Model } from "../../src/model";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { UserPermissions } from "../../src/permissions/userPermissions";
+import { superAdminRole } from "../../src/permissions/superAdmin";
 import { checkToken } from "../../src/token";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { addUserToOrganization, createRole, createSchool } from "../utils/operations/organizationOps";
 import { createOrganization } from "../utils/operations/userOps";
-import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
+import { BillyAuthToken, JoeAuthToken, BillySuperAdminAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import chaiAsPromised from "chai-as-promised"
 import chai from "chai"
@@ -41,6 +42,7 @@ describe("userPermissions", () => {
         let userId: string;
         let testOrgRoleId: string
         let testSchoolRoleId: string
+        let token
 
         beforeEach(async () => {
             await connection.synchronize(true);
@@ -60,12 +62,15 @@ describe("userPermissions", () => {
             const testSchoolRole = await createRole(testClient, organizationId, "test_role");
             testSchoolRoleId = testSchoolRole.role_id;
             await addRoleToSchoolMembership(testClient, userId, schoolId, testSchoolRoleId);
-            const encodedToken = BillyAuthToken;
-            const token = await checkToken(encodedToken) as any;
-            userPermissions = new UserPermissions(token);
         });
 
         context("when user role doesn't include specified permission", () => {
+            beforeEach(async () => {
+                const encodedToken = BillyAuthToken;
+                token = await checkToken(encodedToken) as any;
+                userPermissions = new UserPermissions(token);
+            });
+
             it("should throw error when school ID array is provided", async () => {
                 const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
                 const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
@@ -80,6 +85,12 @@ describe("userPermissions", () => {
         });
 
         context("when user role does include specified permission", () => {
+            beforeEach(async () => {
+                const encodedToken = BillyAuthToken;
+                token = await checkToken(encodedToken) as any;
+                userPermissions = new UserPermissions(token);
+            });
+
             it("should not throw error when school ID array is provided", async () => {
                 await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334);
                 const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
@@ -99,6 +110,23 @@ describe("userPermissions", () => {
                 const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: organizationId };
                 const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                 await expect(fn()).to.be.fulfilled;
+            });
+        });
+
+        context("when the user is super admin", () => {
+            beforeEach(async () => {
+                const encodedToken = BillySuperAdminAuthToken;
+                token = await checkToken(encodedToken) as any;
+                userPermissions = new UserPermissions(token);
+            });
+
+            let permissionContext = {};
+
+            it("allows all the actions of a super admin", async () => {
+                for( const permission of superAdminRole.permissions){
+                    const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, permission);
+                    await expect(fn()).to.be.fulfilled;
+                }
             });
         });
     });

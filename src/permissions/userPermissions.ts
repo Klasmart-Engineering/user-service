@@ -2,6 +2,7 @@ import { getRepository } from "typeorm";
 import { OrganizationMembership } from "../entities/organizationMembership";
 import { SchoolMembership } from "../entities/schoolMembership";
 import { PermissionName } from './permissionNames';
+import { superAdminRole } from './superAdmin';
 
 interface PermissionContext {
     school_ids?: string[]
@@ -13,8 +14,11 @@ export class UserPermissions {
     private _schoolPermissions?: Promise<Map<string, Set<string>>>
 
     private readonly user_id?: string
+    private readonly isAdmin?: boolean
+
     public constructor(token?: any) {
         this.user_id = token?.id
+        this.isAdmin = !!token?.admin
     }
 
     public async rejectIfNotAllowed({school_ids, organization_id}: PermissionContext, permission_name: PermissionName) {
@@ -26,12 +30,15 @@ export class UserPermissions {
         if(!isAllowed && school_ids) {
             throw new Error(`User(${this.user_id}) does not have Permission(${permission_name}) in Schools(${school_ids?.toString()})`)
         }
+        if(!isAllowed) {
+            throw new Error(`User(${this.user_id}) does not have Permission(${permission_name})`)
+        }
     }
 
     public async allowed({school_ids, organization_id}: PermissionContext, permission_name: PermissionName) {
-        let output = false
+        let output = this.isAdmin && superAdminRole.permissions.includes(permission_name)
 
-        if(organization_id) {
+        if(!output && organization_id) {
             const allOrganizationPermisions = await this.organizationPermissions()
             const organizationPermissions = allOrganizationPermisions.get(organization_id)
 
@@ -39,6 +46,7 @@ export class UserPermissions {
               output = true
             }
         }
+
         if(!output && school_ids) {
             const allSchoolPermissions = await this.schoolPermissions()
             for(const id of school_ids) {
