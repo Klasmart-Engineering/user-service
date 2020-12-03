@@ -107,21 +107,21 @@ describe("class", () => {
     });
 
     describe("editTeachers", () => {
+        let user: User;
+        let cls: Class;
+        let organization : Organization;
+
         beforeEach(async () => {
             await connection.synchronize(true);
+
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganization(testClient, orgOwner.user_id);
+            await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            cls = await createClass(testClient, organization.organization_id);
         });
 
         context("when not authenticated", () => {
-            let user: User;
-            let cls: Class;
-
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                user = await createUserBilly(testClient);
-                const organization = await createOrganization(testClient, orgOwner.user_id);
-                cls = await createClass(testClient, organization.organization_id);
-            });
-
             it("fails to edit teachers in class", async () => {
                 const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: undefined });
                 expect(gqlTeacher).to.be.null;
@@ -135,18 +135,6 @@ describe("class", () => {
         });
 
         context("when authenticated", () => {
-            let user: User;
-            let cls: Class;
-            let organization : Organization;
-
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                user = await createUserBilly(testClient);
-                organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                cls = await createClass(testClient, organization.organization_id);
-            });
-
             context("and the user does not have delete teacher permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
@@ -312,21 +300,21 @@ describe("class", () => {
     });
 
     describe("editStudents", () => {
+        let user: User;
+        let cls: Class;
+        let organization : Organization;
+
         beforeEach(async () => {
             await connection.synchronize(true);
+
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganization(testClient, orgOwner.user_id);
+            await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            cls = await createClass(testClient, organization.organization_id);
         });
 
         context("when not authenticated", () => {
-            let user: User;
-            let cls: Class;
-
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                user = await createUserBilly(testClient);
-                const organization = await createOrganization(testClient, orgOwner.user_id);
-                cls = await createClass(testClient, organization.organization_id);
-            });
-
             it("fails to edit students in class", async () => {
                 const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: undefined });
                 expect(gqlStudent).to.be.null;
@@ -340,18 +328,6 @@ describe("class", () => {
         });
 
         context("when authenticated", () => {
-            let user: User;
-            let cls: Class;
-            let organization : Organization;
-
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                user = await createUserBilly(testClient);
-                organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                cls = await createClass(testClient, organization.organization_id);
-            });
-
             context("and the user does not have delete student permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
@@ -517,23 +493,23 @@ describe("class", () => {
     });
 
     describe("editSchools", () => {
+        let school: School;
+        let user: User;
+        let cls: Class;
+        let organization : Organization;
+
         beforeEach(async () => {
             await connection.synchronize(true);
+
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganization(testClient, orgOwner.user_id);
+            await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            cls = await createClass(testClient, organization.organization_id);
+            school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {
-            let school: School;
-            let cls: Class;
-
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                const user = await createUserBilly(testClient);
-                const organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                cls = await createClass(testClient, organization.organization_id);
-                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
-            });
-
             it("fails to edit schools in class", async () => {
                 const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: undefined });
                 expect(gqlSchool).to.be.null;
@@ -547,20 +523,6 @@ describe("class", () => {
         });
 
         context("when authenticated", () => {
-            let school: School;
-            let user: User;
-            let cls: Class;
-            let organization : Organization;
-
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                user = await createUserBilly(testClient);
-                organization = await createOrganization(testClient, orgOwner.user_id);
-                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                cls = await createClass(testClient, organization.organization_id);
-                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
-            });
-
             context("and the user does not have edit school permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
