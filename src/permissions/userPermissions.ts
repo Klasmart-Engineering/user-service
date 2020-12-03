@@ -13,8 +13,8 @@ export class UserPermissions {
     private _schoolPermissions?: Promise<Map<string, Set<string>>>
 
     private readonly user_id?: string
-    public constructor(user_id?: string) {
-        this.user_id = user_id
+    public constructor(token?: any) {
+        this.user_id = token?.id
     }
 
     public async rejectIfNotAllowed({school_ids, organization_id}: PermissionContext, permission_name: PermissionName) {

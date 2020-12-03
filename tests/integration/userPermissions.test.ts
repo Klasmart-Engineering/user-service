@@ -29,7 +29,7 @@ describe("userPermissions", () => {
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
-    
+
     after(async () => {
         await connection?.close();
     });
@@ -62,7 +62,7 @@ describe("userPermissions", () => {
             await addRoleToSchoolMembership(testClient, userId, schoolId, testSchoolRoleId);
             const encodedToken = BillyAuthToken;
             const token = await checkToken(encodedToken) as any;
-            userPermissions = new UserPermissions(token && token.id);
+            userPermissions = new UserPermissions(token);
         });
 
         context("when user role doesn't include specified permission", () => {

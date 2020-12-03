@@ -36,7 +36,7 @@ FwIDAQAB
                 ],
             },
             secretOrPublicKey: "iXtZx1D5AqEB0B9pfn+hRQ==",
-            
+
         },
     ],
     [
@@ -72,7 +72,7 @@ export async function checkToken(token?: string) {
             verify(token, secretOrPublicKey, options, (err, decoded) => {
                 if(err) { reject(err) }
                 if(decoded) { resolve(decoded) }
-                reject(new Error("Unexpected authorization error")) 
+                reject(new Error("Unexpected authorization error"))
             })
         })
         return verifiedToken
