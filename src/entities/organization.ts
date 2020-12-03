@@ -255,7 +255,7 @@ export class Organization extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
-            return result
+            return  {user:result.user, membership: result.membership, schoolMemberships:result.schoolMemberships}
         } catch(e) {
             console.error(e)
         }
@@ -266,7 +266,7 @@ export class Organization extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation") { return null }
             const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
-            return result
+            return {user:result.user, membership: result.membership, schoolMemberships:result.schoolMemberships}
         } catch(e) {
             console.error(e)
         }
@@ -425,7 +425,7 @@ export class Organization extends BaseEntity {
             await manager.remove(oldProfileSchoolMemberships);  
             await manager.save([userProfile, profileMembership, ...profileSchoolMemberships])      
             
-            return {user, membership, schoolMemberships}
+            return {user, membership, schoolMemberships, userProfile, profileMembership, profileSchoolMemberships}
         })
 
     }

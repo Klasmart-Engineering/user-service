@@ -229,6 +229,9 @@ describe("organization", () => {
                 let newUser = object.user
                 let membership = object.membership
                 let schoolmemberships = object.schoolMemberships
+                let userProfile = object.userProfile
+                let profileMembership = object.profileMembership
+                let profileSchoolMemberships = object.profileSchoolMemberships
 
                 expect(newUser).to.exist
                 expect(newUser.email).to.equal("bob@nowhere.com")
@@ -242,6 +245,17 @@ describe("organization", () => {
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
 
+                expect(userProfile).to.exist
+                expect(userProfile.user_profile_user_id).to.be.equal(newUser.user_id)
+
+                expect(profileSchoolMemberships).to.exist
+                expect(profileSchoolMemberships.length).to.be.equal(1)
+                expect(profileSchoolMemberships[0].user_profile_id).to.be.equal(userProfile.user_profile_id)
+
+                expect(profileMembership).to.exist
+                expect(profileMembership.organization_id).to.equal(organizationId)
+                expect(profileMembership.user_profile_id).to.equal(userProfile.user_profile_id)
+
             });
             it("should find the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
                 let email = user.email ?? "anyone@email.com"
@@ -252,6 +266,9 @@ describe("organization", () => {
                 let newUser = object.user
                 let membership = object.membership
                 let schoolmemberships = object.schoolMemberships
+                let userProfile = object.userProfile
+                let profileMembership = object.profileMembership
+                let profileSchoolMemberships = object.profileSchoolMemberships
 
                 expect(newUser).to.exist
                 expect(newUser.user_id).to.equal(user.user_id)
@@ -264,6 +281,17 @@ describe("organization", () => {
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
+
+                expect(userProfile).to.exist
+                expect(userProfile.user_profile_user_id).to.be.equal(newUser.user_id)
+
+                expect(profileSchoolMemberships).to.exist
+                expect(profileSchoolMemberships.length).to.be.equal(1)
+                expect(profileSchoolMemberships[0].user_profile_id).to.be.equal(userProfile.user_profile_id)
+
+                expect(profileMembership).to.exist
+                expect(profileMembership.organization_id).to.equal(organizationId)
+                expect(profileMembership.user_profile_id).to.equal(userProfile.user_profile_id)
 
             });
         });
