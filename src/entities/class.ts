@@ -275,6 +275,54 @@ export class Class extends BaseEntity {
         return false
     }
 
+    public async editSchools({school_ids}: any, context: Context, info: GraphQLResolveInfo) {
+        const organization = await this.organization as Organization
+        if(info.operation.operation !== "mutation" || !organization) { return null }
+
+        const permisionContext = { organization_id: organization.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_school_20330
+        )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_class_20334
+        )
+
+        var oldSchools = await this.schools || []
+        oldSchools = await Promise.all(oldSchools.map(async (school : School) => {
+            if(!school_ids.includes(school.school_id)){
+                const classes  = (await school.classes) || []
+                school.classes = Promise.resolve(
+                    classes.filter(({class_id}) => class_id !== this.class_id)
+                )
+            }
+
+            return school
+        }))
+
+
+         const newSchools = await Promise.all(school_ids.map(async (school_id : string) => {
+            const school = await getRepository(School).findOneOrFail({school_id})
+            const classes  = (await school.classes) || []
+            classes.push(this)
+            school.classes = Promise.resolve(classes)
+
+            return school
+        }))
+
+        try {
+            await getManager().transaction(async (manager) => {
+                await manager.save(oldSchools)
+                await manager.save(newSchools)
+            })
+
+            return newSchools
+        } catch(e) {
+            console.error(e)
+        }
+    }
+
     public async addSchool({school_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization

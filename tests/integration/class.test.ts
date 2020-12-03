@@ -4,7 +4,7 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Class } from "../../src/entities/class";
-import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, updateClass } from "../utils/operations/classOps";
+import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass } from "../utils/operations/classOps";
 import { createOrganization } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
@@ -428,7 +428,6 @@ describe("class", () => {
         });
     });
 
-
     describe("addStudent", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
@@ -513,6 +512,127 @@ describe("class", () => {
                 expect(students).to.have.lengthOf(1);
                 expect(classesStudying![0].class_id).to.equal(dbClass.class_id);
                 expect(students![0].user_id).to.equal(dbStudent.user_id);
+            });
+        });
+    });
+
+    describe("editSchools", () => {
+        beforeEach(async () => {
+            await connection.synchronize(true);
+        });
+
+        context("when not authenticated", () => {
+            let school: School;
+            let cls: Class;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                const user = await createUserBilly(testClient);
+                const organization = await createOrganization(testClient, orgOwner.user_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                cls = await createClass(testClient, organization.organization_id);
+                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+            });
+
+            it("fails to edit schools in class", async () => {
+                const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: undefined });
+                expect(gqlSchool).to.be.null;
+                const dbSchool = await School.findOneOrFail(school.school_id);
+                const dbClass = await Class.findOneOrFail(cls.class_id);
+                const schools = await dbClass.schools;
+                const classes = await dbSchool.classes;
+                expect(classes).to.be.empty;
+                expect(schools).to.be.empty;
+            });
+        });
+
+        context("when authenticated", () => {
+            let school: School;
+            let user: User;
+            let cls: Class;
+            let organization : Organization;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                user = await createUserBilly(testClient);
+                organization = await createOrganization(testClient, orgOwner.user_id);
+                await addUserToOrganization(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                cls = await createClass(testClient, organization.organization_id);
+                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+            });
+
+            context("and the user does not have edit school permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to edit schools in class", async () => {
+                    const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    expect(gqlSchool).to.be.null;
+                    const dbSchool = await School.findOneOrFail(school.school_id);
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    const schools = await dbClass.schools;
+                    const classes = await dbSchool.classes;
+                    expect(classes).to.be.empty;
+                    expect(schools).to.be.empty;
+                });
+            });
+
+            context("and the user does not have edit class permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to edit schools in class", async () => {
+                    const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    expect(gqlSchool).to.be.null;
+                    const dbSchool = await School.findOneOrFail(school.school_id);
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    const schools = await dbClass.schools;
+                    const classes = await dbSchool.classes;
+                    expect(classes).to.be.empty;
+                    expect(schools).to.be.empty;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                let schoolInfo = (school : School) => {
+                    return school.school_id
+                }
+                let classInfo = (cls : Class) => {
+                    return cls.class_id
+                }
+
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("edits schools in class", async () => {
+                    let gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    expect(gqlSchool.map(schoolInfo)).to.deep.eq([school.school_id]);
+                    let dbSchool = await School.findOneOrFail(school.school_id);
+                    let dbClass = await Class.findOneOrFail(cls.class_id);
+                    let schools = await dbClass.schools || [];
+                    let classes = await dbSchool.classes || [];
+                    expect(schools.map(schoolInfo)).to.deep.eq([school.school_id]);
+                    expect(classes.map(classInfo)).to.deep.eq([cls.class_id]);
+
+                    gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    expect(gqlSchool).to.be.empty;
+                    dbSchool = await School.findOneOrFail(school.school_id);
+                    dbClass = await Class.findOneOrFail(cls.class_id);
+                    schools = await dbClass.schools || [];
+                    classes = await dbSchool.classes || [];
+                    expect(schools).to.be.empty
+                    expect(classes).to.be.empty
+                });
             });
         });
     });

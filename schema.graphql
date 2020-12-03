@@ -266,6 +266,7 @@ type Class {
     addStudent(user_id: ID!): User
     editStudents(student_ids : [ID!]): [User]
     removeStudent(user_id: ID!): Boolean
+    editSchools(school_ids : [ID!]): [School]
     addSchool(school_id: ID!): School
     removeSchool(school_id: ID!): Boolean
     delete(_:Int): Boolean
