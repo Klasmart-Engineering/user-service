@@ -5,13 +5,13 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
 import { createOrganization } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/testEntities";
+import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addUserToOrganization, createSchool, createRole } from "../utils/operations/organizationOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
-import { JoeAuthToken } from "../utils/testConfig";
+import { JoeAuthToken, BillyAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 
@@ -47,8 +47,8 @@ describe("organization", () => {
             let email = user.email ?? ""
             oldUser = await organization["findOrCreateUser"](email, user.given_name, user.family_name)
             expect(oldUser).to.exist
-            expect(oldUser.user_id).to.equal(user.user_id)    
-            
+            expect(oldUser.user_id).to.equal(user.user_id)
+
         });
         it("should assign the new user to a new user", async () => {
             let newUser: User
@@ -79,6 +79,87 @@ describe("organization", () => {
                 expect(membership.user_id).to.equal(userId)
             });
 
+        });
+    })
+
+    describe("createSchool", async () => {
+        let userId: string;
+        let organizationId: string;
+        let schoolInfo = (school : any) => { return school.school_id }
+
+
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+            userId = user.user_id
+            organization = await createOrganization(testClient, user.user_id);
+            organizationId = organization.organization_id
+        });
+
+        context("when school name is empty", () => {
+            it("does not create the school", async () => {
+                const school = await createSchool(testClient, organizationId, "", { authorization: JoeAuthToken });
+
+                expect(school).to.be.null
+                const dbSchool = await Organization.findOneOrFail(organizationId);
+                const orgSchools = await dbSchool.schools || []
+                expect(orgSchools).to.be.empty
+
+            });
+        });
+
+        context("when school name is not empty", () => {
+            it("creates the school", async () => {
+                const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+
+                expect(school).not.to.be.null
+                const dbSchool = await Organization.findOneOrFail(organizationId);
+                const orgSchools = await dbSchool.schools || []
+                expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+
+            });
+
+            context("and the school name is duplicated in the same organization", () => {
+                let oldSchool : any;
+
+                beforeEach(async () => {
+                    oldSchool = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+                });
+
+                it("does not create the school", async () => {
+                    const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+
+                    expect(school).to.be.null
+                    const dbSchool = await Organization.findOneOrFail(organizationId);
+                    const orgSchools = await dbSchool.schools || []
+                    expect(orgSchools.map(schoolInfo)).to.deep.eq([oldSchool.school_id])
+
+                });
+            });
+
+            context("and the school name is duplicated in different organizations", () => {
+                let otherSchool : any;
+
+                beforeEach(async () => {
+                    const otherUser = await createUserBilly(testClient);
+                    const otherUserId = otherUser.user_id
+                    const otherOrganization = await createOrganization(testClient, otherUserId, "Other Organization");
+                    const otherOrganizationId = otherOrganization.organization_id
+                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", { authorization: BillyAuthToken });
+                });
+
+                it("creates the school", async () => {
+                    const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+
+                    expect(school).not.to.be.null
+                    const dbSchool = await Organization.findOneOrFail(organizationId);
+                    const orgSchools = await dbSchool.schools || []
+                    expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+                    expect(school.school_id).to.not.eq(otherSchool.school_id)
+                    expect(school.school_name).to.eq(otherSchool.school_name)
+
+                });
+            });
         });
     })
 
@@ -145,7 +226,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
@@ -168,7 +249,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
@@ -210,7 +291,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)

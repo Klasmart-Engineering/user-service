@@ -1,4 +1,18 @@
-import { Column, PrimaryGeneratedColumn, Entity, OneToMany, getRepository, getManager, JoinColumn, ManyToMany, JoinTable, ManyToOne, BaseEntity } from 'typeorm';
+import {
+    Column,
+    PrimaryGeneratedColumn,
+    Check,
+    Entity,
+    Unique,
+    OneToMany,
+    getRepository,
+    getManager,
+    JoinColumn,
+    ManyToMany,
+    JoinTable,
+    ManyToOne,
+    BaseEntity
+} from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { User } from './user';
 import { Class } from './class';
@@ -8,12 +22,14 @@ import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
 
 @Entity()
+@Check(`"school_name" <> ''`)
+@Unique(["school_name", "organization"])
 export class School extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     public readonly school_id!: string;
 
-    @Column({nullable: true})
-    public school_name?: string
+    @Column({nullable: false})
+    public school_name!: string
 
     @OneToMany(() => SchoolMembership, membership => membership.school)
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
