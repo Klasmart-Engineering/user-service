@@ -139,7 +139,6 @@ export const schoolAdminRole = {
         PermissionName.teacher_reports_603,
         PermissionName.class_reports_604,
         PermissionName.student_reports_605,
-        PermissionName.view_reports_610,
         PermissionName.share_report_630,
         PermissionName.download_report_631,
         PermissionName.report_settings_680,

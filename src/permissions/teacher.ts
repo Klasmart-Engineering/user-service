@@ -105,7 +105,6 @@ export const teacherRole = {
         PermissionName.teacher_reports_603,
         PermissionName.class_reports_604,
         PermissionName.student_reports_605,
-        PermissionName.view_reports_610,
         PermissionName.view_my_reports_614,
         PermissionName.report_student_achievement_615,
         PermissionName.report_learning_outcomes_in_categories_616,
