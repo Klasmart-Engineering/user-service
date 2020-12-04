@@ -1,8 +1,8 @@
 import { User } from "../../../src/entities/user";
-import faker from "faker";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
+import { gqlTry } from "../gqlTry";
 
 const NEW_USER = `
     mutation myMutation(
@@ -72,61 +72,64 @@ const GET_USER = `
     }
 `;
 
+/**
+ * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
+ */
+export async function createUserAndValidate(
+    testClient: ApolloServerTestClient,
+    user: User
+): Promise<User> {
+    const gqlUser = await createUser(testClient, user);
+    const dbUser = await User.findOneOrFail({ where: { email: user.email } });
+    expect(gqlUser).to.exist;
+    expect(gqlUser).to.include(user);
+    expect(dbUser).to.include(user);
+
+    return gqlUser;
+}
+
+/**
+ * Creates a new user, verifies the GraphQL operation completed without error, and returns the GraphQL response.
+ */
 export async function createUser(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: NEW_USER,
         variables: user as any,
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
-
+    const res = await gqlTry(operation);
     const gqlUser = res.data?.newUser as User;
-    const dbUser = await User.findOneOrFail({ where: { email: user.email } });
-    expect(gqlUser).to.exist;
-    expect(gqlUser).to.include(user);
-    expect(dbUser).to.include(user);
-
-    return dbUser;
+    return gqlUser;
 }
 
-export async function updateUser(testClient: ApolloServerTestClient, user: User) {
-    const modifiedUser = {
-        user_id: user.user_id,
-        given_name: faker.name.firstName(),
-        family_name: faker.name.lastName(),
-        email: faker.internet.email(),
-        avatar: "my new avatar",
-    };
-
+export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: SET_USER,
         variables: modifiedUser,
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlUser = res.data?.user as User;
-    expect(gqlUser).to.exist;
-    expect(gqlUser).to.include(modifiedUser);
     return gqlUser;
 }
 
 export async function getUsers(testClient: ApolloServerTestClient) {
     const { query } = testClient;
 
-    const res = await query({
+    const operation = () => query({
         query: GET_USERS,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlUsers = res.data?.users as User[];
     return gqlUsers;
 }
@@ -134,12 +137,12 @@ export async function getUsers(testClient: ApolloServerTestClient) {
 export async function getUser(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
             
-    const res = await query({
+    const operation = () => query({
         query: GET_USER,
         variables: { user_id: userId },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlUser = res.data?.user as User;
     return gqlUser;
 }

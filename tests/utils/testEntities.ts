@@ -1,13 +1,13 @@
 import { User } from "../../src/entities/user";
 import { ApolloServerTestClient } from "./createTestClient";
-import { createUser } from "./operations/modelOps";
+import { createUserAndValidate } from "./operations/modelOps";
 
 export function createUserJoe(testClient: ApolloServerTestClient) {
-    return createUser(testClient, joe);
+    return createUserAndValidate(testClient, joe);
 }
 
 export function createUserBilly(testClient: ApolloServerTestClient) {
-    return createUser(testClient, billy);
+    return createUserAndValidate(testClient, billy);
 }
 
 const joe = {

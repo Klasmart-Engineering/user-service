@@ -7,6 +7,7 @@ import { createServer } from "../../src/utils/createServer";
 import { getUser, getUsers, updateUser } from "../utils/operations/modelOps";
 import { createUserJoe } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
+import faker from "faker";
 
 describe("model.user", () => {
     let connection: Connection;
@@ -37,16 +38,26 @@ describe("model.user", () => {
 
     describe("setUser", () => {
         let user: User;
+        let modifiedUser: any;
 
         before(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
+            modifiedUser = {
+                user_id: user.user_id,
+                given_name: faker.name.firstName(),
+                family_name: faker.name.lastName(),
+                email: faker.internet.email(),
+                avatar: "my new avatar",
+            };
         });
 
         it("should modify an existing user", async () => {
-            const gqlUpdatedUser = await updateUser(testClient, user);
+            const gqlUser = await updateUser(testClient, modifiedUser);
+            expect(gqlUser).to.exist;
+            expect(gqlUser).to.include(modifiedUser);
             const dbUser = await User.findOneOrFail(user.user_id);
-            expect(dbUser).to.include(gqlUpdatedUser);
+            expect(dbUser).to.include(gqlUser);
         });
     });
 
