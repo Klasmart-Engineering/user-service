@@ -7,7 +7,7 @@ import { User } from "../../src/entities/user";
 import { createOrganization } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganization, createSchool, createRole } from "../utils/operations/organizationOps";
+import { addUserToOrganization, createSchool, createClass, createRole } from "../utils/operations/organizationOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
@@ -79,6 +79,84 @@ describe("organization", () => {
                 expect(membership.user_id).to.equal(userId)
             });
 
+        });
+    })
+
+    describe("createClass", async () => {
+        let userId: string;
+        let organizationId: string;
+        let classInfo = (cls : any) => { return cls.class_id }
+
+
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+            userId = user.user_id
+            organization = await createOrganization(testClient, user.user_id);
+            organizationId = organization.organization_id
+        });
+
+        context("when class name is empty", () => {
+            it("does not create the class", async () => {
+                const cls = await createClass(testClient, organizationId, "", { authorization: JoeAuthToken });
+
+                expect(cls).to.be.null
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                const orgClasses = await dbOrg.classes || []
+                expect(orgClasses).to.be.empty
+
+            });
+        });
+
+        context("when class name is not empty", () => {
+            it("creates the class", async () => {
+                const cls = await createClass(testClient, organizationId, "Some Class 1", { authorization: JoeAuthToken });
+
+                expect(cls).not.to.be.null
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                const orgClasses = await dbOrg.classes || []
+                expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
+            });
+
+            context("and the class name is duplicated in the same organization", () => {
+                let oldClass : any;
+
+                beforeEach(async () => {
+                    oldClass = await createClass(testClient, organizationId, "Some Class 1", { authorization: JoeAuthToken });
+                });
+
+                it("does not create the class", async () => {
+                    const cls = await createClass(testClient, organizationId, "Some Class 1", { authorization: JoeAuthToken });
+
+                    expect(cls).to.be.null
+                    const dbOrg = await Organization.findOneOrFail(organizationId);
+                    const orgClasses = await dbOrg.classes || []
+                    expect(orgClasses.map(classInfo)).to.deep.eq([oldClass.class_id])
+                });
+            });
+
+            context("and the class name is duplicated in different organizations", () => {
+                let otherClass : any;
+
+                beforeEach(async () => {
+                    const otherUser = await createUserBilly(testClient);
+                    const otherUserId = otherUser.user_id
+                    const otherOrganization = await createOrganization(testClient, otherUserId, "Other Organization");
+                    const otherOrganizationId = otherOrganization.organization_id
+                    otherClass = await createClass(testClient, otherOrganizationId, "Some Class 1", { authorization: BillyAuthToken });
+                });
+
+                it("creates the class", async () => {
+                    const cls = await createClass(testClient, organizationId, "Some Class 1", { authorization: JoeAuthToken });
+
+                    expect(cls).not.to.be.null
+                    const dbOrg = await Organization.findOneOrFail(organizationId);
+                    const orgClasses = await dbOrg.classes || []
+                    expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
+                    expect(cls.class_id).to.not.eq(otherClass.class_id)
+                    expect(cls.class_name).to.eq(otherClass.class_name)
+                });
+            });
         });
     })
 

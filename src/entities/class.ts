@@ -1,5 +1,16 @@
 import { GraphQLResolveInfo } from "graphql";
-import { BaseEntity, Column, Entity, getManager, getRepository, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Check,
+  Entity,
+  Unique,
+  getManager,
+  getRepository,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn
+} from "typeorm";
 import { Organization } from "./organization";
 import { School } from "./school";
 import { User } from "./user";
@@ -7,11 +18,13 @@ import { Context } from "../main";
 import { PermissionName } from "../permissions/permissionNames";
 
 @Entity()
+@Check(`"class_name" <> ''`)
+@Unique(["class_name", "organization"])
 export class Class extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     public class_id!: string
 
-    @Column()
+    @Column({nullable: false})
     public class_name?: String
 
     @ManyToOne(() => Organization, organization => organization.classes)

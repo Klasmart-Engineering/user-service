@@ -59,14 +59,15 @@ const ADD_USER_TO_ORGANIZATION = `
     }
 `;
 
-export async function createClass(testClient: ApolloServerTestClient, organizationId: string) {
+export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, headers?: Headers) {
     const { mutate } = testClient;
-    const className = "My Class";
+    className = className ?? "My Class";
+    headers = headers ?? { authorization: JoeAuthToken };
 
     const res = await mutate({
         mutation: CREATE_CLASS,
         variables: { organization_id: organizationId, class_name: className },
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
