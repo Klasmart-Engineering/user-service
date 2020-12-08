@@ -19,6 +19,7 @@ class Class {
   class_id : uuid
   class_name : string
   organizationOrganizationId : uuid
+  status : status
 }
 
 class Organization {
