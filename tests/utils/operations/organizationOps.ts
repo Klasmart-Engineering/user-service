@@ -4,6 +4,7 @@ import { Organization } from "../../../src/entities/organization";
 import { OrganizationMembership } from "../../../src/entities/organizationMembership";
 import { Role } from "../../../src/entities/role";
 import { School } from "../../../src/entities/school";
+import { SchoolMembership } from "../../../src/entities/schoolMembership"
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
@@ -61,6 +62,59 @@ const ADD_USER_TO_ORGANIZATION = `
     }
 `;
 
+const INVITE_USER = `
+    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
+        organization(organization_id: $organization_id) {
+            inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
+                user{ 
+                    user_id
+                    email
+                    phone
+                    given_name
+                    family_name
+                    avatar
+                }
+                membership{
+                    user_id
+                    organization_id
+                    join_timestamp
+                }
+                schoolMemberships{
+                    user_id
+                    school_id
+                    join_timestamp
+                }
+            }
+        }
+    }
+`;
+
+const EDIT_MEMBERSHIP = `
+    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
+        organization(organization_id: $organization_id) {
+            editMembership(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){    
+                user{ 
+                    user_id
+                    email
+                    phone
+                    given_name
+                    family_name
+                    avatar
+                }
+                membership{
+                    user_id
+                    organization_id
+                    join_timestamp
+                }
+                schoolMemberships{
+                    user_id
+                    school_id
+                    join_timestamp              
+                }
+            }
+        }
+    }
+`;
 export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, headers?: Headers) {
     const { mutate } = testClient;
     className = className ?? "My Class";
@@ -146,3 +200,81 @@ export async function addUserToOrganization(testClient: ApolloServerTestClient, 
     const gqlMembership = res.data?.organization.addUser as OrganizationMembership;
     return gqlMembership;
 }
+export async function inviteUser(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string ,organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers) {
+    const { mutate } = testClient;
+    let variables: any
+    variables = { organization_id:organizationId}
+    if (email !== undefined){
+        variables.email = email
+    }
+    if (phone !== undefined){
+        variables.phone = phone
+    }
+    if (given_name !== undefined){
+        variables.given_name = given_name
+    }
+    if (family_name !== undefined){
+        variables.family_name = family_name
+    }
+    if (organization_role_ids !== undefined){
+        variables.organization_role_ids = organization_role_ids
+    }
+    if (school_ids !== undefined){
+        variables.school_ids = school_ids
+    }
+    if(school_role_ids !== undefined){
+        variables.school_role_ids = school_role_ids
+    }
+    
+    const res = await mutate({
+        mutation: INVITE_USER,
+        variables: variables,
+        headers: { authorization: JoeAuthToken},
+    });
+    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const result = res.data?.organization.inviteUser as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
+    expect(result.membership).to.exist;
+    expect(result.membership.user_id).equals(result.user.user_id);
+    return result
+}
+
+export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string,  given_name?: string, family_name?: string ,organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers) {
+    const { mutate } = testClient;
+    let variables: any
+    variables = { organization_id:organizationId}
+    if (email !== undefined){
+        variables.email = email
+    }
+    if (phone !== undefined){
+        variables.phone = phone
+    }
+    if (given_name !== undefined){
+        variables.given_name = given_name
+    }
+    if (family_name !== undefined){
+        variables.family_name = family_name
+    }
+    if (organization_role_ids !== undefined){
+        variables.organization_role_ids = organization_role_ids
+    }
+    if (school_ids !== undefined){
+        variables.school_ids = school_ids
+    }
+    if(school_role_ids !== undefined){
+        variables.school_role_ids = school_role_ids
+    }
+    
+    const res = await mutate({
+        mutation: EDIT_MEMBERSHIP,
+        variables: variables,
+        headers: { authorization:  JoeAuthToken},
+    });
+    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const result = res.data?.organization.editMembership as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
+    expect(result.membership).to.exist;
+    expect(result.membership.user_id).equals(result.user.user_id);
+    return result
+}
+
+
+

@@ -26,6 +26,9 @@ export class User extends BaseEntity {
     public email?: string
 
     @Column({nullable: true})
+    public phone?: string
+
+    @Column({nullable: true})
     public avatar?: string
 
     @OneToMany(() => OrganizationMembership, membership => membership.user)

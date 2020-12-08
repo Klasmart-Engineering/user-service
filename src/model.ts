@@ -74,13 +74,14 @@ export class Model {
             console.error(e)
         }
     }
-    public async newUser({given_name, family_name, email, avatar}: any) {
+    public async newUser({given_name, family_name, email, phone, avatar}: any) {
         const newUser = new User()
-
-        newUser.user_id = accountUUID(email)
+        let hashSource = email ?? phone 
+        newUser.user_id = accountUUID(hashSource)
         newUser.given_name = given_name
         newUser.family_name = family_name
         newUser.email = email
+        newUser.phone = phone
         newUser.avatar = avatar
 
         await this.manager.save(newUser)

@@ -28,6 +28,22 @@ import { PermissionName } from '../permissions/permissionNames';
 import { SchoolMembership } from './schoolMembership';
 import { Model } from '../model';
 
+export function validateEmail(email?: string):boolean{
+    const email_re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    if(email !== undefined && email.match(email_re)){
+        return true
+    }
+    return false
+}
+
+export function validatePhone(phone?: string):boolean{
+    const phone_re = /^\++?[1-9][0-9]\d{6,14}$/
+    if(phone !== undefined && phone.match(phone_re)){
+        return true
+    }
+    return false
+}
+
 @Entity()
 export class Organization extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
@@ -208,27 +224,28 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async inviteUser({email, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
+    public async inviteUser({email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.send_invitation_40882)
         try {
             if(info.operation.operation !== "mutation") { return null }
-            const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             return result
         } catch(e) {
             console.error(e)
         }
     }
 
-    public async editMembership({email, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
+    public async editMembership({email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.edit_users_40330)
         try {
             if(info.operation.operation !== "mutation") { return null }
-            const result = await this._setMembership(email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             return result
         } catch(e) {
             console.error(e)
         }
     }
+
 
     private async getRoleLookup():Promise<(roleId: string)=>Promise<Role>> {
             const role_repo = getRepository(Role)
@@ -244,19 +261,22 @@ export class Organization extends BaseEntity {
     }
 
     private async findOrCreateUser(
-        email: string,
+        email?: string,
+        phone?: string,
         given_name?: string,
         family_name?: string,
         ):Promise<User> {
-            const user_id = accountUUID(email)
+            let hashSource = email ?? phone
+            const user_id = accountUUID(hashSource)
             const user = await getRepository(User).findOne({user_id}) || new User()
             user.email = email
+            user.phone = phone
             user.user_id = user_id
             if(given_name !== undefined) { user.given_name = given_name }
             if(family_name !== undefined) { user.family_name = family_name }
             return user
         }
-
+    
     private async membershipOrganization(
         user: User,
         organizationRoles: Role[]
@@ -301,19 +321,23 @@ export class Organization extends BaseEntity {
     }
 
     private async _setMembership(
-        email: string,
+        email?: string,
+        phone?: string,
         given_name?: string,
         family_name?: string,
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = []
         ) {
+            if(!(validateEmail(email) || validatePhone(phone))){
+                throw("No valid email or international all digit with leading + sign E.164 phone number provided")
+            }
         return getManager().transaction(async (manager) => {
-            console.log("_setMembership", email, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            console.log("_setMembership", email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             const roleLookup = await this.getRoleLookup()
             const organizationRoles = await Promise.all(organization_role_ids.map((role_id) => roleLookup(role_id)))
             const schoolRoles = await Promise.all(school_role_ids.map((role_id) => roleLookup(role_id)))
-            const user = await this.findOrCreateUser(email,given_name,family_name)
+            const user = await this.findOrCreateUser(email,phone,given_name,family_name)
             const membership = await this.membershipOrganization(user,  organizationRoles)
             const [schoolMemberships,oldSchoolMemberships] = await this.membershipSchools(user,school_ids,schoolRoles)
             await manager.remove(oldSchoolMemberships);
@@ -322,7 +346,6 @@ export class Organization extends BaseEntity {
         })
 
     }
-
 
     public async createRole({role_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {

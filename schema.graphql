@@ -57,6 +57,7 @@ type User {
     given_name: String
     family_name: String
     email: String
+    phone: String
     avatar: String
 
     #connections
@@ -134,8 +135,8 @@ type Organization {
     ): Organization
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
-    inviteUser(email: String!, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
-    editMembership(email: String!, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
+    inviteUser(email: String, phone: String, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
+    editMembership(email: String, phone:String, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
     createRole(role_name: String): Role
     createDefaultRoles(_: Int): [Role]
     resetDefaultRolesPermissions(_: Int): [Role]
