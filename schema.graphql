@@ -246,6 +246,7 @@ type Class {
 
     #properties
     class_name: String
+    status: String
 
     #connections
     organization: Organization

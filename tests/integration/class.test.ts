@@ -4,6 +4,7 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Class } from "../../src/entities/class";
+import { Status } from "../../src/entities/status";
 import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass } from "../utils/operations/classOps";
 import { createOrganization } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
@@ -48,6 +49,10 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, editClassRole.role_id);
             });
 
+            it("the class status by default is active", async () => {
+                expect(cls.status).to.eq(Status.ACTIVE)
+            });
+
             it("should fail to update class name", async () => {
                 const newClassName = "New Class Name"
                 const originalClassName = cls.class_name;
@@ -69,6 +74,10 @@ describe("class", () => {
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
+            });
+
+            it("the class status by default is active", async () => {
+                expect(cls.status).to.eq(Status.ACTIVE)
             });
 
             it("should fail to update class name", async () => {
@@ -93,6 +102,10 @@ describe("class", () => {
                 const editClassRole = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, editClassRole.role_id);
+            });
+
+            it("the class status by default is active", async () => {
+                expect(cls.status).to.eq(Status.ACTIVE)
             });
 
             it("should update class name", async () => {

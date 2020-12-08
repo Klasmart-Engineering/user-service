@@ -4,6 +4,7 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
+import { Status } from "../../src/entities/status";
 import { createOrganization } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -116,6 +117,7 @@ describe("organization", () => {
                 const dbOrg = await Organization.findOneOrFail(organizationId);
                 const orgClasses = await dbOrg.classes || []
                 expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
+                expect(cls.status).to.eq(Status.ACTIVE)
             });
 
             context("and the class name is duplicated in the same organization", () => {
@@ -155,6 +157,7 @@ describe("organization", () => {
                     expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
                     expect(cls.class_id).to.not.eq(otherClass.class_id)
                     expect(cls.class_name).to.eq(otherClass.class_name)
+                    expect(cls.status).to.eq(Status.ACTIVE)
                 });
             });
         });
