@@ -43,6 +43,16 @@ const ADD_TEACHER_TO_CLASS = `
     }
 `;
 
+const REMOVE_TEACHER_IN_CLASS = `
+    mutation myMutation(
+            $class_id: ID!
+            $user_id: ID!) {
+        class(class_id: $class_id) {
+            removeTeacher(user_id: $user_id)
+        }
+    }
+`;
+
 const ADD_STUDENT_TO_CLASS = `
     mutation myMutation(
             $class_id: ID!
@@ -151,6 +161,19 @@ export async function addTeacherToClass(testClient: ApolloServerTestClient, clas
 
     expect(res.errors, res.errors?.toString()).to.be.undefined;
     const teacher = res.data?.class.addTeacher as User;
+    return teacher;
+}
+
+export async function removeTeacherInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const res = await mutate({
+        mutation: REMOVE_TEACHER_IN_CLASS,
+        variables: { class_id: classId, user_id: userId },
+        headers: headers,
+    });
+
+    const teacher = res.data?.class.removeTeacher as boolean;
     return teacher;
 }
 
