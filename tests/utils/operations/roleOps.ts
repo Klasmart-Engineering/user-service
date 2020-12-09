@@ -1,6 +1,6 @@
 import { ApolloServerTestClient } from "../createTestClient";
-import { expect } from "chai";
 import { JoeAuthToken } from "../testConfig";
+import { gqlTry } from "../gqlTry";
 
 const DELETE_ROLE = `
     mutation myMutation(
@@ -29,25 +29,24 @@ const GRANT_PERMISSION = `
 export async function grantPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: GRANT_PERMISSION,
         variables: { role_id: roleId, permission_name: permissionName },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
 }
 
 export async function deleteRole(testClient: ApolloServerTestClient, roleId: string) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: DELETE_ROLE,
         variables: { role_id: roleId },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
-
+    const res = await gqlTry(operation);
     return true;
 }

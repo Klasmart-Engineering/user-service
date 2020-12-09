@@ -5,10 +5,10 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
 import { Status } from "../../src/entities/status";
-import { createOrganization } from "../utils/operations/userOps";
+import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganization, createSchool, createClass, createRole } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createSchool, createClass, createRole } from "../utils/operations/organizationOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
@@ -41,7 +41,7 @@ describe("organization", () => {
         beforeEach(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
-            organization = await createOrganization(testClient, user.user_id);
+            organization = await createOrganizationAndValidate(testClient, user.user_id);
         });
         it("should assign the old user to the exsting user", async () => {
             let oldUser: User
@@ -69,7 +69,7 @@ describe("organization", () => {
                 await reloadDatabase();
                 user = await createUserJoe(testClient);
                 userId = user.user_id
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
             })
@@ -93,7 +93,7 @@ describe("organization", () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
             userId = user.user_id
-            organization = await createOrganization(testClient, user.user_id);
+            organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id
         });
 
@@ -143,7 +143,7 @@ describe("organization", () => {
                 beforeEach(async () => {
                     const otherUser = await createUserBilly(testClient);
                     const otherUserId = otherUser.user_id
-                    const otherOrganization = await createOrganization(testClient, otherUserId, "Other Organization");
+                    const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
                     const otherOrganizationId = otherOrganization.organization_id
                     otherClass = await createClass(testClient, otherOrganizationId, "Some Class 1", { authorization: BillyAuthToken });
                 });
@@ -173,7 +173,7 @@ describe("organization", () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
             userId = user.user_id
-            organization = await createOrganization(testClient, user.user_id);
+            organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id
         });
 
@@ -224,7 +224,7 @@ describe("organization", () => {
                 beforeEach(async () => {
                     const otherUser = await createUserBilly(testClient);
                     const otherUserId = otherUser.user_id
-                    const otherOrganization = await createOrganization(testClient, otherUserId, "Other Organization");
+                    const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
                     const otherOrganizationId = otherOrganization.organization_id
                     otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", { authorization: BillyAuthToken });
                 });
@@ -253,11 +253,11 @@ describe("organization", () => {
                 await reloadDatabase();
                 user = await createUserJoe(testClient);
                 userId = user.user_id
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                await addUserToOrganization(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
             });
 
             it("should set the school in the schools membership for the user", async () => {
@@ -285,7 +285,7 @@ describe("organization", () => {
                 await reloadDatabase();
                 user = await createUserJoe(testClient);
                 userId = user.user_id
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id
@@ -347,7 +347,7 @@ describe("organization", () => {
                 await reloadDatabase();
                 user = await createUserJoe(testClient);
                 userId = user.user_id
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id

@@ -1,6 +1,6 @@
-import { expect } from "chai";
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
 import { ApolloServerTestClient } from "../createTestClient";
+import { gqlTry } from "../gqlTry";
 import { JoeAuthToken } from "../testConfig";
 
 const ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP = `
@@ -40,34 +40,34 @@ const GET_SCHOOL_MEMBERSHIPS = `
 export async function addRoleToOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, roleId: string) {
     const { mutate } = testClient;
     
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP,
         variables: { user_id: userId, organization_id: organizationId, role_id: roleId },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
 }
 
 export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string) {
     const { mutate } = testClient;   
     
     if (permission_name !== undefined){    
-        const res = await mutate({
+        const operation = () => mutate({
             mutation: GET_SCHOOL_MEMBERSHIPS,
             variables: { user_id: userId, organization_id: organizationId, permission_name: permission_name },
             headers: { authorization: JoeAuthToken },
         });
-        expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
+        const res = await gqlTry(operation);
         return res.data?.user.membership.schoolMemberships as SchoolMembership[];
     }
     else{
-        const res = await mutate({
+        const operation = () => mutate({
             mutation: GET_SCHOOL_MEMBERSHIPS,
             variables: { user_id: userId, organization_id: organizationId},
             headers: { authorization: JoeAuthToken },
         });    
-        expect(res.errors, res.errors?.map(x => x.message).toString()).to.be.undefined;
+        const res = await gqlTry(operation);
         return res.data?.user.membership.schoolMemberships as SchoolMembership[];
     }
 }

@@ -5,6 +5,7 @@ import { OrganizationMembership } from "../../../src/entities/organizationMember
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
+import { gqlTry } from "../gqlTry";
 import { JoeAuthToken } from "../testConfig";
 
 const CREATE_ORGANIZATION = `
@@ -117,47 +118,46 @@ const GET_CLASSES_STUDYING = `
     }
 `;
 
-export async function createOrganization(
+export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,
     organizationName?: string
 ): Promise<Organization> {
-    const { mutate } = testClient;
     organizationName = organizationName ?? "My Organization";
+    const gqlOrganization = await createOrganization(testClient, userId, organizationName)
 
-    const res = await mutate({
-        mutation: CREATE_ORGANIZATION,
-        variables: { user_id: userId, organization_name: organizationName },
-        headers: { authorization: JoeAuthToken },
-    });
-
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
-
-    const gqlOrganization = res.data?.user.createOrganization as Organization;
     expect(gqlOrganization).to.exist;
-
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
     expect(dbOrganization).to.include(gqlOrganization);
 
     return dbOrganization;
 }
 
-export async function addOrganizationToUser(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
+export async function createOrganization(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    organizationName: string
+): Promise<Organization> {
     const { mutate } = testClient;
-    
-    const res = await mutate({
-        mutation: ADD_ORGANIZATION_TO_USER,
-        variables: { user_id: userId, organization_id: organizationId },
+
+    const operation = () => mutate({
+        mutation: CREATE_ORGANIZATION,
+        variables: { user_id: userId, organization_name: organizationName },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
+    const gqlOrganization = res.data?.user.createOrganization as Organization;
+    return gqlOrganization;
+}
+
+export async function addOrganizationToUserAndValidate(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
+    const gqlMembership = await addOrganizationToUser(testClient, userId, organizationId);
 
     const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
     const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId } });
     
-    const gqlMembership = res.data?.user.addOrganization as OrganizationMembership;
     const userMemberships = await dbUser.memberships;
     const organizationMemberships = await dbOrganization.memberships;
 
@@ -166,6 +166,21 @@ export async function addOrganizationToUser(testClient: ApolloServerTestClient, 
     expect(gqlMembership.organization_id).equals(organizationId);
     expect(userMemberships).to.deep.include(dbOrganizationMembership);
     expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
+
+    return gqlMembership;
+}
+
+export async function addOrganizationToUser(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
+    const { mutate } = testClient;
+    
+    const operation = () => mutate({
+        mutation: ADD_ORGANIZATION_TO_USER,
+        variables: { user_id: userId, organization_id: organizationId },
+        headers: { authorization: JoeAuthToken },
+    });
+
+    const res = await gqlTry(operation);
+    const gqlMembership = res.data?.user.addOrganization as OrganizationMembership;
     return gqlMembership;
 }
 
@@ -177,13 +192,13 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User)
         avatar: "new_avatar",
     };
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: SET,
         variables: { user_id: user.user_id, ...userMods },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlUser = res.data?.user.set as User;
     return gqlUser;
 }
@@ -191,13 +206,13 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User)
 export async function getOrganizationMemberships(testClient: ApolloServerTestClient, user: User) {
     const { query } = testClient;
     
-    const res = await query({
+    const operation = () => query({
         query: GET_ORGANIZATION_MEMBERSHIPS,
         variables: { user_id: user.user_id },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlMemberships = res.data?.user.memberships as OrganizationMembership[];
     return gqlMemberships;
 }
@@ -205,13 +220,13 @@ export async function getOrganizationMemberships(testClient: ApolloServerTestCli
 export async function getOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
     const { query } = testClient;
 
-    const res = await query({
+    const operation = () => query({
         query: GET_ORGANIZATION_MEMBERSHIP,
         variables: { user_id: userId, organization_id: organizationId },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlMembership = res.data?.user.membership as OrganizationMembership;
     return gqlMembership;
 }
@@ -219,13 +234,13 @@ export async function getOrganizationMembership(testClient: ApolloServerTestClie
 export async function getSchoolMemberships(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
     
-    const res = await query({
+    const operation = () => query({
         query: GET_SCHOOL_MEMBERSHIPS,
         variables: { user_id: userId },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlMemberships = res.data?.user.school_memberships as SchoolMembership[];
     return gqlMemberships;
 }
@@ -233,13 +248,13 @@ export async function getSchoolMemberships(testClient: ApolloServerTestClient, u
 export async function getSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string) {
     const { query } = testClient;
 
-    const res = await query({
+    const operation = () => query({
         query: GET_SCHOOL_MEMBERSHIP,
         variables: { user_id: userId, school_id: schoolId },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlMembership = res.data?.user.school_membership as SchoolMembership;
     return gqlMembership;
 }
@@ -247,13 +262,13 @@ export async function getSchoolMembership(testClient: ApolloServerTestClient, us
 export async function getClassesTeaching(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
     
-    const res = await query({
+    const operation = () => query({
         query: GET_CLASSES_TEACHING,
         variables: { user_id: userId },
         headers: { authorization: JoeAuthToken },
     });
     
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlClasses = res.data?.user.classesTeaching as Class[];
     return gqlClasses;
 }
@@ -261,13 +276,13 @@ export async function getClassesTeaching(testClient: ApolloServerTestClient, use
 export async function getClassesStudying(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
     
-    const res = await query({
+    const operation = () => query({
         query: GET_CLASSES_STUDYING,
         variables: { user_id: userId },
         headers: { authorization: JoeAuthToken },
     });
     
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlClasses = res.data?.user.classesStudying as Class[];
     return gqlClasses;
 }

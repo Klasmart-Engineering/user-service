@@ -8,6 +8,7 @@ import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
+import { gqlTry } from "../gqlTry";
 
 const CREATE_CLASS = `
     mutation myMutation(
@@ -65,15 +66,14 @@ export async function createClass(testClient: ApolloServerTestClient, organizati
     className = className ?? "My Class";
     headers = headers ?? { authorization: JoeAuthToken };
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: CREATE_CLASS,
         variables: { organization_id: organizationId, class_name: className },
         headers: headers,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlClass = res.data?.organization.createClass as Class;
-
     return gqlClass;
 }
 
@@ -90,53 +90,59 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
     const { mutate } = testClient;
     roleName = roleName ?? "My Role";
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: CREATE_ROLE,
         variables: { organization_id: organizationId, role_name: roleName },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
-
-    return await Role.findOneOrFail({ where: { role_name: roleName } });
+    const res = await gqlTry(operation);
+    const gqlRole = res.data?.organization.createRole as Role;
+    return gqlRole;
 }
 
 export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, headers?: Headers) {
     const { mutate } = testClient;
     schoolName = schoolName ?? "My School";
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: CREATE_SCHOOL,
         variables: { organization_id: organizationId, school_name: schoolName },
         headers: headers,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
-    return res.data?.organization.createSchool as School;
+    const res = await gqlTry(operation);
+    const gqlSchool = res.data?.organization.createSchool as School;
+    return gqlSchool;
 }
 
-export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
-    const { mutate } = testClient;
-
-    const res = await mutate({
-        mutation: ADD_USER_TO_ORGANIZATION,
-        variables: { user_id: userId, organization_id: organizationId },
-        headers: headers,
-    });
-
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+export async function addUserToOrganizationAndValidate(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+    const gqlMembership = await addUserToOrganization(testClient, userId, organizationId, headers);
 
     const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
     const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { organization_id: organizationId, user_id: userId } });
 
-    const organizationMembership = res.data?.organization.addUser as OrganizationMembership;
     const userMemberships = await dbUser.memberships;
     const organizationMemberships = await dbOrganization.memberships;
 
-    expect(organizationMembership).to.exist;
-    expect(organizationMembership.user_id).equals(userId);
-    expect(organizationMembership.organization_id).equals(organizationId);
+    expect(gqlMembership).to.exist;
+    expect(gqlMembership.user_id).equals(userId);
+    expect(gqlMembership.organization_id).equals(organizationId);
     expect(userMemberships).to.deep.include(dbOrganizationMembership);
     expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
+}
+
+export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: ADD_USER_TO_ORGANIZATION,
+        variables: { user_id: userId, organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlMembership = res.data?.organization.addUser as OrganizationMembership;
+    return gqlMembership;
 }

@@ -7,9 +7,9 @@ import { Model } from "../../src/model";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganization, createSchool, createRole } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createSchool, createRole } from "../utils/operations/organizationOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { createOrganization } from "../utils/operations/userOps";
+import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
@@ -49,12 +49,12 @@ describe("organizationMembership", () => {
                 const org1Owner = await createUserJoe(testClient);
                 const org2Owner = await createUserBilly(testClient);
                 userId = org1Owner.user_id;
-                organization1Id = (await createOrganization(testClient, org1Owner.user_id, "org 1")).organization_id;
-                organization2Id = (await createOrganization(testClient, org2Owner.user_id, "org 2")).organization_id;
+                organization1Id = (await createOrganizationAndValidate(testClient, org1Owner.user_id, "org 1")).organization_id;
+                organization2Id = (await createOrganizationAndValidate(testClient, org2Owner.user_id, "org 2")).organization_id;
                 school1Id = (await createSchool(testClient, organization1Id, "school 1", { authorization: JoeAuthToken })).school_id;
                 school2Id = (await createSchool(testClient, organization2Id, "school 2", { authorization: BillyAuthToken })).school_id;
-                await addUserToOrganization(testClient, userId, organization1Id, { authorization: JoeAuthToken });
-                await addUserToOrganization(testClient, userId, organization2Id, { authorization: BillyAuthToken });
+                await addUserToOrganizationAndValidate(testClient, userId, organization1Id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, userId, organization2Id, { authorization: BillyAuthToken });
                 await addUserToSchool(testClient, userId, school1Id, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, school2Id, { authorization: BillyAuthToken });
             });
@@ -83,10 +83,10 @@ describe("organizationMembership", () => {
             beforeEach(async () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = orgOwner.user_id;
-                organization = (await createOrganization(testClient, orgOwner.user_id, "org"))
+                organization = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org"))
                 organizationId = organization.organization_id;              
                 schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                await addUserToOrganization(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
                 const testSchoolRole = await createRole(testClient, organizationId, "test_role");
                 testSchoolRoleId = testSchoolRole.role_id;

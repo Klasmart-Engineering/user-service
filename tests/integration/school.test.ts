@@ -4,9 +4,9 @@ import { Model } from "../../src/model";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganization, createSchool, createRole, createClassAndValidate } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createSchool, createRole, createClassAndValidate } from "../utils/operations/organizationOps";
 import { addUserToSchool, getSchoolClasses, getSchoolMembershipsViaSchool, getSchoolMembershipViaSchool, getSchoolOrganization, updateSchool } from "../utils/operations/schoolOps";
-import { createOrganization } from "../utils/operations/userOps";
+import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
@@ -41,7 +41,7 @@ describe("school", () => {
 
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
-            organizationId = (await createOrganization(testClient, orgOwner.user_id, "org 1")).organization_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
         });
 
@@ -62,7 +62,7 @@ describe("school", () => {
 
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
-            organizationId = (await createOrganization(testClient, orgOwner.user_id, "org 1")).organization_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
             classId = (await createClassAndValidate(testClient, organizationId)).class_id;
             await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
@@ -86,7 +86,7 @@ describe("school", () => {
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
-            organizationId = (await createOrganization(testClient, orgOwner.user_id, "org 1")).organization_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
             // TODO: Doing this test, I found that currently, the "addee" isn't required to be part
             // of the organization in order to be added to a school. PJ said this isn't desirable.
@@ -113,9 +113,9 @@ describe("school", () => {
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
-            organizationId = (await createOrganization(testClient, orgOwner.user_id, "org 1")).organization_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-            await addUserToOrganization(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
             await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })
         });
 
@@ -140,9 +140,9 @@ describe("school", () => {
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
-            organizationId = (await createOrganization(testClient, orgOwner.user_id, "org 1")).organization_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             schoolId = (await createSchool(testClient, organizationId, originalSchoolName, { authorization: JoeAuthToken })).school_id;
-            await addUserToOrganization(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
             await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })
             roleId = (await createRole(testClient, organizationId, "test_role")).role_id;
             await grantPermission(testClient, roleId, PermissionName.edit_school_20330);
@@ -202,9 +202,9 @@ describe("school", () => {
             const orgOwner = await createUserJoe(testClient);
             idOfUserToPerformAction = (await createUserBilly(testClient)).user_id;
             idOfUserToBeAdded = orgOwner.user_id;
-            organizationId = (await createOrganization(testClient, orgOwner.user_id, "org 1")).organization_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-            await addUserToOrganization(testClient, idOfUserToPerformAction, organizationId, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, idOfUserToPerformAction, organizationId, { authorization: JoeAuthToken });
             await addUserToSchool(testClient, idOfUserToPerformAction, schoolId, { authorization: JoeAuthToken })
             roleId = (await createRole(testClient, organizationId, "test_role")).role_id;
             await grantPermission(testClient, roleId, PermissionName.edit_school_20330);

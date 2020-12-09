@@ -1,5 +1,5 @@
-import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
+import { gqlTry } from "../gqlTry";
 import { JoeAuthToken } from "../testConfig";
 
 const ADD_ROLE_TO_SCHOOL_MEMBERSHIP = `
@@ -21,11 +21,11 @@ const ADD_ROLE_TO_SCHOOL_MEMBERSHIP = `
 export async function addRoleToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleId: string) {
     const { mutate } = testClient;
     
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: ADD_ROLE_TO_SCHOOL_MEMBERSHIP,
         variables: { user_id: userId, school_id: schoolId, role_id: roleId },
         headers: { authorization: JoeAuthToken },
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
 }

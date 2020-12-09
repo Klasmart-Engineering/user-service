@@ -5,7 +5,7 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
-import { createOrganization } from "../utils/operations/userOps";
+import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
@@ -82,7 +82,7 @@ describe("model.organization", () => {
         context("when one", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                const organization = await createOrganization(testClient, user.user_id);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
             it("should return an array containing one organization", async () => {
@@ -126,7 +126,7 @@ describe("model.organization", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
             it("should return an array containing one organization", async () => {
@@ -163,7 +163,7 @@ describe("model.organization", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
             it("does not modify the default roles permissions", async () => {
@@ -211,7 +211,7 @@ describe("model.organization", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const roles = await organization.roles || []
                 await connection.manager.remove(roles)
             });
@@ -245,7 +245,7 @@ describe("model.organization", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
             it("updates the default roles permissions", async () => {
@@ -297,7 +297,7 @@ describe("model.organization", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                organization = await createOrganization(testClient, user.user_id);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
                 await organization._createDefaultRoles();
             });
 

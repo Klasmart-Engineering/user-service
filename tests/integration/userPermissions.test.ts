@@ -9,8 +9,8 @@ import { checkToken } from "../../src/token";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
-import { addUserToOrganization, createRole, createSchool } from "../utils/operations/organizationOps";
-import { createOrganization } from "../utils/operations/userOps";
+import { addUserToOrganizationAndValidate, createRole, createSchool } from "../utils/operations/organizationOps";
+import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { BillyAuthToken, JoeAuthToken, BillySuperAdminAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import chaiAsPromised from "chai-as-promised"
@@ -50,9 +50,9 @@ describe("userPermissions", () => {
             const orgOwner = await createUserJoe(testClient);
             const user = await createUserBilly(testClient);
             userId = user.user_id
-            const organization = await createOrganization(testClient, orgOwner.user_id);
+            const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             organizationId = organization.organization_id;
-            await addUserToOrganization(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
             const school = await createSchool(testClient, organizationId, "my school", { authorization: JoeAuthToken });
             schoolId = school.school_id;
             await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });

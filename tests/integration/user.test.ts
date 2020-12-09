@@ -5,12 +5,12 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
-import { createOrganization, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, updateUser } from "../utils/operations/userOps";
+import { createOrganizationAndValidate, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, updateUser } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { addOrganizationToUser } from "../utils/operations/userOps";
+import { addOrganizationToUserAndValidate } from "../utils/operations/userOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
 import { JoeAuthToken } from "../utils/testConfig";
@@ -64,8 +64,8 @@ describe("user", () => {
 
         context("when one", () => {
             beforeEach(async () =>{
-                const organization = await createOrganization(testClient, user.user_id);
-                await addOrganizationToUser(testClient, user.user_id, organization.organization_id);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
+                await addOrganizationToUserAndValidate(testClient, user.user_id, organization.organization_id);
             });
 
             it("should return an array containing one organization membership", async () => {
@@ -82,9 +82,9 @@ describe("user", () => {
         beforeEach(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
-            const organization = await createOrganization(testClient, user.user_id);
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id;
-            await addOrganizationToUser(testClient, user.user_id, organizationId);
+            await addOrganizationToUserAndValidate(testClient, user.user_id, organizationId);
         });
 
         it("should get the organization membership associated with the specified organization ID", async () => {
@@ -117,7 +117,7 @@ describe("user", () => {
 
         context("when one", () => {
             beforeEach(async () =>{
-                const organization = await createOrganization(testClient, user.user_id);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, user.user_id, school.school_id, { authorization: JoeAuthToken })
             });
@@ -136,7 +136,7 @@ describe("user", () => {
         beforeEach(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
-            const organization = await createOrganization(testClient, user.user_id);
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
             const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
             schoolId = school.school_id;
             await addUserToSchool(testClient, user.user_id, schoolId, { authorization: JoeAuthToken });
@@ -172,7 +172,7 @@ describe("user", () => {
 
         context("when one", async () => {
             beforeEach(async () =>{
-                const organization = await createOrganization(testClient, user.user_id);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
                 await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
@@ -201,7 +201,7 @@ describe("user", () => {
 
         context("when one", () => {
             beforeEach(async () =>{
-                const organization = await createOrganization(testClient, user.user_id);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
                 await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
@@ -221,7 +221,7 @@ describe("user", () => {
         });
 
         it("should create an organization", async () => {
-            const organization = await createOrganization(testClient, user.user_id);
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
             expect(organization).to.exist;
         });
     });
@@ -232,12 +232,12 @@ describe("user", () => {
         beforeEach(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
-            const organization = await createOrganization(testClient, user.user_id);
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id;
         });
 
         it("user should join the specified organization", async () => {
-            const membership = await addOrganizationToUser(testClient, user.user_id, organizationId);
+            const membership = await addOrganizationToUserAndValidate(testClient, user.user_id, organizationId);
             expect(membership).to.exist;
         });
     });
