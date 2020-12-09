@@ -1,15 +1,15 @@
 import { GraphQLResolveInfo } from "graphql";
 import {
-  BaseEntity,
-  Column,
-  Check,
-  Entity,
-  Unique,
-  getManager,
-  getRepository,
-  ManyToMany,
-  ManyToOne,
-  PrimaryGeneratedColumn
+    BaseEntity,
+    Column,
+    Check,
+    Entity,
+    Unique,
+    getManager,
+    getRepository,
+    ManyToMany,
+    ManyToOne,
+    PrimaryGeneratedColumn
 } from "typeorm";
 import { Organization } from "./organization";
 import { School } from "./school";
@@ -43,10 +43,13 @@ export class Class extends BaseEntity {
     @ManyToMany(() => User, user => user.classesStudying)
     public students?: Promise<User[]>
 
+    @Column({ type: 'timestamp', nullable: true})
+    public deleted_at?: Date
+
     public async set({class_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization) { return null }
+            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
             const permisionContext = { organization_id: organization.organization_id }
             await context.permissions.rejectIfNotAllowed(
@@ -112,7 +115,7 @@ export class Class extends BaseEntity {
 
     public async editTeachers({teacher_ids}: any, context: Context, info: GraphQLResolveInfo) {
         const organization = await this.organization as Organization
-        if(info.operation.operation !== "mutation" || !organization) { return null }
+        if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
         const permisionContext = { organization_id: organization.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -160,7 +163,7 @@ export class Class extends BaseEntity {
     public async addTeacher({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization) { return null }
+            if(info.operation.operation !== "mutation" || !organization|| this.status == Status.INACTIVE) { return null }
 
             const permisionContext = { organization_id: organization.organization_id }
             await context.permissions.rejectIfNotAllowed(
@@ -185,7 +188,7 @@ export class Class extends BaseEntity {
         await context.permissions.rejectIfNotAllowed({organization_id}, PermissionName.delete_teacher_from_class_20446)
 
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation"|| this.status == Status.INACTIVE) { return null }
 
             const user = await getRepository(User).findOneOrFail({user_id})
             const classes  = (await user.classesTeaching) || []
@@ -203,7 +206,7 @@ export class Class extends BaseEntity {
 
     public async editStudents({student_ids}: any, context: Context, info: GraphQLResolveInfo) {
         const organization = await this.organization as Organization
-        if(info.operation.operation !== "mutation" || !organization) { return null }
+        if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
         const permisionContext = { organization_id: organization.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -251,7 +254,7 @@ export class Class extends BaseEntity {
     public async addStudent({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization) { return null }
+            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
             const permisionContext = { organization_id: organization.organization_id }
             await context.permissions.rejectIfNotAllowed(
@@ -276,7 +279,7 @@ export class Class extends BaseEntity {
         await context.permissions.rejectIfNotAllowed({organization_id}, PermissionName.delete_student_from_class_roster_20445)
 
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const user = await getRepository(User).findOneOrFail({user_id})
             const classes  = (await user.classesStudying) || []
@@ -294,7 +297,7 @@ export class Class extends BaseEntity {
 
     public async editSchools({school_ids}: any, context: Context, info: GraphQLResolveInfo) {
         const organization = await this.organization as Organization
-        if(info.operation.operation !== "mutation" || !organization) { return null }
+        if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
         const permisionContext = { organization_id: organization.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -343,7 +346,7 @@ export class Class extends BaseEntity {
     public async addSchool({school_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization) { return null }
+            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
             const permisionContext = { organization_id: organization.organization_id }
             await context.permissions.rejectIfNotAllowed(
@@ -368,7 +371,7 @@ export class Class extends BaseEntity {
         await context.permissions.rejectIfNotAllowed({organization_id}, PermissionName.edit_class_20334)
 
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const school = await getRepository(School).findOneOrFail({school_id})
             const classes  = (await school.classes) || []
@@ -387,14 +390,17 @@ export class Class extends BaseEntity {
     public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
         try {
             const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization) { return null }
+            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
 
             const permisionContext = { organization_id: organization.organization_id }
             await context.permissions.rejectIfNotAllowed(
               permisionContext,
               PermissionName.delete_class_20444
             )
-            await this.remove()
+            this.status = Status.INACTIVE
+            this.deleted_at = new Date()
+            await this.save()
+
             return true
         } catch(e) {
             console.error(e)

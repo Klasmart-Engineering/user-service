@@ -20,6 +20,7 @@ class Class {
   class_name : string
   organizationOrganizationId : uuid
   status : status
+  deleted_at : timestamp
 }
 
 class Organization {

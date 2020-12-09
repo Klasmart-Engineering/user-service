@@ -91,6 +91,14 @@ const EDIT_SCHOOLS_IN_CLASS = `
     }
 `;
 
+const DELETE_CLASS = `
+    mutation myMutation($class_id: ID!) {
+        class(class_id: $class_id) {
+            delete
+        }
+    }
+`;
+
 export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers) {
     const { mutate } = testClient;
 
@@ -186,3 +194,15 @@ export async function editSchoolsInClass(testClient: ApolloServerTestClient, cla
     return schools;
 }
 
+export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const res = await mutate({
+        mutation: DELETE_CLASS,
+        variables: { class_id: classId },
+        headers: headers,
+    });
+
+    const gqlClass = res.data?.class.delete as boolean;
+    return gqlClass;
+}

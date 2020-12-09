@@ -28,7 +28,7 @@ export class Model {
     }
 
     public static readonly SIMILARITY_THRESHOLD = process.env.POSTGRES_TRGM_LIMIT || 0.1;
-    
+
     private connection: Connection
     private manager: EntityManager
     private userRepository: Repository<User>
@@ -51,9 +51,9 @@ export class Model {
         try {
             if(!token) {return null}
             let user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
-            
+
             let modified = false
-            
+
             //Ensure fields match
             if(user.user_id !== token.id)
             { user.user_id = token.id; modified = true }
@@ -66,9 +66,9 @@ export class Model {
 
             if(!user.family_name && token.family_name)
             { user.family_name = token.family_name; modified = true }
-            
+
             if(modified) { await this.manager.save(user) }
-                
+
             return user
         } catch(e) {
             console.error(e)
@@ -100,7 +100,7 @@ export class Model {
     public async getUser(user_id: string) {
         const user = await this.userRepository.findOneOrFail(user_id)
         return user
-    }    
+    }
     public async getUsers() {
         return await this.userRepository.find()
     }
@@ -137,8 +137,8 @@ export class Model {
         try {
             const role = await this.roleRepository.findOneOrFail(role_id)
 
-            if(role_name !== undefined) { role.role_name = role_name } 
-            
+            if(role_name !== undefined) { role.role_name = role_name }
+
             return role
         } catch(e) {
             console.error(e)

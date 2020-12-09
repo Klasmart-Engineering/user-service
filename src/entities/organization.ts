@@ -240,7 +240,7 @@ export class Organization extends BaseEntity {
                 }
                 return role
             }
-            return roleLookup            
+            return roleLookup
     }
 
     private async findOrCreateUser(
@@ -269,8 +269,8 @@ export class Organization extends BaseEntity {
             membership.user = Promise.resolve(user)
             membership.organization = Promise.resolve(this)
             membership.roles = Promise.resolve(organizationRoles)
-        return membership   
-    
+        return membership
+
     }
 
     private async membershipSchools(

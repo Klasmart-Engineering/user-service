@@ -5,7 +5,7 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Class } from "../../src/entities/class";
 import { Status } from "../../src/entities/status";
-import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass } from "../utils/operations/classOps";
+import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass, deleteClass } from "../utils/operations/classOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
@@ -116,6 +116,22 @@ describe("class", () => {
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 expect(dbClass.class_name).to.equal(newClassName);
             });
+
+            context("and the class is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                });
+
+                it("does not update the class name", async () => {
+                    const newClassName = "New Class Name";
+                    const originalClassName = cls.class_name;
+                    const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: BillyAuthToken });
+
+                    expect(gqlClass).to.be.null;
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    expect(dbClass.class_name).to.equal(originalClassName);
+                });
+            });
         });
     });
 
@@ -220,6 +236,24 @@ describe("class", () => {
                     expect(teachers).to.be.empty
                     expect(classesTeaching).to.be.empty
                 });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("does not edit the teachers in class", async () => {
+                        const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+
+                        expect(gqlTeacher).to.be.null;
+                        const dbTeacher = await User.findOneOrFail(user.user_id);
+                        const dbClass = await Class.findOneOrFail(cls.class_id);
+                        const teachers = await dbClass.teachers;
+                        const classesTeaching = await dbTeacher.classesTeaching;
+                        expect(classesTeaching).to.be.empty;
+                        expect(teachers).to.be.empty;
+                    });
+                });
             });
         });
     });
@@ -308,6 +342,24 @@ describe("class", () => {
                 expect(teachers).to.have.lengthOf(1);
                 expect(classesTeaching![0].class_id).to.equal(dbClass.class_id);
                 expect(teachers![0].user_id).to.equal(dbTeacher.user_id);
+            });
+
+            context("and the class is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                });
+
+                it("does not add the teacher in class", async () => {
+                    const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+
+                    expect(gqlTeacher).to.be.null;
+                    const dbTeacher = await User.findOneOrFail(user.user_id);
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    const teachers = await dbClass.teachers;
+                    const classesTeaching = await dbTeacher.classesTeaching;
+                    expect(classesTeaching).to.be.empty;
+                    expect(teachers).to.be.empty;
+                });
             });
         });
     });
@@ -413,6 +465,23 @@ describe("class", () => {
                     expect(students).to.be.empty
                     expect(classesStudying).to.be.empty
                 });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("does not edit the students in class", async () => {
+                        const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                        expect(gqlStudent).to.be.null;
+                        const dbStudent = await User.findOneOrFail(user.user_id);
+                        const dbClass = await Class.findOneOrFail(cls.class_id);
+                        const students = await dbClass.students;
+                        const classesStudying = await dbStudent.classesStudying;
+                        expect(classesStudying).to.be.empty;
+                        expect(students).to.be.empty;
+                    });
+                });
             });
         });
     });
@@ -501,6 +570,23 @@ describe("class", () => {
                 expect(students).to.have.lengthOf(1);
                 expect(classesStudying![0].class_id).to.equal(dbClass.class_id);
                 expect(students![0].user_id).to.equal(dbStudent.user_id);
+            });
+
+            context("and the class is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                });
+
+                it("does not add the student to class", async () => {
+                    const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                    expect(gqlStudent).to.be.null;
+                    const dbStudent = await User.findOneOrFail(user.user_id);
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    const students = await dbClass.students;
+                    const classesStudying = await dbStudent.classesStudying;
+                    expect(classesStudying).to.be.empty;
+                    expect(students).to.be.empty;
+                });
             });
         });
     });
@@ -608,6 +694,23 @@ describe("class", () => {
                     expect(schools).to.be.empty
                     expect(classes).to.be.empty
                 });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("does not edit the schools in class", async () => {
+                        const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                        expect(gqlSchool).to.be.null;
+                        const dbSchool = await School.findOneOrFail(school.school_id);
+                        const dbClass = await Class.findOneOrFail(cls.class_id);
+                        const schools = await dbClass.schools;
+                        const classes = await dbSchool.classes;
+                        expect(classes).to.be.empty;
+                        expect(schools).to.be.empty;
+                    });
+                });
             });
         });
     });
@@ -632,7 +735,7 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
-            it("should fail to add student to class", async () => {
+            it("should fail to add shool to class", async () => {
                 const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: undefined });
                 expect(gqlSchool).to.be.null;
                 const dbSchool = await School.findOneOrFail(school.school_id);
@@ -659,7 +762,7 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
-            it("should fail to add student to class", async () => {
+            it("should fail to add school to class", async () => {
                 const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
                 expect(gqlSchool).to.be.null;
                 const dbSchool = await School.findOneOrFail(school.school_id);
@@ -687,7 +790,7 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
-            it("should add student to class", async () => {
+            it("should add school to class", async () => {
                 const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
                 expect(gqlSchool).to.exist;
                 expect(school).to.include(gqlSchool);
@@ -699,6 +802,97 @@ describe("class", () => {
                 expect(schools).to.have.lengthOf(1);
                 expect(classes![0].class_id).to.equal(dbClass.class_id);
                 expect(schools![0].school_id).to.equal(dbSchool.school_id);
+            });
+
+            context("and the class is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                });
+
+                it("does not add the school to class", async () => {
+                    const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
+                    expect(gqlSchool).to.be.null;
+                    const dbSchool = await School.findOneOrFail(school.school_id);
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    const schools = await dbClass.schools;
+                    const classes = await dbSchool.classes;
+                    expect(classes).to.be.empty;
+                    expect(schools).to.be.empty;
+                });
+            });
+        });
+    });
+
+    describe("delete", () => {
+        let school: School;
+        let user: User;
+        let cls: Class;
+        let organization : Organization;
+
+        beforeEach(async () => {
+            await connection.synchronize(true);
+
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            cls = await createClass(testClient, organization.organization_id);
+        });
+
+        context("when not authenticated", () => {
+            it("fails to delete the class", async () => {
+                 const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                expect(gqlClass).to.be.false;
+                const dbClass = await Class.findOneOrFail(cls.class_id);
+                expect(dbClass.status).to.eq(Status.ACTIVE);
+                expect(dbClass.deleted_at).to.be.null;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have delete class permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to delete the class", async () => {
+                    const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    expect(gqlClass).to.be.false;
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    expect(dbClass.status).to.eq(Status.ACTIVE);
+                    expect(dbClass.deleted_at).to.be.null;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_class_20444);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("deletes the class", async () => {
+                    const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    expect(gqlClass).to.be.true;
+                    const dbClass = await Class.findOneOrFail(cls.class_id);
+                    expect(dbClass.status).to.eq(Status.INACTIVE);
+                    expect(dbClass.deleted_at).not.to.be.null;
+                });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("fails to delete the class", async () => {
+                        const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                        expect(gqlClass).to.be.null;
+                        const dbClass = await Class.findOneOrFail(cls.class_id);
+                        expect(dbClass.status).to.eq(Status.INACTIVE);
+                        expect(dbClass.deleted_at).not.to.be.null;
+                    });
+                });
             });
         });
     });
