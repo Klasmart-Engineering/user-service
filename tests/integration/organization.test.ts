@@ -15,6 +15,7 @@ import { SchoolMembership } from "../../src/entities/schoolMembership";
 import { JoeAuthToken, BillyAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
+import { UniqueDirectiveNamesRule } from "graphql";
 
 describe("organization", () => {
     let connection: Connection;
