@@ -100,6 +100,9 @@ export class Organization extends BaseEntity {
     @JoinColumn()
     public classes?: Promise<Class[]>
 
+    @Column({ type: 'timestamp', nullable: true})
+    public deleted_at?: Date
+
     public async set({
         organization_name,
         address1,
@@ -114,7 +117,7 @@ export class Organization extends BaseEntity {
               PermissionName.edit_an_organization_details_5
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             if(typeof organization_name === "string") { this.organization_name = organization_name }
             if(typeof address1 === "string") { this.address1 = address1 }
@@ -191,7 +194,7 @@ export class Organization extends BaseEntity {
               PermissionName.edit_an_organization_details_5
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const user = await getRepository(User).findOneOrFail({user_id})
             this.primary_contact = Promise.resolve(user)
@@ -211,7 +214,7 @@ export class Organization extends BaseEntity {
               PermissionName.send_invitation_40882
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const user = await getRepository(User).findOneOrFail(user_id)
 
@@ -231,7 +234,7 @@ export class Organization extends BaseEntity {
     public async inviteUser({email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.send_invitation_40882)
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             return result
         } catch(e) {
@@ -242,7 +245,7 @@ export class Organization extends BaseEntity {
     public async editMembership({email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids}: any, context: Context, info: GraphQLResolveInfo) {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.edit_users_40330)
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             return result
         } catch(e) {
@@ -359,7 +362,7 @@ export class Organization extends BaseEntity {
               PermissionName.create_role_with_permissions_30222
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const manager = getManager()
 
             const role = new Role()
@@ -380,7 +383,7 @@ export class Organization extends BaseEntity {
               PermissionName.create_class_20224
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const manager = getManager()
 
             const _class = new Class()
@@ -402,7 +405,7 @@ export class Organization extends BaseEntity {
               PermissionName.create_school_20220
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const school = new School()
             school.school_name = school_name
@@ -467,6 +470,27 @@ export class Organization extends BaseEntity {
         }
 
         return this.roles
+    }
+
+    public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+
+            const permisionContext = { organization_id: this.organization_id }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.delete_organization_10440
+            )
+
+            this.status = Status.INACTIVE
+            this.deleted_at = new Date()
+            await this.save()
+
+            return true
+        } catch(e) {
+            console.error(e)
+        }
+        return false
     }
 
     public async _createDefaultRoles(manager: EntityManager = getManager()) {

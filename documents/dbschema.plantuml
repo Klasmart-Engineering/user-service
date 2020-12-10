@@ -32,6 +32,7 @@ class Organization {
   shortCode : string
   status : status
   primaryContactUserId : uuid
+  deleted_at : timestamp
 }
 
 class OrganizationMembership {

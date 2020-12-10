@@ -143,6 +143,7 @@ type Organization {
     resetDefaultRolesPermissions(_: Int): [Role]
     createSchool(school_name: String): School
     createClass(class_name: String): Class
+    delete(_:Int): Boolean
 }
 
 type MembershipUpdate {

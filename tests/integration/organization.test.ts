@@ -7,13 +7,16 @@ import { User } from "../../src/entities/user";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
-import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, createSchool, createClass, createRole,  inviteUser, editMembership} from "../utils/operations/organizationOps";
+import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
+import { addUserToOrganizationAndValidate, createSchool, createClass, createRole,  inviteUser, editMembership, deleteOrganization } from "../utils/operations/organizationOps";
+import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
 import { JoeAuthToken, BillyAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
+import { OrganizationMembership } from "../../src/entities/organizationMembership";
+import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
 import { UniqueDirectiveNamesRule } from "graphql";
 
@@ -172,6 +175,21 @@ describe("organization", () => {
                     expect(cls.class_name).to.eq(otherClass.class_name)
                     expect(cls.status).to.eq(Status.ACTIVE)
                 });
+
+                context("and the organization is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("fails to create class in the organization", async () => {
+                        const cls = await createClass(testClient, organizationId, "", { authorization: JoeAuthToken });
+
+                        expect(cls).to.be.null
+                        const dbOrg = await Organization.findOneOrFail(organizationId);
+                        const orgClasses = await dbOrg.classes || []
+                        expect(orgClasses).to.be.empty
+                    });
+                });
             });
         });
     })
@@ -252,6 +270,21 @@ describe("organization", () => {
                     expect(school.school_id).to.not.eq(otherSchool.school_id)
                     expect(school.school_name).to.eq(otherSchool.school_name)
 
+                });
+
+                context("and the organization is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("fails to create school in the organization", async () => {
+                        const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+
+                        expect(school).to.be.null
+                        const dbSchool = await Organization.findOneOrFail(organizationId);
+                        const orgSchools = await dbSchool.schools || []
+                        expect(orgSchools).to.be.empty
+                    });
                 });
             });
         });
@@ -483,6 +516,26 @@ describe("organization", () => {
                 expect(membership.user_id).to.equal(newUser.user_id)
             });
 
+            context("and the organization is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
+                });
+
+                it("fails to invite user to the organization", async () => {
+                    let email = "bob@nowhere.com"
+                    let phone = undefined
+                    let given = "Bob"
+                    let family = "Smith"
+                    let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                    expect(gqlresult).to.be.null
+
+                    const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
+                    const organizationMemberships = await dbOrganization.memberships;
+                    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { organization_id: organizationId, user_id: userId } });
+
+                    expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
+                });
+            });
         });
     });
     describe("editMemberships", async () => {
@@ -547,7 +600,93 @@ describe("organization", () => {
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
             });
+
+            context("and the organization is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
+                });
+
+                it("fails to edit membership on the organization", async () => {
+                    let email = undefined
+                    let phone = "+44207344141"
+                    let given = "Bob"
+                    let family = "Smith"
+                    let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                    expect(gqlresult).to.be.null
+                });
+            });
         });
     });
 
+    describe("delete", () => {
+        let user: User;
+        let organization : Organization;
+
+        beforeEach(async () => {
+            await connection.synchronize(true);
+
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to delete the organization", async () => {
+                 const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: undefined });
+                expect(gqlOrganization).to.be.false;
+                const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                expect(dbOrganization.status).to.eq(Status.ACTIVE);
+                expect(dbOrganization.deleted_at).to.be.null;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have delete organization permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to delete the organization", async () => {
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                    expect(gqlOrganization).to.be.false;
+                    const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                    expect(dbOrganization.status).to.eq(Status.ACTIVE);
+                    expect(dbOrganization.deleted_at).to.be.null;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_organization_10440);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("deletes the organization", async () => {
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                    expect(gqlOrganization).to.be.true;
+                    const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                    expect(dbOrganization.status).to.eq(Status.INACTIVE);
+                    expect(dbOrganization.deleted_at).not.to.be.null;
+                });
+
+                context("and the organization is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
+                    });
+
+                    it("fails to delete the organization", async () => {
+                        const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                        expect(gqlOrganization).to.be.null;
+                        const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                        expect(dbOrganization.status).to.eq(Status.INACTIVE);
+                        expect(dbOrganization.deleted_at).not.to.be.null;
+                    });
+                });
+            });
+        });
+    });
 });

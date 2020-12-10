@@ -63,6 +63,14 @@ const ADD_USER_TO_ORGANIZATION = `
     }
 `;
 
+const DELETE_ORGANIZATION = `
+    mutation myMutation($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            delete
+        }
+    }
+`;
+
 const INVITE_USER = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
         organization(organization_id: $organization_id) {
@@ -234,8 +242,6 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     });
     expect(res.errors, res.errors?.toString()).to.be.undefined;
     const result = res.data?.organization.inviteUser as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
-    expect(result.membership).to.exist;
-    expect(result.membership.user_id).equals(result.user.user_id);
     return result
 }
 
@@ -272,10 +278,21 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
     });
     expect(res.errors, res.errors?.toString()).to.be.undefined;
     const result = res.data?.organization.editMembership as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
-    expect(result.membership).to.exist;
-    expect(result.membership.user_id).equals(result.user.user_id);
     return result
 }
 
+export async function deleteOrganization(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: DELETE_ORGANIZATION,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlOrganization = res.data?.organization.delete as boolean;
+    return gqlOrganization;
+}
 
 
