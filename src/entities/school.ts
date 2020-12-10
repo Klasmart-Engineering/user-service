@@ -56,6 +56,9 @@ export class School extends BaseEntity {
     @JoinTable()
     public classes?: Promise<Class[]>
 
+    @Column({ type: 'timestamp', nullable: true})
+    public deleted_at?: Date
+
     public async set({school_name}: any, context: Context, info: GraphQLResolveInfo) {
         try {
 
@@ -69,7 +72,7 @@ export class School extends BaseEntity {
               PermissionName.edit_school_20330
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             if(typeof school_name === "string") { this.school_name = school_name }
 
@@ -93,7 +96,7 @@ export class School extends BaseEntity {
               PermissionName.edit_school_20330
             )
 
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const user = await getRepository(User).findOneOrFail(user_id)
             const membership = new SchoolMembership()
@@ -107,5 +110,29 @@ export class School extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
+    }
+
+    public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
+        try {
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+
+            const permisionContext = {
+              organization_id: (await this.organization as Organization).organization_id,
+              school_ids: [this.school_id]
+            }
+            await context.permissions.rejectIfNotAllowed(
+              permisionContext,
+              PermissionName.delete_school_20440
+            )
+
+            this.status = Status.INACTIVE
+            this.deleted_at = new Date()
+            await this.save()
+
+            return true
+        } catch(e) {
+            console.error(e)
+        }
+        return false
     }
 }

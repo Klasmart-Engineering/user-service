@@ -58,6 +58,7 @@ class School {
   school_name : string
   status : status
   organizationOrganizationId : uuid
+  deleted_at : timestamp
 }
 
 class SchoolMembership {

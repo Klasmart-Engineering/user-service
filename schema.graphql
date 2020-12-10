@@ -220,6 +220,7 @@ type School {
     #mutations
     set(school_name: String): School
     addUser(user_id: ID!): SchoolMembership
+    delete(_:Int): Boolean
 }
 
 type SchoolMembership {

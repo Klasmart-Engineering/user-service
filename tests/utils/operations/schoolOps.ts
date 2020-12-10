@@ -78,9 +78,17 @@ const ADD_USER_TO_SCHOOL = `
     }
 `;
 
+const DELETE_SCHOOL = `
+    mutation myMutation($school_id: ID!) {
+        school(school_id: $school_id) {
+            delete
+        }
+    }
+`;
+
 export async function getSchoolOrganization(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_ORGANIZATION,
         variables: { school_id: schoolId },
@@ -94,7 +102,7 @@ export async function getSchoolOrganization(testClient: ApolloServerTestClient, 
 
 export async function getSchoolClasses(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_CLASSES,
         variables: { school_id: schoolId },
@@ -108,7 +116,7 @@ export async function getSchoolClasses(testClient: ApolloServerTestClient, schoo
 
 export async function getSchoolMembershipsViaSchool(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_MEMBERSHIPS,
         variables: { school_id: schoolId },
@@ -122,7 +130,7 @@ export async function getSchoolMembershipsViaSchool(testClient: ApolloServerTest
 
 export async function getSchoolMembershipViaSchool(testClient: ApolloServerTestClient, schoolId: string, userId: string, headers?: Headers) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_MEMBERSHIP,
         variables: { school_id: schoolId, user_id: userId },
@@ -136,7 +144,7 @@ export async function getSchoolMembershipViaSchool(testClient: ApolloServerTestC
 
 export async function updateSchool(testClient: ApolloServerTestClient, schoolId: string, schoolName: string, headers?: Headers) {
     const { mutate } = testClient;
-    
+
     const operation = () => mutate({
         mutation: UPDATE_SCHOOL,
         variables: { school_id: schoolId, school_name: schoolName },
@@ -150,7 +158,7 @@ export async function updateSchool(testClient: ApolloServerTestClient, schoolId:
 
 export async function addUserToSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
-    
+
     const operation = () => mutate({
         mutation: ADD_USER_TO_SCHOOL,
         variables: { user_id: userId, school_id: schoolId },
@@ -160,4 +168,18 @@ export async function addUserToSchool(testClient: ApolloServerTestClient, userId
     const res = await gqlTry(operation);
     const gqlMembership = res.data?.school.addUser as SchoolMembership;
     return gqlMembership;
+}
+
+export async function deleteSchool(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: DELETE_SCHOOL,
+        variables: { school_id: schoolId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSchool = res.data?.school.delete as boolean;
+    return gqlSchool;
 }
