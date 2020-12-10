@@ -209,6 +209,7 @@ type School {
 
     #properties
     school_name: String
+    status: String
 
     #connections
     organization: Organization

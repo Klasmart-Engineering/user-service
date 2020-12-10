@@ -46,6 +46,7 @@ const CREATE_SCHOOL = `
             createSchool(school_name: $school_name) {
                 school_id
                 school_name
+                status
             }
         }
     }
@@ -66,7 +67,7 @@ const INVITE_USER = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
         organization(organization_id: $organization_id) {
             inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
-                user{ 
+                user{
                     user_id
                     email
                     phone
@@ -92,8 +93,8 @@ const INVITE_USER = `
 const EDIT_MEMBERSHIP = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
         organization(organization_id: $organization_id) {
-            editMembership(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){    
-                user{ 
+            editMembership(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
+                user{
                     user_id
                     email
                     phone
@@ -109,7 +110,7 @@ const EDIT_MEMBERSHIP = `
                 schoolMemberships{
                     user_id
                     school_id
-                    join_timestamp              
+                    join_timestamp
                 }
             }
         }
@@ -225,7 +226,7 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     if(school_role_ids !== undefined){
         variables.school_role_ids = school_role_ids
     }
-    
+
     const res = await mutate({
         mutation: INVITE_USER,
         variables: variables,
@@ -263,7 +264,7 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
     if(school_role_ids !== undefined){
         variables.school_role_ids = school_role_ids
     }
-    
+
     const res = await mutate({
         mutation: EDIT_MEMBERSHIP,
         variables: variables,

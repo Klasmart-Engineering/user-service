@@ -56,6 +56,7 @@ class Role {
 class School {
   school_id : uuid
   school_name : string
+  status : status
   organizationOrganizationId : uuid
 }
 

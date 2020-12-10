@@ -20,6 +20,7 @@ import { SchoolMembership } from './schoolMembership';
 import { Organization } from './organization';
 import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
+import { Status } from "./status";
 
 @Entity()
 @Check(`"school_name" <> ''`)
@@ -30,6 +31,9 @@ export class School extends BaseEntity {
 
     @Column({nullable: false})
     public school_name!: string
+
+    @Column({type: "enum", enum: Status, default: Status.ACTIVE})
+    public status! : Status
 
     @OneToMany(() => SchoolMembership, membership => membership.school)
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
