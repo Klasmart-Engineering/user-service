@@ -27,6 +27,7 @@ import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
 import { SchoolMembership } from './schoolMembership';
 import { Model } from '../model';
+import { Status } from "./status";
 
 export function validateEmail(email?: string):boolean{
     const email_re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -63,6 +64,9 @@ export class Organization extends BaseEntity {
 
     @Column({nullable: true})
     public shortCode?: string
+
+    @Column({type: "enum", enum: Status, default: Status.ACTIVE})
+    public status! : Status
 
     @OneToMany(() => OrganizationMembership, membership => membership.organization)
     @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
@@ -276,7 +280,7 @@ export class Organization extends BaseEntity {
             if(family_name !== undefined) { user.family_name = family_name }
             return user
         }
-    
+
     private async membershipOrganization(
         user: User,
         organizationRoles: Role[]

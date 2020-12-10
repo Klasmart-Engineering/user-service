@@ -30,6 +30,7 @@ class Organization {
   address2 : string
   phone : string
   shortCode : string
+  status : status
   primaryContactUserId : uuid
 }
 

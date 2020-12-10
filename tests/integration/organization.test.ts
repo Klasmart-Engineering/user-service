@@ -44,6 +44,11 @@ describe("organization", () => {
             user = await createUserJoe(testClient);
             organization = await createOrganizationAndValidate(testClient, user.user_id);
         });
+
+        it("the organization status by default is active", async () => {
+            expect(organization.status).to.eq(Status.ACTIVE)
+        });
+
         it("should assign the old user to the exsting user", async () => {
             let oldUser: User
             let email = user.email ?? ""
@@ -450,7 +455,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
@@ -472,7 +477,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
@@ -516,7 +521,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
@@ -537,7 +542,7 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)

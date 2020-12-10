@@ -14,6 +14,7 @@ const CREATE_ORGANIZATION = `
             createOrganization(organization_name: $organization_name) {
                 organization_id
                 organization_name
+                status
             }
         }
     }
@@ -157,7 +158,7 @@ export async function addOrganizationToUserAndValidate(testClient: ApolloServerT
     const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
     const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId } });
-    
+
     const userMemberships = await dbUser.memberships;
     const organizationMemberships = await dbOrganization.memberships;
 
@@ -172,7 +173,7 @@ export async function addOrganizationToUserAndValidate(testClient: ApolloServerT
 
 export async function addOrganizationToUser(testClient: ApolloServerTestClient, userId: string, organizationId: string) {
     const { mutate } = testClient;
-    
+
     const operation = () => mutate({
         mutation: ADD_ORGANIZATION_TO_USER,
         variables: { user_id: userId, organization_id: organizationId },
@@ -205,7 +206,7 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User)
 
 export async function getOrganizationMemberships(testClient: ApolloServerTestClient, user: User) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_ORGANIZATION_MEMBERSHIPS,
         variables: { user_id: user.user_id },
@@ -233,7 +234,7 @@ export async function getOrganizationMembership(testClient: ApolloServerTestClie
 
 export async function getSchoolMemberships(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_SCHOOL_MEMBERSHIPS,
         variables: { user_id: userId },
@@ -261,13 +262,13 @@ export async function getSchoolMembership(testClient: ApolloServerTestClient, us
 
 export async function getClassesTeaching(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_CLASSES_TEACHING,
         variables: { user_id: userId },
         headers: { authorization: JoeAuthToken },
     });
-    
+
     const res = await gqlTry(operation);
     const gqlClasses = res.data?.user.classesTeaching as Class[];
     return gqlClasses;
@@ -275,13 +276,13 @@ export async function getClassesTeaching(testClient: ApolloServerTestClient, use
 
 export async function getClassesStudying(testClient: ApolloServerTestClient, userId: string) {
     const { query } = testClient;
-    
+
     const operation = () => query({
         query: GET_CLASSES_STUDYING,
         variables: { user_id: userId },
         headers: { authorization: JoeAuthToken },
     });
-    
+
     const res = await gqlTry(operation);
     const gqlClasses = res.data?.user.classesStudying as Class[];
     return gqlClasses;

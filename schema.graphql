@@ -106,6 +106,7 @@ type Organization {
     address2: String
     phone: String
     shortCode: String
+    status: String
 
     #connections
 
