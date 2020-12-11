@@ -131,5 +131,16 @@ export const teacherRole = {
         PermissionName.view_users_40110,
         PermissionName.support_60100,
         PermissionName.online_support_60101,
+        PermissionName.free_programs_80000,
+        PermissionName.bada_rhyme_81000,
+        PermissionName.view_free_programs_80001,
+        PermissionName.bada_genius_81001,
+        PermissionName.bada_talk_81002,
+        PermissionName.bada_sound_81003,
+        PermissionName.bada_read_81004,
+        PermissionName.bada_math_81005,
+        PermissionName.bada_stem_81006,
+        PermissionName.badanamu_esl_81007,
+        PermissionName.use_free_as_recommended_content_for_study_81008,
     ]
 }

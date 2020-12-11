@@ -204,5 +204,6 @@ export const schoolAdminRole = {
         PermissionName.bada_math_81005,
         PermissionName.bada_stem_81006,
         PermissionName.badanamu_esl_81007,
+        PermissionName.use_free_as_recommended_content_for_study_81008,
     ]
 }

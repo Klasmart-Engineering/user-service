@@ -35,5 +35,6 @@ export const studentRole = {
         PermissionName.join_organization_10881,
         PermissionName.leave_organization_10882,
         PermissionName.online_support_60101,
+        PermissionName.use_free_as_recommended_content_for_study_81008,
     ],
 }
