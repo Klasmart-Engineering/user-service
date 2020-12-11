@@ -1,10 +1,11 @@
-import { expect } from "chai";
 import { HttpQueryError, GraphQLResponse } from "apollo-server-core"
 
 export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
     try {
         const res = await gqlOperation();
-        expect(res.errors, res.errors?.map(x => x.message).join('\n')).to.be.undefined;
+        if (res.errors) {
+            throw new Error(res.errors?.map(x => x.message).join('\n'));
+        }
         return res;
     } catch (e) {
         if (e instanceof HttpQueryError) {

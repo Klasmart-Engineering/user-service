@@ -17,6 +17,9 @@ import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
+import chaiAsPromised from "chai-as-promised";
+import chai from "chai"
+chai.use(chaiAsPromised);
 
 describe("class", () => {
     let connection: Connection;
@@ -53,11 +56,11 @@ describe("class", () => {
                 expect(cls.status).to.eq(Status.ACTIVE)
             });
 
-            it("should fail to update class name", async () => {
+            it("should throw a permission exception and not mutate the database entry", async () => {
                 const newClassName = "New Class Name"
                 const originalClassName = cls.class_name;
-                const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: undefined });
-                expect(gqlClass).to.be.null;
+                const fn = () => updateClass(testClient, cls.class_id, newClassName, { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 expect(dbClass.class_name).to.equal(originalClassName);
             });
@@ -80,11 +83,11 @@ describe("class", () => {
                 expect(cls.status).to.eq(Status.ACTIVE)
             });
 
-            it("should fail to update class name", async () => {
+            it("should throw a permission exception and not mutate the database entry", async () => {
                 const newClassName = "New Class Name"
                 const originalClassName = cls.class_name;
-                const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: BillyAuthToken });
-                expect(gqlClass).to.be.null;
+                const fn = () => updateClass(testClient, cls.class_id, newClassName, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 expect(dbClass.class_name).to.equal(originalClassName);
             });
@@ -151,9 +154,9 @@ describe("class", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to edit teachers in class", async () => {
-                const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: undefined });
-                expect(gqlTeacher).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const teachers = await dbClass.teachers;
@@ -171,9 +174,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to edit teachers in class", async () => {
-                    const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
-                    expect(gqlTeacher).to.be.null;
+                it("should throw a permission exception and not mutate the database entries", async () => {
+                    const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbTeacher = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     const teachers = await dbClass.teachers;
@@ -190,9 +193,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to edit teachers in class", async () => {
-                    const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
-                    expect(gqlTeacher).to.be.null;
+                it("should throw a permission exception and not mutate the database entries", async () => {
+                    const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbTeacher = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     const teachers = await dbClass.teachers;
@@ -277,9 +280,9 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
-            it("should fail to add teacher to class", async () => {
-                const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: undefined });
-                expect(gqlTeacher).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const teachers = await dbClass.teachers;
@@ -303,9 +306,9 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
-            it("should fail to add teacher to class", async () => {
-                const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
-                expect(gqlTeacher).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const teachers = await dbClass.teachers;
@@ -391,9 +394,9 @@ describe("class", () => {
                 await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
 
-            it("fails to remove teacher in class", async () => {
-                const gqlTeacher = await removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: undefined });
-                expect(gqlTeacher).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const teachers = await dbClass.teachers || [];
@@ -418,9 +421,9 @@ describe("class", () => {
                 await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
 
-            it("fails to remove teacher in class", async () => {
-                const gqlTeacher = await removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
-                expect(gqlTeacher).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const teachers = await dbClass.teachers || [];
@@ -492,9 +495,9 @@ describe("class", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to edit students in class", async () => {
-                const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: undefined });
-                expect(gqlStudent).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbStudent = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const students = await dbClass.students;
@@ -512,9 +515,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to edit students in class", async () => {
-                    const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
-                    expect(gqlStudent).to.be.null;
+                it("should throw a permission exception and not mutate the database entries", async () => {
+                    const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbStudent = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     const students = await dbClass.students;
@@ -531,9 +534,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to edit students in class", async () => {
-                    const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
-                    expect(gqlStudent).to.be.null;
+                it("should throw a permission exception and not mutate the database entries", async () => {
+                    const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbStudent = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     const students = await dbClass.students;
@@ -617,9 +620,9 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
-            it("should fail to add student to class", async () => {
-                const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: undefined });
-                expect(gqlStudent).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbStudent = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const students = await dbClass.students;
@@ -643,9 +646,9 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
-            it("should fail to add student to class", async () => {
-                const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
-                expect(gqlStudent).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 const dbStudent = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const students = await dbClass.students;
@@ -721,9 +724,9 @@ describe("class", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to edit schools in class", async () => {
-                const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: undefined });
-                expect(gqlSchool).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbSchool = await School.findOneOrFail(school.school_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const schools = await dbClass.schools;
@@ -741,9 +744,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to edit schools in class", async () => {
-                    const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
-                    expect(gqlSchool).to.be.null;
+                it("should throw a permission exception and not mutate the database entries", async () => {
+                    const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbSchool = await School.findOneOrFail(school.school_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     const schools = await dbClass.schools;
@@ -760,9 +763,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to edit schools in class", async () => {
-                    const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
-                    expect(gqlSchool).to.be.null;
+                it("should throw a permission exception and not mutate the database entries", async () => {
+                    const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbSchool = await School.findOneOrFail(school.school_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     const schools = await dbClass.schools;
@@ -847,9 +850,9 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
-            it("should fail to add shool to class", async () => {
-                const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: undefined });
-                expect(gqlSchool).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbSchool = await School.findOneOrFail(school.school_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const schools = await dbClass.schools;
@@ -874,9 +877,9 @@ describe("class", () => {
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
-            it("should fail to add school to class", async () => {
-                const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
-                expect(gqlSchool).to.be.null;
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 const dbSchool = await School.findOneOrFail(school.school_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 const schools = await dbClass.schools;
@@ -952,9 +955,9 @@ describe("class", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to delete the class", async () => {
-                 const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
-                expect(gqlClass).to.be.false;
+            it("should throw a permission exception and not mutate the database entry", async () => {
+                const fn = () => deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 expect(dbClass.status).to.eq(Status.ACTIVE);
                 expect(dbClass.deleted_at).to.be.null;
@@ -968,9 +971,9 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to delete the class", async () => {
-                    const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
-                    expect(gqlClass).to.be.false;
+                it("should throw a permission exception and not mutate the database entry", async () => {
+                    const fn = () => deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     expect(dbClass.status).to.eq(Status.ACTIVE);
                     expect(dbClass.deleted_at).to.be.null;
@@ -985,8 +988,8 @@ describe("class", () => {
                 });
 
                 it("deletes the class", async () => {
-                    const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
-                    expect(gqlClass).to.be.true;
+                    const successful = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    expect(successful).to.be.true;
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     expect(dbClass.status).to.eq(Status.INACTIVE);
                     expect(dbClass.deleted_at).not.to.be.null;
@@ -998,8 +1001,8 @@ describe("class", () => {
                     });
 
                     it("fails to delete the class", async () => {
-                        const gqlClass = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
-                        expect(gqlClass).to.be.null;
+                        const successful = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                        expect(successful).to.be.null;
                         const dbClass = await Class.findOneOrFail(cls.class_id);
                         expect(dbClass.status).to.eq(Status.INACTIVE);
                         expect(dbClass.deleted_at).not.to.be.null;

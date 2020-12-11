@@ -18,7 +18,9 @@ import { Organization } from "../../src/entities/organization";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
-import { UniqueDirectiveNamesRule } from "graphql";
+import chaiAsPromised from "chai-as-promised";
+import chai from "chai"
+chai.use(chaiAsPromised);
 
 describe("organization", () => {
     let connection: Connection;
@@ -634,8 +636,8 @@ describe("organization", () => {
 
         context("when not authenticated", () => {
             it("fails to delete the organization", async () => {
-                 const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: undefined });
-                expect(gqlOrganization).to.be.false;
+                const fn = () => deleteOrganization(testClient, organization.organization_id, { authorization: undefined });
+                expect(fn()).to.be.rejected;
                 const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                 expect(dbOrganization.status).to.eq(Status.ACTIVE);
                 expect(dbOrganization.deleted_at).to.be.null;
@@ -650,8 +652,8 @@ describe("organization", () => {
                 });
 
                 it("fails to delete the organization", async () => {
-                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
-                    expect(gqlOrganization).to.be.false;
+                    const fn = () => deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     expect(dbOrganization.status).to.eq(Status.ACTIVE);
                     expect(dbOrganization.deleted_at).to.be.null;

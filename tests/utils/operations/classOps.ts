@@ -4,6 +4,7 @@ import { School } from "../../../src/entities/school";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { Headers } from 'node-mocks-http';
+import { gqlTry } from "../gqlTry";
 
 const UPDATE_CLASS = `
     mutation myMutation(
@@ -112,13 +113,13 @@ const DELETE_CLASS = `
 export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: UPDATE_CLASS,
         variables: { class_id: classId, class_name: className },
         headers: headers,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const gqlClass = res.data?.class.set as Class;
     return gqlClass;
 }
@@ -126,13 +127,13 @@ export async function updateClass(testClient: ApolloServerTestClient, classId: s
 export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: ADD_SCHOOL_TO_CLASS,
         variables: { class_id: classId, school_id: schoolId },
         headers: headers,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const school = res.data?.class.addSchool as School;
     return school;
 }
@@ -140,12 +141,13 @@ export async function addSchoolToClass(testClient: ApolloServerTestClient, class
 export async function editTeachersInClass(testClient: ApolloServerTestClient, classId: string, teacherIds: string[], headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: EDIT_TEACHERS_IN_CLASS,
         variables: { class_id: classId, teacher_ids: teacherIds },
         headers: headers,
     });
 
+    const res = await gqlTry(operation);
     const teachers = res.data?.class.editTeachers as User[];
     return teachers;
 }
@@ -153,13 +155,13 @@ export async function editTeachersInClass(testClient: ApolloServerTestClient, cl
 export async function addTeacherToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: ADD_TEACHER_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const teacher = res.data?.class.addTeacher as User;
     return teacher;
 }
@@ -167,12 +169,13 @@ export async function addTeacherToClass(testClient: ApolloServerTestClient, clas
 export async function removeTeacherInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: REMOVE_TEACHER_IN_CLASS,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
     });
 
+    const res = await gqlTry(operation);
     const teacher = res.data?.class.removeTeacher as boolean;
     return teacher;
 }
@@ -180,12 +183,13 @@ export async function removeTeacherInClass(testClient: ApolloServerTestClient, c
 export async function editStudentsInClass(testClient: ApolloServerTestClient, classId: string, studentIds: string[], headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: EDIT_STUDENTS_IN_CLASS,
         variables: { class_id: classId, student_ids: studentIds },
         headers: headers,
     });
 
+    const res = await gqlTry(operation);
     const students = res.data?.class.editStudents as User[];
     return students;
 }
@@ -193,13 +197,13 @@ export async function editStudentsInClass(testClient: ApolloServerTestClient, cl
 export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: ADD_STUDENT_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
     });
 
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    const res = await gqlTry(operation);
     const student = res.data?.class.addStudent as User;
     return student;
 }
@@ -207,12 +211,13 @@ export async function addStudentToClass(testClient: ApolloServerTestClient, clas
 export async function editSchoolsInClass(testClient: ApolloServerTestClient, classId: string, schoolIds: string[], headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: EDIT_SCHOOLS_IN_CLASS,
         variables: { class_id: classId, school_ids: schoolIds },
         headers: headers,
     });
 
+    const res = await gqlTry(operation);
     const schools = res.data?.class.editSchools as School[];
     return schools;
 }
@@ -220,12 +225,13 @@ export async function editSchoolsInClass(testClient: ApolloServerTestClient, cla
 export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: DELETE_CLASS,
         variables: { class_id: classId },
         headers: headers,
     });
 
-    const gqlClass = res.data?.class.delete as boolean;
-    return gqlClass;
+    const res = await gqlTry(operation);
+    const successful = res.data?.class.delete as boolean;
+    return successful;
 }

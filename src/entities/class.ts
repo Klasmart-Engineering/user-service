@@ -47,16 +47,16 @@ export class Class extends BaseEntity {
     public deleted_at?: Date
 
     public async set({class_name}: any, context: Context, info: GraphQLResolveInfo) {
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+          permisionContext,
+          PermissionName.edit_class_20334
+        )
+
         try {
-            const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
-
-            const permisionContext = { organization_id: organization.organization_id }
-            await context.permissions.rejectIfNotAllowed(
-              permisionContext,
-              PermissionName.edit_class_20334
-            )
-
             if(typeof class_name === "string") { this.class_name = class_name }
 
             await this.save()
@@ -114,10 +114,10 @@ export class Class extends BaseEntity {
     }
 
     public async editTeachers({teacher_ids}: any, context: Context, info: GraphQLResolveInfo) {
-        const organization = await this.organization as Organization
-        if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-        const permisionContext = { organization_id: organization.organization_id }
+        const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
             PermissionName.add_teachers_to_class_20226
@@ -127,28 +127,28 @@ export class Class extends BaseEntity {
             PermissionName.delete_teacher_from_class_20446
         )
 
-        var oldTeachers = await this.teachers || []
-        oldTeachers = await Promise.all(oldTeachers.map(async (teacher : User) => {
-            if(!teacher_ids.includes(teacher.user_id)){
-                const classes  = (await teacher.classesTeaching) || []
-                teacher.classesTeaching = Promise.resolve(
-                    classes.filter(({class_id}) => class_id !== this.class_id)
-                )
-            }
-
-            return teacher
-        }))
-
-         const newTeachers = await Promise.all(teacher_ids.map(async (teacher_id : string) => {
-            const teacher = await getRepository(User).findOneOrFail({user_id: teacher_id})
-            const classes  = (await teacher.classesTeaching) || []
-            classes.push(this)
-            teacher.classesTeaching = Promise.resolve(classes)
-
-            return teacher
-        }))
-
         try {
+            var oldTeachers = await this.teachers || []
+            oldTeachers = await Promise.all(oldTeachers.map(async (teacher : User) => {
+                if(!teacher_ids.includes(teacher.user_id)){
+                    const classes  = (await teacher.classesTeaching) || []
+                    teacher.classesTeaching = Promise.resolve(
+                        classes.filter(({class_id}) => class_id !== this.class_id)
+                    )
+                }
+
+                return teacher
+            }))
+
+            const newTeachers = await Promise.all(teacher_ids.map(async (teacher_id : string) => {
+                const teacher = await getRepository(User).findOneOrFail({user_id: teacher_id})
+                const classes  = (await teacher.classesTeaching) || []
+                classes.push(this)
+                teacher.classesTeaching = Promise.resolve(classes)
+
+                return teacher
+            }))
+
             await getManager().transaction(async (manager) => {
                 await manager.save(oldTeachers)
                 await manager.save(newTeachers)
@@ -161,15 +161,16 @@ export class Class extends BaseEntity {
     }
 
     public async addTeacher({user_id}: any, context: Context, info: GraphQLResolveInfo) {
-        try {
-            const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization|| this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-            const permisionContext = { organization_id: organization.organization_id }
-            await context.permissions.rejectIfNotAllowed(
-              permisionContext,
-              PermissionName.add_teachers_to_class_20226
-            )
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+          permisionContext,
+          PermissionName.add_teachers_to_class_20226
+        )
+
+        try {
             const user = await getRepository(User).findOneOrFail({user_id})
             const classes  = (await user.classesTeaching) || []
             classes.push(this)
@@ -183,13 +184,17 @@ export class Class extends BaseEntity {
     }
 
     public async removeTeacher({user_id}: any, context: Context, info: GraphQLResolveInfo) {
-        const organization_id = (await this.organization)?.organization_id
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
+
         //TODO: provide way to check permission for many schools
-        await context.permissions.rejectIfNotAllowed({organization_id}, PermissionName.delete_teacher_from_class_20446)
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.delete_teacher_from_class_20446
+        )
 
         try {
-            if(info.operation.operation !== "mutation"|| this.status == Status.INACTIVE) { return null }
-
             const user = await getRepository(User).findOneOrFail({user_id})
             const classes  = (await user.classesTeaching) || []
             user.classesTeaching = Promise.resolve(
@@ -205,10 +210,10 @@ export class Class extends BaseEntity {
     }
 
     public async editStudents({student_ids}: any, context: Context, info: GraphQLResolveInfo) {
-        const organization = await this.organization as Organization
-        if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-        const permisionContext = { organization_id: organization.organization_id }
+        const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
             PermissionName.add_students_to_class_20225
@@ -218,28 +223,28 @@ export class Class extends BaseEntity {
             PermissionName.delete_student_from_class_roster_20445
         )
 
-        var oldStudents = await this.students || []
-        oldStudents = await Promise.all(oldStudents.map(async (student : User) => {
-            if(!student_ids.includes(student.user_id)){
-                const classes  = (await student.classesStudying) || []
-                student.classesStudying = Promise.resolve(
-                    classes.filter(({class_id}) => class_id !== this.class_id)
-                )
-            }
-
-            return student
-        }))
-
-         const newStudents = await Promise.all(student_ids.map(async (student_id : string) => {
-            const student = await getRepository(User).findOneOrFail({user_id: student_id})
-            const classes  = (await student.classesStudying) || []
-            classes.push(this)
-            student.classesStudying = Promise.resolve(classes)
-
-            return student
-        }))
-
         try {
+            var oldStudents = await this.students || []
+            oldStudents = await Promise.all(oldStudents.map(async (student : User) => {
+                if(!student_ids.includes(student.user_id)){
+                    const classes  = (await student.classesStudying) || []
+                    student.classesStudying = Promise.resolve(
+                        classes.filter(({class_id}) => class_id !== this.class_id)
+                    )
+                }
+
+                return student
+            }))
+
+            const newStudents = await Promise.all(student_ids.map(async (student_id : string) => {
+                const student = await getRepository(User).findOneOrFail({user_id: student_id})
+                const classes  = (await student.classesStudying) || []
+                classes.push(this)
+                student.classesStudying = Promise.resolve(classes)
+
+                return student
+            }))
+
             await getManager().transaction(async (manager) => {
                 await manager.save(oldStudents)
                 await manager.save(newStudents)
@@ -252,15 +257,16 @@ export class Class extends BaseEntity {
     }
 
     public async addStudent({user_id}: any, context: Context, info: GraphQLResolveInfo) {
-        try {
-            const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-            const permisionContext = { organization_id: organization.organization_id }
-            await context.permissions.rejectIfNotAllowed(
-              permisionContext,
-              PermissionName.add_students_to_class_20225
-            )
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+          permisionContext,
+          PermissionName.add_students_to_class_20225
+        )
+
+        try {
             const user = await getRepository(User).findOneOrFail({user_id})
             const classes  = (await user.classesStudying) || []
             classes.push(this)
@@ -274,13 +280,17 @@ export class Class extends BaseEntity {
     }
 
     public async removeStudent({user_id}: any, context: Context, info: GraphQLResolveInfo) {
-        const organization_id = (await this.organization)?.organization_id
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
+
         //TODO: provide way to check permission for many schools
-        await context.permissions.rejectIfNotAllowed({organization_id}, PermissionName.delete_student_from_class_roster_20445)
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.delete_student_from_class_roster_20445
+        )
 
         try {
-            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
-
             const user = await getRepository(User).findOneOrFail({user_id})
             const classes  = (await user.classesStudying) || []
             user.classesStudying = Promise.resolve(
@@ -296,10 +306,10 @@ export class Class extends BaseEntity {
     }
 
     public async editSchools({school_ids}: any, context: Context, info: GraphQLResolveInfo) {
-        const organization = await this.organization as Organization
-        if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-        const permisionContext = { organization_id: organization.organization_id }
+        const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
             PermissionName.edit_school_20330
@@ -309,29 +319,28 @@ export class Class extends BaseEntity {
             PermissionName.edit_class_20334
         )
 
-        var oldSchools = await this.schools || []
-        oldSchools = await Promise.all(oldSchools.map(async (school : School) => {
-            if(!school_ids.includes(school.school_id)){
-                const classes  = (await school.classes) || []
-                school.classes = Promise.resolve(
-                    classes.filter(({class_id}) => class_id !== this.class_id)
-                )
-            }
-
-            return school
-        }))
-
-
-         const newSchools = await Promise.all(school_ids.map(async (school_id : string) => {
-            const school = await getRepository(School).findOneOrFail({school_id})
-            const classes  = (await school.classes) || []
-            classes.push(this)
-            school.classes = Promise.resolve(classes)
-
-            return school
-        }))
-
         try {
+            var oldSchools = await this.schools || []
+            oldSchools = await Promise.all(oldSchools.map(async (school : School) => {
+                if(!school_ids.includes(school.school_id)){
+                    const classes  = (await school.classes) || []
+                    school.classes = Promise.resolve(
+                        classes.filter(({class_id}) => class_id !== this.class_id)
+                    )
+                }
+
+                return school
+            }))
+
+            const newSchools = await Promise.all(school_ids.map(async (school_id : string) => {
+                const school = await getRepository(School).findOneOrFail({school_id})
+                const classes  = (await school.classes) || []
+                classes.push(this)
+                school.classes = Promise.resolve(classes)
+
+                return school
+            }))
+        
             await getManager().transaction(async (manager) => {
                 await manager.save(oldSchools)
                 await manager.save(newSchools)
@@ -344,15 +353,16 @@ export class Class extends BaseEntity {
     }
 
     public async addSchool({school_id}: any, context: Context, info: GraphQLResolveInfo) {
-        try {
-            const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-            const permisionContext = { organization_id: organization.organization_id }
-            await context.permissions.rejectIfNotAllowed(
-              permisionContext,
-              PermissionName.edit_school_20330
-            )
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+          permisionContext,
+          PermissionName.edit_school_20330
+        )
+
+        try {
             const school = await getRepository(School).findOneOrFail({school_id})
             const classes  = (await school.classes) || []
             classes.push(this)
@@ -366,13 +376,17 @@ export class Class extends BaseEntity {
     }
 
     public async removeSchool({school_id}: any, context: Context, info: GraphQLResolveInfo) {
-        const organization_id = (await this.organization)?.organization_id
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
+
         //TODO: provide way to check permission for many schools
-        await context.permissions.rejectIfNotAllowed({organization_id}, PermissionName.edit_class_20334)
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+          permisionContext,
+          PermissionName.edit_class_20334
+        )
 
         try {
-            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
-
             const school = await getRepository(School).findOneOrFail({school_id})
             const classes  = (await school.classes) || []
             school.classes = Promise.resolve(
@@ -388,15 +402,16 @@ export class Class extends BaseEntity {
     }
 
     public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
-        try {
-            const organization = await this.organization as Organization
-            if(info.operation.operation !== "mutation" || !organization || this.status == Status.INACTIVE) { return null }
+        const organization_id = (await this.organization)?.organization_id;
+        if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-            const permisionContext = { organization_id: organization.organization_id }
-            await context.permissions.rejectIfNotAllowed(
-              permisionContext,
-              PermissionName.delete_class_20444
-            )
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+          permisionContext,
+          PermissionName.delete_class_20444
+        )
+
+        try {
             this.status = Status.INACTIVE
             this.deleted_at = new Date()
             await this.save()
