@@ -21,6 +21,7 @@ import { Organization } from './organization';
 import { Context } from '../main';
 import { PermissionName } from '../permissions/permissionNames';
 import { Status } from "./status";
+import { OrganizationMembership } from './organizationMembership';
 
 @Entity()
 @Check(`"school_name" <> ''`)
@@ -86,8 +87,9 @@ export class School extends BaseEntity {
 
     public async addUser({user_id}: any, context: Context, info: GraphQLResolveInfo) {
         try {
+            const organizationId = (await this.organization as Organization).organization_id
             const permisionContext = {
-              organization_id: (await this.organization as Organization).organization_id,
+              organization_id: organizationId,
               school_ids: [this.school_id]
             }
 
@@ -99,6 +101,9 @@ export class School extends BaseEntity {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const user = await getRepository(User).findOneOrFail(user_id)
+
+            await OrganizationMembership.findOneOrFail({ where: { organization_id: organizationId, user_id: user_id } })
+
             const membership = new SchoolMembership()
             membership.school_id = this.school_id
             membership.school = Promise.resolve(this)

@@ -16,9 +16,10 @@ import { SchoolMembership } from "../../src/entities/schoolMembership";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
 import { School } from "../../src/entities/school";
-import { User } from "../../src/entities/user";
+import { accountUUID, User } from "../../src/entities/user";
 import { Status } from "../../src/entities/status";
 import { addSchoolToClass } from "../utils/operations/classOps";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 
 describe("school", () => {
     let connection: Connection;
@@ -101,9 +102,7 @@ describe("school", () => {
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
             schoolId = school?.school_id;
-            // TODO: Doing this test, I found that currently, the "addee" isn't required to be part
-            // of the organization in order to be added to a school. PJ said this isn't desirable.
-            //await addUserToOrganization(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
             await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })
         });
 
@@ -243,11 +242,15 @@ describe("school", () => {
         let school : School;
         let schoolId: string;
         let roleId: string;
+        const userToBeAdded = {
+            user_id: accountUUID("testuser@gmail.com"),
+            email: "testuser@gmail.com",
+        } as User;
 
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
             idOfUserToPerformAction = (await createUserBilly(testClient)).user_id;
-            idOfUserToBeAdded = orgOwner.user_id;
+            idOfUserToBeAdded = (await createUserAndValidate(testClient, userToBeAdded)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
             school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
             schoolId = school?.school_id;
@@ -264,6 +267,7 @@ describe("school", () => {
                 });
 
                 it("should return the membership and create a database entry", async () => {
+                    await addUserToOrganizationAndValidate(testClient, idOfUserToBeAdded, organizationId, { authorization: JoeAuthToken });
                     const gqlMembership = await addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
 
                     const dbMembership = await SchoolMembership.findOneOrFail({ where: { user_id: idOfUserToBeAdded, school_id: schoolId } });
@@ -272,8 +276,19 @@ describe("school", () => {
                     expect(dbMembership).to.include(gqlMembership);
                 });
 
+                context("and the user being added isn't a member of the organization", () => {
+                    it("fails add user to the school", async () => {
+                        const gqlMembership = await addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
+
+                        const dbMembership = await SchoolMembership.findOne({ where: { user_id: idOfUserToBeAdded, school_id: schoolId } });
+                        expect(dbMembership).to.be.undefined;
+                        expect(gqlMembership).to.be.null;
+                    });
+                });
+
                 context("and the school is marked as inactive", () => {
                     beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, idOfUserToBeAdded, organizationId, { authorization: JoeAuthToken });
                         await deleteSchool(testClient, school.school_id, { authorization: JoeAuthToken });
                     });
 
@@ -293,6 +308,7 @@ describe("school", () => {
                 });
 
                 it("should return the membership and create a database entry", async () => {
+                    await addUserToOrganizationAndValidate(testClient, idOfUserToBeAdded, organizationId, { authorization: JoeAuthToken });
                     const gqlMembership = await addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
 
                     const dbMembership = await SchoolMembership.findOneOrFail({ where: { user_id: idOfUserToBeAdded, school_id: schoolId } });
@@ -301,8 +317,19 @@ describe("school", () => {
                     expect(dbMembership).to.include(gqlMembership);
                 });
 
+                context("and the user being added isn't a member of the organization", () => {
+                    it("fails add user to the school", async () => {
+                        const gqlMembership = await addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
+
+                        const dbMembership = await SchoolMembership.findOne({ where: { user_id: idOfUserToBeAdded, school_id: schoolId } });
+                        expect(dbMembership).to.be.undefined;
+                        expect(gqlMembership).to.be.null;
+                    });
+                });
+
                 context("and the school is marked as inactive", () => {
                     beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, idOfUserToBeAdded, organizationId, { authorization: JoeAuthToken });
                         await deleteSchool(testClient, school.school_id, { authorization: JoeAuthToken });
                     });
 
@@ -319,6 +346,7 @@ describe("school", () => {
 
         context("when user does not have the edit school permission", () => {
             it("should return a null response, and not add a database entry", async () => {
+                await addUserToOrganizationAndValidate(testClient, idOfUserToBeAdded, organizationId, { authorization: JoeAuthToken });
                 const gqlMembership = await addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
 
                 const dbMembership = await SchoolMembership.findOne({ where: { user_id: idOfUserToBeAdded, school_id: schoolId } });
