@@ -1,4 +1,4 @@
-import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, OneToMany, getConnection, getRepository, BaseEntity, ManyToMany, getManager, JoinColumn, JoinTable, OneToOne, EntityManager} from "typeorm";
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from "./organizationMembership";
 import { Organization } from "./organization";
