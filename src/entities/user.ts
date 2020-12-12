@@ -320,7 +320,13 @@ export class User extends BaseEntity {
                                 schoolmemberships.push(schoolMembership)
 
                             }
-                        })
+                        })        
+                    }
+                    if (memberships.length > 0){
+                        ouruser.memberships = Promise.resolve(memberships)
+                    }
+                    if (schoolmemberships.length > 0){
+                        ouruser.school_memberships = Promise.resolve(schoolmemberships)
                     }
                     if (memberships.length > 0) {
                         ouruser.memberships = Promise.resolve(memberships)
