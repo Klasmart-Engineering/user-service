@@ -243,17 +243,29 @@ export class User extends BaseEntity {
 
                 await queryRunner.connect();
                 let otherMemberships = await otherUser.memberships
+                let ourMemberships = await ouruser.memberships
                 let otherSchoolMemberships = await otherUser.school_memberships
+                let ourSchoolMemberships = await ouruser.school_memberships
                 let otherClassesStudying = await otherUser.classesStudying
                 let otherClassesTeaching = await otherUser.classesTeaching
                 let classesStudying = await this.classesStudying
                 let classesTeaching = await this.classesTeaching
                 await queryRunner.startTransaction();
                 try {
+                    let memberships : OrganizationMembership[] = []
+                    if (ourMemberships !== undefined){
+                         memberships = ourMemberships
+                    }
                     if (otherMemberships !== undefined) {
                         otherMemberships.forEach(async function (otherMembership) {
-                            let result = await queryRunner.manager.findOne(OrganizationMembership, { where: { user_id: ourid, organization_id: otherMembership.organization_id } })
-                            if (result === undefined) {
+                            let found = false
+                            memberships.some(async function(membership){
+                                if (membership.organization_id === otherMembership.organization_id){
+                                    found = true
+                                }
+                                return found
+                            })
+                            if (!found){
                                 let membership = new OrganizationMembership()
                                 membership.organization_id = otherMembership.organization_id
                                 membership.user_id = ourid
@@ -262,26 +274,46 @@ export class User extends BaseEntity {
                                 if(otherMembership.roles !== undefined){
                                     membership.roles = Promise.resolve(otherMembership.roles)
                                 }
-                                await queryRunner.manager.save(membership)
+                                memberships.push(membership)
                             }
                         })                  
                     }
+                    let schoolmemberships : SchoolMembership[] = []
                     if (otherSchoolMemberships !== undefined){
+                        if(ourSchoolMemberships !== undefined) {
+                            schoolmemberships = ourSchoolMemberships
+                        }
                         otherSchoolMemberships.forEach(async function (otherSchoolMembership) {
-                            let result = await queryRunner.manager.findOne(SchoolMembership, { where: { user_id: ourid, school_id: otherSchoolMembership.school_id } })
-                            if (result === undefined){
+                            let found = false
+                            schoolmemberships.some(async function(schoolmembership ){
+                                if(schoolmembership.school_id === otherSchoolMembership.school_id){
+                                    found = true
+                                }
+                                return found
+                            })
+                            if(!found){
                                 let schoolMembership = new SchoolMembership()
                                 schoolMembership.user_id = ourid
                                 schoolMembership.user = Promise.resolve(ouruser)
+                             
                                 schoolMembership.school_id = otherSchoolMembership.school_id
                                 schoolMembership.school = otherSchoolMembership.school
                                 if(otherSchoolMembership.roles !== undefined){
                                    schoolMembership.roles = Promise.resolve(otherSchoolMembership.roles)
-                                } 
-                                await queryRunner.manager.save(schoolMembership)
+                                }
+                                schoolmemberships.push(schoolMembership)
+                               
                             }
-                        })
+                        })        
                     }
+                    if (memberships.length > 0){
+                        ouruser.memberships = Promise.resolve(memberships)
+                    }
+                    if (schoolmemberships.length > 0){
+                        ouruser.school_memberships = Promise.resolve(schoolmemberships)
+                    }
+                    queryRunner.manager.save(User, ouruser)
+                    
                     if(otherClassesStudying !== undefined){
                         let changed = false
                         otherClassesStudying.forEach(async function(otherClassStudying){
@@ -306,7 +338,7 @@ export class User extends BaseEntity {
                         })
                         if(changed && classesStudying != undefined){
                             ouruser.classesStudying = Promise.resolve(classesStudying)
-                            await queryRunner.manager.save(ouruser)
+                            await queryRunner.manager.save(User, ouruser)
                         }
                     }
                     if(otherClassesTeaching !== undefined){
@@ -333,7 +365,7 @@ export class User extends BaseEntity {
                         })
                         if(changed && classesTeaching !== undefined){ 
                             ouruser.classesTeaching = Promise.resolve(classesTeaching)
-                            await queryRunner.manager.save(ouruser)
+                            await queryRunner.manager.save(User, ouruser)
                         }
                     }
 
@@ -346,7 +378,7 @@ export class User extends BaseEntity {
             }
         }
         let resultUser = await getRepository(User).findOne({ user_id: this.user_id })
-        return resultUser
+        return Promise.resolve(resultUser)
     }
 }
 
