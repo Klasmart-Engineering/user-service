@@ -234,7 +234,6 @@ export class User extends BaseEntity {
     public async merge({ other_id }: any, context: any, info: GraphQLResolveInfo) {
         if (info.operation.operation !== "mutation") { return null }
         if (other_id != undefined) {
-            let success = true
             let dberr: any
             const ourid = this.user_id
             let ouruser = this
@@ -242,7 +241,7 @@ export class User extends BaseEntity {
             if (otherUser !== undefined) {
                 const connection = getConnection();
                 const queryRunner = connection.createQueryRunner();
-
+                let success = true
                 await queryRunner.connect();
                 let otherMemberships = await otherUser.memberships
                 let ourMemberships = await ouruser.memberships
