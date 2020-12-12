@@ -234,6 +234,8 @@ export class User extends BaseEntity {
     public async merge({ other_id }: any, context: any, info: GraphQLResolveInfo) {
         if (info.operation.operation !== "mutation") { return null }
         if (other_id != undefined) {
+            let success = true
+            let dberr: any
             const ourid = this.user_id
             let ouruser = this
             let otherUser = await getRepository(User).findOne({ user_id: other_id })
@@ -377,15 +379,25 @@ export class User extends BaseEntity {
                     }                               
 
                 } catch (err) {
+                    success = false
                     console.log(err)
+                    dberr = err
                     await queryRunner.rollbackTransaction();
                 } finally {
                     await queryRunner.release();
                 }
+                if(success){
+                    console.log("success")
+                    // Todo call delete user other
+                    return this
+                }
+                else{
+                    throw (dberr)
+                }
 
             }
         }
-        return this
+        return null
     }
 }
 
