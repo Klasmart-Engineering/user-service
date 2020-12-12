@@ -95,6 +95,9 @@ type User {
         phone: String
         shortCode: String
     ): Organization
+    merge(
+        user_id: ID!
+    ): User
     addOrganization(organization_id: ID!): OrganizationMembership
     addSchool(school_id: ID!): OrganizationMembership
 }

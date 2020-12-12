@@ -10,6 +10,7 @@ import { createHash } from "crypto"
 import { School } from "./school";
 import { Status } from "./status";
 
+
 @Entity()
 export class User extends BaseEntity {
 
@@ -228,7 +229,120 @@ export class User extends BaseEntity {
         } catch(e) {
             console.error(e)
         }
-    }}
+    }
+    
+    public async merge({ user_id }: any, context: any, info: GraphQLResolveInfo) {
+        if(info.operation.operation !== "mutation" ) { return null }
+        if (user_id != undefined) {
+            let ourid = this.user_id
+            let ouruser = this
+            let otherUser = await getRepository(User).findOne({ user_id })
+            if (otherUser !== undefined) {
+                const connection = getConnection();
+                const queryRunner = connection.createQueryRunner();
+
+                await queryRunner.connect();
+                let otherMemberships = await otherUser.memberships
+                let otherSchoolMemberships = await otherUser.school_memberships
+                let otherClassesStudying = await otherUser.classesStudying
+                let otherClassesTeaching = await otherUser.classesTeaching
+                let classesStudying = await this.classesStudying
+                let classesTeaching = await this.classesTeaching
+                await queryRunner.startTransaction();
+                try {
+                    if (otherMemberships !== undefined) {
+                        otherMemberships.forEach(async function (otherMembership) {
+                            let result = await queryRunner.manager.findOne(OrganizationMembership, { where: { user_id: ourid, organization_id: otherMembership.organization_id } })
+                            if (result === undefined) {
+                                let membership = new OrganizationMembership()
+                                membership.organization_id = otherMembership.organization_id
+                                membership.user_id = ourid
+                                membership.user = Promise.resolve(ouruser)
+                                membership.organization = otherMembership.organization
+                                //membership.roles = Promise.resolve(organizationRoles)
+                                await queryRunner.manager.save(membership)
+                            }
+                        })                  
+                    }
+                    if (otherSchoolMemberships !== undefined){
+                        otherSchoolMemberships.forEach(async function (otherSchoolMembership) {
+                            let result = await queryRunner.manager.findOne(SchoolMembership, { where: { user_id: ourid, school_id: otherSchoolMembership.school_id } })
+                            if (result === undefined){
+                                let schoolMembership = new SchoolMembership()
+                                schoolMembership.user_id = ourid
+                                schoolMembership.user = Promise.resolve(ouruser)
+                                schoolMembership.school_id = otherSchoolMembership.school_id
+                                schoolMembership.school = otherSchoolMembership.school
+                                //schoolMembership.roles = Promise.resolve(schoolRoles) 
+                                await queryRunner.manager.save(schoolMembership)
+                            }
+                        })
+                    }
+                    if(otherClassesStudying !== undefined){
+                        let changed = false
+                        otherClassesStudying.forEach(async function(otherClassStudying){
+                            if(classesStudying !== undefined){
+                                let found = false
+                                classesStudying.some(async function(classStudying){
+                                    if(classStudying.class_id === otherClassStudying.class_id){
+                                        found = true
+                                    }
+                                    return found
+                                }) 
+                                if (!found){
+                                    changed = true
+                                    classesStudying.push(otherClassStudying)
+                                }
+                            }
+                            else{
+                                changed = true
+                                classesStudying = new Array (otherClassStudying)
+                            }
+
+                        })
+                        if(changed && classesStudying != undefined){
+                            ouruser.classesStudying = Promise.resolve(classesStudying)
+                            await queryRunner.manager.save(ouruser)
+                        }
+                    }
+                    if(otherClassesTeaching !== undefined){
+                        let changed = false
+                        otherClassesTeaching.forEach(async function(otherClassTeaching){
+                            if(classesTeaching !== undefined){
+                                let found = false
+                                classesTeaching.some(async function(classTeaching){
+                                    if(classTeaching.class_id === otherClassTeaching.class_id){
+                                        found = true
+                                    }
+                                    return found
+                                }) 
+                                if (!found){
+                                    changed = true
+                                    classesTeaching.push(otherClassTeaching)
+                                }
+                            }
+                            else{
+                                changed = true
+                                classesTeaching = new Array (otherClassTeaching)
+                            }
+
+                        })
+                        if(changed && classesTeaching !== undefined){ 
+                            ouruser.classesTeaching = Promise.resolve(classesTeaching)
+                            await queryRunner.manager.save(ouruser)
+                        }
+                    }
+
+                } catch (err) {
+                    await queryRunner.rollbackTransaction();
+                } finally {
+                    await queryRunner.release();
+                }
+
+            }
+        }
+    }
+}
 
 const accountNamespace = v5("kidsloop.net", v5.DNS)
 export function accountUUID(email?: string) {
