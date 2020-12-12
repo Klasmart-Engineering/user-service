@@ -96,7 +96,7 @@ type User {
         shortCode: String
     ): Organization
     merge(
-        user_id: ID!
+        other_id: String
     ): User
     addOrganization(organization_id: ID!): OrganizationMembership
     addSchool(school_id: ID!): OrganizationMembership

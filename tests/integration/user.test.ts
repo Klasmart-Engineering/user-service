@@ -69,7 +69,7 @@ describe("user", () => {
         });
 
         context("when one", () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 await addOrganizationToUserAndValidate(testClient, user.user_id, organization.organization_id);
             });
@@ -122,7 +122,7 @@ describe("user", () => {
         });
 
         context("when one", () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, user.user_id, school.school_id, { authorization: JoeAuthToken })
@@ -177,7 +177,7 @@ describe("user", () => {
         });
 
         context("when one", async () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
                 await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
@@ -206,7 +206,7 @@ describe("user", () => {
         });
 
         context("when one", () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
                 await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });

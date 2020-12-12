@@ -231,12 +231,12 @@ export class User extends BaseEntity {
         }
     }
     
-    public async merge({ user_id }: any, context: any, info: GraphQLResolveInfo) {
+    public async merge({ other_id }: any, context: any, info: GraphQLResolveInfo) {
         if(info.operation.operation !== "mutation" ) { return null }
-        if (user_id != undefined) {
-            let ourid = this.user_id
+        if (other_id != undefined) {
+            const ourid = this.user_id
             let ouruser = this
-            let otherUser = await getRepository(User).findOne({ user_id })
+            let otherUser = await getRepository(User).findOne({ user_id:other_id })
             if (otherUser !== undefined) {
                 const connection = getConnection();
                 const queryRunner = connection.createQueryRunner();
@@ -259,7 +259,9 @@ export class User extends BaseEntity {
                                 membership.user_id = ourid
                                 membership.user = Promise.resolve(ouruser)
                                 membership.organization = otherMembership.organization
-                                //membership.roles = Promise.resolve(organizationRoles)
+                                if(otherMembership.roles !== undefined){
+                                    membership.roles = Promise.resolve(otherMembership.roles)
+                                }
                                 await queryRunner.manager.save(membership)
                             }
                         })                  
@@ -273,7 +275,9 @@ export class User extends BaseEntity {
                                 schoolMembership.user = Promise.resolve(ouruser)
                                 schoolMembership.school_id = otherSchoolMembership.school_id
                                 schoolMembership.school = otherSchoolMembership.school
-                                //schoolMembership.roles = Promise.resolve(schoolRoles) 
+                                if(otherSchoolMembership.roles !== undefined){
+                                   schoolMembership.roles = Promise.resolve(otherSchoolMembership.roles)
+                                } 
                                 await queryRunner.manager.save(schoolMembership)
                             }
                         })
@@ -341,6 +345,8 @@ export class User extends BaseEntity {
 
             }
         }
+        let resultUser = await getRepository(User).findOne({ user_id: this.user_id })
+        return resultUser
     }
 }
 
