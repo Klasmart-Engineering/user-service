@@ -265,6 +265,10 @@ export class User extends BaseEntity {
                     if (ourMemberships !== undefined) {
                         memberships = ourMemberships
                     }
+                    let schoolmemberships: SchoolMembership[] = []
+                    if (ourSchoolMemberships !== undefined) {
+                        schoolmemberships = ourSchoolMemberships
+                    }
                     if (otherMemberships !== undefined) {
                         otherMemberships.forEach(async function (otherMembership) {
                             let found = false
@@ -287,11 +291,8 @@ export class User extends BaseEntity {
                             }
                         })
                     }
-                    let schoolmemberships: SchoolMembership[] = []
+                    
                     if (otherSchoolMemberships !== undefined) {
-                        if (ourSchoolMemberships !== undefined) {
-                            schoolmemberships = ourSchoolMemberships
-                        }
                         otherSchoolMemberships.forEach(async function (otherSchoolMembership) {
                             let found = false
                             schoolmemberships.some(async function (schoolmembership) {
@@ -364,10 +365,10 @@ export class User extends BaseEntity {
                             ouruser.classesTeaching = Promise.resolve(classesTeaching)
                             await queryRunner.manager.save([ouruser, ...classesTeaching])
                         }
-                    }                 
-                    //await queryRunner.manager.save([ouruser, ...classesStudying,...classesTeaching])                    
+                    }                               
 
                 } catch (err) {
+                    console.log(err)
                     await queryRunner.rollbackTransaction();
                 } finally {
                     await queryRunner.release();
