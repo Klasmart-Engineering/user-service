@@ -419,7 +419,7 @@ export class User extends BaseEntity {
                 else{
                     throw (dberr)
                 }
-
+                return this
             }
         }
         return null
