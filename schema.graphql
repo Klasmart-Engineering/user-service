@@ -230,6 +230,7 @@ type SchoolMembership {
     user_id: ID!
     school_id: ID!
     join_timestamp: Date
+    status: String
 
     #connections
     user: User

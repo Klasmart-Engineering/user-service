@@ -1,28 +1,35 @@
-import {Entity, ManyToOne, PrimaryColumn, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager} from "typeorm";
+import {Entity, ManyToOne, PrimaryColumn, Column, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager} from "typeorm";
 import { User } from "./user";
 import { Role } from "./role";
 import { GraphQLResolveInfo } from "graphql";
 import { School } from "./school";
+import { Status } from "./status";
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
     @PrimaryColumn()
     public user_id!: string
-    
+
     @PrimaryColumn()
     public school_id!: string
-    
+
+    @Column({type: "enum", enum: Status, default: Status.ACTIVE})
+    public status! : Status
+
     @CreateDateColumn()
     public join_timestamp?: Date
-    
+
     @ManyToOne(() => User, user => user.school_memberships)
     public user?: Promise<User>
-    
+
     @ManyToOne(() => School, school => school.memberships)
     public school?: Promise<School>
 
     @ManyToMany(() => Role, role => role.schoolMemberships)
     public roles?: Promise<Role[]>
+
+    @Column({ type: 'timestamp', nullable: true})
+    public deleted_at?: Date
 
     public async checkAllowed({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
         const results = await createQueryBuilder("SchoolMembership")
@@ -38,7 +45,7 @@ export class SchoolMembership extends BaseEntity {
 
     public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({role_id})
             const memberships = (await role.schoolMemberships) || []
             memberships.push(this)
@@ -52,9 +59,9 @@ export class SchoolMembership extends BaseEntity {
 
     public async addRoles({ role_ids }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             if(!(role_ids instanceof Array)) { return null }
-            
+
             const rolePromises = role_ids.map(async (role_id) => {
                 const role = await getRepository(Role).findOneOrFail({role_id})
                 const schoolMemberships = (await role.schoolMemberships) || []
@@ -72,10 +79,10 @@ export class SchoolMembership extends BaseEntity {
 
     public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({role_id})
             const memberships = await role.schoolMemberships
-            if(memberships) {   
+            if(memberships) {
                 const newMemberships = memberships.filter((membership) => membership.user_id !== this.user_id)
                 role.schoolMemberships = Promise.resolve(newMemberships)
                 await role.save()
@@ -88,8 +95,12 @@ export class SchoolMembership extends BaseEntity {
 
     public async leave({}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if(info.operation.operation !== "mutation") { return null }
-            await this.remove()
+            if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+
+            this.status = Status.INACTIVE
+            this.deleted_at = new Date()
+            await this.save()
+
             return true
         } catch(e) {
             console.error(e)
