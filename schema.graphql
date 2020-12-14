@@ -158,6 +158,7 @@ type OrganizationMembership {
     user_id: ID!
     organization_id: ID!
     join_timestamp: Date
+    status: String
 
     #connections
     organization: Organization
