@@ -125,11 +125,13 @@ export async function removeRoleToOrganizationMembership(testClient: ApolloServe
     return res.data?.user.membership.removeRole as OrganizationMembership;
 }
 
-export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string, headers?: Headers) {
-    const { mutate } = testClient;
-    headers = headers ?? { authorization: JoeAuthToken };
 
-    if (permission_name !== undefined){
+
+export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string, headers?: Headers) {
+        const { mutate } = testClient;
+        headers = headers ?? { authorization: JoeAuthToken };
+     
+    if (permission_name !== undefined){    
         const operation = () => mutate({
             mutation: GET_SCHOOL_MEMBERSHIPS,
             variables: { user_id: userId, organization_id: organizationId, permission_name: permission_name },
@@ -162,3 +164,6 @@ export async function leaveOrganization(testClient: ApolloServerTestClient, user
     const res = await gqlTry(operation);
     return res.data?.user.membership.leave as boolean;
 }
+
+
+

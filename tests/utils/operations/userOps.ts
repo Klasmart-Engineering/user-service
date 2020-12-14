@@ -123,10 +123,11 @@ const GET_CLASSES_STUDYING = `
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,
-    organizationName?: string
+    organizationName?: string,
+    token?: string
 ): Promise<Organization> {
     organizationName = organizationName ?? "My Organization";
-    const gqlOrganization = await createOrganization(testClient, userId, organizationName)
+    const gqlOrganization = await createOrganization(testClient, userId, organizationName,token)
 
     expect(gqlOrganization).to.exist;
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
@@ -138,14 +139,18 @@ export async function createOrganizationAndValidate(
 export async function createOrganization(
     testClient: ApolloServerTestClient,
     userId: string,
-    organizationName: string
+    organizationName: string,
+    token?: string
 ): Promise<Organization> {
+   
+    token = token ?? JoeAuthToken
+    
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_ORGANIZATION,
         variables: { user_id: userId, organization_name: organizationName },
-        headers: { authorization: JoeAuthToken },
+        headers: { authorization: token },
     });
 
     const res = await gqlTry(operation);

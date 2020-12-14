@@ -84,6 +84,10 @@ export class OrganizationMembership extends BaseEntity {
             if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({ role_id })
             const memberships = (await role.memberships) || []
+            const roleOrganization = await role.organization
+            if(roleOrganization?.organization_id !== this.organization_id){
+                throw new Error(`Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
+            }
             memberships.push(this)
             role.memberships = Promise.resolve(memberships)
             await role.save()
@@ -101,6 +105,10 @@ export class OrganizationMembership extends BaseEntity {
             const rolePromises = role_ids.map(async (role_id) => {
                 const role = await getRepository(Role).findOneOrFail({ role_id })
                 const memberships = (await role.memberships) || []
+                const roleOrganization = await role.organization
+                if(roleOrganization?.organization_id !== this.organization_id){
+                    throw new Error(`Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
+                }
                 memberships.push(this)
                 role.memberships = Promise.resolve(memberships)
                 return role

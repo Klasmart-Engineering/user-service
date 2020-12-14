@@ -20,6 +20,7 @@ import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
+import { isRequiredArgument } from "graphql";
 chai.use(chaiAsPromised);
 
 describe("organization", () => {
@@ -450,6 +451,26 @@ describe("organization", () => {
                 expect(gqlSchoolMemberships).to.have.lengthOf(1);
                 expect(gqlSchoolMemberships[0].school_id).to.equal(schoolId);
 
+            });
+            it("should attempt to assign a role for one organizion to another and not succeed", async () => {
+                let user2 = await createUserBilly(testClient);
+                let userId2 = user2.user_id
+                let organization2 = await createOrganizationAndValidate(testClient, userId2, "otherOrgName", BillyAuthToken);
+                let organizationId2 = organization2.organization_id
+                role = await createRole(testClient, organization.organization_id, "student");
+                roleId = role.role_id
+                let role2 = await createRole(testClient, organizationId2, "student", BillyAuthToken);
+                let role2id = role2.role_id
+                let email = user.email
+                let given = user.given_name
+                let family = user.family_name
+                try{
+                    let object = await organization["_setMembership"](email, undefined, given, family, [roleId,role2id], Array(schoolId), new Array(roleId))
+                    expect(false).true
+                }
+                catch(e){
+                    expect(e).to.exist
+                }
             });
         });
 

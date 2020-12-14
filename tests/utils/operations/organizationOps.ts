@@ -149,14 +149,16 @@ export async function createClassAndValidate(testClient: ApolloServerTestClient,
     return gqlClass;
 }
 
-export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string) {
+export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string, token?:string) {
     const { mutate } = testClient;
     roleName = roleName ?? "My Role";
-
+    if(token === undefined){
+        token = JoeAuthToken
+    }
     const operation = () => mutate({
         mutation: CREATE_ROLE,
         variables: { organization_id: organizationId, role_name: roleName },
-        headers: { authorization: JoeAuthToken },
+        headers: { authorization: token },
     });
 
     const res = await gqlTry(operation);
