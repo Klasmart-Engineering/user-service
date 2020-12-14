@@ -318,12 +318,21 @@ export class User extends BaseEntity {
                     }
                     if (memberships.length > 0) {
                         ouruser.memberships = Promise.resolve(memberships)
+                        await queryRunner.manager.save([ouruser, ...memberships])
                     }
-                    if (schoolmemberships.length > 0) {
-                        ouruser.school_memberships = Promise.resolve(schoolmemberships)
+                    else{
+                        ouruser.memberships = undefined
                     }
 
-                    await queryRunner.manager.save([ouruser, ...memberships, ...schoolmemberships])
+                    if (schoolmemberships.length > 0) {
+                        ouruser.school_memberships = Promise.resolve(schoolmemberships)
+                        await queryRunner.manager.save([ouruser, ...schoolmemberships])
+                    }
+                    else{
+                        ouruser.school_memberships = undefined
+                    }
+
+                    //await queryRunner.manager.save([ouruser, ...memberships, ...schoolmemberships])
 
                     if (otherClassesStudying !== undefined) {
                         let changed = false
