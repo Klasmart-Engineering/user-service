@@ -1,10 +1,11 @@
-import { Entity, ManyToOne, PrimaryColumn, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager } from "typeorm";
+import { Entity, ManyToOne, PrimaryColumn, Column, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager } from "typeorm";
 import { User } from "./user";
 import { Organization } from "./organization";
 import { Role } from "./role";
 import { GraphQLResolveInfo } from "graphql";
 import { Context } from "../main";
 import { SchoolMembership } from "./schoolMembership";
+import { Status } from "./status";
 
 @Entity()
 export class OrganizationMembership extends BaseEntity {
@@ -13,6 +14,9 @@ export class OrganizationMembership extends BaseEntity {
 
     @PrimaryColumn()
     public organization_id!: string
+
+    @Column({type: "enum", enum: Status, default: Status.ACTIVE})
+    public status! : Status
 
     @CreateDateColumn()
     public join_timestamp?: Date
@@ -25,6 +29,9 @@ export class OrganizationMembership extends BaseEntity {
 
     @ManyToMany(() => Role, role => role.memberships)
     public roles?: Promise<Role[]>
+
+    @Column({ type: 'timestamp', nullable: true})
+    public deleted_at?: Date
 
     public async schoolMemberships({ permission_name }: any, context: Context, info: GraphQLResolveInfo) {
         try {
@@ -74,7 +81,7 @@ export class OrganizationMembership extends BaseEntity {
 
     public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if (info.operation.operation !== "mutation") { return null }
+            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({ role_id })
             const memberships = (await role.memberships) || []
             memberships.push(this)
@@ -88,7 +95,7 @@ export class OrganizationMembership extends BaseEntity {
 
     public async addRoles({ role_ids }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if (info.operation.operation !== "mutation") { return null }
+            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             if (!(role_ids instanceof Array)) { return null }
 
             const rolePromises = role_ids.map(async (role_id) => {
@@ -108,7 +115,7 @@ export class OrganizationMembership extends BaseEntity {
 
     public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if (info.operation.operation !== "mutation") { return null }
+            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
             const role = await getRepository(Role).findOneOrFail({ role_id })
             const memberships = await role.memberships
@@ -124,8 +131,11 @@ export class OrganizationMembership extends BaseEntity {
     }
     public async leave({ }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            if (info.operation.operation !== "mutation") { return null }
-            await this.remove()
+            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+            this.status = Status.INACTIVE
+            this.deleted_at = new Date()
+            await this.save()
+
             return true
         } catch (e) {
             console.error(e)

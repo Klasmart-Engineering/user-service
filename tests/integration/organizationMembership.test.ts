@@ -2,11 +2,12 @@ import { expect } from "chai";
 import { Connection, getRepository } from "typeorm";
 import { Class } from "../../src/entities/class";
 import { Organization } from "../../src/entities/organization";
+import { Status } from "../../src/entities/status";
 import {OrganizationMembership} from "../../src/entities/organizationMembership";
 import { Model } from "../../src/model";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { getSchoolMembershipsForOrganizationMembership } from "../utils/operations/organizationMembershipOps";
+import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership, addRolesToOrganizationMembership, removeRoleToOrganizationMembership, leaveOrganization } from "../utils/operations/organizationMembershipOps";
 import { addUserToOrganizationAndValidate, createSchool, createRole } from "../utils/operations/organizationOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
@@ -22,6 +23,14 @@ import { GraphQLResolveInfo } from 'graphql';
 describe("organizationMembership", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
+    let userId: string;
+    let organizationId: string;
+    let schoolId: string;
+    let organization: Organization;
+    let testSchoolRoleId: string;
+    let membership: OrganizationMembership;
+
+    let roleInfo = (role : any) => { return role.role_id }
 
     before(async () => {
         connection = await createTestConnection();
@@ -33,13 +42,12 @@ describe("organizationMembership", () => {
         await connection?.close();
     });
 
-    describe("schoolMemberships", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
+    beforeEach(async () => {
+        await connection.synchronize(true);
+    });
 
+    describe("schoolMemberships", () => {
         context("when user is a member of schools in different organizations", () => {
-            let userId: string;
             let organization1Id: string;
             let organization2Id: string;
             let school1Id: string;
@@ -66,25 +74,15 @@ describe("organizationMembership", () => {
             });
         });
     });
-    
-    describe("schoolMemberships with permissions", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
 
+    describe("schoolMemberships with permissions", () => {
         context("when user is a member a of school with or without permissions", () => {
-            let userId: string;
-            let organizationId: string;
-            let schoolId: string;
-            let organization: Organization;
-            let testSchoolRoleId: string;
-            let membership: OrganizationMembership;
 
             beforeEach(async () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = orgOwner.user_id;
-                organization = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org"))
-                organizationId = organization.organization_id;              
+                organization = (await createOrganizationAndValidate(testClient, userId, "org"))
+                organizationId = organization.organization_id;
                 schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
@@ -105,5 +103,178 @@ describe("organizationMembership", () => {
             });
         });
     });
-    
+
+    describe("addRole", () => {
+        let roleId : string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            userId = orgOwner.user_id;
+            organization = (await createOrganizationAndValidate(testClient, userId, "org"))
+            organizationId = organization.organization_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            const role = await createRole(testClient, organizationId);
+            roleId = role?.role_id
+        });
+
+        context("when the organization membership is active", () => {
+            it("adds the role to the organization membership", async () => {
+                const role = await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId)
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+                const dbRoles = await dbMembership.roles || [];
+
+                expect(role.role_id).to.eq(roleId)
+                expect(dbMembership).not.to.be.null
+                expect(dbRoles.map(roleInfo)).to.deep.include(roleId)
+            });
+        });
+
+        context("when the organization membership is inactive", () => {
+            beforeEach(async () => {
+                await leaveOrganization(testClient, userId, organizationId, { authorization: BillyAuthToken });
+            });
+
+            it("does not add the role to the organization membership", async () => {
+                const role = await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId)
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+                const dbRoles = await dbMembership.roles || [];
+
+                expect(role).to.be.null
+                expect(dbMembership).not.to.be.null
+                expect(dbRoles.map(roleInfo)).not.to.deep.include(roleId)
+                expect(dbMembership.deleted_at).to.not.be.null
+                expect(dbMembership.status).to.eq(Status.INACTIVE)
+            });
+        });
+    });
+
+    describe("addRoles", () => {
+        let roleId : string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            userId = orgOwner.user_id;
+            organization = (await createOrganizationAndValidate(testClient, userId, "org"))
+            organizationId = organization.organization_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            const role = await createRole(testClient, organizationId);
+            roleId = role?.role_id
+        });
+
+        context("when the organization membership is active", () => {
+            it("adds the roles to the organization membership", async () => {
+                const roles = await addRolesToOrganizationMembership(testClient, userId, organizationId, [roleId])
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+                const dbRoles = await dbMembership.roles || [];
+
+                expect(roles.map(roleInfo)).to.deep.eq([roleId])
+                expect(dbMembership).not.to.be.null
+                expect(dbRoles.map(roleInfo)).to.deep.include(roleId)
+            });
+        });
+
+        context("when the organization membership is inactive", () => {
+            beforeEach(async () => {
+                await leaveOrganization(testClient, userId, organizationId, { authorization: BillyAuthToken });
+            });
+
+            it("does not add the roles to the organization membership", async () => {
+                const roles = await addRolesToOrganizationMembership(testClient, userId, organizationId, [roleId])
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+                const dbRoles = await dbMembership.roles || [];
+
+                expect(roles).to.be.null
+                expect(dbMembership).not.to.be.null
+                expect(dbRoles.map(roleInfo)).not.to.deep.include(roleId)
+                expect(dbMembership.deleted_at).to.not.be.null
+                expect(dbMembership.status).to.eq(Status.INACTIVE)
+            });
+        });
+    });
+
+    describe("removeRole", () => {
+        let roleId : string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            userId = orgOwner.user_id;
+            organization = (await createOrganizationAndValidate(testClient, userId, "org"))
+            organizationId = organization.organization_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            const role = await createRole(testClient, organizationId);
+            roleId = role?.role_id
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId)
+        });
+
+        context("when the organization membership is active", () => {
+            it("removes the role to the organization membership", async () => {
+                const gqlMembership = await removeRoleToOrganizationMembership(testClient, userId, organizationId, roleId)
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+                const dbRoles = await dbMembership.roles || [];
+
+                expect(gqlMembership.user_id).to.eq(userId)
+                expect(gqlMembership.organization_id).to.eq(organizationId)
+                expect(dbMembership).not.to.be.null
+                expect(dbRoles.map(roleInfo)).to.not.deep.include(roleId)
+            });
+        });
+
+        context("when the organization membership is inactive", () => {
+            beforeEach(async () => {
+                await leaveOrganization(testClient, userId, organizationId, { authorization: BillyAuthToken });
+            });
+
+            it("does not remove the role to the organization membership", async () => {
+                const gqlMembership = await removeRoleToOrganizationMembership(testClient, userId, organizationId, roleId)
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+                const dbRoles = await dbMembership.roles || [];
+
+                expect(gqlMembership).to.be.null
+                expect(dbMembership).not.to.be.null
+                expect(dbRoles.map(roleInfo)).to.deep.include(roleId)
+            });
+        });
+    });
+
+    describe("leave", () => {
+        let roleId : string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            userId = orgOwner.user_id;
+            organization = (await createOrganizationAndValidate(testClient, userId, "org"))
+            organizationId = organization.organization_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            const role = await createRole(testClient, organizationId);
+            roleId = role?.role_id
+        });
+
+        context("when the organization membership is active", () => {
+            it("leaves the organization membership", async () => {
+                const leftGql = await leaveOrganization(testClient, userId, organizationId, { authorization: BillyAuthToken });
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+
+                expect(leftGql).to.be.true
+                expect(dbMembership).not.to.be.null
+                expect(dbMembership.status).to.eq(Status.INACTIVE)
+                expect(dbMembership.deleted_at).not.to.be.null
+            });
+        });
+
+        context("when the organization membership is inactive", () => {
+            beforeEach(async () => {
+                await leaveOrganization(testClient, userId, organizationId, { authorization: BillyAuthToken });
+            });
+
+            it("does not leave the organization membership", async () => {
+                const leftGql = await leaveOrganization(testClient, userId, organizationId, { authorization: BillyAuthToken });
+                const dbMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+
+                expect(leftGql).to.be.null
+                expect(dbMembership).not.to.be.null
+                expect(dbMembership.status).to.eq(Status.INACTIVE)
+                expect(dbMembership.deleted_at).not.to.be.null
+            });
+        });
+    });
 });
