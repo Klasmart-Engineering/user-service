@@ -319,9 +319,18 @@ export class User extends BaseEntity {
                     }
                     if (memberships.length > 0) {
                         ouruser.memberships = Promise.resolve(memberships)
+                        await queryRunner.manager.save([ouruser, ...memberships])
                     }
+                    else{
+                        ouruser.memberships = undefined
+                    }
+
                     if (schoolmemberships.length > 0) {
                         ouruser.school_memberships = Promise.resolve(schoolmemberships)
+                        await queryRunner.manager.save([ouruser, ...schoolmemberships])
+                    }
+                    else{
+                        ouruser.school_memberships = undefined
                     }
                     if (memberships.length > 0) {
                         ouruser.memberships = Promise.resolve(memberships)
