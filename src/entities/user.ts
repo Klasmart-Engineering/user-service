@@ -239,9 +239,9 @@ export class User extends BaseEntity {
             let ouruser = this
             let otherUser = await getRepository(User).findOne({ user_id: other_id })
             if (otherUser !== undefined) {
+                let success = true
                 const connection = getConnection();
                 const queryRunner = connection.createQueryRunner();
-                let success = true
                 await queryRunner.connect();
                 let otherMemberships = await otherUser.memberships
                 let ourMemberships = await ouruser.memberships
@@ -339,7 +339,6 @@ export class User extends BaseEntity {
                         ouruser.school_memberships = undefined
                     }
 
-                    //await queryRunner.manager.save([ouruser, ...memberships, ...schoolmemberships])
 
                     if (otherClassesStudying !== undefined) {
                         let changed = false
