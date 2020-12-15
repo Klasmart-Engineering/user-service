@@ -57,7 +57,7 @@ export class Role extends BaseEntity {
         try {
             const organization = await this.organization as Organization
 
-            if(info.operation.operation !== "mutation" || !organization) { return null }
+            if (!organization) { return null }
 
             const permisionContext = { organization_id: organization.organization_id }
             await context.permissions.rejectIfNotAllowed(
