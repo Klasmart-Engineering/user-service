@@ -130,14 +130,35 @@ export class School extends BaseEntity {
               PermissionName.delete_school_20440
             )
 
-            this.status = Status.INACTIVE
-            this.deleted_at = new Date()
-            await this.save()
+            await getManager().transaction(async (manager) => {
+                this.inactivate()
+                const schoolMemberships = await this.inactivateSchoolMemberships()
+
+                await manager.save(this)
+                await manager.save(schoolMemberships)
+            })
 
             return true
         } catch(e) {
             console.error(e)
         }
         return false
+    }
+
+    private async inactivateSchoolMemberships() {
+        const schoolMemberships = await SchoolMembership.find({
+            where: { school_id: this.school_id }
+        });
+
+        for(const schoolMembership of schoolMemberships){
+            await schoolMembership.inactivate()
+        }
+
+        return schoolMemberships
+    }
+
+    public async inactivate(){
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
     }
 }

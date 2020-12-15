@@ -413,6 +413,16 @@ describe("school", () => {
                     expect(dbSchool.deleted_at).not.to.be.null;
                 });
 
+                it("deletes the school memberships", async () => {
+                    const gqlSchool = await deleteSchool(testClient, school.school_id, { authorization: BillyAuthToken });
+                    expect(gqlSchool).to.be.true;
+                    const dbSchool = await School.findOneOrFail(school.school_id);
+                    const dbSchoolMemberships = await SchoolMembership.find({ where: { school_id: school.school_id } });
+                    expect(dbSchoolMemberships).to.satisfy((memberships : SchoolMembership[]) => {
+                        return memberships.every(membership => membership.status === Status.INACTIVE)
+                    });
+                });
+
                 context("and the school is marked as inactive", () => {
                     beforeEach(async () => {
                         await deleteSchool(testClient, school.school_id, { authorization: JoeAuthToken });

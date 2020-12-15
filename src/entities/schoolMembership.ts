@@ -97,8 +97,7 @@ export class SchoolMembership extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
-            this.status = Status.INACTIVE
-            this.deleted_at = new Date()
+            this.inactivate()
             await this.save()
 
             return true
@@ -106,6 +105,11 @@ export class SchoolMembership extends BaseEntity {
             console.error(e)
         }
         return false
+    }
+
+    public async inactivate(){
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
     }
 
 }
