@@ -41,7 +41,7 @@ describe("user", () => {
         });
 
         it("should set the specified user properties", async () => {
-            const gqlUpdatedUser = await updateUser(testClient, user);
+            const gqlUpdatedUser = await updateUser(testClient, user, { authorization: JoeAuthToken });
             const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
             expect(gqlUpdatedUser).to.exist;
             expect(dbUser).to.include(gqlUpdatedUser);
@@ -56,7 +56,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlMemberships = await getOrganizationMemberships(testClient, user);
+                const gqlMemberships = await getOrganizationMemberships(testClient, user, { authorization: JoeAuthToken });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships).to.be.empty;
             });
@@ -69,7 +69,7 @@ describe("user", () => {
             });
 
             it("should return an array containing one organization membership", async () => {
-                const gqlMemberships = await getOrganizationMemberships(testClient, user);
+                const gqlMemberships = await getOrganizationMemberships(testClient, user, { authorization: JoeAuthToken });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(1);
             });
@@ -88,7 +88,7 @@ describe("user", () => {
         });
 
         it("should get the organization membership associated with the specified organization ID", async () => {
-            const gqlMembership = await getOrganizationMembership(testClient, user.user_id, organizationId);
+            const gqlMembership = await getOrganizationMembership(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
             const dbMembership = await OrganizationMembership.findOneOrFail({
                 where: {
                     user_id: user.user_id,
@@ -109,7 +109,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id);
+                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id, { authorization: JoeAuthToken });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships).to.be.empty;
             });
@@ -123,7 +123,7 @@ describe("user", () => {
             });
 
             it("should return an array containing one school membership", async () => {
-                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id);
+                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id, { authorization: JoeAuthToken });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(1);
             });
@@ -143,7 +143,7 @@ describe("user", () => {
         });
 
         it("should get school membership", async () => {
-            const gqlMembership = await getSchoolMembership(testClient, user.user_id, schoolId);
+            const gqlMembership = await getSchoolMembership(testClient, user.user_id, schoolId, { authorization: JoeAuthToken });
             const dbMembership = await SchoolMembership.findOneOrFail({
                 where: {
                     user_id: user.user_id,
@@ -164,7 +164,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlClasses = await getClassesTeaching(testClient, user.user_id);
+                const gqlClasses = await getClassesTeaching(testClient, user.user_id, { authorization: JoeAuthToken });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.be.empty;
             });
@@ -178,7 +178,7 @@ describe("user", () => {
             });
 
             it("should return an array containing one class", async () => {
-                const gqlClasses = await getClassesTeaching(testClient, user.user_id);
+                const gqlClasses = await getClassesTeaching(testClient, user.user_id, { authorization: JoeAuthToken });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.have.lengthOf(1);
             });
@@ -193,7 +193,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlClasses = await getClassesStudying(testClient, user.user_id);
+                const gqlClasses = await getClassesStudying(testClient, user.user_id, { authorization: JoeAuthToken });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.be.empty;
             });
@@ -207,7 +207,7 @@ describe("user", () => {
             });
 
             it("should return an array containing one class", async () => {
-                const gqlClasses = await getClassesStudying(testClient, user.user_id);
+                const gqlClasses = await getClassesStudying(testClient, user.user_id, { authorization: JoeAuthToken });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.have.lengthOf(1);
             });

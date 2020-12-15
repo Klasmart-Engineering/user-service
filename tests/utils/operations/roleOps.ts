@@ -1,5 +1,5 @@
 import { ApolloServerTestClient } from "../createTestClient";
-import { JoeAuthToken } from "../testConfig";
+import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 
 const DELETE_ROLE = `
@@ -26,25 +26,25 @@ const GRANT_PERMISSION = `
     }
 `;
 
-export async function grantPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string) {
+export async function grantPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: GRANT_PERMISSION,
         variables: { role_id: roleId, permission_name: permissionName },
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     const res = await gqlTry(operation);
 }
 
-export async function deleteRole(testClient: ApolloServerTestClient, roleId: string) {
+export async function deleteRole(testClient: ApolloServerTestClient, roleId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_ROLE,
         variables: { role_id: roleId },
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     const res = await gqlTry(operation);

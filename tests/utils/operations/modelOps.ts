@@ -2,6 +2,7 @@ import { User } from "../../../src/entities/user";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
+import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 
 const NEW_USER = `
@@ -79,7 +80,7 @@ export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user);
+    const gqlUser = await createUser(testClient, user, { authorization: JoeAuthToken });
     const dbUser = await User.findOneOrFail({ where: { email: user.email } });
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
@@ -93,14 +94,15 @@ export async function createUserAndValidate(
  */
 export async function createUser(
     testClient: ApolloServerTestClient,
-    user: User
+    user: User,
+    headers: Headers
 ): Promise<User> {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: NEW_USER,
         variables: user as any,
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     const res = await gqlTry(operation);
@@ -108,13 +110,13 @@ export async function createUser(
     return gqlUser;
 }
 
-export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any) {
+export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: SET_USER,
         variables: modifiedUser,
-        headers: { authorization: JoeAuthToken },
+        headers: headers,
     });
 
     const res = await gqlTry(operation);
@@ -122,11 +124,12 @@ export async function updateUser(testClient: ApolloServerTestClient, modifiedUse
     return gqlUser;
 }
 
-export async function getUsers(testClient: ApolloServerTestClient) {
+export async function getUsers(testClient: ApolloServerTestClient, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_USERS,
+        headers: headers,
     });
 
     const res = await gqlTry(operation);
@@ -134,12 +137,13 @@ export async function getUsers(testClient: ApolloServerTestClient) {
     return gqlUsers;
 }
 
-export async function getUser(testClient: ApolloServerTestClient, userId: string) {
+export async function getUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
     const { query } = testClient;
             
     const operation = () => query({
         query: GET_USER,
         variables: { user_id: userId },
+        headers: headers,
     });
 
     const res = await gqlTry(operation);

@@ -478,7 +478,7 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -500,7 +500,7 @@ describe("organization", () => {
                 let phone = "+44207344141"
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -528,7 +528,7 @@ describe("organization", () => {
                     let phone = undefined
                     let given = "Bob"
                     let family = "Smith"
-                    let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                    let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken })
                     expect(gqlresult).to.be.null
 
                     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
@@ -565,7 +565,7 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -586,7 +586,7 @@ describe("organization", () => {
                 let phone = "+44207344141"
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -613,7 +613,7 @@ describe("organization", () => {
                     let phone = "+44207344141"
                     let given = "Bob"
                     let family = "Smith"
-                    let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId))
+                    let gqlresult = await editMembership( testClient, organizationId, email, phone, given, family, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken })
                     expect(gqlresult).to.be.null
                 });
             });
@@ -663,7 +663,7 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_organization_10440);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_organization_10440, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 

@@ -48,7 +48,7 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const editClassRole = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334);
+                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, editClassRole.role_id);
             });
@@ -104,7 +104,7 @@ describe("class", () => {
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const editClassRole = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334);
+                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, editClassRole.role_id);
             });
 
@@ -171,7 +171,7 @@ describe("class", () => {
             context("and the user does not have delete teacher permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226);
+                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -190,7 +190,7 @@ describe("class", () => {
             context("and the user does not have add teacher permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -216,8 +216,8 @@ describe("class", () => {
 
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446);
+                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -277,7 +277,7 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226);
+                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
@@ -331,7 +331,7 @@ describe("class", () => {
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226);
+                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
@@ -391,7 +391,7 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226);
+                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
@@ -447,7 +447,7 @@ describe("class", () => {
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446);
+                await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
             });
@@ -514,7 +514,7 @@ describe("class", () => {
             context("and the user does not have delete student permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225);
+                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -533,7 +533,7 @@ describe("class", () => {
             context("and the user does not have add student permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -559,8 +559,8 @@ describe("class", () => {
 
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445);
+                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -619,7 +619,7 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225);
+                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
@@ -673,7 +673,7 @@ describe("class", () => {
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225);
+                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
@@ -744,7 +744,7 @@ describe("class", () => {
             context("and the user does not have edit school permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -763,7 +763,7 @@ describe("class", () => {
             context("and the user does not have edit class permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -789,8 +789,8 @@ describe("class", () => {
 
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -850,7 +850,7 @@ describe("class", () => {
                 school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
+                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
@@ -906,7 +906,7 @@ describe("class", () => {
                 school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330);
+                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
@@ -988,7 +988,7 @@ describe("class", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_class_20444);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_class_20444, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 

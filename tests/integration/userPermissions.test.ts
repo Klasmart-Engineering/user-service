@@ -92,21 +92,21 @@ describe("userPermissions", () => {
             });
 
             it("should not throw error when school ID array is provided", async () => {
-                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334);
+                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                 const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
                 const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                 await expect(fn()).to.be.fulfilled;
             });
 
             it("should not throw error when organization ID is provided", async () => {
-                await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334);
+                await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                 const permissionContext = { school_id: undefined, school_ids: undefined, organization_id: organizationId };
                 const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                 await expect(fn()).to.be.fulfilled;
             });
 
             it("should not throw error when user dosn't have organization permission, but does have permission for at least one school", async () => {
-                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334);
+                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                 const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: organizationId };
                 const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                 await expect(fn()).to.be.fulfilled;

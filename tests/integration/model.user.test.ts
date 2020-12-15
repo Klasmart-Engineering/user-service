@@ -8,6 +8,7 @@ import { getUser, getUsers, updateUser } from "../utils/operations/modelOps";
 import { createUserJoe } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
+import { JoeAuthToken } from "../utils/testConfig";
 
 describe("model.user", () => {
     let connection: Connection;
@@ -53,7 +54,7 @@ describe("model.user", () => {
         });
 
         it("should modify an existing user", async () => {
-            const gqlUser = await updateUser(testClient, modifiedUser);
+            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: JoeAuthToken });
             expect(gqlUser).to.exist;
             expect(gqlUser).to.include(modifiedUser);
             const dbUser = await User.findOneOrFail(user.user_id);
@@ -70,7 +71,7 @@ describe("model.user", () => {
         });
 
         it("should get users", async () => {
-            const gqlUsers = await getUsers(testClient);
+            const gqlUsers = await getUsers(testClient, { authorization: JoeAuthToken });
 
             expect(gqlUsers).to.exist;
             expect(gqlUsers.length).to.equal(1);
@@ -92,7 +93,7 @@ describe("model.user", () => {
         });
 
         it("should get user by ID", async () => {
-            const gqlUser = await getUser(testClient, user.user_id);
+            const gqlUser = await getUser(testClient, user.user_id, { authorization: JoeAuthToken });
             expect(gqlUser).to.exist;
             expect(user).to.include(gqlUser);
         });

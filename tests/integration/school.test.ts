@@ -161,7 +161,7 @@ describe("school", () => {
             await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
             await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })
             roleId = (await createRole(testClient, organizationId, "test_role")).role_id;
-            await grantPermission(testClient, roleId, PermissionName.edit_school_20330);
+            await grantPermission(testClient, roleId, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
         });
 
         context("when user has the edit school permission", () => {
@@ -257,7 +257,7 @@ describe("school", () => {
             await addUserToOrganizationAndValidate(testClient, idOfUserToPerformAction, organizationId, { authorization: JoeAuthToken });
             await addUserToSchool(testClient, idOfUserToPerformAction, schoolId, { authorization: JoeAuthToken })
             roleId = (await createRole(testClient, organizationId, "test_role")).role_id;
-            await grantPermission(testClient, roleId, PermissionName.edit_school_20330);
+            await grantPermission(testClient, roleId, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
         });
 
         context("when user has the edit school permission", () => {
@@ -401,7 +401,7 @@ describe("school", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_school_20440);
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_school_20440, { authorization: JoeAuthToken });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 

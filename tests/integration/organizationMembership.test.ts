@@ -92,7 +92,7 @@ describe("organizationMembership", () => {
             });
 
             it("should return membership if has permission", async () => {
-                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334);
+                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
                 let gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, userId, organizationId, PermissionName.edit_class_20334);
                 expect(gqlSchoolMemberships).to.have.lengthOf(1);
                 expect(gqlSchoolMemberships[0].school_id).to.equal(schoolId);

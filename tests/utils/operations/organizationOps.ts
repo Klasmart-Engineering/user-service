@@ -235,12 +235,13 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
         variables.school_role_ids = school_role_ids
     }
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: INVITE_USER,
         variables: variables,
-        headers: { authorization: JoeAuthToken},
+        headers: headers,
     });
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+    
+    const res = await gqlTry(operation);
     const result = res.data?.organization.inviteUser as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
     return result
 }
@@ -271,12 +272,13 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
         variables.school_role_ids = school_role_ids
     }
 
-    const res = await mutate({
+    const operation = () => mutate({
         mutation: EDIT_MEMBERSHIP,
         variables: variables,
-        headers: { authorization:  JoeAuthToken},
+        headers: headers,
     });
-    expect(res.errors, res.errors?.toString()).to.be.undefined;
+
+    const res = await gqlTry(operation);
     const result = res.data?.organization.editMembership as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
     return result
 }
