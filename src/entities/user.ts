@@ -10,7 +10,6 @@ import { createHash } from "crypto"
 import { School } from "./school";
 import { Status } from "./status";
 
-
 @Entity()
 export class User extends BaseEntity {
 
@@ -33,6 +32,12 @@ export class User extends BaseEntity {
 
     @Column({ nullable: true })
     public avatar?: string
+
+    @Column({ type: "enum", enum: Status, default: Status.ACTIVE })
+    public status!: Status
+
+    @Column({ type: 'timestamp', nullable: true })
+    public deleted_at?: Date
 
     @OneToMany(() => OrganizationMembership, membership => membership.user)
     @JoinColumn({ name: "organization_id", referencedColumnName: "organization_id" })
@@ -292,7 +297,7 @@ export class User extends BaseEntity {
                             }
                         })
                     }
-                    
+
                     if (otherSchoolMemberships !== undefined) {
                         otherSchoolMemberships.forEach(async function (otherSchoolMembership) {
                             let found = false
@@ -327,7 +332,7 @@ export class User extends BaseEntity {
                         ouruser.memberships = Promise.resolve(memberships)
                         await queryRunner.manager.save([ouruser, ...memberships])
                     }
-                    else{
+                    else {
                         ouruser.memberships = undefined
                     }
 
@@ -335,7 +340,7 @@ export class User extends BaseEntity {
                         ouruser.school_memberships = Promise.resolve(schoolmemberships)
                         await queryRunner.manager.save([ouruser, ...schoolmemberships])
                     }
-                    else{
+                    else {
                         ouruser.school_memberships = undefined
                     }
                     if (memberships.length > 0) {
@@ -401,7 +406,8 @@ export class User extends BaseEntity {
                             ouruser.classesTeaching = Promise.resolve(classesTeaching)
                             await queryRunner.manager.save([ouruser, ...classesTeaching])
                         }
-                    }                               
+                    }
+                    otherUser.inactivate(queryRunner.manager)
 
                 } catch (err) {
                     success = false
@@ -411,12 +417,12 @@ export class User extends BaseEntity {
                 } finally {
                     await queryRunner.release();
                 }
-                if(success){
+                if (success) {
                     console.log("success")
-                    // Todo call delete user other
+                    
                     return this
                 }
-                else{
+                else {
                     throw (dberr)
                 }
 
@@ -425,7 +431,37 @@ export class User extends BaseEntity {
         return null
     }
    
+    private async inactivateOrganizationMemberships(manager: any) {
+        const organizationMemberships = await this.memberships || []
+
+        for (const organizationMembership of organizationMemberships) {
+            await organizationMembership.inactivate(manager)
+        }
+        
+        return organizationMemberships
+    }
+
+    private async inactivateSchoolMemberships(manager: any) {
+        const schoolMemberships = await this.school_memberships || []
+
+        for (const schoolMembership of schoolMemberships) {
+            await schoolMembership.inactivate(manager)
+        }
+        
+        return schoolMemberships
+    }
+
+    public async inactivate(manager: any) {
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
+        await this.inactivateOrganizationMemberships(manager)
+        await this.inactivateSchoolMemberships(manager)
+        await manager.save(this)
+    }
+
 }
+
+
 
 const accountNamespace = v5("kidsloop.net", v5.DNS)
 export function accountUUID(email?: string) {
