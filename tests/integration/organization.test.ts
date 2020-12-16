@@ -17,6 +17,7 @@ import { SchoolMembership } from "../../src/entities/schoolMembership";
 import { JoeAuthToken, BillyAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
+import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
 import chaiAsPromised from "chai-as-promised";
@@ -717,6 +718,14 @@ describe("organization", () => {
                     expect(dbSchools).to.satisfy((schools : School[]) => {
                         return schools.every(school => school.status === Status.INACTIVE)
                     });
+                });
+
+                it("deletes the organization ownership", async () => {
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                    expect(gqlOrganization).to.be.true;
+                    const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                    const dbOrganizationOwnership = await OrganizationOwnership.findOneOrFail({ where: { organization_id: organization.organization_id } });
+                    expect(dbOrganizationOwnership.status).to.eq(Status.INACTIVE)
                 });
 
                 context("and the organization is marked as inactive", () => {

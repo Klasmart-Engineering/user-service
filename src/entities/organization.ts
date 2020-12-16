@@ -13,6 +13,7 @@ import {
 } from 'typeorm';
 import { GraphQLResolveInfo } from 'graphql';
 import { OrganizationMembership } from './organizationMembership';
+import { OrganizationOwnership } from './organizationOwnership';
 import { Role } from './role';
 import { User, accountUUID } from './user';
 import { Class } from './class';
@@ -548,12 +549,25 @@ export class Organization extends BaseEntity {
         return schools
     }
 
+    private async inactivateOwnership(manager : any) {
+        const ownership = await OrganizationOwnership.findOne({
+            organization_id: this.organization_id }
+        )
+
+        if(ownership){
+            await ownership.inactivate(manager)
+        }
+
+        return ownership
+    }
+
     public async inactivate(manager : any){
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 
         await this.inactivateSchools(manager)
         await this.inactivateOrganizationMemberships(manager)
+        await this.inactivateOwnership(manager)
         await manager.save(this)
     }
 }
