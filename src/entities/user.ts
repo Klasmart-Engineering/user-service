@@ -428,7 +428,8 @@ export class User extends BaseEntity {
                             await queryRunner.manager.save([ouruser, ...classesTeaching])
                         }
                     }
-                    otherUser.inactivate(queryRunner.manager)
+                    await otherUser.inactivate(queryRunner.manager)
+                    queryRunner.commitTransaction();
 
                 } catch (err) {
                     success = false
