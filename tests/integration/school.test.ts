@@ -15,6 +15,7 @@ import { grantPermission } from "../utils/operations/roleOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
+import { Class } from "../../src/entities/class";
 import { School } from "../../src/entities/school";
 import { accountUUID, User } from "../../src/entities/user";
 import { Status } from "../../src/entities/status";
@@ -370,6 +371,10 @@ describe("school", () => {
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
             school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken });
+            const schoolId = school?.school_id
+            const cls = await createClassAndValidate(testClient, organizationId);
+            const classId = cls?.class_id
+            await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {
@@ -420,6 +425,17 @@ describe("school", () => {
                     const dbSchoolMemberships = await SchoolMembership.find({ where: { school_id: school.school_id } });
                     expect(dbSchoolMemberships).to.satisfy((memberships : SchoolMembership[]) => {
                         return memberships.every(membership => membership.status === Status.INACTIVE)
+                    });
+                });
+
+                it("deletes the school classes", async () => {
+                    const gqlSchool = await deleteSchool(testClient, school.school_id, { authorization: BillyAuthToken });
+                    expect(gqlSchool).to.be.true;
+                    const dbSchool = await School.findOneOrFail(school.school_id);
+                    const dbClasses = await dbSchool.classes || []
+
+                    expect(dbClasses).to.satisfy((classes : Class[]) => {
+                        return classes.every(cls => cls.status === Status.INACTIVE)
                     });
                 });
 

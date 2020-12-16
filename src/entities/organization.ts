@@ -214,7 +214,7 @@ export class Organization extends BaseEntity {
           permisionContext,
           PermissionName.send_invitation_40882
         )
-        
+
         try {
             const user = await getRepository(User).findOneOrFail(user_id)
 
@@ -484,9 +484,9 @@ export class Organization extends BaseEntity {
         )
 
         try {
-            this.status = Status.INACTIVE
-            this.deleted_at = new Date()
-            await this.save()
+            await getManager().transaction(async (manager) => {
+                await this.inactivate(manager)
+            })
 
             return true
         } catch(e) {
@@ -526,5 +526,34 @@ export class Organization extends BaseEntity {
         }
 
         return roles
+    }
+
+    private async inactivateOrganizationMemberships(manager : any) {
+        const organizationMemberships = await this.memberships || []
+
+        for(const organizationMembership of organizationMemberships){
+            await organizationMembership.inactivate(manager)
+        }
+
+        return organizationMemberships
+    }
+
+    private async inactivateSchools(manager : any) {
+        const schools = await this.schools || []
+
+        for(const school of schools){
+            await school.inactivate(manager)
+        }
+
+        return schools
+    }
+
+    public async inactivate(manager : any){
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
+
+        await this.inactivateSchools(manager)
+        await this.inactivateOrganizationMemberships(manager)
+        await manager.save(this)
     }
 }

@@ -4,6 +4,7 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
+import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
@@ -653,6 +654,7 @@ describe("organization", () => {
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            const school = await createSchool(testClient, organizationId, "school", { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {
@@ -694,6 +696,27 @@ describe("organization", () => {
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     expect(dbOrganization.status).to.eq(Status.INACTIVE);
                     expect(dbOrganization.deleted_at).not.to.be.null;
+                });
+
+                it("deletes the organization memberships", async () => {
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                    expect(gqlOrganization).to.be.true;
+                    const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                    const dbOrganizationMemberships = await OrganizationMembership.find({ where: { organization_id: organization.organization_id } });
+                    expect(dbOrganizationMemberships).to.satisfy((memberships : OrganizationMembership[]) => {
+                        return memberships.every(membership => membership.status === Status.INACTIVE)
+                    });
+                });
+
+                it("deletes the organization schools", async () => {
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: BillyAuthToken });
+                    expect(gqlOrganization).to.be.true;
+                    const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
+                    const dbSchools = await dbOrganization.schools || []
+
+                    expect(dbSchools).to.satisfy((schools : School[]) => {
+                        return schools.every(school => school.status === Status.INACTIVE)
+                    });
                 });
 
                 context("and the organization is marked as inactive", () => {

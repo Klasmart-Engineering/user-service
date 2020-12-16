@@ -340,7 +340,7 @@ export class Class extends BaseEntity {
 
                 return school
             }))
-        
+
             await getManager().transaction(async (manager) => {
                 await manager.save(oldSchools)
                 await manager.save(newSchools)
@@ -412,9 +412,7 @@ export class Class extends BaseEntity {
         )
 
         try {
-            this.status = Status.INACTIVE
-            this.deleted_at = new Date()
-            await this.save()
+            await this.inactivate(getManager())
 
             return true
         } catch(e) {
@@ -423,4 +421,10 @@ export class Class extends BaseEntity {
         return false
     }
 
+    public async inactivate(manager : any){
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
+
+        await manager.save(this)
+    }
 }

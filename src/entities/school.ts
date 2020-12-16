@@ -131,11 +131,7 @@ export class School extends BaseEntity {
             )
 
             await getManager().transaction(async (manager) => {
-                this.inactivate()
-                const schoolMemberships = await this.inactivateSchoolMemberships()
-
-                await manager.save(this)
-                await manager.save(schoolMemberships)
+                await this.inactivate(manager)
             })
 
             return true
@@ -145,20 +141,32 @@ export class School extends BaseEntity {
         return false
     }
 
-    private async inactivateSchoolMemberships() {
-        const schoolMemberships = await SchoolMembership.find({
-            where: { school_id: this.school_id }
-        });
+    private async inactivateSchoolMemberships(manager : any) {
+        const schoolMemberships = await this.memberships || []
 
         for(const schoolMembership of schoolMemberships){
-            await schoolMembership.inactivate()
+            await schoolMembership.inactivate(manager)
         }
 
         return schoolMemberships
     }
 
-    public async inactivate(){
+    private async inactivateClasses(manager : any) {
+        const classes = await this.classes || []
+
+        for(const cls of classes){
+            await cls.inactivate(manager)
+        }
+
+        return classes
+    }
+
+    public async inactivate(manager : any){
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
+
+        await this.inactivateClasses(manager)
+        await this.inactivateSchoolMemberships(manager)
+        await manager.save(this)
     }
 }

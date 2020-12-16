@@ -140,9 +140,7 @@ export class OrganizationMembership extends BaseEntity {
     public async leave({ }: any, context: any, info: GraphQLResolveInfo) {
         try {
             if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
-            this.status = Status.INACTIVE
-            this.deleted_at = new Date()
-            await this.save()
+            await this.inactivate(getManager())
 
             return true
         } catch (e) {
@@ -151,4 +149,10 @@ export class OrganizationMembership extends BaseEntity {
         return false
     }
 
+    public async inactivate(manager : any){
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
+
+        await manager.save(this)
+    }
 }

@@ -97,8 +97,7 @@ export class SchoolMembership extends BaseEntity {
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
-            this.inactivate()
-            await this.save()
+            await this.inactivate(getManager())
 
             return true
         } catch(e) {
@@ -107,9 +106,11 @@ export class SchoolMembership extends BaseEntity {
         return false
     }
 
-    public async inactivate(){
+    public async inactivate(manager : any){
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
+
+        await manager.save(this)
     }
 
 }
