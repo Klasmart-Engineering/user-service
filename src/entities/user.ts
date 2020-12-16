@@ -4,6 +4,7 @@ import { OrganizationMembership } from "./organizationMembership";
 import { Organization } from "./organization";
 import { Class } from "./class";
 import { SchoolMembership } from "./schoolMembership";
+import { OrganizationOwnership } from './organizationOwnership';
 import { v5 } from "uuid";
 import { createHash } from "crypto"
 import { School } from "./school";
@@ -60,7 +61,7 @@ export class User extends BaseEntity {
     @ManyToMany(() => Class, class_ => class_.teachers)
     @JoinTable()
     public classesTeaching?: Promise<Class[]>
-    
+
     @ManyToMany(() => Class, class_ => class_.students)
     @JoinTable()
     public classesStudying?: Promise<Class[]>
@@ -124,7 +125,7 @@ export class User extends BaseEntity {
         }
     }
 
-    
+
     public async set({
         given_name,
         family_name,
@@ -159,10 +160,10 @@ export class User extends BaseEntity {
                 organization.owner = Promise.resolve(this)
                 organization.primary_contact = Promise.resolve(this)
                 await manager.save(organization)
-                
+
                 const roles = await organization._createDefaultRoles(manager)
                 const adminRoles = roles.get("Organization Admin")
-                
+
                 const membership = new OrganizationMembership()
                 membership.user = Promise.resolve(this)
                 membership.user_id = this.user_id
@@ -171,8 +172,14 @@ export class User extends BaseEntity {
                 if(adminRoles) { membership.roles = Promise.resolve(adminRoles) }
                 organization.memberships = Promise.resolve([membership])
                 await manager.save(membership)
+
+                const organizationOwnership = new OrganizationOwnership()
+                organizationOwnership.user_id = this.user_id
+                organizationOwnership.organization_id = organization.organization_id
+                await manager.save(organizationOwnership)
+
             })
-    
+
             return organization
         } catch(e) {
             console.error(e)

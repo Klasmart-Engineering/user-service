@@ -5,6 +5,7 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { accountUUID, User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
+import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
 import { createOrganizationAndValidate, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, updateUser } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
@@ -30,7 +31,7 @@ describe("user", () => {
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
-    
+
     after(async () => {
         await connection?.close();
     });
@@ -100,7 +101,7 @@ describe("user", () => {
                     organization_id: organizationId,
                 }
             });
-            
+
             expect(gqlMembership).to.exist;
             expect(dbMembership).to.include(gqlMembership);
         });
@@ -155,7 +156,7 @@ describe("user", () => {
                     school_id: schoolId,
                 }
             });
-            
+
             expect(gqlMembership).to.exist;
             expect(dbMembership).to.include(gqlMembership);
         });
@@ -228,6 +229,15 @@ describe("user", () => {
         it("should create an organization", async () => {
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             expect(organization).to.exist;
+        });
+
+        it("creates the organization ownership", async () => {
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
+            const organizationOwnership = await OrganizationOwnership.find({
+                where: { organization_id: organization.organization_id, user_id: user.user_id }
+            })
+
+            expect(organizationOwnership).to.exist;
         });
     });
 
