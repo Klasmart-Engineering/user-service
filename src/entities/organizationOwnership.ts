@@ -33,4 +33,13 @@ export class OrganizationOwnership extends BaseEntity {
 
     @Column({ type: 'timestamp', nullable: true})
     public deleted_at?: Date
+
+    public async inactivate(manager : any){
+        if(this.status != Status.ACTIVE) { return }
+
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
+
+        await manager.save(this)
+    }
 }

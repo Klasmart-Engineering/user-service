@@ -103,4 +103,48 @@ describe("OrganizationOwnership", () => {
             });
         });
     });
+
+    describe("#inactivate", () => {
+        let ownership : OrganizationOwnership;
+
+        context("when the organization ownership is active", () => {
+            beforeEach(async () => {
+                await manager.save(user);
+                await manager.save(organization);
+
+                ownership = new OrganizationOwnership()
+                ownership.user_id = user.user_id
+                ownership.organization_id = organization.organization_id
+                await manager.save(ownership)
+            });
+
+            it("inactivates the ownership", async () => {
+                await ownership.inactivate(manager);
+
+                expect(ownership.status).to.eq(Status.INACTIVE)
+                expect(ownership.deleted_at).not.to.be.null
+            });
+        });
+
+        context("when the organization ownership is inactive", () => {
+            beforeEach(async () => {
+                await manager.save(user);
+                await manager.save(organization);
+
+                ownership = new OrganizationOwnership()
+                ownership.user_id = user.user_id
+                ownership.organization_id = organization.organization_id
+                await manager.save(ownership)
+                await ownership.inactivate(manager);
+            });
+
+            it("inactivates the ownership", async () => {
+                const deletedAt = ownership.deleted_at;
+                await ownership.inactivate(manager);
+
+                expect(ownership.status).to.eq(Status.INACTIVE)
+                expect(ownership.deleted_at).to.eq(deletedAt)
+            });
+        });
+    });
 });
