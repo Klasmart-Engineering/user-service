@@ -3,6 +3,10 @@ import { PermissionName } from "./permissionNames";
 export const organizationAdminRole = {
     role_name: "Organization Admin",
     permissions: [
+        PermissionName.create_folder_289,
+        PermissionName.view_folder__290,
+        PermissionName.edit_folder_291,
+        PermissionName.delete_folder_292,
         PermissionName.logos_1000,
         PermissionName.my_account_1010,
         PermissionName.my_settings_1020,
