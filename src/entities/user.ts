@@ -339,48 +339,20 @@ export class User extends BaseEntity {
                         ouruser.school_memberships = undefined
                     }
 
-                    if (otherClassesStudying !== undefined) {
-                        let changed = false
-                        otherClassesStudying.forEach(async function (otherClassStudying) {
-                            let found = false
-                            classesStudying.some(async function (classStudying) {
-                                if (classStudying.class_id === otherClassStudying.class_id) {
-                                    found = true
-                                }
-                                return found
-                            })
-                            if (!found) {
-                                changed = true
-                                classesStudying.push(otherClassStudying)
-                            }
-                        })
-                        if (changed) {
-                            ouruser.classesStudying = Promise.resolve(classesStudying)
-                            await queryRunner.manager.save([ouruser, ...classesStudying])
-                        }
+                    classesStudying = await this.mergeClasses(classesStudying,otherClassesStudying)
+                    if(classesStudying.length > 0){
+                        ouruser.classesStudying = Promise.resolve(classesStudying)
+                        await queryRunner.manager.save([ouruser, ...classesStudying])
                     }
-                    if (otherClassesTeaching !== undefined) {
-                        let changed = false
-                        otherClassesTeaching.forEach(async function (otherClassTeaching) {
 
-                            let found = false
-                            classesTeaching.some(async function (classTeaching) {
-                                if (classTeaching.class_id === otherClassTeaching.class_id) {
-                                    found = true
-                                }
-                                return found
-                            })
-                            if (!found) {
-                                changed = true
-                                classesTeaching.push(otherClassTeaching)
-                            }
-                        })
-                        if (changed) {
-                            ouruser.classesTeaching = Promise.resolve(classesTeaching)
-                            await queryRunner.manager.save([ouruser, ...classesTeaching])
-                        }
+                    classesTeaching =  await this.mergeClasses(classesTeaching,otherClassesTeaching)
+                    if(classesTeaching.length > 0){
+                        ouruser.classesTeaching = Promise.resolve(classesTeaching)
+                        await queryRunner.manager.save([ouruser, ...classesTeaching])
                     }
+
                     await otherUser.inactivate(queryRunner.manager)
+
                     queryRunner.commitTransaction();
 
                 } catch (err) {
@@ -431,6 +403,26 @@ export class User extends BaseEntity {
         await this.inactivateOrganizationMemberships(manager)
         await this.inactivateSchoolMemberships(manager)
         await manager.save(this)
+    }
+
+    private async mergeClasses(toClasses: Class[],fromClasses?: Class[]): Promise<Class[]>{
+        if (fromClasses !== undefined) {
+            let changed = false
+            fromClasses.forEach(async function (fromClass) {
+                let found = false
+                toClasses.some(async function (classStudying) {
+                    if (classStudying.class_id === fromClass.class_id) {
+                        found = true
+                    }
+                    return found
+                })
+                if (!found) {
+                    changed = true
+                    toClasses.push(fromClass)
+                }
+            })
+        }
+        return toClasses
     }
 
 }
