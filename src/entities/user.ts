@@ -259,22 +259,11 @@ export class User extends BaseEntity {
 
                 await queryRunner.startTransaction();
                 try {
-                    let classesStudying: Class[] = []
-                    if (ourClassesStudying !== undefined) {
-                        classesStudying = ourClassesStudying
-                    }
-                    let classesTeaching: Class[] = []
-                    if (ourClassesTeaching !== undefined) {
-                        classesTeaching = ourClassesTeaching
-                    }
-                    let memberships: OrganizationMembership[] = []
-                    if (ourMemberships !== undefined) {
-                        memberships = ourMemberships
-                    }
-                    let schoolmemberships: SchoolMembership[] = []
-                    if (ourSchoolMemberships !== undefined) {
-                        schoolmemberships = ourSchoolMemberships
-                    }
+                    let classesStudying = ourClassesStudying || []                   
+                    let classesTeaching = ourClassesTeaching || []                     
+                    let memberships = ourMemberships || []                                    
+                    let schoolmemberships = ourSchoolMemberships || []
+                   
                     memberships = await this.mergeOrganizationMemberships(memberships,otherMemberships)  
                     if (memberships.length > 0) {
                         ouruser.memberships = Promise.resolve(memberships)
