@@ -6,7 +6,7 @@ import { createServer } from "../../src/utils/createServer";
 import { accountUUID, User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
-import { createOrganizationAndValidate, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, updateUser } from "../utils/operations/userOps";
+import { createOrganizationAndValidate, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, mergeUser, updateUser } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
@@ -20,6 +20,10 @@ import { grantPermission } from "../utils/operations/roleOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { createUserAndValidate } from "../utils/operations/modelOps";
+import { Organization } from "../../src/entities/organization";
+import { Role } from "../../src/entities/role";
+import { Status } from "../../src/entities/status";
+import { gql } from "apollo-server-express";
 
 describe("user", () => {
     let connection: Connection;
@@ -295,7 +299,7 @@ describe("user", () => {
         });
 
         context("when user being queried has the specified permission in a school's organization", () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
             });
 
@@ -315,7 +319,7 @@ describe("user", () => {
         });
 
         context("when user being queried has the specified permission in a school", () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
             });
 
@@ -335,7 +339,7 @@ describe("user", () => {
         });
 
         context("when user being queried has the specified permission in organization 1 and in school 2 of organization 2", () => {
-            beforeEach(async () =>{
+            beforeEach(async () => {
                 await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
                 await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school2Id, org2RoleId, { authorization: tokenOfOrg2Owner });
             });
@@ -347,4 +351,103 @@ describe("user", () => {
             });
         });
     });
+    describe("merge", () => {
+        let joeUser: User
+        let organization: Organization
+        let organizationId: string
+        let role: Role
+        let roleId: string
+        let schoolId: string
+        beforeEach(async () => {
+            await reloadDatabase();
+            joeUser = await createUserJoe(testClient);
+          //  const idOfOrg1Owner = joeUser.user_id;
+            organization = await createOrganizationAndValidate(testClient, joeUser.user_id);
+            organizationId = organization.organization_id
+            role = await createRole(testClient, organization.organization_id, "student");
+            roleId = role.role_id
+            schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+        });
+        it("should merge one user into another marking the source user inactive", async () => {
+
+            let anne = {
+                given_name: "Anne",
+                family_name: "Bob",
+                email: "anne@gmail.com",
+                avatar: "anne_avatar"
+            } as User
+
+            let oldUser = await createUserAndValidate(testClient, anne)
+            let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
+
+            let newUser = object.user
+            let membership = object.membership
+            let schoolmemberships = object.schoolMemberships
+
+            expect(newUser).to.exist
+            expect(newUser.email).to.equal("bob@nowhere.com")
+
+            expect(schoolmemberships).to.exist
+            expect(schoolmemberships.length).to.equal(1)
+            expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
+            expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+            expect(membership).to.exist
+            expect(membership.organization_id).to.equal(organizationId)
+            expect(membership.user_id).to.equal(newUser.user_id)
+
+            let gqlUser = await mergeUser(testClient, oldUser.user_id, newUser.user_id, { authorization: JoeAuthToken })
+            expect(gqlUser).to.exist
+            expect(gqlUser.user_id).to.equal(oldUser.user_id)
+            let newMemberships = await gqlUser.memberships
+            expect(newMemberships).to.exist
+            if (newMemberships !== undefined) {
+                expect(newMemberships.length).to.equal(1)
+                expect(newMemberships[0].organization_id).to.equal(organizationId)
+                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+            let newSchoolMemberships = await gqlUser.school_memberships
+            expect(newSchoolMemberships).to.exist
+            if (newSchoolMemberships !== undefined) {
+                expect(newSchoolMemberships.length).to.equal(1)
+                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+
+            let dbOldUser = await User.findOneOrFail({where:{ user_id: oldUser.user_id} })
+            expect(dbOldUser).to.exist
+            newMemberships = await dbOldUser.memberships
+            expect(newMemberships).to.exist
+            if (newMemberships !== undefined) {
+                expect(newMemberships.length).to.equal(1)
+                expect(newMemberships[0].organization_id).to.equal(organizationId)
+                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+            newSchoolMemberships = await dbOldUser.school_memberships
+            expect(newSchoolMemberships).to.exist
+            if (newSchoolMemberships !== undefined) {
+                expect(newSchoolMemberships.length).to.equal(1)
+                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+
+            let dbNewUser = await User.findOneOrFail({where: { user_id: newUser.user_id }})
+            expect(dbNewUser).to.exist
+            expect(dbNewUser.status).to.equal(Status.INACTIVE)
+            newMemberships = await dbNewUser.memberships
+            expect(newMemberships).to.exist
+            if (newMemberships !== undefined) {
+                expect(newMemberships.length).to.equal(1)
+                expect(newMemberships[0].status).to.equal(Status.INACTIVE)
+            }
+            newSchoolMemberships = await dbNewUser.school_memberships
+            expect(newSchoolMemberships).to.exist
+            if (newSchoolMemberships !== undefined) {
+                expect(newSchoolMemberships.length).to.equal(1)
+                expect(newSchoolMemberships[0].status).to.equal(Status.INACTIVE)
+            }
+
+        });
+    });
 });
+

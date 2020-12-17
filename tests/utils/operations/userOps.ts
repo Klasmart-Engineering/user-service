@@ -131,6 +131,27 @@ const GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION = `
     }
 `;
 
+const MERGE_USER = `
+mutation myMutation($user_id: ID!, $other_id: String) {
+    user(user_id: $user_id) {
+        merge(other_id: $other_id) {
+            user_id
+            given_name
+            family_name
+            avatar
+            memberships{
+                user_id
+                organization_id
+            }
+            school_memberships{
+                user_id
+                school_id
+            }
+        }
+    }
+}
+`;
+
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,
@@ -319,4 +340,20 @@ export async function getUserSchoolMembershipsWithPermission(testClient: ApolloS
     const res = await gqlTry(operation);
     const gqlMemberships = res.data?.user.schoolsWithPermission as SchoolMembership[];
     return gqlMemberships;
+}
+
+export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers){
+    const { mutate } = testClient;
+
+    headers = headers ?? { authorization: JoeAuthToken };
+
+    const operation = () => mutate({
+        mutation: MERGE_USER,
+        variables: { user_id: userId, other_id: otherId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlMembership = res.data?.user.merge as User;
+    return gqlMembership;
 }
