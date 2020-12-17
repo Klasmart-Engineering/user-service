@@ -276,6 +276,8 @@ describe("user", () => {
             school2Id = (await createSchool(testClient, organization2Id, "School 2", { authorization: tokenOfOrg2Owner })).school_id;
             await addUserToSchool(testClient, idOfUserToBeQueried, school1Id, { authorization: tokenOfOrg1Owner });
             await addUserToSchool(testClient, idOfUserToBeQueried, school2Id, { authorization: tokenOfOrg2Owner });
+            await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
+            await addUserToSchool(testClient, idOfOrg1Owner, school2Id, { authorization: tokenOfOrg2Owner });
             org1RoleId = (await createRole(testClient, organization1Id, "Org 1 Role")).role_id;
             org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", tokenOfOrg2Owner)).role_id;
             await grantPermission(testClient, org1RoleId, permissionName, { authorization: tokenOfOrg1Owner });

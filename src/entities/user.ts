@@ -105,7 +105,7 @@ export class User extends BaseEntity {
                 .innerJoin("OrgMembership.roles","OrgRole")
                 .innerJoin("OrgRole.permissions", "OrgPermission")
                 .groupBy("OrgMembership.user_id, SchoolMembership.school_id, OrgPermission.permission_name, SchoolMembership.user_id")
-                .where("OrgMembership.user_id = :user_id", {user_id: this.user_id})
+                .where("OrgMembership.user_id = :user_id AND SchoolMembership.user_id = :user_id", {user_id: this.user_id})
                 .andWhere("OrgPermission.permission_name = :permission_name", {permission_name})
                 .having("bool_and(OrgPermission.allow) = :allowed", {allowed: true})
                 .getMany()
