@@ -240,18 +240,17 @@ export class User extends BaseEntity {
         if (info.operation.operation !== "mutation") { return null }
         if (other_id != undefined) {
             let dberr: any
-            const ourid = this.user_id
-            let ouruser = this
             let otherUser = await getRepository(User).findOne({ user_id: other_id })
             if (otherUser !== undefined) {
                 let success = true
                 const connection = getConnection();
                 const queryRunner = connection.createQueryRunner();
                 await queryRunner.connect();
+
                 let otherMemberships = await otherUser.memberships
-                let ourMemberships = await ouruser.memberships
+                let ourMemberships = await this.memberships
                 let otherSchoolMemberships = await otherUser.school_memberships
-                let ourSchoolMemberships = await ouruser.school_memberships
+                let ourSchoolMemberships = await this.school_memberships
                 let otherClassesStudying = await otherUser.classesStudying
                 let otherClassesTeaching = await otherUser.classesTeaching
                 let ourClassesStudying = await this.classesStudying
@@ -266,32 +265,32 @@ export class User extends BaseEntity {
                    
                     memberships = await this.mergeOrganizationMemberships(memberships,otherMemberships)  
                     if (memberships.length > 0) {
-                        ouruser.memberships = Promise.resolve(memberships)
-                        await queryRunner.manager.save([ouruser, ...memberships])
+                        this.memberships = Promise.resolve(memberships)
+                        await queryRunner.manager.save([this, ...memberships])
                     }
                     else {
-                        ouruser.memberships = undefined
+                        this.memberships = undefined
                     }
 
                     schoolmemberships = await this.mergeSchoolMemberships(schoolmemberships,otherSchoolMemberships)
                     if (schoolmemberships.length > 0) {
-                        ouruser.school_memberships = Promise.resolve(schoolmemberships)
-                        await queryRunner.manager.save([ouruser, ...schoolmemberships])
+                        this.school_memberships = Promise.resolve(schoolmemberships)
+                        await queryRunner.manager.save([this, ...schoolmemberships])
                     }
                     else {
-                        ouruser.school_memberships = undefined
+                        this.school_memberships = undefined
                     }
 
                     classesStudying = await this.mergeClasses(classesStudying, otherClassesStudying)
                     if (classesStudying.length > 0) {
-                        ouruser.classesStudying = Promise.resolve(classesStudying)
-                        await queryRunner.manager.save([ouruser, ...classesStudying])
+                        this.classesStudying = Promise.resolve(classesStudying)
+                        await queryRunner.manager.save([this, ...classesStudying])
                     }
 
                     classesTeaching = await this.mergeClasses(classesTeaching, otherClassesTeaching)
                     if (classesTeaching.length > 0) {
-                        ouruser.classesTeaching = Promise.resolve(classesTeaching)
-                        await queryRunner.manager.save([ouruser, ...classesTeaching])
+                        this.classesTeaching = Promise.resolve(classesTeaching)
+                        await queryRunner.manager.save([this, ...classesTeaching])
                     }
 
                     await otherUser.inactivate(queryRunner.manager)
