@@ -153,7 +153,7 @@ export class User extends BaseEntity {
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE }
         })
-        if(active_organizations) { throw new Error("Only one active organization per user") }
+        if(active_organizations.length) { throw new Error("Only one active organization per user") }
 
         try {
             if(info.operation.operation !== "mutation") { return null }

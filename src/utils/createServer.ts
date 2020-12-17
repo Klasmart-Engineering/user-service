@@ -26,6 +26,7 @@ export const createServer = (model: Model, context?: any) =>
                 me: (_parent, _args, context, _info) => model.getMyUser(context),
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 newUser: (_parent, args, _context, _info) => model.newUser(args),
+                newOrganizationOwnership: (_parent, args, _context, _info) => model.newOrganizationOwnership(args),
                 organization: (_parent, args, _context, _info) => model.setOrganization(args),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),

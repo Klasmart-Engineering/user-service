@@ -7,6 +7,7 @@ import {
     OneToOne,
     PrimaryColumn,
 } from "typeorm";
+import { GraphQLResolveInfo } from 'graphql';
 
 import { Organization } from './organization';
 import { Status } from "./status";

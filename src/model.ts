@@ -5,6 +5,7 @@ import { Role } from "./entities/role";
 import { Class } from "./entities/class";
 import { Context } from "./main";
 import { School } from "./entities/school";
+import { OrganizationOwnership } from "./entities/organizationOwnership";
 
 export class Model {
     public static async create() {
@@ -76,7 +77,7 @@ export class Model {
     }
     public async newUser({given_name, family_name, email, phone, avatar}: any) {
         const newUser = new User()
-        let hashSource = email ?? phone 
+        let hashSource = email ?? phone
         newUser.user_id = accountUUID(hashSource)
         newUser.given_name = given_name
         newUser.family_name = family_name
@@ -87,6 +88,21 @@ export class Model {
         await this.manager.save(newUser)
         return newUser
     }
+
+
+    // This is temporary function for migrating ownerships. Once is done it will dissappear
+    public async newOrganizationOwnership({user_id, organization_id}: any) {
+        const user = User.findOneOrFail(user_id)
+        const organization = Organization.findOneOrFail(organization_id)
+
+        const organizationOwnership = new OrganizationOwnership()
+        organizationOwnership.user_id = user_id
+        organizationOwnership.organization_id = organization_id
+        await this.manager.save(organizationOwnership)
+
+        return organizationOwnership
+    }
+
     public async setUser({user_id, given_name, family_name, email, avatar}: any) {
         const user = await this.userRepository.findOneOrFail(user_id)
 
