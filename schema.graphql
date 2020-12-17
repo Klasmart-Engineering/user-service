@@ -65,6 +65,7 @@ type User {
     'my_organization' is the Organization that this user has created
     """
     my_organization: Organization
+    organization_ownerships: [OrganizationOwnership]
     memberships: [OrganizationMembership]
     membership(organization_id: ID!): OrganizationMembership
 
@@ -176,6 +177,17 @@ type OrganizationMembership {
     addRoles(role_ids: [ID!]!): [Role]
     removeRole(role_id: ID!): OrganizationMembership
     leave(_:Int): Boolean
+}
+
+type OrganizationOwnership {
+    #properties
+    user_id: ID!
+    organization_id: ID!
+    status: String
+
+    #connections
+    organization: Organization
+    user: User
 }
 
 type Role {

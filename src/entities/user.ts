@@ -8,6 +8,7 @@ import { OrganizationOwnership } from './organizationOwnership';
 import { v5 } from "uuid";
 import { createHash } from "crypto"
 import { School } from "./school";
+import { Status } from "./status";
 
 @Entity()
 export class User extends BaseEntity {
@@ -69,6 +70,10 @@ export class User extends BaseEntity {
     @OneToOne(() => Organization, organization => organization.owner)
     @JoinColumn()
     public my_organization?: Promise<Organization>
+
+    @OneToMany(() => OrganizationOwnership, orgOwnership => orgOwnership.user)
+    @JoinColumn({name: "user_id", referencedColumnName: "user_id"})
+    public organization_ownerships?: Promise<OrganizationOwnership[]>
 
     public async organizationsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
@@ -145,6 +150,11 @@ export class User extends BaseEntity {
         }
     }
     public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
+        const active_organizations = await OrganizationOwnership.find({
+            where: { user_id: this.user_id, status: Status.ACTIVE }
+        })
+        if(active_organizations) { throw new Error("Only one active organization per user") }
+
         try {
             if(info.operation.operation !== "mutation") { return null }
             const my_organization = await this.my_organization
