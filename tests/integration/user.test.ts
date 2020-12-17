@@ -361,7 +361,6 @@ describe("user", () => {
         beforeEach(async () => {
             await reloadDatabase();
             joeUser = await createUserJoe(testClient);
-          //  const idOfOrg1Owner = joeUser.user_id;
             organization = await createOrganizationAndValidate(testClient, joeUser.user_id);
             organizationId = organization.organization_id
             role = await createRole(testClient, organization.organization_id, "student");
@@ -377,13 +376,14 @@ describe("user", () => {
                 avatar: "anne_avatar"
             } as User
 
+            // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
             let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
             let schoolmemberships = object.schoolMemberships
-
+            // newUser has memberships
             expect(newUser).to.exist
             expect(newUser.email).to.equal("bob@nowhere.com")
 
@@ -395,8 +395,9 @@ describe("user", () => {
             expect(membership).to.exist
             expect(membership.organization_id).to.equal(organizationId)
             expect(membership.user_id).to.equal(newUser.user_id)
-
+            // Merging newUser into oldUser
             let gqlUser = await mergeUser(testClient, oldUser.user_id, newUser.user_id, { authorization: JoeAuthToken })
+            // OldUser should have taken on newUser's memberships
             expect(gqlUser).to.exist
             expect(gqlUser.user_id).to.equal(oldUser.user_id)
             let newMemberships = await gqlUser.memberships
@@ -413,7 +414,7 @@ describe("user", () => {
                 expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
                 expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
             }
-
+            // The same for the db object
             let dbOldUser = await User.findOneOrFail({where:{ user_id: oldUser.user_id} })
             expect(dbOldUser).to.exist
             newMemberships = await dbOldUser.memberships
@@ -430,7 +431,7 @@ describe("user", () => {
                 expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
                 expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
             }
-
+            // newUser has been marked inactive
             let dbNewUser = await User.findOneOrFail({where: { user_id: newUser.user_id }})
             expect(dbNewUser).to.exist
             expect(dbNewUser.status).to.equal(Status.INACTIVE)
