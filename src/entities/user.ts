@@ -60,6 +60,26 @@ export class User extends BaseEntity {
     @ManyToMany(() => Class, class_ => class_.teachers)
     @JoinTable()
     public classesTeaching?: Promise<Class[]>
+
+    public async classesTeachingInOrganization({organization_id}: any, context: any, info: GraphQLResolveInfo) {
+        try {
+            const classesTeaching = await this.classesTeaching;
+            if (!classesTeaching) {
+                return []
+            }
+
+            const results = [] as Class[];
+            for (const cls of classesTeaching) {
+                if ((await cls.organization)?.organization_id === organization_id) {
+                    results.push(cls)
+                }
+            }
+
+            return results
+        } catch (e) {
+            console.error(e)
+        }
+    }
     
     @ManyToMany(() => Class, class_ => class_.students)
     @JoinTable()

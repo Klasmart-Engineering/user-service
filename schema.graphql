@@ -75,6 +75,7 @@ type User {
     classesStudying: [Class]
 
     #query
+    classesTeachingInOrganization(organization_id: String!): [Class]
     organizationsWithPermission(permission_name: String!): [OrganizationMembership]
     schoolsWithPermission(permission_name: String!): [SchoolMembership]
 
