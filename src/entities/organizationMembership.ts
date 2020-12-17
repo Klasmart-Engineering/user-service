@@ -6,6 +6,7 @@ import { GraphQLResolveInfo } from "graphql";
 import { Context } from "../main";
 import { SchoolMembership } from "./schoolMembership";
 import { Status } from "./status";
+import { Class } from "./class";
 
 @Entity()
 export class OrganizationMembership extends BaseEntity {
@@ -62,6 +63,20 @@ export class OrganizationMembership extends BaseEntity {
                     .getMany()
 
             }
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    public async classesTeaching(context: any, info: GraphQLResolveInfo) {
+        try {
+            return await getRepository(Class)
+                .createQueryBuilder()
+                .innerJoin("Class.teachers", "Teacher")
+                .innerJoin("Class.organization", "Organization")
+                .where("Teacher.user_id = :user_id", { user_id: this.user_id })
+                .andWhere("Organization.organization_id = :organization_id", { organization_id: this.organization_id })
+                .getMany()
         } catch (e) {
             console.error(e)
         }

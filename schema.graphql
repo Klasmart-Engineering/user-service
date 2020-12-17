@@ -75,7 +75,6 @@ type User {
     classesStudying: [Class]
 
     #query
-    classesTeachingInOrganization(organization_id: String!): [Class]
     organizationsWithPermission(permission_name: String!): [OrganizationMembership]
     schoolsWithPermission(permission_name: String!): [SchoolMembership]
 
@@ -170,6 +169,7 @@ type OrganizationMembership {
 
     #query
     checkAllowed(permission_name: ID!): Boolean
+    classesTeaching: [Class]
 
     #mutations
     addRole(role_id: ID!): Role

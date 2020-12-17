@@ -110,16 +110,6 @@ const GET_CLASSES_TEACHING = `
     }
 `;
 
-const GET_CLASSES_TEACHING_IN_ORGANIZATION = `
-    query myQuery($user_id: ID!, $organization_id: String!) {
-        user(user_id: $user_id) {
-            classesTeachingInOrganization(organization_id: $organization_id) {
-                class_id
-            }
-        }
-    }
-`;
-
 const GET_CLASSES_STUDYING = `
     query myQuery($user_id: ID!) {
         user(user_id: $user_id) {
@@ -300,20 +290,6 @@ export async function getClassesTeaching(testClient: ApolloServerTestClient, use
 
     const res = await gqlTry(operation);
     const gqlClasses = res.data?.user.classesTeaching as Class[];
-    return gqlClasses;
-}
-
-export async function getClassesTeachingInOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
-
-    const operation = () => query({
-        query: GET_CLASSES_TEACHING_IN_ORGANIZATION,
-        variables: { user_id: userId, organization_id: organizationId },
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    const gqlClasses = res.data?.user.classesTeachingInOrganization as Class[];
     return gqlClasses;
 }
 

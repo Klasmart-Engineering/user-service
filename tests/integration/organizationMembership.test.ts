@@ -1,26 +1,24 @@
 import { expect } from "chai";
-import { Connection, getRepository } from "typeorm";
-import { Class } from "../../src/entities/class";
+import { Connection } from "typeorm";
 import { Organization } from "../../src/entities/organization";
 import { Status } from "../../src/entities/status";
 import {OrganizationMembership} from "../../src/entities/organizationMembership";
 import { Model } from "../../src/model";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership, addRolesToOrganizationMembership, removeRoleToOrganizationMembership, leaveOrganization } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, addUserToOrganization, createSchool, createRole } from "../utils/operations/organizationOps";
+import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership, addRolesToOrganizationMembership, removeRoleToOrganizationMembership, leaveOrganization, getClassesTeachingViaOrganizationMembership } from "../utils/operations/organizationMembershipOps";
+import { addUserToOrganizationAndValidate, createSchool, createRole, createClass } from "../utils/operations/organizationOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { createOrganizationAndValidate } from "../utils/operations/userOps";
+import { addOrganizationToUser, createOrganizationAndValidate } from "../utils/operations/userOps";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
-import { Context } from '../../src/main';
-import { GraphQLResolveInfo } from 'graphql';
 import { User } from "@sentry/node";
 import { Role } from "../../src/entities/role";
+import { addTeacherToClass } from "../utils/operations/classOps";
 
 describe("organizationMembership", () => {
     let connection: Connection;
@@ -30,7 +28,6 @@ describe("organizationMembership", () => {
     let schoolId: string;
     let organization: Organization;
     let testSchoolRoleId: string;
-    let membership: OrganizationMembership;
 
     let roleInfo = (role : any) => { return role.role_id }
 
@@ -78,9 +75,6 @@ describe("organizationMembership", () => {
     });
 
     describe("schoolMemberships with permissions", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
         context("when user is a member a of school with or without permissions", () => {
 
             beforeEach(async () => {
@@ -283,10 +277,6 @@ describe("organizationMembership", () => {
         });
     });
     describe("Adding role and roles", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
-
         context("fail to add role for one organization to a different organizations", () => {
             let userId: string;
             let organization1Id: string;
@@ -332,5 +322,39 @@ describe("organizationMembership", () => {
         });
     })
 
+    describe("classesTeaching", () => {
+        let idOfUserToBeQueried: string;
+        let organization1Id: string;
+        let organization2Id: string;
+        let org2ClassId: string;
 
+        beforeEach(async () => {
+            const user = await createUserJoe(testClient);
+            const idOfOrg1Owner = user.user_id;
+            idOfUserToBeQueried = idOfOrg1Owner;
+            const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
+            organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner, "Org 1", JoeAuthToken)).organization_id;
+            organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, "Org 2", BillyAuthToken)).organization_id;
+            await addOrganizationToUser(testClient, idOfUserToBeQueried, organization2Id, BillyAuthToken);
+            org2ClassId = (await createClass(testClient, organization2Id, "Class 2", { authorization: BillyAuthToken })).class_id;
+        });
+
+        context("when user is a teacher in organization 2", () => {
+            beforeEach(async () =>{
+                await addTeacherToClass(testClient, org2ClassId, idOfUserToBeQueried, { authorization: BillyAuthToken });
+            });
+
+            it("should return an empty array when querying organization 1", async () => {
+                const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, { authorization: JoeAuthToken });
+                expect(gqlClasses).to.exist;
+                expect(gqlClasses).to.be.empty;
+            });
+
+            it("should return an array containing one class when querying organization 2", async () => {
+                const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization2Id, { authorization: JoeAuthToken });
+                expect(gqlClasses).to.exist;
+                expect(gqlClasses).to.have.lengthOf(1);
+            });
+        });
+    });
 });

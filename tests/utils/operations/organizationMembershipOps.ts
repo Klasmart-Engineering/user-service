@@ -5,6 +5,7 @@ import { JoeAuthToken } from "../testConfig";
 import { Role } from "../../../src/entities/role";
 import { OrganizationMembership } from "../../../src/entities/organizationMembership";
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
+import { Class } from "../../../src/entities/class";
 
 const ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP = `
     mutation myMutation(
@@ -78,6 +79,18 @@ const LEAVE_ORGANIZATION = `
         user(user_id: $user_id) {
             membership(organization_id: $organization_id) {
                 leave
+            }
+        }
+    }
+`;
+
+const GET_CLASSES_TEACHING = `
+    query myQuery($user_id: ID!, $organization_id: ID!) {
+        user(user_id: $user_id) {
+            membership(organization_id: $organization_id) {
+                classesTeaching {
+                    class_id
+                }
             }
         }
     }
@@ -165,5 +178,16 @@ export async function leaveOrganization(testClient: ApolloServerTestClient, user
     return res.data?.user.membership.leave as boolean;
 }
 
+export async function getClassesTeachingViaOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
 
+    const operation = () => query({
+        query: GET_CLASSES_TEACHING,
+        variables: { user_id: userId, organization_id: organizationId },
+        headers: headers,
+    });
 
+    const res = await gqlTry(operation);
+    const gqlClasses = res.data?.user.membership.classesTeaching as Class[];
+    return gqlClasses;
+}
