@@ -147,6 +147,12 @@ mutation myMutation($user_id: ID!, $other_id: String) {
                 user_id
                 school_id
             }
+            classesStudying{
+                class_id
+            }
+            classesTeaching{
+                class_id
+            }
         }
     }
 }

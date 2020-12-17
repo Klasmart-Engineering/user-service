@@ -449,6 +449,105 @@ describe("user", () => {
             }
 
         });
+        it("should merge one user into another including classes marking the source user inactive", async () => {
+
+            let anne = {
+                given_name: "Anne",
+                family_name: "Bob",
+                email: "anne@gmail.com",
+                avatar: "anne_avatar"
+            } as User
+
+            // oldUser is a bare user with no memberships
+            let oldUser = await createUserAndValidate(testClient, anne)
+            let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
+
+            let newUser = object.user
+            let membership = object.membership
+            let schoolmemberships = object.schoolMemberships
+            // newUser has memberships
+            expect(newUser).to.exist
+            expect(newUser.email).to.equal("bob@nowhere.com")
+
+            expect(schoolmemberships).to.exist
+            expect(schoolmemberships.length).to.equal(1)
+            expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
+            expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+            expect(membership).to.exist
+            expect(membership.organization_id).to.equal(organizationId)
+            expect(membership.user_id).to.equal(newUser.user_id)
+
+            const cls = await createClass(testClient, organization.organization_id);
+            await addStudentToClass(testClient, cls.class_id, newUser.user_id, { authorization: JoeAuthToken });
+
+            // Merging newUser into oldUser
+            let gqlUser = await mergeUser(testClient, oldUser.user_id, newUser.user_id, { authorization: JoeAuthToken })
+            // OldUser should have taken on newUser's memberships
+            expect(gqlUser).to.exist
+            expect(gqlUser.user_id).to.equal(oldUser.user_id)
+            let newMemberships = await gqlUser.memberships
+            expect(newMemberships).to.exist
+            if (newMemberships !== undefined) {
+                expect(newMemberships.length).to.equal(1)
+                expect(newMemberships[0].organization_id).to.equal(organizationId)
+                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+            let newSchoolMemberships = await gqlUser.school_memberships
+            expect(newSchoolMemberships).to.exist
+            if (newSchoolMemberships !== undefined) {
+                expect(newSchoolMemberships.length).to.equal(1)
+                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+            let classesStudying = await gqlUser.classesStudying
+            expect(classesStudying).to.exist
+            if(classesStudying !== undefined){
+                expect(classesStudying.length).to.equal(1)
+                expect(classesStudying[0].class_id==cls.class_id)
+            }
+            // The same for the db object
+            let dbOldUser = await User.findOneOrFail({where:{ user_id: oldUser.user_id} })
+            expect(dbOldUser).to.exist
+            newMemberships = await dbOldUser.memberships
+            expect(newMemberships).to.exist
+            if (newMemberships !== undefined) {
+                expect(newMemberships.length).to.equal(1)
+                expect(newMemberships[0].organization_id).to.equal(organizationId)
+                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+            newSchoolMemberships = await dbOldUser.school_memberships
+            expect(newSchoolMemberships).to.exist
+            if (newSchoolMemberships !== undefined) {
+                expect(newSchoolMemberships.length).to.equal(1)
+                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
+            }
+
+            classesStudying = await dbOldUser.classesStudying
+            expect(classesStudying).to.exist
+            if(classesStudying !== undefined){
+                expect(classesStudying.length).to.equal(1)
+                expect(classesStudying[0].class_id==cls.class_id)
+            }
+            // newUser has been marked inactive
+            let dbNewUser = await User.findOneOrFail({where: { user_id: newUser.user_id }})
+            expect(dbNewUser).to.exist
+            expect(dbNewUser.status).to.equal(Status.INACTIVE)
+            newMemberships = await dbNewUser.memberships
+            expect(newMemberships).to.exist
+            if (newMemberships !== undefined) {
+                expect(newMemberships.length).to.equal(1)
+                expect(newMemberships[0].status).to.equal(Status.INACTIVE)
+            }
+            newSchoolMemberships = await dbNewUser.school_memberships
+            expect(newSchoolMemberships).to.exist
+            if (newSchoolMemberships !== undefined) {
+                expect(newSchoolMemberships.length).to.equal(1)
+                expect(newSchoolMemberships[0].status).to.equal(Status.INACTIVE)
+            }
+
+        });
     });
 });
 
