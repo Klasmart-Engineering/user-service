@@ -407,24 +407,21 @@ export class User extends BaseEntity {
 
     private async mergeClasses(toClasses: Class[], fromClasses?: Class[]): Promise<Class[]> {
         if (fromClasses !== undefined) {
-            let changed = false
             fromClasses.forEach(async function (fromClass) {
                 let found = false
-                toClasses.some(async function (classStudying) {
-                    if (classStudying.class_id === fromClass.class_id) {
+                toClasses.some(async function (toClass) {
+                    if (toClass.class_id === fromClass.class_id) {
                         found = true
                     }
                     return found
                 })
                 if (!found) {
-                    changed = true
                     toClasses.push(fromClass)
                 }
             })
         }
         return toClasses
     }
-
 }
 
 
