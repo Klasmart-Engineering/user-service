@@ -87,7 +87,7 @@ export class User extends BaseEntity {
 
     public async schoolsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
         try {
-            return await getRepository(SchoolMembership)
+            const schoolPermissionPromise = await getRepository(SchoolMembership)
                 .createQueryBuilder()
                 .innerJoin("SchoolMembership.roles","Role")
                 .innerJoin("Role.permissions","Permission")
@@ -96,6 +96,29 @@ export class User extends BaseEntity {
                 .andWhere("Permission.permission_name = :permission_name", {permission_name})
                 .having("bool_and(Permission.allow) = :allowed", {allowed: true})
                 .getMany()
+
+            const organizationPermissionPromise = await getRepository(SchoolMembership)
+                .createQueryBuilder()
+                .innerJoin("SchoolMembership.school", "School")
+                .innerJoin("School.organization", "SchoolOrganization")
+                .innerJoin("SchoolOrganization.memberships", "OrgMembership")
+                .innerJoin("OrgMembership.roles","OrgRole")
+                .innerJoin("OrgRole.permissions", "OrgPermission")
+                .groupBy("OrgMembership.user_id, SchoolMembership.school_id, OrgPermission.permission_name, SchoolMembership.user_id")
+                .where("OrgMembership.user_id = :user_id", {user_id: this.user_id})
+                .andWhere("OrgPermission.permission_name = :permission_name", {permission_name})
+                .having("bool_and(OrgPermission.allow) = :allowed", {allowed: true})
+                .getMany()
+
+            const [schoolPermissionResults, organizationPermissionResults] = await Promise.all([schoolPermissionPromise, organizationPermissionPromise]);
+
+            return schoolPermissionResults.concat(
+                organizationPermissionResults.filter(
+                    a => {
+                        return !schoolPermissionResults.find(b => b.school_id === a.school_id);
+                    }
+                )
+            );
         } catch(e) {
             console.error(e)
         }
