@@ -360,6 +360,6 @@ export async function mergeUser(testClient: ApolloServerTestClient, userId: stri
     });
 
     const res = await gqlTry(operation);
-    const gqlMembership = res.data?.user.merge as User;
-    return gqlMembership;
+    const gqlUser = res.data?.user.merge as User;
+    return gqlUser;
 }
