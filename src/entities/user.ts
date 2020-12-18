@@ -99,7 +99,7 @@ export class User extends BaseEntity {
 
     public async schoolsWithPermission({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
         try {
-            const schoolPermissionPromise = await getRepository(SchoolMembership)
+            const schoolPermissionPromise = getRepository(SchoolMembership)
                 .createQueryBuilder()
                 .innerJoin("SchoolMembership.roles", "Role")
                 .innerJoin("Role.permissions", "Permission")
@@ -109,7 +109,7 @@ export class User extends BaseEntity {
                 .having("bool_and(Permission.allow) = :allowed", { allowed: true })
                 .getMany()
 
-            const organizationPermissionPromise = await getRepository(SchoolMembership)
+            const organizationPermissionPromise = getRepository(SchoolMembership)
                 .createQueryBuilder()
                 .innerJoin("SchoolMembership.school", "School")
                 .innerJoin("School.organization", "SchoolOrganization")

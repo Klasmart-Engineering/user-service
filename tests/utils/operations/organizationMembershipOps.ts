@@ -64,6 +64,7 @@ const GET_SCHOOL_MEMBERSHIPS = `
         user(user_id: $user_id) {
             membership(organization_id: $organization_id) {
                 schoolMemberships(permission_name: $permission_name) {
+                    user_id
                     school_id
                     school {
                         school_name
@@ -137,8 +138,6 @@ export async function removeRoleToOrganizationMembership(testClient: ApolloServe
     const res = await gqlTry(operation);
     return res.data?.user.membership.removeRole as OrganizationMembership;
 }
-
-
 
 export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string, headers?: Headers) {
         const { mutate } = testClient;
