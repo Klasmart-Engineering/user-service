@@ -18,7 +18,7 @@ import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
+import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../utils/operations/schoolMembershipOps";
 import { createUserAndValidate } from "../utils/operations/modelOps";
 
 describe("user", () => {
@@ -301,6 +301,8 @@ describe("user", () => {
 
             it("should return an array containing one school membership", async () => {
                 const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.true;
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(1);
             });
@@ -309,6 +311,8 @@ describe("user", () => {
         context("when user being queried does not have the specified permission in a school's organization", () => {
             it("should return an empty array", async () => {
                 const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.false;
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(0);
             });
@@ -321,6 +325,8 @@ describe("user", () => {
 
             it("should return an array containing one school membership", async () => {
                 const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.true;
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(1);
             });
@@ -329,6 +335,8 @@ describe("user", () => {
         context("when user being queried does not have the specified permission in a school", () => {
             it("should return an empty array", async () => {
                 const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.false;
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(0);
             });
@@ -342,6 +350,10 @@ describe("user", () => {
 
             it("should return an array containing two school memberships", async () => {
                 const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed1 = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                const isAllowed2 = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school2Id, permissionName);
+                expect(isAllowed1).to.be.true;
+                expect(isAllowed2).to.be.true;
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(2);
             });
