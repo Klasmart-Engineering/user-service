@@ -4,6 +4,7 @@ import { Role } from "./role";
 import { GraphQLResolveInfo } from "graphql";
 import { School } from "./school";
 import { Status } from "./status";
+import { Permission } from "./permission";
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
@@ -32,14 +33,29 @@ export class SchoolMembership extends BaseEntity {
     public deleted_at?: Date
 
     public async checkAllowed({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
-        const results = await createQueryBuilder("SchoolMembership")
-        .innerJoinAndSelect("SchoolMembership.roles", "Role")
-        .innerJoinAndSelect("Role.permissions", "Permission")
-        .where("SchoolMembership.user_id = :user_id", {user_id: this.user_id})
-        .andWhere("SchoolMembership.school_id = :school_id", {school_id: this.school_id})
-        .andWhere("Permission.permission_name = :permission_name", { permission_name })
-        .getRawMany()
-        if(results.length === 0) { return false }
+        let results = await createQueryBuilder("SchoolMembership")
+            .innerJoinAndSelect("SchoolMembership.school", "School")
+            .innerJoinAndSelect("School.organization", "SchoolOrganization")
+            .innerJoinAndSelect("SchoolOrganization.memberships", "OrgMembership")
+            .innerJoinAndSelect("OrgMembership.roles", "Role")
+            .innerJoinAndSelect("Role.permissions", "Permission")
+            .where("OrgMembership.user_id = :user_id AND SchoolMembership.user_id = :user_id", { user_id: this.user_id })
+            .andWhere("SchoolMembership.school_id = :school_id", {school_id: this.school_id})
+            .andWhere("Permission.permission_name = :permission_name", { permission_name })
+            .getRawMany()
+
+        if (results.length === 0) {
+            results = await createQueryBuilder("SchoolMembership")
+                .innerJoinAndSelect("SchoolMembership.roles", "Role")
+                .innerJoinAndSelect("Role.permissions", "Permission")
+                .where("SchoolMembership.user_id = :user_id", {user_id: this.user_id})
+                .andWhere("SchoolMembership.school_id = :school_id", {school_id: this.school_id})
+                .andWhere("Permission.permission_name = :permission_name", { permission_name })
+                .getRawMany()
+        }
+
+        if (results.length === 0) { return false }
+
         return results.every((v) => v.Permission_allow)
     }
 

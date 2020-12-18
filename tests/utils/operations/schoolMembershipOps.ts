@@ -63,6 +63,16 @@ mutation myMutation($user_id: ID!  $school_id: ID!){
 }
 `;
 
+const CHECK_ALLOWED = `
+query myQuery($user_id: ID!  $school_id: ID!, $permission_name: ID!){
+    user(user_id: $user_id) {
+        school_membership(school_id: $school_id) {
+            checkAllowed(permission_name: $permission_name)
+        }
+    }
+}
+`;
+
 export async function addRoleToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleId: string, headers?: Headers) {
     const { mutate } = testClient;
     headers = headers ?? { authorization: JoeAuthToken };
@@ -121,4 +131,18 @@ export async function leaveSchool(testClient: ApolloServerTestClient, userId: st
     const res = await gqlTry(operation);
     const leaveResult = res.data?.user.school_membership.leave as boolean;
     return leaveResult;
+}
+
+export async function schoolMembershipCheckAllowed(testClient: ApolloServerTestClient, userId: string, schoolId: string, permissionName: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: CHECK_ALLOWED,
+        variables: { user_id: userId, school_id: schoolId, permission_name: permissionName },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const isAllowed = res.data?.user.school_membership.checkAllowed as boolean;
+    return isAllowed;
 }
