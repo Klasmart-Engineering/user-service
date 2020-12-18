@@ -9,16 +9,17 @@ import { ApolloServerTestClient, createTestClient } from "../utils/createTestCli
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership, addRolesToOrganizationMembership, removeRoleToOrganizationMembership, leaveOrganization, getClassesTeachingViaOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addUserToOrganizationAndValidate, createSchool, createRole, createClass } from "../utils/operations/organizationOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { addOrganizationToUser, createOrganizationAndValidate } from "../utils/operations/userOps";
+import { addOrganizationToUser, addOrganizationToUserAndValidate, createOrganizationAndValidate } from "../utils/operations/userOps";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
-import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
+import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../utils/operations/schoolMembershipOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
-import { User } from "@sentry/node";
 import { Role } from "../../src/entities/role";
 import { addTeacherToClass } from "../utils/operations/classOps";
+import { createUserAndValidate } from "../utils/operations/modelOps";
+import { accountUUID, User } from "../../src/entities/user";
 
 describe("organizationMembership", () => {
     let connection: Connection;
@@ -75,30 +76,101 @@ describe("organizationMembership", () => {
     });
 
     describe("schoolMemberships with permissions", () => {
-        context("when user is a member a of school with or without permissions", () => {
+        let organization1Id: string;
+        let school1Id: string;
+        let school2Id: string;
+        let org1RoleId: string;
+        let org2RoleId: string;
+        let idOfUserToBeQueried: string;
+        const tokenOfOrg1Owner = JoeAuthToken;
+        const tokenOfOrg2Owner = BillyAuthToken;
+        const permissionName = PermissionName.edit_groups_30330;
+        const userToBeQueried = {
+            user_id: accountUUID("testuser@gmail.com"),
+            email: "testuser@gmail.com",
+        } as User;
 
-            beforeEach(async () => {
-                const orgOwner = await createUserJoe(testClient);
-                userId = orgOwner.user_id;
-                organization = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org"))
-                organizationId = organization.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
-                const testSchoolRole = await createRole(testClient, organizationId, "test_role");
-                testSchoolRoleId = testSchoolRole.role_id;
-                await addRoleToSchoolMembership(testClient, userId, schoolId, testSchoolRoleId);
+        beforeEach(async () => {
+            const user = await createUserJoe(testClient);
+            const idOfOrg1Owner = user.user_id;
+            const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
+            idOfUserToBeQueried = (await createUserAndValidate(testClient, userToBeQueried)).user_id;
+            organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner)).organization_id;
+            const organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, tokenOfOrg2Owner)).organization_id;
+            await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization1Id, tokenOfOrg1Owner);
+            await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization2Id, tokenOfOrg2Owner);
+            school1Id = (await createSchool(testClient, organization1Id, "School 1", { authorization: tokenOfOrg1Owner })).school_id;
+            school2Id = (await createSchool(testClient, organization2Id, "School 2", { authorization: tokenOfOrg2Owner })).school_id;
+            await addUserToSchool(testClient, idOfUserToBeQueried, school1Id, { authorization: tokenOfOrg1Owner });
+            await addUserToSchool(testClient, idOfUserToBeQueried, school2Id, { authorization: tokenOfOrg2Owner });
+            await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
+            await addUserToSchool(testClient, idOfOrg1Owner, school2Id, { authorization: tokenOfOrg2Owner });
+            org1RoleId = (await createRole(testClient, organization1Id, "Org 1 Role")).role_id;
+            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", tokenOfOrg2Owner)).role_id;
+            await grantPermission(testClient, org1RoleId, permissionName, { authorization: tokenOfOrg1Owner });
+            await grantPermission(testClient, org2RoleId, permissionName, { authorization: tokenOfOrg2Owner });
+        });
+
+        context("when user being queried has the specified permission in a school's organization", () => {
+            beforeEach(async () =>{
+                await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
             });
 
-            it("should return membership if has permission", async () => {
-                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
-                let gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, userId, organizationId, PermissionName.edit_class_20334);
-                expect(gqlSchoolMemberships).to.have.lengthOf(1);
-                expect(gqlSchoolMemberships[0].school_id).to.equal(schoolId);
+            it("should return an array containing one school membership", async () => {
+                const gqlMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.true;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(1);
             });
-            it("should not return membership if has no permission", async () => {
-                let gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, userId, organizationId, PermissionName.edit_class_20334);
-                expect(gqlSchoolMemberships).to.have.lengthOf(0);
+        });
+
+        context("when user being queried does not have the specified permission in a school's organization", () => {
+            it("should return an empty array", async () => {
+                const gqlMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.false;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(0);
+            });
+        });
+
+        context("when user being queried has the specified permission in a school", () => {
+            beforeEach(async () =>{
+                await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+            });
+
+            it("should return an array containing one school membership", async () => {
+                const gqlMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.true;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(1);
+            });
+        });
+
+        context("when user being queried does not have the specified permission in a school", () => {
+            it("should return an empty array", async () => {
+                const gqlMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.false;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(0);
+            });
+        });
+
+        context("when user being queried has the specified permission in organization 1 and in school 2 of organization 2", () => {
+            beforeEach(async () =>{
+                await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+                await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school2Id, org2RoleId, { authorization: tokenOfOrg2Owner });
+            });
+
+            it("should return an array containing one school membership", async () => {
+                const gqlMemberships = await getSchoolMembershipsForOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, permissionName, { authorization: tokenOfOrg1Owner });
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(1);
+                expect(gqlMemberships[0].school_id).to.equal(school1Id);
+                expect(gqlMemberships[0].user_id).to.equal(idOfUserToBeQueried);
             });
         });
     });
