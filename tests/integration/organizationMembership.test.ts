@@ -324,36 +324,48 @@ describe("organizationMembership", () => {
 
     describe("classesTeaching", () => {
         let idOfUserToBeQueried: string;
+        let idOfAnotherTeacher: string;
         let organization1Id: string;
         let organization2Id: string;
-        let org2ClassId: string;
+        let org1Class1Id: string;
+        let org2Class1Id: string;
+        let org2Class2Id: string;
 
         beforeEach(async () => {
             const user = await createUserJoe(testClient);
             const idOfOrg1Owner = user.user_id;
-            idOfUserToBeQueried = idOfOrg1Owner;
             const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
+            idOfUserToBeQueried = idOfOrg1Owner;
+            idOfAnotherTeacher = idOfOrg2Owner;
             organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner, "Org 1", JoeAuthToken)).organization_id;
             organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, "Org 2", BillyAuthToken)).organization_id;
             await addOrganizationToUser(testClient, idOfUserToBeQueried, organization2Id, BillyAuthToken);
-            org2ClassId = (await createClass(testClient, organization2Id, "Class 2", { authorization: BillyAuthToken })).class_id;
+            org1Class1Id = (await createClass(testClient, organization1Id, "Class 1", { authorization: JoeAuthToken })).class_id;
+            org2Class1Id = (await createClass(testClient, organization2Id, "Class 1", { authorization: BillyAuthToken })).class_id;
+            org2Class2Id = (await createClass(testClient, organization2Id, "Class 2", { authorization: BillyAuthToken })).class_id;
         });
 
-        context("when user is a teacher in organization 2", () => {
+        context("when user being queried is a teacher for class 1 in organization 2", () => {
             beforeEach(async () =>{
-                await addTeacherToClass(testClient, org2ClassId, idOfUserToBeQueried, { authorization: BillyAuthToken });
+                await addTeacherToClass(testClient, org2Class1Id, idOfUserToBeQueried, { authorization: BillyAuthToken });
             });
 
-            it("should return an empty array when querying organization 1", async () => {
-                const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, { authorization: JoeAuthToken });
-                expect(gqlClasses).to.exist;
-                expect(gqlClasses).to.be.empty;
-            });
+            context("and another user is a teacher for class 2 in organization 2", () => {
+                beforeEach(async () =>{
+                    await addTeacherToClass(testClient, org2Class2Id, idOfAnotherTeacher, { authorization: BillyAuthToken });
+                });
 
-            it("should return an array containing one class when querying organization 2", async () => {
-                const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization2Id, { authorization: JoeAuthToken });
-                expect(gqlClasses).to.exist;
-                expect(gqlClasses).to.have.lengthOf(1);
+                it("should return an empty array when querying organization 1", async () => {
+                    const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, { authorization: JoeAuthToken });
+                    expect(gqlClasses).to.exist;
+                    expect(gqlClasses).to.be.empty;
+                });
+    
+                it("should return class 1 of organization 2 when querying organization 2", async () => {
+                    const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization2Id, { authorization: JoeAuthToken });
+                    expect(gqlClasses).to.exist.and.have.lengthOf(1);
+                    expect(gqlClasses[0].class_id).to.equal(org2Class1Id);
+                });
             });
         });
     });
