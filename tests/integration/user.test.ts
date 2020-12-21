@@ -24,6 +24,7 @@ import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
 import { gql } from "apollo-server-express";
+import { Class } from "../../src/entities/class";
 
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
@@ -395,7 +396,7 @@ describe("user", () => {
             roleId = role.role_id
             schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
         });
-        it("should merge one user into another marking the source user inactive", async () => {
+        it("should merge one user into another deleting the source user", async () => {
 
             let anne = {
                 given_name: "Anne",
@@ -459,25 +460,12 @@ describe("user", () => {
                 expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
                 expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
             }
-            // newUser has been marked inactive
-            let dbNewUser = await User.findOneOrFail({where: { user_id: newUser.user_id }})
-            expect(dbNewUser).to.exist
-            expect(dbNewUser.status).to.equal(Status.INACTIVE)
-            newMemberships = await dbNewUser.memberships
-            expect(newMemberships).to.exist
-            if (newMemberships !== undefined) {
-                expect(newMemberships.length).to.equal(1)
-                expect(newMemberships[0].status).to.equal(Status.INACTIVE)
-            }
-            newSchoolMemberships = await dbNewUser.school_memberships
-            expect(newSchoolMemberships).to.exist
-            if (newSchoolMemberships !== undefined) {
-                expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].status).to.equal(Status.INACTIVE)
-            }
+            // newUser has been deleted
+            let dbNewUser = await User.findOne({where: { user_id: newUser.user_id }})
+            expect(dbNewUser).to.not.exist
 
         });
-        it("should merge one user into another including classes marking the source user inactive", async () => {
+        it("should merge one user into another including classes deleting the source user", async () => {
 
             let anne = {
                 given_name: "Anne",
@@ -553,30 +541,43 @@ describe("user", () => {
                 expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
             }
 
+            
             classesStudying = await dbOldUser.classesStudying
             expect(classesStudying).to.exist
             if(classesStudying !== undefined){
                 expect(classesStudying.length).to.equal(1)
                 expect(classesStudying[0].class_id==cls.class_id)
+                
+                let studying = classesStudying[0]
+                let students = await studying.students
+                expect (students).to.exist
+                if(students != undefined){
+                    students.forEach(function(student){
+                        expect (student.user_id).to.not.equal(newUser.user_id)
+                    })
+                }
             }
-            // newUser has been marked inactive
-            let dbNewUser = await User.findOneOrFail({where: { user_id: newUser.user_id }})
-            expect(dbNewUser).to.exist
-            expect(dbNewUser.status).to.equal(Status.INACTIVE)
-            newMemberships = await dbNewUser.memberships
-            expect(newMemberships).to.exist
-            if (newMemberships !== undefined) {
-                expect(newMemberships.length).to.equal(1)
-                expect(newMemberships[0].status).to.equal(Status.INACTIVE)
+            // newUser has been deleted
+            let dbNewUser = await User.findOne({where: { user_id: newUser.user_id }})
+            expect(dbNewUser).to.not.exist
+            // deleted newUser is not a student of the class but oldUser is
+            let dbClass = await Class.findOne({where:{class_id: cls.class_id}})
+            expect(dbClass).to.exist
+            if(dbClass !== undefined){
+                let students = await dbClass.students
+                expect(students).to.exist
+                if(students !== undefined){
+                    let found = false
+                    for (const student of students){
+                        expect (student.user_id).to.not.equal(newUser.user_id)
+                        if(student.user_id === oldUser.user_id){
+                            found = true
+                        }
+                    }
+                    expect (found)
+                }
             }
-            newSchoolMemberships = await dbNewUser.school_memberships
-            expect(newSchoolMemberships).to.exist
-            if (newSchoolMemberships !== undefined) {
-                expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].status).to.equal(Status.INACTIVE)
-            }
-
-        });
+        }); 
     });
     describe("restrict return With Permission", () => {
         let organization1Id: string;

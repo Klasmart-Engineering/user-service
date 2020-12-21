@@ -451,7 +451,7 @@ export class User extends BaseEntity {
                 await queryRunner.manager.save([this, ...classesTeaching])
             }
 
-            await otherUser.inactivate(queryRunner.manager)
+            await otherUser.removeUser(queryRunner.manager)
 
             queryRunner.commitTransaction()
         } catch (err) {
@@ -487,6 +487,27 @@ export class User extends BaseEntity {
             return this.retryMerge(otherUser)
         }
         return null
+    }
+
+    private async removeOrganizationMemberships(manager: any) {
+        const organizationMemberships = (await this.memberships) || []
+        for (const organizationMembership of organizationMemberships) {
+            await organizationMembership.remove(manager)
+        }
+    }
+
+    private async removeSchoolMemberships(manager: any) {
+        const schoolMemberships = (await this.school_memberships) || []
+        for (const schoolMembership of schoolMemberships) {
+            await schoolMembership.remove(manager)
+        }
+    }
+
+    // Hard deletes a user
+    private async removeUser(manager: any) {
+        await this.removeOrganizationMemberships(manager)
+        await this.removeSchoolMemberships(manager)
+        await manager.remove(this)
     }
 
     private async inactivateOrganizationMemberships(manager: any) {
