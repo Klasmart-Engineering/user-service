@@ -243,6 +243,15 @@ export class Organization extends BaseEntity {
             phone = normalizedLowercaseTrimmed(phone)
 
             const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            if (process.env.REGION === "CN") {
+                let resp = await Axios({
+                    url: process.env.INVITE_URL || 'http://localhost:8080/invite_notify',
+                    method: 'post',
+                    data: {
+                        mobile: phone
+                    }
+                }).catch(console.error)
+            }
             return result
         } catch(e) {
             console.error(e)
