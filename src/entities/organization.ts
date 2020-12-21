@@ -29,6 +29,7 @@ import { PermissionName } from '../permissions/permissionNames';
 import { SchoolMembership } from './schoolMembership';
 import { Model } from '../model';
 import { Status } from "./status";
+import Axios  from 'axios';
 
 export function validateEmail(email?: string):boolean{
     const email_re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -242,6 +243,15 @@ export class Organization extends BaseEntity {
             phone = normalizedLowercaseTrimmed(phone)
 
             const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
+            if (process.env.REGION === "CN") {
+                let resp = await Axios({
+                    url: process.env.INVITE_URL || 'http://localhost:8080/invite_notify',
+                    method: 'post',
+                    data: {
+                        mobile: phone
+                    }
+                }).catch(console.error)
+            }
             return result
         } catch(e) {
             console.error(e)
