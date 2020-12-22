@@ -345,9 +345,20 @@ export class Organization extends BaseEntity {
         school_ids: string[] = [],
         school_role_ids: string[] = []
         ) {
-            if(!(validateEmail(email) || validatePhone(phone))){
-                throw("No valid email or international all digit with leading + sign E.164 phone number provided")
-            }
+
+        if( !validateEmail(email) && validatePhone(email)) {
+            phone = email
+            email = undefined
+
+        } else if( !validatePhone(phone) && validateEmail(phone)) {
+            email = phone
+            phone = undefined
+        }
+
+
+        if(!(validateEmail(email) || validatePhone(phone))){
+            throw("No valid email or international all digit with leading + sign E.164 phone number provided")
+        }
         return getManager().transaction(async (manager) => {
             console.log("_setMembership", email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             const roleLookup = await this.getRoleLookup()
