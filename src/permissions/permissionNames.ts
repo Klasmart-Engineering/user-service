@@ -13,7 +13,7 @@ export enum PermissionName {
         block_org_users_access_12 = "block_org_users_access_12",
         create_pricing_plan_13 = "create_pricing_plan_13",
         create_folder_289 = "create_folder_289",
-        view_folder__290 = "view_folder__290",
+        view_folder_290 = "view_folder_290",
         edit_folder_291 = "edit_folder_291",
         delete_folder_292 = "delete_folder_292",
         logos_1000 = "logos_1000",

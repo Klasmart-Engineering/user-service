@@ -121,7 +121,6 @@ export const schoolAdminRole = {
         PermissionName.schedule_500,
         PermissionName.create_schedule_page_501,
         PermissionName.view_my_calendar_510,
-        PermissionName.view_org_calendar_511,
         PermissionName.view_school_calendar_512,
         PermissionName.create_event_520,
         PermissionName.create_my_schools_schedule_events_522,
