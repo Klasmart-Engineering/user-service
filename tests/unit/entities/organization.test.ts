@@ -56,10 +56,17 @@ describe("validateEmail", () => {
 
   describe("validatePhone", () => {
     it("is a valid phone", async () => {
-        [           
+        [    
+            "+61291920995",   //Australia Test line
+            "+6498876986",    //NZ Test line
             "+442071838750",
             "+14155552671",
             "+442077325637",
+            "+442087599036",  //BT line test
+            "+18004444444",   //MCI. Caller ID readback
+            "+12027621401",   //Speaking Clock
+            "+12136210002",   //Milliwatt test tone
+            "+19142329901"    //Pleasantville DMS 100
         ].forEach(function(phone){
             expect(validatePhone(phone))
         })
