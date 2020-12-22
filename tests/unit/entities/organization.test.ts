@@ -56,7 +56,9 @@ describe("validateEmail", () => {
 
   describe("validatePhone", () => {
     it("is a valid phone", async () => {
-        [
+        [           
+            "+442071838750",
+            "+14155552671",
             "+442077325637",
         ].forEach(function(phone){
             expect(validatePhone(phone))
@@ -69,7 +71,7 @@ describe("validateEmail", () => {
             "02077325632",
             "+44(0)20-7732 5637" 
         ].forEach(function(phone){
-            expect(!validateEmail(phone))
+            expect(!validatePhone(phone))
         })
     });
   });
