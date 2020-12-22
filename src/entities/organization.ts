@@ -46,6 +46,8 @@ export function validatePhone(phone?: string):boolean{
     return false
 }
 
+const normalizedLowercaseTrimmed = (x: string) => x?.normalize("NFKC").toLowerCase().trim()
+
 @Entity()
 export class Organization extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
@@ -236,6 +238,9 @@ export class Organization extends BaseEntity {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.send_invitation_40882)
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+            email = normalizedLowercaseTrimmed(email)
+            phone = normalizedLowercaseTrimmed(phone)
+
             const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             return result
         } catch(e) {
@@ -247,6 +252,9 @@ export class Organization extends BaseEntity {
         await context.permissions.rejectIfNotAllowed(this, PermissionName.edit_users_40330)
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+            email = normalizedLowercaseTrimmed(email)
+            phone = normalizedLowercaseTrimmed(phone)
+
             const result = await this._setMembership(email, phone, given_name, family_name, organization_role_ids, school_ids, school_role_ids)
             return result
         } catch(e) {
