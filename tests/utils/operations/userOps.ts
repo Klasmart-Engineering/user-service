@@ -352,7 +352,7 @@ export async function mergeUser(testClient: ApolloServerTestClient, userId: stri
     const { mutate } = testClient;
 
     headers = headers ?? { authorization: JoeAuthToken };
-
+    console.log("userId:",userId,"otherId:",otherId)
     const operation = () => mutate({
         mutation: MERGE_USER,
         variables: { user_id: userId, other_id: otherId },

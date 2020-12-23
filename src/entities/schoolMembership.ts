@@ -215,7 +215,8 @@ export class SchoolMembership extends BaseEntity {
     public async inactivate(manager: any) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
-
+        console.log("#5.2.3.2")
         await manager.save(this)
+        console.log("#5.2.3.3")
     }
 }

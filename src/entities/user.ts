@@ -13,6 +13,7 @@ import {
     OneToOne,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
+import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
 import { OrganizationMembership } from './organizationMembership'
 import { Organization } from './organization'
 import { Class } from './class'
@@ -374,103 +375,108 @@ export class User extends BaseEntity {
         }
     }
 
+    @Retryable({
+        maxAttempts: 3,
+        backOffPolicy: BackOffPolicy.ExponentialBackOffPolicy,
+        backOff: 50,
+        exponentialOption: { maxInterval: 2000, multiplier: 2 },
+    })
+    private async retryMerge(otherUser: User): Promise<any> {
+        let dberr: any
+        const connection = getConnection()
+        const queryRunner = connection.createQueryRunner()
+        await queryRunner.connect()
+        let success = true
+        const otherMemberships = await otherUser.memberships
+        const ourMemberships = await this.memberships
+        const otherSchoolMemberships = await otherUser.school_memberships
+        const ourSchoolMemberships = await this.school_memberships
+        const otherClassesStudying = await otherUser.classesStudying
+        const otherClassesTeaching = await otherUser.classesTeaching
+        const ourClassesStudying = await this.classesStudying
+        const ourClassesTeaching = await this.classesTeaching
+
+        await queryRunner.startTransaction()
+        try {
+            let classesStudying = ourClassesStudying || []
+            let classesTeaching = ourClassesTeaching || []
+            let memberships = ourMemberships || []
+            let schoolmemberships = ourSchoolMemberships || []
+            console.log('#1')
+            memberships = this.mergeOrganizationMemberships(
+                memberships,
+                otherMemberships
+            )
+            if (memberships.length > 0) {
+                this.memberships = Promise.resolve(memberships)
+                await queryRunner.manager.save([this, ...memberships])
+            } else {
+                this.memberships = undefined
+            }
+            console.log('#2')
+            schoolmemberships = this.mergeSchoolMemberships(
+                schoolmemberships,
+                otherSchoolMemberships
+            )
+            if (schoolmemberships.length > 0) {
+                this.school_memberships = Promise.resolve(schoolmemberships)
+                await queryRunner.manager.save([this, ...schoolmemberships])
+            } else {
+                this.school_memberships = undefined
+            }
+            console.log('#3')
+            classesStudying = this.mergeClasses(
+                classesStudying,
+                otherClassesStudying
+            )
+            if (classesStudying.length > 0) {
+                this.classesStudying = Promise.resolve(classesStudying)
+                await queryRunner.manager.save([this, ...classesStudying])
+            }
+            console.log('#4')
+            classesTeaching = this.mergeClasses(
+                classesTeaching,
+                otherClassesTeaching
+            )
+            if (classesTeaching.length > 0) {
+                this.classesTeaching = Promise.resolve(classesTeaching)
+                await queryRunner.manager.save([this, ...classesTeaching])
+            }
+            console.log('#5')
+            await otherUser.inactivate(queryRunner.manager)
+            console.log('#6')
+            queryRunner.commitTransaction()
+        } catch (err) {
+            success = false
+            console.log(err)
+            dberr = err
+            await queryRunner.rollbackTransaction()
+        } finally {
+            await queryRunner.release()
+        }
+        if (success) {
+            console.log('success')
+            return this
+        }
+        if (dberr !== undefined) {
+            throw dberr
+        }
+        return null
+    }
+
     public async merge(
         { other_id }: any,
         context: any,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call user merge by ${context.token?.id}`
-        )
-
         if (info.operation.operation !== 'mutation' || other_id === undefined) {
             return null
         }
-
-        let dberr: any
         const otherUser = await getRepository(User).findOne({
             user_id: other_id,
         })
         if (otherUser !== undefined) {
-            let success = true
-            const connection = getConnection()
-            const queryRunner = connection.createQueryRunner()
-            await queryRunner.connect()
-
-            const otherMemberships = await otherUser.memberships
-            const ourMemberships = await this.memberships
-            const otherSchoolMemberships = await otherUser.school_memberships
-            const ourSchoolMemberships = await this.school_memberships
-            const otherClassesStudying = await otherUser.classesStudying
-            const otherClassesTeaching = await otherUser.classesTeaching
-            const ourClassesStudying = await this.classesStudying
-            const ourClassesTeaching = await this.classesTeaching
-
-            await queryRunner.startTransaction()
-            try {
-                let classesStudying = ourClassesStudying || []
-                let classesTeaching = ourClassesTeaching || []
-                let memberships = ourMemberships || []
-                let schoolmemberships = ourSchoolMemberships || []
-
-                memberships = this.mergeOrganizationMemberships(
-                    memberships,
-                    otherMemberships
-                )
-                if (memberships.length > 0) {
-                    this.memberships = Promise.resolve(memberships)
-                    await queryRunner.manager.save([this, ...memberships])
-                } else {
-                    this.memberships = undefined
-                }
-
-                schoolmemberships = this.mergeSchoolMemberships(
-                    schoolmemberships,
-                    otherSchoolMemberships
-                )
-                if (schoolmemberships.length > 0) {
-                    this.school_memberships = Promise.resolve(schoolmemberships)
-                    await queryRunner.manager.save([this, ...schoolmemberships])
-                } else {
-                    this.school_memberships = undefined
-                }
-
-                classesStudying = this.mergeClasses(
-                    classesStudying,
-                    otherClassesStudying
-                )
-                if (classesStudying.length > 0) {
-                    this.classesStudying = Promise.resolve(classesStudying)
-                    await queryRunner.manager.save([this, ...classesStudying])
-                }
-
-                classesTeaching = this.mergeClasses(
-                    classesTeaching,
-                    otherClassesTeaching
-                )
-                if (classesTeaching.length > 0) {
-                    this.classesTeaching = Promise.resolve(classesTeaching)
-                    await queryRunner.manager.save([this, ...classesTeaching])
-                }
-
-                await otherUser.inactivate(queryRunner.manager)
-
-                queryRunner.commitTransaction()
-            } catch (err) {
-                success = false
-                console.log(err)
-                dberr = err
-                await queryRunner.rollbackTransaction()
-            } finally {
-                await queryRunner.release()
-            }
-            if (success) {
-                console.log('success')
-
-                return this
-            } else {
-                throw dberr
-            }
+            return this.retryMerge(otherUser)
         }
         return null
     }
@@ -479,9 +485,14 @@ export class User extends BaseEntity {
         const organizationMemberships = (await this.memberships) || []
 
         for (const organizationMembership of organizationMemberships) {
+            console.log('#5.1.2')
+            if (organizationMemberships === undefined) {
+                throw 'organizationMembership is undefined'
+            }
+            console.log('#5.1.3')
             await organizationMembership.inactivate(manager)
+            console.log('#5.1.4')
         }
-
         return organizationMemberships
     }
 
@@ -489,24 +500,60 @@ export class User extends BaseEntity {
         const schoolMemberships = (await this.school_memberships) || []
 
         for (const schoolMembership of schoolMemberships) {
+            console.log('#5.2.2')
+            if (schoolMembership === undefined) {
+                throw 'schoolMembership is undefined'
+            }
+            console.log('#5.2.3')
             await schoolMembership.inactivate(manager)
+            console.log('#5.2.4')
         }
-
         return schoolMemberships
     }
 
     public async inactivate(manager: any) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
+        console.log('#5.1')
         await this.inactivateOrganizationMemberships(manager)
+        console.log('#5.2')
         await this.inactivateSchoolMemberships(manager)
+        console.log('#5.3')
         await manager.save(this)
+        console.log('#5.4')
     }
 
     private mergeOrganizationMemberships(
         toMemberships: OrganizationMembership[],
         fromMemberships?: OrganizationMembership[]
     ): OrganizationMembership[] {
+        if (fromMemberships !== undefined) {
+            const ourid = this.user_id
+            const ouruser = this
+            for (const fromMembership of fromMemberships) {
+                const found = toMemberships.some(
+                    (toMembership) =>
+                        toMembership.organization_id ===
+                        fromMembership.organization_id
+                )
+                if (!found) {
+                    const membership = new OrganizationMembership()
+                    membership.organization_id = fromMembership.organization_id
+                    membership.user_id = ourid
+                    membership.user = Promise.resolve(ouruser)
+                    membership.organization = fromMembership.organization
+                    membership.status = fromMembership.status
+                    if (fromMembership.roles !== undefined) {
+                        membership.roles = Promise.resolve(fromMembership.roles)
+                    }
+                    toMemberships.push(membership)
+                }
+            }
+        }
+        return toMemberships
+    }
+    /*
+    private async mergeOrganizationMemberships(toMemberships: OrganizationMembership[], fromMemberships?: OrganizationMembership[]): Promise<OrganizationMembership[]> {
         if (fromMemberships !== undefined) {
             const ourid = this.user_id
             const user = this
@@ -527,6 +574,7 @@ export class User extends BaseEntity {
                     membership.user_id = ourid
                     membership.user = Promise.resolve(user)
                     membership.organization = fromMembership.organization
+                    membership.status = fromMembership.status
                     if (fromMembership.roles !== undefined) {
                         membership.roles = Promise.resolve(fromMembership.roles)
                     }
@@ -536,11 +584,40 @@ export class User extends BaseEntity {
         }
         return toMemberships
     }
-
+*/
     private mergeSchoolMemberships(
         toSchoolMemberships: SchoolMembership[],
         fromSchoolMemberships?: SchoolMembership[]
     ): SchoolMembership[] {
+        if (fromSchoolMemberships !== undefined) {
+            const ourid = this.user_id
+            const ouruser = this
+            for (const fromSchoolMembership of fromSchoolMemberships) {
+                const found = toSchoolMemberships.some(
+                    (toSchoolMembership) =>
+                        toSchoolMembership.school_id ===
+                        fromSchoolMembership.school_id
+                )
+                if (!found) {
+                    const schoolMembership = new SchoolMembership()
+                    schoolMembership.user_id = ourid
+                    schoolMembership.user = Promise.resolve(ouruser)
+                    schoolMembership.school_id = fromSchoolMembership.school_id
+                    schoolMembership.school = fromSchoolMembership.school
+                    schoolMembership.status = fromSchoolMembership.status
+                    if (fromSchoolMembership.roles !== undefined) {
+                        schoolMembership.roles = Promise.resolve(
+                            fromSchoolMembership.roles
+                        )
+                    }
+                    toSchoolMemberships.push(schoolMembership)
+                }
+            }
+        }
+        return toSchoolMemberships
+    }
+    /*
+    private async mergeSchoolMemberships(toSchoolMemberships: SchoolMembership[], fromSchoolMemberships?: SchoolMembership[]): Promise<SchoolMembership[]> {
         if (fromSchoolMemberships !== undefined) {
             const ourid = this.user_id
             const user = this
@@ -562,6 +639,7 @@ export class User extends BaseEntity {
 
                     schoolMembership.school_id = fromSchoolMembership.school_id
                     schoolMembership.school = fromSchoolMembership.school
+                    schoolMembership.status = fromSchoolMembership.status
                     if (fromSchoolMembership.roles !== undefined) {
                         schoolMembership.roles = Promise.resolve(
                             fromSchoolMembership.roles
@@ -574,7 +652,23 @@ export class User extends BaseEntity {
         return toSchoolMemberships
     }
 
+*/
+
     private mergeClasses(toClasses: Class[], fromClasses?: Class[]): Class[] {
+        if (fromClasses !== undefined) {
+            for (const fromClass of fromClasses) {
+                const found = toClasses.some(
+                    (toClass) => toClass.class_id === fromClass.class_id
+                )
+                if (!found) {
+                    toClasses.push(fromClass)
+                }
+            }
+        }
+        return toClasses
+    }
+    /*
+    private async mergeClasses(toClasses: Class[], fromClasses?: Class[]): Promise<Class[]> {
         if (fromClasses !== undefined) {
             fromClasses.forEach(function (fromClass) {
                 let found = false
@@ -591,6 +685,7 @@ export class User extends BaseEntity {
         }
         return toClasses
     }
+    */
 }
 
 const accountNamespace = v5('kidsloop.net', v5.DNS)
