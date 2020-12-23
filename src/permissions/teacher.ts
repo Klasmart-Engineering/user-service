@@ -94,7 +94,6 @@ export const teacherRole = {
         PermissionName.schedule_500,
         PermissionName.create_schedule_page_501,
         PermissionName.view_my_calendar_510,
-        PermissionName.create_event_520,
         PermissionName.create_my_schedule_events_521,
         PermissionName.edit_event_523,
         PermissionName.edit_event_530,
