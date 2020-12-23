@@ -424,8 +424,8 @@ export class User extends BaseEntity {
 }
 
 
-
-const accountNamespace = v5("kidsloop.net", v5.DNS)
+const domain = process.env.DOMAIN
+const accountNamespace = v5(domain||"", v5.DNS)
 export function accountUUID(email?: string) {
     const hash = createHash('sha256');
     if (email) { hash.update(email) }
