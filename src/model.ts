@@ -62,6 +62,9 @@ export class Model {
             if(user.email !== token.email)
             { user.email = token.email; modified = true }
 
+            if(user.phone !== token.phone)
+            { user.phone = token.phone; modified = true }
+
             if(!user.given_name && token.given_name)
             { user.given_name = token.given_name; modified = true }
 
