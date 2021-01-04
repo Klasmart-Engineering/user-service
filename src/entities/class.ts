@@ -187,8 +187,10 @@ export class Class extends BaseEntity {
         const organization_id = (await this.organization)?.organization_id;
         if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-        //TODO: provide way to check permission for many schools
-        const permisionContext = { organization_id: organization_id }
+        const permisionContext = {
+            organization_id: organization_id,
+            school_ids: (await this.schools)?.map(x => x.school_id),
+        }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
             PermissionName.delete_teacher_from_class_20446
@@ -283,8 +285,10 @@ export class Class extends BaseEntity {
         const organization_id = (await this.organization)?.organization_id;
         if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-        //TODO: provide way to check permission for many schools
-        const permisionContext = { organization_id: organization_id }
+        const permisionContext = {
+            organization_id: organization_id,
+            school_ids: (await this.schools)?.map(x => x.school_id),
+        }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
             PermissionName.delete_student_from_class_roster_20445
@@ -379,8 +383,10 @@ export class Class extends BaseEntity {
         const organization_id = (await this.organization)?.organization_id;
         if(info.operation.operation !== "mutation" || !organization_id || this.status == Status.INACTIVE) { return null }
 
-        //TODO: provide way to check permission for many schools
-        const permisionContext = { organization_id: organization_id }
+        const permisionContext = {
+            organization_id: organization_id,
+            school_ids: (await this.schools)?.map(x => x.school_id),
+        }
         await context.permissions.rejectIfNotAllowed(
           permisionContext,
           PermissionName.edit_class_20334

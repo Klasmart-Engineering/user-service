@@ -102,6 +102,16 @@ const EDIT_SCHOOLS_IN_CLASS = `
     }
 `;
 
+const REMOVE_SCHOOL = `
+    mutation myMutation(
+            $class_id: ID!
+            $school_id: ID!) {
+        class(class_id: $class_id) {
+            removeSchool(school_id: $school_id)
+        }
+    }
+`;
+
 const DELETE_CLASS = `
     mutation myMutation($class_id: ID!) {
         class(class_id: $class_id) {
@@ -220,6 +230,20 @@ export async function editSchoolsInClass(testClient: ApolloServerTestClient, cla
     const res = await gqlTry(operation);
     const schools = res.data?.class.editSchools as School[];
     return schools;
+}
+
+export async function removeSchoolFromClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: REMOVE_SCHOOL,
+        variables: { class_id: classId, school_id: schoolId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const successful = res.data?.class.removeSchool as boolean;
+    return successful;
 }
 
 export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
