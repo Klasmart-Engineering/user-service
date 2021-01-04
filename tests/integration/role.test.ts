@@ -13,6 +13,9 @@ import { denyPermission, getPermissionViaRole, grantPermission, revokePermission
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { Role } from "../../src/entities/role";
 import { Permission } from "../../src/entities/permission";
+import chaiAsPromised from "chai-as-promised";
+import chai from "chai"
+chai.use(chaiAsPromised);
 
 describe("role", () => {
     let connection: Connection;
@@ -64,12 +67,12 @@ describe("role", () => {
         });
 
         context("when user does not have the 'edit groups' permission within the organization", () => {
-            it("should return a null response, and not update the database entry", async () => {
-                const gqlRole = await updateRole(testClient, roleId, newRoleName, { authorization: BillyAuthToken });
+            it("should throw a permission exception, and not update the database entry", async () => {
+                const fn = () => updateRole(testClient, roleId, newRoleName, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
 
                 const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
                 expect(dbRole.role_name).to.equal(originalRoleName);
-                expect(gqlRole).to.be.null;
             });
         });
     });
@@ -104,10 +107,9 @@ describe("role", () => {
         });
 
         context("when user does not have the 'view role permissions' permission within the organization", () => {
-            it("should return a null response", async () => {
-                const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: BillyAuthToken });
-                
-                expect(gqlPermission).to.be.null;
+            it("should throw a permission exception", async () => {
+                const fn = () => getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
             });
         });
     });
@@ -165,22 +167,22 @@ describe("role", () => {
                     await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                 });
 
-                it("should return a null response, and not create a database entry", async () => {
-                    const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
+                it("should throw a permission exception, and not create a database entry", async () => {
+                    const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
     
                     const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
                     expect(dbPermission.allow).to.equal(false);
-                    expect(gqlPermission).to.be.null;
                 });
             });
 
             context("and permission entry does not exist", () => {
-                it("should return a null response, and not create a database entry", async () => {
-                    const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
+                it("should throw a permission exception, and not create a database entry", async () => {
+                    const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
     
                     const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
                     expect(dbPermission).to.be.undefined;
-                    expect(gqlPermission).to.be.null;
                 });
             });
         });
@@ -217,11 +219,11 @@ describe("role", () => {
         });
 
         context("when user does not have the 'edit role permissions' permission within the organization", () => {
-            it("should return false and not delete/modify the database entry", async () => {
-                const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillyAuthToken });
+            it("should throw a permission exception and not delete/modify the database entry", async () => {
+                const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
                 
                 const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
-                expect(successful).to.be.false;
                 expect(dbPermission.allow).to.be.true;
             });
         });

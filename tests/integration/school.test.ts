@@ -226,12 +226,12 @@ describe("school", () => {
         });
 
         context("when user does not have the edit school permission", () => {
-            it("should return a null response, and not update the database entry", async () => {
-                const gqlSchool = await updateSchool(testClient, schoolId, newSchoolName, { authorization: BillyAuthToken });
+            it("should throw a permission exception, and not update the database entry", async () => {
+                const fn = () => updateSchool(testClient, schoolId, newSchoolName, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
 
                 const dbSchool = await School.findOneOrFail({ where: { school_id: schoolId } });
                 expect(dbSchool.school_name).to.equal(originalSchoolName);
-                expect(gqlSchool).to.be.null;
             });
         });
     });
@@ -346,13 +346,14 @@ describe("school", () => {
         });
 
         context("when user does not have the edit school permission", () => {
-            it("should return a null response, and not add a database entry", async () => {
+            it("should throw a permission exception, and not add a database entry", async () => {
                 await addUserToOrganizationAndValidate(testClient, idOfUserToBeAdded, organizationId, { authorization: JoeAuthToken });
-                const gqlMembership = await addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
+
+                const fn = () => addUserToSchool(testClient, idOfUserToBeAdded, schoolId, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
 
                 const dbMembership = await SchoolMembership.findOne({ where: { user_id: idOfUserToBeAdded, school_id: schoolId } });
                 expect(dbMembership).to.be.undefined;
-                expect(gqlMembership).to.be.null;
             });
         });
     });
@@ -378,9 +379,10 @@ describe("school", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to delete the school", async () => {
-                 const gqlSchool = await deleteSchool(testClient, school.school_id, { authorization: undefined });
-                expect(gqlSchool).to.be.false;
+            it("should throw a permission exception, and not delete the database entry", async () => {
+                const fn = () => deleteSchool(testClient, school.school_id, { authorization: undefined });
+                expect(fn()).to.be.rejected;
+
                 const dbSchool = await School.findOneOrFail(school.school_id);
                 expect(dbSchool.status).to.eq(Status.ACTIVE);
                 expect(dbSchool.deleted_at).to.be.null;
@@ -394,9 +396,10 @@ describe("school", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("fails to delete the school", async () => {
-                    const gqlSchool = await deleteSchool(testClient, school.school_id, { authorization: BillyAuthToken });
-                    expect(gqlSchool).to.be.false;
+                it("should throw a permission exception, and not delete the database entry", async () => {
+                    const fn = () => deleteSchool(testClient, school.school_id, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
                     const dbSchool = await School.findOneOrFail(school.school_id);
                     expect(dbSchool.status).to.eq(Status.ACTIVE);
                     expect(dbSchool.deleted_at).to.be.null;
