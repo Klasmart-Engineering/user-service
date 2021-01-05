@@ -2,5 +2,7 @@
 {
     "mochaExplorer.files": "tests/**/*.test.ts",
     "mochaExplorer.require": "ts-node/register",
-    "mochaExplorer.timeout": 0,
+    "mochaExplorer.timeout": 0
+    //"editor.formatOnPaste": true,
+    //"editor.formatOnSave": true,
 }
