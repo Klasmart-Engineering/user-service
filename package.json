@@ -8,6 +8,7 @@
     "start:dev": "nodemon",
     "build": "webpack",
     "lint": "eslint . --ext .ts",
+    "prettier-format": "prettier --config .prettierrc src/**/*.ts --write",
     "test:unit": "mocha --require ts-node/register tests/unit/**/*.test.ts",
     "test:integration": "mocha --require ts-node/register tests/integration/**/*.test.ts --timeout 5000",
     "test": "npm run test:unit && npm run test:integration",
@@ -46,6 +47,7 @@
     "node-mocks-http": "^1.9.0",
     "nodemon": "^2.0.6",
     "nyc": "^15.1.0",
+    "prettier": "^2.2.1",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5"
   },
