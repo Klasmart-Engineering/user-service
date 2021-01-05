@@ -286,7 +286,7 @@ export class Organization extends BaseEntity {
         given_name?: string,
         family_name?: string,
         ):Promise<User> {
-            let hashSource = email ?? phone
+            const hashSource = email ?? phone
             const user_id = accountUUID(hashSource)
             const user = await getRepository(User).findOne({user_id}) || new User()
             user.email = email

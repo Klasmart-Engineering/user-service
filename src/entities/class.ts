@@ -26,7 +26,7 @@ export class Class extends BaseEntity {
     public class_id!: string
 
     @Column({nullable: false})
-    public class_name?: String
+    public class_name?: string
 
     @Column({type: "enum", enum: Status, default: Status.ACTIVE})
     public status! : Status
@@ -132,7 +132,7 @@ export class Class extends BaseEntity {
         )
 
         try {
-            var oldTeachers = await this.teachers || []
+            let oldTeachers = await this.teachers || []
             oldTeachers = await Promise.all(oldTeachers.map(async (teacher : User) => {
                 if(!teacher_ids.includes(teacher.user_id)){
                     const classes  = (await teacher.classesTeaching) || []
@@ -230,7 +230,7 @@ export class Class extends BaseEntity {
         )
 
         try {
-            var oldStudents = await this.students || []
+            let oldStudents = await this.students || []
             oldStudents = await Promise.all(oldStudents.map(async (student : User) => {
                 if(!student_ids.includes(student.user_id)){
                     const classes  = (await student.classesStudying) || []
@@ -328,7 +328,7 @@ export class Class extends BaseEntity {
         )
 
         try {
-            var oldSchools = await this.schools || []
+            let oldSchools = await this.schools || []
             oldSchools = await Promise.all(oldSchools.map(async (school : School) => {
                 if(!school_ids.includes(school.school_id)){
                     const classes  = (await school.classes) || []

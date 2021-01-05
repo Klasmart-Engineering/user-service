@@ -51,7 +51,7 @@ export class Model {
     public async getMyUser({token}: Context) {
         try {
             if(!token) {return null}
-            let user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
+            const user = (await this.userRepository.findOne({ user_id: token.id })) || new User()
 
             let modified = false
 
@@ -82,7 +82,7 @@ export class Model {
         console.info("Unauthenticated endpoint call newUser")
 
         const newUser = new User()
-        let hashSource = email ?? phone
+        const hashSource = email ?? phone
         newUser.user_id = accountUUID(hashSource)
         newUser.given_name = given_name
         newUser.family_name = family_name

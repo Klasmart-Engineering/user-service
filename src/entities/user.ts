@@ -258,21 +258,21 @@ export class User extends BaseEntity {
         if (info.operation.operation !== "mutation" || other_id === undefined) { return null }
 
         let dberr: any
-        let otherUser = await getRepository(User).findOne({ user_id: other_id })
+        const otherUser = await getRepository(User).findOne({ user_id: other_id })
         if (otherUser !== undefined) {
             let success = true
             const connection = getConnection();
             const queryRunner = connection.createQueryRunner();
             await queryRunner.connect();
 
-            let otherMemberships = await otherUser.memberships
-            let ourMemberships = await this.memberships
-            let otherSchoolMemberships = await otherUser.school_memberships
-            let ourSchoolMemberships = await this.school_memberships
-            let otherClassesStudying = await otherUser.classesStudying
-            let otherClassesTeaching = await otherUser.classesTeaching
-            let ourClassesStudying = await this.classesStudying
-            let ourClassesTeaching = await this.classesTeaching
+            const otherMemberships = await otherUser.memberships
+            const ourMemberships = await this.memberships
+            const otherSchoolMemberships = await otherUser.school_memberships
+            const ourSchoolMemberships = await this.school_memberships
+            const otherClassesStudying = await otherUser.classesStudying
+            const otherClassesTeaching = await otherUser.classesTeaching
+            const ourClassesStudying = await this.classesStudying
+            const ourClassesTeaching = await this.classesTeaching
 
             await queryRunner.startTransaction();
             try {
@@ -377,7 +377,7 @@ export class User extends BaseEntity {
                     return found
                 })
                 if (!found) {
-                    let membership = new OrganizationMembership()
+                    const membership = new OrganizationMembership()
                     membership.organization_id = fromMembership.organization_id
                     membership.user_id = ourid
                     membership.user = Promise.resolve(ouruser)
@@ -405,7 +405,7 @@ export class User extends BaseEntity {
                     return found
                 })
                 if (!found) {
-                    let schoolMembership = new SchoolMembership()
+                    const schoolMembership = new SchoolMembership()
                     schoolMembership.user_id = ourid
                     schoolMembership.user = Promise.resolve(ouruser)
 
