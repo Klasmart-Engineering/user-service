@@ -64,6 +64,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call schoolMembership addRole by ${context.token?.id}`)
+
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({role_id})
@@ -78,6 +80,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async addRoles({ role_ids }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call schoolMembership addRoles by ${context.token?.id}`)
+
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             if(!(role_ids instanceof Array)) { return null }
@@ -98,6 +102,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call schoolMembership removeRole by ${context.token?.id}`)
+
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({role_id})
@@ -114,6 +120,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async leave({}: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call school leave by ${context.token?.id}`)
+
         try {
             if(info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 

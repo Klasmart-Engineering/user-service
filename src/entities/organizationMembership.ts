@@ -35,6 +35,8 @@ export class OrganizationMembership extends BaseEntity {
     public deleted_at?: Date
 
     public async schoolMemberships({ permission_name }: any, context: Context, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call schoolMemberships by ${context.token?.id}`)
+
         try {
             if (permission_name === undefined) {
                 return await getRepository(SchoolMembership)
@@ -83,6 +85,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async classesTeaching(context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call classesTeaching by ${context.token?.id}`)
+
         try {
             return await getRepository(Class)
                 .createQueryBuilder()
@@ -109,6 +113,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call organizationMembership addRole by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             const role = await getRepository(Role).findOneOrFail({ role_id })
@@ -127,6 +133,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async addRoles({ role_ids }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call organizationMembership addRoles by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             if (!(role_ids instanceof Array)) { return null }
@@ -151,6 +159,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call organizationMembership removeRole by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
 
@@ -167,6 +177,8 @@ export class OrganizationMembership extends BaseEntity {
         }
     }
     public async leave({ }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call organizationMembership leave by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
             await this.inactivate(getManager())

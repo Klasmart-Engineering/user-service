@@ -76,6 +76,8 @@ export class Organization extends BaseEntity {
     public memberships?: Promise<OrganizationMembership[]>
 
     public async membership({user_id}: any, context: Context, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call organization membership by ${context.token?.id}`)
+
         try {
             const membership = await getRepository(OrganizationMembership).findOneOrFail({where: {user_id, organization_id: this.organization_id}})
             return membership
@@ -137,6 +139,8 @@ export class Organization extends BaseEntity {
     }
 
     public async membersWithPermission({permission_name, search_query}: any, context: Context, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call membersWithPermission by ${context.token?.id}`)
+
         try {
             const query = getRepository(OrganizationMembership)
                 .createQueryBuilder()

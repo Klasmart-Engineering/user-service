@@ -41,6 +41,8 @@ export class School extends BaseEntity {
     public memberships?: Promise<SchoolMembership[]>
 
     public async membership({user_id}: any, context: Context, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call school membership by ${context.token?.id}`)
+
         try {
             const membership = await getRepository(SchoolMembership).findOneOrFail({where: {user_id, school_id: this.school_id}})
             return membership
@@ -95,7 +97,7 @@ export class School extends BaseEntity {
           permisionContext,
           PermissionName.edit_school_20330
         )
-        
+
         try {
             const user = await getRepository(User).findOneOrFail(user_id)
 

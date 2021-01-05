@@ -79,6 +79,8 @@ export class Model {
         }
     }
     public async newUser({given_name, family_name, email, phone, avatar}: any) {
+        console.info("Unauthenticated endpoint call newUser")
+
         const newUser = new User()
         let hashSource = email ?? phone
         newUser.user_id = accountUUID(hashSource)
@@ -95,6 +97,8 @@ export class Model {
 
     // This is temporary function for migrating ownerships. Once is done it will dissappear
     public async newOrganizationOwnership({user_id, organization_id}: any) {
+        console.info("Unauthenticated endpoint call newOrganizationOwnership")
+
         const user = User.findOneOrFail(user_id)
         const organization = Organization.findOneOrFail(organization_id)
 
@@ -107,6 +111,8 @@ export class Model {
     }
 
     public async setUser({user_id, given_name, family_name, email, avatar}: any) {
+        console.info("Unauthenticated endpoint call setUser")
+
         const user = await this.userRepository.findOneOrFail(user_id)
 
         if(given_name !== undefined) { user.given_name = given_name }
@@ -118,14 +124,20 @@ export class Model {
         return user
     }
     public async getUser(user_id: string) {
+        console.info("Unauthenticated endpoint call getUser")
+
         const user = await this.userRepository.findOneOrFail(user_id)
         return user
     }
     public async getUsers() {
+        console.log("Unauthenticated endpoint call getUsers")
+
         return await this.userRepository.find()
     }
 
     public async setOrganization({organization_id, organization_name, address1, address2, phone, shortCode}:Organization) {
+        console.info("Unauthenticated endpoint call setOrganization")
+
         const organization = await this.organizationRepository.findOneOrFail(organization_id)
 
         if(organization_name !== undefined) { organization.organization_name = organization_name }
@@ -138,10 +150,14 @@ export class Model {
         return organization
     }
     public async getOrganization(organization_id: string) {
+        console.info("Unauthenticated endpoint call getOrganization")
+
         const organization = await this.organizationRepository.findOne(organization_id)
         return organization
     }
     public async getOrganizations(organization_ids: string[]) {
+        console.info("Unauthenticated endpoint call getOrganizations")
+
         try {
             if (organization_ids) {
                 return await this.organizationRepository.findByIds(organization_ids)
@@ -154,6 +170,8 @@ export class Model {
     }
 
     public async setRole({role_id, role_name}: Role) {
+        console.info("Unauthenticated endpoint call setRole")
+
         try {
             const role = await this.roleRepository.findOneOrFail(role_id)
 
@@ -165,6 +183,8 @@ export class Model {
         }
     }
     public async getRole({role_id}: Role) {
+        console.info("Unauthenticated endpoint call getRole")
+
         try {
             const role = await this.roleRepository.findOneOrFail({role_id})
             return role
@@ -173,6 +193,8 @@ export class Model {
         }
     }
     public async getRoles() {
+        console.info("Unauthenticated endpoint call getRoles")
+
         try {
             const roles = await this.roleRepository.find()
             return roles
@@ -182,6 +204,8 @@ export class Model {
     }
 
     public async getClass({class_id}: Class) {
+        console.info("Unauthenticated endpoint call getClass")
+
         try {
             const _class = await this.classRepository.findOneOrFail({class_id})
             return _class
@@ -190,6 +214,8 @@ export class Model {
         }
     }
     public async getClasses() {
+        console.info("Unauthenticated endpoint call getClasses")
+
         try {
             const classes = await this.classRepository.find()
             return classes
@@ -199,6 +225,8 @@ export class Model {
     }
 
     public async getSchool({school_id}: School) {
+        console.info("Unauthenticated endpoint call getSchool")
+
         try {
             const school = await this.schoolRepository.findOneOrFail({school_id})
             return school

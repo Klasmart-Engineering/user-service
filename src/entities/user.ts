@@ -44,6 +44,8 @@ export class User extends BaseEntity {
     public memberships?: Promise<OrganizationMembership[]>
 
     public async membership({ organization_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call user membership by ${context.token?.id}`)
+
         try {
             const membership = await getRepository(OrganizationMembership).findOneOrFail({ where: { user_id: this.user_id, organization_id } })
             return membership
@@ -57,6 +59,8 @@ export class User extends BaseEntity {
     public school_memberships?: Promise<SchoolMembership[]>
 
     public async school_membership({ school_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call user school_membership by ${context.token?.id}`)
+
         try {
             const membership = await getRepository(SchoolMembership).findOneOrFail({ where: { user_id: this.user_id, school_id } })
             return membership
@@ -82,6 +86,8 @@ export class User extends BaseEntity {
     public organization_ownerships?: Promise<OrganizationOwnership[]>
 
     public async organizationsWithPermission({permission_name}: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call organizationsWithPermission by ${context.token?.id}`)
+
         try {
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
@@ -98,6 +104,8 @@ export class User extends BaseEntity {
     }
 
     public async schoolsWithPermission({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call schoolsWithPermission by ${context.token?.id}`)
+
         try {
             const schoolPermissionPromise = getRepository(SchoolMembership)
                 .createQueryBuilder()
@@ -142,6 +150,8 @@ export class User extends BaseEntity {
         family_name,
         avatar,
     }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call user set by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation") { return null }
 
@@ -156,6 +166,8 @@ export class User extends BaseEntity {
         }
     }
     public async createOrganization({organization_name, address1, address2, phone, shortCode}: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call createOrganization by ${context.token?.id}`)
+
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE }
         })
@@ -203,6 +215,8 @@ export class User extends BaseEntity {
     }
 
     public async addOrganization({ organization_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call addOrganization by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation") { return null }
 
@@ -220,6 +234,8 @@ export class User extends BaseEntity {
     }
 
     public async addSchool({ school_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call addSchool by ${context.token?.id}`)
+
         try {
             if (info.operation.operation !== "mutation") { return null }
 
@@ -237,6 +253,8 @@ export class User extends BaseEntity {
     }
 
     public async merge({ other_id }: any, context: any, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call user merge by ${context.token?.id}`)
+
         if (info.operation.operation !== "mutation" || other_id === undefined) { return null }
 
         let dberr: any

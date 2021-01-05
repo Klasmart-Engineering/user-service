@@ -49,6 +49,11 @@ export const createServer = (model: Model, context?: any) =>
             const encodedToken = req.headers.authorization||req.cookies.access
             const token = await checkToken(encodedToken) as any
             const permissions = new UserPermissions(token)
+
+            if(!token) {
+                console.log("User not authenticated")
+            }
+
             return { token, permissions };
         }),
         playground: {

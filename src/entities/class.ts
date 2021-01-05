@@ -69,10 +69,14 @@ export class Class extends BaseEntity {
 
 
     public async eligibleTeachers({}: any, context: Context, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call eligibleTeachers by ${context.token?.id}`)
+
         return this._membersWithPermission(PermissionName.attend_live_class_as_a_teacher_186)
     }
 
     public  async eligibleStudents({}: any, context: Context, info: GraphQLResolveInfo) {
+        console.info(`Unauthenticated endpoint call eligibleStudents by ${context.token?.id}`)
+
         return this._membersWithPermission(PermissionName.attend_live_class_as_a_student_187)
     }
 
