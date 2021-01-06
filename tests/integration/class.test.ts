@@ -5,22 +5,23 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Class } from "../../src/entities/class";
 import { Status } from "../../src/entities/status";
-import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass, deleteClass, removeTeacherInClass, removeSchoolFromClass } from "../utils/operations/classOps";
+import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass, deleteClass, removeTeacherInClass, removeSchoolFromClass, removeStudentInClass, eligibleTeachers, eligibleStudents } from "../utils/operations/classOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
-import { User } from "../../src/entities/user";
+import { accountUUID, User } from "../../src/entities/user";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { grantPermission } from "../utils/operations/roleOps";
+import { denyPermission, grantPermission } from "../utils/operations/roleOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 chai.use(chaiAsPromised);
 
 describe("class", () => {
@@ -37,10 +38,11 @@ describe("class", () => {
         await connection?.close();
     });
 
+    beforeEach(async () => {
+        await connection.synchronize(true);
+    });
+
     describe("set", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
         context("when not authenticated", () => {
             let cls: Class;
 
@@ -141,14 +143,236 @@ describe("class", () => {
         });
     });
 
+    describe("eligibleTeachers", () => {
+        context("when one user is authorized to attend a live class as a teacher, and another as a student", () => {
+            let teacherId: string;
+            let studentId: string;
+            let teacherRoleId: string;
+            let studentRoleId: string;
+            let classId: string;
+            let organizationId: string;
+            let orgOwnerId: string;
+            const orgOwnerToken = JoeAuthToken;
+
+            beforeEach(async () => {
+                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const teacherInfo = { user_id: accountUUID("teacher@gmail.com"), email: "teacher@gmail.com" } as User;
+                const studentInfo = { user_id: accountUUID("student@gmail.com"), email: "student@gmail.com" } as User;
+                teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
+                studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
+                organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
+                await addUserToOrganizationAndValidate(testClient, teacherId, organizationId, { authorization: orgOwnerToken });
+                await addUserToOrganizationAndValidate(testClient, studentId, organizationId, { authorization: orgOwnerToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                teacherRoleId = (await createRole(testClient, organizationId, "Teacher Role"))?.role_id;
+                studentRoleId = (await createRole(testClient, organizationId, "Student Role"))?.role_id;
+                await grantPermission(testClient, teacherRoleId, PermissionName.attend_live_class_as_a_teacher_186, { authorization: orgOwnerToken });
+                await grantPermission(testClient, studentRoleId, PermissionName.attend_live_class_as_a_student_187, { authorization: orgOwnerToken });
+                await addRoleToOrganizationMembership(testClient, teacherId, organizationId, teacherRoleId);
+                await addRoleToOrganizationMembership(testClient, studentId, organizationId, studentRoleId);
+            });
+
+            context("via organization permission", () => {
+                beforeEach(async () => {
+                    await addRoleToOrganizationMembership(testClient, teacherId, organizationId, teacherRoleId);
+                    await addRoleToOrganizationMembership(testClient, studentId, organizationId, studentRoleId);
+                });
+
+                it("returns an array containing the teacher", async () => {
+                    const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').with.lengthOf(1);
+                    expect(userIds[0]).to.equal(teacherId);
+                });
+            });
+
+            context("via school permission", () => {
+                beforeEach(async () => {
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    await addUserToSchool(testClient, teacherId, schoolId, { authorization: orgOwnerToken });
+                    await addUserToSchool(testClient, studentId, schoolId, { authorization: orgOwnerToken });
+                    await addRoleToSchoolMembership(testClient, teacherId, schoolId, teacherRoleId);
+                    await addRoleToSchoolMembership(testClient, studentId, schoolId, studentRoleId);
+                });
+
+                it("returns an array containing the teacher", async () => {
+                    const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').with.lengthOf(1);
+                    expect(userIds[0]).to.equal(teacherId);
+                });
+            });
+        });
+
+        context("when a user's permission to attend a live class as a teacher has been denied (permission.allow = false)", () => {
+            let teacherId: string;
+            let teacherRoleId: string;
+            let classId: string;
+            let organizationId: string;
+            let orgOwnerId: string;
+            const orgOwnerToken = JoeAuthToken;
+
+            beforeEach(async () => {
+                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const teacherInfo = { user_id: accountUUID("teacher@gmail.com"), email: "teacher@gmail.com" } as User;
+                teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
+                organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
+                await addUserToOrganizationAndValidate(testClient, teacherId, organizationId, { authorization: orgOwnerToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                teacherRoleId = (await createRole(testClient, organizationId, "Teacher Role"))?.role_id;
+                await denyPermission(testClient, teacherRoleId, PermissionName.attend_live_class_as_a_teacher_186, { authorization: orgOwnerToken });
+            });
+
+            context("via organization permission", () => {
+                beforeEach(async () => {
+                    await addRoleToOrganizationMembership(testClient, teacherId, organizationId, teacherRoleId);
+                });
+
+                it("returns an array containing only the organization owner", async () => {
+                    const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').that.is.empty;
+                });
+            });
+
+            context("via school permission", () => {
+                beforeEach(async () => {
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    await addUserToSchool(testClient, teacherId, schoolId, { authorization: orgOwnerToken });
+                    await addRoleToSchoolMembership(testClient, teacherId, schoolId, teacherRoleId);
+                });
+
+                it("returns an array containing only the organization owner", async () => {
+                    const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').that.is.empty;
+                });
+            });
+        });
+    });
+
+    describe("eligibleStudents", () => {
+        context("when one user is authorized to attend a live class as a teacher, and another as a student", () => {
+            let teacherId: string;
+            let studentId: string;
+            let teacherRoleId: string;
+            let studentRoleId: string;
+            let classId: string;
+            let organizationId: string;
+            let orgOwnerId: string;
+            const orgOwnerToken = JoeAuthToken;
+
+            beforeEach(async () => {
+                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const teacherInfo = { user_id: accountUUID("teacher@gmail.com"), email: "teacher@gmail.com" } as User;
+                const studentInfo = { user_id: accountUUID("student@gmail.com"), email: "student@gmail.com" } as User;
+                teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
+                studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
+                organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
+                await addUserToOrganizationAndValidate(testClient, teacherId, organizationId, { authorization: orgOwnerToken });
+                await addUserToOrganizationAndValidate(testClient, studentId, organizationId, { authorization: orgOwnerToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                teacherRoleId = (await createRole(testClient, organizationId, "Teacher Role"))?.role_id;
+                studentRoleId = (await createRole(testClient, organizationId, "Student Role"))?.role_id;
+                await grantPermission(testClient, teacherRoleId, PermissionName.attend_live_class_as_a_teacher_186, { authorization: orgOwnerToken });
+                await grantPermission(testClient, studentRoleId, PermissionName.attend_live_class_as_a_student_187, { authorization: orgOwnerToken });
+                await addRoleToOrganizationMembership(testClient, teacherId, organizationId, teacherRoleId);
+                await addRoleToOrganizationMembership(testClient, studentId, organizationId, studentRoleId);
+            });
+
+            context("via organization permission", () => {
+                beforeEach(async () => {
+                    await addRoleToOrganizationMembership(testClient, teacherId, organizationId, teacherRoleId);
+                    await addRoleToOrganizationMembership(testClient, studentId, organizationId, studentRoleId);
+                });
+
+                it("returns an array containing only the student", async () => {
+                    const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').with.lengthOf(1);
+                    expect(userIds[0]).to.equal(studentId);
+                });
+            });
+
+            context("via school permission", () => {
+                beforeEach(async () => {
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    await addUserToSchool(testClient, teacherId, schoolId, { authorization: orgOwnerToken });
+                    await addUserToSchool(testClient, studentId, schoolId, { authorization: orgOwnerToken });
+                    await addRoleToSchoolMembership(testClient, teacherId, schoolId, teacherRoleId);
+                    await addRoleToSchoolMembership(testClient, studentId, schoolId, studentRoleId);
+                });
+
+                it("returns an array containing the organization owner and the student", async () => {
+                    const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').with.lengthOf(1);
+                    expect(userIds[0]).to.equal(studentId);
+                });
+            });
+        });
+
+        context("when a user's permission to attend a live class as a student has been denied (permission.allow = false)", () => {
+            let studentId: string;
+            let studentRoleId: string;
+            let classId: string;
+            let organizationId: string;
+            let orgOwnerId: string;
+            const orgOwnerToken = JoeAuthToken;
+
+            beforeEach(async () => {
+                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const studentInfo = { user_id: accountUUID("student@gmail.com"), email: "student@gmail.com" } as User;
+                studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
+                organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
+                await addUserToOrganizationAndValidate(testClient, studentId, organizationId, { authorization: orgOwnerToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                studentRoleId = (await createRole(testClient, organizationId, "Student Role"))?.role_id;
+                await denyPermission(testClient, studentRoleId, PermissionName.attend_live_class_as_a_student_187, { authorization: orgOwnerToken });
+            });
+
+            context("via organization permission", () => {
+                beforeEach(async () => {
+                    await addRoleToOrganizationMembership(testClient, studentId, organizationId, studentRoleId);
+                });
+
+                it("returns an array containing only the organization owner", async () => {
+                    const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').that.is.empty;
+                });
+            });
+
+            context("via school permission", () => {
+                beforeEach(async () => {
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    await addUserToSchool(testClient, studentId, schoolId, { authorization: orgOwnerToken });
+                    await addRoleToSchoolMembership(testClient, studentId, schoolId, studentRoleId);
+                });
+
+                it("returns an empty array", async () => {
+                    const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
+                    
+                    const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
+                    expect(userIds).to.be.an('array').that.is.empty;
+                });
+            });
+        });
+    });
+
     describe("editTeachers", () => {
         let user: User;
         let cls: Class;
         let organization : Organization;
 
         beforeEach(async () => {
-            await connection.synchronize(true);
-
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
@@ -265,10 +489,6 @@ describe("class", () => {
     });
 
     describe("addTeacher", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
-
         context("when not authenticated", () => {
             let user: User;
             let cls: Class;
@@ -378,10 +598,6 @@ describe("class", () => {
         let classInfo = (cls : Class) => {
             return cls.class_id
         }
-
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
 
         context("when not authorized within the organization or any school the class belongs to", () => {
             let user: User;
@@ -512,8 +728,6 @@ describe("class", () => {
         let organization : Organization;
 
         beforeEach(async () => {
-            await connection.synchronize(true);
-
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
@@ -629,10 +843,6 @@ describe("class", () => {
     });
 
     describe("addStudent", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
-
         context("when not authenticated", () => {
             let user: User;
             let cls: Class;
@@ -734,6 +944,137 @@ describe("class", () => {
         });
     });
 
+    describe("removeStudent", () => {
+        let userInfo = (user : User) => {
+            return user.user_id
+        }
+        let classInfo = (cls : Class) => {
+            return cls.class_id
+        }
+
+        context("when not authorized within the organization or any school the class belongs to", () => {
+            let userId: string;
+            let classId: string;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                userId = (await createUserBilly(testClient))?.user_id;
+                const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                const emptyRole = await createRole(testClient, organizationId);
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, emptyRole.role_id);
+                await addStudentToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+            });
+
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
+                const dbStudent = await User.findOneOrFail(userId);
+                const dbClass = await Class.findOneOrFail(classId);
+                const students = await dbClass.students || [];
+                const classesStudying = await dbStudent.classesStudying || [];
+                expect(students.map(userInfo)).to.deep.eq([userId]);
+                expect(classesStudying.map(classInfo)).to.deep.eq([classId]);
+            });
+        });
+
+        context("when authorized within organization", () => {
+            let userId: string;
+            let classId: string;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                userId = (await createUserBilly(testClient))?.user_id;
+                const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                const role = await createRole(testClient, organizationId);
+                await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, role.role_id);
+                await addStudentToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+            });
+
+            it("removes the student from class", async () => {
+                const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                expect(gqlStudent).to.be.true;
+                const dbStudent = await User.findOneOrFail(userId);
+                const dbClass = await Class.findOneOrFail(classId);
+                const students = await dbClass.students || [];
+                const classesStudying = await dbStudent.classesStudying || [];
+                expect(students).to.be.empty;
+                expect(classesStudying).to.be.empty;
+            });
+
+            context("and the class is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                });
+
+                it("fails to remove student from class", async () => {
+                    const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                    expect(gqlStudent).to.be.null;
+                    const dbStudents = await User.findOneOrFail(userId);
+                    const dbClass = await Class.findOneOrFail(classId);
+                    const students = await dbClass.students || [];
+                    const classesStudying = await dbStudents.classesStudying || [];
+                    expect(students.map(userInfo)).to.deep.eq([userId]);
+                    expect(classesStudying.map(classInfo)).to.deep.eq([classId]);
+                });
+            });
+        });
+
+        context("when authorized within a school", () => {
+            let userId: string;
+            let classId: string;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                userId = (await createUserBilly(testClient))?.user_id;
+                const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
+                const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: JoeAuthToken }))?.school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
+                classId = (await createClass(testClient, organizationId))?.class_id;
+                await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+                const role = await createRole(testClient, organizationId);
+                await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
+                await addRoleToSchoolMembership(testClient, userId, schoolId, role.role_id);
+                await addStudentToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+            });
+
+            it("removes the student from class", async () => {
+                const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                
+                expect(gqlStudent).to.be.true;
+                const dbStudent = await User.findOneOrFail(userId);
+                const dbClass = await Class.findOneOrFail(classId);
+                const students = await dbClass.students || [];
+                const classesStudying = await dbStudent.classesStudying || [];
+                expect(students).to.be.empty;
+                expect(classesStudying).to.be.empty;
+            });
+
+            context("and the class is marked as inactive", () => {
+                beforeEach(async () => {
+                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                });
+
+                it("fails to remove student in class", async () => {
+                    const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                    
+                    expect(gqlStudent).to.be.null;
+                    const dbStudent = await User.findOneOrFail(userId);
+                    const dbClass = await Class.findOneOrFail(classId);
+                    const students = await dbClass.students || [];
+                    const classesStudying = await dbStudent.classesStudying || [];
+                    expect(students.map(userInfo)).to.deep.eq([userId]);
+                    expect(classesStudying.map(classInfo)).to.deep.eq([classId]);
+                });
+            });
+        });
+    });
+
    describe("editSchools", () => {
         let school: School;
         let user: User;
@@ -741,8 +1082,6 @@ describe("class", () => {
         let organization : Organization;
 
         beforeEach(async () => {
-            await connection.synchronize(true);
-
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
@@ -859,10 +1198,6 @@ describe("class", () => {
     });
 
     describe("addSchool", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
-
         context("when not authenticated", () => {
             let school: School;
             let cls: Class;
@@ -974,10 +1309,6 @@ describe("class", () => {
         let classInfo = (cls : Class) => {
             return cls.class_id
         }
-
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
 
         context("when not authorized within the organization or any school the class belongs to", () => {
             let userId: string;
@@ -1120,8 +1451,6 @@ describe("class", () => {
         let organization : Organization;
 
         beforeEach(async () => {
-            await connection.synchronize(true);
-
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);

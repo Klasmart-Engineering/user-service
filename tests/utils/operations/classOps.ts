@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { Class } from "../../../src/entities/class";
 import { School } from "../../../src/entities/school";
 import { User } from "../../../src/entities/user";
@@ -14,6 +13,28 @@ const UPDATE_CLASS = `
             set(class_name: $class_name) {
                 class_id
                 class_name
+            }
+        }
+    }
+`;
+
+const ELIGIBLE_TEACHERS = `
+    query myQuery($class_id: ID!) {
+        class(class_id: $class_id) {
+            eligibleTeachers {
+                user_id
+                user_name
+            }
+        }
+    }
+`;
+
+const ELIGIBLE_STUDENTS = `
+    query myQuery($class_id: ID!) {
+        class(class_id: $class_id) {
+            eligibleStudents {
+                user_id
+                user_name
             }
         }
     }
@@ -44,7 +65,7 @@ const ADD_TEACHER_TO_CLASS = `
     }
 `;
 
-const REMOVE_TEACHER_IN_CLASS = `
+const REMOVE_TEACHER = `
     mutation myMutation(
             $class_id: ID!
             $user_id: ID!) {
@@ -62,6 +83,16 @@ const ADD_STUDENT_TO_CLASS = `
             addStudent(user_id: $user_id) {
                 user_id
             }
+        }
+    }
+`;
+
+const REMOVE_STUDENT = `
+    mutation myMutation(
+            $class_id: ID!
+            $user_id: ID!) {
+        class(class_id: $class_id) {
+            removeStudent(user_id: $user_id)
         }
     }
 `;
@@ -134,6 +165,34 @@ export async function updateClass(testClient: ApolloServerTestClient, classId: s
     return gqlClass;
 }
 
+export async function eligibleTeachers(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: ELIGIBLE_TEACHERS,
+        variables: { class_id: classId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlTeachers = res.data?.class.eligibleTeachers as User[];
+    return gqlTeachers;
+}
+
+export async function eligibleStudents(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: ELIGIBLE_STUDENTS,
+        variables: { class_id: classId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlStudents = res.data?.class.eligibleStudents as User[];
+    return gqlStudents;
+}
+
 export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
 
@@ -180,14 +239,14 @@ export async function removeTeacherInClass(testClient: ApolloServerTestClient, c
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: REMOVE_TEACHER_IN_CLASS,
+        mutation: REMOVE_TEACHER,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
     });
 
     const res = await gqlTry(operation);
-    const teacher = res.data?.class.removeTeacher as boolean;
-    return teacher;
+    const successful = res.data?.class.removeTeacher as boolean;
+    return successful;
 }
 
 export async function editStudentsInClass(testClient: ApolloServerTestClient, classId: string, studentIds: string[], headers?: Headers) {
@@ -216,6 +275,20 @@ export async function addStudentToClass(testClient: ApolloServerTestClient, clas
     const res = await gqlTry(operation);
     const student = res.data?.class.addStudent as User;
     return student;
+}
+
+export async function removeStudentInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: REMOVE_STUDENT,
+        variables: { class_id: classId, user_id: userId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const successful = res.data?.class.removeStudent as boolean;
+    return successful;
 }
 
 export async function editSchoolsInClass(testClient: ApolloServerTestClient, classId: string, schoolIds: string[], headers?: Headers) {
