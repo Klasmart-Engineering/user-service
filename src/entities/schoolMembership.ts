@@ -15,7 +15,6 @@ import { Role } from './role'
 import { GraphQLResolveInfo } from 'graphql'
 import { School } from './school'
 import { Status } from './status'
-import { Permission } from './permission'
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
@@ -191,7 +190,7 @@ export class SchoolMembership extends BaseEntity {
         }
     }
 
-    public async leave({}: any, context: any, info: GraphQLResolveInfo) {
+    public async leave(args: any, context: any, info: GraphQLResolveInfo) {
         console.info(
             `Unauthenticated endpoint call school leave by ${context.token?.id}`
         )

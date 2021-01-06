@@ -13,7 +13,7 @@ export const createServer = (model: Model, context?: any) =>
         })[0].document,
         resolvers: {
             Query: {
-                me: (_parent, _args, context, _info) =>
+                me: (_parent, _args, _context, _info) =>
                     model.getMyUser(context),
                 users: () => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
@@ -34,7 +34,7 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSchool(args),
             },
             Mutation: {
-                me: (_parent, _args, context, _info) =>
+                me: (_parent, _args, _context, _info) =>
                     model.getMyUser(context),
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 newUser: (_parent, args, _context, _info) =>
@@ -62,7 +62,6 @@ export const createServer = (model: Model, context?: any) =>
                 const permissions = new UserPermissions(token && token.id)
                 return { sessionId, token, websocket, permissions }
             },
-            onDisconnect: (websocket, connectionData) => {},
         },
         context:
             context ??

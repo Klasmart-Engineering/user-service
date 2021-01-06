@@ -146,7 +146,7 @@ export class School extends BaseEntity {
         }
     }
 
-    public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
         if (
             info.operation.operation !== 'mutation' ||
             this.status == Status.INACTIVE

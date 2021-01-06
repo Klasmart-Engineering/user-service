@@ -287,7 +287,7 @@ export class OrganizationMembership extends BaseEntity {
             console.error(e)
         }
     }
-    public async leave({}: any, context: any, info: GraphQLResolveInfo) {
+    public async leave(args: any, context: any, info: GraphQLResolveInfo) {
         console.info(
             `Unauthenticated endpoint call organizationMembership leave by ${context.token?.id}`
         )

@@ -7,7 +7,7 @@
     "start": "ts-node src/main.ts",
     "start:dev": "nodemon",
     "build": "webpack",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint . --ext .ts --fix",
     "prettier-format": "prettier --config .prettierrc src/**/*.ts --write",
     "test:unit": "mocha --require ts-node/register tests/unit/**/*.test.ts",
     "test:integration": "mocha --require ts-node/register tests/integration/**/*.test.ts --timeout 5000",

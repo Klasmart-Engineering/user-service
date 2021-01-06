@@ -20,5 +20,5 @@ export class Permission extends BaseEntity {
     public role?: Promise<Role>
 
     @Column({ nullable: false })
-    public allow!: Boolean
+    public allow!: boolean
 }

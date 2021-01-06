@@ -7,7 +7,6 @@ import {
     JoinTable,
     OneToMany,
     ManyToOne,
-    getManager,
     getRepository,
     BaseEntity,
 } from 'typeorm'
@@ -177,7 +176,7 @@ export class Role extends BaseEntity {
     }
 
     public async delete_role(
-        {}: any,
+        args: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {

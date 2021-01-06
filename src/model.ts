@@ -99,12 +99,12 @@ export class Model {
     public async newOrganizationOwnership({user_id, organization_id}: any) {
         console.info("Unauthenticated endpoint call newOrganizationOwnership")
 
-        const user = User.findOneOrFail(user_id)
-        const organization = Organization.findOneOrFail(organization_id)
+        const user = await User.findOneOrFail(user_id)
+        const organization = await Organization.findOneOrFail(organization_id)
 
         const organizationOwnership = new OrganizationOwnership()
-        organizationOwnership.user_id = user_id
-        organizationOwnership.organization_id = organization_id
+        organizationOwnership.user_id = user.user_id
+        organizationOwnership.organization_id = organization.organization_id
         await this.manager.save(organizationOwnership)
 
         return organizationOwnership

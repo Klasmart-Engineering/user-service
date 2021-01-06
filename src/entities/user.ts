@@ -11,7 +11,6 @@ import {
     JoinColumn,
     JoinTable,
     OneToOne,
-    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -510,7 +509,7 @@ export class User extends BaseEntity {
     ): Promise<OrganizationMembership[]> {
         if (fromMemberships !== undefined) {
             const ourid = this.user_id
-            const ouruser = this
+            const user = this
             fromMemberships.forEach(async function (fromMembership) {
                 let found = false
                 toMemberships.some(async function (toMembership) {
@@ -526,7 +525,7 @@ export class User extends BaseEntity {
                     const membership = new OrganizationMembership()
                     membership.organization_id = fromMembership.organization_id
                     membership.user_id = ourid
-                    membership.user = Promise.resolve(ouruser)
+                    membership.user = Promise.resolve(user)
                     membership.organization = fromMembership.organization
                     if (fromMembership.roles !== undefined) {
                         membership.roles = Promise.resolve(fromMembership.roles)
@@ -544,7 +543,7 @@ export class User extends BaseEntity {
     ): Promise<SchoolMembership[]> {
         if (fromSchoolMemberships !== undefined) {
             const ourid = this.user_id
-            const ouruser = this
+            const user = this
             fromSchoolMemberships.forEach(async function (
                 fromSchoolMembership
             ) {
@@ -561,7 +560,7 @@ export class User extends BaseEntity {
                 if (!found) {
                     const schoolMembership = new SchoolMembership()
                     schoolMembership.user_id = ourid
-                    schoolMembership.user = Promise.resolve(ouruser)
+                    schoolMembership.user = Promise.resolve(user)
 
                     schoolMembership.school_id = fromSchoolMembership.school_id
                     schoolMembership.school = fromSchoolMembership.school

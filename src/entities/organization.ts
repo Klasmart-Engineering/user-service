@@ -31,7 +31,7 @@ import { Model } from '../model'
 import { Status } from './status'
 
 export function validateEmail(email?: string): boolean {
-    const email_re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     if (email !== undefined && email.match(email_re)) {
         return true
     }
@@ -654,7 +654,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createDefaultRoles(
-        {}: any,
+        args: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -671,7 +671,7 @@ export class Organization extends BaseEntity {
     }
 
     public async resetDefaultRolesPermissions(
-        {}: any,
+        args: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -718,7 +718,7 @@ export class Organization extends BaseEntity {
         return this.roles
     }
 
-    public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
         if (
             info.operation.operation !== 'mutation' ||
             this.status == Status.INACTIVE

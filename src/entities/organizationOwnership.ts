@@ -2,12 +2,10 @@ import {
     BaseEntity,
     Column,
     Entity,
-    getManager,
     JoinColumn,
     OneToOne,
     PrimaryColumn,
 } from 'typeorm'
-import { GraphQLResolveInfo } from 'graphql'
 
 import { Organization } from './organization'
 import { Status } from './status'

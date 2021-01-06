@@ -80,7 +80,7 @@ export class Class extends BaseEntity {
     }
 
     public async eligibleTeachers(
-        {}: any,
+        args: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -94,7 +94,7 @@ export class Class extends BaseEntity {
     }
 
     public async eligibleStudents(
-        {}: any,
+        args: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -571,7 +571,7 @@ export class Class extends BaseEntity {
         return false
     }
 
-    public async delete({}: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
