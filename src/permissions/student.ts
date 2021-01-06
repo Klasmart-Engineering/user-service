@@ -1,7 +1,7 @@
-import { PermissionName } from "./permissionNames";
+import { PermissionName } from './permissionNames'
 
 export const studentRole = {
-    role_name: "Student",
+    role_name: 'Student',
     permissions: [
         PermissionName.logos_1000,
         PermissionName.my_account_1010,

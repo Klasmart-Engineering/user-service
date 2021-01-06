@@ -1,7 +1,7 @@
-import { PermissionName } from "./permissionNames";
+import { PermissionName } from './permissionNames'
 
 export const schoolAdminRole = {
-    role_name: "School Admin",
+    role_name: 'School Admin',
     permissions: [
         PermissionName.logos_1000,
         PermissionName.my_account_1010,
@@ -203,5 +203,5 @@ export const schoolAdminRole = {
         PermissionName.bada_stem_81006,
         PermissionName.badanamu_esl_81007,
         PermissionName.use_free_as_recommended_content_for_study_81008,
-    ]
+    ],
 }

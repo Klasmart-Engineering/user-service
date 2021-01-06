@@ -1,12 +1,23 @@
-import { Entity, ManyToOne, PrimaryColumn, Column, CreateDateColumn, ManyToMany, BaseEntity, getRepository, createQueryBuilder, getManager } from "typeorm";
-import { User } from "./user";
-import { Organization } from "./organization";
-import { Role } from "./role";
-import { GraphQLResolveInfo } from "graphql";
-import { Context } from "../main";
-import { SchoolMembership } from "./schoolMembership";
-import { Status } from "./status";
-import { Class } from "./class";
+import {
+    Entity,
+    ManyToOne,
+    PrimaryColumn,
+    Column,
+    CreateDateColumn,
+    ManyToMany,
+    BaseEntity,
+    getRepository,
+    createQueryBuilder,
+    getManager,
+} from 'typeorm'
+import { User } from './user'
+import { Organization } from './organization'
+import { Role } from './role'
+import { GraphQLResolveInfo } from 'graphql'
+import { Context } from '../main'
+import { SchoolMembership } from './schoolMembership'
+import { Status } from './status'
+import { Class } from './class'
 
 @Entity()
 export class OrganizationMembership extends BaseEntity {
@@ -16,64 +27,102 @@ export class OrganizationMembership extends BaseEntity {
     @PrimaryColumn()
     public organization_id!: string
 
-    @Column({type: "enum", enum: Status, default: Status.ACTIVE})
-    public status! : Status
+    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
+    public status!: Status
 
     @CreateDateColumn()
     public join_timestamp?: Date
 
-    @ManyToOne(() => User, user => user.memberships)
+    @ManyToOne(() => User, (user) => user.memberships)
     public user?: Promise<User>
 
-    @ManyToOne(() => Organization, organization => organization.memberships)
+    @ManyToOne(() => Organization, (organization) => organization.memberships)
     public organization?: Promise<Organization>
 
-    @ManyToMany(() => Role, role => role.memberships)
+    @ManyToMany(() => Role, (role) => role.memberships)
     public roles?: Promise<Role[]>
 
-    @Column({ type: 'timestamp', nullable: true})
+    @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
 
-    public async schoolMemberships({ permission_name }: any, context: Context, info: GraphQLResolveInfo) {
-        console.info(`Unauthenticated endpoint call schoolMemberships by ${context.token?.id}`)
+    public async schoolMemberships(
+        { permission_name }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        console.info(
+            `Unauthenticated endpoint call schoolMemberships by ${context.token?.id}`
+        )
 
         try {
             if (permission_name === undefined) {
                 return await getRepository(SchoolMembership)
                     .createQueryBuilder()
-                    .innerJoin("SchoolMembership.school", "School")
-                    .innerJoin("School.organization", "SchoolOrganization")
-                    .where("SchoolMembership.user_id = :user_id", { user_id: this.user_id })
-                    .andWhere("SchoolOrganization.organization_id = :organization_id", { organization_id: this.organization_id })
+                    .innerJoin('SchoolMembership.school', 'School')
+                    .innerJoin('School.organization', 'SchoolOrganization')
+                    .where('SchoolMembership.user_id = :user_id', {
+                        user_id: this.user_id,
+                    })
+                    .andWhere(
+                        'SchoolOrganization.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
                     .getMany()
-            }
-            else {
+            } else {
                 let results = await getRepository(SchoolMembership)
                     .createQueryBuilder()
-                    .innerJoin("SchoolMembership.school", "School")
-                    .innerJoin("School.organization", "SchoolOrganization")
-                    .innerJoin("SchoolOrganization.memberships", "OrgMembership")
-                    .innerJoin("OrgMembership.roles","OrgRole")
-                    .innerJoin("OrgRole.permissions", "OrgPermission")
-                    .groupBy("OrgMembership.user_id, SchoolMembership.school_id, OrgPermission.permission_name, SchoolMembership.user_id")
-                    .where("OrgMembership.user_id = :user_id AND SchoolMembership.user_id = :user_id", { user_id: this.user_id })
-                    .andWhere("OrgMembership.organization_id = :organization_id", { organization_id: this.organization_id })
-                    .andWhere("OrgPermission.permission_name = :permission_name", { permission_name })
-                    .having("bool_and(OrgPermission.allow) = :allowed", { allowed: true })
+                    .innerJoin('SchoolMembership.school', 'School')
+                    .innerJoin('School.organization', 'SchoolOrganization')
+                    .innerJoin(
+                        'SchoolOrganization.memberships',
+                        'OrgMembership'
+                    )
+                    .innerJoin('OrgMembership.roles', 'OrgRole')
+                    .innerJoin('OrgRole.permissions', 'OrgPermission')
+                    .groupBy(
+                        'OrgMembership.user_id, SchoolMembership.school_id, OrgPermission.permission_name, SchoolMembership.user_id'
+                    )
+                    .where(
+                        'OrgMembership.user_id = :user_id AND SchoolMembership.user_id = :user_id',
+                        { user_id: this.user_id }
+                    )
+                    .andWhere(
+                        'OrgMembership.organization_id = :organization_id',
+                        { organization_id: this.organization_id }
+                    )
+                    .andWhere(
+                        'OrgPermission.permission_name = :permission_name',
+                        { permission_name }
+                    )
+                    .having('bool_and(OrgPermission.allow) = :allowed', {
+                        allowed: true,
+                    })
                     .getMany()
 
                 if (results.length === 0) {
                     results = await getRepository(SchoolMembership)
                         .createQueryBuilder()
-                        .innerJoin("SchoolMembership.school", "School")
-                        .innerJoin("School.organization", "SchoolOrganization")
-                        .innerJoin("SchoolMembership.roles", "Role")
-                        .innerJoin("Role.permissions", "Permission")
-                        .groupBy("SchoolMembership.school_id, Permission.permission_name, SchoolMembership.user_id")
-                        .where("SchoolMembership.user_id = :user_id", { user_id: this.user_id })
-                        .andWhere("SchoolOrganization.organization_id = :organization_id", { organization_id: this.organization_id })
-                        .andWhere("Permission.permission_name = :permission_name", { permission_name })
-                        .having("bool_and(Permission.allow) = :allowed", { allowed: true })
+                        .innerJoin('SchoolMembership.school', 'School')
+                        .innerJoin('School.organization', 'SchoolOrganization')
+                        .innerJoin('SchoolMembership.roles', 'Role')
+                        .innerJoin('Role.permissions', 'Permission')
+                        .groupBy(
+                            'SchoolMembership.school_id, Permission.permission_name, SchoolMembership.user_id'
+                        )
+                        .where('SchoolMembership.user_id = :user_id', {
+                            user_id: this.user_id,
+                        })
+                        .andWhere(
+                            'SchoolOrganization.organization_id = :organization_id',
+                            { organization_id: this.organization_id }
+                        )
+                        .andWhere(
+                            'Permission.permission_name = :permission_name',
+                            { permission_name }
+                        )
+                        .having('bool_and(Permission.allow) = :allowed', {
+                            allowed: true,
+                        })
                         .getMany()
                 }
 
@@ -85,43 +134,73 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async classesTeaching(context: any, info: GraphQLResolveInfo) {
-        console.info(`Unauthenticated endpoint call classesTeaching by ${context.token?.id}`)
+        console.info(
+            `Unauthenticated endpoint call classesTeaching by ${context.token?.id}`
+        )
 
         try {
             return await getRepository(Class)
                 .createQueryBuilder()
-                .innerJoin("Class.teachers", "Teacher")
-                .innerJoin("Class.organization", "Organization")
-                .where("Teacher.user_id = :user_id", { user_id: this.user_id })
-                .andWhere("Organization.organization_id = :organization_id", { organization_id: this.organization_id })
+                .innerJoin('Class.teachers', 'Teacher')
+                .innerJoin('Class.organization', 'Organization')
+                .where('Teacher.user_id = :user_id', { user_id: this.user_id })
+                .andWhere('Organization.organization_id = :organization_id', {
+                    organization_id: this.organization_id,
+                })
                 .getMany()
         } catch (e) {
             console.error(e)
         }
     }
 
-    public async checkAllowed({ permission_name }: any, context: any, info: GraphQLResolveInfo) {
-        const results = await createQueryBuilder("OrganizationMembership")
-            .innerJoinAndSelect("OrganizationMembership.roles", "Role")
-            .innerJoinAndSelect("Role.permissions", "Permission")
-            .where("OrganizationMembership.user_id = :user_id", { user_id: this.user_id })
-            .andWhere("OrganizationMembership.organization_id = :organization_id", { organization_id: this.organization_id })
-            .andWhere("Permission.permission_name = :permission_name", { permission_name })
+    public async checkAllowed(
+        { permission_name }: any,
+        context: any,
+        info: GraphQLResolveInfo
+    ) {
+        const results = await createQueryBuilder('OrganizationMembership')
+            .innerJoinAndSelect('OrganizationMembership.roles', 'Role')
+            .innerJoinAndSelect('Role.permissions', 'Permission')
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: this.user_id,
+            })
+            .andWhere(
+                'OrganizationMembership.organization_id = :organization_id',
+                { organization_id: this.organization_id }
+            )
+            .andWhere('Permission.permission_name = :permission_name', {
+                permission_name,
+            })
             .getRawMany()
-        if (results.length === 0) { return false }
+        if (results.length === 0) {
+            return false
+        }
         return results.every((v) => v.Permission_allow)
     }
 
-    public async addRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
-        console.info(`Unauthenticated endpoint call organizationMembership addRole by ${context.token?.id}`)
+    public async addRole(
+        { role_id }: any,
+        context: any,
+        info: GraphQLResolveInfo
+    ) {
+        console.info(
+            `Unauthenticated endpoint call organizationMembership addRole by ${context.token?.id}`
+        )
 
         try {
-            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+            if (
+                info.operation.operation !== 'mutation' ||
+                this.status == Status.INACTIVE
+            ) {
+                return null
+            }
             const role = await getRepository(Role).findOneOrFail({ role_id })
             const memberships = (await role.memberships) || []
             const roleOrganization = await role.organization
-            if(roleOrganization?.organization_id !== this.organization_id){
-                throw new Error(`Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
+            if (roleOrganization?.organization_id !== this.organization_id) {
+                throw new Error(
+                    `Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`
+                )
             }
             memberships.push(this)
             role.memberships = Promise.resolve(memberships)
@@ -132,19 +211,38 @@ export class OrganizationMembership extends BaseEntity {
         }
     }
 
-    public async addRoles({ role_ids }: any, context: any, info: GraphQLResolveInfo) {
-        console.info(`Unauthenticated endpoint call organizationMembership addRoles by ${context.token?.id}`)
+    public async addRoles(
+        { role_ids }: any,
+        context: any,
+        info: GraphQLResolveInfo
+    ) {
+        console.info(
+            `Unauthenticated endpoint call organizationMembership addRoles by ${context.token?.id}`
+        )
 
         try {
-            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
-            if (!(role_ids instanceof Array)) { return null }
+            if (
+                info.operation.operation !== 'mutation' ||
+                this.status == Status.INACTIVE
+            ) {
+                return null
+            }
+            if (!(role_ids instanceof Array)) {
+                return null
+            }
 
             const rolePromises = role_ids.map(async (role_id) => {
-                const role = await getRepository(Role).findOneOrFail({ role_id })
+                const role = await getRepository(Role).findOneOrFail({
+                    role_id,
+                })
                 const memberships = (await role.memberships) || []
                 const roleOrganization = await role.organization
-                if(roleOrganization?.organization_id !== this.organization_id){
-                    throw new Error(`Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`)
+                if (
+                    roleOrganization?.organization_id !== this.organization_id
+                ) {
+                    throw new Error(
+                        `Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`
+                    )
                 }
                 memberships.push(this)
                 role.memberships = Promise.resolve(memberships)
@@ -158,16 +256,29 @@ export class OrganizationMembership extends BaseEntity {
         }
     }
 
-    public async removeRole({ role_id }: any, context: any, info: GraphQLResolveInfo) {
-        console.info(`Unauthenticated endpoint call organizationMembership removeRole by ${context.token?.id}`)
+    public async removeRole(
+        { role_id }: any,
+        context: any,
+        info: GraphQLResolveInfo
+    ) {
+        console.info(
+            `Unauthenticated endpoint call organizationMembership removeRole by ${context.token?.id}`
+        )
 
         try {
-            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+            if (
+                info.operation.operation !== 'mutation' ||
+                this.status == Status.INACTIVE
+            ) {
+                return null
+            }
 
             const role = await getRepository(Role).findOneOrFail({ role_id })
             const memberships = await role.memberships
             if (memberships) {
-                const newMemberships = memberships.filter((membership) => membership.user_id !== this.user_id)
+                const newMemberships = memberships.filter(
+                    (membership) => membership.user_id !== this.user_id
+                )
                 role.memberships = Promise.resolve(newMemberships)
                 await role.save()
             }
@@ -176,11 +287,18 @@ export class OrganizationMembership extends BaseEntity {
             console.error(e)
         }
     }
-    public async leave({ }: any, context: any, info: GraphQLResolveInfo) {
-        console.info(`Unauthenticated endpoint call organizationMembership leave by ${context.token?.id}`)
+    public async leave({}: any, context: any, info: GraphQLResolveInfo) {
+        console.info(
+            `Unauthenticated endpoint call organizationMembership leave by ${context.token?.id}`
+        )
 
         try {
-            if (info.operation.operation !== "mutation" || this.status == Status.INACTIVE) { return null }
+            if (
+                info.operation.operation !== 'mutation' ||
+                this.status == Status.INACTIVE
+            ) {
+                return null
+            }
             await this.inactivate(getManager())
 
             return true
@@ -190,7 +308,7 @@ export class OrganizationMembership extends BaseEntity {
         return false
     }
 
-    public async inactivate(manager : any){
+    public async inactivate(manager: any) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

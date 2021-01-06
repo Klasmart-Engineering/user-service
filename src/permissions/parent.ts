@@ -1,7 +1,7 @@
-import { PermissionName } from "./permissionNames";
+import { PermissionName } from './permissionNames'
 
 export const parentRole = {
-    role_name: "Parent",
+    role_name: 'Parent',
     permissions: [
         PermissionName.logos_1000,
         PermissionName.my_account_1010,
@@ -36,5 +36,5 @@ export const parentRole = {
         PermissionName.leave_organization_10882,
         PermissionName.online_support_60101,
         PermissionName.use_free_as_recommended_content_for_study_81008,
-    ]
+    ],
 }

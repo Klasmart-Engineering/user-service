@@ -1,7 +1,7 @@
-import { PermissionName } from "./permissionNames";
+import { PermissionName } from './permissionNames'
 
 export const superAdminRole = {
-    role_name: "Super Admin",
+    role_name: 'Super Admin',
     permissions: [
         PermissionName.create_an_organization_account_1,
         PermissionName.delete_an_organization_account_2,
@@ -331,5 +331,5 @@ export const superAdminRole = {
         PermissionName.publish_free_content_for_all_hub_79000,
         PermissionName.publish_free_content_for_specific_orgs_79001,
         PermissionName.publish_free_content_for_all_orgs_79002,
-    ]
+    ],
 }
