@@ -22,6 +22,7 @@ pipelines:
             - node
           script:
             - npm install
+            - npm run lint
             - npm test
   branches:
     master:
@@ -32,6 +33,7 @@ pipelines:
             - node
           script:
             - npm install
+            - npm run lint
             - npm test
   tags:
     v*:
