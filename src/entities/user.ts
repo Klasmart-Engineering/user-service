@@ -413,7 +413,7 @@ export class User extends BaseEntity {
                 let memberships = ourMemberships || []
                 let schoolmemberships = ourSchoolMemberships || []
 
-                memberships = await this.mergeOrganizationMemberships(
+                memberships = this.mergeOrganizationMemberships(
                     memberships,
                     otherMemberships
                 )
@@ -424,7 +424,7 @@ export class User extends BaseEntity {
                     this.memberships = undefined
                 }
 
-                schoolmemberships = await this.mergeSchoolMemberships(
+                schoolmemberships = this.mergeSchoolMemberships(
                     schoolmemberships,
                     otherSchoolMemberships
                 )
@@ -435,7 +435,7 @@ export class User extends BaseEntity {
                     this.school_memberships = undefined
                 }
 
-                classesStudying = await this.mergeClasses(
+                classesStudying = this.mergeClasses(
                     classesStudying,
                     otherClassesStudying
                 )
@@ -444,7 +444,7 @@ export class User extends BaseEntity {
                     await queryRunner.manager.save([this, ...classesStudying])
                 }
 
-                classesTeaching = await this.mergeClasses(
+                classesTeaching = this.mergeClasses(
                     classesTeaching,
                     otherClassesTeaching
                 )
@@ -503,16 +503,16 @@ export class User extends BaseEntity {
         await manager.save(this)
     }
 
-    private async mergeOrganizationMemberships(
+    private mergeOrganizationMemberships(
         toMemberships: OrganizationMembership[],
         fromMemberships?: OrganizationMembership[]
-    ): Promise<OrganizationMembership[]> {
+    ): OrganizationMembership[] {
         if (fromMemberships !== undefined) {
             const ourid = this.user_id
             const user = this
-            fromMemberships.forEach(async function (fromMembership) {
+            fromMemberships.forEach(function (fromMembership) {
                 let found = false
-                toMemberships.some(async function (toMembership) {
+                toMemberships.some(function (toMembership) {
                     if (
                         toMembership.organization_id ===
                         fromMembership.organization_id
@@ -537,18 +537,16 @@ export class User extends BaseEntity {
         return toMemberships
     }
 
-    private async mergeSchoolMemberships(
+    private mergeSchoolMemberships(
         toSchoolMemberships: SchoolMembership[],
         fromSchoolMemberships?: SchoolMembership[]
-    ): Promise<SchoolMembership[]> {
+    ): SchoolMembership[] {
         if (fromSchoolMemberships !== undefined) {
             const ourid = this.user_id
             const user = this
-            fromSchoolMemberships.forEach(async function (
-                fromSchoolMembership
-            ) {
+            fromSchoolMemberships.forEach(function (fromSchoolMembership) {
                 let found = false
-                toSchoolMemberships.some(async function (toSchoolMembership) {
+                toSchoolMemberships.some(function (toSchoolMembership) {
                     if (
                         toSchoolMembership.school_id ===
                         fromSchoolMembership.school_id
@@ -576,12 +574,9 @@ export class User extends BaseEntity {
         return toSchoolMemberships
     }
 
-    private async mergeClasses(
-        toClasses: Class[],
-        fromClasses?: Class[]
-    ): Promise<Class[]> {
+    private mergeClasses(toClasses: Class[], fromClasses?: Class[]): Class[] {
         if (fromClasses !== undefined) {
-            fromClasses.forEach(async function (fromClass) {
+            fromClasses.forEach(function (fromClass) {
                 let found = false
                 toClasses.some(async function (toClass) {
                     if (toClass.class_id === fromClass.class_id) {
