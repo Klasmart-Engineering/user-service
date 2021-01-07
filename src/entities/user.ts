@@ -402,7 +402,7 @@ export class User extends BaseEntity {
             let classesTeaching = ourClassesTeaching || []
             let memberships = ourMemberships || []
             let schoolmemberships = ourSchoolMemberships || []
-            console.log('#1')
+
             memberships = this.mergeOrganizationMemberships(
                 memberships,
                 otherMemberships
@@ -413,7 +413,7 @@ export class User extends BaseEntity {
             } else {
                 this.memberships = undefined
             }
-            console.log('#2')
+
             schoolmemberships = this.mergeSchoolMemberships(
                 schoolmemberships,
                 otherSchoolMemberships
@@ -424,7 +424,7 @@ export class User extends BaseEntity {
             } else {
                 this.school_memberships = undefined
             }
-            console.log('#3')
+
             classesStudying = this.mergeClasses(
                 classesStudying,
                 otherClassesStudying
@@ -433,7 +433,7 @@ export class User extends BaseEntity {
                 this.classesStudying = Promise.resolve(classesStudying)
                 await queryRunner.manager.save([this, ...classesStudying])
             }
-            console.log('#4')
+
             classesTeaching = this.mergeClasses(
                 classesTeaching,
                 otherClassesTeaching
@@ -442,9 +442,9 @@ export class User extends BaseEntity {
                 this.classesTeaching = Promise.resolve(classesTeaching)
                 await queryRunner.manager.save([this, ...classesTeaching])
             }
-            console.log('#5')
+
             await otherUser.inactivate(queryRunner.manager)
-            console.log('#6')
+
             queryRunner.commitTransaction()
         } catch (err) {
             success = false
@@ -485,13 +485,11 @@ export class User extends BaseEntity {
         const organizationMemberships = (await this.memberships) || []
 
         for (const organizationMembership of organizationMemberships) {
-            console.log('#5.1.2')
             if (organizationMemberships === undefined) {
                 throw 'organizationMembership is undefined'
             }
-            console.log('#5.1.3')
+
             await organizationMembership.inactivate(manager)
-            console.log('#5.1.4')
         }
         return organizationMemberships
     }
@@ -500,13 +498,11 @@ export class User extends BaseEntity {
         const schoolMemberships = (await this.school_memberships) || []
 
         for (const schoolMembership of schoolMemberships) {
-            console.log('#5.2.2')
             if (schoolMembership === undefined) {
                 throw 'schoolMembership is undefined'
             }
-            console.log('#5.2.3')
+
             await schoolMembership.inactivate(manager)
-            console.log('#5.2.4')
         }
         return schoolMemberships
     }
@@ -514,13 +510,12 @@ export class User extends BaseEntity {
     public async inactivate(manager: any) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
-        console.log('#5.1')
+
         await this.inactivateOrganizationMemberships(manager)
-        console.log('#5.2')
+
         await this.inactivateSchoolMemberships(manager)
-        console.log('#5.3')
+
         await manager.save(this)
-        console.log('#5.4')
     }
 
     private mergeOrganizationMemberships(

@@ -472,7 +472,7 @@ describe("user", () => {
 
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
-	    expect(oldUser).to.exist
+	        expect(oldUser).to.exist
             let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
