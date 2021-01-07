@@ -523,20 +523,30 @@ export class User extends BaseEntity {
         console.log('#5.4')
     }
 
-    private mergeOrganizationMemberships (toMemberships: OrganizationMembership[], fromMemberships?: OrganizationMembership[]): OrganizationMembership[] {
-      if (fromMemberships !== undefined) {
-        const ourid = this.user_id
-        for (const fromMembership of fromMemberships) {
-          const found = toMemberships.some((toMembership) => toMembership.organization_id === fromMembership.organization_id)
-          if (!found) {
-            const membership = new OrganizationMembership()
-            membership.organization_id = fromMembership.organization_id
-            membership.user_id = ourid
-            membership.user = Promise.resolve(this)
-            membership.organization = fromMembership.organization
-            membership.status = fromMembership.status
-            if (fromMembership.roles !== undefined) {
-              membership.roles = Promise.resolve(fromMembership.roles)
+    private mergeOrganizationMemberships(
+        toMemberships: OrganizationMembership[],
+        fromMemberships?: OrganizationMembership[]
+    ): OrganizationMembership[] {
+        if (fromMemberships !== undefined) {
+            const ourid = this.user_id
+            for (const fromMembership of fromMemberships) {
+                const found = toMemberships.some(
+                    (toMembership) =>
+                        toMembership.organization_id ===
+                        fromMembership.organization_id
+                )
+                if (!found) {
+                    const membership = new OrganizationMembership()
+                    membership.organization_id = fromMembership.organization_id
+                    membership.user_id = ourid
+                    membership.user = Promise.resolve(this)
+                    membership.organization = fromMembership.organization
+                    membership.status = fromMembership.status
+                    if (fromMembership.roles !== undefined) {
+                        membership.roles = Promise.resolve(fromMembership.roles)
+                    }
+                    toMemberships.push(membership)
+                }
             }
         }
         return toMemberships
