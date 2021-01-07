@@ -30,7 +30,6 @@ type Mutation {
         email: String
         avatar: String
     ): User
-    newOrganizationOwnership(user_id: ID!, organization_id: ID!): OrganizationMembership
 
     organization(
         organization_id: ID!

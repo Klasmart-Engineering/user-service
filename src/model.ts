@@ -12,7 +12,6 @@ import { Role } from './entities/role'
 import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
-import { OrganizationOwnership } from './entities/organizationOwnership'
 
 export class Model {
     public static async create() {
@@ -129,21 +128,6 @@ export class Model {
 
         await this.manager.save(newUser)
         return newUser
-    }
-
-    // This is temporary function for migrating ownerships. Once is done it will dissappear
-    public async newOrganizationOwnership({ user_id, organization_id }: any) {
-        console.info('Unauthenticated endpoint call newOrganizationOwnership')
-
-        const user = await User.findOneOrFail(user_id)
-        const organization = await Organization.findOneOrFail(organization_id)
-
-        const organizationOwnership = new OrganizationOwnership()
-        organizationOwnership.user_id = user.user_id
-        organizationOwnership.organization_id = organization.organization_id
-        await this.manager.save(organizationOwnership)
-
-        return organizationOwnership
     }
 
     public async setUser({
