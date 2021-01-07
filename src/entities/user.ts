@@ -552,39 +552,7 @@ export class User extends BaseEntity {
         }
         return toMemberships
     }
-    /*
-    private async mergeOrganizationMemberships(toMemberships: OrganizationMembership[], fromMemberships?: OrganizationMembership[]): Promise<OrganizationMembership[]> {
-        if (fromMemberships !== undefined) {
-            const ourid = this.user_id
-            const user = this
-            fromMemberships.forEach(function (fromMembership) {
-                let found = false
-                toMemberships.some(function (toMembership) {
-                    if (
-                        toMembership.organization_id ===
-                        fromMembership.organization_id
-                    ) {
-                        found = true
-                    }
-                    return found
-                })
-                if (!found) {
-                    const membership = new OrganizationMembership()
-                    membership.organization_id = fromMembership.organization_id
-                    membership.user_id = ourid
-                    membership.user = Promise.resolve(user)
-                    membership.organization = fromMembership.organization
-                    membership.status = fromMembership.status
-                    if (fromMembership.roles !== undefined) {
-                        membership.roles = Promise.resolve(fromMembership.roles)
-                    }
-                    toMemberships.push(membership)
-                }
-            })
-        }
-        return toMemberships
-    }
-*/
+
     private mergeSchoolMemberships(
         toSchoolMemberships: SchoolMembership[],
         fromSchoolMemberships?: SchoolMembership[]
@@ -616,43 +584,6 @@ export class User extends BaseEntity {
         }
         return toSchoolMemberships
     }
-    /*
-    private async mergeSchoolMemberships(toSchoolMemberships: SchoolMembership[], fromSchoolMemberships?: SchoolMembership[]): Promise<SchoolMembership[]> {
-        if (fromSchoolMemberships !== undefined) {
-            const ourid = this.user_id
-            const user = this
-            fromSchoolMemberships.forEach(function (fromSchoolMembership) {
-                let found = false
-                toSchoolMemberships.some(function (toSchoolMembership) {
-                    if (
-                        toSchoolMembership.school_id ===
-                        fromSchoolMembership.school_id
-                    ) {
-                        found = true
-                    }
-                    return found
-                })
-                if (!found) {
-                    const schoolMembership = new SchoolMembership()
-                    schoolMembership.user_id = ourid
-                    schoolMembership.user = Promise.resolve(user)
-
-                    schoolMembership.school_id = fromSchoolMembership.school_id
-                    schoolMembership.school = fromSchoolMembership.school
-                    schoolMembership.status = fromSchoolMembership.status
-                    if (fromSchoolMembership.roles !== undefined) {
-                        schoolMembership.roles = Promise.resolve(
-                            fromSchoolMembership.roles
-                        )
-                    }
-                    toSchoolMemberships.push(schoolMembership)
-                }
-            })
-        }
-        return toSchoolMemberships
-    }
-
-*/
 
     private mergeClasses(toClasses: Class[], fromClasses?: Class[]): Class[] {
         if (fromClasses !== undefined) {
@@ -667,25 +598,6 @@ export class User extends BaseEntity {
         }
         return toClasses
     }
-    /*
-    private async mergeClasses(toClasses: Class[], fromClasses?: Class[]): Promise<Class[]> {
-        if (fromClasses !== undefined) {
-            fromClasses.forEach(function (fromClass) {
-                let found = false
-                toClasses.some(async function (toClass) {
-                    if (toClass.class_id === fromClass.class_id) {
-                        found = true
-                    }
-                    return found
-                })
-                if (!found) {
-                    toClasses.push(fromClass)
-                }
-            })
-        }
-        return toClasses
-    }
-    */
 }
 
 const accountNamespace = v5('kidsloop.net', v5.DNS)
