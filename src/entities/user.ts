@@ -523,31 +523,20 @@ export class User extends BaseEntity {
         console.log('#5.4')
     }
 
-    private mergeOrganizationMemberships(
-        toMemberships: OrganizationMembership[],
-        fromMemberships?: OrganizationMembership[]
-    ): OrganizationMembership[] {
-        if (fromMemberships !== undefined) {
-            const ourid = this.user_id
-            const ouruser = this
-            for (const fromMembership of fromMemberships) {
-                const found = toMemberships.some(
-                    (toMembership) =>
-                        toMembership.organization_id ===
-                        fromMembership.organization_id
-                )
-                if (!found) {
-                    const membership = new OrganizationMembership()
-                    membership.organization_id = fromMembership.organization_id
-                    membership.user_id = ourid
-                    membership.user = Promise.resolve(ouruser)
-                    membership.organization = fromMembership.organization
-                    membership.status = fromMembership.status
-                    if (fromMembership.roles !== undefined) {
-                        membership.roles = Promise.resolve(fromMembership.roles)
-                    }
-                    toMemberships.push(membership)
-                }
+    private mergeOrganizationMemberships (toMemberships: OrganizationMembership[], fromMemberships?: OrganizationMembership[]): OrganizationMembership[] {
+      if (fromMemberships !== undefined) {
+        const ourid = this.user_id
+        for (const fromMembership of fromMemberships) {
+          const found = toMemberships.some((toMembership) => toMembership.organization_id === fromMembership.organization_id)
+          if (!found) {
+            const membership = new OrganizationMembership()
+            membership.organization_id = fromMembership.organization_id
+            membership.user_id = ourid
+            membership.user = Promise.resolve(this)
+            membership.organization = fromMembership.organization
+            membership.status = fromMembership.status
+            if (fromMembership.roles !== undefined) {
+              membership.roles = Promise.resolve(fromMembership.roles)
             }
         }
         return toMemberships
@@ -559,7 +548,6 @@ export class User extends BaseEntity {
     ): SchoolMembership[] {
         if (fromSchoolMemberships !== undefined) {
             const ourid = this.user_id
-            const ouruser = this
             for (const fromSchoolMembership of fromSchoolMemberships) {
                 const found = toSchoolMemberships.some(
                     (toSchoolMembership) =>
@@ -569,7 +557,7 @@ export class User extends BaseEntity {
                 if (!found) {
                     const schoolMembership = new SchoolMembership()
                     schoolMembership.user_id = ourid
-                    schoolMembership.user = Promise.resolve(ouruser)
+                    schoolMembership.user = Promise.resolve(this)
                     schoolMembership.school_id = fromSchoolMembership.school_id
                     schoolMembership.school = fromSchoolMembership.school
                     schoolMembership.status = fromSchoolMembership.status
