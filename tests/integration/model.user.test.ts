@@ -4,11 +4,11 @@ import { User } from "../../src/entities/user";
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { getUser, getUsers, updateUser } from "../utils/operations/modelOps";
-import { createUserJoe } from "../utils/testEntities";
+import { getUser, getUsers, createUser, updateUser } from "../utils/operations/modelOps";
+import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
-import { JoeAuthToken } from "../utils/testConfig";
+import { getJoeToken } from "../utils/testConfig";
 
 describe("model.user", () => {
     let connection: Connection;
@@ -54,7 +54,7 @@ describe("model.user", () => {
         });
 
         it("should modify an existing user", async () => {
-            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: JoeAuthToken });
+            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: getJoeToken() });
             expect(gqlUser).to.exist;
             expect(gqlUser).to.include(modifiedUser);
             const dbUser = await User.findOneOrFail(user.user_id);
@@ -65,13 +65,13 @@ describe("model.user", () => {
     describe("getUsers", () => {
         let user: User;
 
-        before(async () => {
+        beforeEach(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
         it("should get users", async () => {
-            const gqlUsers = await getUsers(testClient, { authorization: JoeAuthToken });
+            const gqlUsers = await getUsers(testClient, undefined, undefined,{ authorization: getJoeToken() });
 
             expect(gqlUsers).to.exist;
             expect(gqlUsers.length).to.equal(1);
@@ -80,8 +80,68 @@ describe("model.user", () => {
                 given_name: user.given_name,
                 family_name: user.family_name,
             });
-            expect(user).to.include(gqlUsers[0]);
+        
         });
+
+        it("should get more users", async () => {
+            let anne = {
+                given_name: "Anne",
+                family_name: "Bob",
+                email: user.email,
+                avatar: "anne_avatar"
+            } as User
+            let user1 = await createUser(testClient, anne,{ authorization: getJoeToken() });
+            let user2 = await createUserBilly(testClient);
+            const gqlUsers = await getUsers(testClient, undefined,undefined, { authorization: getJoeToken() });
+
+            expect(gqlUsers).to.exist;
+            expect(gqlUsers.length).to.equal(3);
+            
+        });
+        it("should get Joe users", async () => {
+            let anne = {
+                given_name: "Anne",
+                family_name: "Brown",
+                email: user.email,
+                avatar: "anne_avatar"
+            } as User
+            let user1 = createUser(testClient, anne,{ authorization: getJoeToken() });
+            let user2 = await createUserBilly(testClient);
+            const gqlUsers = await getUsers(testClient, user.email, undefined,{ authorization: getJoeToken() });
+
+            expect(gqlUsers).to.exist;
+            expect(gqlUsers.length).to.equal(2);
+            expect(gqlUsers[0]).to.deep.include({
+                family_name: user.family_name,
+            });
+            it("should get +44207344141 users", async () => {
+                let anne = {
+                    given_name: "Anne",
+                    family_name: "Brown",
+                    phone: "+44207344141",
+                    avatar: "anne_avatar"
+                } as User
+                let peter = {
+                    given_name: "Peter",
+                    family_name: "Brown",
+                    phone: anne.phone,
+                    avatar: "peter_avatar"
+                } as User
+                
+                let user1 = createUser(testClient, anne,{ authorization: getJoeToken() });
+                let user2 = await createUserBilly(testClient);
+                const gqlUsers = await getUsers(testClient, undefined, peter.phone, { authorization: getJoeToken() });
+    
+                expect(gqlUsers).to.exist;
+                expect(gqlUsers.length).to.equal(2);
+                expect(gqlUsers[0]).to.deep.include({
+                    family_name: peter.family_name,
+                });
+    
+            });
+
+        });
+
     });
 
     describe("getUser", () => {
@@ -93,7 +153,7 @@ describe("model.user", () => {
         });
 
         it("should get user by ID", async () => {
-            const gqlUser = await getUser(testClient, user.user_id, { authorization: JoeAuthToken });
+            const gqlUser = await getUser(testClient, user.user_id, { authorization: getJoeToken() });
             expect(gqlUser).to.exist;
             expect(user).to.include(gqlUser);
         });

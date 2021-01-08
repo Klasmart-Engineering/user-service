@@ -7,9 +7,9 @@ import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/testEntities";
-import { accountUUID } from "../../src/entities/user";
+import { v4 as uuidv4} from "uuid";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { JoeAuthToken } from "../utils/testConfig";
+import { getJoeToken } from "../utils/testConfig";
 
 const GET_ORGANIZATIONS = `
     query getOrganizations {
@@ -69,7 +69,7 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -90,7 +90,7 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -112,8 +112,8 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATION,
-                    variables: { organization_id: accountUUID() },
-                    headers: { authorization: JoeAuthToken },
+                    variables: { organization_id: uuidv4() },
+                    headers: { authorization: getJoeToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -135,7 +135,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: organization.organization_id },
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -183,7 +183,7 @@ describe("model.organization", () => {
                     mutation: RESET_ORGANIZATION_ROLES_PERMISSIONS,
                     variables: { organization_id: organization.organization_id },
                     headers: {
-                        authorization: JoeAuthToken,
+                        authorization: getJoeToken(),
                     },
                 });
 
@@ -226,7 +226,7 @@ describe("model.organization", () => {
                     mutation: RESET_ORGANIZATION_ROLES_PERMISSIONS,
                     variables: { organization_id: organization.organization_id },
                     headers: {
-                        authorization: JoeAuthToken,
+                        authorization: getJoeToken(),
                     },
                 });
 
@@ -268,7 +268,7 @@ describe("model.organization", () => {
                     mutation: RESET_ORGANIZATION_ROLES_PERMISSIONS,
                     variables: { organization_id: organization.organization_id },
                     headers: {
-                        authorization: JoeAuthToken,
+                        authorization: getJoeToken(),
                     },
                 });
 
@@ -321,7 +321,7 @@ describe("model.organization", () => {
                     mutation: RESET_ORGANIZATION_ROLES_PERMISSIONS,
                     variables: { organization_id: organization.organization_id },
                     headers: {
-                        authorization: JoeAuthToken,
+                        authorization: getJoeToken(),
                     },
                 });
 

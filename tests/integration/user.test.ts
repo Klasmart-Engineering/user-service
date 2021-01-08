@@ -3,7 +3,7 @@ import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { accountUUID, User } from "../../src/entities/user";
+import { User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
 import { createOrganizationAndValidate, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, mergeUser, updateUser } from "../utils/operations/userOps";
@@ -14,7 +14,7 @@ import { ApolloServerTestClient, createTestClient } from "../utils/createTestCli
 import { addOrganizationToUserAndValidate } from "../utils/operations/userOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
-import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
+import { getBillyToken, getJoeToken } from "../utils/testConfig";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -51,7 +51,7 @@ describe("user", () => {
         });
 
         it("should set the specified user properties", async () => {
-            const gqlUpdatedUser = await updateUser(testClient, user, { authorization: JoeAuthToken });
+            const gqlUpdatedUser = await updateUser(testClient, user, { authorization: getJoeToken() });
             const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
             expect(gqlUpdatedUser).to.exist;
             expect(dbUser).to.include(gqlUpdatedUser);
@@ -66,7 +66,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlMemberships = await getOrganizationMemberships(testClient, user, { authorization: JoeAuthToken });
+                const gqlMemberships = await getOrganizationMemberships(testClient, user, { authorization: getJoeToken() });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships).to.be.empty;
             });
@@ -79,7 +79,7 @@ describe("user", () => {
             });
 
             it("should return an array containing one organization membership", async () => {
-                const gqlMemberships = await getOrganizationMemberships(testClient, user, { authorization: JoeAuthToken });
+                const gqlMemberships = await getOrganizationMemberships(testClient, user, { authorization: getJoeToken() });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(1);
             });
@@ -98,7 +98,7 @@ describe("user", () => {
         });
 
         it("should get the organization membership associated with the specified organization ID", async () => {
-            const gqlMembership = await getOrganizationMembership(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
+            const gqlMembership = await getOrganizationMembership(testClient, user.user_id, organizationId, { authorization: getJoeToken() });
             const dbMembership = await OrganizationMembership.findOneOrFail({
                 where: {
                     user_id: user.user_id,
@@ -119,7 +119,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id, { authorization: JoeAuthToken });
+                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id, { authorization: getJoeToken() });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships).to.be.empty;
             });
@@ -128,12 +128,12 @@ describe("user", () => {
         context("when one", () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
-                const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, user.user_id, school.school_id, { authorization: JoeAuthToken })
+                const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: getJoeToken() });
+                await addUserToSchool(testClient, user.user_id, school.school_id, { authorization: getJoeToken() })
             });
 
             it("should return an array containing one school membership", async () => {
-                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id, { authorization: JoeAuthToken });
+                const gqlMemberships = await getSchoolMemberships(testClient, user.user_id, { authorization: getJoeToken() });
                 expect(gqlMemberships).to.exist;
                 expect(gqlMemberships.length).to.equal(1);
             });
@@ -147,13 +147,13 @@ describe("user", () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
-            const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+            const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: getJoeToken() });
             schoolId = school.school_id;
-            await addUserToSchool(testClient, user.user_id, schoolId, { authorization: JoeAuthToken });
+            await addUserToSchool(testClient, user.user_id, schoolId, { authorization: getJoeToken() });
         });
 
         it("should get school membership", async () => {
-            const gqlMembership = await getSchoolMembership(testClient, user.user_id, schoolId, { authorization: JoeAuthToken });
+            const gqlMembership = await getSchoolMembership(testClient, user.user_id, schoolId, { authorization: getJoeToken() });
             const dbMembership = await SchoolMembership.findOneOrFail({
                 where: {
                     user_id: user.user_id,
@@ -174,7 +174,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlClasses = await getClassesTeaching(testClient, user.user_id, { authorization: JoeAuthToken });
+                const gqlClasses = await getClassesTeaching(testClient, user.user_id, { authorization: getJoeToken() });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.be.empty;
             });
@@ -184,11 +184,11 @@ describe("user", () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
-                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: getJoeToken() });
             });
 
             it("should return an array containing one class", async () => {
-                const gqlClasses = await getClassesTeaching(testClient, user.user_id, { authorization: JoeAuthToken });
+                const gqlClasses = await getClassesTeaching(testClient, user.user_id, { authorization: getJoeToken() });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.have.lengthOf(1);
             });
@@ -203,7 +203,7 @@ describe("user", () => {
 
         context("when none", () => {
             it("should return an empty array", async () => {
-                const gqlClasses = await getClassesStudying(testClient, user.user_id, { authorization: JoeAuthToken });
+                const gqlClasses = await getClassesStudying(testClient, user.user_id, { authorization: getJoeToken() });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.be.empty;
             });
@@ -213,11 +213,11 @@ describe("user", () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 const cls = await createClass(testClient, organization.organization_id);
-                await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
+                await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: getJoeToken() });
             });
 
             it("should return an array containing one class", async () => {
-                const gqlClasses = await getClassesStudying(testClient, user.user_id, { authorization: JoeAuthToken });
+                const gqlClasses = await getClassesStudying(testClient, user.user_id, { authorization: getJoeToken() });
                 expect(gqlClasses).to.exist;
                 expect(gqlClasses).to.have.lengthOf(1);
             });
@@ -268,19 +268,26 @@ describe("user", () => {
         let org1RoleId: string;
         let org2RoleId: string;
         let idOfUserToBeQueried: string;
-        const tokenOfOrg1Owner = JoeAuthToken;
-        const tokenOfOrg2Owner = BillyAuthToken;
+        // The following are initialised to bootstrap values Billy and Joe don't yet exist
+        let tokenOfOrg1Owner = getJoeToken();
+        let tokenOfOrg2Owner = getBillyToken();
         const permissionName = PermissionName.edit_groups_30330;
-        const userToBeQueried = {
-            user_id: accountUUID("testuser@gmail.com"),
-            email: "testuser@gmail.com",
-        } as User;
+        let userToBeQueried: User
 
         beforeEach(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
+            userToBeQueried = {
+                given_name: "Anne",
+                family_name: "Bob",
+                email: "testuser@gmail.com",
+                avatar: "anne_avatar"
+            } as User
             const idOfOrg1Owner = user.user_id;
             const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
+            // The following are assigned the real values as Billy and Joe actually exist
+            tokenOfOrg1Owner = getJoeToken();
+            tokenOfOrg2Owner = getBillyToken();
             idOfUserToBeQueried = (await createUserAndValidate(testClient, userToBeQueried)).user_id;
             organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner)).organization_id;
             const organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, tokenOfOrg2Owner)).organization_id;
@@ -377,7 +384,9 @@ describe("user", () => {
             organizationId = organization.organization_id
             role = await createRole(testClient, organization.organization_id, "student");
             roleId = role.role_id
-            schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+            const school = await createSchool(testClient, organizationId, "school 1", { authorization: getJoeToken() });
+            expect(school).to.exist
+            schoolId = school.school_id
         });
         it("should merge one user into another marking the source user inactive", async () => {
 
@@ -390,11 +399,12 @@ describe("user", () => {
 
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
-            let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
-
-            let newUser = object.user
+            expect(oldUser).to.exist
+          //  let object = await organization["_setMembership"](undefined, "bob@nowhere.com", undefined, "Bob", "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"]( "bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
+            let newUser =  object.user
             let membership = object.membership
-            let schoolmemberships = object.schoolMemberships
+            let schoolmemberships =  object.schoolMemberships
             // newUser has memberships
             expect(newUser).to.exist
             expect(newUser.email).to.equal("bob@nowhere.com")
@@ -407,8 +417,10 @@ describe("user", () => {
             expect(membership).to.exist
             expect(membership.organization_id).to.equal(organizationId)
             expect(membership.user_id).to.equal(newUser.user_id)
+            let oldUserId = oldUser.user_id
+            let newUserId = newUser.user_id
             // Merging newUser into oldUser
-            let gqlUser = await mergeUser(testClient, oldUser.user_id, newUser.user_id, { authorization: JoeAuthToken })
+            let gqlUser = await mergeUser(testClient, oldUserId, newUserId, { authorization: getJoeToken() })
             // OldUser should have taken on newUser's memberships
             expect(gqlUser).to.exist
             expect(gqlUser.user_id).to.equal(oldUser.user_id)
@@ -492,10 +504,10 @@ describe("user", () => {
             expect(membership.user_id).to.equal(newUser.user_id)
 
             const cls = await createClass(testClient, organization.organization_id);
-            await addStudentToClass(testClient, cls.class_id, newUser.user_id, { authorization: JoeAuthToken });
+            await addStudentToClass(testClient, cls.class_id, newUser.user_id, { authorization: getJoeToken() });
 
             // Merging newUser into oldUser
-            let gqlUser = await mergeUser(testClient, oldUser.user_id, newUser.user_id, { authorization: JoeAuthToken })
+            let gqlUser = await mergeUser(testClient, oldUser.user_id, newUser.user_id, { authorization: getJoeToken() })
             // OldUser should have taken on newUser's memberships
             expect(gqlUser).to.exist
             expect(gqlUser.user_id).to.equal(oldUser.user_id)

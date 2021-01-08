@@ -1,9 +1,10 @@
 import { User } from "../../../src/entities/user";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
-import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
+import { getJoeToken } from "../testConfig";
+
 
 const NEW_USER = `
     mutation myMutation(
@@ -50,12 +51,18 @@ const SET_USER = `
 `;
 
 const GET_USERS = `
-    query myQuery {
-        users {
+    query myQuery(
+        $email:String
+        $phone:String) {
+        users (
+            email: $email
+            phone: $phone) {
             user_id
             given_name
             family_name
             email
+            phone
+            profile_name
             avatar
         }
     }
@@ -73,14 +80,12 @@ const GET_USER = `
     }
 `;
 
-/**
- * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
- */
+
 export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user, { authorization: JoeAuthToken });
+    const gqlUser = await createUser(testClient, user, { authorization: getJoeToken() });
     const dbUser = await User.findOneOrFail({ where: { email: user.email } });
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
@@ -107,6 +112,9 @@ export async function createUser(
 
     const res = await gqlTry(operation);
     const gqlUser = res.data?.newUser as User;
+    const dbUser = await User.findOneOrFail({ where: { user_id: gqlUser.user_id } });
+    expect(gqlUser).to.exist;
+    expect(dbUser).to.include(gqlUser);
     return gqlUser;
 }
 
@@ -124,12 +132,20 @@ export async function updateUser(testClient: ApolloServerTestClient, modifiedUse
     return gqlUser;
 }
 
-export async function getUsers(testClient: ApolloServerTestClient, headers?: Headers) {
+export async function getUsers(testClient: ApolloServerTestClient, email?:string, phone?:string,headers?: Headers) {
     const { query } = testClient;
-
+  
+    let variables:any = {}
+    if(email !== undefined){        
+        variables.email = email
+    }
+    if(phone !== undefined){
+        variables.phone = phone
+    }
     const operation = () => query({
         query: GET_USERS,
         headers: headers,
+        variables: variables
     });
 
     const res = await gqlTry(operation);

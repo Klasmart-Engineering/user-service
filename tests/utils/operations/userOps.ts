@@ -6,7 +6,7 @@ import { SchoolMembership } from "../../../src/entities/schoolMembership";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { gqlTry } from "../gqlTry";
-import { JoeAuthToken } from "../testConfig";
+import { getJoeToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 
 const CREATE_ORGANIZATION = `
@@ -165,7 +165,7 @@ export async function createOrganizationAndValidate(
     token?: string
 ): Promise<Organization> {
     organizationName = organizationName ?? "My Organization";
-    const gqlOrganization = await createOrganization(testClient, userId, organizationName,token)
+    const gqlOrganization = await createOrganization(testClient, userId, organizationName, token)
 
     expect(gqlOrganization).to.exist;
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
@@ -180,9 +180,9 @@ export async function createOrganization(
     organizationName: string,
     token?: string
 ): Promise<Organization> {
-   
-    token = token ?? JoeAuthToken
-    
+
+    token = token ?? getJoeToken()
+
     const { mutate } = testClient;
 
     const operation = () => mutate({
@@ -218,7 +218,7 @@ export async function addOrganizationToUserAndValidate(testClient: ApolloServerT
 export async function addOrganizationToUser(testClient: ApolloServerTestClient, userId: string, organizationId: string, token?: string) {
     const { mutate } = testClient;
 
-    token = token ?? JoeAuthToken;
+    token = token ?? getJoeToken();
 
     const operation = () => mutate({
         mutation: ADD_ORGANIZATION_TO_USER,
@@ -348,10 +348,10 @@ export async function getUserSchoolMembershipsWithPermission(testClient: ApolloS
     return gqlMemberships;
 }
 
-export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers){
+export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers) {
     const { mutate } = testClient;
 
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeToken() };
     console.log("userId:",userId,"otherId:",otherId)
     const operation = () => mutate({
         mutation: MERGE_USER,
@@ -360,6 +360,29 @@ export async function mergeUser(testClient: ApolloServerTestClient, userId: stri
     });
 
     const res = await gqlTry(operation);
-    const gqlUser = res.data?.user.merge as User;
+    const gqlUser = await res.data?.user.merge as User;
     return gqlUser;
+}
+
+export function userToPayload(user: User): any {
+    return {
+        "id": user.user_id,
+        "email": user.email,
+        "given_name": user.given_name,
+        "family_name": user.family_name,
+        "name": user.user_name,
+        "iss": "calmid-debug"
+    }
+}
+
+export function userToSuperPayload(user: User): any {
+    return {
+        "id": user.user_id,
+        "email": user.email,
+        "given_name": user.given_name,
+        "family_name": user.family_name,
+        "name": user.user_name,
+        "admin": true,
+        "iss": "calmid-debug"
+    }
 }

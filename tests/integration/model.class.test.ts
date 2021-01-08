@@ -7,7 +7,7 @@ import { Class } from "../../src/entities/class";
 import { createClass } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/testEntities";
-import { accountUUID } from "../../src/entities/user";
+import { v4 as uuidv4} from "uuid";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
 const GET_CLASSES = `
@@ -95,7 +95,7 @@ describe("model.class", () => {
 
                 const res = await query({
                     query: GET_CLASS,
-                    variables: { class_id: accountUUID() },
+                    variables: { class_id: uuidv4() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
