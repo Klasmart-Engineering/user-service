@@ -1,3 +1,7 @@
+directive @deprecated(
+  reason: String = "No longer supported"
+) on FIELD_DEFINITION
+
 type Query {
     me: User
     user(user_id: ID!): User
@@ -64,7 +68,7 @@ type User {
     """
     'my_organization' is the Organization that this user has created
     """
-    my_organization: Organization
+    my_organization: Organization @deprecated(reason: "Use `organization_ownerships`.")
     organization_ownerships: [OrganizationOwnership]
     memberships: [OrganizationMembership]
     membership(organization_id: ID!): OrganizationMembership
@@ -117,7 +121,7 @@ type Organization {
     """
     'owner' is the User that created this Organization
     """
-    owner: User
+    owner: User @deprecated(reason: "Use `organization_ownerships`.")
     primary_contact: User
     roles: [Role]
     memberships: [OrganizationMembership]
