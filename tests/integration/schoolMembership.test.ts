@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { Connection } from "typeorm";
 import { createServer } from "../../src/utils/createServer";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
-import {  ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
+import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate, createSchool, createRole } from "../utils/operations/organizationOps";
@@ -48,6 +48,10 @@ describe("SchoolMembership", () => {
         await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
         await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })
         schoolMembership = await getSchoolMembershipViaSchool(testClient, schoolId, userId, { authorization: BillyAuthToken });
+    });
+
+    describe("checkAllowed", async () => {
+        // TODO: Add tests.
     });
 
     describe("addRole", () => {
@@ -203,5 +207,9 @@ describe("SchoolMembership", () => {
                 expect(dbMembership.deleted_at).not.to.be.null
             });
         });
+    });
+
+    describe("inactivate", async () => {
+        // TODO: Add tests.
     });
 });

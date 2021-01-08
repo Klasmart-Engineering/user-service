@@ -23,7 +23,6 @@ import { createUserAndValidate } from "../utils/operations/modelOps";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
-import { gql } from "apollo-server-express";
 
 describe("user", () => {
     let connection: Connection;
@@ -43,20 +42,6 @@ describe("user", () => {
     function reloadDatabase() {
         return connection?.synchronize(true);
     }
-
-    describe("set", () => {
-        beforeEach(async () => {
-            await reloadDatabase();
-            user = await createUserJoe(testClient);
-        });
-
-        it("should set the specified user properties", async () => {
-            const gqlUpdatedUser = await updateUser(testClient, user, { authorization: JoeAuthToken });
-            const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
-            expect(gqlUpdatedUser).to.exist;
-            expect(dbUser).to.include(gqlUpdatedUser);
-        });
-    });
 
     describe("memberships", () => {
         beforeEach(async () => {
@@ -224,41 +209,8 @@ describe("user", () => {
         });
     });
 
-    describe("createOrganization", () => {
-        beforeEach(async () => {
-            await reloadDatabase();
-            user = await createUserJoe(testClient);
-        });
-
-        it("should create an organization", async () => {
-            const organization = await createOrganizationAndValidate(testClient, user.user_id);
-            expect(organization).to.exist;
-        });
-
-        it("creates the organization ownership", async () => {
-            const organization = await createOrganizationAndValidate(testClient, user.user_id);
-            const organizationOwnership = await OrganizationOwnership.find({
-                where: { organization_id: organization.organization_id, user_id: user.user_id }
-            })
-
-            expect(organizationOwnership).to.exist;
-        });
-    });
-
-    describe("addOrganization", () => {
-        let organizationId: string;
-
-        beforeEach(async () => {
-            await reloadDatabase();
-            user = await createUserJoe(testClient);
-            const organization = await createOrganizationAndValidate(testClient, user.user_id);
-            organizationId = organization.organization_id;
-        });
-
-        it("user should join the specified organization", async () => {
-            const membership = await addOrganizationToUserAndValidate(testClient, user.user_id, organizationId);
-            expect(membership).to.exist;
-        });
+    describe("organizationsWithPermission", async () => {
+        // TODO: Add tests.
     });
 
     describe("schoolsWithPermission", () => {
@@ -363,6 +315,62 @@ describe("user", () => {
             });
         });
     });
+
+    describe("set", () => {
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+        });
+
+        it("should set the specified user properties", async () => {
+            const gqlUpdatedUser = await updateUser(testClient, user, { authorization: JoeAuthToken });
+            const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
+            expect(gqlUpdatedUser).to.exist;
+            expect(dbUser).to.include(gqlUpdatedUser);
+        });
+    });
+
+    describe("createOrganization", () => {
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+        });
+
+        it("should create an organization", async () => {
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
+            expect(organization).to.exist;
+        });
+
+        it("creates the organization ownership", async () => {
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
+            const organizationOwnership = await OrganizationOwnership.find({
+                where: { organization_id: organization.organization_id, user_id: user.user_id }
+            })
+
+            expect(organizationOwnership).to.exist;
+        });
+    });
+
+    describe("addOrganization", () => {
+        let organizationId: string;
+
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+            const organization = await createOrganizationAndValidate(testClient, user.user_id);
+            organizationId = organization.organization_id;
+        });
+
+        it("user should join the specified organization", async () => {
+            const membership = await addOrganizationToUserAndValidate(testClient, user.user_id, organizationId);
+            expect(membership).to.exist;
+        });
+    });
+
+    describe("addSchool", async () => {
+        // TODO: Add tests.
+    });
+
     describe("merge", () => {
         let joeUser: User
         let organization: Organization
@@ -561,6 +569,10 @@ describe("user", () => {
             }
 
         });
+    });
+
+    describe("inactivate", async () => {
+        // TODO: Add tests.
     });
 });
 

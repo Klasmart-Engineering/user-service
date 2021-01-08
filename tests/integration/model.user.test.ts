@@ -28,6 +28,10 @@ describe("model.user", () => {
         return connection?.synchronize(true);
     }
 
+    describe("myUser", () => {
+        // TODO: Add tests.
+    });
+
     describe("newUser", () => {
         before(async () => await reloadDatabase());
 

@@ -228,4 +228,12 @@ describe("role", () => {
             });
         });
     });
+
+    describe("deny", async () => {
+        // TODO: Add tests.
+    });
+
+    describe("delete_role", async () => {
+        // TODO: Add tests.
+    });
 });

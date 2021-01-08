@@ -40,57 +40,6 @@ describe("school", () => {
         await connection.synchronize(true);
     });
 
-    describe("organization", () => {
-        let organizationId: string;
-        let schoolId: string;
-        let school : School;
-
-        beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
-            schoolId = school?.school_id;
-        });
-
-        it("the school status by default is active", async () => {
-            expect(school.status).to.eq(Status.ACTIVE)
-        });
-
-        context("no permissions required", () => {
-            it("should return the organization", async () => {
-                const gqlOrganization = await getSchoolOrganization(testClient, schoolId, { authorization: BillyAuthToken });
-
-                expect(gqlOrganization).to.exist;
-                expect(gqlOrganization).to.include({ organization_id: organizationId });
-            });
-        });
-    });
-
-    describe("classes", () => {
-        let organizationId: string;
-        let school : School;
-        let schoolId: string;
-        let classId: string;
-
-        beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
-            schoolId = school?.school_id;
-            classId = (await createClassAndValidate(testClient, organizationId)).class_id;
-            await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
-        });
-
-        context("no permissions required", () => {
-            it("should return all classes", async () => {
-                const gqlClasses = await getSchoolClasses(testClient, schoolId, { authorization: BillyAuthToken });
-
-                expect(gqlClasses).to.exist.with.lengthOf(1);
-                expect(gqlClasses[0]).to.include({ class_id: classId });
-            });
-        });
-    });
-
     describe("memberships", () => {
         let userId: string;
         let organizationId: string;
@@ -140,6 +89,57 @@ describe("school", () => {
 
                 expect(gqlMembership).to.exist;
                 expect(gqlMembership).to.include({ user_id: userId, school_id: schoolId });
+            });
+        });
+    });
+
+    describe("organization", () => {
+        let organizationId: string;
+        let schoolId: string;
+        let school : School;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
+            school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
+            schoolId = school?.school_id;
+        });
+
+        it("the school status by default is active", async () => {
+            expect(school.status).to.eq(Status.ACTIVE)
+        });
+
+        context("no permissions required", () => {
+            it("should return the organization", async () => {
+                const gqlOrganization = await getSchoolOrganization(testClient, schoolId, { authorization: BillyAuthToken });
+
+                expect(gqlOrganization).to.exist;
+                expect(gqlOrganization).to.include({ organization_id: organizationId });
+            });
+        });
+    });
+
+    describe("classes", () => {
+        let organizationId: string;
+        let school : School;
+        let schoolId: string;
+        let classId: string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
+            school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
+            schoolId = school?.school_id;
+            classId = (await createClassAndValidate(testClient, organizationId)).class_id;
+            await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+        });
+
+        context("no permissions required", () => {
+            it("should return all classes", async () => {
+                const gqlClasses = await getSchoolClasses(testClient, schoolId, { authorization: BillyAuthToken });
+
+                expect(gqlClasses).to.exist.with.lengthOf(1);
+                expect(gqlClasses[0]).to.include({ class_id: classId });
             });
         });
     });
@@ -457,5 +457,9 @@ describe("school", () => {
                 });
             });
         });
+    });
+
+    describe("inactivate", async () => {
+        // TODO: Add tests.
     });
 });

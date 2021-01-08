@@ -42,6 +42,10 @@ describe("model.role", () => {
         await connection?.close();
     });
 
+    describe("setRole", async () => {
+        // TODO: Add tests.
+    });
+
     describe("getRoles", () => {
         beforeEach(async () => {
             await connection.synchronize(true);

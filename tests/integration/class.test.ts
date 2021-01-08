@@ -1515,4 +1515,8 @@ describe("class", () => {
             });
         });
     });
+
+    describe("inactivate", async () => {
+        // TODO: Add tests.
+    });
 });
