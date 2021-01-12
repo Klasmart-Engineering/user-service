@@ -30,14 +30,6 @@ type Mutation {
         profile_name: String
         avatar: String
     ): User
-    newUser(
-        given_name: String
-        family_name: String
-        email: String
-        phone: String
-        profile_name: String
-        avatar: String
-    ): User
 
     organization(
         organization_id: ID!

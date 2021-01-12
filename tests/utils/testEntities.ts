@@ -7,14 +7,12 @@ import { userToPayload, userToSuperPayload } from "./operations/userOps"
 
 export async function createUserJoe(testClient: ApolloServerTestClient) {
     const joeUser = await getMe(testClient, { authorization: getJoeToken() })
-    // const joeUser =  await createUser(testClient, joe,{ authorization: getJoeToken() });
     setJoeToken(userToPayload(joeUser))
     return joeUser
 }
 
 export async function createUserBilly(testClient: ApolloServerTestClient) {
     const billyUser = await getMe(testClient, { authorization: getBillyToken() })
-    //const billyUser = await createUser(testClient, billy,{ authorization: getBillyToken() });
     setBillyToken(userToPayload(billyUser))
     setSuperBillyToken(userToSuperPayload(billyUser))
     return billyUser

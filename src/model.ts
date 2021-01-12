@@ -6,7 +6,6 @@ import {
     getRepository,
     Repository,
 } from 'typeorm'
-import { v4 as uuidv4 } from 'uuid'
 import { User } from './entities/user'
 import { Organization } from './entities/organization'
 import { Role } from './entities/role'
