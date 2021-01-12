@@ -6,7 +6,6 @@ import { School } from "../../../src/entities/school";
 import { Organization } from "../../../src/entities/organization";
 import { Class } from "../../../src/entities/class";
 
-
 const GET_ORGANIZATION = `
     query myQuery($school_id: ID!) {
         school(school_id: $school_id) {
@@ -65,7 +64,6 @@ const UPDATE_SCHOOL = `
         }
     }
 `;
-
 
 const ADD_USER_TO_SCHOOL = `
     mutation myMutation(

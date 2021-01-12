@@ -1,11 +1,11 @@
 directive @deprecated(
-    reason: String = "No longer supported"
+  reason: String = "No longer supported"
 ) on FIELD_DEFINITION
 
 type Query {
     me: User
     user(user_id: ID!): User
-    users(email: String, phone: String): [User]
+    users: [User]
 
     organization(organization_id: ID!): Organization
     organizations(organization_ids: [ID!]): [Organization]
@@ -26,16 +26,12 @@ type Mutation {
         given_name: String
         family_name: String
         email: String
-        phone: String
-        profile_name: String
         avatar: String
     ): User
     newUser(
         given_name: String
         family_name: String
         email: String
-        phone: String
-        profile_name: String
         avatar: String
     ): User
 
@@ -65,7 +61,6 @@ type User {
     given_name: String
     family_name: String
     email: String
-    profile_name: String
     phone: String
     avatar: String
 
@@ -73,8 +68,7 @@ type User {
     """
     'my_organization' is the Organization that this user has created
     """
-    my_organization: Organization
-        @deprecated(reason: "Use `organization_ownerships`.")
+    my_organization: Organization @deprecated(reason: "Use `organization_ownerships`.")
     organization_ownerships: [OrganizationOwnership]
     memberships: [OrganizationMembership]
     membership(organization_id: ID!): OrganizationMembership
@@ -86,9 +80,7 @@ type User {
     classesStudying: [Class]
 
     #query
-    organizationsWithPermission(
-        permission_name: String!
-    ): [OrganizationMembership]
+    organizationsWithPermission(permission_name: String!): [OrganizationMembership]
     schoolsWithPermission(permission_name: String!): [SchoolMembership]
 
     #mutations
@@ -106,7 +98,9 @@ type User {
         phone: String
         shortCode: String
     ): Organization
-    merge(other_id: String): User
+    merge(
+        other_id: String
+    ): User
     addOrganization(organization_id: ID!): OrganizationMembership
     addSchool(school_id: ID!): OrganizationMembership
 }
@@ -137,10 +131,7 @@ type Organization {
     classes: [Class]
 
     #query
-    membersWithPermission(
-        permission_name: String!
-        search_query: String
-    ): [OrganizationMembership]
+    membersWithPermission(permission_name: String!, search_query: String): [OrganizationMembership]
     findMembers(search_query: String!): [OrganizationMembership]
 
     #mutations
@@ -153,30 +144,14 @@ type Organization {
     ): Organization
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!): OrganizationMembership
-    inviteUser(
-        email: String
-        phone: String
-        given_name: String
-        family_name: String
-        organization_role_ids: [ID!]
-        school_ids: [ID!]
-        school_role_ids: [ID!]
-    ): MembershipUpdate
-    editMembership(
-        email: String
-        phone: String
-        given_name: String
-        family_name: String
-        organization_role_ids: [ID!]
-        school_ids: [ID!]
-        school_role_ids: [ID!]
-    ): MembershipUpdate
+    inviteUser(email: String, phone: String, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
+    editMembership(email: String, phone:String, given_name: String, family_name: String, organization_role_ids: [ID!], school_ids: [ID!], school_role_ids: [ID!]): MembershipUpdate
     createRole(role_name: String): Role
     createDefaultRoles(_: Int): [Role]
     resetDefaultRolesPermissions(_: Int): [Role]
     createSchool(school_name: String): School
     createClass(class_name: String): Class
-    delete(_: Int): Boolean
+    delete(_:Int): Boolean
 }
 
 type MembershipUpdate {
@@ -198,7 +173,7 @@ type OrganizationMembership {
     user: User
     roles: [Role]
     classes: [Class]
-    schoolMemberships(permission_name: String): [SchoolMembership]
+    schoolMemberships(permission_name:String): [SchoolMembership]
 
     #query
     checkAllowed(permission_name: ID!): Boolean
@@ -208,7 +183,7 @@ type OrganizationMembership {
     addRole(role_id: ID!): Role
     addRoles(role_ids: [ID!]!): [Role]
     removeRole(role_id: ID!): OrganizationMembership
-    leave(_: Int): Boolean
+    leave(_:Int): Boolean
 }
 
 type OrganizationOwnership {
@@ -220,6 +195,7 @@ type OrganizationOwnership {
     #connections
     organization: Organization
     user: User
+
 }
 
 type Role {
@@ -240,7 +216,7 @@ type Role {
     revoke(permission_name: String!): Boolean
     deny(permission_name: String!): Permission
 
-    delete_role(_: Int): Boolean
+    delete_role(_:Int): Boolean
 }
 
 type Permission {
@@ -268,7 +244,7 @@ type School {
     #mutations
     set(school_name: String): School
     addUser(user_id: ID!): SchoolMembership
-    delete(_: Int): Boolean
+    delete(_:Int): Boolean
 }
 
 type SchoolMembership {
@@ -290,7 +266,7 @@ type SchoolMembership {
     addRole(role_id: ID!): Role
     addRoles(role_ids: [ID!]!): [Role]
     removeRole(role_id: ID!): SchoolMembership
-    leave(_: Int): Boolean
+    leave(_:Int): Boolean
 }
 
 type Class {
@@ -314,15 +290,15 @@ type Class {
     #mutations
     set(class_name: String): Class
     addTeacher(user_id: ID!): User
-    editTeachers(teacher_ids: [ID!]): [User]
+    editTeachers(teacher_ids : [ID!]): [User]
     removeTeacher(user_id: ID!): Boolean
     addStudent(user_id: ID!): User
-    editStudents(student_ids: [ID!]): [User]
+    editStudents(student_ids : [ID!]): [User]
     removeStudent(user_id: ID!): Boolean
-    editSchools(school_ids: [ID!]): [School]
+    editSchools(school_ids : [ID!]): [School]
     addSchool(school_id: ID!): School
     removeSchool(school_id: ID!): Boolean
-    delete(_: Int): Boolean
+    delete(_:Int): Boolean
     # addSchedule(id: ID!, timestamp: Date): Boolean
     # removeSchedule(id: ID!): Boolean
 }

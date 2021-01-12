@@ -11,12 +11,11 @@ import {
     BaseEntity,
     EntityManager,
 } from 'typeorm'
-import { v4 as uuidv4 } from 'uuid'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { OrganizationOwnership } from './organizationOwnership'
 import { Role } from './role'
-import { User } from './user'
+import { User, accountUUID } from './user'
 import { Class } from './class'
 import { School } from './school'
 import { organizationAdminRole } from '../permissions/organizationAdmin'
@@ -403,6 +402,7 @@ export class Organization extends BaseEntity {
             console.error(e)
         }
     }
+
     private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {
         const role_repo = getRepository(Role)
         const roleLookup = async (role_id: string) => {
@@ -427,33 +427,13 @@ export class Organization extends BaseEntity {
         given_name?: string,
         family_name?: string
     ): Promise<User> {
-        let user: User
-        if (email !== undefined && phone !== undefined) {
-            user =
-                (await getRepository(User).findOne({
-                    where: { email: email, phone: phone },
-                })) || new User()
-        } else {
-            if (email !== undefined) {
-                user =
-                    (await getRepository(User).findOne({
-                        where: { email: email },
-                    })) || new User()
-            } else {
-                if (phone !== undefined) {
-                    user =
-                        (await getRepository(User).findOne({
-                            where: { phone: phone },
-                        })) || new User()
-                } else {
-                    throw 'No email or phone provided'
-                }
-            }
-        }
-        const userId = user.user_id ?? uuidv4()
-        user.user_id = userId
+        const hashSource = email ?? phone
+        const user_id = accountUUID(hashSource)
+        const user =
+            (await getRepository(User).findOne({ user_id })) || new User()
         user.email = email
         user.phone = phone
+        user.user_id = user_id
         if (given_name !== undefined) {
             user.given_name = given_name
         }
@@ -531,15 +511,23 @@ export class Organization extends BaseEntity {
         school_ids: string[] = [],
         school_role_ids: string[] = []
     ) {
+        if (!validateEmail(email) && validatePhone(email)) {
+            phone = email
+            email = undefined
+        } else if (!validatePhone(phone) && validateEmail(phone)) {
+            email = phone
+            phone = undefined
+        }
+
         if (!(validateEmail(email) || validatePhone(phone))) {
             throw 'No valid email or international all digit with leading + sign E.164 phone number provided'
         }
         return getManager().transaction(async (manager) => {
             console.log(
                 '_setMembership',
-                /*user_id,*/ email,
+                email,
                 phone,
-                /*profile_name,*/ given_name,
+                given_name,
                 family_name,
                 organization_role_ids,
                 school_ids,

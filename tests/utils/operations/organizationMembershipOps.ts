@@ -1,7 +1,7 @@
 import { ApolloServerTestClient } from "../createTestClient";
 import { Headers } from "node-mocks-http"
 import { gqlTry } from "../gqlTry";
-import { getJoeToken } from "../testConfig";
+import { JoeAuthToken } from "../testConfig";
 import { Role } from "../../../src/entities/role";
 import { OrganizationMembership } from "../../../src/entities/organizationMembership";
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
@@ -99,7 +99,7 @@ const GET_CLASSES_TEACHING = `
 
 export async function addRoleToOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, roleId: string, headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: getJoeToken() };
+    headers = headers ?? { authorization: JoeAuthToken };
 
     const operation = () => mutate({
         mutation: ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP,
@@ -113,7 +113,7 @@ export async function addRoleToOrganizationMembership(testClient: ApolloServerTe
 
 export async function addRolesToOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, roleIds: string[], headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: getJoeToken() };
+    headers = headers ?? { authorization: JoeAuthToken };
 
     const operation = () => mutate({
         mutation: ADD_ROLES_TO_ORGANIZATION_MEMBERSHIP,
@@ -127,7 +127,7 @@ export async function addRolesToOrganizationMembership(testClient: ApolloServerT
 
 export async function removeRoleToOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, roleId: string, headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: getJoeToken() };
+    headers = headers ?? { authorization: JoeAuthToken };
 
     const operation = () => mutate({
         mutation: REMOVE_ROLE_TO_ORGANIZATION_MEMBERSHIP,
@@ -141,7 +141,7 @@ export async function removeRoleToOrganizationMembership(testClient: ApolloServe
 
 export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string, headers?: Headers) {
         const { mutate } = testClient;
-        headers = headers ?? { authorization: getJoeToken() };
+        headers = headers ?? { authorization: JoeAuthToken };
      
     if (permission_name !== undefined){    
         const operation = () => mutate({
@@ -165,7 +165,7 @@ export async function getSchoolMembershipsForOrganizationMembership(testClient: 
 
 export async function leaveOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: getJoeToken() };
+    headers = headers ?? { authorization: JoeAuthToken };
 
     const operation = () => mutate({
         mutation: LEAVE_ORGANIZATION,

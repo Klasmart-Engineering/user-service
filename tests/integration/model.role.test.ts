@@ -7,7 +7,7 @@ import { Role } from "../../src/entities/role";
 import { createRole } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe } from "../utils/testEntities";
-import { v4 as uuidv4} from "uuid";
+import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
 const GET_ROLES = `
@@ -97,7 +97,7 @@ describe("model.role", () => {
         
                 const res = await query({
                     query: GET_ROLE,
-                    variables: { role_id: uuidv4() },
+                    variables: { role_id: accountUUID() },
                 });
         
                 expect(res.errors, res.errors?.toString()).to.be.undefined;

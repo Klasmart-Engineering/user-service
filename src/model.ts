@@ -6,8 +6,7 @@ import {
     getRepository,
     Repository,
 } from 'typeorm'
-import { v4 as uuidv4 } from 'uuid'
-import { User } from './entities/user'
+import { User, accountUUID } from './entities/user'
 import { Organization } from './entities/organization'
 import { Role } from './entities/role'
 import { Class } from './entities/class'
@@ -119,10 +118,10 @@ export class Model {
         console.info('Unauthenticated endpoint call newUser')
 
         const newUser = new User()
-        newUser.user_id = uuidv4()
+        const hashSource = email ?? phone
+        newUser.user_id = accountUUID(hashSource)
         newUser.given_name = given_name
         newUser.family_name = family_name
-        //newUser.profile_name = profile_name
         newUser.email = email
         newUser.phone = phone
         newUser.avatar = avatar
@@ -164,26 +163,10 @@ export class Model {
         const user = await this.userRepository.findOneOrFail(user_id)
         return user
     }
-    public async getUsers({ email, phone }: any) {
-        if (email !== undefined && phone !== undefined) {
-            return await this.userRepository.find({
-                where: { email: email, phone: phone },
-            })
-        } else {
-            if (phone !== undefined) {
-                return await this.userRepository.find({
-                    where: { phone: phone },
-                })
-            } else {
-                if (email !== undefined) {
-                    return await this.userRepository.find({
-                        where: { email: email },
-                    })
-                } else {
-                    return await this.userRepository.find()
-                }
-            }
-        }
+    public async getUsers() {
+        console.log('Unauthenticated endpoint call getUsers')
+
+        return await this.userRepository.find()
     }
 
     public async setOrganization({

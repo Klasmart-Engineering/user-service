@@ -1,31 +1,13 @@
 import { User } from "../../src/entities/user";
 import { ApolloServerTestClient } from "./createTestClient";
-import { createUser } from "./operations/modelOps";
-import { setJoeToken, setBillyToken, setSuperBillyToken, getJoeToken, getBillyToken}  from "./testConfig"
-import { userToPayload, userToSuperPayload } from "./operations/userOps"
+import { createUserAndValidate } from "./operations/modelOps";
 
-
-/*
 export function createUserJoe(testClient: ApolloServerTestClient) {
     return createUserAndValidate(testClient, joe);
 }
 
 export function createUserBilly(testClient: ApolloServerTestClient) {
     return createUserAndValidate(testClient, billy);
-*/
-
-
-export async function createUserJoe(testClient: ApolloServerTestClient) {
-    const joeUser =  await createUser(testClient, joe,{ authorization: getJoeToken() });
-    setJoeToken(userToPayload(joeUser))
-    return joeUser
-}
-
-export async function createUserBilly(testClient: ApolloServerTestClient) {
-    const billyUser = await createUser(testClient, billy,{ authorization: getBillyToken() });
-    setBillyToken(userToPayload(billyUser))
-    setSuperBillyToken(userToSuperPayload(billyUser))
-    return billyUser
 }
 
 const joe = {
@@ -43,4 +25,3 @@ const billy = {
     email: "billy@gmail.com",
     avatar: "billy_avatar",
 } as User;
-
