@@ -35,8 +35,6 @@ export const createServer = (model: Model, context?: any) =>
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
-                newUser: (_parent, args, _context, _info) =>
-                    model.newUser(args),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 roles: () => model.getRoles(),

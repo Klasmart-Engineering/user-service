@@ -1,9 +1,12 @@
 import { User } from "../../../src/entities/user";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
+import { v4 as uuidv4 } from "uuid"
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
-import { getJoeToken } from "../testConfig";
+import { getJoeToken, generateToken } from "../testConfig";
+import { userToPayload } from "./userOps"
+ 
 
 
 const NEW_USER = `
@@ -75,18 +78,35 @@ const GET_USER = `
             given_name
             family_name
             email
+           
             avatar
         }
     }
 `;
 
 
+const GET_ME =  `
+    query myQuery {
+        me {
+            user_id
+            given_name
+            family_name
+            email
+            phone
+            profile_name
+            avatar
+        }
+    }
+`;
+
 export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user, { authorization: getJoeToken() });
-    const dbUser = await User.findOneOrFail({ where: { email: user.email } });
+    user.user_id = user.user_id ?? uuidv4()
+    const token = generateToken(userToPayload(user))
+    const gqlUser = await getMe(testClient, { authorization: token });
+    const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
     expect(dbUser).to.include(user);
@@ -94,29 +114,6 @@ export async function createUserAndValidate(
     return gqlUser;
 }
 
-/**
- * Creates a new user, verifies the GraphQL operation completed without error, and returns the GraphQL response.
- */
-export async function createUser(
-    testClient: ApolloServerTestClient,
-    user: User,
-    headers: Headers
-): Promise<User> {
-    const { mutate } = testClient;
-
-    const operation = () => mutate({
-        mutation: NEW_USER,
-        variables: user as any,
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.newUser as User;
-    const dbUser = await User.findOneOrFail({ where: { user_id: gqlUser.user_id } });
-    expect(gqlUser).to.exist;
-    expect(dbUser).to.include(gqlUser);
-    return gqlUser;
-}
 
 export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {
     const { mutate } = testClient;
@@ -164,5 +161,18 @@ export async function getUser(testClient: ApolloServerTestClient, userId: string
 
     const res = await gqlTry(operation);
     const gqlUser = res.data?.user as User;
+    return gqlUser;
+}
+
+export async function getMe(testClient: ApolloServerTestClient, headers?: Headers) {
+    const { query } = testClient;
+            
+    const operation = () => query({
+        query: GET_ME,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlUser = res.data?.me as User;
     return gqlUser;
 }

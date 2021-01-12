@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { Connection } from "typeorm"
+import { v4 as uuidv4 } from "uuid"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
@@ -11,15 +12,15 @@ import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { addOrganizationToUserAndValidate } from "../utils/operations/userOps";
+import { addOrganizationToUserAndValidate, userToPayload} from "../utils/operations/userOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
-import { getBillyToken, getJoeToken } from "../utils/testConfig";
+import { getBillyToken, getJoeToken, generateToken } from "../utils/testConfig";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../utils/operations/schoolMembershipOps";
-import { createUserAndValidate } from "../utils/operations/modelOps";
+import { createUserAndValidate, getMe} from "../utils/operations/modelOps";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
@@ -278,6 +279,7 @@ describe("user", () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
             userToBeQueried = {
+                user_id: uuidv4(),
                 given_name: "Anne",
                 family_name: "Bob",
                 email: "testuser@gmail.com",
@@ -288,7 +290,9 @@ describe("user", () => {
             // The following are assigned the real values as Billy and Joe actually exist
             tokenOfOrg1Owner = getJoeToken();
             tokenOfOrg2Owner = getBillyToken();
-            idOfUserToBeQueried = (await createUserAndValidate(testClient, userToBeQueried)).user_id;
+            const annToken = generateToken(userToPayload(userToBeQueried))
+            idOfUserToBeQueried = (await getMe(testClient, { authorization: annToken })).user_id;
+            //idOfUserToBeQueried = (await createUserAndValidate(testClient, userToBeQueried)).user_id;
             organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner)).organization_id;
             const organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, tokenOfOrg2Owner)).organization_id;
             await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization1Id, tokenOfOrg1Owner);
@@ -391,6 +395,7 @@ describe("user", () => {
         it("should merge one user into another marking the source user inactive", async () => {
 
             let anne = {
+                user_id: uuidv4(),
                 given_name: "Anne",
                 family_name: "Bob",
                 email: "anne@gmail.com",
@@ -398,7 +403,8 @@ describe("user", () => {
             } as User
 
             // oldUser is a bare user with no memberships
-            let oldUser = await createUserAndValidate(testClient, anne)
+            const annToken = generateToken(userToPayload(anne))
+            const oldUser = await getMe(testClient, { authorization: annToken });
             expect(oldUser).to.exist
           //  let object = await organization["_setMembership"](undefined, "bob@nowhere.com", undefined, "Bob", "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
             let object = await organization["_setMembership"]( "bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
@@ -476,14 +482,16 @@ describe("user", () => {
         it("should merge one user into another including classes marking the source user inactive", async () => {
 
             let anne = {
+                user_id: uuidv4(),
                 given_name: "Anne",
                 family_name: "Bob",
                 email: "anne@gmail.com",
                 avatar: "anne_avatar"
             } as User
-
+            const annToken = generateToken(userToPayload(anne))
+            const oldUser = await getMe(testClient, { authorization: annToken });
             // oldUser is a bare user with no memberships
-            let oldUser = await createUserAndValidate(testClient, anne)
+            //let oldUser = await createUserAndValidate(testClient, anne)
 	        expect(oldUser).to.exist
             let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", new Array(roleId), Array(schoolId), new Array(roleId))
 

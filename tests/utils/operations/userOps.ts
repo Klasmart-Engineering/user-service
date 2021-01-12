@@ -368,9 +368,12 @@ export function userToPayload(user: User): any {
     return {
         "id": user.user_id,
         "email": user.email,
+        "phone": user.phone,
+        "profile_name": user.profile_name,
         "given_name": user.given_name,
         "family_name": user.family_name,
         "name": user.user_name,
+        "avatar": user.avatar,
         "iss": "calmid-debug"
     }
 }
@@ -379,9 +382,12 @@ export function userToSuperPayload(user: User): any {
     return {
         "id": user.user_id,
         "email": user.email,
+        "phone": user.phone,
+        "profile_name": user.profile_name,
         "given_name": user.given_name,
         "family_name": user.family_name,
         "name": user.user_name,
+        "avatar": user.avatar,
         "admin": true,
         "iss": "calmid-debug"
     }

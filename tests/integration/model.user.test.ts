@@ -1,14 +1,16 @@
 import { expect } from "chai";
 import { Connection } from "typeorm"
+import { v4 as uuidv4 } from "uuid"
 import { User } from "../../src/entities/user";
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { getUser, getUsers, createUser, updateUser } from "../utils/operations/modelOps";
+import { getUser, getUsers, createUserAndValidate, updateUser, getMe } from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
-import { getJoeToken } from "../utils/testConfig";
+import { generateToken, getJoeToken } from "../utils/testConfig";
+import { userToPayload } from "../utils/operations/userOps"
 
 describe("model.user", () => {
     let connection: Connection;
@@ -90,7 +92,7 @@ describe("model.user", () => {
                 email: user.email,
                 avatar: "anne_avatar"
             } as User
-            let user1 = await createUser(testClient, anne,{ authorization: getJoeToken() });
+            let user1 = await createUserAndValidate(testClient, anne);
             let user2 = await createUserBilly(testClient);
             const gqlUsers = await getUsers(testClient, undefined,undefined, { authorization: getJoeToken() });
 
@@ -105,7 +107,7 @@ describe("model.user", () => {
                 email: user.email,
                 avatar: "anne_avatar"
             } as User
-            let user1 = createUser(testClient, anne,{ authorization: getJoeToken() });
+            let user1 = createUserAndValidate(testClient, anne);
             let user2 = await createUserBilly(testClient);
             const gqlUsers = await getUsers(testClient, user.email, undefined,{ authorization: getJoeToken() });
 
@@ -128,7 +130,7 @@ describe("model.user", () => {
                     avatar: "peter_avatar"
                 } as User
                 
-                let user1 = createUser(testClient, anne,{ authorization: getJoeToken() });
+                let user1 = createUserAndValidate(testClient, anne);
                 let user2 = await createUserBilly(testClient);
                 const gqlUsers = await getUsers(testClient, undefined, peter.phone, { authorization: getJoeToken() });
     
@@ -156,6 +158,27 @@ describe("model.user", () => {
             const gqlUser = await getUser(testClient, user.user_id, { authorization: getJoeToken() });
             expect(gqlUser).to.exist;
             expect(user).to.include(gqlUser);
+        });
+    });
+
+    describe("getMe", () => {
+        let user: User;
+        before(async () => {
+            await reloadDatabase();
+        });
+        it("Should create a user", async () => {
+             let anne = {
+                user_id: uuidv4(),
+                given_name: "Anne",
+                family_name: "Bob",
+                email: "anne@nowhere.com",
+                avatar: "anne_avatar"
+            } as User
+            const annToken = generateToken(userToPayload(anne))
+            const gqlUser = await getMe(testClient, { authorization: annToken });
+            expect(gqlUser).to.exist;
+            const dbUser = await User.findOneOrFail(anne.user_id);
+            expect(dbUser).to.include(gqlUser);
         });
     });
 });

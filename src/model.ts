@@ -100,6 +100,16 @@ export class Model {
                 modified = true
             }
 
+            if (!user.profile_name && token.profile_name) {
+                user.profile_name = token.profile_name
+                modified = true
+            }
+
+            if (!user.avatar && token.avatar) {
+                user.avatar = token.avatar
+                modified = true
+            }
+
             if (modified) {
                 await this.manager.save(user)
             }
@@ -108,27 +118,6 @@ export class Model {
         } catch (e) {
             console.error(e)
         }
-    }
-    public async newUser({
-        given_name,
-        family_name,
-        email,
-        phone,
-        avatar,
-    }: any) {
-        console.info('Unauthenticated endpoint call newUser')
-
-        const newUser = new User()
-        newUser.user_id = uuidv4()
-        newUser.given_name = given_name
-        newUser.family_name = family_name
-        //newUser.profile_name = profile_name
-        newUser.email = email
-        newUser.phone = phone
-        newUser.avatar = avatar
-
-        await this.manager.save(newUser)
-        return newUser
     }
 
     public async setUser({
