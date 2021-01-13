@@ -6,6 +6,7 @@ import { createServer } from "../../src/utils/createServer";
 import { User } from "../../src/entities/user";
 import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -681,7 +682,7 @@ describe("organization", () => {
     });
 
 
-    /*
+    
     describe("inviteUser", async () => {
         context("We have an email or phone, given_name, family_name, organization_role_ids, school_ids and school_role_ids", () => {
             let userId: string;
@@ -702,6 +703,37 @@ describe("organization", () => {
                 await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeToken()});
             });
 
+            it("adds the user to an organization", async () => {
+
+                let anne = {
+                    given_name: "Anne",
+                    family_name: "Bob",
+                    email: "ann@nowhere.com",
+                    avatar: "anne_avatar"
+                } as User
+                let user1 = await createUserAndValidate(testClient, anne);
+                
+                let gqlresult = await inviteUser( testClient, organizationId, anne.email, undefined, anne.given_name, anne.family_name, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeToken() })
+                let newUser = gqlresult.user
+                let membership = gqlresult.membership
+                let schoolmemberships = gqlresult.schoolMemberships
+
+                expect(newUser).to.exist
+                expect(newUser.email).to.equal(anne.email)
+                expect(newUser.phone).to.be.null
+                expect(newUser.user_id).to.equal(user1.user_id)
+
+                expect(schoolmemberships).to.exist
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                expect(membership).to.exist
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser.user_id)
+            });
+
+            /*
             it("creates the user when email provided", async () => {
             /*
             it("should should create the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
@@ -846,10 +878,11 @@ describe("organization", () => {
 
                     expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
                 });
-            });
+                */
         });
     });
-    */
+    
+    
    /*
     describe("editMemberships", async () => {
         context("We have an user_id, email or phone, given_name, family_name, organization_role_ids, school_ids and school_role_ids", () => {

@@ -6,6 +6,7 @@ import {
     getRepository,
     Repository,
 } from 'typeorm'
+import { v4 as uuidv4 } from 'uuid'
 import { User } from './entities/user'
 import { Organization } from './entities/organization'
 import { Role } from './entities/role'
@@ -117,6 +118,29 @@ export class Model {
         } catch (e) {
             console.error(e)
         }
+    }
+
+    public async newUser({
+        given_name,
+        family_name,
+        email,
+        phone,
+        avatar,
+    }: any) {
+        console.info('Unauthenticated endpoint call newUser')
+        console.info('call newUser is depreciated')
+
+        const newUser = new User()
+        newUser.user_id = uuidv4()
+        newUser.given_name = given_name
+        newUser.family_name = family_name
+        //newUser.profile_name = profile_name
+        newUser.email = email
+        newUser.phone = phone
+        newUser.avatar = avatar
+
+        await this.manager.save(newUser)
+        return newUser
     }
 
     public async setUser({

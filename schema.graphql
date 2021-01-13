@@ -30,7 +30,14 @@ type Mutation {
         profile_name: String
         avatar: String
     ): User
-
+    newUser(
+        given_name: String
+        family_name: String
+        email: String
+        phone: String
+        profile_name: String
+        avatar: String
+    ): User @deprecated(reason: "Use `me`.")
     organization(
         organization_id: ID!
         organization_name: String
