@@ -6,7 +6,7 @@ import { createServer } from "../../src/utils/createServer";
 import { accountUUID, User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
-import { createOrganizationAndValidate, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, mergeUser, updateUser } from "../utils/operations/userOps";
+import { createOrganizationAndValidate, createOrganization, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, mergeUser, updateUser } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
@@ -24,6 +24,10 @@ import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
 import { gql } from "apollo-server-express";
+
+import chaiAsPromised from "chai-as-promised";
+import chai from "chai"
+chai.use(chaiAsPromised);
 
 describe("user", () => {
     let connection: Connection;
@@ -242,6 +246,18 @@ describe("user", () => {
             })
 
             expect(organizationOwnership).to.exist;
+        });
+
+        context("when the user already has an active organisation", () => {
+            beforeEach(async () => {
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
+            });
+
+            it("does not create another organisation", async () => {
+                const fn = () => createOrganization(testClient, user.user_id, "Another Org");
+
+                expect(fn()).to.be.rejected;
+            });
         });
     });
 
