@@ -73,6 +73,14 @@ const GET_USER = `
     }
 `;
 
+const SWITCH_USER = `
+    mutation switchUser($user_id: ID!) {
+        switchUser(user_id: $user_id) {
+            user_id
+            email
+        }
+    }
+`;
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -110,6 +118,19 @@ export async function createUser(
     return gqlUser;
 }
 
+export async function switchUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: SWITCH_USER,
+        variables: { user_id: userId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    return res;
+}
+
 export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {
     const { mutate } = testClient;
 
@@ -139,7 +160,7 @@ export async function getUsers(testClient: ApolloServerTestClient, headers?: Hea
 
 export async function getUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
     const { query } = testClient;
-            
+
     const operation = () => query({
         query: GET_USER,
         variables: { user_id: userId },

@@ -13,8 +13,7 @@ export const createServer = (model: Model, context?: any) =>
         })[0].document,
         resolvers: {
             Query: {
-                me: (_parent, _args, ctx, _info) =>
-                    model.getMyUser(ctx),
+                me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 users: () => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
@@ -34,9 +33,10 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSchool(args),
             },
             Mutation: {
-                me: (_parent, _args, ctx, _info) =>
-                    model.getMyUser(ctx),
+                me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
+                switchUser: (_parent, args, ctx, info) =>
+                    model.switchUser(args, ctx, info),
                 newUser: (_parent, args, _context, _info) =>
                     model.newUser(args),
                 organization: (_parent, args, _context, _info) =>
@@ -63,7 +63,7 @@ export const createServer = (model: Model, context?: any) =>
         },
         context:
             context ??
-            (async ({ req, connection }) => {
+            (async ({ res, req, connection }) => {
                 if (connection) {
                     return connection.context
                 }
@@ -76,7 +76,7 @@ export const createServer = (model: Model, context?: any) =>
                     console.log('User not authenticated')
                 }
 
-                return { token, permissions }
+                return { token, permissions, res }
             }),
         playground: {
             settings: {

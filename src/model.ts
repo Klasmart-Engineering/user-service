@@ -6,6 +6,7 @@ import {
     getRepository,
     Repository,
 } from 'typeorm'
+import { GraphQLResolveInfo } from 'graphql'
 import { User, accountUUID } from './entities/user'
 import { Organization } from './entities/organization'
 import { Role } from './entities/role'
@@ -128,6 +129,32 @@ export class Model {
 
         await this.manager.save(newUser)
         return newUser
+    }
+
+    public async switchUser(
+        { user_id }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const userEmail = context.token?.email
+        const userPhone = context.token?.phone
+        let user = undefined
+
+        if(userEmail) {
+            user = await User.findOne({ where: { email: userEmail, user_id: user_id } })
+        }else if(userPhone) {
+            user = await User.findOne({ where: { phone: userPhone, user_id: user_id  } })
+        }
+
+        if(!user) {
+            throw new Error(
+                `Not able to switch to user ${user_id}. Please try authenticating again`
+            )
+        }
+
+        context.res.cookie('user_id', user.user_id)
+
+        return user
     }
 
     public async setUser({

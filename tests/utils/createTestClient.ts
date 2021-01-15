@@ -3,7 +3,7 @@
  * and [apollo-server-integration-testing](https://github.com/zapier/apollo-server-integration-testing),
  * this allows the use of `headers` while making a request
  *
- * Credits to the original authors 
+ * Credits to the original authors
  */
 
 import express from 'express';
@@ -113,44 +113,47 @@ export interface ApolloServerTestClient {
  * @returns `ApolloServerTestClient`
  */
 export const createTestClient = (server: ApolloServer): ApolloServerTestClient => {
-  const app = express();
-  server.applyMiddleware({ app });
+    const app = express();
+    server.applyMiddleware({ app });
 
-  const test = async ({ query, mutation, ...args }: Query | Mutation): Promise<GraphQLResponse> => {
-    const operation = query || mutation;
+    const test = async ({ query, mutation, ...args }: Query | Mutation): Promise<GraphQLResponse> => {
+        const operation = query || mutation;
 
-    if (!operation || (query && mutation)) {
-      throw new Error('Either `query` or `mutation` must be passed, but not both.');
-    }
+        if (!operation || (query && mutation)) {
+            throw new Error('Either `query` or `mutation` must be passed, but not both.');
+        }
 
-    /**
-     * Set the `Headers` for the `Request`
-     */
-    const req = mockRequest({
-      headers: args.headers,
-    });
-    const res = mockResponse();
+        /**
+         * Set the `Headers` for the `Request`
+         */
+        const req = mockRequest({
+            headers: args.headers,
+        });
+        const res = mockResponse();
 
-    let variables;
-    if (args.variables) {
-      variables = args.variables;
-    }
+        let variables;
+        if (args.variables) {
+            variables = args.variables;
+        }
 
-    const graphQLOptions = await server.createGraphQLServerOptions(req, res);
+        const graphQLOptions = await server.createGraphQLServerOptions(req, res);
 
-    const { graphqlResponse } = await runHttpQuery([req, res], {
-      method: 'POST',
-      options: graphQLOptions,
-      query: {
-        // operation can be a string or an AST, but `runHttpQuery` only accepts a string
-        query: typeof operation === 'string' ? operation : print(operation),
-        variables,
-      },
-      request: convertNodeHttpToRequest(req),
-    });
+        const { graphqlResponse } = await runHttpQuery([req, res], {
+            method: 'POST',
+            options: graphQLOptions,
+            query: {
+                // operation can be a string or an AST, but `runHttpQuery` only accepts a string
+                query: typeof operation === 'string' ? operation : print(operation),
+                variables,
+            },
+            request: convertNodeHttpToRequest(req),
+        });
 
-    return JSON.parse(graphqlResponse) as GraphQLResponse;
-  };
+        let gqlResponse = JSON.parse(graphqlResponse)
+        gqlResponse.extensions = { cookies: res.cookies }
 
-  return { query: test, mutate: test };
+        return gqlResponse as GraphQLResponse;
+    };
+
+    return { query: test, mutate: test };
 };

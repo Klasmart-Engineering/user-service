@@ -20,6 +20,7 @@ Sentry.init({
 export interface Context {
     token?: any
     sessionId?: string
+    res?: any
     websocket?: WebSocket
     permissions: UserPermissions
 }

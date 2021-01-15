@@ -34,6 +34,7 @@ type Mutation {
         email: String
         avatar: String
     ): User
+    switchUser(user_id: ID!): User
 
     organization(
         organization_id: ID!
