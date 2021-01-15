@@ -46,8 +46,18 @@ export function validatePhone(phone?: string): boolean {
     return false
 }
 
-const normalizedLowercaseTrimmed = (x: string) =>
+export function validateDOB(dob?: string): boolean {
+    const dob_re = /^(((0)[0-9])|((1)[0-2]))(-)\d{4}$/
+    if (dob !== undefined && dob.match(dob_re)) {
+        return true
+    }
+    return false
+}
+
+export const normalizedLowercaseTrimmed = (x: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
+
+export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -325,6 +335,7 @@ export class Organization extends BaseEntity {
             phone,
             given_name,
             family_name,
+            date_of_birth,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -346,11 +357,14 @@ export class Organization extends BaseEntity {
             email = normalizedLowercaseTrimmed(email)
             phone = normalizedLowercaseTrimmed(phone)
 
+            date_of_birth = padShortDob(date_of_birth)
+
             const result = await this._setMembership(
                 email,
                 phone,
                 given_name,
                 family_name,
+                date_of_birth,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -367,6 +381,7 @@ export class Organization extends BaseEntity {
             phone,
             given_name,
             family_name,
+            date_of_birth,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -387,12 +402,14 @@ export class Organization extends BaseEntity {
             }
             email = normalizedLowercaseTrimmed(email)
             phone = normalizedLowercaseTrimmed(phone)
+            date_of_birth = padShortDob(date_of_birth)
 
             const result = await this._setMembership(
                 email,
                 phone,
                 given_name,
                 family_name,
+                date_of_birth,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -425,7 +442,8 @@ export class Organization extends BaseEntity {
         email?: string,
         phone?: string,
         given_name?: string,
-        family_name?: string
+        family_name?: string,
+        date_of_birth?: string
     ): Promise<User> {
         const hashSource = email ?? phone
         const user_id = accountUUID(hashSource)
@@ -439,6 +457,9 @@ export class Organization extends BaseEntity {
         }
         if (family_name !== undefined) {
             user.family_name = family_name
+        }
+        if (date_of_birth !== undefined) {
+            user.date_of_birth = date_of_birth
         }
         return user
     }
@@ -507,6 +528,7 @@ export class Organization extends BaseEntity {
         phone?: string,
         given_name?: string,
         family_name?: string,
+        date_of_birth?: string,
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = []
@@ -518,10 +540,13 @@ export class Organization extends BaseEntity {
             email = phone
             phone = undefined
         }
-
         if (!(validateEmail(email) || validatePhone(phone))) {
             throw 'No valid email or international all digit with leading + sign E.164 phone number provided'
         }
+        if (!validateDOB(date_of_birth)) {
+            date_of_birth = undefined
+        }
+
         return getManager().transaction(async (manager) => {
             console.log(
                 '_setMembership',
@@ -529,6 +554,7 @@ export class Organization extends BaseEntity {
                 phone,
                 given_name,
                 family_name,
+                date_of_birth,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -544,7 +570,8 @@ export class Organization extends BaseEntity {
                 email,
                 phone,
                 given_name,
-                family_name
+                family_name,
+                date_of_birth
             )
             const membership = await this.membershipOrganization(
                 user,

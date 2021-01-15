@@ -44,6 +44,9 @@ export class User extends BaseEntity {
     public phone?: string
 
     @Column({ nullable: true })
+    public date_of_birth?: string
+
+    @Column({ nullable: true })
     public avatar?: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })

@@ -8,7 +8,14 @@ import {
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User, accountUUID } from './entities/user'
-import { Organization } from './entities/organization'
+import {
+    Organization,
+    validateDOB,
+    validateEmail,
+    validatePhone,
+    normalizedLowercaseTrimmed,
+    padShortDob,
+} from './entities/organization'
 import { Role } from './entities/role'
 import { Class } from './entities/class'
 import { Context } from './main'
@@ -81,13 +88,18 @@ export class Model {
             }
 
             if (user.email !== token.email) {
-                user.email = token.email
-                modified = true
+                token.email = normalizedLowercaseTrimmed(token.email)
+                if (validateEmail(token.email)) {
+                    user.email = token.email
+                    modified = true
+                }
             }
 
             if (user.phone !== token.phone) {
-                user.phone = token.phone
-                modified = true
+                if (validatePhone(token.phone)) {
+                    user.phone = token.phone
+                    modified = true
+                }
             }
 
             if (!user.given_name && token.given_name) {
@@ -98,6 +110,14 @@ export class Model {
             if (!user.family_name && token.family_name) {
                 user.family_name = token.family_name
                 modified = true
+            }
+
+            if (!user.date_of_birth && token.date_of_birth) {
+                token.date_of_birth = padShortDob(token.date_of_birth)
+                if (validateDOB(token.date_of_birth)) {
+                    user.date_of_birth = token.date_of_birth
+                    modified = true
+                }
             }
 
             if (modified) {
