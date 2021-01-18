@@ -5,7 +5,7 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken } from "../utils/testConfig";
-import { switchUser } from "../utils/operations/modelOps";
+import { switchUser, myUsers } from "../utils/operations/modelOps";
 import { Model } from "../../src/model";
 import { User } from "../../src/entities/user";
 import chaiAsPromised from "chai-as-promised";
@@ -49,7 +49,7 @@ describe("model", () => {
             context("and the user_id is on the account", () => {
                 it("returns the expected user", async () => {
                     const gqlRes = await switchUser(testClient, user.user_id, { authorization: JoeAuthToken });
-                    const gqlUser = gqlRes.data?.switchUser as User
+                    const gqlUser = gqlRes.data?.switch_user as User
                     const gqlCookies = gqlRes.extensions?.cookies
 
                     expect(gqlUser.user_id).to.eq(user.user_id)
@@ -69,6 +69,32 @@ describe("model", () => {
 
                     expect(fn()).to.be.rejected;
                 });
+            });
+        });
+    });
+
+    describe("myUsers", () => {
+        let user: User;
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+        });
+
+        context("when user is not logged in", () => {
+            it("raises an error", async () => {
+                const fn = () => myUsers(testClient, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+            });
+        });
+
+        context("when user is logged in", () => {
+            const userInfo = (user: User) => { return user.user_id }
+
+            it("returns the expected users", async () => {
+                const gqlUsers = await myUsers(testClient, { authorization: JoeAuthToken });
+
+                expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
             });
         });
     });

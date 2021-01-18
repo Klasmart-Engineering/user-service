@@ -61,6 +61,14 @@ const GET_USERS = `
     }
 `;
 
+const MY_USERS = `
+    query myQuery {
+        my_users {
+            user_id
+        }
+    }
+`;
+
 const GET_USER = `
     query myQuery($user_id: ID!) {
         user(user_id: $user_id) {
@@ -75,7 +83,7 @@ const GET_USER = `
 
 const SWITCH_USER = `
     mutation switchUser($user_id: ID!) {
-        switchUser(user_id: $user_id) {
+        switch_user(user_id: $user_id) {
             user_id
             email
         }
@@ -155,6 +163,19 @@ export async function getUsers(testClient: ApolloServerTestClient, headers?: Hea
 
     const res = await gqlTry(operation);
     const gqlUsers = res.data?.users as User[];
+    return gqlUsers;
+}
+
+export async function myUsers(testClient: ApolloServerTestClient, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: MY_USERS,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlUsers = res.data?.my_users as User[];
     return gqlUsers;
 }
 

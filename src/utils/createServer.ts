@@ -17,6 +17,8 @@ export const createServer = (model: Model, context?: any) =>
                 users: () => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
+                my_users: (_parent, _args, ctx, info) =>
+                    model.myUsers({}, ctx, info),
                 organizations: (
                     _parent,
                     { organization_ids },
@@ -35,7 +37,7 @@ export const createServer = (model: Model, context?: any) =>
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
-                switchUser: (_parent, args, ctx, info) =>
+                switch_user: (_parent, args, ctx, info) =>
                     model.switchUser(args, ctx, info),
                 newUser: (_parent, args, _context, _info) =>
                     model.newUser(args),

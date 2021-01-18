@@ -6,6 +6,7 @@ type Query {
     me: User
     user(user_id: ID!): User
     users: [User]
+    my_users: [User!]
 
     organization(organization_id: ID!): Organization
     organizations(organization_ids: [ID!]): [Organization]
@@ -34,7 +35,7 @@ type Mutation {
         email: String
         avatar: String
     ): User
-    switchUser(user_id: ID!): User
+    switch_user(user_id: ID!): User
 
     organization(
         organization_id: ID!

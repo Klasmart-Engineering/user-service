@@ -210,6 +210,31 @@ export class Model {
         const user = await this.userRepository.findOneOrFail(user_id)
         return user
     }
+
+    public async myUsers(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const userEmail = context.token?.email
+        const userPhone = context.token?.phone
+        let users: User[] = []
+
+        if(userEmail) {
+            users = await User.find({ where: { email: userEmail } })
+        }else if(userPhone) {
+            users = await User.find({ where: { phone: userPhone } })
+        }
+
+        if(users.length === 0) {
+            throw new Error(
+                `Please try authenticating again`
+            )
+        }
+
+        return users
+    }
+
     public async getUsers() {
         console.log('Unauthenticated endpoint call getUsers')
 
