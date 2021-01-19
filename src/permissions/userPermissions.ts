@@ -14,7 +14,7 @@ export class UserPermissions {
     private _schoolPermissions?: Promise<Map<string, Set<string>>>
 
     private readonly user_id?: string
-    private readonly isAdmin?: boolean
+    public readonly isAdmin?: boolean
 
     public constructor(token?: any) {
         this.user_id = token?.id

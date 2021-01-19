@@ -35,6 +35,33 @@ describe("userPermissions", () => {
         await connection?.close();
     });
 
+    describe("isAdmin", () => {
+        let userPermissions: UserPermissions;
+        let token
+
+        beforeEach(async () => {
+            const encodedToken = BillyAuthToken;
+            token = await checkToken(encodedToken) as any;
+            userPermissions = new UserPermissions(token);
+        });
+
+        it("returns false", async () => {
+            expect(userPermissions.isAdmin).to.be.false;
+        });
+
+        context("when user is a super admin", () => {
+            beforeEach(async () => {
+                const encodedToken = BillySuperAdminAuthToken;
+                token = await checkToken(encodedToken) as any;
+                userPermissions = new UserPermissions(token);
+            });
+
+            it("returns true", async () => {
+                expect(userPermissions.isAdmin).to.be.true;
+            });
+        });
+    });
+
     describe("rejectIfNotAllowed", () => {
         let userPermissions: UserPermissions;
         let schoolId: string;
