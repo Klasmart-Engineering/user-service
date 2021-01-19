@@ -12,7 +12,7 @@ import { Role } from './role'
 export class Permission extends BaseEntity {
     @PrimaryColumn()
     public role_id!: string
-    @PrimaryColumn()
+    @PrimaryColumn({ name: 'permission_id' })
     public permission_name!: string
 
     @ManyToOne(() => Role, (role) => role.permission, { onDelete: 'CASCADE' })

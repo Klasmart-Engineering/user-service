@@ -124,17 +124,17 @@ export class UserPermissions {
 
                     for (const {
                         organization_id,
-                        permission_name,
+                        permission_id,
                     } of organizationPermissionResults) {
                         const permissions = organizationPermissions.get(
                             organization_id
                         )
                         if (permissions) {
-                            permissions.add(permission_name)
+                            permissions.add(permission_id)
                         } else {
                             organizationPermissions.set(
                                 organization_id,
-                                new Set([permission_name])
+                                new Set([permission_id])
                             )
                         }
                     }
@@ -180,15 +180,15 @@ export class UserPermissions {
 
                         for (const {
                             school_id,
-                            permission_name,
+                            permission_id,
                         } of schoolPermissionResults) {
                             const permissions = schoolPermissions.get(school_id)
                             if (permissions) {
-                                permissions.add(permission_name)
+                                permissions.add(permission_id)
                             } else {
                                 schoolPermissions.set(
                                     school_id,
-                                    new Set([permission_name])
+                                    new Set([permission_id])
                                 )
                             }
                         }
