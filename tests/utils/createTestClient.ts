@@ -40,6 +40,7 @@ type Query = {
   };
   operationName?: string;
   headers?: Headers;
+  cookies?: any;
 };
 
 /** A mutation must not come with a query */
@@ -51,6 +52,7 @@ type Mutation = {
   };
   operationName?: string;
   headers?: Headers;
+  cookies?: any;
 };
 
 /**
@@ -128,6 +130,7 @@ export const createTestClient = (server: ApolloServer): ApolloServerTestClient =
          */
         const req = mockRequest({
             headers: args.headers,
+            cookies: args.cookies || {},
         });
         const res = mockResponse();
 

@@ -78,7 +78,7 @@ export const createServer = (model: Model, context?: any) =>
                     console.log('User not authenticated')
                 }
 
-                return { token, permissions, res }
+                return { token, permissions, res, req }
             }),
         playground: {
             settings: {

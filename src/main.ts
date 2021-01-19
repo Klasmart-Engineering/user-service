@@ -21,6 +21,7 @@ export interface Context {
     token?: any
     sessionId?: string
     res?: any
+    req?: any
     websocket?: WebSocket
     permissions: UserPermissions
 }

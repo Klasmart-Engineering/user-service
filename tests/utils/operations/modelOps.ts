@@ -69,6 +69,15 @@ const MY_USERS = `
     }
 `;
 
+const ME = `
+    query myQuery {
+        me {
+            user_id
+            email
+        }
+    }
+`;
+
 const GET_USER = `
     query myQuery($user_id: ID!) {
         user(user_id: $user_id) {
@@ -190,5 +199,19 @@ export async function getUser(testClient: ApolloServerTestClient, userId: string
 
     const res = await gqlTry(operation);
     const gqlUser = res.data?.user as User;
+    return gqlUser;
+}
+
+export async function me(testClient: ApolloServerTestClient, headers?: Headers, cookies?: any) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: ME,
+        headers: headers,
+        cookies: cookies,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlUser = res.data?.me as User;
     return gqlUser;
 }

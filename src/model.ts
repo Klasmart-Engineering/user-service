@@ -70,15 +70,29 @@ export class Model {
         this.schoolRepository = getRepository(School, connection.name)
     }
 
-    public async getMyUser({ token }: Context) {
-        try {
-            if (!token) {
-                return null
-            }
-            const user =
-                (await this.userRepository.findOne({ user_id: token.id })) ||
-                new User()
+    public async getMyUser({ token, req }: Context) {
+        const userID = req.cookies?.user_id
+        const userEmail = token?.email
+        const userPhone = token?.phone
 
+        let user;
+
+        if (userID && token) {
+            if (userEmail) {
+                user = await this.userRepository.findOne({ email: userEmail, user_id: userID })
+            } else if (userPhone) {
+                user = await this.userRepository.findOne({ phone: userPhone, user_id: userID })
+            }
+        } else if(token) {
+            user = (await this.userRepository.findOne({ user_id: token.id })) ||
+                new User()
+        }
+
+        if(!user) {
+            return null
+        }
+
+        try {
             let modified = false
 
             //Ensure fields match

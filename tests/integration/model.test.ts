@@ -5,7 +5,7 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken } from "../utils/testConfig";
-import { switchUser, myUsers } from "../utils/operations/modelOps";
+import { switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { Model } from "../../src/model";
 import { User } from "../../src/entities/user";
 import chaiAsPromised from "chai-as-promised";
@@ -68,6 +68,56 @@ describe("model", () => {
                     const fn = () => switchUser(testClient, otherUser.user_id, { authorization: JoeAuthToken });
 
                     expect(fn()).to.be.rejected;
+                });
+            });
+        });
+    });
+
+    describe("getMyUser", () => {
+        let user: User;
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+        });
+
+        context("when user is not logged in", () => {
+            context("and the user_id cookie is not provided", () => {
+                it("returns null", async () => {
+                    const gqlUser = await me(testClient, { authorization: undefined });
+
+                    expect(gqlUser).to.be.null
+                });
+            });
+
+            context("and the user_id cookie is provided", () => {
+                it("returns null", async () => {
+                    const gqlUser = await me(testClient, { authorization: undefined}, { user_id: user.user_id });
+
+                    expect(gqlUser).to.be.null
+                });
+            });
+        });
+
+        context("when user is logged in", () => {
+            context("and the correct user_id cookie is provided", () => {
+                it("returns the expected user", async () => {
+                    const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: user.user_id });
+
+                    expect(gqlUser.user_id).to.eq(user.user_id)
+                });
+            });
+
+            context("and the incorrect user_id cookie is provided", () => {
+                let otherUser: User;
+
+                beforeEach(async () => {
+                    otherUser= await createUserBilly(testClient);
+                });
+
+                it("returns null", async () => {
+                    const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: otherUser.user_id });
+
+                    expect(gqlUser).to.be.null
                 });
             });
         });
