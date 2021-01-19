@@ -59,6 +59,7 @@ type User {
     user_id: ID!
 
     #properties
+    user_name: String @deprecated(reason: "Use `full_name`.")
     full_name: String
     given_name: String
     family_name: String

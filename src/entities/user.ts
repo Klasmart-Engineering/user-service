@@ -29,6 +29,8 @@ export class User extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public user_id!: string
 
+    // Needs to be deprecated
+    public user_name = () => `${this.given_name} ${this.family_name}`
     public full_name = () => `${this.given_name} ${this.family_name}`
 
     @Column({ nullable: true })
