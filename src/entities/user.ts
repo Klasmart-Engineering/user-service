@@ -29,13 +29,16 @@ export class User extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public user_id!: string
 
-    public user_name = () => `${this.given_name} ${this.family_name}`
+    public full_name = () => `${this.given_name} ${this.family_name}`
 
     @Column({ nullable: true })
     public given_name?: string
 
     @Column({ nullable: true })
     public family_name?: string
+
+    @Column({ nullable: true })
+    public username?: string
 
     @Column({ nullable: true })
     public email?: string

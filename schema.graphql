@@ -59,7 +59,7 @@ type User {
     user_id: ID!
 
     #properties
-    user_name: String
+    full_name: String
     given_name: String
     family_name: String
     email: String

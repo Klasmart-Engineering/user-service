@@ -23,7 +23,6 @@ const ELIGIBLE_TEACHERS = `
         class(class_id: $class_id) {
             eligibleTeachers {
                 user_id
-                user_name
             }
         }
     }
@@ -34,7 +33,6 @@ const ELIGIBLE_STUDENTS = `
         class(class_id: $class_id) {
             eligibleStudents {
                 user_id
-                user_name
             }
         }
     }

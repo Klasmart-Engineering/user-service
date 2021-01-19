@@ -1,10 +1,12 @@
 @startuml
 class User {
   user_id : uuid
-  user_name : string
+  full_name : string
   given_name : string
   family_name: string
+  username : string
   email : string
+  phone : string
   avatar : string
 }
 

@@ -7,6 +7,7 @@ export function createUser() {
     user.given_name = faker.name.firstName();
     user.family_name = faker.name.lastName();
     user.email = faker.internet.email();
+    user.username = faker.internet.userName();
 
     return user;
 }
