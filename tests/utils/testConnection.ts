@@ -8,7 +8,7 @@ export const createTestConnection = (drop: boolean = false) => {
         port: 5432,
         username: "postgres",
         password: "kidsloop",
-        database: "testdb",
+        database: "testmigrationdb",
         synchronize: drop,
         dropSchema: drop,
         entities: ["src/entities/*.ts"]

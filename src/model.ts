@@ -136,7 +136,7 @@ export class Model {
         phone,
         avatar,
     }: any) {
-        console.info('Unauthenticated endpoint call newUser')
+        //console.info('Unauthenticated endpoint call newUser')
 
         const newUser = new User()
         const hashSource = email ?? phone
@@ -160,13 +160,17 @@ export class Model {
         const userPhone = context.token?.phone
         let user = undefined
 
-        if(userEmail) {
-            user = await User.findOne({ where: { email: userEmail, user_id: user_id } })
-        }else if(userPhone) {
-            user = await User.findOne({ where: { phone: userPhone, user_id: user_id  } })
+        if (userEmail) {
+            user = await User.findOne({
+                where: { email: userEmail, user_id: user_id },
+            })
+        } else if (userPhone) {
+            user = await User.findOne({
+                where: { phone: userPhone, user_id: user_id },
+            })
         }
 
-        if(!user) {
+        if (!user) {
             throw new Error(
                 `Not able to switch to user ${user_id}. Please try authenticating again`
             )
@@ -184,7 +188,7 @@ export class Model {
         email,
         avatar,
     }: any) {
-        console.info('Unauthenticated endpoint call setUser')
+        //console.info('Unauthenticated endpoint call setUser')
 
         const user = await this.userRepository.findOneOrFail(user_id)
 
@@ -205,7 +209,7 @@ export class Model {
         return user
     }
     public async getUser(user_id: string) {
-        console.info('Unauthenticated endpoint call getUser')
+        //console.info('Unauthenticated endpoint call getUser')
 
         const user = await this.userRepository.findOneOrFail(user_id)
         return user

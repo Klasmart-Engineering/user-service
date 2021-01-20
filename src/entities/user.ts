@@ -327,9 +327,9 @@ export class User extends BaseEntity {
         context: any,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call addOrganization by ${context.token?.id}`
-        )
+        // console.info(
+        //     `Unauthenticated endpoint call addOrganization by ${context.token?.id}`
+        // )
 
         try {
             if (info.operation.operation !== 'mutation') {
