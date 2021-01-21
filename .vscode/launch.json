@@ -8,7 +8,7 @@
             "name": "main.ts",
             "type": "pwa-node",
             "request": "launch",
-            "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "src/main.ts"],
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "src/migration.ts"],
             "sourceMaps": true,
             "smartStep": true,
             "cwd": "${workspaceRoot}",

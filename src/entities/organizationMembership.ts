@@ -183,9 +183,9 @@ export class OrganizationMembership extends BaseEntity {
         context: any,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call organizationMembership addRole by ${context.token?.id}`
-        )
+        // console.info(
+        //     `Unauthenticated endpoint call organizationMembership addRole by ${context.token?.id}`
+        // )
 
         try {
             if (

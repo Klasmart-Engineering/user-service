@@ -264,9 +264,9 @@ export class User extends BaseEntity {
         context: any,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call createOrganization by ${context.token?.id}`
-        )
+        // console.info(
+        //     `Unauthenticated endpoint call createOrganization by ${context.token?.id}`
+        // )
 
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE },

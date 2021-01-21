@@ -32,6 +32,7 @@ type Mutation {
         given_name: String
         family_name: String
         email: String
+        phone: String
         avatar: String
     ): User
     switchUser(user_id: ID!): User
