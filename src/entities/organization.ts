@@ -26,6 +26,7 @@ import { teacherRole } from '../permissions/teacher'
 import { Permission } from './permission'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
+import { permissionInfo } from '../permissions/permissionInfo'
 import { SchoolMembership } from './schoolMembership'
 import { Model } from '../model'
 import { Status } from './status'
@@ -707,6 +708,8 @@ export class Organization extends BaseEntity {
                 return null
             }
 
+            const permissionDetails = await permissionInfo()
+
             for (const { role_name, permissions } of [
                 organizationAdminRole,
                 schoolAdminRole,
@@ -728,7 +731,16 @@ export class Organization extends BaseEntity {
                     const permissionEntities = [] as Permission[]
                     for (const permission_name of permissions) {
                         const permission = new Permission()
+                        const permissionInf = permissionDetails.get(
+                            permission_name
+                        )
+
                         permission.permission_name = permission_name
+                        permission.permission_id = permission_name
+                        permission.permission_category = permissionInf?.category
+                        permission.permission_section = permissionInf?.section
+                        permission.permission_description =
+                            permissionInf?.description
                         permission.allow = true
                         permission.role = Promise.resolve(role)
                         permissionEntities.push(permission)

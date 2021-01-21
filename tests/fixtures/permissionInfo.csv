@@ -1,0 +1,374 @@
+ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
+(Accounts, Live, Library, Assessments, Schedule, Reports, General)","Permission Level 
+(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, Operational)",Description
+1,create_an_organization_account_1,Create an Organization Account,Accounts,Super Admin,Gives uers access to create an organization account
+2,delete_an_organization_account_2,Delete an Organization Account,Accounts,Super Admin,Gives users access to delete an organization account
+3,reset_an_organization_account_3,Reset an Organization Account,Accounts,Super Admin,Gives users access to reset an organizations account
+4,setup_an_organizations_academic_profile_4,Setup an Organizations Academic Profile,Accounts,Super Admin,Gives users access to setup an organizations academic profile
+5,edit_an_organization_details_5,Edit an Organization Details,Accounts,Super Admin,Gives users access to edit an organizations details
+6,update_default_thumbnails_6,Update Default Thumbnails,Accounts,Super Admin,Gives users access to update default thumbnails
+7,upgrade_organization_publishing_permissions_7,Upgrade Organization Publishing Permissions,Accounts,Super Admin,Gives users access to upgrade organization publishing permissions
+8,approve_and_reject_pending_content_8,Approve and Reject Pending Content,Accounts,Super Admin,Gives users access to approve and reject pending content
+9,create_program_category_9,Create Program Category,Accounts,Super Admin,Gives users access to create a program category
+10,change_an_organizations_visibility_settings_10,Change an Organizations Visibility Settings,Accounts,Super Admin,Gives users access to change an organizations visbility settings
+11,view_organization_bill_details_11,View Organization Bill Details,Accounts,Super Admin,Gives users access to view organization bill details
+12,block_org_users_access_12,Block Org Users Access,Accounts,Super Admin,Gives users access to block organization users access
+13,create_pricing_plan_13,Create Pricing Plan,Accounts,Super Admin,Gives users access to create a pricing plan
+1000,logos_1000,Logos,Accounts,Org Admin,Gives users access to view logos
+1010,my_account_1010,My Account,Accounts,Org Admin,Gives users access to view my account
+1020,my_settings_1020,My Settings,Accounts,Teacher,Gives users access to edit their settings
+1030,personalizations_1030,Personalizations,Accounts,Teacher,Gives users access to view personalizations
+1040,my_learners_page_1040,My Learners Page,Accounts,School Admin,Gives users access to view my learners page
+1041,my_learners_dashboards_1041,My Learners Dashboards,Accounts,School Admin,Gives users access to view my learners dashboards
+1042,my_learners_schedule_1042,My Learners Schedule,Accounts,School Admin,Gives users access to view my learners schedule
+1043,my_learners_study_plan_1043,My Learners Study Plan,Accounts,School Admin,Gives users access to view my learners study plan
+1044,my_learners_notifications_1044,My Learners Notifications,Accounts,School Admin,Gives users access to view my learners notifications
+1045,my_learners_make_a_payment_1045,My Learners Make A Payment,Accounts,School Admin,Gives users access to view my learners make a payment
+1046,my_learners_coupon_management_1046,My Learners Coupon Management,Accounts,School Admin,Gives users access to view my learners coupon management
+1047,my_learners_view_promotions_1047,My Learners View Promotions,Accounts,School Admin,Gives users access to view my learners view promotions
+1048,my_learners_class_recordings_1048,My Learners Class Recordings,Accounts,School Admin,Gives users access to view my learners class recordings
+1049,my_learners_attendance_report_1049,My Learners Attendance Report,Accounts,Teacher,Gives users access to view my learners attendance report
+100,live_100,Live,Live,School Admin,
+101,go_live_101,Go Live,Live,School Admin,Gives users access to go live
+110,view_organization_live_recordings_110,View Organization Live Recordings,Accounts,Org Admin,Gives users access to view organization live recordings
+120,manage_live_classroom_recording_120,Manage Live Classroom Recording,Accounts,Org Admin,Gives users access to manage live classroom recordings
+130,override_live_classroom_recording_130,Override Live Classroom Recording,Accounts,Org Admin,Gives users access to override live classroom recordings
+140,delete_live_classroom_recordings_140,Delete Live Classroom Recordings,Accounts,Org Admin,Gives users access to delete live classroom recordings
+170,live_default_interface_170,Live Default Interface,Live,Operational,
+171,auto_interface_based_on_age_range_171,Auto Interface based on Age Range,Live,Org Admin,Gives users access to auto interface based on age range
+172,record_live_classes_172,Record Live Classes,Accounts,Teacher,Gives users acces to record live classes
+173,record_class_classes_173,Record Class Classes,Accounts,Teacher,Gives users access to record class classes
+174,collaboration_show_web_cam_dynamic_174,Collaboration Show Web Cam Dynamic,Accounts,Teacher,
+175,collaboration_show_web_cam_focus_175,Collaboration Show Web Cam Focus,Accounts,Teacher,
+176,collaboration_teacher_present_176,Collaboration Teacher Present,Accounts,Teacher,
+177,collaboration_observe_mode_177,Collaboration Observe Mode,Accounts,Teacher,
+178,collaboration_screenshare_mode_178,Collaboration Screenshare Mode,Accounts,Teacher,
+179,participants_tab_179,Participants Tab,Accounts,Teacher,
+180,lesson_plan_tab_180,Lesson Plan Tab,Accounts,Teacher,
+181,teaches_desk_tab_181,Teaches Desk Tab,Accounts,Teacher,
+182,settings_tab_182,Settings Tab,Accounts,Teacher,
+183,view_lesson_attachments_183,View Lesson Attachments,Accounts,Teacher,Gives users access to view lesson attachments
+184,view_starred_content_184,View Starred Content,Accounts,Teacher,Gives users access to view starred content
+185,see_recommended_content_based_on_age_range_185,See Recommended Content based on Age Range,Accounts,Teacher,Gives users access to see recommended content based on age range
+186,attend_live_class_as_a_teacher_186,Attend Live Class as a Teacher,Accounts,Teacher,Gives users access to attend live class as a teacher
+187,attend_live_class_as_a_student_187,Attend Live Class as a Student,Accounts,Teacher,Gives users access to attend live class as a student
+200,library_200,Library,Library,Org Admin,
+201,create_content_page_201,Create Content Page,Library,Org Admin,Gives users access to create content pages
+202,unpublished_content_page_202,Unpublished Content Page,Library,Org Admin,Gives users access to view unpublished content pages
+203,pending_content_page_203,Pending Content Page,Library,Org Admin,Gives users access to view pending content pages
+204,published_content_page_204,Published Content Page,Library,Org Admin,Gives users access to view published content pages
+205,archived_content_page_205,Archived Content Page,Library,Org Admin,Gives users access to view archived content pages
+300,view_asset_db_300,View Asset DB,Library,Org Admin,Gives users access to view asset database
+210,view_my_unpublished_content_210,View My Unpublished Content,Library,Org Admin,Gives users access to view my unpublished content
+211,view_org_unpublished_content_211,View Org Unpublished Content,Library,Org Admin,Gives users access to view org unpublished content
+212,view_my_pending_212,View My Pending,Library,Org Admin,Gives users access to view my pending
+213,view_org_pending_213,View Org Pending,Library,Org Admin,Gives users access to view org pending
+214,view_my_published_214,View My Published,Library,Org Admin,Gives users access to view my published
+215,view_org_published_215,View Org Published,Library,Org Admin,Gives users access to view org published
+216,view_my_archived_216,View My Archived,Library,Org Admin,Gives users access to view my archived
+217,view_org_archived_217,View Org Archived,Library,Org Admin,Gives users access to view org archived
+218,view_my_school_published_218,View My School Published,Accounts,School Admin,Gives users access to view my school published
+225,view_my_school_pending_225,View My School Pending,Accounts,School Admin,Gives users access to view my school pending
+226,view_my_school_archived_226,View My School Archived,Accounts,School Admin,Gives users access to view my school archived
+227,view_all_schools_published_227,View All Schools Published,Accounts,Org Admin,Gives users access to view all schools published
+228,view_all_schools_pending_228,View All Schools Pending,Accounts,Org Admin,Gives users access to view all schools pending
+229,view_all_schools_archived_229,View All Schools Archived,Accounts,Org Admin,Gives users access to view all schools archived
+220,create_lesson_material_220,Create Lesson Material,Accounts,,Gives users access to create lesson material
+221,create_lesson_plan_221,Create Lesson Plan,Accounts,Org Admin,Gives users access to create lesson plans
+222,copy_content_222,Copy Content,Accounts,,Gives users access to copy content
+223,create_my_schools_content_223,Create My Schools Content,Accounts,School Admin,Gives users access to create my schools content
+224,create_all_schools_content_224,Create All Schools Content,Accounts,Org Admin,Gives users access to create all schools content
+230,edit_my_unpublished_content_230,Edit My Unpublished Content,Accounts,Teacher,Gives users access to edit my unpublished content
+231,edit_org_unpublished_content_231,Edit Org Unpublished Content,Accounts,Teacher,Gives users access to edit my org unpublished ontent
+232,edit_my_pending_content_232,Edit My Pending Content,Accounts,Teacher,Gives users access to edit my pending content
+233,edit_org_pending_content_233,Edit Org Pending Content,Accounts,Org Admin,Gives users access to edit org pending content
+234,edit_my_published_content_234,Edit My Published Content,Accounts,Org Admin,Gives users access to edit my published content
+235,edit_org_published_content_235,Edit Org Published Content,Accounts,Org Admin,Gives users access to edit org published content
+236,edit_lesson_material_metadata_and_content_236,Edit Lesson Material Metadata and Content,Accounts,Org Admin,Gives users access to edit lesson material metadata and content
+237,edit_lesson_plan_metadata_237,Edit Lesson Plan Metadata,Accounts,Org Admin,Gives users access to edit lesson plan metadata
+238,edit_lesson_plan_content_238,Edit Lesson Plan Content,Accounts,Org Admin,Gives users access to edit lesson plan content
+239,download_lesson_plan_239,Download Lesson Plan,Accounts,Org Admin,Gives users access to download lesson plan
+247,edit_my_schools_published_247,Edit My Schools Published,Library,School Admin,Gives users access to edit my schools published
+248,edit_my_schools_pending_248,Edit My Schools Pending,Library,School Admin,Gives users access to my schools pending
+249,edit_all_schools_published_249,Edit All Schools Published,Library,Org Admin,Gives users access to edit all schools published
+250,edit_all_schools_pending_250,Edit All Schools Pending,Library,Org Admin,Gives users access to edit all schools pending
+240,delete_my_unpublished_content_240,Delete My Unpublished Content,Library,Org Admin,Gives users access to delete my unpublished content
+241,delete_my_schools_pending_241,Delete My Schools Pending,Library,Teacher,Gives users access to delete my schools pending
+242,remove_my_schools_published_242,Remove My Schools Published,Library,Teacher,Gives users access to remove my schools published
+243,delete_my_schools_archived_243,Delete My Schools Archived,Library,Teacher,Gives users access to delete my schools archived
+244,delete_all_schools_pending_244,Delete All Schools Pending,Library,Org Admin,Gives users access to delete all schools pending
+245,remove_all_schools_published_245,Remove All Schools Published,Library,Org Admin,Gives users access to remove all schools published
+246,delete_all_schools_archived_246,Delete All Schools Archived,Library,Org Admin,Gives users access to delete all schools archived
+270,library_settings_270,Library Settings,Library,Operational,Gives users access to library settings
+271,approve_pending_content_271,Approve Pending Content,Library,Org Admin,Gives users access to approve pending content
+272,reject_pending_content_272,Reject Pending Content,Library,Org Admin,Gives users access to reject pending content
+273,archive_published_content_273,Archive Published Content,Library,Org Admin,Gives users access to archive published content
+274,republish_archived_content_274,Republish Archived Content,Library,Org Admin,Gives users access to republish archived content
+275,delete_archived_content_275,Delete Archived Content,Library,Org Admin,Gives users access to delete archived content
+276,details_upload_thumbnail_276,Details Upload Thumbnail,Library,Org Admin,
+277,details_manually_add_program_277,Details Manually Add Program,,Org Admin,
+278,details_manually_add_developmental_skill_278,Details Manually Add Developmental Skill,,Org Admin,
+279,details_manually_add_skills_category_279,Details Manually Add Skills Category,,Org Admin,
+280,details_manually_add_suitable_age_280,Details Manually Add Suitable Age,Library,Org Admin,
+281,details_manually_add_grade_281,Details Manually Add Grade,Library,Org Admin,
+282,share_content_282,Share Content,,Org Admin,Gives users access to share content
+283,favorite_content_283,Favorite Content,,Org Admin,Gives users access to favorite content
+284,associate_learning_outcomes_284,Associate Learning Outcomes,,Org Admin,Gives users access to associate learning outcomes
+285,publish_featured_content_with_lo_285,Publish Featured Content with LO,,Org Admin,Gives users access to publish featured content with LO
+286,publish_featured_content_no_lo_286,Publish Featured Content no LO,,Org Admin,Gives users access to publish featured content with no LO
+287,publish_free_content_with_lo_287,Publish Free Content with LO,,Org Admin,Gives users access to publish free content with LO
+288,publish_free_content_no_lo_288,Publish Free Content no LO,,Org Admin,Gives users access to publish free content with no LO
+300,asset_db_300,Asset DB,Library,Org Admin,
+301,create_asset_page_301,Create Asset Page,Library,Org Admin,Gives users access to create asset pages
+310,view_asset_310,View Asset,Library,Org Admin,Gives users access to view asset
+311,view_live_recordings_311,View Live Recordings,,Org Admin,Gives users access to view live recordings
+320,create_asset_320,Create Asset,Library,Org Admin,Gives users access to create asset pages
+321,upload_asset_321,Upload Asset,Library,Org Admin,Gives users access to upload assets
+330,edit_asset_330,Edit Asset,Library,Org Admin,Gives users access to edit assets
+331,download_asset_331,Download Asset,Library,Org Admin,Gives users access to download assets
+340,delete_asset_340,Delete Asset,Library,Org Admin,Gives users access to delete assets
+380,asset_db_settings_380,Asset DB Settings,Library,Org Admin,Gives users access to asset DB settings
+400,assessments_400,Assessments,Assessments,Org Admin,Gives users access to assessments
+401,create_learning_outcome_page_401,Create Learning Outcome Page,Assessments,Org Admin,Gives users access to create learning outcome pages
+402,unpublished_page_402,Unpublished Page,Assessments,Org Admin,Gives users access to view unpublished pages
+403,pending_page_403,Pending Page,Assessments,Org Admin,Gives users access to view pending pages
+404,learning_outcome_page_404,Learning Outcome Page,Assessments,Org Admin,Gives users access to view learning outcome pages
+405,milestones_page_405,Milestones Page,Assessments,Org Admin,Gives users access to view milestones pages
+406,assessments_page_406,Assessments Page,Assessments,Org Admin,Gives users access to view assessments pages
+410,view_my_unpublished_learning_outcome_410,View My Unpublished Learning Outcome,Assessments,Org Admin,Gives users access to view my unpublished learning outcomes
+411,view_org_unpublished_learning_outcome_411,View Org Unpublished Learning Outcome,Assessments,Org Admin,Gives users access to view org unpublished learning outcomes
+412,view_my_pending_learning_outcome_412,View My Pending Learning Outcome,Assessments,Org Admin,Gives users access to view my pending learning outcomes
+413,view_org_pending_learning_outcome_413,View Org Pending Learning Outcome,Assessments,Org Admin,Gives users access to view org pending learning outcomes
+414,view_completed_assessments_414,View Completed Assessments,Assessments,Org Admin,Gives users access to view completed assessments
+415,view_in_progress_assessments_415,View In Progress Assessments,Assessments,Org Admin,Gives users access to view in progress assessments
+416,view_published_learning_outcome_416,View Published Learning Outcome,Assessments,Org Admin,Gives users access to view published learning outcome
+417,view_unpublished_milestone_417,View Unpublished Milestone,Assessments,Org Admin,Gives users access to view unpublished milestone
+418,view_published_milestone_418,View Published Milestone,Assessments,Org Admin,Gives users access to view published milestones
+419,view_unpublished_standard_419,View Unpublished Standard,,Org Admin,Gives users access to view the unpublished standard
+420,view_published_standard_420,View Published Standard,,Org Admin,Gives users access to view the published standard
+424,view_org_completed_assessments_424,View Org Completed Assessments,Assessments,Org Admin,Gives users access to create learning outcomes
+425,view_org_in_progress_assessments_425,View Org In Progress Assessments,Assessments,Org Admin,Gives users access to create milestones
+426,view_school_completed_assessments_426,View School Completed Assessments,Assessments,Org Admin,Gives users access to create standards
+427,view_school_in_progress_assessments_427,View School In Progress Assessments,Assessments,,Gives users access to edit my unpublished learning outcomes
+421,create_learning_outcome_421,Create Learning Outcome,Assessments,Org Admin,Gives users access to edit org unpublished learning outcomes
+422,create_milestone_422,Create Milestone,Assessments,Org Admin,Gives users access to remove content from the learning outcomes cart
+423,create_standard_423,Create Standard,Assessments,Org Admin,Gives users access to add content learning outcomes
+430,edit_my_unpublished_learning_outcome_430,Edit My Unpublished Learning Outcome,Assessments,Org Admin,Gives users access to edit my pending learning outcomes
+431,edit_org_unpublished_learning_outcome_431,Edit Org Unpublished Learning Outcome,Assessments,Org Admin,Gives users access to edit org pending learning outcomes
+432,remove_content_learning_outcomes_cart_432,Remove Content Learning Outcomes Cart,Assessments,Org Admin,Gives users access to remove content learning outcomes from the cart
+433,add_content_learning_outcomes_433,Add Content Learning Outcomes,Assessments,Org Admin,Gives users access to add content learning outcomes
+434,edit_my_pending_learning_outcome_434,Edit My Pending Learning Outcome,Assessments,Org Admin,Gives users access to edit my pending learning outcomes
+435,edit_org_pending_learning_outcome_435,Edit Org Pending Learning Outcome,Assessments,Org Admin,Gives users access to edit org pending learning outcomes
+436,edit_published_learning_outcome_436,Edit Published Learning Outcome,Assessments,Org Admin,Gives users access to edit published learning outcomes
+437,edit_attendance_for_completed_assessment_437,Edit Attendance for Completed Assessment,Assessments,Super Admin,Gives users access to edit attendance for completed assessmens
+438,edit_attendance_for_in_progress_assessment_438,Edit Attendance for In Progress Assessment,Assessments,Org Admin,Gives users access to edit attendance for in progress assessments
+439,edit_in_progress_assessment_439,Edit In Progress Assessment,Assessments,Org Admin,Gives users access to edit in progress assessments
+440,edit_unpublished_milestone_440,Edit Unpublished Milestone,Assessments,Org Admin,Gives users access to edit unpublished milestones
+441,edit_published_milestone_441,Edit Published Milestone,Assessments,Org Admin,Gives users access to edit published milestones
+442,edit_unpublished_standard_442,Edit Unpublished Standard,,Org Admin,Gives users access to edit unpublished standards
+443,edit_published_standard_443,Edit Published Standard,,Org Admin,Gives users access to edit published standards
+444,delete_my_unpublished_learninng_outcome_444,Delete My Unpublished Learninng Outcome,Assessments,Org Admin,Gives users access to delete my unpublished learning outcomes
+445,delete_org_unpublished_learning_outcome_445,Delete Org Unpublished Learning Outcome,Assessments,Org Admin,Gives users access to delete org unpublished learning outcomes
+446,delete_my_pending_learning_outcome_446,Delete My Pending Learning Outcome,Assessments,Org Admin,Gives users access to delete my pending learning outcomes
+447,delete_org_pending_learning_outcome_447,Delete Org Pending Learning Outcome,Assessments,Org Admin,Gives users access to delete org pending learning outcomes
+448,delete_published_learning_outcome_448,Delete Published Learning Outcome,Assessments,Org Admin,Gives users access to delete published learning outcomes
+449,delete_unpublish_milestone_449,Delete Unpublish Milestone,Assessments,Org Admin,Gives users access to delete unpublished milestones
+450,delete_published_milestone_450,Delete Published Milestone,Assessments,Org Admin,Gives users access to delete published milestones
+451,delete_unpublished_standard_451,Delete Unpublished Standard,Assessments,Org Admin,Gives users access to delete unpublished standards
+452,delete_published_standard_452,Delete Published Standard,Assessments,Org Admin,Gives users access to delete published standards
+480,assessment_settings_480,Assessment Settings,Assessments,Org Admin,Gives users access to view assessment settings
+481,approve_pending_learning_outcome_481,Approve Pending Learning Outcome,Assessments,Org Admin,Gives users access to approve pending learning outcomes
+482,reject_pending_learning_outcome_482,Reject Pending Learning Outcome,Assessments,Org Admin,Gives users access to reject pending learning outcomes
+483,upload_learning_outcomes_483,Upload Learning Outcomes,Assessments,Org Admin,Gives users access to upload learning outcomes
+484,download_learning_outcomes_484,Download Learning Outcomes,Assessments,Org Admin,Gives users access to download learning outcomes
+485,add_learning_outcome_to_content_485,Add Learning Outcome to Content,Assessments,Org Admin,Gives users access to add learning outcomes to content
+500,schedule_500,Schedule,Schedule,Org Admin,Gives users access to view schedules
+501,create_schedule_page_501,Create Schedule Page,Schedule,Org Admin,Gives users access to create schedule pages
+510,view_my_calendar_510,View My Calendar,Schedule,Org Admin,Gives users access to view my calendar
+511,view_org_calendar_511,View Org Calendar,Schedule,Org Admin,Gives users access to view org calendar
+512,view_school_calendar_512,View School Calendar,Schedule,Org Admin,Gives users access to view school calendar
+520,create_event_520,Create Event,Schedule,Org Admin,Gives users access to create events
+530,edit_event_530,Edit Event,Schedule,Org Admin,Gives users access to edit events
+531,override_live_classroom_recording_setting_531,Override Live Classroom Recording Setting,Schedule,Org Admin,Gives users access to override live classroom recording settings
+540,delete_event_540,Delete Event,Schedule,Org Admin,Gives users access to delete events
+580,schedule_settings_580,Schedule Settings,Schedule,Org Admin,Gives users access to schedule settings
+581,schedule_quick_start_581,Schedule Quick Start,Schedule,Org Admin,Gives users access to schedule quick starts
+582,schedule_search_582,Schedule Search,Schedule,Org Admin,Gives users access to schedule searches
+600,reports_600,Reports,Reports,Org Admin,
+601,org_reports_601,Org Reports,Reports,Org Admin,Gives users access to view org reports
+602,school_reports_602,School Reports,Reports,Org Admin,Gives users access to view school reports
+603,teacher_reports_603,Teacher Reports,Reports,Org Admin,Gives users access to view teacher reports
+604,class_reports_604,Class Reports,Reports,Org Admin,Gives users access to vew class reports
+605,student_reports_605,Student Reports,Reports,Org Admin,Gives users access to vew student reports
+,,,,,
+,,,,,
+610,view_reports_610,View Reports,Reports,Org Admin,Gives users access to view reports
+611,view_my_school_reports_611,View My School Reports,Reports,Org Admin,Gives users access to view my school reports
+612,view_my_organizations_reports_612,View My Organizations Reports,Reports,Org Admin,Gives users access to view my organization reports
+613,view_all_organizations_reports_613,View All Organizations Reports,Reports,Super Admin,Gives users access to view all organization reports
+614,view_my_reports_614,View My Reports,Reports,Teacher,Gives users access to view my reports
+615,report_student_achievement_615,Report Student Achievement,Reports,Org Admin,Gives users access to report student achievement
+616,report_learning_outcomes_in_categories_616,Report Learning Outcomes in Categories,Reports,Org Admin,Gives users access to report learning outcomes in categories
+,,,,,
+,,,,,
+630,share_report_630,Share Report,Report,Org Admin,Gives users access to share reports
+631,download_report_631,Download Report,Report,Org Admin,Gives users access to download reports
+680,report_settings_680,Report Settings,Report,Org Admin,Gives users access to report settings
+10100,organizational_profile_10100,Organizational Profile,General,Org Admin,
+10101,view_all_organization_details_page_10101,View All Organization Details Page,General,Org Admin,Gives users access to view all organization details page
+10110,view_this_organization_profile_10110,View This Organization Profile,General,Org Admin,Gives users access to view this organization profile
+10111,view_my_organization_profile_10111,View My Organization Profile,General,Org Admin,Gives users access to view my organization profile
+10112,view_organization_details_10112,View Organization Details,General,Org Admin,Gives users access to view organization details
+10220,create_own_organization_10220,Create Own Organization,General,Parent,Gives users access to create their own organization
+10330,edit_this_organization_10330,Edit This Organization,General,Org Admin,Gives users access to edit this organization
+10331,edit_my_organization_10331,,General,Org Admin,Gives users access to edit my organization
+10332,edit_email_address_10332,,General,Org Admin,Gives users access to edit their email address
+10333,edit_password_10333,,Edit My Organization,Org Admin,Gives users access to edit their password
+10440,delete_organization_10440,Delete Organization,Edit Email Address,Org Admin,Gives users access to delete an organization
+10880,change_owner_10880,Change Owner,Edit Password,Org Admin,Gives users access to change owners
+10881,join_organization_10881,Join Organization,General,Org Admin,Gives users access to join an organization
+10882,leave_organization_10882,Leave Organization,General,Org Admin,Gives users access to leave an organization
+20100,school_resources_20100,School Resources,General,Org Admin,Gives users access to view school resources
+20101,define_school_program_page_20101,Define School Program Page,General,Org Admin,Gives users access to define school program pages
+20102,define_age_ranges_page_20102,Define Age Ranges Page,General,Org Admin,Gives users access to define age ranges page
+20103,define_grade_page_20103,Define Grade Page,General,Org Admin,Gives users access to define grade page
+20110,view_school_20110,View School,General,Org Admin,Gives users access to view school
+20111,view_program_20111,View Program,General,Org Admin,Gives users access to view program
+20112,view_age_range_20112,View Age Range,General,Org Admin,Gives users access to view age range
+20113,view_grades_20113,View Grades,General,Org Admin,Gives users access to view grades
+20114,view_classes_20114,View Classes,General,Org Admin,Gives users access to view classes
+20220,create_school_20220,Create School,General,Org Admin,Gives users access to create schools
+20221,create_program_20221,Create Program,General,Org Admin,Gives users access to create programs
+20222,create_age_range_20222,Create Age Range,General,Org Admin,Gives users access to create age ranges
+20223,create_grade_20223,Create Grade,General,Org Admin,Gives users access to create grades
+20224,create_class_20224,Create Class,General,Org Admin,Gives users access to create classes
+20225,add_students_to_class_20225,Add Students to Class,General,Org Admin,Gives users access to add students to class
+20226,add_teachers_to_class_20226,Add Teachers to Class,General,Org Admin,Gives users access to add teachers to class
+20330,edit_school_20330,Edit School,General,Org Admin,Gives users access to edit school
+20331,edit_program_20331,Edit Program,General,Org Admin,Gives users access to edit programs
+20332,edit_age_range_20332,Edit Age Range,General,Org Admin,Gives users access to edit age range
+20333,edit_grade_20333,Edit Grade,General,Org Admin,Gives users access to edit grades
+20334,edit_class_20334,Edit Class,General,Org Admin,Gives users access to edit class
+20335,move_students_to_another_class_20335,Move Students to Another Class,General,Org Admin,Gives users access to move students to another class
+20336,edit_teacher_in_class_20336,Edit Teacher in Class,General,Org Admin,Gives users access to edit teacher in class
+20440,delete_school_20440,Delete School,General,Org Admin,Gives users access to delete schools
+20441,delete_program_20441,Delete Program,General,Org Admin,Gives users access to delete programs
+20442,delete_age_range_20442,Delete Age Range,General,Org Admin,Gives users access to delete age ranges
+20443,delete_grade_20443,Delete Grade,General,Org Admin,Gives users access to delete grades
+20444,delete_class_20444,Delete Class,General,Org Admin,Gives users access to delete classes
+20445,delete_student_from_class_roster_20445,Delete Student from Class Roster,General,Org Admin,Gives users access to delete students from class rosters
+20446,delete_teacher_from_class_20446,Delete Teacher from Class,General,Org Admin,Gives users access to delete teachers from class
+20880,upload_schools_20880,Upload Schools,General,Org Admin,Gives users access to upload schools
+20881,download_schools_20881,Download Schools,General,Org Admin,Gives users access to download schools
+20882,upload_program_20882,Upload Program,General,Org Admin,Gives users access to upload programs
+20883,download_program_20883,Download Program,General,Org Admin,Gives users access to download programs
+20884,upload_class_roster_with_teachers_20884,Upload Class Roster with Teachers,General,Org Admin,Gives users access to upload class rosters with teachers
+20885,download_class_roster_with_teachers_20885,Download Class Roster with Teachers,General,Org Admin,Gives users access to download class rosters with teachers
+20886,upload_age_range_20886,Upload Age Range,General,Org Admin,Gives users access to upload age ranges
+20887,download_age_range_20887,Download Age Range,General,Org Admin,Gives users access to download age ranges
+20888,upload_grades_20888,Upload Grades,General,Org Admin,Gives users access to upload grades
+20889,download_grades_20889,Download Grades,General,Org Admin,Gives users access to download grades
+20890,upload_classes_20890,Upload Classes,General,Org Admin,Gives users access to upload classes
+20891,download_classes_20891,Download Classes,General,Org Admin,Gives users access to download classes
+30100,groups_30100,Groups,,Org Admin,
+30101,role_levels_30101,Role Levels,,Org Admin,Gives users access to view role levels
+30102,permissions_30102,Permissions,,Org Admin,Gives users access to view permissions
+30110,view_groups_30110,View Groups,,Org Admin,Gives users access to view groups
+30111,view_role_priority_levels_30111,View Role Priority Levels,,Org Admin,Gives users access to view role priority levels
+30112,view_role_permissions_30112,View Role Permissions,,Org Admin,Gives users access to view role permissions
+30220,create_groups_30220,Create Groups,,Org Admin,Gives users access to create groups
+30221,create_role_priority_levels_30221,Create Role Priority Levels,,Org Admin,Gives users access to create role priority levels
+30222,create_role_with_permissions_30222,Create Role with Permissions,,Org Admin,Gives users access to create roles with permissions
+30330,edit_groups_30330,Edit Groups,,Org Admin,Gives users access to edit groups
+30331,edit_role_priority_levels_30331,Edit Role Priority Levels,,Org Admin,Gives users access to edit role priority levels
+30332,edit_role_permissions_30332,Edit Role Permissions,,Org Admin,Gives users access to edit role permissions
+30440,delete_groups_30440,Delete Groups,,Org Admin,Gives users access to delete groups
+40100,users_40100,Users,General,Org Admin,
+40101,view_user_page_40101,View User Page,General,Org Admin,Gives users access to view user pages
+40110,view_users_40110,View Users,General,Org Admin,Gives users access to view users
+40220,create_users_40220,Create Users,General,Org Admin,Gives users access to create users
+40330,edit_users_40330,Edit Users,General,Org Admin,Gives users access to edit users
+40440,delete_users_40440,Delete Users,General,Org Admin,Gives users access to delete users
+40880,upload_users_40880,Upload Users,General,Org Admin,Gives users access to upload users
+40881,download_users_40881,Download Users,General,Org Admin,Gives users access to download users
+40882,send_invitation_40882,Send Invitation,General,Org Admin,Gives users access to send invitations
+40883,deactivate_user_40883,Deactivate User,General,Org Admin,Gives users access to deactivate users
+50100,billing_50100,Billing,General,Org Admin,
+50101,view_payment_details_and_make_payment_50101,View Payment Details and Make Payment,General,Org Admin,Gives users access to view payment details and make payments
+50110,view_billing_details_50110,View Billing Details,General,Org Admin,Gives users access to view billing details
+50880,purchase_more_minutes_50880,Purchase More Minutes,General,Org Admin,Gives users access to purchase more minutes
+50881,purchase_more_storage_50881,Purchase More Storage,General,Org Admin,Gives users access to purchase more storage
+50882,purchase_next_plan_50882,Purchase Next Plan,General,Org Admin,Gives users access to purchase the next plan
+50883,download_billing_50883,Download Billing,General,Org Admin,Gives users access to download billing
+60100,support_60100,Support,General,Org Admin,
+60101,online_support_60101,Online Support,General,Org Admin,Gives users access to view online support
+70000,featured_programs_70000,Featured Programs,Live,Org Admin,
+70001,view_any_featured_programs_70001,View Any Featured Programs,Live,Org Admin,Gives users access to view any featured programs
+71000,bada_rhyme_71000,Bada Rhyme,Live,Org Admin,Gives users access to view Bada Rhyme
+71001,bada_genius_71001,Bada Genius,Live,Org Admin,Gives users access to view Bada Genius
+71002,bada_talk_71002,Bada Talk,Live,Org Admin,Gives users access to view Bada Talk
+71003,bada_sound_71003,Bada Sound,Live,Org Admin,Gives users access to view Bada Sound
+71004,bada_read_71004,Bada Read,Live,Org Admin,Gives users access to view Bada Read
+71005,bada_math_71005,Bada Math,Live,Org Admin,Gives users access to view Bada Math
+71006,bada_stem_71006,Bada STEM,Live,Org Admin,Gives users access to view Bada STEM
+71007,badanamu_esl_71007,Badanamu ESL,Live,Org Admin,Gives users access to view Badanamu ESL
+71008,undefined_71008,undefined,,,undefined
+71009,undefined_71009,undefined,,,undefined
+75000,bada_rhyme_75000,Bada Rhyme,Live,Org Admin,Gives users access to create Bada Rhyme
+75001,bada_genius_75001,Bada Genius,Live,Org Admin,Gives users access to create Bada Genius
+75002,bada_talk_75002,Bada Talk,Live,Org Admin,Gives users access to create Bada Talk
+75003,bada_sound_75003,Bada Sound,Live,Org Admin,Gives users access to create Bada Sound
+75004,bada_read_75004,Bada Read,Live,Org Admin,Gives users access to create Bada Read
+75005,bada_math_75005,Bada Math,Live,Org Admin,Gives users access to create Bada Math
+75006,bada_stem_75006,Bada STEM,Live,Org Admin,Gives users access to create Bada STEM
+75007,badanamu_esl_75007,Badanamu ESL,Live,Org Admin,Gives users access to create Badanamu ESL 
+75008,undefined_75008,undefined,,,undefined
+75009,undefined_75009,undefined,,,undefined
+78000,bada_rhyme_78000,Bada Rhyme,Live,Org Admin,Gives users access to edit Bada Rhyme
+78001,bada_genius_78001,Bada Genius,Live,Org Admin,Gives users access to edit Bada Genius
+78002,bada_talk_78002,Bada Talk,Live,Org Admin,Gives users access to edit Bada Talk
+78003,bada_sound_78003,Bada Sound,Live,Org Admin,Gives users access to edit Bada Sound
+78004,bada_read_78004,Bada Read,Live,Org Admin,Gives users access to edit Bada Read
+78005,bada_math_78005,Bada Math,Live,Org Admin,Gives users access to edit Bada Math
+78006,bada_stem_78006,Bada STEM,Live,Org Admin,Gives users access to edit Bada STEM
+78007,badanamu_esl_78007,Badanamu ESL,Live,Org Admin,Gives users access to edit Badanamu ESL
+78008,undefined_78008,undefined,,,undefined
+78009,unndefined_78009,unndefined,,,undefined
+79000,publish_featured_content_for_all_hub_79000,Publish featured content for all hub,,,Gives users access to publish featured content for all hub
+79001,publish_featured_content_for_specific_orgs_79001,Publish featured content for specific orgs,,,Gives users access to publish featured content for specific organizations
+79002,publish_featured_content_for_all_orgs_79002,Publish featured content for all orgs,,,Gives users access to publish featured content for all organizations
+80000,free_programs_80000,Free Programs,,,
+80001,view_free_programs_80001,View Free Programs,,,Gives users access to view free programs
+81000,bada_rhyme_81000,Bada Rhyme,Library,Org Admin,Gives users access to view Bada Rhyme
+81001,bada_genius_81001,Bada Genius,Library,Org Admin,Gives users access to view Bada Genius
+81002,bada_talk_81002,Bada Talk,Library,Org Admin,Gives users access to view Bada Talk
+81003,bada_sound_81003,Bada Sound,Library,Org Admin,Gives users access to view Bada Sound
+81004,bada_read_81004,Bada Read,Library,Org Admin,Gives users access to view Bada Read
+81005,bada_math_81005,Bada Math,Library,Org Admin,Gives users access to view Bada Math
+81006,bada_stem_81006,Bada STEM,Library,Org Admin,Gives users access to view Bada STEM
+81007,badanamu_esl_81007,Badanamu ESL,Library,Org Admin,Gives users access to view Badanamu ESL
+81008,use_free_as_recommended_content_for_study_81008,Use Free as Recommended Content for Study,,Org Admin,Gives users access to use free as recommended content for study
+81009,undefinend_81009,undefinend,,,undefined
+85000,bada_rhyme_85000,Bada Rhyme,Library,Super Admin,Gives users access to create Bada Rhyme
+85001,bada_genius_85001,Bada Genius,Library,Super Admin,Gives users access to create Bada Genius
+85002,bada_talk_85002,Bada Talk,Library,Super Admin,Gives users access to create Bada Talk
+85003,bada_sound_85003,Bada Sound,Library,Super Admin,Gives users access to create Bada Sound
+85004,bada_read_85004,Bada Read,Library,Super Admin,Gives users access to create Bada Read
+75005,bada_math_75005,Bada Math,Library,Super Admin,Gives users access to create Bada Math
+75006,bada_stem_75006,Bada STEM,Library,Super Admin,Gives users access to create Bada STEM
+75007,undefined_75007,undefined,,,undefined
+75008,undefined_75008,undefined,,,undefined
+75009,unndefined_75009,unndefined,,,undefined
+78000,bada_rhyme_78000,Bada Rhyme,Library,Super Admin,Gives users access to edit Bada Rhyme
+78001,bada_genius_78001,Bada Genius,Library,Super Admin,Gives users access to edit Bada Genius
+78002,bada_talk_78002,Bada Talk,Library,Super Admin,Gives users access to edit Bada Talk
+78003,bada_sound_78003,Bada Sound,Library,Super Admin,Gives users access to edit Bada Sound
+78004,bada_read_78004,Bada Read,Library,Super Admin,Gives users access to edit Bada Read
+78005,bada_math_78005,Bada Math,Library,Super Admin,Gives users access to edit Bada Math
+78006,bada_stem_78006,Bada STEM,Library,Super Admin,Gives users access to edit Bada STEM
+78007,badanamu_esl_78007,Badanamu ESL,Library,Super Admin,Gives users access to edit Badanamu ESL
+78008,undefined_78008,undefined,,,undefined
+78009,unndefined_78009,unndefined,,,undefined
+79000,publish_free_content_for_all_hub_79000,Publish free content for all hub,Library,Super Admin,Gives users access to publish free content for all hub
+79001,publish_free_content_for_specific_orgs_79001,Publish free content for specific orgs,Library,Super Admin,Gives users access to publish free content for specific organizations
+79002,publish_free_content_for_all_orgs_79002,Publish free content for all orgs,Library,Super Admin,Gives users access to publish frree content for all organizations
