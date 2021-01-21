@@ -1,0 +1,285 @@
+import csvParser from 'csv-parser'
+import fs from 'fs'
+import { GraphQLResolveInfo } from 'graphql'
+import path from 'path'
+import { OrganizationMembership } from './entities/organizationMembership'
+import { Role } from './entities/role'
+import { User } from './entities/user'
+import { Model } from './model'
+import { organizationAdminRole } from './permissions/organizationAdmin'
+import { parentRole } from './permissions/parent'
+import { studentRole } from './permissions/student'
+import { teacherRole } from './permissions/teacher'
+
+const USER_INFO_FILE = path.join(__dirname, './userInfo.csv')
+const STUDENT_INFO_FILE = path.join(__dirname, './studentInfo.csv')
+
+interface UserInfo {
+    name: string
+    email: string
+    birthday: string | undefined
+    role: string
+}
+
+async function main() {
+    try {
+        const model = await Model.create()
+        await migrate(model)
+        console.log('migration complete')
+    } catch (e) {
+        console.error(e)
+        process.exit(-1)
+    }
+}
+
+main()
+
+async function migrate(model: Model) {
+    //const organizationId = '740ec808-bd56-46c6-8bcb-babbe1666dc4'
+    const admin = await model.newUser({
+        given_name: 'Joe',
+        family_name: 'Brown',
+        email: 'admin@gmail.com',
+        phone: undefined,
+        avatar: undefined,
+    })
+    const organizationId = (
+        await admin.createOrganization(
+            { organization_name: 'My Org' },
+            undefined,
+            {
+                operation: { operation: 'mutation' },
+            } as GraphQLResolveInfo
+        )
+    )?.organization_id
+    if (!organizationId) throw Error('createOrganization failed')
+
+    // let userInfoEntries = await getUserInfoEntriesFromCsv()
+    // userInfoEntries = userInfoEntries.filter(
+    //     (userInfo, i, arr) =>
+    //         arr.findIndex((x) => x.email === userInfo.email) === i
+    // )
+    // await migrateUsers(model, userInfoEntries)
+    //console.log('parent, teacher, and admin migration complete')
+
+    let studentInfoEntries = await getStudentInfoEntriesFromCsv()
+    studentInfoEntries = studentInfoEntries.filter(
+        (userInfo, i, arr) =>
+            arr.findIndex((x) => x.email === userInfo.email) === i
+    )
+    await migrateUsers(model, organizationId, studentInfoEntries)
+    console.log('student migration complete')
+}
+
+async function migrateUsers(
+    model: Model,
+    organizationId: string,
+    userInfoEntries: UserInfo[]
+) {
+    // const organization = await model.getOrganization(organizationId)
+    // const orgRoles = await organization?.roles
+    // if (!orgRoles) return
+    // const roleNameToId = orgRoles.filter(x => x.role_name !== undefined).map(x => [x.role_name, x.role_id] as [string, string])
+    // const roleNameToIdMap = new Map<string, string>(roleNameToId)
+
+    const context = undefined
+    const info = {
+        operation: { operation: 'mutation' },
+    } as GraphQLResolveInfo
+
+    const migrateUserPromises: Promise<
+        [UserInfo, OrganizationMembership | null | undefined]
+    >[] = []
+    for (const userInfo of userInfoEntries) {
+        const migrateUserPromise = migrateUser(
+            userInfo,
+            model,
+            organizationId,
+            context,
+            info
+        )
+        migrateUserPromises.push(migrateUserPromise)
+    }
+
+    const userMigrationResults = await Promise.all(migrateUserPromises)
+    await migrateRoles(userMigrationResults, organizationId)
+}
+
+async function migrateUser(
+    userInfo: UserInfo,
+    model: Model,
+    organizationId: string,
+    context: any,
+    info: GraphQLResolveInfo
+): Promise<[UserInfo, OrganizationMembership | null | undefined]> {
+    const existingUserCount = await User.count({
+        where: { email: userInfo.email },
+    })
+
+    if (existingUserCount > 0) [userInfo, undefined]
+
+    const user = await model.newUser({
+        given_name: userInfo.name,
+        family_name: undefined,
+        email: userInfo.email,
+        phone: undefined,
+        avatar: undefined,
+    })
+    const membership = await user.addOrganization(
+        { organization_id: organizationId },
+        context,
+        info
+    )
+
+    return [userInfo, membership]
+}
+
+async function migrateRoles(
+    userMigrationResults: [
+        UserInfo,
+        OrganizationMembership | null | undefined
+    ][],
+    organizationId: string
+) {
+    const orgStudentRole = await Role.findOneOrFail({
+        where: {
+            organization: organizationId,
+            role_name: studentRole.role_name,
+        },
+    })
+    const orgParentRole = await Role.findOneOrFail({
+        where: {
+            organization: organizationId,
+            role_name: parentRole.role_name,
+        },
+    })
+    const orgTeacherRole = await Role.findOneOrFail({
+        where: {
+            organization: organizationId,
+            role_name: teacherRole.role_name,
+        },
+    })
+    const orgAdminRole = await Role.findOneOrFail({
+        where: {
+            organization: organizationId,
+            role_name: organizationAdminRole.role_name,
+        },
+    })
+
+    const studentRoleMemberships = (await orgStudentRole.memberships) || []
+    const parentRoleMemberships = (await orgParentRole.memberships) || []
+    const teacherRoleMemberships = (await orgTeacherRole.memberships) || []
+    const adminRoleMemberships = (await orgAdminRole.memberships) || []
+
+    for (const migrationResult of userMigrationResults) {
+        const userInfo = migrationResult[0]
+        const membership = migrationResult[1]
+
+        if (!membership) continue
+
+        switch (userInfo.role) {
+            case 'super':
+                adminRoleMemberships.push(membership)
+                break
+            case 'teacher':
+                teacherRoleMemberships.push(membership)
+                break
+            case 'student':
+                studentRoleMemberships.push(membership)
+                break
+            case 'parent':
+                parentRoleMemberships.push(membership)
+                break
+            default:
+                console.log(
+                    `Unexpected role encountered: ${userInfo.role}. Won't add a role for user ${userInfo.email}.`
+                )
+                continue
+        }
+    }
+
+    orgStudentRole.memberships = Promise.resolve(studentRoleMemberships)
+    orgParentRole.memberships = Promise.resolve(parentRoleMemberships)
+    orgTeacherRole.memberships = Promise.resolve(teacherRoleMemberships)
+    orgAdminRole.memberships = Promise.resolve(adminRoleMemberships)
+    await orgStudentRole.save()
+    await orgParentRole.save()
+    await orgTeacherRole.save()
+    await orgAdminRole.save()
+}
+
+async function getUserInfoEntriesFromCsv() {
+    const userInfoEntries: UserInfo[] = []
+
+    const _ = await new Promise((resolve) =>
+        fs
+            .createReadStream(USER_INFO_FILE)
+            .pipe(csvParser())
+            .on('data', (row: any) => {
+                if (
+                    row['deleted'] === 'FALSE' &&
+                    row['deleted_by_kbt'] === 'FALSE'
+                ) {
+                    const birthDateString = getBirthDate(row['birthday'])
+                    userInfoEntries.push({
+                        name: row['name'],
+                        email: row['email'],
+                        birthday: birthDateString,
+                        role: row['role'],
+                    })
+                }
+
+                return row
+            })
+            .on('end', resolve)
+    )
+
+    return userInfoEntries
+}
+
+async function getStudentInfoEntriesFromCsv() {
+    const studentInfoEntries: UserInfo[] = []
+
+    const _ = await new Promise((resolve) =>
+        fs
+            .createReadStream(STUDENT_INFO_FILE)
+            .pipe(csvParser())
+            .on('data', (row: any) => {
+                if (
+                    row['deleted'] === 'FALSE' &&
+                    row['parent_deleted'] === 'FALSE' &&
+                    row['parent_deleted_by_kbt'] === 'FALSE'
+                ) {
+                    const birthDateString = getBirthDate(row['birthday'])
+                    studentInfoEntries.push({
+                        name: row['student_name'],
+                        email: row['parent_email'],
+                        birthday: birthDateString,
+                        role: 'student',
+                    })
+                }
+
+                return row
+            })
+            .on('end', resolve)
+    )
+
+    return studentInfoEntries
+}
+
+function getBirthDate(unixTime: number) {
+    try {
+        if (unixTime > 0) {
+            const birthDate = new Date(unixTime * 1000)
+            return dateToMMYYYY(birthDate)
+        }
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+function dateToMMYYYY(date: Date) {
+    var month = date.getMonth() + 1
+    var year = date.getFullYear()
+    return (month <= 9 ? '0' + month : month) + '-' + year
+}
