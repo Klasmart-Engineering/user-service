@@ -2,10 +2,7 @@ import csvParser from 'csv-parser'
 import fs from 'fs'
 import path from 'path'
 
-const PERMISSION_INFO_FILE = path.join(
-    __dirname,
-    '../../tests/fixtures/permissionInfo.csv'
-)
+const PERMISSION_INFO_FILE = path.join(__dirname, './permissionInfo.csv')
 
 interface PermissionDetails {
     name: string

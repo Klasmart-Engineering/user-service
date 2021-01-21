@@ -6,7 +6,7 @@ import path from 'path'
 const PERMISSIONS_CSV_URL = "https://docs.google.com/spreadsheets/d/1C1g-Q3UUsBBnDTXIFq75FSNdRN9Mr1qbJzyTYlpTePU/export?format=csv"
 const PERMISSIONS_CSV_INFO_URL = "https://docs.google.com/spreadsheets/d/1C1g-Q3UUsBBnDTXIFq75FSNdRN9Mr1qbJzyTYlpTePU/export?format=csv&gid=680886613"
 const PERMISSION_FILE = path.join(__dirname, "../fixtures/permissions.csv");
-const PERMISSION_INFO_FILE = path.join(__dirname, "../fixtures/permissionInfo.csv");
+const PERMISSION_INFO_FILE = path.join(__dirname, "../../src/permissions/permissionInfo.csv");
 
 interface PermissionInfo {
   name: String,
