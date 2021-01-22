@@ -4,7 +4,6 @@ import { GraphQLResolveInfo } from 'graphql'
 import path from 'path'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { Role } from './entities/role'
-import { User } from './entities/user'
 import { Model } from './model'
 import { organizationAdminRole } from './permissions/organizationAdmin'
 import { parentRole } from './permissions/parent'
@@ -50,19 +49,17 @@ async function migrate(model: Model) {
         phone: undefined,
         avatar: undefined,
     })
-    const organizationId = (
-        await admin.createOrganization(
-            { organization_name: 'My Org' },
-            undefined,
-            {
-                operation: { operation: 'mutation' },
-            } as GraphQLResolveInfo
-        )
-    )?.organization_id
-    if (!organizationId) throw Error('createOrganization failed')
+    const organization = await admin.createOrganization(
+        { organization_name: 'My Org' },
+        undefined,
+        {
+            operation: { operation: 'mutation' },
+        } as GraphQLResolveInfo
+    )
+    if (!organization) throw Error('createOrganization failed')
 
     let userInfoEntries = await getUserInfoEntriesFromCsv()
-    await migrateUsers(model, organizationId, userInfoEntries)
+    await migrateUsers(model, organization.organization_id, userInfoEntries)
     console.log('parent, teacher, and admin migration complete')
 }
 
@@ -223,10 +220,12 @@ async function getUserInfoEntriesFromCsv() {
             .pipe(csvParser())
             .on('data', (row: any) => {
                 if (
+                    // TODO: Log these values if typo.
                     row['deleted'] === 'FALSE' &&
                     row['deleted_by_kbt'] === 'FALSE'
                 ) {
                     const birthDateString = getBirthDate(row['birthday'])
+                    //const birthDateString = getBirthDate(row['birthday'])
                     userInfoEntries.push({
                         name: row['name'],
                         email: row['email'],

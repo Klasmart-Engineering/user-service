@@ -27,15 +27,11 @@ export class Model {
             const connection = await createConnection({
                 name: 'default',
                 type: 'postgres',
-                host: 'localhost',
-                username: 'postgres',
-                password: 'kidsloop',
-                database: 'testmigrationdb',
-                // url:
-                //     process.env.DATABASE_URL ||
-                //     'postgres://postgres:kidsloop@localhost',
+                url:
+                    process.env.DATABASE_URL ||
+                    'postgres://postgres:kidsloop@localhost',
                 synchronize: true,
-                dropSchema: true,
+                dropSchema: false,
                 logging: Boolean(process.env.DATABASE_LOGGING),
                 entities: ['src/entities/*.ts'],
             })
