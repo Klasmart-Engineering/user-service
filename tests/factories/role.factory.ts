@@ -5,6 +5,7 @@ export function createRole() {
     const role = new Role();
 
     role.role_name = faker.random.word();
+    role.role_description = faker.random.words();
 
     return role;
 }

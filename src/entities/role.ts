@@ -26,6 +26,9 @@ export class Role extends BaseEntity {
     @Column({ nullable: true })
     public role_name?: string
 
+    @Column({ nullable: true })
+    public role_description?: string
+
     @ManyToOne(() => Organization, (organization) => organization.roles)
     public organization?: Promise<Organization>
 

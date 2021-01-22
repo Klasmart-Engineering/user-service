@@ -228,6 +228,7 @@ type Role {
 
     #properties
     role_name: String
+    role_description: String!
 
     #connections
     organization: Organization
