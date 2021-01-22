@@ -25,6 +25,21 @@ describe("Role", () => {
     });
 
     describe(".new", () => {
+        context("when role description is undefined", () => {
+            beforeEach(async () => {
+                role.role_description = undefined;
+                await manager.save(role);
+            });
+
+            it("creates the role with the default description", async () => {
+                const dbRole = await Role.findOneOrFail(role.role_id)
+
+                expect(dbRole.role_id).to.eq(role.role_id)
+                expect(dbRole.role_name).to.eq(role.role_name)
+                expect(dbRole.role_description).to.eq('System Default Role')
+            });
+        });
+
         context("when all details are correct", () => {
             beforeEach(async () => {
                 await manager.save(role);

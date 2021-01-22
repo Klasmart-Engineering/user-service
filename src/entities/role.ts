@@ -26,7 +26,7 @@ export class Role extends BaseEntity {
     @Column({ nullable: true })
     public role_name?: string
 
-    @Column({ nullable: true })
+    @Column({ nullable: false, default: 'System Default Role' })
     public role_description?: string
 
     @ManyToOne(() => Organization, (organization) => organization.roles)
