@@ -69,6 +69,24 @@ const DENY_PERMISSION = `
     }
 `;
 
+const EDIT_PERMISSIONS = `
+    mutation editPermissions(
+            $role_id: ID!
+            $permission_names: [String!]) {
+        role(role_id: $role_id) {
+            edit_permissions(permission_names: $permission_names) {
+                permission_id
+                permission_name
+                permission_section
+                permission_category
+                permission_description
+                role_id
+                allow
+            }
+        }
+    }
+`;
+
 const DELETE_ROLE = `
     mutation myMutation(
             $role_id: ID!) {
@@ -145,6 +163,20 @@ export async function denyPermission(testClient: ApolloServerTestClient, roleId:
     const res = await gqlTry(operation);
     const gqlPermission = res.data?.role.deny as Permission;
     return gqlPermission;
+}
+
+export async function editPermissions(testClient: ApolloServerTestClient, roleId: string, permissionNames: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: EDIT_PERMISSIONS,
+        variables: { role_id: roleId, permission_names: permissionNames },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlPermissions = res.data?.role.edit_permissions as Permission[];
+    return gqlPermissions;
 }
 
 export async function deleteRole(testClient: ApolloServerTestClient, roleId: string, headers?: Headers) {

@@ -240,6 +240,7 @@ type Role {
     set(role_name: String): Role
     grant(permission_name: String!): Permission
     revoke(permission_name: String!): Boolean
+    edit_permissions(permission_names: [String!]): [Permission]
     deny(permission_name: String!): Permission
 
     delete_role(_: Int): Boolean

@@ -2,6 +2,7 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
+    getManager,
     ManyToMany,
     JoinColumn,
     JoinTable,
@@ -13,6 +14,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { Permission } from './permission'
+import { permissionInfo } from '../permissions/permissionInfo'
 import { Organization } from './organization'
 import { SchoolMembership } from './schoolMembership'
 import { Context } from '../main'
@@ -173,6 +175,52 @@ export class Role extends BaseEntity {
                 allow: false,
             })
             return permission
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    public async edit_permissions(
+        { permission_names }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (info.operation.operation !== 'mutation' || !organization_id) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_role_permissions_30332
+        )
+
+        const permissionDetails = await permissionInfo()
+        const oldPermissions = (await this.permissions) || []
+
+        const permissionEntities = [] as Permission[]
+        for (const permission_name of permission_names) {
+            const permission = new Permission()
+            const permissionInf = permissionDetails.get(permission_name)
+
+            permission.permission_name = permission_name
+            permission.permission_id = permission_name
+            permission.permission_category = permissionInf?.category
+            permission.permission_section = permissionInf?.section
+            permission.permission_description = permissionInf?.description
+            permission.allow = true
+            permission.role = Promise.resolve(this)
+            permissionEntities.push(permission)
+        }
+
+        try {
+            await getManager().transaction(async (manager) => {
+                await manager.remove(oldPermissions)
+                await manager.save(permissionEntities)
+            })
+
+            return permissionEntities
         } catch (e) {
             console.error(e)
         }
