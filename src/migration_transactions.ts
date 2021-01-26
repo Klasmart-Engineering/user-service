@@ -9,7 +9,6 @@ import { OrganizationMembership } from './entities/organizationMembership'
 import { accountUUID, User } from './entities/user'
 
 const USER_INFO_FILE = path.join(__dirname, './userInfo.csv')
-const STUDENT_INFO_FILE = path.join(__dirname, './studentInfo.csv')
 
 interface UserInfo {
     name: string
@@ -36,6 +35,9 @@ async function migrate() {
     //const organization = await getRealOrganization()
     const organization = await getDummyOrganization()
 
+    const existingUsers = await User.find()
+    const existingUserMap = new Map(existingUsers.map((x) => [x.user_id, x]))
+
     const emailSet = new Set<string>()
     const roles = await organization.roles
     if (!roles) {
@@ -44,12 +46,18 @@ async function migrate() {
     }
     const roleMap = new Map(roles.map((x) => [x.role_name, x]))
 
-    const studentEntries = await getStudentInfoEntriesFromCsv()
     const userInfoEntries = await getUserInfoEntriesFromCsv()
-    const allUserInfoEntries = studentEntries.concat(userInfoEntries)
+
+    for (const userInfo of userInfoEntries) {
+        if (existingUserMap.has(userInfo.email)) {
+            console.log(
+                `An account with email [${userInfo.email}] already exists. This account will be overwritten.`
+            )
+        }
+    }
 
     await connection.transaction(async (entityManager) => {
-        for (const userInfo of allUserInfoEntries) {
+        for (const userInfo of userInfoEntries) {
             const user = new User()
             user.given_name = userInfo.name
             user.date_of_birth = userInfo.birthday
@@ -117,8 +125,8 @@ async function getConn() {
             // url:
             //     process.env.DATABASE_URL ||
             //     'postgres://postgres:kidsloop@localhost',
-            synchronize: true,
-            dropSchema: true,
+            synchronize: false,
+            dropSchema: false,
             logging: Boolean(process.env.DATABASE_LOGGING),
             entities: ['src/entities/*.ts'],
         })
@@ -138,18 +146,13 @@ async function getUserInfoEntriesFromCsv() {
             .createReadStream(USER_INFO_FILE)
             .pipe(csvParser())
             .on('data', (row: any) => {
-                if (
-                    row['deleted'] === 'FALSE' &&
-                    row['deleted_by_kbt'] === 'FALSE'
-                ) {
-                    const birthDateString = getBirthDate(row['birthday'])
-                    userInfoEntries.push({
-                        name: row['name'],
-                        email: row['email'],
-                        birthday: birthDateString,
-                        role: row['role'],
-                    })
-                }
+                const birthDateString = getBirthDate(row['birthday'])
+                userInfoEntries.push({
+                    name: row['name'],
+                    email: row['email'],
+                    birthday: birthDateString,
+                    role: row['role'],
+                })
 
                 return row
             })
@@ -157,36 +160,6 @@ async function getUserInfoEntriesFromCsv() {
     )
 
     return userInfoEntries
-}
-
-async function getStudentInfoEntriesFromCsv() {
-    const studentInfoEntries: UserInfo[] = []
-
-    const _ = await new Promise((resolve) =>
-        fs
-            .createReadStream(STUDENT_INFO_FILE)
-            .pipe(csvParser())
-            .on('data', (row: any) => {
-                if (
-                    row['deleted'] === 'FALSE' &&
-                    row['parent_deleted'] === 'FALSE' &&
-                    row['parent_deleted_by_kbt'] === 'FALSE'
-                ) {
-                    const birthDateString = getBirthDate(row['birthday'])
-                    studentInfoEntries.push({
-                        name: row['student_name'],
-                        email: row['parent_email'],
-                        birthday: birthDateString,
-                        role: 'Student',
-                    })
-                }
-
-                return row
-            })
-            .on('end', resolve)
-    )
-
-    return studentInfoEntries
 }
 
 function getBirthDate(unixTime: number) {
