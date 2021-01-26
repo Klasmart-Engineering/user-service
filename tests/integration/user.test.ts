@@ -578,5 +578,107 @@ describe("user", () => {
 
         });
     });
+    describe("restrict return With Permission", () => {
+        let organization1Id: string;
+        let school1Id: string;
+        let school2Id: string;
+        let org1RoleId: string;
+        let org2RoleId: string;
+        let idOfUserToBeQueried: string;
+        const tokenOfOrg1Owner = JoeAuthToken;
+        const tokenOfOrg2Owner = BillyAuthToken;
+        const permissionName = PermissionName.edit_groups_30330;
+        const userToBeQueried = {
+            user_id: accountUUID("testuser@gmail.com"),
+            email: "testuser@gmail.com",
+        } as User;
+
+        beforeEach(async () => {
+            await reloadDatabase();
+            user = await createUserJoe(testClient);
+            const idOfOrg1Owner = user.user_id;
+            const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
+            idOfUserToBeQueried = (await createUserAndValidate(testClient, userToBeQueried)).user_id;
+            organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner)).organization_id;
+            const organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, tokenOfOrg2Owner)).organization_id;
+            await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization1Id, tokenOfOrg1Owner);
+            await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization2Id, tokenOfOrg2Owner);
+            school1Id = (await createSchool(testClient, organization1Id, "School 1", { authorization: tokenOfOrg1Owner })).school_id;
+            school2Id = (await createSchool(testClient, organization2Id, "School 2", { authorization: tokenOfOrg2Owner })).school_id;
+            await addUserToSchool(testClient, idOfUserToBeQueried, school1Id, { authorization: tokenOfOrg1Owner });
+            await addUserToSchool(testClient, idOfUserToBeQueried, school2Id, { authorization: tokenOfOrg2Owner });
+            await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
+            await addUserToSchool(testClient, idOfOrg1Owner, school2Id, { authorization: tokenOfOrg2Owner });
+            org1RoleId = (await createRole(testClient, organization1Id, "Org 1 Role")).role_id;
+            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", tokenOfOrg2Owner)).role_id;
+            await grantPermission(testClient, org1RoleId, permissionName, { authorization: tokenOfOrg1Owner });
+            await grantPermission(testClient, org2RoleId, permissionName, { authorization: tokenOfOrg2Owner });
+        });
+
+        context("when user being queried has the specified permission in a school's organization", () => {
+            beforeEach(async () => {
+                await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+            });
+
+            it("should return an array containing one school membership", async () => {
+                const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.true;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(1);
+            });
+        });
+
+        context("when user being queried does not have the specified permission in a school's organization", () => {
+            it("should return an empty array", async () => {
+                const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.false;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(0);
+            });
+        });
+
+        context("when user being queried has the specified permission in a school", () => {
+            beforeEach(async () => {
+                await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+            });
+
+            it("should return an array containing one school membership", async () => {
+                const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.true;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(1);
+            });
+        });
+
+        context("when user being queried does not have the specified permission in a school", () => {
+            it("should return an empty array", async () => {
+                const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                expect(isAllowed).to.be.false;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(0);
+            });
+        });
+
+        context("when user being queried has the specified permission in organization 1 and in school 2 of organization 2", () => {
+            beforeEach(async () => {
+                await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+                await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school2Id, org2RoleId, { authorization: tokenOfOrg2Owner });
+            });
+
+            it("should return an array containing two school memberships", async () => {
+                const gqlMemberships = await getUserSchoolMembershipsWithPermission(testClient, idOfUserToBeQueried, permissionName, { authorization: tokenOfOrg1Owner });
+                const isAllowed1 = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school1Id, permissionName);
+                const isAllowed2 = await schoolMembershipCheckAllowed(testClient, idOfUserToBeQueried, school2Id, permissionName);
+                expect(isAllowed1).to.be.true;
+                expect(isAllowed2).to.be.true;
+                expect(gqlMemberships).to.exist;
+                expect(gqlMemberships.length).to.equal(2);
+            });
+        });
+    });
 });
 

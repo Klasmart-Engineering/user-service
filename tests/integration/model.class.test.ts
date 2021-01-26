@@ -4,11 +4,17 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Class } from "../../src/entities/class";
-import { createClass } from "../utils/operations/organizationOps";
+import { User } from "../../src/entities/user";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/testEntities";
+import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
+import { addStudentToClass, addTeacherToClass} from "../utils/operations/classOps";
+import { addUserToOrganizationAndValidate, createClass, createRole } from "../utils/operations/organizationOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
+import { BillySuperAdminAuthToken, JoeAuthToken, BillyAuthToken } from "../utils/testConfig";
+import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
+import { PermissionName } from "../../src/permissions/permissionNames";
+import { grantPermission } from "../utils/operations/roleOps";
 
 const GET_CLASSES = `
     query getClasses {
@@ -53,6 +59,7 @@ describe("model.class", () => {
 
                 const res = await query({
                     query: GET_CLASSES,
+                    headers: { authorization: JoeAuthToken },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -62,10 +69,14 @@ describe("model.class", () => {
             });
         });
 
-        context("when one", () => {
+        context("when one and admin token", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
+                await createUserBilly(testClient);
+                const userId = user.user_id
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
+                const organizationId = organization.organization_id
+
                 await createClass(testClient, organization.organization_id);
             });
 
@@ -73,7 +84,75 @@ describe("model.class", () => {
                 const { query } = testClient;
 
                 const res = await query({
-                    query: GET_CLASSES,
+                     query: GET_CLASSES,
+                     headers: { authorization: BillySuperAdminAuthToken },
+                });
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const classes = res.data?.classes as Class[];
+                expect(classes).to.exist;
+                expect(classes).to.have.lengthOf(1);
+            });
+        });
+
+        context("when one and user is a student in the class", () => {
+            
+            let user: User;
+            let cls: Class;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                user = await createUserBilly(testClient);
+                const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                cls = await createClass(testClient, organization.organization_id);
+                const role = await createRole(testClient, organization.organization_id);
+                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
+                await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+            });
+
+
+            it("should return an array containing one class", async () => {
+                const { query } = testClient;
+
+                const res = await query({
+                     query: GET_CLASSES,
+                     headers: { authorization: BillyAuthToken },
+                });
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const classes = res.data?.classes as Class[];
+                expect(classes).to.exist;
+                expect(classes).to.have.lengthOf(1);
+            });
+        });
+
+        context("when one and user is a teacher of the class", () => {
+            
+            let user: User;
+            let cls: Class;
+
+            beforeEach(async () => {
+                const orgOwner = await createUserJoe(testClient);
+                user = await createUserBilly(testClient);
+                const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                cls = await createClass(testClient, organization.organization_id);
+                const role = await createRole(testClient, organization.organization_id);
+                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
+                await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                
+            });
+
+
+            it("should return an array containing one class", async () => {
+                const { query } = testClient;
+
+                const res = await query({
+                     query: GET_CLASSES,
+                     headers: { authorization: BillyAuthToken },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -83,6 +162,9 @@ describe("model.class", () => {
             });
         });
     });
+
+      
+    
 
     describe("getClass", () => {
         beforeEach(async () => {

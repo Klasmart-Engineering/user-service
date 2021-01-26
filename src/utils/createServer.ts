@@ -14,7 +14,7 @@ export const createServer = (model: Model, context?: any) =>
         resolvers: {
             Query: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
-                users: () => model.getUsers(),
+                users: (_parent, _args, ctx, _info) => model.getUsers(ctx),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
@@ -24,12 +24,13 @@ export const createServer = (model: Model, context?: any) =>
                     { organization_ids },
                     _context,
                     _info
-                ) => model.getOrganizations(organization_ids),
+                ) => model.getOrganizations(organization_ids, _context),
                 organization: (_parent, { organization_id }, _context, _info) =>
                     model.getOrganization(organization_id),
-                roles: () => model.getRoles(),
+                roles: (_parent, _args, ctx, info) => model.getRoles(ctx),
                 role: (_parent, args, _context, _info) => model.setRole(args),
-                classes: () => model.getClasses(),
+                classes: (_parent, args, _context, _info) =>
+                    model.getClasses(_context),
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 school: (_parent, args, _context, _info) =>
                     model.getSchool(args),
@@ -43,9 +44,10 @@ export const createServer = (model: Model, context?: any) =>
                     model.newUser(args),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
-                roles: () => model.getRoles(),
+                roles: (_parent, _args, ctx, info) => model.getRoles(ctx),
                 role: (_parent, args, _context, _info) => model.setRole(args),
-                classes: () => model.getClasses(),
+                classes: (parent, args, _context, _info) =>
+                    model.getClasses(_context),
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 school: (_parent, args, _context, _info) =>
                     model.getSchool(args),
