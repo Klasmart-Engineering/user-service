@@ -1,6 +1,7 @@
 import {
     Entity,
     PrimaryGeneratedColumn,
+    Check,
     Column,
     getManager,
     ManyToMany,
@@ -21,6 +22,7 @@ import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 
 @Entity()
+@Check(`"role_description" <> ''`)
 export class Role extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public role_id!: string
@@ -47,7 +49,7 @@ export class Role extends BaseEntity {
     public permissions?: Promise<Permission[]>
 
     public async set(
-        { role_name }: any,
+        { role_name, role_description }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -65,6 +67,10 @@ export class Role extends BaseEntity {
         try {
             if (typeof role_name === 'string') {
                 this.role_name = role_name
+            }
+
+            if (typeof role_description === 'string') {
+                this.role_description = role_description
             }
 
             await this.save()

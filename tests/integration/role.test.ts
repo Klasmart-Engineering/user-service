@@ -38,6 +38,7 @@ describe("role", () => {
     describe("set", () => {
         const originalRoleName = "Original Role Name";
         const newRoleName = "New Role Name";
+        const roleDescription = "Some description";
         let organizationId: string;
         let userId: string;
         let roleId: string;
@@ -57,18 +58,18 @@ describe("role", () => {
             });
 
             it("should return the modified role and update the database entry", async () => {
-                const gqlRole = await updateRole(testClient, roleId, newRoleName, { authorization: BillyAuthToken });
+                const gqlRole = await updateRole(testClient, roleId, newRoleName, roleDescription, { authorization: BillyAuthToken });
 
                 const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
                 expect(gqlRole).to.exist;
-                expect(gqlRole).to.include({ role_id: roleId, role_name: newRoleName });
+                expect(gqlRole).to.include({ role_id: roleId, role_name: newRoleName, role_description: roleDescription });
                 expect(dbRole).to.include(gqlRole);
             });
         });
 
         context("when user does not have the 'edit groups' permission within the organization", () => {
             it("should throw a permission exception, and not update the database entry", async () => {
-                const fn = () => updateRole(testClient, roleId, newRoleName, { authorization: BillyAuthToken });
+                const fn = () => updateRole(testClient, roleId, newRoleName, roleDescription, { authorization: BillyAuthToken });
                 expect(fn()).to.be.rejected;
 
                 const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });

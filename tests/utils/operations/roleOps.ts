@@ -7,11 +7,13 @@ import { Permission } from "../../../src/entities/permission";
 const UPDATE_ROLE = `
     mutation myMutation(
             $role_id: ID!,
-            $role_name: String) {
+            $role_name: String!
+            $role_description: String!) {
         role(role_id: $role_id) {
-            set(role_name: $role_name) {
+            set(role_name: $role_name, role_description: $role_description) {
                 role_id
                 role_name
+                role_description
             }
         }
     }
@@ -96,12 +98,12 @@ const DELETE_ROLE = `
     }
 `;
 
-export async function updateRole(testClient: ApolloServerTestClient, roleId: string, roleName: string, headers?: Headers) {
+export async function updateRole(testClient: ApolloServerTestClient, roleId: string, roleName: string, roleDescription: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: UPDATE_ROLE,
-        variables: { role_id: roleId, role_name: roleName },
+        variables: { role_id: roleId, role_name: roleName, role_description: roleDescription },
         headers: headers,
     });
 
