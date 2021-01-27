@@ -1,7 +1,6 @@
 import {
     Entity,
     PrimaryGeneratedColumn,
-    Check,
     Column,
     getManager,
     ManyToMany,
@@ -22,7 +21,6 @@ import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 
 @Entity()
-@Check(`"role_description" <> ''`)
 export class Role extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public role_id!: string
