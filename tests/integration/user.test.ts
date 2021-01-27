@@ -310,7 +310,7 @@ describe("user", () => {
             await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
             await addUserToSchool(testClient, idOfOrg1Owner, school2Id, { authorization: tokenOfOrg2Owner });
             org1RoleId = (await createRole(testClient, organization1Id, "Org 1 Role")).role_id;
-            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", tokenOfOrg2Owner)).role_id;
+            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", "Org 2 role description", tokenOfOrg2Owner)).role_id;
             await grantPermission(testClient, org1RoleId, permissionName, { authorization: tokenOfOrg1Owner });
             await grantPermission(testClient, org2RoleId, permissionName, { authorization: tokenOfOrg2Owner });
         });
@@ -541,13 +541,13 @@ describe("user", () => {
                 expect(newSchoolMemberships[0].user_id).to.equal(oldUser.user_id)
             }
 
-            
+
             classesStudying = await dbOldUser.classesStudying
             expect(classesStudying).to.exist
             if(classesStudying !== undefined){
                 expect(classesStudying.length).to.equal(1)
                 expect(classesStudying[0].class_id==cls.class_id)
-                
+
                 let studying = classesStudying[0]
                 let students = await studying.students
                 expect (students).to.exist
@@ -577,7 +577,7 @@ describe("user", () => {
                     expect (found)
                 }
             }
-        }); 
+        });
     });
     describe("restrict return With Permission", () => {
         let organization1Id: string;
@@ -611,7 +611,7 @@ describe("user", () => {
             await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
             await addUserToSchool(testClient, idOfOrg1Owner, school2Id, { authorization: tokenOfOrg2Owner });
             org1RoleId = (await createRole(testClient, organization1Id, "Org 1 Role")).role_id;
-            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", tokenOfOrg2Owner)).role_id;
+            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", "Org 2 role description", tokenOfOrg2Owner)).role_id;
             await grantPermission(testClient, org1RoleId, permissionName, { authorization: tokenOfOrg1Owner });
             await grantPermission(testClient, org2RoleId, permissionName, { authorization: tokenOfOrg2Owner });
         });

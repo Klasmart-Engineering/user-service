@@ -589,7 +589,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createRole(
-        { role_name }: any,
+        { role_name, role_description }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -610,7 +610,15 @@ export class Organization extends BaseEntity {
             const manager = getManager()
 
             const role = new Role()
-            role.role_name = role_name
+
+            if (typeof role_name === 'string') {
+                role.role_name = role_name
+            }
+
+            if (typeof role_description === 'string') {
+                role.role_description = role_description
+            }
+
             role.organization = Promise.resolve(this)
             await manager.save(role)
             return role

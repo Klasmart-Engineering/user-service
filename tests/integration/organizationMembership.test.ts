@@ -106,7 +106,7 @@ describe("organizationMembership", () => {
             await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
             await addUserToSchool(testClient, idOfOrg1Owner, school2Id, { authorization: tokenOfOrg2Owner });
             org1RoleId = (await createRole(testClient, organization1Id, "Org 1 Role")).role_id;
-            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", tokenOfOrg2Owner)).role_id;
+            org2RoleId = (await createRole(testClient, organization2Id, "Org 2 Role", "Org 2 role description", tokenOfOrg2Owner)).role_id;
             await grantPermission(testClient, org1RoleId, permissionName, { authorization: tokenOfOrg1Owner });
             await grantPermission(testClient, org2RoleId, permissionName, { authorization: tokenOfOrg2Owner });
         });
@@ -371,8 +371,8 @@ describe("organizationMembership", () => {
                 school2Id = (await createSchool(testClient, organization2Id, "school 2", { authorization: BillyAuthToken })).school_id;
                 await addUserToOrganizationAndValidate(testClient, org1Owner.user_id, organization1Id, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, org2Owner.user_id, organization2Id, { authorization: BillyAuthToken });
-                role1 = await createRole(testClient, organization1Id, "student", JoeAuthToken);
-                role2 = await createRole(testClient, organization2Id, "student", BillyAuthToken);
+                role1 = await createRole(testClient, organization1Id, "student", "student role", JoeAuthToken);
+                role2 = await createRole(testClient, organization2Id, "student", "student role", BillyAuthToken);
 
             });
             it("should succed to add the role ", async () => {
@@ -432,7 +432,7 @@ describe("organizationMembership", () => {
                     expect(gqlClasses).to.exist;
                     expect(gqlClasses).to.be.empty;
                 });
-    
+
                 it("should return class 1 of organization 2 when querying organization 2", async () => {
                     const gqlClasses = await getClassesTeachingViaOrganizationMembership(testClient, idOfUserToBeQueried, organization2Id, { authorization: JoeAuthToken });
                     expect(gqlClasses).to.exist.and.have.lengthOf(1);

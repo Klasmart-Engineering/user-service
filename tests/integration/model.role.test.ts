@@ -50,17 +50,17 @@ describe("model.role", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
-    
+
         context("when none", () => {
             it("should return an empty array", async () => {
                 await createUserJoe(testClient);
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLES,
                     headers: { authorization: JoeAuthToken },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const roles = res.data?.roles as Role[];
                 expect(roles).to.exist;
@@ -73,8 +73,8 @@ describe("model.role", () => {
                 const orgOwnerId = (await createUserBilly(testClient)).user_id;
                 const userId = (await createUserJoe(testClient)).user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId, "myOrg", BillyAuthToken)).organization_id;
-                const roleId = (await createRole(testClient, organizationId, "first role", BillyAuthToken)).role_id;
-                const role2Id = (await createRole(testClient, organizationId, "other role", BillyAuthToken)).role_id;
+                const roleId = (await createRole(testClient, organizationId, "first role", "first role description", BillyAuthToken)).role_id;
+                const role2Id = (await createRole(testClient, organizationId, "other role", "other role description", BillyAuthToken)).role_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: BillyAuthToken });
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: BillyAuthToken });
                 const school = await createSchool(testClient, organizationId, "school 1", { authorization: BillyAuthToken })
@@ -83,18 +83,18 @@ describe("model.role", () => {
                 await addUserToSchool(testClient, userId, schoolId, { authorization: BillyAuthToken })
                 await addRoleToSchoolMembership(testClient, userId, schoolId, role2Id,{ authorization: BillyAuthToken })
                 await addRoleToSchoolMembership(testClient, userId, schoolId, roleId,{ authorization: BillyAuthToken })
-               
-               
+
+
             });
 
             it("should return an array containing two roles", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLES,
                     headers: { authorization: JoeAuthToken },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const roles = res.data?.roles as Role[];
                 expect(roles).to.exist;
@@ -103,12 +103,12 @@ describe("model.role", () => {
 
             it("should return an array containing one role for the organization owner", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLES,
                     headers: { authorization: BillyAuthToken },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const roles = res.data?.roles as Role[];
                 expect(roles).to.exist;
@@ -116,14 +116,14 @@ describe("model.role", () => {
             });
             it("should return an array containing all the roles in the db as admin user", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLES,
                     headers: { authorization: BillySuperAdminAuthToken },
                 });
 
                 const dbRoles = await Role.find();
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const roles = res.data?.roles as Role[];
                 expect(roles).to.exist;
@@ -131,11 +131,11 @@ describe("model.role", () => {
             });
             it("should return an array containing no roles as no token", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLES,
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const roles = res.data?.roles as Role[];
                 expect(roles).to.exist;
@@ -152,14 +152,14 @@ describe("model.role", () => {
 
             it("should return an array containing the default roles", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLES,
                     headers: { authorization: BillySuperAdminAuthToken },
                 });
 
                 const dbRoles = await Role.find();
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const roles = res.data?.roles as Role[];
                 expect(roles).to.exist;
@@ -172,16 +172,16 @@ describe("model.role", () => {
         beforeEach(async () => {
             await connection.synchronize(true);
         });
-    
+
         context("when none", () => {
             it("should return null", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLE,
                     variables: { role_id: accountUUID() },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 expect(res.data?.role).to.be.null;
             });
@@ -198,13 +198,13 @@ describe("model.role", () => {
 
             it("should return an array containing the default roles", async () => {
                 const { query } = testClient;
-        
+
                 const res = await query({
                     query: GET_ROLE,
                     variables: { role_id: role.role_id },
                     headers: { authorization: BillySuperAdminAuthToken },
                 });
-        
+
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const gqlRole = res.data?.role as Role;
                 expect(gqlRole).to.exist;

@@ -28,11 +28,13 @@ const CREATE_CLASS = `
 const CREATE_ROLE = `
     mutation myMutation(
             $organization_id: ID!
-            $role_name: String) {
+            $role_name: String!,
+            $role_description: String!) {
         organization(organization_id: $organization_id) {
-            createRole(role_name: $role_name) {
+            createRole(role_name: $role_name, role_description: $role_description) {
                 role_id
                 role_name
+                role_description
             }
         }
     }
@@ -151,15 +153,16 @@ export async function createClassAndValidate(testClient: ApolloServerTestClient,
     return gqlClass;
 }
 
-export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string, token?:string) {
+export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string, roleDescription?: string, token?:string) {
     const { mutate } = testClient;
     roleName = roleName ?? "My Role";
+    roleDescription = roleDescription ?? "My Role Description";
     if(token === undefined){
         token = JoeAuthToken
     }
     const operation = () => mutate({
         mutation: CREATE_ROLE,
-        variables: { organization_id: organizationId, role_name: roleName },
+        variables: { organization_id: organizationId, role_name: roleName, role_description: roleDescription },
         headers: { authorization: token },
     });
 
@@ -248,7 +251,7 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
         variables: variables,
         headers: headers,
     });
-    
+
     const res = await gqlTry(operation);
     const result = res.data?.organization.inviteUser as {user:User,membership: OrganizationMembership,schoolMemberships: SchoolMembership[]}
     return result

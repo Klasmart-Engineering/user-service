@@ -172,7 +172,7 @@ type Organization {
         school_ids: [ID!]
         school_role_ids: [ID!]
     ): MembershipUpdate
-    createRole(role_name: String): Role
+    createRole(role_name: String!, role_description: String!): Role
     createDefaultRoles(_: Int): [Role]
     resetDefaultRolesPermissions(_: Int): [Role]
     createSchool(school_name: String): School
