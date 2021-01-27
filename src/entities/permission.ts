@@ -31,7 +31,10 @@ export class Permission extends BaseEntity {
     public permission_category?: string
 
     @Column({ nullable: true })
-    public permission_section?: string
+    public permission_group?: string
+
+    @Column({ nullable: true })
+    public permission_level?: string
 
     @Column({ nullable: true })
     public permission_description?: string

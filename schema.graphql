@@ -251,7 +251,8 @@ type Permission {
     permission_id: ID
     permission_name: ID!
     permission_category: String
-    permission_section: String
+    permission_group: String
+    permission_level: String
     permission_description: String
     allow: Boolean
 

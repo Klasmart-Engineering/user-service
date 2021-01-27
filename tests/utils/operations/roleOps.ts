@@ -79,7 +79,7 @@ const EDIT_PERMISSIONS = `
             edit_permissions(permission_names: $permission_names) {
                 permission_id
                 permission_name
-                permission_section
+                permission_level
                 permission_category
                 permission_description
                 role_id

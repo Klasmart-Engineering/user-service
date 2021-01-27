@@ -7,7 +7,8 @@ const PERMISSION_INFO_FILE = path.join(__dirname, './permissionInfo.csv')
 interface PermissionDetails {
     name: string
     category: string
-    section: string
+    group: string
+    level: string
     description: string
 }
 
@@ -25,12 +26,13 @@ export const permissionInfo = async () => {
                     name: row['Permission Name (BE)'],
                     category:
                         row[
-                            'Permission Category (BE)\n(Accounts, Live, Library, Assessments, Schedule, Reports, General)'
+                            'Permission Category (BE)\n(Accounts, Academic Profile, Live, Library, Assessments, Schedule, Reports, General)'
                         ],
-                    section:
+                    level:
                         row[
-                            'Permission Level \n(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, Operational)'
+                            'Permission Level \n(Super Admin, Org Admin, School Admin, Teacher, Parent, Student, None)'
                         ],
+                    group: row['Permission Group'],
                     description: row['Description'],
                 })
 

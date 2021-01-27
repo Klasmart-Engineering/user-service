@@ -46,7 +46,8 @@ describe("Permission", () => {
                 expect(dbPermission.permission_id).to.eq(permission.permission_id)
                 expect(dbPermission.allow).to.eq(permission.allow)
                 expect(dbPermission.permission_category).to.eq(permission.permission_category)
-                expect(dbPermission.permission_section).to.eq(permission.permission_section)
+                expect(dbPermission.permission_group).to.eq(permission.permission_group)
+                expect(dbPermission.permission_level).to.eq(permission.permission_level)
                 expect(dbPermission.permission_description).to.eq(permission.permission_description)
             });
         });

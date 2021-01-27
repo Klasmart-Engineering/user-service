@@ -746,7 +746,8 @@ export class Organization extends BaseEntity {
                         permission.permission_name = permission_name
                         permission.permission_id = permission_name
                         permission.permission_category = permissionInf?.category
-                        permission.permission_section = permissionInf?.section
+                        permission.permission_level = permissionInf?.level
+                        permission.permission_group = permissionInf?.group
                         permission.permission_description =
                             permissionInf?.description
                         permission.allow = true

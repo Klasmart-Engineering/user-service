@@ -11,7 +11,8 @@ export function createPermission(role : Role = createRole() ) {
     permission.permission_name = faker.random.word();
     permission.allow = true
     permission.permission_category = faker.random.word();
-    permission.permission_section = faker.random.word();
+    permission.permission_group = faker.random.word();
+    permission.permission_level = faker.random.word();
     permission.permission_description = faker.random.words();
 
     return permission;
