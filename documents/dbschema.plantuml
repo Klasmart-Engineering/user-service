@@ -10,13 +10,6 @@ class User {
   avatar : string
 }
 
-class UserProfile{
-   user_profile_id : uuid
-   user_profile_name : string
-   user_profile_user : uuid
-   myOrganizationOrganizationId : uuid
-}
-
 class Class {
   class_id : uuid
   class_name : string
@@ -38,7 +31,7 @@ class Organization {
 }
 
 class OrganizationMembership {
-  user_profile_id : string
+  user_id : string
   organization_id : string
   join_timestamp : timestamp
   userUserId : uuid
@@ -47,8 +40,13 @@ class OrganizationMembership {
 
 class Permission {
   role_id : uuid
+  permission_id : string
   permission_name : string
+  permission_category : string
+  permission_group : string
+  permission_level : string
   allow : boolean
+  permission_description : string
 }
 
 class Role {
@@ -66,7 +64,7 @@ class School {
 }
 
 class SchoolMembership {
-  user_profile_id : string
+  user_id : string
   school_id : string
   join_timestamp : timestamp
   userUserId : uuid
@@ -83,23 +81,23 @@ class Attendance {
 
 class RoleMembershipsOrganizationMembership {
   roleRoleId : uuid
-  organizationMembershipUserProfileId : string
+  organizationMembershipUserId : string
   organizationMembershipOrganizationId : string
 }
 
 class RoleSchoolMembershipsSchoolMembership {
   roleRoleId : uuid
-  schoolMembershipUserProfileId : string
+  schoolMembershipUserId : string
   schoolMembershipSchoolId : string
 }
 
 class UserClassesStudyingcClass {
-  userUserProfileId : uuid
+  userUserId : uuid
   classClassId : uuid
 }
 
 class UserClassesTeachingClass {
-  userUserProfileId : uuid
+  userUserId : uuid
   classClassId : uuid
 }
 
@@ -109,22 +107,21 @@ class SchoolClassesClass {
 }
 
 Role -- "*" Organization
-UserProfile -- "0..1" Organization
-UserProfile "0..1" *-- "*" OrganizationMembership
-UserProfile "*" -- "1" User
+User -- "0..1" Organization
+User "0..1" *-- "*" OrganizationMembership
 OrganizationMembership "*" --* "0..1" Organization
 Class -- "0..1" Organization
 Permission --* "0..1" Role
 School -- "0..1" Organization
-UserProfile "0..1" *-- "*" SchoolMembership
+User "0..1" *-- "*" SchoolMembership
 SchoolMembership "*" --* "0..1" School
 RoleMembershipsOrganizationMembership "*" --* "1" Role
 RoleMembershipsOrganizationMembership "*" --* "1" OrganizationMembership
 RoleSchoolMembershipsSchoolMembership "*" --* "1" Role
 RoleSchoolMembershipsSchoolMembership "*" --* "1" SchoolMembership
-UserClassesStudyingcClass "*" --* "1" UserProfile
+UserClassesStudyingcClass "*" --* "1" User
 UserClassesStudyingcClass "*" --* "1" Class
-UserClassesTeachingClass "*" --* "1" UserProfile
+UserClassesTeachingClass "*" --* "1" User
 UserClassesTeachingClass "*" --* "1" Class
 SchoolClassesClass "*" --* "1" School
 SchoolClassesClass "*" --* "1" Class
