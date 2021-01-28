@@ -1,6 +1,7 @@
 import { getRepository } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
+import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
 
@@ -114,6 +115,9 @@ export class UserPermissions {
                         .where('OrganizationMembership.user_id = :user_id', {
                             user_id: this.user_id,
                         })
+                        .andWhere('Role.status = :status', {
+                            status: Status.ACTIVE,
+                        })
                         .groupBy(
                             'OrganizationMembership.user_id, OrganizationMembership.organization_id, Permission.permission_name'
                         )
@@ -169,6 +173,9 @@ export class UserPermissions {
                             )
                             .where('SchoolMembership.user_id = :user_id', {
                                 user_id: this.user_id,
+                            })
+                            .andWhere('Role.status = :status', {
+                                status: Status.ACTIVE,
                             })
                             .groupBy(
                                 'SchoolMembership.user_id, SchoolMembership.school_id, Permission.permission_name'

@@ -17,6 +17,7 @@ import { Permission } from './permission'
 import { permissionInfo } from '../permissions/permissionInfo'
 import { Organization } from './organization'
 import { SchoolMembership } from './schoolMembership'
+import { Status } from './status'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 
@@ -27,6 +28,12 @@ export class Role extends BaseEntity {
 
     @Column({ nullable: true })
     public role_name?: string
+
+    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
+    public status!: Status
+
+    @Column({ type: 'timestamp', nullable: true })
+    public deleted_at?: Date
 
     @Column({ nullable: false, default: 'System Default Role' })
     public role_description?: string
@@ -236,7 +243,11 @@ export class Role extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         const organization_id = (await this.organization)?.organization_id
-        if (info.operation.operation !== 'mutation' || !organization_id) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
             return null
         }
 
@@ -247,11 +258,21 @@ export class Role extends BaseEntity {
         )
 
         try {
-            await this.remove()
+            await getManager().transaction(async (manager) => {
+                await this.inactivate(manager)
+            })
+
             return true
         } catch (e) {
             console.error(e)
         }
         return false
+    }
+
+    public async inactivate(manager: any) {
+        this.status = Status.INACTIVE
+        this.deleted_at = new Date()
+
+        await manager.save(this)
     }
 }

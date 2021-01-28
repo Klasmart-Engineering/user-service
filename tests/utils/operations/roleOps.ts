@@ -93,7 +93,7 @@ const DELETE_ROLE = `
     mutation myMutation(
             $role_id: ID!) {
         role(role_id: $role_id) {
-            delete_role()
+            delete_role
         }
     }
 `;
@@ -191,5 +191,5 @@ export async function deleteRole(testClient: ApolloServerTestClient, roleId: str
     });
 
     const res = await gqlTry(operation);
-    return res.data?.delete_role as boolean;
+    return res.data?.role.delete_role as boolean;
 }

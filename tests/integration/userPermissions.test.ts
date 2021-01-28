@@ -15,7 +15,7 @@ import { BillyAuthToken, JoeAuthToken, BillySuperAdminAuthToken } from "../utils
 import { createTestConnection } from "../utils/testConnection";
 import chaiAsPromised from "chai-as-promised"
 import chai from "chai"
-import { grantPermission } from "../utils/operations/roleOps";
+import { grantPermission, deleteRole } from "../utils/operations/roleOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -118,25 +118,48 @@ describe("userPermissions", () => {
                 userPermissions = new UserPermissions(token);
             });
 
-            it("should not throw error when school ID array is provided", async () => {
-                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
-                const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
-                const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
-                await expect(fn()).to.be.fulfilled;
+            context("and the role is active", () => {
+                it("should not throw error when school ID array is provided", async () => {
+                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
+                    const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
+                    await expect(fn()).to.be.fulfilled;
+                });
+
+                it("should not throw error when organization ID is provided", async () => {
+                    await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    const permissionContext = { school_id: undefined, school_ids: undefined, organization_id: organizationId };
+                    const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
+                    await expect(fn()).to.be.fulfilled;
+                });
+
+                it("should not throw error when user dosn't have organization permission, but does have permission for at least one school", async () => {
+                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: organizationId };
+                    const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
+                    await expect(fn()).to.be.fulfilled;
+                });
             });
 
-            it("should not throw error when organization ID is provided", async () => {
-                await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
-                const permissionContext = { school_id: undefined, school_ids: undefined, organization_id: organizationId };
-                const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
-                await expect(fn()).to.be.fulfilled;
-            });
+            context("and the role is inactive", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await deleteRole(testClient, testOrgRoleId, { authorization: JoeAuthToken });
+                    await deleteRole(testClient, testSchoolRoleId, { authorization: JoeAuthToken });
+                });
 
-            it("should not throw error when user dosn't have organization permission, but does have permission for at least one school", async () => {
-                await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
-                const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: organizationId };
-                const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
-                await expect(fn()).to.be.fulfilled;
+                it("throws an error when school ID array is provided", async () => {
+                    const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
+                    const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
+                    await expect(fn()).to.be.rejected;
+                });
+
+                it("throws an error when organization ID is provided", async () => {
+                    const permissionContext = { school_id: undefined, school_ids: undefined, organization_id: organizationId };
+                    const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
+                    await expect(fn()).to.be.rejected;
+                });
             });
         });
 

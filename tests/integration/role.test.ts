@@ -9,10 +9,11 @@ import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { PermissionName } from "../../src/permissions/permissionNames";
-import { denyPermission, editPermissions, getPermissionViaRole, grantPermission, revokePermission, updateRole } from "../utils/operations/roleOps";
+import { denyPermission, editPermissions, getPermissionViaRole, grantPermission, revokePermission, updateRole, deleteRole } from "../utils/operations/roleOps";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
-import { Role } from "../../src/entities/role";
 import { Permission } from "../../src/entities/permission";
+import { Role } from "../../src/entities/role";
+import { Status } from "../../src/entities/status";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 chai.use(chaiAsPromised);
@@ -302,6 +303,75 @@ describe("role", () => {
 
                 const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
                 expect(dbPermission.allow).to.be.true;
+            });
+        });
+    });
+
+    describe("delete_role", () => {
+        let organizationId: string;
+        let userId: string;
+        let roleId: string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            userId = (await createUserBilly(testClient)).user_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("throws a permission exception, and not delete the database entry", async () => {
+                const fn = () => deleteRole(testClient, roleId, { authorization: undefined });
+                expect(fn()).to.be.rejected;
+
+                const dbRole = await Role.findOneOrFail(roleId);
+                expect(dbRole.status).to.eq(Status.ACTIVE);
+                expect(dbRole.deleted_at).to.be.null;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have delete role permissions", () => {
+                it("throws a permission exception, and not delete the database entry", async () => {
+                    const fn = () => deleteRole(testClient, roleId, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
+                    const dbRole = await Role.findOneOrFail(roleId);
+                    expect(dbRole.status).to.eq(Status.ACTIVE);
+                    expect(dbRole.deleted_at).to.be.null;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: JoeAuthToken });
+                });
+
+                it("deletes the role", async () => {
+                    const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: BillyAuthToken });
+                    expect(gqlDeleteRole).to.be.true;
+
+                    const dbRole = await Role.findOneOrFail(roleId);
+                    expect(dbRole.status).to.eq(Status.INACTIVE);
+                    expect(dbRole.deleted_at).not.to.be.null;
+                });
+
+                context("and the role is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteRole(testClient, roleId, { authorization: JoeAuthToken });
+                    });
+
+                    it("fails to delete the role", async () => {
+                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: BillyAuthToken });
+                        expect(gqlDeleteRole).to.be.null;
+
+                        const dbRole = await Role.findOneOrFail(roleId);
+                        expect(dbRole.status).to.eq(Status.INACTIVE);
+                        expect(dbRole.deleted_at).not.to.be.null;
+                    });
+                });
             });
         });
     });

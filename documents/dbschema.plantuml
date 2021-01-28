@@ -52,6 +52,8 @@ class Permission {
 class Role {
   role_id : uuid
   role_name : string
+  status : status
+  deleted_at : timestamp
   organizationOrganizationId : uuid
 }
 
