@@ -5,6 +5,9 @@ import {
     EntityManager,
     getRepository,
     Repository,
+    Brackets,
+    LessThanOrEqual,
+    MoreThanOrEqual,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User, accountUUID } from './entities/user'
@@ -15,6 +18,7 @@ import {
     validatePhone,
     normalizedLowercaseTrimmed,
     padShortDob,
+    OrganizationCursorArgs,
 } from './entities/organization'
 import { organizationAdminRole } from './permissions/organizationAdmin'
 import { schoolAdminRole } from './permissions/schoolAdmin'
@@ -281,6 +285,106 @@ export class Model {
         return await this.userRepository.find()
     }
 
+    private async paginateAuth(token: any): Promise<User | undefined> {
+        if (!token) {
+            return undefined
+        }
+        const user = await this.userRepository.findOne({
+            user_id: token.id,
+        })
+        return user
+    }
+
+    private async v1_usersWithAdminPermissions(
+        owner: Model,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number,
+        ids?: string[]
+    ): Promise<Paginated<User, string>> {
+        let timeStamp: number
+        let count: number
+
+        if (staleTotal) {
+            count = (await owner.userRepository.count()) || 0
+            timeStamp = Date.now()
+        } else {
+            count = cursor.total || 0
+            timeStamp = cursor.timeStamp || 0
+        }
+        let options: any
+        if (direction) {
+            options = {
+                where: {
+                    user_id: LessThanOrEqual(id),
+                },
+                order: { user_id: 'DESC' },
+                take: limit + 2,
+            }
+        } else {
+            options = {
+                where: {
+                    user_id: MoreThanOrEqual(id),
+                },
+                order: { user_id: 'ASC' },
+                take: limit + 2,
+            }
+        }
+        const users = await owner.userRepository.find(options)
+        if (!direction) {
+            users.reverse()
+        }
+        return paginateData<User, string>(
+            count,
+            timeStamp,
+            users,
+            true,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    private async v1_usersWithUserPermission(
+        owner: Model,
+        user: User,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number,
+        ids?: string[]
+    ) {
+        let users = [] as User[]
+        let count = 0
+        let timeStamp = 0
+
+        if (
+            (direction && user.user_id < id) ||
+            (!direction && user.user_id > id)
+        ) {
+            users = [user]
+            count = 1
+            timeStamp = Date.now()
+        }
+        return paginateData<User, string>(count, timeStamp, users, true, limit)
+    }
+    public async v1_getUsers(
+        context: Context,
+        { after, before, first, last }: CursorArgs
+    ) {
+        const empty = paginateData<User, string>(0, Date.now(), [], true, 0)
+        return this.v1_getPaginated(
+            context,
+            this.v1_usersWithAdminPermissions,
+            this.v1_usersWithUserPermission,
+            empty,
+            { before, after, first, last }
+        )
+    }
+
     public async setOrganization({
         organization_id,
         organization_name,
@@ -441,6 +545,172 @@ export class Model {
 
         return roles
     }
+    private async v1_organizationsWithAdminPermission(
+        owner: Model,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number,
+        organization_ids?: string[]
+    ): Promise<Paginated<Organization, string>> {
+        let timeStamp: number
+        let count: number
+        let options: any
+        if (direction) {
+            options = {
+                where: {
+                    organization_id: LessThanOrEqual(id),
+                },
+                order: { organization_id: 'DESC' },
+                take: limit + 2,
+            }
+        } else {
+            options = {
+                where: {
+                    organization_id: MoreThanOrEqual(id),
+                },
+                order: { organization_id: 'ASC' },
+                take: limit + 2,
+            }
+        }
+        if (organization_ids) {
+            if (staleTotal) {
+                const whereparams: any = []
+                organization_ids.forEach(function (oid: string) {
+                    whereparams.push({ organization_id: oid })
+                })
+                count =
+                    (await owner.organizationRepository.count({
+                        where: whereparams,
+                    })) || 0
+                timeStamp = Date.now()
+            } else {
+                timeStamp = cursor.timeStamp || 0
+                count = cursor.total || 0
+            }
+
+            const organizations = await owner.organizationRepository.findByIds(
+                organization_ids,
+                options
+            )
+            if (!direction) {
+                organizations.reverse()
+            }
+            return paginateData<Organization, string>(
+                count,
+                timeStamp,
+                organizations,
+                true,
+                limit,
+                direction ? undefined : id,
+                direction ? id : undefined
+            )
+        }
+        if (staleTotal) {
+            count = (await owner.organizationRepository.count()) || 0
+            timeStamp = Date.now()
+        } else {
+            timeStamp = cursor.timeStamp || 0
+            count = cursor.total || 0
+        }
+        const organizations = await owner.organizationRepository.find(options)
+        if (!direction) {
+            organizations.reverse()
+        }
+        return paginateData<Organization, string>(
+            count,
+            timeStamp,
+            organizations,
+            true,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    private async v1_organizationsWithUserPermission(
+        owner: Model,
+        user: User,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number,
+        organization_ids?: string[]
+    ): Promise<Paginated<Organization, string>> {
+        let timeStamp: number
+        let count: number
+        let sqb = owner.organizationRepository
+            .createQueryBuilder()
+            .innerJoin('Organization.memberships', 'OrganizationMembership')
+            .groupBy(
+                'Organization.organization_id, OrganizationMembership.user_id'
+            )
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: user.user_id,
+            })
+        if (organization_ids) {
+            sqb = sqb.andWhereInIds(organization_ids)
+        }
+        if (staleTotal) {
+            const countSqb = sqb
+            count = (await countSqb.getCount()) || 0
+            timeStamp = Date.now()
+        } else {
+            timeStamp = cursor.timeStamp || 0
+            count = cursor.total || 0
+        }
+        const organizations = await sqb
+            .andWhere(
+                new Brackets((qb) => {
+                    qb.where(
+                        direction
+                            ? 'Organization.organization_id <= :id'
+                            : 'Organization.organization_id >= :id',
+                        {
+                            id: id,
+                        }
+                    )
+                })
+            )
+            .orderBy('Organization.organization_id', direction ? 'DESC' : 'ASC')
+            .limit(limit + 2)
+            .getMany()
+
+        if (!direction) {
+            organizations.reverse()
+        }
+        return paginateData<Organization, string>(
+            count,
+            timeStamp,
+            organizations,
+            true,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    public async v1_getOrganizations(
+        context: Context,
+        { organization_ids, after, before, first, last }: OrganizationCursorArgs
+    ) {
+        const empty = paginateData<Organization, string>(
+            0,
+            Date.now(),
+            [],
+            true,
+            0
+        )
+        return this.v1_getPaginated(
+            context,
+            this.v1_organizationsWithAdminPermission,
+            this.v1_organizationsWithUserPermission,
+            empty,
+            { before, after, first, last, organization_ids }
+        )
+    }
 
     private async _assignPermissionsDefaultRoles(
         manager: EntityManager,
@@ -496,6 +766,156 @@ export class Model {
         }
     }
 
+    private async v1_rolesWithAdminPermission(
+        owner: Model,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number
+    ): Promise<Paginated<Role, string>> {
+        let timeStamp: number
+        let count: number
+        if (staleTotal) {
+            count = (await owner.roleRepository.count()) || 0
+            timeStamp = Date.now()
+        } else {
+            count = cursor.total || 0
+            timeStamp = cursor.timeStamp || 0
+        }
+        let options: any
+        if (direction) {
+            options = {
+                where: {
+                    role_id: LessThanOrEqual(id),
+                },
+                order: { role_id: 'DESC' },
+                take: limit + 2,
+            }
+        } else {
+            options = {
+                where: {
+                    role_id: MoreThanOrEqual(id),
+                },
+                order: { role_id: 'ASC' },
+                take: limit + 2,
+            }
+        }
+        const roles = await owner.roleRepository.find(options)
+        if (!direction) {
+            roles.reverse()
+        }
+        return paginateData<Role, string>(
+            count,
+            timeStamp,
+            roles,
+            true,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    private async v1_rolesWithUserPermission(
+        owner: Model,
+        user: User,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number
+    ): Promise<Paginated<Role, string>> {
+        let timeStamp: number
+        let count: number
+        const orgSqb = owner.roleRepository
+            .createQueryBuilder()
+            .innerJoin('Role.memberships', 'OrganizationMembership')
+            .innerJoin('OrganizationMembership.user', 'User')
+            .groupBy('Role.role_id, OrganizationMembership.user_id')
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: user.user_id,
+            })
+        const schoolSqb = owner.roleRepository
+            .createQueryBuilder()
+            .innerJoin('Role.schoolMemberships', 'SchoolMembership')
+            .innerJoin('SchoolMembership.user', 'User')
+            .groupBy('Role.role_id, SchoolMembership.user_id')
+            .where('SchoolMembership.user_id = :user_id', {
+                user_id: user.user_id,
+            })
+        if (staleTotal) {
+            const countBothRoles: Role[][] = []
+
+            for (const countSqb of [orgSqb, schoolSqb]) {
+                countBothRoles.push(await countSqb.getMany())
+            }
+            const countRoles = countBothRoles[0].concat(countBothRoles[1])
+
+            const countRoleMap = countRoles.reduce(
+                (map, role) => map.set(role.role_id, role),
+                new Map()
+            )
+            count = [...countRoleMap.values()].length
+            timeStamp = Date.now()
+        } else {
+            count = cursor.total || 0
+            timeStamp = cursor.timeStamp || 0
+        }
+        const bothRoles: Role[][] = []
+        for (const sqb of [orgSqb, schoolSqb]) {
+            bothRoles.push(
+                await sqb
+                    .andWhere(
+                        new Brackets((qb) => {
+                            qb.where(
+                                direction
+                                    ? 'Role.role_id <= :id'
+                                    : 'Role.role_id >= :id',
+                                {
+                                    id: id,
+                                }
+                            )
+                        })
+                    )
+                    .orderBy('Role.role_id', direction ? 'DESC' : 'ASC')
+                    .limit(limit + 2)
+                    .getMany()
+            )
+        }
+
+        const allRoles = bothRoles[0].concat(bothRoles[1])
+
+        const roleMap = allRoles.reduce(
+            (map, role) => map.set(role.role_id, role),
+            new Map()
+        )
+        const roles = [...roleMap.values()]
+
+        return paginateData<Role, string>(
+            count,
+            timeStamp,
+            roles,
+            false,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    public async v1_getRoles(
+        context: Context,
+        { before, after, first, last }: CursorArgs
+    ) {
+        const empty = paginateData<Role, string>(0, Date.now(), [], true, 0)
+        return this.v1_getPaginated(
+            context,
+            this.v1_rolesWithAdminPermission,
+            this.v1_rolesWithUserPermission,
+            empty,
+            { before, after, first, last }
+        )
+    }
+
     public async getClass({ class_id }: Class) {
         console.info('Unauthenticated endpoint call getClass')
 
@@ -519,6 +939,115 @@ export class Model {
         }
     }
 
+    private async v1_classesWithAdminPermissions(
+        owner: Model,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number
+    ): Promise<Paginated<Class, string>> {
+        let timeStamp: number
+        let count: number
+        if (staleTotal) {
+            count = (await owner.classRepository.count()) || 0
+            timeStamp = Date.now()
+        } else {
+            timeStamp = cursor.timeStamp || 0
+            count = cursor.total || 0
+        }
+        let options: any
+        if (direction) {
+            options = {
+                where: {
+                    class_id: LessThanOrEqual(id),
+                },
+                order: { class_id: 'DESC' },
+                take: limit + 2,
+            }
+        } else {
+            options = {
+                where: {
+                    class_id: MoreThanOrEqual(id),
+                },
+                order: { class_id: 'ASC' },
+                take: limit + 2,
+            }
+        }
+        const classes = await owner.classRepository.find(options)
+        if (!direction) {
+            classes.reverse()
+        }
+        return paginateData<Class, string>(
+            count,
+            timeStamp,
+            classes,
+            true,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    private async v1_classesWithUserPermissions(
+        owner: Model,
+        user: User,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number
+    ): Promise<Paginated<Class, string>> {
+        const teaching: Class[] =
+            (await owner.classRepository
+                .createQueryBuilder()
+                .relation(User, 'classesTeaching')
+                .of(user?.user_id)
+                .loadMany()) ?? []
+
+        const studying: Class[] =
+            (await owner.classRepository
+                .createQueryBuilder()
+                .relation(User, 'classesStudying')
+                .of(user?.user_id)
+                .loadMany()) ?? []
+
+        const allClasses = teaching.concat(studying)
+
+        //Dedup
+        const classMap = allClasses.reduce(
+            (map, _class) => map.set(_class.class_id, _class),
+            new Map()
+        )
+        const classes = [...classMap.values()]
+        const count = classes.length
+        const timeStamp = Date.now()
+
+        return paginateData<Class, string>(
+            count,
+            timeStamp,
+            classes,
+            false,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
+    }
+
+    public async v1_getClasses(
+        context: Context,
+        { before, after, first, last }: CursorArgs
+    ) {
+        const empty = paginateData<Class, string>(0, Date.now(), [], true, 0)
+        return this.v1_getPaginated(
+            context,
+            this.v1_classesWithAdminPermissions,
+            this.v1_classesWithUserPermissions,
+            empty,
+            { before, after, first, last }
+        )
+    }
+
     public async getSchool({ school_id }: School) {
         console.info('Unauthenticated endpoint call getSchool')
 
@@ -527,6 +1056,70 @@ export class Model {
                 school_id,
             })
             return school
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    private async v1_getPaginated(
+        context: Context,
+        aq: adminQuery,
+        uq: userQuery,
+        empty: any,
+        { before, after, first, last, organization_ids }: CursorArgs
+    ) {
+        if (!after && !before) {
+            if (first !== undefined) {
+                after = START_CURSOR
+            } else {
+                if (last !== undefined) {
+                    before = END_CURSOR
+                }
+            }
+            if (!after && !before) {
+                after = START_CURSOR
+            }
+        }
+        if (!last) last = DEFAULT_PAGE_SIZE
+        if (!first) first = DEFAULT_PAGE_SIZE
+
+        const cursor = after
+            ? fromCursorHash(after)
+            : before
+            ? fromCursorHash(before)
+            : fromCursorHash(END_CURSOR)
+
+        const id = cursor.id
+
+        const staleTotal = staleCursorTotal(cursor)
+        const user = await this.paginateAuth(context.token)
+
+        if (user == undefined) {
+            return empty
+        }
+        const userPermissions = new UserPermissions(context.token)
+        try {
+            if (userPermissions.isAdmin) {
+                return aq(
+                    this,
+                    cursor,
+                    id,
+                    after ? true : false,
+                    staleTotal,
+                    after ? first : last,
+                    organization_ids
+                )
+            }
+            return uq(
+                this,
+                user,
+                cursor,
+                id,
+                after ? true : false,
+                staleTotal,
+                after ? first : last,
+                organization_ids
+            )
         } catch (e) {
             console.error(e)
         }

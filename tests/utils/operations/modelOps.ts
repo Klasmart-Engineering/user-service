@@ -6,6 +6,7 @@ import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
+import { UserConnection } from "../../../src/entities/user"
 
 const CREATE_DEFAULT_ROLES = `
 mutation createDefaultRoles{
@@ -69,6 +70,27 @@ const GET_USERS = `
             family_name
             email
             avatar
+        }
+    }
+`;
+
+const GET_V1_USERS = `
+    query myQuery($after:String,$before:String,$first:Int,$last:Int) {
+        users_v1(after:$after,before:$before,first:$first,last:$last) {
+            total
+            edges {
+                user_id
+                given_name
+                family_name
+                email
+                avatar
+            }
+            pageInfo{
+                hasPreviousPage
+                hasNextPage
+                endCursor
+                startCursor
+            }
         }
     }
 `;
@@ -216,6 +238,37 @@ export async function getUsers(testClient: ApolloServerTestClient, headers?: Hea
 
     const res = await gqlTry(operation);
     const gqlUsers = res.data?.users as User[];
+    return gqlUsers;
+}
+
+export async function getv1Users(testClient: ApolloServerTestClient, after?: string, before?: string, first?: number, last?: number, headers?: Headers) {
+    const { query } = testClient;
+    const variables: any = {}
+    if (after){
+        variables.after = after
+    }
+    if (before){
+        variables.before = before
+    }
+    if (first){
+        variables.first = first
+    }
+    if (last){
+        variables.last = last
+    }
+
+    const params = {
+        query: GET_V1_USERS,
+        headers: headers,
+    } as any
+    if(after || first || before || last){
+        params.variables = variables
+    }
+
+    const operation = () => query(params);
+
+    const res = await gqlTry(operation);
+    const gqlUsers = res.data?.users_v1 as UserConnection;
     return gqlUsers;
 }
 

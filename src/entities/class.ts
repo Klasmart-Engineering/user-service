@@ -17,11 +17,19 @@ import { User } from './user'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
+import {
+    CursorObject,
+    Paginatable,
+    Paginated,
+    toCursorHash,
+} from '../utils/paginated.interface'
+
+export class ClassConnection extends Paginated<Class, string> {}
 
 @Entity()
 @Check(`"class_name" <> ''`)
 @Unique(['class_name', 'organization'])
-export class Class extends BaseEntity {
+export class Class extends BaseEntity implements Paginatable<Class, string> {
     @PrimaryGeneratedColumn('uuid')
     public class_id!: string
 
@@ -602,5 +610,21 @@ export class Class extends BaseEntity {
         this.deleted_at = new Date()
 
         await manager.save(this)
+    }
+
+    public compareKey(key: string): number {
+        return key > this.class_id ? 1 : key < this.class_id ? -1 : 0
+    }
+
+    public compare(other: Class): number {
+        return other.class_id > this.class_id
+            ? 1
+            : other.class_id < this.class_id
+            ? -1
+            : 0
+    }
+
+    public generateCursor(total?: number, timestamp?: number): string {
+        return toCursorHash(new CursorObject(this.class_id, total, timestamp))
     }
 }

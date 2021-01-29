@@ -24,9 +24,17 @@ import { createHash } from 'crypto'
 import { Role } from './role'
 import { School } from './school'
 import { Status } from './status'
+import {
+    CursorObject,
+    Paginatable,
+    Paginated,
+    toCursorHash,
+} from '../utils/paginated.interface'
+
+export class UserConnection extends Paginated<User, string> {}
 
 @Entity()
-export class User extends BaseEntity {
+export class User extends BaseEntity implements Paginatable<User, string> {
     @PrimaryGeneratedColumn('uuid')
     public user_id!: string
 
@@ -627,6 +635,21 @@ export class User extends BaseEntity {
             }
         }
         return toClasses
+    }
+
+    public compareKey(key: string): number {
+        return key > this.user_id ? 1 : key < this.user_id ? -1 : 0
+    }
+
+    public compare(other: User): number {
+        return other.user_id > this.user_id
+            ? 1
+            : other.user_id < this.user_id
+            ? -1
+            : 0
+    }
+    public generateCursor(total?: number, timestamp?: number): string {
+        return toCursorHash(new CursorObject(this.user_id, total, timestamp))
     }
 }
 

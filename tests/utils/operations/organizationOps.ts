@@ -7,9 +7,11 @@ import { School } from "../../../src/entities/school";
 import { SchoolMembership } from "../../../src/entities/schoolMembership"
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
-import { JoeAuthToken } from "../testConfig";
+import { JoeAuthToken, generateToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
+import { userToPayload, userToSuperPayload } from "../../utils/operations/userOps"
+import { utils } from "mocha";
 
 const CREATE_CLASS = `
     mutation myMutation(

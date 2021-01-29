@@ -22,8 +22,17 @@ import { Context } from '../main'
 import { Permission } from './permission'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from './schoolMembership'
+import {
+    CursorArgs,
+    CursorObject,
+    Paginatable,
+    Paginated,
+    toCursorHash,
+} from '../utils/paginated.interface'
 import { Model } from '../model'
 import { Status } from './status'
+
+export class OrganizationConnection extends Paginated<Organization, string> {}
 
 export function validateEmail(email?: string): boolean {
     const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -55,7 +64,9 @@ export const normalizedLowercaseTrimmed = (x: string) =>
 export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)
 
 @Entity()
-export class Organization extends BaseEntity {
+export class Organization
+    extends BaseEntity
+    implements Paginatable<Organization, string> {
     @PrimaryGeneratedColumn('uuid')
     public readonly organization_id!: string
 
@@ -916,4 +927,30 @@ export class Organization extends BaseEntity {
         await this.inactivateOwnership(manager)
         await manager.save(this)
     }
+
+    public compareKey(key: string): number {
+        return key > this.organization_id
+            ? 1
+            : key < this.organization_id
+            ? -1
+            : 0
+    }
+
+    public compare(other: Organization): number {
+        return other.organization_id > this.organization_id
+            ? 1
+            : other.organization_id < this.organization_id
+            ? -1
+            : 0
+    }
+
+    public generateCursor(total?: number, timestamp?: number): string {
+        return toCursorHash(
+            new CursorObject(this.organization_id, total, timestamp)
+        )
+    }
+}
+
+export class OrganizationCursorArgs extends CursorArgs {
+    organization_ids?: string[]
 }
