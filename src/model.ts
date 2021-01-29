@@ -91,25 +91,33 @@ export class Model {
                 })
             }
         } else if (token) {
-            user =
-                (await this.userRepository.findOne({ user_id: token.id })) ||
-                new User()
+            const hashSource = userEmail || userPhone
+            user = await this.userRepository.findOne({ user_id: token.id })
+
+            if(!user){
+                user = new User()
+                user.user_id = accountUUID(hashSource)
+            }
         }
 
-        if (!user) {
-            return null
+        if (user) {
+            user = await this.updateUserWithTokenDetails(user, token)
         }
 
+        return user
+    }
+
+    private async updateUserWithTokenDetails(user : User, token : any) {
         try {
             let modified = false
 
             //Ensure fields match
-            if (user.user_id !== token.id) {
+            if (token.id && user.user_id !== token.id) {
                 user.user_id = token.id
                 modified = true
             }
 
-            if (user.email !== token.email) {
+            if (token.email && user.email !== token.email) {
                 token.email = normalizedLowercaseTrimmed(token.email)
                 if (validateEmail(token.email)) {
                     user.email = token.email
@@ -117,7 +125,7 @@ export class Model {
                 }
             }
 
-            if (user.phone !== token.phone) {
+            if (token.phone && user.phone !== token.phone) {
                 if (validatePhone(token.phone)) {
                     user.phone = token.phone
                     modified = true
@@ -151,6 +159,8 @@ export class Model {
             console.error(e)
         }
     }
+
+
     public async newUser({
         given_name,
         family_name,

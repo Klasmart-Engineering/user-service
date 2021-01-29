@@ -4,7 +4,7 @@ import { ApolloServerTestClient, createTestClient } from "../utils/createTestCli
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
-import { JoeAuthToken } from "../utils/testConfig";
+import { JoeAuthToken, JoeAuthWithoutIdToken } from "../utils/testConfig";
 import { switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { Model } from "../../src/model";
 import { User } from "../../src/entities/user";
@@ -99,6 +99,15 @@ describe("model", () => {
         });
 
         context("when user is logged in", () => {
+            context("and no user_id cookie is provided", () => {
+                it("creates and returns the expected user", async () => {
+                    const gqlUserWithoutId = await me(testClient, { authorization: JoeAuthWithoutIdToken}, { user_id: user.user_id });
+                    const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: user.user_id });
+
+                    expect(gqlUserWithoutId.user_id).to.eq(gqlUser.user_id)
+                });
+            });
+
             context("and the correct user_id cookie is provided", () => {
                 it("returns the expected user", async () => {
                     const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: user.user_id });

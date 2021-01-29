@@ -9,6 +9,15 @@
 export const JoeAuthToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImM2ZDRmZWVkLTkxMzMtNTUyOS04ZDcyLTEwMDM1MjZkMWIxMyIsImVtYWlsIjoiam9lQGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJKb2UiLCJmYW1pbHlfbmFtZSI6IkJyb3duIiwibmFtZSI6IkpvZSBCcm93biIsImlzcyI6ImNhbG1pZC1kZWJ1ZyJ9.Ub8UkFgK6lcyQrIA3d1Nj4sOZaNxEjATrI3tcNllLCM";
 
 // {
+//   "email": "joe@gmail.com",
+//   "given_name": "Joe",
+//   "family_name": "Brown",
+//   "name": "Joe Brown",
+//   "iss": "calmid-debug"
+// }
+export const JoeAuthWithoutIdToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvZUBnbWFpbC5jb20iLCJnaXZlbl9uYW1lIjoiSm9lIiwiZmFtaWx5X25hbWUiOiJCcm93biIsIm5hbWUiOiJKb2UgQnJvd24iLCJpc3MiOiJjYWxtaWQtZGVidWcifQ._ji07rJi_18z49xsjfE0ixsL01ynp-8Jz-TOX5dH9-g";
+
+// {
 //   "id": "fcf922e5-25c9-5dce-be9f-987a600c1356",
 //   "email": "billy@gmail.com",
 //   "given_name": "Billy",
