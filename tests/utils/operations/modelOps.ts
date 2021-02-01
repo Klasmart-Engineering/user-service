@@ -4,7 +4,6 @@ import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
-import { Organization } from "../../../src/entities/organization";
 
 const NEW_USER = `
     mutation myMutation(
@@ -99,19 +98,6 @@ const SWITCH_USER = `
         }
     }
 `;
-
-const GET_ORGANIZATIONS = `
-    query myQuery($organization_ids: [ID!]) {
-        organizations(organization_ids: $organization_ids) {
-            organization_id
-            organization_name
-            address1
-            address2
-            phone
-            shortCode
-        }
-`;
-
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -228,25 +214,4 @@ export async function me(testClient: ApolloServerTestClient, headers?: Headers, 
     const res = await gqlTry(operation);
     const gqlUser = res.data?.me as User;
     return gqlUser;
-}
-
-export async function getOrganizations(testClient: ApolloServerTestClient, organizationIds?: string[] , headers?: Headers) {
-    const { query } = testClient;
-
-    const params = {
-        query: GET_ORGANIZATIONS,
-        headers: headers,
-    } as any
-
-    if(organizationIds != undefined && organizationIds.length > 0){
-        const variables = {
-            organization_ids: organizationIds,
-        }
-        params.variables = variables
-    }
-
-    const operation = () => query(params);
-    const res = await gqlTry(operation);
-    const gqlUsers = res.data?.organizations as Organization[];
-    return gqlUsers;
 }

@@ -5,15 +5,10 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { getUser, getUsers, updateUser } from "../utils/operations/modelOps";
-import { createUserBilly, createUserJoe } from "../utils/testEntities";
+import { createUserJoe } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
-import { BillySuperAdminAuthToken, JoeAuthToken } from "../utils/testConfig";
-import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { createRole } from "../utils/operations/organizationOps";
-import { PermissionName } from "../../src/permissions/permissionNames";
-import { grantPermission } from "../utils/operations/roleOps";
+import { JoeAuthToken } from "../utils/testConfig";
 
 describe("model.user", () => {
     let connection: Connection;
@@ -73,14 +68,13 @@ describe("model.user", () => {
         before(async () => {
             await reloadDatabase();
             user = await createUserJoe(testClient);
-            await createUserBilly(testClient)            
         });
 
         it("should get users", async () => {
-            const gqlUsers = await getUsers(testClient, { authorization: BillySuperAdminAuthToken });
+            const gqlUsers = await getUsers(testClient, { authorization: JoeAuthToken });
 
             expect(gqlUsers).to.exist;
-            expect(gqlUsers.length).to.equal(2);
+            expect(gqlUsers.length).to.equal(1);
             expect(gqlUsers[0]).to.deep.include({
                 user_id: user.user_id,
                 given_name: user.given_name,

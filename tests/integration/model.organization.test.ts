@@ -6,15 +6,10 @@ import { createServer } from "../../src/utils/createServer";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { createUserJoe, createUserBilly } from "../utils/testEntities";
+import { createUserJoe } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { JoeAuthToken, BillySuperAdminAuthToken} from "../utils/testConfig";
-import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { createRole, addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
-import { PermissionName } from "../../src/permissions/permissionNames";
-import { grantPermission } from "../utils/operations/roleOps";
-
+import { JoeAuthToken } from "../utils/testConfig";
 
 const GET_ORGANIZATIONS = `
     query getOrganizations {
@@ -87,9 +82,7 @@ describe("model.organization", () => {
         context("when one", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, "Organization 1");
-                const user2 = await createUserBilly(testClient);
-                const organization2 = await createOrganizationAndValidate(testClient, user2.user_id, "Organization 2");
+                const organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
             it("should return an array containing one organization", async () => {
@@ -106,64 +99,6 @@ describe("model.organization", () => {
                 expect(organizations).to.have.lengthOf(1);
             });
         });
-
-        context("with permission", () => {
-            let organizationId : string
-            let userId: string
-
-            beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, "Organization 1");
-                
-                const user2 = await createUserBilly(testClient);
-                const organization2 = await createOrganizationAndValidate(testClient, user2.user_id, "Organization 2");
-                organizationId = organization.organization_id
-                userId = user.user_id
-                 
-            });
-
-            it("should return an array containing two organizations", async () => {
-              
-                const { query } = testClient;
-
-                const res = await query({
-                    query: GET_ORGANIZATIONS,
-                    headers: { authorization: BillySuperAdminAuthToken },
-                });
-
-                expect(res.errors, res.errors?.toString()).to.be.undefined;
-                const organizations = res.data?.organizations as Organization[];
-                expect(organizations).to.exist;
-                expect(organizations).to.have.lengthOf(2);
-            });
-        });
-        context("without permission", () => {
-            let organizationId : string
-            let userId: string
-            beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, "Organization 1");
-                const user2 = await createUserBilly(testClient);
-                const organization2 = await createOrganizationAndValidate(testClient, user2.user_id, "Organization 2");
-                organizationId = organization.organization_id
-                userId = user.user_id
-            });
-
-            it("should return an empty array ", async () => {
-               
-                const { query } = testClient;
-
-                const res = await query({
-                    query: GET_ORGANIZATIONS,
-                });
-
-                expect(res.errors, res.errors?.toString()).to.be.undefined;
-                const organizations = res.data?.organizations as Organization[];
-                expect(organizations).to.exist;
-                expect(organizations).to.have.lengthOf(0);
-            });
-        });
-
     });
 
     describe("getOrganization", () => {

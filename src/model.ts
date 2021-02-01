@@ -20,7 +20,6 @@ import { Role } from './entities/role'
 import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
-import { UserPermissions } from './permissions/userPermissions'
 
 export class Model {
     public static async create() {
@@ -76,19 +75,13 @@ export class Model {
         const userEmail = token?.email
         const userPhone = token?.phone
 
-        let user
+        let user;
 
         if (userID && token) {
             if (userEmail) {
-                user = await this.userRepository.findOne({
-                    email: userEmail,
-                    user_id: userID,
-                })
+                user = await this.userRepository.findOne({ email: userEmail, user_id: userID })
             } else if (userPhone) {
-                user = await this.userRepository.findOne({
-                    phone: userPhone,
-                    user_id: userID,
-                })
+                user = await this.userRepository.findOne({ phone: userPhone, user_id: userID })
             }
         } else if (token) {
             const hashSource = userEmail || userPhone
@@ -192,17 +185,13 @@ export class Model {
         const userPhone = context.token?.phone
         let user = undefined
 
-        if (userEmail) {
-            user = await User.findOne({
-                where: { email: userEmail, user_id: user_id },
-            })
-        } else if (userPhone) {
-            user = await User.findOne({
-                where: { phone: userPhone, user_id: user_id },
-            })
+        if(userEmail) {
+            user = await User.findOne({ where: { email: userEmail, user_id: user_id } })
+        }else if(userPhone) {
+            user = await User.findOne({ where: { phone: userPhone, user_id: user_id  } })
         }
 
-        if (!user) {
+        if(!user) {
             throw new Error(
                 `Not able to switch to user ${user_id}. Please try authenticating again`
             )
@@ -256,40 +245,25 @@ export class Model {
         const userPhone = context.token?.phone
         let users: User[] = []
 
-        if (userEmail) {
+        if(userEmail) {
             users = await User.find({ where: { email: userEmail } })
-        } else if (userPhone) {
+        }else if(userPhone) {
             users = await User.find({ where: { phone: userPhone } })
         }
 
-        if (users.length === 0) {
-            throw new Error(`Please try authenticating again`)
+        if(users.length === 0) {
+            throw new Error(
+                `Please try authenticating again`
+            )
         }
 
         return users
     }
 
-    public async getUsers(context: Context) {
+    public async getUsers() {
         console.log('Unauthenticated endpoint call getUsers')
-        let users: User[] = []
-        if (context.token) {
-            const user = await this.userRepository.findOne({
-                user_id: context.token.id,
-            })
-            if (user !== undefined) {
-                const userPermissions = new UserPermissions(context.token)
-                try {
-                    if (userPermissions.isAdmin) {
-                        users = await this.userRepository.find()
-                    } else {
-                        users = [user]
-                    }
-                } catch (e) {
-                    console.error(e)
-                }
-            }
-        }
-        return users
+
+        return await this.userRepository.find()
     }
 
     public async setOrganization({
@@ -333,74 +307,20 @@ export class Model {
         )
         return organization
     }
-
-    public async getOrganizations(
-        organization_ids: string[],
-        context: Context
-    ) {
+    public async getOrganizations(organization_ids: string[]) {
         console.info('Unauthenticated endpoint call getOrganizations')
 
-        let organizations: Organization[] = []
-        if (context.token) {
-            const user = await this.userRepository.findOne({
-                user_id: context.token.id,
-            })
-
-            if (user !== undefined) {
-                const userPermissions = new UserPermissions(context.token)
-                try {
-                    if (userPermissions.isAdmin) {
-                        if (organization_ids) {
-                            organizations = await this.organizationRepository.findByIds(
-                                organization_ids
-                            )
-                        } else {
-                            organizations = await this.organizationRepository.find()
-                        }
-                    } else {
-                        if (!organization_ids) {
-                            organizations = await this.organizationRepository
-                                .createQueryBuilder()
-                                .innerJoin(
-                                    'Organization.memberships',
-                                    'OrganizationMembership'
-                                )
-                                .groupBy(
-                                    'Organization.organization_id, OrganizationMembership.user_id'
-                                )
-                                .where(
-                                    'OrganizationMembership.user_id = :user_id',
-                                    {
-                                        user_id: user.user_id,
-                                    }
-                                )
-                                .getMany()
-                        } else {
-                            organizations = await this.organizationRepository
-                                .createQueryBuilder()
-                                .innerJoin(
-                                    'Organization.memberships',
-                                    'OrganizationMembership'
-                                )
-                                .groupBy(
-                                    'Organization.organization_id, OrganizationMembership.user_id'
-                                )
-                                .where(
-                                    'OrganizationMembership.user_id = :user_id',
-                                    {
-                                        user_id: user.user_id,
-                                    }
-                                )
-                                .andWhereInIds(organization_ids)
-                                .getMany()
-                        }
-                    }
-                } catch (e) {
-                    console.error(e)
-                }
+        try {
+            if (organization_ids) {
+                return await this.organizationRepository.findByIds(
+                    organization_ids
+                )
+            } else {
+                return await this.organizationRepository.find()
             }
+        } catch (e) {
+            console.error(e)
         }
-        return organizations
     }
 
     public async setRole({ role_id, role_name }: Role) {
@@ -420,6 +340,7 @@ export class Model {
     }
     public async getRole({ role_id }: Role) {
         console.info('Unauthenticated endpoint call getRole')
+
         try {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
@@ -427,68 +348,20 @@ export class Model {
             console.error(e)
         }
     }
-    public async getRoles(context: Context) {
+    public async getRoles() {
         console.info('Unauthenticated endpoint call getRoles')
-        let roles: Role[] = []
-        if (context.token) {
-            const user = await this.userRepository.findOne({
-                user_id: context.token.id,
-            })
-            if (user !== undefined) {
-                const userPermissions = new UserPermissions(context.token)
-                try {
-                    if (userPermissions.isAdmin) {
-                        roles = await this.roleRepository.find()
-                    } else {
-                        const orgRoles = await this.roleRepository
-                            .createQueryBuilder()
-                            .innerJoin(
-                                'Role.memberships',
-                                'OrganizationMembership'
-                            )
-                            .innerJoin('OrganizationMembership.user', 'User')
-                            .groupBy(
-                                'Role.role_id, OrganizationMembership.user_id'
-                            )
-                            .where(
-                                'OrganizationMembership.user_id = :user_id',
-                                {
-                                    user_id: user.user_id,
-                                }
-                            )
-                            .getMany()
 
-                        const schoolRoles = await this.roleRepository
-                            .createQueryBuilder()
-                            .innerJoin(
-                                'Role.schoolMemberships',
-                                'SchoolMembership'
-                            )
-                            .innerJoin('SchoolMembership.user', 'User')
-                            .groupBy('Role.role_id, SchoolMembership.user_id')
-                            .where('SchoolMembership.user_id = :user_id', {
-                                user_id: user.user_id,
-                            })
-                            .getMany()
-
-                        const allRoles = orgRoles.concat(schoolRoles)
-
-                        const roleMap = allRoles.reduce(
-                            (map, role) => map.set(role.role_id, role),
-                            new Map()
-                        )
-                        roles = [...roleMap.values()]
-                    }
-                } catch (e) {
-                    console.error(e)
-                }
-            }
+        try {
+            const roles = await this.roleRepository.find()
+            return roles
+        } catch (e) {
+            console.error(e)
         }
-        return roles
     }
 
     public async getClass({ class_id }: Class) {
         console.info('Unauthenticated endpoint call getClass')
+
         try {
             const _class = await this.classRepository.findOneOrFail({
                 class_id,
@@ -498,47 +371,15 @@ export class Model {
             console.error(e)
         }
     }
-    public async getClasses(context: Context) {
+    public async getClasses() {
         console.info('Unauthenticated endpoint call getClasses')
-        let classes: Class[] = []
-        if (context.token) {
-            const user = await this.userRepository.findOne({
-                user_id: context.token.id,
-            })
-            if (user !== undefined) {
-                const userPermissions = new UserPermissions(context.token)
-                try {
-                    if (userPermissions.isAdmin) {
-                        classes = await this.classRepository.find()
-                    } else {
-                        const teaching: Class[] =
-                            (await this.classRepository
-                                .createQueryBuilder()
-                                .relation(User, 'classesTeaching')
-                                .of(user?.user_id)
-                                .loadMany()) ?? []
 
-                        const studying: Class[] =
-                            (await this.classRepository
-                                .createQueryBuilder()
-                                .relation(User, 'classesStudying')
-                                .of(user?.user_id)
-                                .loadMany()) ?? []
-
-                        const allClasses = teaching.concat(studying)
-
-                        const classMap = allClasses.reduce(
-                            (map, _class) => map.set(_class.class_id, _class),
-                            new Map()
-                        )
-                        classes = [...classMap.values()]
-                    }
-                } catch (e) {
-                    console.error(e)
-                }
-            }
+        try {
+            const classes = await this.classRepository.find()
+            return classes
+        } catch (e) {
+            console.error(e)
         }
-        return classes
     }
 
     public async getSchool({ school_id }: School) {
