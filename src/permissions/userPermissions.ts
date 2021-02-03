@@ -22,6 +22,14 @@ export class UserPermissions {
         this.isAdmin = !!token?.admin
     }
 
+    public rejectIfNotAdmin() {
+        if (!this.isAdmin) {
+            throw new Error(
+                `User(${this.user_id}) does not have Admin permissions`
+            )
+        }
+    }
+
     public async rejectIfNotAllowed(
         { school_ids, organization_id }: PermissionContext,
         permission_name: PermissionName

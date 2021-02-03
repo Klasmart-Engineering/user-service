@@ -14,6 +14,22 @@ const UPDATE_ROLE = `
                 role_id
                 role_name
                 role_description
+                system_role
+            }
+        }
+    }
+`;
+
+const UPDATE_SYSTEM_ROLE = `
+    mutation myMutation(
+            $role_id: ID!,
+            $system_role: Boolean) {
+        role(role_id: $role_id) {
+            set(system_role: $system_role) {
+                role_id
+                role_name
+                role_description
+                system_role
             }
         }
     }
@@ -98,12 +114,13 @@ const DELETE_ROLE = `
     }
 `;
 
-export async function updateRole(testClient: ApolloServerTestClient, roleId: string, roleName: string, roleDescription: string, headers?: Headers) {
+export async function updateRole(testClient: ApolloServerTestClient, { roleId, roleName, roleDescription, systemRole }: any , headers?: Headers) {
     const { mutate } = testClient;
+    const mutationQuery = systemRole ? UPDATE_SYSTEM_ROLE : UPDATE_ROLE;
 
     const operation = () => mutate({
-        mutation: UPDATE_ROLE,
-        variables: { role_id: roleId, role_name: roleName, role_description: roleDescription },
+        mutation: mutationQuery,
+        variables: { role_id: roleId, role_name: roleName, role_description: roleDescription, system_role: systemRole },
         headers: headers,
     });
 

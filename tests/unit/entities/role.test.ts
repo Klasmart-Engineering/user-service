@@ -25,6 +25,21 @@ describe("Role", () => {
     });
 
     describe(".new", () => {
+        context("when system_role is not defined", () => {
+            beforeEach(async () => {
+                role.system_role = undefined;
+                await manager.save(role);
+            });
+
+            it("creates the role as not a system role", async () => {
+                const dbRole = await Role.findOneOrFail(role.role_id)
+
+                expect(dbRole.role_id).to.eq(role.role_id)
+                expect(dbRole.role_name).to.eq(role.role_name)
+                expect(dbRole.system_role).to.be.false
+            });
+        });
+
         context("when role description is undefined", () => {
             beforeEach(async () => {
                 role.role_description = undefined;
@@ -51,6 +66,7 @@ describe("Role", () => {
                 expect(dbRole.role_id).to.eq(role.role_id)
                 expect(dbRole.role_name).to.eq(role.role_name)
                 expect(dbRole.role_description).to.eq(role.role_description)
+                expect(dbRole.system_role).to.eq(role.system_role)
             });
         });
     });

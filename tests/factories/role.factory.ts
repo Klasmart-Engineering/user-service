@@ -6,6 +6,7 @@ export function createRole() {
 
     role.role_name = faker.random.word();
     role.role_description = faker.random.words();
+    role.system_role = faker.random.boolean();
 
     return role;
 }

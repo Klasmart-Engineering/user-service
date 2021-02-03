@@ -230,6 +230,7 @@ type Role {
     role_name: String
     role_description: String!
     status: String!
+    system_role: Boolean!
 
     #connections
     organization: Organization
@@ -238,7 +239,7 @@ type Role {
     permission(permission_name: String!): Permission
 
     #mutations
-    set(role_name: String!, role_description: String!): Role
+    set(role_name: String, role_description: String, system_role: Boolean): Role
     grant(permission_name: String!): Permission
     revoke(permission_name: String!): Boolean
     edit_permissions(permission_names: [String!]): [Permission]

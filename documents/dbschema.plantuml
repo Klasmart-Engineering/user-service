@@ -53,6 +53,7 @@ class Role {
   role_id : uuid
   role_name : string
   status : status
+  system_role : bool
   deleted_at : timestamp
   organizationOrganizationId : uuid
 }

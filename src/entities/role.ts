@@ -38,6 +38,9 @@ export class Role extends BaseEntity {
     @Column({ nullable: false, default: 'System Default Role' })
     public role_description?: string
 
+    @Column({ nullable: false, default: false })
+    public system_role?: boolean
+
     @ManyToOne(() => Organization, (organization) => organization.roles)
     public organization?: Promise<Organization>
 
@@ -54,13 +57,17 @@ export class Role extends BaseEntity {
     public permissions?: Promise<Permission[]>
 
     public async set(
-        { role_name, role_description }: any,
+        { role_name, role_description, system_role }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
         const organization_id = (await this.organization)?.organization_id
         if (info.operation.operation !== 'mutation' || !organization_id) {
             return null
+        }
+
+        if (this.system_role || system_role) {
+            context.permissions.rejectIfNotAdmin()
         }
 
         const permisionContext = { organization_id: organization_id }
@@ -76,6 +83,10 @@ export class Role extends BaseEntity {
 
             if (typeof role_description === 'string') {
                 this.role_description = role_description
+            }
+
+            if (system_role) {
+                this.system_role = system_role
             }
 
             await this.save()
@@ -122,6 +133,10 @@ export class Role extends BaseEntity {
             return null
         }
 
+        if (this.system_role) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
@@ -149,6 +164,10 @@ export class Role extends BaseEntity {
             return null
         }
 
+        if (this.system_role) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
@@ -171,6 +190,10 @@ export class Role extends BaseEntity {
         const organization_id = (await this.organization)?.organization_id
         if (info.operation.operation !== 'mutation' || !organization_id) {
             return null
+        }
+
+        if (this.system_role) {
+            context.permissions.rejectIfNotAdmin()
         }
 
         const permisionContext = { organization_id: organization_id }
@@ -199,6 +222,10 @@ export class Role extends BaseEntity {
         const organization_id = (await this.organization)?.organization_id
         if (info.operation.operation !== 'mutation' || !organization_id) {
             return null
+        }
+
+        if (this.system_role) {
+            context.permissions.rejectIfNotAdmin()
         }
 
         const permisionContext = { organization_id: organization_id }
@@ -249,6 +276,10 @@ export class Role extends BaseEntity {
             this.status == Status.INACTIVE
         ) {
             return null
+        }
+
+        if (this.system_role) {
+            context.permissions.rejectIfNotAdmin()
         }
 
         const permisionContext = { organization_id: organization_id }
