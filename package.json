@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ts-node src/main.ts",
     "start:dev": "nodemon",
-    "migration": "ts-node src/migration_transactions.ts",
+    "migration": "ts-node src/remove_users_from_organization.ts",
     "build": "webpack",
     "lint": "eslint . --ext .ts --fix",
     "prettier-format": "prettier --config .prettierrc src/**/*.ts --write",

@@ -6,6 +6,7 @@ import { createConnection, getManager } from 'typeorm'
 import { v4 } from 'uuid'
 import { Organization } from './entities/organization'
 import { OrganizationMembership } from './entities/organizationMembership'
+import { Role } from './entities/role'
 import { accountUUID, User } from './entities/user'
 
 const USER_INFO_FILE = path.join(__dirname, './userInfo.csv')
@@ -35,11 +36,20 @@ async function remove_users_from_organization() {
     //const organization = await getDummyOrganization()
 
     const userInfoEntries = await getUserInfoEntriesFromCsv()
+    console.log(`Number of users to be removed: ${userInfoEntries.length}`)
 
     const memberships = await OrganizationMembership.find({
         where: { organization_id: organization.organization_id },
     })
     const membershipsByUserId = new Map(memberships.map((x) => [x.user_id, x]))
+    console.log(`Membership count (before): ${memberships.length}`)
+
+    // const rolePromises: Promise<Role[]>[] = []
+    // for (const membership of memberships) {
+    //     const rolePromise = membership.roles || Promise.resolve([])
+    //     rolePromises.push(rolePromise)
+    // }
+    // const roles = await Promise.all(rolePromises)
 
     const userPromises: Promise<User>[] = []
     for (const membership of memberships) {
@@ -47,29 +57,56 @@ async function remove_users_from_organization() {
         userPromises.push(userPromise)
     }
     const users = await Promise.all(userPromises)
-    const usersById = new Map(users.map((x) => [x.user_id, x]))
-    const usersByEmail = new Map(
-        users.filter((x) => x.email !== undefined).map((x) => [x.email, x])
+    const usersByEmailPlusName = new Map(
+        users.map((x) => [getEmailPlusNameKey(x.email, x.given_name), x])
     )
 
+    // let membershipCountToBeRemoved = 0
+    // for (const userInfo of userInfoEntries) {
+    //     const user = usersByEmailPlusName.get(
+    //         getEmailPlusNameKey(userInfo.email, userInfo.name)
+    //     )
+    //     if (!user) {
+    //         console.log(
+    //             `user [${userInfo.email}] with role [${userInfo.role}] was not found.`
+    //         )
+    //         continue
+    //     }
+    //     const membership = membershipsByUserId.get(user.user_id)
+    //     if (!membership) {
+    //         console.log(
+    //             `membership for user [${userInfo.email}] with role [${userInfo.role}] was not found.`
+    //         )
+    //         continue
+    //     }
+    //     membershipsByUserId.delete(user.user_id)
+    //     membershipCountToBeRemoved += 1
+    // }
+    // console.log(`memberships to be removed: ${membershipCountToBeRemoved}.`)
+
+    // return
+
+    let numberOfMembershipsRemoved = 0
     await connection.transaction(async (entityManager) => {
         for (const userInfo of userInfoEntries) {
-            const userId = accountUUID(userInfo.email)
-            let membership = membershipsByUserId.get(userId)
-            if (membership) {
-                const userByEmail = usersByEmail.get(userInfo.email)
-                //membership = membershipsByUserId.get(userByEmail?.user_id)
-                //const userFoundById = usersById.get(userId)
-            }
-            // else {
-            //     const userByEmail = usersByEmail.get(userInfo.email)
-            // }
-
+            const user = usersByEmailPlusName.get(
+                getEmailPlusNameKey(userInfo.email, userInfo.name)
+            )
+            if (!user) continue
+            const membership = membershipsByUserId.get(user.user_id)
             if (!membership) continue
 
             await entityManager.remove(membership)
+            membershipsByUserId.delete(user.user_id)
+            numberOfMembershipsRemoved += 1
         }
     })
+
+    console.log(`number of memberships removed: ${numberOfMembershipsRemoved}.`)
+}
+
+function getEmailPlusNameKey(email?: string, givenName?: string) {
+    return `${email || ''}-${givenName || ''}`
 }
 
 async function getRealOrganization() {
