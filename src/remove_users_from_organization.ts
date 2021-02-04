@@ -2,7 +2,7 @@ import csvParser from 'csv-parser'
 import fs from 'fs'
 import { GraphQLResolveInfo } from 'graphql'
 import path from 'path'
-import { createConnection, getManager } from 'typeorm'
+import { createConnection, getManager, Not } from 'typeorm'
 import { v4 } from 'uuid'
 import { Organization } from './entities/organization'
 import { OrganizationMembership } from './entities/organizationMembership'
@@ -35,6 +35,13 @@ async function remove_users_from_organization() {
     const organization = await getRealOrganization()
     //const organization = await getDummyOrganization()
 
+    const { organization_id } = organization
+    const organizationOwner = await organization.owner
+    await OrganizationMembership.delete({
+        organization_id,
+        user_id: organizationOwner && Not(organizationOwner.user_id),
+    })
+
     const userInfoEntries = await getUserInfoEntriesFromCsv()
     console.log(`Number of users to be removed: ${userInfoEntries.length}`)
 
@@ -43,13 +50,6 @@ async function remove_users_from_organization() {
     })
     const membershipsByUserId = new Map(memberships.map((x) => [x.user_id, x]))
     console.log(`Membership count (before): ${memberships.length}`)
-
-    // const rolePromises: Promise<Role[]>[] = []
-    // for (const membership of memberships) {
-    //     const rolePromise = membership.roles || Promise.resolve([])
-    //     rolePromises.push(rolePromise)
-    // }
-    // const roles = await Promise.all(rolePromises)
 
     const userPromises: Promise<User>[] = []
     for (const membership of memberships) {
