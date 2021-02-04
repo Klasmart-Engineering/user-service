@@ -11,6 +11,16 @@ interface PermissionContext {
 }
 
 export class UserPermissions {
+    static ADMIN_EMAILS = [
+        'sandy@calmid.com',
+        'pj.williams@calmid.com',
+        'emfg@calmid.com',
+        'owen.delahoy@calmid.com',
+        'mcarey@calmid.com',
+        'ncurtis@calmid.com',
+        'sbrolia@calmid.com',
+    ]
+
     private _organizationPermissions?: Promise<Map<string, Set<string>>>
     private _schoolPermissions?: Promise<Map<string, Set<string>>>
 
@@ -19,7 +29,11 @@ export class UserPermissions {
 
     public constructor(token?: any) {
         this.user_id = token?.id
-        this.isAdmin = !!token?.admin
+        this.isAdmin = this.checkAdmin(token)
+    }
+
+    private checkAdmin(token?: any) {
+        return UserPermissions.ADMIN_EMAILS.includes(token?.email)
     }
 
     public rejectIfNotAdmin() {

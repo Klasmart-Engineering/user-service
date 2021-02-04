@@ -11,7 +11,7 @@ import { ApolloServerTestClient, createTestClient } from "../utils/createTestCli
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { addUserToOrganizationAndValidate, createRole, createSchool } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { BillyAuthToken, JoeAuthToken, BillySuperAdminAuthToken } from "../utils/testConfig";
+import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import chaiAsPromised from "chai-as-promised"
 import chai from "chai"
@@ -24,14 +24,18 @@ chai.use(chaiAsPromised);
 describe("userPermissions", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
+    let originalAdmins: string[];
 
     before(async () => {
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
@@ -51,7 +55,7 @@ describe("userPermissions", () => {
 
         context("when user is a super admin", () => {
             beforeEach(async () => {
-                const encodedToken = BillySuperAdminAuthToken;
+                const encodedToken = JoeAuthToken;
                 token = await checkToken(encodedToken) as any;
                 userPermissions = new UserPermissions(token);
             });
@@ -165,7 +169,7 @@ describe("userPermissions", () => {
 
         context("when the user is super admin", () => {
             beforeEach(async () => {
-                const encodedToken = BillySuperAdminAuthToken;
+                const encodedToken = JoeAuthToken;
                 token = await checkToken(encodedToken) as any;
                 userPermissions = new UserPermissions(token);
             });

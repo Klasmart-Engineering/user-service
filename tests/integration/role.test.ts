@@ -9,8 +9,9 @@ import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { PermissionName } from "../../src/permissions/permissionNames";
+import { UserPermissions } from "../../src/permissions/userPermissions";
 import { denyPermission, editPermissions, getPermissionViaRole, grantPermission, revokePermission, updateRole, deleteRole } from "../utils/operations/roleOps";
-import { BillyAuthToken, JoeAuthToken, BillySuperAdminAuthToken } from "../utils/testConfig";
+import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { Permission } from "../../src/entities/permission";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
@@ -21,14 +22,18 @@ chai.use(chaiAsPromised);
 describe("role", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
+    let originalAdmins: string[];
 
     before(async () => {
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
@@ -54,15 +59,15 @@ describe("role", () => {
         context("when is a system role", () => {
             beforeEach(async () => {
                 roleId = (await createRole(testClient, organizationId, originalRoleName)).role_id;
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: BillySuperAdminAuthToken });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
 
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: JoeAuthToken });
-                await grantPermission(testClient, roleId, PermissionName.edit_groups_30330, { authorization: BillySuperAdminAuthToken });
+                await grantPermission(testClient, roleId, PermissionName.edit_groups_30330, { authorization: JoeAuthToken });
             });
 
             context("and the user is an admin", () => {
                 it("updates the role", async () => {
-                    const gqlRole = await updateRole(testClient, { roleId, roleName: newRoleName, roleDescription }, { authorization: BillySuperAdminAuthToken });
+                    const gqlRole = await updateRole(testClient, { roleId, roleName: newRoleName, roleDescription }, { authorization: JoeAuthToken });
 
                     const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
                     expect(gqlRole).to.exist;
@@ -134,12 +139,12 @@ describe("role", () => {
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: BillySuperAdminAuthToken });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
             });
 
             context("when user has the 'view role permissions' permission within the organization", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, roleId, PermissionName.view_role_permissions_30112, { authorization: BillySuperAdminAuthToken });
+                    await grantPermission(testClient, roleId, PermissionName.view_role_permissions_30112, { authorization: JoeAuthToken });
                 });
 
                 it("should return the permission", async () => {
@@ -198,7 +203,7 @@ describe("role", () => {
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: BillySuperAdminAuthToken });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
             });
 
             context("and the user is not an admin", () => {
@@ -214,16 +219,16 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("when user has the 'edit role permissions' permission within the organization", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: BillySuperAdminAuthToken });
+                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: JoeAuthToken });
                     });
 
                     context("and permission entry exists with allow set to false", () => {
                         beforeEach(async () => {
-                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillySuperAdminAuthToken });
+                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                         });
 
                         it("should return the permission with 'allow' set to true and update the database entry", async () => {
-                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillySuperAdminAuthToken });
+                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
 
                             const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
                             expect(gqlPermission).to.exist;
@@ -234,7 +239,7 @@ describe("role", () => {
 
                     context("and permission entry does not exist", () => {
                         it("should return the permission with 'allow' set to true and create a database entry", async () => {
-                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillySuperAdminAuthToken });
+                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
 
                             const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
                             expect(gqlPermission).to.exist;
@@ -247,11 +252,11 @@ describe("role", () => {
                 context("when user does not have the 'edit role permissions' permission within the organization", () => {
                     context("and permission entry exists with allow set to false", () => {
                         beforeEach(async () => {
-                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillySuperAdminAuthToken });
+                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                         });
 
                         it("should throw a permission exception, and not create a database entry", async () => {
-                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillySuperAdminAuthToken });
+                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                             expect(fn()).to.be.rejected;
 
                             const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
@@ -261,7 +266,7 @@ describe("role", () => {
 
                     context("and permission entry does not exist", () => {
                         it("should throw a permission exception, and not create a database entry", async () => {
-                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillySuperAdminAuthToken });
+                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                             expect(fn()).to.be.rejected;
 
                             const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
@@ -350,7 +355,7 @@ describe("role", () => {
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: BillySuperAdminAuthToken });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
             });
 
             context("and the user is not an admin", () => {
@@ -372,7 +377,7 @@ describe("role", () => {
                     });
 
                     it("throws a permission exception and not mutate the database entries", async () => {
-                        const fn = () => editPermissions(testClient, roleId, [nameOfPermission], { authorization: BillySuperAdminAuthToken });
+                        const fn = () => editPermissions(testClient, roleId, [nameOfPermission], { authorization: JoeAuthToken });
 
                         expect(fn()).to.be.rejected;
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -390,17 +395,17 @@ describe("role", () => {
                     beforeEach(async () => {
                         roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
                         await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: JoeAuthToken });
-                        await grantPermission(testClient, roleId, editRolePermission, { authorization: BillySuperAdminAuthToken });
+                        await grantPermission(testClient, roleId, editRolePermission, { authorization: JoeAuthToken });
                     });
 
                     it("edits permissions in role", async () => {
-                        let gqlPermissions = await editPermissions(testClient, roleId, [editRolePermission, nameOfPermission], { authorization: BillySuperAdminAuthToken });
+                        let gqlPermissions = await editPermissions(testClient, roleId, [editRolePermission, nameOfPermission], { authorization: JoeAuthToken });
                         expect(gqlPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
                         let dbRole = await Role.findOneOrFail(roleId);
                         let dbPermissions = await dbRole.permissions || [];
                         expect(dbPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
 
-                        gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: BillySuperAdminAuthToken });
+                        gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: JoeAuthToken });
                         expect(gqlPermissions).to.be.empty;
                         dbRole = await Role.findOneOrFail(roleId);
                         dbPermissions = await dbRole.permissions || [];
@@ -491,7 +496,7 @@ describe("role", () => {
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: BillySuperAdminAuthToken });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
             });
 
             context("and the user is not an admin", () => {
@@ -507,11 +512,11 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("when user has the 'edit role permissions' permission within the organization", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: BillySuperAdminAuthToken });
+                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: JoeAuthToken });
                     });
 
                     it("should return true and delete the database entry", async () => {
-                        const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillySuperAdminAuthToken });
+                        const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: JoeAuthToken });
 
                         const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
                         expect(successful).to.be.true;
@@ -521,7 +526,7 @@ describe("role", () => {
 
                 context("when user does not have the 'edit role permissions' permission within the organization", () => {
                     it("should throw a permission exception and not delete/modify the database entry", async () => {
-                        const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillySuperAdminAuthToken });
+                        const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: JoeAuthToken });
                         expect(fn()).to.be.rejected;
 
                         const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
@@ -574,7 +579,7 @@ describe("role", () => {
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: BillySuperAdminAuthToken });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
             });
 
             context("and the user is not an admin", () => {
@@ -591,7 +596,7 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("and the user does not have delete role permissions", () => {
                     it("throws a permission exception, and not delete the database entry", async () => {
-                        const fn = () => deleteRole(testClient, roleId, { authorization: BillySuperAdminAuthToken });
+                        const fn = () => deleteRole(testClient, roleId, { authorization: JoeAuthToken });
                         expect(fn()).to.be.rejected;
 
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -602,11 +607,11 @@ describe("role", () => {
 
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: BillySuperAdminAuthToken });
+                        await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: JoeAuthToken });
                     });
 
                     it("deletes the role", async () => {
-                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: BillySuperAdminAuthToken });
+                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: JoeAuthToken });
                         expect(gqlDeleteRole).to.be.true;
 
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -616,11 +621,11 @@ describe("role", () => {
 
                     context("and the role is marked as inactive", () => {
                         beforeEach(async () => {
-                            await deleteRole(testClient, roleId, { authorization: BillySuperAdminAuthToken });
+                            await deleteRole(testClient, roleId, { authorization: JoeAuthToken });
                         });
 
                         it("fails to delete the role", async () => {
-                            const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: BillySuperAdminAuthToken });
+                            const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: JoeAuthToken });
                             expect(gqlDeleteRole).to.be.null;
 
                             const dbRole = await Role.findOneOrFail(roleId);

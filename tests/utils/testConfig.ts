@@ -26,14 +26,3 @@ export const JoeAuthWithoutIdToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlb
 //   "iss": "calmid-debug"
 // }
 export const BillyAuthToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZjZjkyMmU1LTI1YzktNWRjZS1iZTlmLTk4N2E2MDBjMTM1NiIsImVtYWlsIjoiYmlsbHlAZ21haWwuY29tIiwiZ2l2ZW5fbmFtZSI6IkJpbGx5IiwiZmFtaWx5X25hbWUiOiJCb2IiLCJuYW1lIjoiQmlsbHkgQm9iIiwiaXNzIjoiY2FsbWlkLWRlYnVnIn0.Aza7YU5AbKty56djaCl6vAgPTswui8I_My090xJbQcA";
-
-// {
-//   "id": "fcf922e5-25c9-5dce-be9f-987a600c1356",
-//   "email": "billy@gmail.com",
-//   "given_name": "Billy",
-//   "family_name": "Bob",
-//   "name": "Billy Bob",
-//   "admin": true,
-//   "iss": "calmid-debug"
-// }
-export const BillySuperAdminAuthToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjYWxtaWQtZGVidWciLCJpZCI6ImZjZjkyMmU1LTI1YzktNWRjZS1iZTlmLTk4N2E2MDBjMTM1NiIsIm5hbWUiOiJCaWxseSBCb2IiLCJlbWFpbCI6ImJpbGx5QGdtYWlsLmNvbSIsImdpdmVuX25hbWUiOiJCaWxseSIsImZhbWlseV9uYW1lIjoiQm9iIiwiYWRtaW4iOnRydWV9.joUvM_4zG_XvMvY3-Wa2U5cLURLULbne7zubjEzazMA";
