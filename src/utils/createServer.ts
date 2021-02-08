@@ -5,6 +5,7 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { checkToken } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
+import { IsAdminDirective } from '../directives/isAdmin'
 
 export const createServer = (model: Model, context?: any) =>
     new ApolloServer({
@@ -19,12 +20,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
                     model.myUsers({}, ctx, info),
-                organizations: (
-                    _parent,
-                    { organization_ids },
-                    _context,
-                    _info
-                ) => model.getOrganizations(organization_ids),
+                organizations: (_parent, args, _context, _info) =>
+                    model.getOrganizations(args),
                 organization: (_parent, { organization_id }, _context, _info) =>
                     model.getOrganization(organization_id),
                 roles: () => model.getRoles(),
@@ -51,6 +48,9 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSchool(args),
             },
         },
+        schemaDirectives: {
+            isAdmin: IsAdminDirective,
+        },
         subscriptions: {
             keepAlive: 1000,
             onConnect: async (
@@ -73,10 +73,6 @@ export const createServer = (model: Model, context?: any) =>
                     req.headers.authorization || req.cookies.access
                 const token = (await checkToken(encodedToken)) as any
                 const permissions = new UserPermissions(token)
-
-                if (!token) {
-                    console.log('User not authenticated')
-                }
 
                 return { token, permissions, res, req }
             }),

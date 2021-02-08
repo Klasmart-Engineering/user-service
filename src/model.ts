@@ -307,19 +307,14 @@ export class Model {
         )
         return organization
     }
-    public async getOrganizations(organization_ids: string[]) {
-        console.info('Unauthenticated endpoint call getOrganizations')
 
-        try {
-            if (organization_ids) {
-                return await this.organizationRepository.findByIds(
-                    organization_ids
-                )
-            } else {
-                return await this.organizationRepository.find()
-            }
-        } catch (e) {
-            console.error(e)
+    public async getOrganizations({ organization_ids, scope }: any) {
+        if (organization_ids) {
+            return await scope.whereInIds(
+                organization_ids
+            ).getMany()
+        } else {
+            return await scope.getMany()
         }
     }
 

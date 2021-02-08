@@ -1,6 +1,9 @@
 directive @deprecated(
     reason: String = "No longer supported"
 ) on FIELD_DEFINITION
+directive @isAdmin(
+  entity: String
+)on FIELD_DEFINITION
 
 type Query {
     me: User
@@ -9,7 +12,7 @@ type Query {
     my_users: [User!]
 
     organization(organization_id: ID!): Organization
-    organizations(organization_ids: [ID!]): [Organization]
+    organizations(organization_ids: [ID!]): [Organization] @isAdmin(entity: "organization")
 
     role(role_id: ID!): Role
     roles: [Role]

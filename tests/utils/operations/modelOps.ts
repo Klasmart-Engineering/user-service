@@ -1,4 +1,5 @@
 import { User } from "../../../src/entities/user";
+import { Organization } from "../../../src/entities/organization";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
@@ -95,6 +96,24 @@ const SWITCH_USER = `
         switch_user(user_id: $user_id) {
             user_id
             email
+        }
+    }
+`;
+
+const GET_ALL_ORGANIZATIONS = `
+    query getAllOrgs {
+        organizations {
+            organization_id
+            organization_name
+        }
+    }
+`;
+
+const GET_ORGANIZATIONS = `
+    query getOrgs($organization_ids: [ID!]) {
+        organizations(organization_ids: $organization_ids) {
+            organization_id
+            organization_name
         }
     }
 `;
@@ -214,4 +233,31 @@ export async function me(testClient: ApolloServerTestClient, headers?: Headers, 
     const res = await gqlTry(operation);
     const gqlUser = res.data?.me as User;
     return gqlUser;
+}
+
+export async function getAllOrganizations(testClient: ApolloServerTestClient, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_ALL_ORGANIZATIONS,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlOrgs = res.data?.organizations as Organization[];
+    return gqlOrgs;
+}
+
+export async function getOrganizations(testClient: ApolloServerTestClient, organizationIds: string[], headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_ORGANIZATIONS,
+        variables: { organization_ids: organizationIds },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlOrgs = res.data?.organizations as Organization[];
+    return gqlOrgs;
 }
