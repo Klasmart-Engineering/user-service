@@ -10,6 +10,7 @@ import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { addUserToOrganizationAndValidate, createRole, createSchool } from "../utils/operations/organizationOps";
+import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
@@ -37,6 +38,11 @@ describe("userPermissions", () => {
     after(async () => {
         UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
+    });
+
+    beforeEach(async () => {
+        await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("isAdmin", () => {
@@ -76,8 +82,6 @@ describe("userPermissions", () => {
         let token
 
         beforeEach(async () => {
-            await connection.synchronize(true);
-
             const orgOwner = await createUserJoe(testClient);
             const user = await createUserBilly(testClient);
             userId = user.user_id

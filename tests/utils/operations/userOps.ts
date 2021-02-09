@@ -180,9 +180,9 @@ export async function createOrganization(
     organizationName: string,
     token?: string
 ): Promise<Organization> {
-   
+
     token = token ?? JoeAuthToken
-    
+
     const { mutate } = testClient;
 
     const operation = () => mutate({

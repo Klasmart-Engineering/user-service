@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
 import { Connection } from "typeorm";
 import { Model } from "../../src/model";
 import { createServer } from "../../src/utils/createServer";
@@ -19,25 +19,34 @@ import { Class } from "../../src/entities/class";
 import { School } from "../../src/entities/school";
 import { accountUUID, User } from "../../src/entities/user";
 import { Status } from "../../src/entities/status";
+import { UserPermissions } from "../../src/permissions/userPermissions";
 import { addSchoolToClass } from "../utils/operations/classOps";
-import { createUserAndValidate } from "../utils/operations/modelOps";
+import { createDefaultRoles, createUserAndValidate } from "../utils/operations/modelOps";
+import chaiAsPromised from "chai-as-promised";
+use(chaiAsPromised);
 
 describe("school", () => {
     let connection: Connection;
+    let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
     beforeEach(async () => {
         await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("organization", () => {
@@ -364,8 +373,6 @@ describe("school", () => {
         let organization : Organization;
 
         beforeEach(async () => {
-            await connection.synchronize(true);
-
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);

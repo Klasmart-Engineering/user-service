@@ -197,7 +197,10 @@ export class OrganizationMembership extends BaseEntity {
             const role = await getRepository(Role).findOneOrFail({ role_id })
             const memberships = (await role.memberships) || []
             const roleOrganization = await role.organization
-            if (roleOrganization?.organization_id !== this.organization_id) {
+            if (
+                !role.system_role &&
+                roleOrganization?.organization_id !== this.organization_id
+            ) {
                 throw new Error(
                     `Can not assign Organization(${roleOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`
                 )
@@ -238,6 +241,7 @@ export class OrganizationMembership extends BaseEntity {
                 const memberships = (await role.memberships) || []
                 const roleOrganization = await role.organization
                 if (
+                    !role.system_role &&
                     roleOrganization?.organization_id !== this.organization_id
                 ) {
                     throw new Error(

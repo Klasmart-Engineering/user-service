@@ -6,7 +6,7 @@ import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../../utils/testEntities";
 import { JoeAuthToken, BillyAuthToken } from "../../utils/testConfig";
-import { getAllOrganizations } from "../../utils/operations/modelOps";
+import { createDefaultRoles, getAllOrganizations } from "../../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { Model } from "../../../src/model";
 import { User } from "../../../src/entities/user";
@@ -37,6 +37,7 @@ describe("isAdmin", () => {
 
     beforeEach(async () => {
         await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("organizations", () => {

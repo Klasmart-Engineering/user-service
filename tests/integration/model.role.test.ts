@@ -6,8 +6,11 @@ import { createServer } from "../../src/utils/createServer";
 import { Role } from "../../src/entities/role";
 import { createRole } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
+import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createUserJoe } from "../utils/testEntities";
+import { JoeAuthToken } from "../utils/testConfig";
 import { accountUUID } from "../../src/entities/user";
+import { UserPermissions } from "../../src/permissions/userPermissions";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
 const GET_ROLES = `
@@ -30,25 +33,32 @@ const GET_ROLE = `
 
 describe("model.role", () => {
     let connection: Connection;
+    let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
+    let roleInfo = ( role: Role ) => { return role.role_id }
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
-    describe("getRoles", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
+    beforeEach(async () => {
+        await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
+    });
 
+    describe("getRoles", () => {
         context("when none", () => {
-            it("should return an empty array", async () => {
+            it("returns only the system roles", async () => {
                 const { query } = testClient;
 
                 const res = await query({
@@ -56,9 +66,10 @@ describe("model.role", () => {
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
-                const roles = res.data?.roles as Role[];
-                expect(roles).to.exist;
-                expect(roles).to.be.empty;
+                const systemRoles = await Role.find({ where: { system_role: true } })
+
+                const roles = res.data?.roles as Role[]
+                expect(roles.map(roleInfo)).to.deep.eq(systemRoles.map(roleInfo))
             });
         });
 
@@ -87,10 +98,6 @@ describe("model.role", () => {
     });
 
     describe("getRole", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
-
         context("when none", () => {
             it("should return null", async () => {
                 const { query } = testClient;

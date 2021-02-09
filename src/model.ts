@@ -16,10 +16,17 @@ import {
     normalizedLowercaseTrimmed,
     padShortDob,
 } from './entities/organization'
+import { organizationAdminRole } from './permissions/organizationAdmin'
+import { schoolAdminRole } from './permissions/schoolAdmin'
+import { parentRole } from './permissions/parent'
+import { studentRole } from './permissions/student'
+import { teacherRole } from './permissions/teacher'
 import { Role } from './entities/role'
 import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
+import { Permission } from './entities/permission'
+import { permissionInfo } from './permissions/permissionInfo'
 
 export class Model {
     public static async create() {
@@ -316,6 +323,78 @@ export class Model {
         } else {
             return await scope.getMany()
         }
+    }
+
+    public async createDefaultRoles(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        let roles: Role[] = []
+        context.permissions.rejectIfNotAdmin()
+
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        await getManager().transaction(async (manager) => {
+            roles = await this._createDefaultRoles(manager)
+        });
+
+        return roles
+    }
+
+    private async _createDefaultRoles(manager: EntityManager = getManager()) {
+        const roles: Role[] = []
+        const permissionDetails = await permissionInfo()
+
+        for (const { role_name, permissions } of [
+            organizationAdminRole,
+            schoolAdminRole,
+            parentRole,
+            studentRole,
+            teacherRole,
+        ]) {
+            let role = await Role.findOne({ where: {
+                role_name: role_name,
+                system_role: true,
+                organization: { organization_id: null }
+            }})
+
+            if(!role) {
+                role = new Role()
+                role.role_name = role_name
+                role.system_role = true
+                await manager.save(role)
+            }
+
+            roles.push(role)
+            const oldPermissions = (await role.permissions) || []
+
+            const permissionEntities = [] as Permission[]
+            for (const permission_name of permissions) {
+                const permission = new Permission()
+                const permissionInf = permissionDetails.get(
+                    permission_name
+                )
+
+                permission.permission_name = permission_name
+                permission.permission_id = permission_name
+                permission.permission_category = permissionInf?.category
+                permission.permission_level = permissionInf?.level
+                permission.permission_group = permissionInf?.group
+                permission.permission_description =
+                    permissionInf?.description
+                permission.allow = true
+                permission.role = Promise.resolve(role)
+                permissionEntities.push(permission)
+            }
+
+            await manager.remove(oldPermissions)
+            await manager.save(permissionEntities)
+        }
+
+        return roles
     }
 
     public async setRole({ role_id, role_name }: Role) {

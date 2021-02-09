@@ -1,10 +1,21 @@
 import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
+import { Role } from "../../../src/entities/role";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
+
+const CREATE_DEFAULT_ROLES = `
+mutation createDefaultRoles{
+  create_default_roles {
+    role_id
+    role_name
+    system_role
+  }
+}
+`
 
 const NEW_USER = `
     mutation myMutation(
@@ -117,6 +128,20 @@ const GET_ORGANIZATIONS = `
         }
     }
 `;
+
+export async function createDefaultRoles( testClient: ApolloServerTestClient, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CREATE_DEFAULT_ROLES,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlRoles = res.data?.create_default_roles as Role[];
+    return gqlRoles;
+}
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */

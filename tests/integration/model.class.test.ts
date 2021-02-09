@@ -6,8 +6,11 @@ import { createServer } from "../../src/utils/createServer";
 import { Class } from "../../src/entities/class";
 import { createClass } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
+import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createUserJoe } from "../utils/testEntities";
+import { JoeAuthToken } from "../utils/testConfig";
 import { accountUUID } from "../../src/entities/user";
+import { UserPermissions } from "../../src/permissions/userPermissions";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
 const GET_CLASSES = `
@@ -31,22 +34,28 @@ const GET_CLASS = `
 describe("model.class", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
+    let originalAdmins: string[];
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
-    describe("getClasses", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
+    beforeEach(async () => {
+        await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
+    });
 
+    describe("getClasses", () => {
         context("when none", () => {
             it("should return an empty array", async () => {
                 const { query } = testClient;
@@ -85,10 +94,6 @@ describe("model.class", () => {
     });
 
     describe("getClass", () => {
-        beforeEach(async () => {
-            await connection.synchronize(true);
-        });
-
         context("when none", () => {
             it("should return null", async () => {
                 const { query } = testClient;

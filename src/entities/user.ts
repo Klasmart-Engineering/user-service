@@ -21,6 +21,7 @@ import { SchoolMembership } from './schoolMembership'
 import { OrganizationOwnership } from './organizationOwnership'
 import { v5 } from 'uuid'
 import { createHash } from 'crypto'
+import { Role } from './role'
 import { School } from './school'
 import { Status } from './status'
 
@@ -300,8 +301,15 @@ export class User extends BaseEntity {
                 organization.primary_contact = Promise.resolve(this)
                 await manager.save(organization)
 
-                const roles = await organization._createDefaultRoles(manager)
-                const adminRoles = roles.get('Organization Admin')
+                const adminRoles = [
+                    await Role.findOneOrFail({
+                        where: {
+                            role_name: 'Organization Admin',
+                            system_role: true,
+                            organization: { organization_id: null },
+                        },
+                    }),
+                ]
 
                 const membership = new OrganizationMembership()
                 membership.user = Promise.resolve(this)

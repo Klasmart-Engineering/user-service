@@ -9,7 +9,6 @@ import {
     OneToOne,
     ManyToOne,
     BaseEntity,
-    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -18,15 +17,8 @@ import { Role } from './role'
 import { User, accountUUID } from './user'
 import { Class } from './class'
 import { School } from './school'
-import { organizationAdminRole } from '../permissions/organizationAdmin'
-import { schoolAdminRole } from '../permissions/schoolAdmin'
-import { parentRole } from '../permissions/parent'
-import { studentRole } from '../permissions/student'
-import { teacherRole } from '../permissions/teacher'
-import { Permission } from './permission'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
-import { permissionInfo } from '../permissions/permissionInfo'
 import { SchoolMembership } from './schoolMembership'
 import { Model } from '../model'
 import { Status } from './status'
@@ -118,9 +110,17 @@ export class Organization extends BaseEntity {
     @JoinColumn()
     public primary_contact?: Promise<User>
 
-    @OneToMany(() => Role, (role) => role.organization)
-    @JoinColumn()
-    public roles?: Promise<Role[]>
+    public async roles(args: any, context: any, info: any): Promise<Role[]> {
+        return Role.find({
+            where: [
+                { system_role: true, organization: { organization_id: null } },
+                {
+                    system_role: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
 
     @OneToMany(() => School, (school) => school.organization)
     @JoinColumn()
@@ -689,83 +689,6 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async createDefaultRoles(
-        args: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        try {
-            if (info.operation.operation !== 'mutation') {
-                return null
-            }
-
-            const roles = await this._createDefaultRoles()
-            return [...roles.values()].flat()
-        } catch (e) {
-            console.error(e)
-        }
-    }
-
-    public async resetDefaultRolesPermissions(
-        args: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        try {
-            if (info.operation.operation !== 'mutation') {
-                return null
-            }
-
-            const permissionDetails = await permissionInfo()
-
-            for (const { role_name, permissions } of [
-                organizationAdminRole,
-                schoolAdminRole,
-                parentRole,
-                studentRole,
-                teacherRole,
-            ]) {
-                const manager = getManager()
-                const roles = await Role.find({
-                    where: {
-                        organization: this.organization_id,
-                        role_name: role_name,
-                    },
-                })
-
-                for (const role of roles) {
-                    const oldPermissions = (await role.permissions) || []
-
-                    const permissionEntities = [] as Permission[]
-                    for (const permission_name of permissions) {
-                        const permission = new Permission()
-                        const permissionInf = permissionDetails.get(
-                            permission_name
-                        )
-
-                        permission.permission_name = permission_name
-                        permission.permission_id = permission_name
-                        permission.permission_category = permissionInf?.category
-                        permission.permission_level = permissionInf?.level
-                        permission.permission_group = permissionInf?.group
-                        permission.permission_description =
-                            permissionInf?.description
-                        permission.allow = true
-                        permission.role = Promise.resolve(role)
-                        permissionEntities.push(permission)
-                    }
-
-                    await manager.remove(oldPermissions)
-                    await manager.save(permissionEntities)
-                }
-            }
-        } catch (e) {
-            console.error(e)
-        }
-
-        return this.roles
-    }
-
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
         if (
             info.operation.operation !== 'mutation' ||
@@ -790,43 +713,6 @@ export class Organization extends BaseEntity {
             console.error(e)
         }
         return false
-    }
-
-    public async _createDefaultRoles(manager: EntityManager = getManager()) {
-        const roles = new Map<string, Role[]>()
-
-        for (const { role_name, permissions } of [
-            organizationAdminRole,
-            schoolAdminRole,
-            parentRole,
-            studentRole,
-            teacherRole,
-        ]) {
-            const role = new Role()
-
-            const key = role_name || ''
-            const value = roles.get(key)
-            if (value) {
-                value.push(role)
-            } else {
-                roles.set(key, [role])
-            }
-
-            role.role_name = role_name
-            role.organization = Promise.resolve(this)
-            await manager.save(role)
-            const permissionEntities = [] as Permission[]
-            for (const permission_name of permissions) {
-                const permission = new Permission()
-                permission.permission_name = permission_name
-                permission.allow = true
-                permission.role = Promise.resolve(role)
-                permissionEntities.push(permission)
-            }
-            await manager.save(permissionEntities)
-        }
-
-        return roles
     }
 
     private async inactivateOrganizationMemberships(manager: any) {

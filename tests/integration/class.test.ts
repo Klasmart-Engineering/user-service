@@ -12,6 +12,7 @@ import { Organization } from "../../src/entities/organization";
 import { accountUUID, User } from "../../src/entities/user";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
+import { UserPermissions } from "../../src/permissions/userPermissions";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -21,25 +22,31 @@ import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { createUserAndValidate } from "../utils/operations/modelOps";
+import { createUserAndValidate, createDefaultRoles } from "../utils/operations/modelOps";
 chai.use(chaiAsPromised);
 
 describe("class", () => {
     let connection: Connection;
+    let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
     beforeEach(async () => {
         await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("set", () => {
@@ -180,7 +187,7 @@ describe("class", () => {
 
                 it("returns an array containing the teacher", async () => {
                     const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').with.lengthOf(1);
                     expect(userIds[0]).to.equal(teacherId);
@@ -198,7 +205,7 @@ describe("class", () => {
 
                 it("returns an array containing the teacher", async () => {
                     const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').with.lengthOf(1);
                     expect(userIds[0]).to.equal(teacherId);
@@ -232,7 +239,7 @@ describe("class", () => {
 
                 it("returns an array containing only the organization owner", async () => {
                     const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').that.is.empty;
                 });
@@ -247,7 +254,7 @@ describe("class", () => {
 
                 it("returns an array containing only the organization owner", async () => {
                     const gqlTeachers = await eligibleTeachers(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlTeachers.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').that.is.empty;
                 });
@@ -292,7 +299,7 @@ describe("class", () => {
 
                 it("returns an array containing only the student", async () => {
                     const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').with.lengthOf(1);
                     expect(userIds[0]).to.equal(studentId);
@@ -310,7 +317,7 @@ describe("class", () => {
 
                 it("returns an array containing the organization owner and the student", async () => {
                     const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').with.lengthOf(1);
                     expect(userIds[0]).to.equal(studentId);
@@ -344,7 +351,7 @@ describe("class", () => {
 
                 it("returns an array containing only the organization owner", async () => {
                     const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').that.is.empty;
                 });
@@ -359,7 +366,7 @@ describe("class", () => {
 
                 it("returns an empty array", async () => {
                     const gqlStudents = await eligibleStudents(testClient, classId, { authorization: undefined });
-                    
+
                     const userIds = gqlStudents.map(x => x.user_id).filter(x => x !== orgOwnerId);
                     expect(userIds).to.be.an('array').that.is.empty;
                 });
@@ -692,7 +699,7 @@ describe("class", () => {
 
             it("removes the teacher from class", async () => {
                 const gqlTeacher = await removeTeacherInClass(testClient, classId, userId, { authorization: BillyAuthToken });
-                
+
                 expect(gqlTeacher).to.be.true;
                 const dbTeacher = await User.findOneOrFail(userId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -709,7 +716,7 @@ describe("class", () => {
 
                 it("fails to remove teacher in class", async () => {
                     const gqlTeacher = await removeTeacherInClass(testClient, classId, userId, { authorization: BillyAuthToken });
-                    
+
                     expect(gqlTeacher).to.be.null;
                     const dbTeacher = await User.findOneOrFail(userId);
                     const dbClass = await Class.findOneOrFail(classId);
@@ -1045,7 +1052,7 @@ describe("class", () => {
 
             it("removes the student from class", async () => {
                 const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
-                
+
                 expect(gqlStudent).to.be.true;
                 const dbStudent = await User.findOneOrFail(userId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -1062,7 +1069,7 @@ describe("class", () => {
 
                 it("fails to remove student in class", async () => {
                     const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
-                    
+
                     expect(gqlStudent).to.be.null;
                     const dbStudent = await User.findOneOrFail(userId);
                     const dbClass = await Class.findOneOrFail(classId);
@@ -1363,7 +1370,7 @@ describe("class", () => {
 
             it("removes the school from class", async () => {
                 const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
-                
+
                 expect(gqlTeacher).to.be.true;
                 const dbSchool = await School.findOneOrFail(schoolId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -1380,7 +1387,7 @@ describe("class", () => {
 
                 it("fails to remove school from class", async () => {
                     const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
-                    
+
                     expect(gqlTeacher).to.be.null;
                     const dbSchool = await School.findOneOrFail(schoolId);
                     const dbClass = await Class.findOneOrFail(classId);
@@ -1414,7 +1421,7 @@ describe("class", () => {
 
             it("removes the school from class", async () => {
                 const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
-                
+
                 expect(gqlTeacher).to.be.true;
                 const dbSchool = await School.findOneOrFail(schoolId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -1431,7 +1438,7 @@ describe("class", () => {
 
                 it("fails to remove school from class", async () => {
                     const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
-                    
+
                     expect(gqlTeacher).to.be.null;
                     const dbSchool = await School.findOneOrFail(schoolId);
                     const dbClass = await Class.findOneOrFail(classId);

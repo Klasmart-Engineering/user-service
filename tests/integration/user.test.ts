@@ -19,10 +19,11 @@ import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../utils/operations/schoolMembershipOps";
-import { createUserAndValidate } from "../utils/operations/modelOps";
+import { createDefaultRoles, createUserAndValidate } from "../utils/operations/modelOps";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
+import { UserPermissions } from "../../src/permissions/userPermissions";
 import { gql } from "apollo-server-express";
 import { Class } from "../../src/entities/class";
 
@@ -32,6 +33,7 @@ chai.use(chaiAsPromised);
 
 describe("user", () => {
     let connection: Connection;
+    let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
     let user: User;
 
@@ -39,19 +41,23 @@ describe("user", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
-    function reloadDatabase() {
-        return connection?.synchronize(true);
-    }
+    beforeEach(async () => {
+        await connection?.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
+    });
 
     describe("set", () => {
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -65,7 +71,6 @@ describe("user", () => {
 
     describe("memberships", () => {
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -95,7 +100,6 @@ describe("user", () => {
         let organizationId: string;
 
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id;
@@ -118,7 +122,6 @@ describe("user", () => {
 
     describe("school_memberships", () => {
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -149,7 +152,6 @@ describe("user", () => {
         let schoolId: string;
 
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
@@ -173,7 +175,6 @@ describe("user", () => {
 
     describe("classesTeaching", () => {
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -202,7 +203,6 @@ describe("user", () => {
 
     describe("classesStudying", () => {
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -231,7 +231,6 @@ describe("user", () => {
 
     describe("createOrganization", () => {
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -266,7 +265,6 @@ describe("user", () => {
         let organizationId: string;
 
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id;
@@ -294,7 +292,6 @@ describe("user", () => {
         } as User;
 
         beforeEach(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
             const idOfOrg1Owner = user.user_id;
             const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
@@ -388,7 +385,6 @@ describe("user", () => {
         let roleId: string
         let schoolId: string
         beforeEach(async () => {
-            await reloadDatabase();
             joeUser = await createUserJoe(testClient);
             organization = await createOrganizationAndValidate(testClient, joeUser.user_id);
             organizationId = organization.organization_id

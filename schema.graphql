@@ -49,6 +49,7 @@ type Mutation {
         shortCode: String
     ): Organization
 
+    create_default_roles(_: Int): [Role]
     role(role_id: ID!): Role
     roles: [Role]
 
@@ -176,8 +177,6 @@ type Organization {
         school_role_ids: [ID!]
     ): MembershipUpdate
     createRole(role_name: String!, role_description: String!): Role
-    createDefaultRoles(_: Int): [Role]
-    resetDefaultRolesPermissions(_: Int): [Role]
     createSchool(school_name: String): School
     createClass(class_name: String): Class
     delete(_: Int): Boolean

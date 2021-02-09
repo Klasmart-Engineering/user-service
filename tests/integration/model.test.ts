@@ -5,7 +5,7 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken, JoeAuthWithoutIdToken } from "../utils/testConfig";
-import { getAllOrganizations, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { createDefaultRoles, getAllOrganizations, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { Model } from "../../src/model";
 import { User } from "../../src/entities/user";
@@ -36,6 +36,7 @@ describe("model", () => {
 
     beforeEach(async () => {
         await connection.synchronize(true);
+        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("switchUser", () => {
@@ -213,6 +214,101 @@ describe("model", () => {
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
                 });
+            });
+        });
+    });
+
+    describe("createDefaultRoles", () => {
+        const roleInfoFunc =  function (role: any) {
+          return { role_id: role.role_id, role_name: role.role_name }
+        };
+        const permissionInfoFunc =  function (permission: any) {
+          return { permission_name: permission.permission_name, role_id: permission.role_id }
+        };
+
+        context("when updated default permissions exists", () => {
+            let organization: Organization;
+
+            beforeEach(async () => {
+                const user = await createUserJoe(testClient);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
+            });
+
+            it("does not modify the default roles permissions", async () => {
+                const { mutate } = testClient;
+                const dbRoles = await organization.roles({}, {}, {}) || []
+                let dbPermissions = []
+                expect(dbRoles).not.to.be.empty;
+
+                for(const role of dbRoles){
+                  const permissions = await role.permissions || [];
+
+                  expect(permissions).not.to.be.empty
+                  dbPermissions.push(...permissions.map(permissionInfoFunc))
+                }
+
+
+                const gqlRoles = await createDefaultRoles(testClient, { authorization: JoeAuthToken });
+
+                organization = await Organization.findOneOrFail(organization.organization_id);
+                const dbNewRoles = await organization.roles({}, {}, {}) || []
+                expect(dbNewRoles).not.to.be.empty;
+
+                expect(gqlRoles.map(roleInfoFunc)).to.deep.equal(dbNewRoles?.map(roleInfoFunc));
+                let resetPermissions = []
+
+                for(const role of dbNewRoles){
+                  const permissions = await role.permissions || [];
+
+                  expect(permissions).not.to.be.empty
+                  resetPermissions.push(...permissions?.map(permissionInfoFunc))
+                }
+
+                expect(dbPermissions).to.deep.members(resetPermissions)
+            });
+        });
+
+        context("when outdated default permissions exists", () => {
+            let organization: Organization;
+
+            beforeEach(async () => {
+                const user = await createUserJoe(testClient);
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
+            });
+
+            it("updates the default roles permissions", async () => {
+                const { mutate } = testClient;
+                let dbRoles = await organization.roles({}, {}, {}) || []
+                let defaultPermissions = []
+                expect(dbRoles).not.to.be.empty;
+
+                for(const role of dbRoles){
+                  const permissions = await role.permissions || [];
+
+                  defaultPermissions.push(...permissions.map(permissionInfoFunc))
+
+                  if(role.role_name === "Organization Admin") { continue }
+
+                  await connection.manager.remove(permissions);
+                }
+
+                const gqlRoles = await createDefaultRoles(testClient, { authorization: JoeAuthToken });
+
+                organization = await Organization.findOneOrFail(organization.organization_id);
+                const dbNewRoles = await organization.roles({}, {}, {}) || []
+                expect(dbNewRoles).not.to.be.empty;
+
+                expect(gqlRoles.map(roleInfoFunc)).to.deep.equal(dbNewRoles?.map(roleInfoFunc));
+                let resetPermissions = []
+
+                for(const role of dbNewRoles){
+                  const permissions = await role.permissions || [];
+
+                  expect(permissions).not.to.be.empty
+                  resetPermissions.push(...permissions?.map(permissionInfoFunc))
+                }
+
+                expect(defaultPermissions).to.deep.members(resetPermissions)
             });
         });
     });
