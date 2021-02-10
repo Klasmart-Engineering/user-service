@@ -457,6 +457,7 @@ export class Organization extends BaseEntity {
 
         for(const membership of memberships) {
             const membershipRoles = await membership.roles || []
+            let newMembershipRoles = membershipRoles.slice()
             const membershipRolesIds = await membershipRoles.map((role: Role) => { return role.role_id })
 
             for(const role of membershipRoles) {
@@ -478,7 +479,8 @@ export class Organization extends BaseEntity {
                     const migrated = membershipRolesIds.includes(systemRole.role_id)
 
                     if(!role.system_role && !migrated) {
-                        membership.roles = Promise.resolve([...membershipRoles, systemRole])
+                        newMembershipRoles = [...newMembershipRoles, systemRole]
+                        membership.roles = Promise.resolve(newMembershipRoles)
 
                         await manager.save(membership)
 
