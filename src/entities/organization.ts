@@ -2,6 +2,7 @@ import {
     Column,
     PrimaryGeneratedColumn,
     Entity,
+    EntityManager,
     OneToMany,
     getRepository,
     getManager,
@@ -419,6 +420,75 @@ export class Organization extends BaseEntity {
         } catch (e) {
             console.error(e)
         }
+    }
+
+    // NOTE: This is a migration function. Will be deleted after migration is finished for
+    // all organizations
+    public async mapSystemRoles(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if ( info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        let newRoles: any[] = []
+
+        await getManager().transaction(async (manager) => {
+            const organizationMemberships = await this.memberships || []
+            newRoles = await this.migrateRoles(organizationMemberships, manager)
+
+            const schools = await this.schools || []
+            for(const school of schools) {
+                const schoolMemberships = await school.memberships || []
+
+                const tmp = await this.migrateRoles(schoolMemberships, manager)
+                newRoles = [...newRoles, ...tmp]
+            }
+        });
+
+        return  newRoles
+    }
+
+    private async migrateRoles(memberships: any[], manager: EntityManager) {
+        const roles = []
+        const systemRoles = new Map()
+
+        for(const membership of memberships) {
+            const membershipRoles = await membership.roles || []
+            const membershipRolesIds = await membershipRoles.map((role: Role) => { return role.role_id })
+
+            for(const role of membershipRoles) {
+                const role_name = role.role_name
+                let systemRole = systemRoles.get(role_name)
+
+                if(!systemRole) {
+                    systemRole = await Role.findOne({ where: {
+                        role_name: role_name,
+                        system_role: true
+                    } })
+
+                    if(systemRole) {
+                        systemRoles.set(role.role_name, systemRole)
+                    }
+                }
+
+                if(systemRole) {
+                    const migrated = membershipRolesIds.includes(systemRole.role_id)
+
+                    if(!role.system_role && !migrated) {
+                        membership.roles = Promise.resolve([...membershipRoles, systemRole])
+
+                        await manager.save(membership)
+
+                        roles.push(systemRole)
+                    }
+                }
+            }
+        }
+
+        return roles
     }
 
     private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {

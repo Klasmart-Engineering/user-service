@@ -16,7 +16,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                     scope = getRepository(Organization).createQueryBuilder()
                     break
                 default:
-                // do nothing
+                    context.permissions.rejectIfNotAdmin()
             }
 
             if (!context.permissions.isAdmin && scope) {

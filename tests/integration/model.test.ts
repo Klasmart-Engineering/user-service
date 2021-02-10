@@ -4,7 +4,7 @@ import { ApolloServerTestClient, createTestClient } from "../utils/createTestCli
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
-import { JoeAuthToken, JoeAuthWithoutIdToken } from "../utils/testConfig";
+import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/testConfig";
 import { createDefaultRoles, getAllOrganizations, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { Model } from "../../src/model";
@@ -191,6 +191,14 @@ describe("model", () => {
             beforeEach(async () => {
                 const otherUser = await createUserBilly(testClient);
                 otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
+            });
+
+            context("and the user is not an admin", () => {
+                it("raises an error", async () => {
+                    const fn = () => getAllOrganizations(testClient, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                });
             });
 
             context("and there is no filter in the organization ids", () => {

@@ -331,7 +331,6 @@ export class Model {
         info: GraphQLResolveInfo
     ) {
         let roles: Role[] = []
-        context.permissions.rejectIfNotAdmin()
 
         if (info.operation.operation !== 'mutation') {
             return null

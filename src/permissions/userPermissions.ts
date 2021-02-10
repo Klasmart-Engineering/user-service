@@ -19,7 +19,6 @@ export class UserPermissions {
         'mcarey@calmid.com',
         'ncurtis@calmid.com',
         'sbrolia@calmid.com',
-        'apollo1@calmid.com',
     ]
 
     private _organizationPermissions?: Promise<Map<string, Set<string>>>
