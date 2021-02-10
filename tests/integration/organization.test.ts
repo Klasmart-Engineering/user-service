@@ -335,12 +335,13 @@ describe("organization", () => {
             let organizationId: string;
             let schoolId: string;
             let roleId: string
+
             beforeEach(async () => {
                 user = await createUserJoe(testClient);
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
-                role = await createRole(testClient, organization.organization_id, "student");
+                role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
                 schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
             });
@@ -478,6 +479,7 @@ describe("organization", () => {
         });
 
     });
+
     describe("inviteUser", async () => {
         context("We have an email or phone, profile_name, given_name, family_name, date_of_birth, organization_role_ids, school_ids and school_role_ids", () => {
             let userId: string;
@@ -485,12 +487,13 @@ describe("organization", () => {
             let schoolId: string;
             let oldSchoolId: string;
             let roleId: string
+
             beforeEach(async () => {
                 user = await createUserJoe(testClient);
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
-                role = await createRole(testClient, organization.organization_id, "student");
+                role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
                 oldSchoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
                 schoolId = (await createSchool(testClient, organizationId, "school 2", { authorization: JoeAuthToken })).school_id;

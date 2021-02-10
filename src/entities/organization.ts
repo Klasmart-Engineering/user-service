@@ -427,8 +427,9 @@ export class Organization extends BaseEntity {
             const role = await role_repo.findOneOrFail(role_id)
             const checkOrganization = await role.organization
             if (
-                !checkOrganization ||
-                checkOrganization.organization_id !== this.organization_id
+                !role.system_role &&
+                (!checkOrganization ||
+                    checkOrganization.organization_id !== this.organization_id)
             ) {
                 throw new Error(
                     `Can not assign Organization(${checkOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`
