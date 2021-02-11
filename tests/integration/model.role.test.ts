@@ -4,16 +4,16 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Role, RoleConnection } from "../../src/entities/role";
-import { addUserToOrganizationAndValidate, createRole, createSchool} from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createRole, createSchool } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
-import { accountUUID, User} from "../../src/entities/user";
+import { accountUUID, User } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { JoeAuthToken, BillyAuthToken, generateToken} from "../utils/testConfig";
+import { JoeAuthToken, BillyAuthToken, generateToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { createUserAndValidate } from "../utils/operations/modelOps";
+import { createDefaultRoles, createUserAndValidate } from "../utils/operations/modelOps";
 import { UserPermissions } from "../../src/permissions/userPermissions";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
 
@@ -58,7 +58,7 @@ describe("model.role", () => {
     let connection: Connection;
     let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
-    let roleInfo = ( role: Role ) => { return role.role_id }
+    let roleInfo = (role: Role) => { return role.role_id }
 
     before(async () => {
         connection = await createTestConnection();
@@ -119,16 +119,16 @@ describe("model.role", () => {
             });
         });
     });
-describe("getv1Roles", () => {
+    describe("getv1Roles", () => {
         let user: User;
         const orgIds: string[] = []
+        let connection: Connection;
         let originalAdmins: string[];
-        before(async () => {
-            originalAdmins = UserPermissions.ADMIN_EMAILS
-            UserPermissions.ADMIN_EMAILS = ['billy@gmail.com']
-            await connection.synchronize(true);
-            user = await createUserJoe(testClient); 
-            await createUserBilly(testClient); 
+
+
+        beforeEach(async () => {
+            await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
             for (let i = 1; i < 10; i++) {
                 let anne1 = {
                     given_name: "Anne" + i,
@@ -147,66 +147,63 @@ describe("getv1Roles", () => {
                 await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id, role1Id, { authorization: anne1Token })
             }
         });
-        after(async () => {
-            UserPermissions.ADMIN_EMAILS = originalAdmins
-        });
 
-        it("should get paged roles as admin", async () => {
-          
+
+        it("should get paged roles as admin!", async () => {
             let after: string | undefined = undefined
-            for (let i = 1; i < 7; i++) {
+            for (let i = 1; i < 4; i++) {
                 const { query } = testClient;
-                let variables = { first: 10 } as any
-                if (after){
+                let variables = { first: 5 } as any
+                if (after) {
                     variables.after = after
                 }
                 const res = await query({
                     query: GET_V1_ROLES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: JoeAuthToken },
                     variables: variables
                 });
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
                 const rolesConn = res.data?.roles_v1 as RoleConnection;
                 expect(rolesConn).to.exist;
-                expect(rolesConn.total).to.equal(54)
+                expect(rolesConn.total).to.equal(14)
                 let roles = rolesConn.edges
-                const expectcount = i < 6 ? 10 : 4
+                const expectcount = i < 3 ? 5 : 4
                 expect(roles).to.have.lengthOf(expectcount);
                 let pageInfo = rolesConn.pageInfo
                 expect(pageInfo).to.exist
-                expect(pageInfo?.hasNextPage === i < 6)
+                expect(pageInfo?.hasNextPage === i < 3)
                 after = pageInfo?.endCursor
-                if(i===6){
+                if (i === 3) {
                     const before = pageInfo?.startCursor
-                    variables = { last: 10 }
-                    if (before){
+                    variables = { last: 5 }
+                    if (before) {
                         variables.before = before
                     }
                     const res1 = await query({
                         query: GET_V1_ROLES,
-                        headers: { authorization: BillyAuthToken },
+                        headers: { authorization: JoeAuthToken },
                         variables: variables
                     });
                     expect(res1.errors, res1.errors?.toString()).to.be.undefined;
                     const rolesConn1 = res1.data?.roles_v1 as RoleConnection;
                     expect(rolesConn1).to.exist;
-                    expect(rolesConn1.total).to.equal(54)
+                    expect(rolesConn1.total).to.equal(14)
                     roles = rolesConn1.edges
-                    expect(roles).to.have.lengthOf(10);
+                    expect(roles).to.have.lengthOf(5);
                 }
             }
-            
-            
+
+
         });
-        
+
 
         it("should get paged roles as user", async () => {
             const { query } = testClient;
             const res = await query({
-                    query: GET_V1_ROLES,
-                    headers: { authorization: JoeAuthToken },
-                     variables:{ first:5}
-                });
+                query: GET_V1_ROLES,
+                headers: { authorization: BillyAuthToken },
+                variables: { first: 5 }
+            });
 
             expect(res.errors, res.errors?.toString()).to.be.undefined;
             const rolesConn = res.data?.roles_v1 as RoleConnection;
@@ -215,15 +212,15 @@ describe("getv1Roles", () => {
             let roles = rolesConn.edges
             expect(roles).to.have.lengthOf(5);
             let pageInfo = rolesConn.pageInfo
-            expect (pageInfo).to.exist
+            expect(pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
-            
-            
+
+
             const res2 = await query({
-                    query: GET_V1_ROLES,
-                    headers: { authorization: JoeAuthToken },
-                    variables:{after: pageInfo?.endCursor, first:5}
-                });
+                query: GET_V1_ROLES,
+                headers: { authorization: BillyAuthToken },
+                variables: { after: pageInfo?.endCursor, first: 5 }
+            });
 
             expect(res2.errors, res2.errors?.toString()).to.be.undefined;
             const rolesConn2 = res2.data?.roles_v1 as RoleConnection;
@@ -232,22 +229,22 @@ describe("getv1Roles", () => {
             let roles2 = rolesConn2.edges
             expect(roles2).to.have.lengthOf(4);
             let pageInfo2 = rolesConn2.pageInfo
-            expect (pageInfo2).to.exist
+            expect(pageInfo2).to.exist
             expect(!pageInfo2?.hasNextPage)
             const before = pageInfo2?.startCursor
             const res3 = await query({
-                    query: GET_V1_ROLES,
-                    headers: { authorization: JoeAuthToken },
-                    variables:{before: pageInfo2?.startCursor, last:5}
-                });   
+                query: GET_V1_ROLES,
+                headers: { authorization: BillyAuthToken },
+                variables: { before: pageInfo2?.startCursor, last: 5 }
+            });
             expect(res2.errors, res3.errors?.toString()).to.be.undefined;
-             const rolesConn3 = res3.data?.roles_v1 as RoleConnection;
+            const rolesConn3 = res3.data?.roles_v1 as RoleConnection;
             expect(rolesConn3).to.exist;
             expect(rolesConn3.total).to.equal(9)
             let roles3 = rolesConn3.edges
             expect(roles3).to.have.lengthOf(5);
             expect(roles3).deep.equal(roles)
-            
+
         })
     });
     describe("getRole", () => {

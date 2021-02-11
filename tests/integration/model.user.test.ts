@@ -13,17 +13,23 @@ import { UserPermissions } from "../../src/permissions/userPermissions";
 
 describe("model.user", () => {
     let connection: Connection;
+    let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+
+        originalAdmins = UserPermissions.ADMIN_EMAILS
+        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
+        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
+
 
     function reloadDatabase() {
         return connection?.synchronize(true);
@@ -90,12 +96,10 @@ describe("model.user", () => {
 describe("getv1Users", () => {
         let user: User;
         let originalAdmins: string[];
-        before(async () => {
-            originalAdmins = UserPermissions.ADMIN_EMAILS
-            UserPermissions.ADMIN_EMAILS = ['billy@gmail.com']
+        beforeEach(async () => {
             await reloadDatabase();
-            user = await createUserJoe(testClient);
-            await createUserBilly(testClient);
+            await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
             for (let i = 1; i < 10; i++) {
         
                 let anne = {
@@ -109,12 +113,9 @@ describe("getv1Users", () => {
             }
  
         });
-         after(async () => {
-            UserPermissions.ADMIN_EMAILS = originalAdmins
-        });
 
         it("should get users as admin", async () => {
-            const gqlUserConnection = await getv1Users(testClient, undefined, undefined, 5, undefined, { authorization: BillyAuthToken });
+            const gqlUserConnection = await getv1Users(testClient, undefined, undefined, 5, undefined, { authorization: JoeAuthToken });
             expect(gqlUserConnection).to.exist;
             let users = gqlUserConnection.edges
             let total = gqlUserConnection.total
@@ -125,7 +126,7 @@ describe("getv1Users", () => {
             expect (pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
             expect(!pageInfo?.hasPreviousPage)
-            const gqlUserConnection2 = await getv1Users(testClient, pageInfo?.endCursor, undefined, 5, undefined,{ authorization: BillyAuthToken });
+            const gqlUserConnection2 = await getv1Users(testClient, pageInfo?.endCursor, undefined, 5, undefined,{ authorization: JoeAuthToken });
             expect(gqlUserConnection2.total).to.equal(total)
             expect(gqlUserConnection2).to.exist;
             let users2 = gqlUserConnection2.edges
@@ -142,7 +143,7 @@ describe("getv1Users", () => {
             const uniqueUser = [...usersMap.values()]
 
             expect (uniqueUser.length).to.equal(10)
-            const gqlUserConnection3 = await getv1Users(testClient, pageInfo2?.endCursor, undefined, 5, undefined,{ authorization: BillyAuthToken });
+            const gqlUserConnection3 = await getv1Users(testClient, pageInfo2?.endCursor, undefined, 5, undefined,{ authorization: JoeAuthToken });
             expect(gqlUserConnection3).to.exist;
             expect(gqlUserConnection3.total).to.equal(total)
             let users3 = gqlUserConnection3.edges
@@ -151,7 +152,7 @@ describe("getv1Users", () => {
             expect (pageInfo3).to.exist
             expect(!pageInfo3?.hasNextPage)
             expect(pageInfo3.hasPreviousPage)
-            const gqlUserConnection4 = await getv1Users(testClient, undefined, pageInfo3?.startCursor, undefined, 5, { authorization: BillyAuthToken });
+            const gqlUserConnection4 = await getv1Users(testClient, undefined, pageInfo3?.startCursor, undefined, 5, { authorization: JoeAuthToken });
             expect(gqlUserConnection4).to.exist;
             expect(gqlUserConnection4.total).to.equal(total)
             let users4 = gqlUserConnection4.edges
@@ -160,7 +161,7 @@ describe("getv1Users", () => {
             expect (pageInfo4).to.exist
             expect(pageInfo4?.hasNextPage)
             expect(pageInfo4?.hasPreviousPage)
-            const gqlUserConnection5 = await getv1Users(testClient, undefined, pageInfo4?.startCursor, undefined, 5, { authorization: BillyAuthToken });
+            const gqlUserConnection5 = await getv1Users(testClient, undefined, pageInfo4?.startCursor, undefined, 5, { authorization: JoeAuthToken });
             expect(gqlUserConnection5).to.exist;
             expect(gqlUserConnection5.total).to.equal(total)
             let users5 = gqlUserConnection4.edges
@@ -173,7 +174,7 @@ describe("getv1Users", () => {
 
         });
         it("should get users as user", async () => {
-            const gqlUserConnection = await getv1Users(testClient, undefined, undefined, undefined, undefined, { authorization: JoeAuthToken });
+            const gqlUserConnection = await getv1Users(testClient, undefined, undefined, undefined, undefined, { authorization: BillyAuthToken });
             expect(gqlUserConnection).to.exist;
             let users = gqlUserConnection.edges
             let total = gqlUserConnection.total

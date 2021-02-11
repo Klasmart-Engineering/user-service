@@ -123,12 +123,9 @@ describe("model.class", () => {
         let user2: User;
         const orgIds: string[] = []
         let originalAdmins: string[];
-         before(async () => {
-             originalAdmins = UserPermissions.ADMIN_EMAILS
-             UserPermissions.ADMIN_EMAILS = ['billy@gmail.com']
-             await connection.synchronize(true);
-             user = await createUserJoe(testClient);
-             user2 = await createUserBilly(testClient);
+         beforeEach(async () => {
+             user2 = await createUserJoe(testClient);
+             user = await createUserBilly(testClient);
              for (let i = 1; i < 10; i++) {
                  let anne1 = {
                      given_name: "Anne" + i,
@@ -149,22 +146,19 @@ describe("model.class", () => {
                  await grantPermission(testClient, role1Id, PermissionName.add_students_to_class_20225, { authorization: anne1Token });
                  await grantPermission(testClient, role1Id, PermissionName.add_teachers_to_class_20226, { authorization: anne1Token });
                  if( (i % 2) > 0){ 
-                     await addTeacherToClass(testClient, cls1.class_id, user.user_id, { authorization: JoeAuthToken });
+                     await addTeacherToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
                  } else {
-                    await addStudentToClass(testClient, cls1.class_id, user.user_id, { authorization: JoeAuthToken });
+                    await addStudentToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
                 }
              }
 
          });
-        after(async () => {
-            UserPermissions.ADMIN_EMAILS = originalAdmins
-        });
 
         it("should get paged classes as admin", async () => {
             const { query } = testClient;
             const res = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: JoeAuthToken },
                     variables:{first:5}
                 });
 
@@ -180,7 +174,7 @@ describe("model.class", () => {
 
             const res2 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: JoeAuthToken },
                     variables:{after:pageInfo?.endCursor, first:5}
                 });
 
@@ -197,7 +191,7 @@ describe("model.class", () => {
 
             const res3 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: JoeAuthToken },
                     variables:{before:pageInfo2?.startCursor, last:5}
                 });
 
@@ -216,7 +210,7 @@ describe("model.class", () => {
             const { query } = testClient;
             const res = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: BillyAuthToken },
                     variables:{first:5}
                 });
 
@@ -232,7 +226,7 @@ describe("model.class", () => {
 
             const res2 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: BillyAuthToken },
                     variables:{after:pageInfo?.endCursor, first:5}
                 });
 
@@ -249,7 +243,7 @@ describe("model.class", () => {
 
             const res3 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: BillyAuthToken },
                     variables:{before:pageInfo2?.startCursor, last:5}
                 });
 
