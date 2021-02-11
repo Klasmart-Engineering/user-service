@@ -171,6 +171,7 @@ describe("model.class", () => {
             let pageInfo = classesConn.pageInfo
             expect (pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
+            expect(!pageInfo?.hasPreviousPage)
 
             const res2 = await query({
                     query: GET_V1_CLASSES,

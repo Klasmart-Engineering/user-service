@@ -296,7 +296,7 @@ export class Model {
     }
 
     private async v1_usersWithAdminPermissions(
-        owner: Model,
+        receiver: Model,
         cursor: CursorObject,
         id: string,
         direction: boolean,
@@ -308,7 +308,7 @@ export class Model {
         let count: number
 
         if (staleTotal) {
-            count = (await owner.userRepository.count()) || 0
+            count = (await receiver.userRepository.count()) || 0
             timeStamp = Date.now()
         } else {
             count = cursor.total || 0
@@ -332,7 +332,7 @@ export class Model {
                 take: limit + 1,
             }
         }
-        const users = await owner.userRepository.find(options)
+        const users = await receiver.userRepository.find(options)
         if (!direction) {
             users.reverse()
         }
@@ -348,7 +348,7 @@ export class Model {
     }
 
     private async v1_usersWithUserPermission(
-        owner: Model,
+        receiver: Model,
         user: User,
         cursor: CursorObject,
         id: string,
@@ -560,7 +560,7 @@ export class Model {
         return roles
     }
     private async v1_organizationsWithAdminPermission(
-        owner: Model,
+        receiver: Model,
         cursor: CursorObject,
         id: string,
         direction: boolean,
@@ -595,7 +595,7 @@ export class Model {
                     whereparams.push({ organization_id: oid })
                 })
                 count =
-                    (await owner.organizationRepository.count({
+                    (await receiver.organizationRepository.count({
                         where: whereparams,
                     })) || 0
                 timeStamp = Date.now()
@@ -604,7 +604,7 @@ export class Model {
                 count = cursor.total || 0
             }
 
-            const organizations = await owner.organizationRepository.findByIds(
+            const organizations = await receiver.organizationRepository.findByIds(
                 organization_ids,
                 options
             )
@@ -622,13 +622,15 @@ export class Model {
             )
         }
         if (staleTotal) {
-            count = (await owner.organizationRepository.count()) || 0
+            count = (await receiver.organizationRepository.count()) || 0
             timeStamp = Date.now()
         } else {
             timeStamp = cursor.timeStamp || 0
             count = cursor.total || 0
         }
-        const organizations = await owner.organizationRepository.find(options)
+        const organizations = await receiver.organizationRepository.find(
+            options
+        )
         if (!direction) {
             organizations.reverse()
         }
@@ -644,7 +646,7 @@ export class Model {
     }
 
     private async v1_organizationsWithUserPermission(
-        owner: Model,
+        receiver: Model,
         user: User,
         cursor: CursorObject,
         id: string,
@@ -655,7 +657,7 @@ export class Model {
     ): Promise<Paginated<Organization, string>> {
         let timeStamp: number
         let count: number
-        let sqb = owner.organizationRepository
+        let sqb = receiver.organizationRepository
             .createQueryBuilder()
             .innerJoin('Organization.memberships', 'OrganizationMembership')
             .groupBy(
@@ -781,7 +783,7 @@ export class Model {
     }
 
     private async v1_rolesWithAdminPermission(
-        owner: Model,
+        receiver: Model,
         cursor: CursorObject,
         id: string,
         direction: boolean,
@@ -791,7 +793,7 @@ export class Model {
         let timeStamp: number
         let count: number
         if (staleTotal) {
-            count = (await owner.roleRepository.count()) || 0
+            count = (await receiver.roleRepository.count()) || 0
             timeStamp = Date.now()
         } else {
             count = cursor.total || 0
@@ -815,7 +817,7 @@ export class Model {
                 take: limit + 1,
             }
         }
-        const roles = await owner.roleRepository.find(options)
+        const roles = await receiver.roleRepository.find(options)
         if (!direction) {
             roles.reverse()
         }
@@ -831,7 +833,7 @@ export class Model {
     }
 
     private async v1_rolesWithUserPermission(
-        owner: Model,
+        receiver: Model,
         user: User,
         cursor: CursorObject,
         id: string,
@@ -841,7 +843,7 @@ export class Model {
     ): Promise<Paginated<Role, string>> {
         let timeStamp: number
         let count: number
-        const orgSqb = owner.roleRepository
+        const orgSqb = receiver.roleRepository
             .createQueryBuilder()
             .innerJoin('Role.memberships', 'OrganizationMembership')
             .innerJoin('OrganizationMembership.user', 'User')
@@ -849,7 +851,7 @@ export class Model {
             .where('OrganizationMembership.user_id = :user_id', {
                 user_id: user.user_id,
             })
-        const schoolSqb = owner.roleRepository
+        const schoolSqb = receiver.roleRepository
             .createQueryBuilder()
             .innerJoin('Role.schoolMemberships', 'SchoolMembership')
             .innerJoin('SchoolMembership.user', 'User')
@@ -960,7 +962,7 @@ export class Model {
     }
 
     private async v1_classesWithAdminPermissions(
-        owner: Model,
+        receiver: Model,
         cursor: CursorObject,
         id: string,
         direction: boolean,
@@ -970,7 +972,7 @@ export class Model {
         let timeStamp: number
         let count: number
         if (staleTotal) {
-            count = (await owner.classRepository.count()) || 0
+            count = (await receiver.classRepository.count()) || 0
             timeStamp = Date.now()
         } else {
             timeStamp = cursor.timeStamp || 0
@@ -994,7 +996,7 @@ export class Model {
                 take: limit + 1,
             }
         }
-        const classes = await owner.classRepository.find(options)
+        const classes = await receiver.classRepository.find(options)
         if (!direction) {
             classes.reverse()
         }
@@ -1010,7 +1012,7 @@ export class Model {
     }
 
     private async v1_classesWithUserPermissions(
-        owner: Model,
+        receiver: Model,
         user: User,
         cursor: CursorObject,
         id: string,
@@ -1019,14 +1021,14 @@ export class Model {
         limit: number
     ): Promise<Paginated<Class, string>> {
         const teaching: Class[] =
-            (await owner.classRepository
+            (await receiver.classRepository
                 .createQueryBuilder()
                 .relation(User, 'classesTeaching')
                 .of(user?.user_id)
                 .loadMany()) ?? []
 
         const studying: Class[] =
-            (await owner.classRepository
+            (await receiver.classRepository
                 .createQueryBuilder()
                 .relation(User, 'classesStudying')
                 .of(user?.user_id)
