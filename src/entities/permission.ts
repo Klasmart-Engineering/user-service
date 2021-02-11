@@ -2,6 +2,7 @@ import {
     BaseEntity,
     Column,
     Entity,
+    Index,
     JoinColumn,
     JoinTable,
     ManyToOne,
@@ -11,12 +12,13 @@ import {
 import { Role } from './role'
 
 @Entity()
+@Index(['role_id', 'permission_name'], { unique: true })
 export class Permission extends BaseEntity {
     @PrimaryGeneratedColumn()
     public id!: number
 
-    @Column({ name: 'role_id', nullable: false })
-    public role_id!: string
+    @Column({ name: 'role_id', nullable: true })
+    public role_id?: string
 
     @Column({ name: 'permission_id', nullable: false })
     public permission_name!: string

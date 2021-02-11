@@ -325,6 +325,70 @@ export class Model {
         }
     }
 
+    public async createSystemPermissions(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        let permissions: Permission[] = []
+
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        await getManager().transaction(async (manager) => {
+            permissions = await this._createSystemPermissions(manager)
+        });
+
+        return permissions
+    }
+
+    private async _createSystemPermissions(manager: EntityManager = getManager()) {
+        const permissionDetails = await permissionInfo()
+        const permissionEntities = new Map<string, Permission>()
+
+        for (const { permissions } of [
+            organizationAdminRole,
+            schoolAdminRole,
+            parentRole,
+            studentRole,
+            teacherRole,
+        ]) {
+
+            for (const permission_name of permissions) {
+                let permission = permissionEntities.get(permission_name)
+
+                if (!permission) {
+                    permission = (await Permission.findOne({
+                        where: {
+                            permission_name: permission_name,
+                            role_id: null
+                        }
+                    })) || new Permission()
+
+                    const permissionInf = permissionDetails.get(
+                        permission_name
+                    )
+
+                    permission.permission_name = permission_name
+                    permission.permission_id = permission_name
+                    permission.permission_category = permissionInf?.category
+                    permission.permission_level = permissionInf?.level
+                    permission.permission_group = permissionInf?.group
+                    permission.permission_description =
+                        permissionInf?.description
+                    permission.allow = true
+
+                    await manager.save(permission)
+                    permissionEntities.set(permission_name, permission)
+                }
+            }
+
+        }
+
+        return [...permissionEntities.values()]
+    }
+
     public async createDefaultRoles(
         args: any,
         context: Context,

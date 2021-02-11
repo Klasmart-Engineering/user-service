@@ -50,6 +50,7 @@ type Mutation {
     ): Organization
 
     create_default_roles(_: Int): [Role] @isAdmin
+    create_system_permissions(_: Int): [Permission] @isAdmin
     role(role_id: ID!): Role
     roles: [Role]
 

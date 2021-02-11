@@ -42,6 +42,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.setOrganization(args),
                 create_default_roles: (_parent, args, ctx, info) =>
                     model.createDefaultRoles(args, ctx, info),
+                create_system_permissions: (_parent, args, ctx, info) =>
+                    model.createSystemPermissions(args, ctx, info),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),
                 classes: () => model.getClasses(),
