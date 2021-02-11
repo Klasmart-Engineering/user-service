@@ -6,8 +6,8 @@ import {
     getRepository,
     Repository,
     Brackets,
-    LessThanOrEqual,
-    MoreThanOrEqual,
+    LessThan,
+    MoreThan,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User, accountUUID } from './entities/user'
@@ -318,18 +318,18 @@ export class Model {
         if (direction) {
             options = {
                 where: {
-                    user_id: LessThanOrEqual(id),
+                    user_id: LessThan(id),
                 },
                 order: { user_id: 'DESC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         } else {
             options = {
                 where: {
-                    user_id: MoreThanOrEqual(id),
+                    user_id: MoreThan(id),
                 },
                 order: { user_id: 'ASC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         }
         const users = await owner.userRepository.find(options)
@@ -369,13 +369,27 @@ export class Model {
             count = 1
             timeStamp = Date.now()
         }
-        return paginateData<User, string>(count, timeStamp, users, true, limit)
+        return paginateData<User, string>(
+            count,
+            timeStamp,
+            users,
+            true,
+            limit,
+            direction ? undefined : id,
+            direction ? id : undefined
+        )
     }
     public async v1_getUsers(
         context: Context,
         { after, before, first, last }: CursorArgs
     ) {
-        const empty = paginateData<User, string>(0, Date.now(), [], true, 0)
+        const empty = paginateData<User, string>(
+            0,
+            Date.now(),
+            [],
+            true,
+            after ? first || 0 : last || 0
+        )
         return this.v1_getPaginated(
             context,
             this.v1_usersWithAdminPermissions,
@@ -560,18 +574,18 @@ export class Model {
         if (direction) {
             options = {
                 where: {
-                    organization_id: LessThanOrEqual(id),
+                    organization_id: LessThan(id),
                 },
                 order: { organization_id: 'DESC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         } else {
             options = {
                 where: {
-                    organization_id: MoreThanOrEqual(id),
+                    organization_id: MoreThan(id),
                 },
                 order: { organization_id: 'ASC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         }
         if (organization_ids) {
@@ -666,8 +680,8 @@ export class Model {
                 new Brackets((qb) => {
                     qb.where(
                         direction
-                            ? 'Organization.organization_id <= :id'
-                            : 'Organization.organization_id >= :id',
+                            ? 'Organization.organization_id < :id'
+                            : 'Organization.organization_id > :id',
                         {
                             id: id,
                         }
@@ -675,7 +689,7 @@ export class Model {
                 })
             )
             .orderBy('Organization.organization_id', direction ? 'DESC' : 'ASC')
-            .limit(limit + 2)
+            .limit(limit + 1)
             .getMany()
 
         if (!direction) {
@@ -701,7 +715,7 @@ export class Model {
             Date.now(),
             [],
             true,
-            0
+            after ? first || 0 : last || 0
         )
         return this.v1_getPaginated(
             context,
@@ -787,18 +801,18 @@ export class Model {
         if (direction) {
             options = {
                 where: {
-                    role_id: LessThanOrEqual(id),
+                    role_id: LessThan(id),
                 },
                 order: { role_id: 'DESC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         } else {
             options = {
                 where: {
-                    role_id: MoreThanOrEqual(id),
+                    role_id: MoreThan(id),
                 },
                 order: { role_id: 'ASC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         }
         const roles = await owner.roleRepository.find(options)
@@ -869,8 +883,8 @@ export class Model {
                         new Brackets((qb) => {
                             qb.where(
                                 direction
-                                    ? 'Role.role_id <= :id'
-                                    : 'Role.role_id >= :id',
+                                    ? 'Role.role_id < :id'
+                                    : 'Role.role_id > :id',
                                 {
                                     id: id,
                                 }
@@ -878,7 +892,7 @@ export class Model {
                         })
                     )
                     .orderBy('Role.role_id', direction ? 'DESC' : 'ASC')
-                    .limit(limit + 2)
+                    .limit(limit + 1)
                     .getMany()
             )
         }
@@ -906,7 +920,13 @@ export class Model {
         context: Context,
         { before, after, first, last }: CursorArgs
     ) {
-        const empty = paginateData<Role, string>(0, Date.now(), [], true, 0)
+        const empty = paginateData<Role, string>(
+            0,
+            Date.now(),
+            [],
+            true,
+            after ? first || 0 : last || 0
+        )
         return this.v1_getPaginated(
             context,
             this.v1_rolesWithAdminPermission,
@@ -960,18 +980,18 @@ export class Model {
         if (direction) {
             options = {
                 where: {
-                    class_id: LessThanOrEqual(id),
+                    class_id: LessThan(id),
                 },
                 order: { class_id: 'DESC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         } else {
             options = {
                 where: {
-                    class_id: MoreThanOrEqual(id),
+                    class_id: MoreThan(id),
                 },
                 order: { class_id: 'ASC' },
-                take: limit + 2,
+                take: limit + 1,
             }
         }
         const classes = await owner.classRepository.find(options)
@@ -1038,7 +1058,13 @@ export class Model {
         context: Context,
         { before, after, first, last }: CursorArgs
     ) {
-        const empty = paginateData<Class, string>(0, Date.now(), [], true, 0)
+        const empty = paginateData<Class, string>(
+            0,
+            Date.now(),
+            [],
+            true,
+            after ? first || 0 : last || 0
+        )
         return this.v1_getPaginated(
             context,
             this.v1_classesWithAdminPermissions,

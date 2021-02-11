@@ -1,9 +1,15 @@
+const START_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+const END_KEY = '00000000-0000-0000-0000-000000000000'
+
+interface stringable {
+    toString(): string
+}
 export class CursorObject {
     id: string
     timeStamp?: number
     total?: number
     constructor(id: string, total?: number, stamp?: number) {
-        this.id = id || '00000000-0000-0000-0000-000000000000'
+        this.id = id || END_KEY
         this.timeStamp = stamp
         this.total = total
     }
@@ -19,13 +25,9 @@ export function fromCursorHash(s: string): CursorObject {
     return JSON.parse(json) as CursorObject
 }
 
-export const START_CURSOR = toCursorHash(
-    new CursorObject('ffffffff-ffff-ffff-ffff-ffffffffffff')
-)
+export const START_CURSOR = toCursorHash(new CursorObject(START_KEY))
 
-export const END_CURSOR = toCursorHash(
-    new CursorObject('00000000-0000-0000-0000-000000000000')
-)
+export const END_CURSOR = toCursorHash(new CursorObject(END_KEY))
 
 const totalRefresh = 5
 
@@ -43,7 +45,7 @@ export interface Paginatable<T, K> {
     compareKey(rhs: K): number
     generateCursor(total?: number, timestamp?: number): string
 }
-export class Paginated<T extends Paginatable<T, K>, K> {
+export class Paginated<T extends Paginatable<T, K>, K extends stringable> {
     public total: number
     public edges: Array<T>
     public pageInfo: PageInfo
@@ -78,7 +80,7 @@ export class Paginated<T extends Paginatable<T, K>, K> {
 export const DEFAULT_PAGE_SIZE = 100
 
 // Public API
-export function paginateData<T extends Paginatable<T, K>, K>(
+export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
     count: number,
     timestamp: number,
     data: T[],
@@ -95,16 +97,11 @@ export function paginateData<T extends Paginatable<T, K>, K>(
     let hasMoreDataBefore = false
     let hasMoreDataAfter = false
     if (after) {
-        hasMoreDataBefore = sortedData[0].compareKey(after) === 0
-        hasMoreDataAfter =
-            (hasMoreDataBefore && sortedData.length > limit + 1) ||
-            sortedData.length > limit
+        hasMoreDataBefore = after.toString() !== START_KEY
+        hasMoreDataAfter = sortedData.length > limit
     } else if (before) {
-        hasMoreDataAfter =
-            sortedData[sortedData.length - 1].compareKey(before) === 0
-        hasMoreDataBefore =
-            (hasMoreDataAfter && sortedData.length > limit + 1) ||
-            sortedData.length > limit
+        hasMoreDataAfter = before.toString() !== END_KEY
+        hasMoreDataBefore = sortedData.length > limit
     }
 
     // Throwing out values that are too big or small
@@ -124,7 +121,7 @@ export function paginateData<T extends Paginatable<T, K>, K>(
 }
 
 // https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
-function applyCursorsToEdges<T extends Paginatable<T, K>, K>(
+function applyCursorsToEdges<T extends Paginatable<T, K>, K extends stringable>(
     sortedData: T[],
     before?: K,
     after?: K
@@ -155,7 +152,7 @@ function applyCursorsToEdges<T extends Paginatable<T, K>, K>(
 }
 
 // https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
-function edgesToReturn<T extends Paginatable<T, K>, K>(
+function edgesToReturn<T extends Paginatable<T, K>, K extends stringable>(
     sortedData: T[],
     limit: number,
     before?: K,
