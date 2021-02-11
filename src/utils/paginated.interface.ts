@@ -1,3 +1,8 @@
+import { getRepository } from 'typeorm'
+import { User } from '../entities/user'
+import { Context } from '../main'
+import { UserPermissions } from '../permissions/userPermissions'
+
 const START_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 const END_KEY = '00000000-0000-0000-0000-000000000000'
 
@@ -181,4 +186,104 @@ export class CursorArgs {
     before?: string
     last?: number
     organization_ids?: string[]
+}
+
+export interface userQuery {
+    (
+        receiver: any,
+        user: User,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number,
+        ids?: string[]
+    ): Promise<Paginated<any, string>>
+}
+
+export interface adminQuery {
+    (
+        receiver: any,
+        cursor: CursorObject,
+        id: string,
+        direction: boolean,
+        staleTotal: boolean,
+        limit: number,
+        ids?: string[]
+    ): Promise<Paginated<any, string>>
+}
+
+async function paginateAuth(token: any): Promise<User | undefined> {
+    if (!token) {
+        return undefined
+    }
+    const user = await getRepository(User).findOne({
+        user_id: token.id,
+    })
+    return user
+}
+
+export async function v1_getPaginated(
+    receiver: any,
+    context: Context,
+    aq: adminQuery,
+    uq: userQuery,
+    empty: any,
+    { before, after, first, last, organization_ids }: CursorArgs
+) {
+    if (!after && !before) {
+        if (first !== undefined) {
+            after = START_CURSOR
+        } else {
+            if (last !== undefined) {
+                before = END_CURSOR
+            }
+        }
+        if (!after && !before) {
+            after = START_CURSOR
+        }
+    }
+    if (!last) last = DEFAULT_PAGE_SIZE
+    if (!first) first = DEFAULT_PAGE_SIZE
+
+    const cursor = after
+        ? fromCursorHash(after)
+        : before
+        ? fromCursorHash(before)
+        : fromCursorHash(END_CURSOR)
+
+    const id = cursor.id
+
+    const staleTotal = staleCursorTotal(cursor)
+    const user = await paginateAuth(context.token)
+
+    if (user == undefined) {
+        return empty
+    }
+    const userPermissions = new UserPermissions(context.token)
+    try {
+        if (userPermissions.isAdmin) {
+            return aq(
+                receiver,
+                cursor,
+                id,
+                after ? true : false,
+                staleTotal,
+                after ? first : last,
+                organization_ids
+            )
+        }
+        return uq(
+            receiver,
+            user,
+            cursor,
+            id,
+            after ? true : false,
+            staleTotal,
+            after ? first : last,
+            organization_ids
+        )
+    } catch (e) {
+        console.error(e)
+    }
 }

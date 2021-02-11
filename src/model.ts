@@ -33,6 +33,19 @@ import { Permission } from './entities/permission'
 import { permissionInfo } from './permissions/permissionInfo'
 import { PermissionName } from './permissions/permissionNames'
 
+import {
+    CursorArgs,
+    CursorObject,
+    //START_CURSOR,
+    //fromCursorHash,
+    Paginated,
+    paginateData,
+    //staleCursorTotal,
+    //END_CURSOR,
+    //DEFAULT_PAGE_SIZE,
+    v1_getPaginated,
+} from './utils/paginated.interface'
+
 export class Model {
     public static async create() {
         try {
@@ -285,16 +298,6 @@ export class Model {
         return await this.userRepository.find()
     }
 
-    private async paginateAuth(token: any): Promise<User | undefined> {
-        if (!token) {
-            return undefined
-        }
-        const user = await this.userRepository.findOne({
-            user_id: token.id,
-        })
-        return user
-    }
-
     private async v1_usersWithAdminPermissions(
         receiver: Model,
         cursor: CursorObject,
@@ -390,7 +393,8 @@ export class Model {
             true,
             after ? first || 0 : last || 0
         )
-        return this.v1_getPaginated(
+        return v1_getPaginated(
+            this,
             context,
             this.v1_usersWithAdminPermissions,
             this.v1_usersWithUserPermission,
@@ -719,7 +723,8 @@ export class Model {
             true,
             after ? first || 0 : last || 0
         )
-        return this.v1_getPaginated(
+        return v1_getPaginated(
+            this,
             context,
             this.v1_organizationsWithAdminPermission,
             this.v1_organizationsWithUserPermission,
@@ -929,7 +934,8 @@ export class Model {
             true,
             after ? first || 0 : last || 0
         )
-        return this.v1_getPaginated(
+        return v1_getPaginated(
+            this,
             context,
             this.v1_rolesWithAdminPermission,
             this.v1_rolesWithUserPermission,
@@ -1067,7 +1073,8 @@ export class Model {
             true,
             after ? first || 0 : last || 0
         )
-        return this.v1_getPaginated(
+        return v1_getPaginated(
+            this,
             context,
             this.v1_classesWithAdminPermissions,
             this.v1_classesWithUserPermissions,
@@ -1084,70 +1091,6 @@ export class Model {
                 school_id,
             })
             return school
-        } catch (e) {
-            console.error(e)
-        }
-    }
-
-    private async v1_getPaginated(
-        context: Context,
-        aq: adminQuery,
-        uq: userQuery,
-        empty: any,
-        { before, after, first, last, organization_ids }: CursorArgs
-    ) {
-        if (!after && !before) {
-            if (first !== undefined) {
-                after = START_CURSOR
-            } else {
-                if (last !== undefined) {
-                    before = END_CURSOR
-                }
-            }
-            if (!after && !before) {
-                after = START_CURSOR
-            }
-        }
-        if (!last) last = DEFAULT_PAGE_SIZE
-        if (!first) first = DEFAULT_PAGE_SIZE
-
-        const cursor = after
-            ? fromCursorHash(after)
-            : before
-            ? fromCursorHash(before)
-            : fromCursorHash(END_CURSOR)
-
-        const id = cursor.id
-
-        const staleTotal = staleCursorTotal(cursor)
-        const user = await this.paginateAuth(context.token)
-
-        if (user == undefined) {
-            return empty
-        }
-        const userPermissions = new UserPermissions(context.token)
-        try {
-            if (userPermissions.isAdmin) {
-                return aq(
-                    this,
-                    cursor,
-                    id,
-                    after ? true : false,
-                    staleTotal,
-                    after ? first : last,
-                    organization_ids
-                )
-            }
-            return uq(
-                this,
-                user,
-                cursor,
-                id,
-                after ? true : false,
-                staleTotal,
-                after ? first : last,
-                organization_ids
-            )
         } catch (e) {
             console.error(e)
         }
