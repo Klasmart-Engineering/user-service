@@ -3,16 +3,22 @@ import {
     Column,
     Entity,
     JoinColumn,
+    JoinTable,
     ManyToOne,
-    PrimaryColumn,
+    ManyToMany,
+    PrimaryGeneratedColumn,
 } from 'typeorm'
 import { Role } from './role'
 
 @Entity()
 export class Permission extends BaseEntity {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn()
+    public id!: number
+
+    @Column({ name: 'role_id', nullable: false })
     public role_id!: string
-    @PrimaryColumn({ name: 'permission_id' })
+
+    @Column({ name: 'permission_id', nullable: false })
     public permission_name!: string
 
     // This is done to do a renaming without breaking the frontend. Will be
@@ -23,6 +29,10 @@ export class Permission extends BaseEntity {
     @ManyToOne(() => Role, (role) => role.permission, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'role_id' })
     public role?: Promise<Role>
+
+    @ManyToMany(() => Role, (role) => role.permissions)
+    @JoinTable()
+    public roles?: Promise<Role[]>
 
     @Column({ nullable: false })
     public allow!: boolean

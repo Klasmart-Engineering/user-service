@@ -144,11 +144,22 @@ export class Role extends BaseEntity {
         )
 
         try {
-            const permission = await getRepository(Permission).save({
-                role_id: this.role_id,
-                permission_name,
-                allow: true,
+            let permission = await getRepository(Permission).findOne({
+                where: {
+                    role_id: this.role_id,
+                    permission_name: permission_name,
+                },
             })
+
+            if (!permission) {
+                permission = new Permission()
+                permission.role_id = this.role_id
+                permission.permission_name = permission_name
+            }
+
+            permission.allow = true
+            await permission.save()
+
             return permission
         } catch (e) {
             console.error(e)
