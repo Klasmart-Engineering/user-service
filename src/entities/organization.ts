@@ -447,9 +447,6 @@ export class Organization extends BaseEntity {
                 const tmp = await this.migrateRoles(schoolMemberships, manager)
                 newRoles = [...newRoles, ...tmp]
             }
-
-            const organizationRoles = (await this.roles({}, {}, {})) || []
-            await this.migratePermissions(organizationRoles, manager)
         })
 
         return newRoles
@@ -501,6 +498,24 @@ export class Organization extends BaseEntity {
                 }
             }
         }
+
+        return roles
+    }
+
+    public async mapSystemPermissions(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const roles = await this.roles({}, {}, {})
+
+        await getManager().transaction(async (manager) => {
+            await this.migratePermissions(roles, manager)
+        })
 
         return roles
     }

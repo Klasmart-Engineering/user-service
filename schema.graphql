@@ -181,6 +181,7 @@ type Organization {
     createSchool(school_name: String): School
     createClass(class_name: String): Class
     mapSystemRoles(_: Int): [Role] @isAdmin
+    mapSystemPermissions(_: Int): [Role] @isAdmin
     delete(_: Int): Boolean
 }
 
