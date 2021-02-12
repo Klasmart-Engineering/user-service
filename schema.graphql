@@ -253,7 +253,7 @@ type Role {
 }
 
 type Permission {
-    role_id: ID!
+    role_id: ID
     permission_id: ID
     permission_name: ID!
     permission_category: String

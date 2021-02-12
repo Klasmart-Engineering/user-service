@@ -379,14 +379,17 @@ export class Model {
                         permissionInf?.description
                     permission.allow = true
 
-                    await manager.save(permission)
                     permissionEntities.set(permission_name, permission)
                 }
             }
 
         }
 
-        return [...permissionEntities.values()]
+        const permissions = [...permissionEntities.values()]
+
+        await manager.save(permissions)
+
+        return permissions
     }
 
     public async createDefaultRoles(
@@ -410,6 +413,7 @@ export class Model {
     private async _createDefaultRoles(manager: EntityManager = getManager()) {
         const roles: Role[] = []
         const permissionDetails = await permissionInfo()
+        const newPermissionEntities = new Map<string, Permission>()
 
         for (const { role_name, permissions } of [
             organizationAdminRole,
@@ -432,11 +436,17 @@ export class Model {
             }
 
             roles.push(role)
-            const oldPermissions = (await role.permissions) || []
 
+            const oldPermissions = (await role.permissions) || []
             const permissionEntities = [] as Permission[]
+
             for (const permission_name of permissions) {
-                const permission = new Permission()
+                const permission = (await Permission.findOne({
+                    where: {
+                        permission_name: permission_name,
+                        role_id: role.role_id
+                    },
+                })) || new Permission()
                 const permissionInf = permissionDetails.get(
                     permission_name
                 )
@@ -451,11 +461,43 @@ export class Model {
                 permission.allow = true
                 permission.role = Promise.resolve(role)
                 permissionEntities.push(permission)
+
+                let newPermission = newPermissionEntities.get(permission_name)
+
+                if (!newPermission) {
+                    newPermission = await Permission.findOne({
+                        where: {
+                            permission_name: permission_name,
+                            role_id: null
+                        },
+                    })
+
+                    if (newPermission) {
+                        newPermissionEntities.set(permission_name, newPermission)
+                    }
+                }
+
+                if (newPermission) {
+                    const permissionRoles = (await newPermission.roles) || []
+                    const permissionRoleIds = await permissionRoles.map((r: Role) => {
+                        return r.role_id
+                    })
+
+                    if (!permissionRoleIds.includes(role.role_id)) {
+                        newPermission.roles = Promise.resolve([
+                            ...permissionRoles,
+                            role,
+                        ])
+                    }
+                }
+
             }
 
             await manager.remove(oldPermissions)
             await manager.save(permissionEntities)
+
         }
+        await manager.save([...newPermissionEntities.values()])
 
         return roles
     }

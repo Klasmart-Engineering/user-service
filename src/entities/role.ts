@@ -144,6 +144,23 @@ export class Role extends BaseEntity {
         )
 
         try {
+            const systemPermission = await getRepository(Permission).findOne({
+                where: {
+                    role_id: null,
+                    permission_name: permission_name,
+                },
+            })
+
+            if (systemPermission) {
+                let roles = (await systemPermission.roles) || []
+                roles = roles.filter((role) => {
+                    return role.role_id != this.role_id
+                })
+                systemPermission.roles = Promise.resolve([...roles, this])
+
+                await systemPermission.save()
+            }
+
             let permission = await getRepository(Permission).findOne({
                 where: {
                     role_id: this.role_id,
@@ -186,6 +203,23 @@ export class Role extends BaseEntity {
         )
 
         try {
+            const systemPermission = await getRepository(Permission).findOne({
+                where: {
+                    role_id: null,
+                    permission_name: permission_name,
+                },
+            })
+
+            if (systemPermission) {
+                let roles = (await systemPermission.roles) || []
+                roles = roles.filter((role) => {
+                    return role.role_id != this.role_id
+                })
+                systemPermission.roles = Promise.resolve(roles)
+
+                await systemPermission.save()
+            }
+
             await Permission.delete({ role_id: this.role_id, permission_name })
             return true
         } catch (e) {
@@ -214,11 +248,22 @@ export class Role extends BaseEntity {
         )
 
         try {
-            const permission = await getRepository(Permission).save({
-                role_id: this.role_id,
-                permission_name,
-                allow: false,
+            let permission = await getRepository(Permission).findOne({
+                where: {
+                    role_id: this.role_id,
+                    permission_name: permission_name,
+                },
             })
+
+            if (!permission) {
+                permission = new Permission()
+                permission.role_id = this.role_id
+                permission.permission_name = permission_name
+            }
+
+            permission.allow = false
+            await permission.save()
+
             return permission
         } catch (e) {
             console.error(e)
@@ -249,6 +294,26 @@ export class Role extends BaseEntity {
         const oldPermissions = (await this.permissions) || []
 
         const permissionEntities = [] as Permission[]
+        const systemPermissionEntities = [] as Permission[]
+
+        for (const { permission_name } of oldPermissions) {
+            const systemPermission = await getRepository(Permission).findOne({
+                where: {
+                    role_id: null,
+                    permission_name: permission_name,
+                },
+            })
+
+            if (systemPermission) {
+                let roles = (await systemPermission.roles) || []
+                roles = roles.filter((role) => {
+                    return role.role_id != this.role_id
+                })
+                systemPermission.roles = Promise.resolve(roles)
+                systemPermissionEntities.push(systemPermission)
+            }
+        }
+
         for (const permission_name of permission_names) {
             const permission = new Permission()
             const permissionInf = permissionDetails.get(permission_name)
@@ -261,12 +326,29 @@ export class Role extends BaseEntity {
             permission.allow = true
             permission.role = Promise.resolve(this)
             permissionEntities.push(permission)
+
+            const systemPermission = await getRepository(Permission).findOne({
+                where: {
+                    role_id: null,
+                    permission_name: permission_name,
+                },
+            })
+
+            if (systemPermission) {
+                let roles = (await systemPermission.roles) || []
+                roles = roles.filter((role) => {
+                    return role.role_id != this.role_id
+                })
+                systemPermission.roles = Promise.resolve([...roles, this])
+                systemPermissionEntities.push(systemPermission)
+            }
         }
 
         try {
             await getManager().transaction(async (manager) => {
                 await manager.remove(oldPermissions)
                 await manager.save(permissionEntities)
+                await manager.save(systemPermissionEntities)
             })
 
             return permissionEntities

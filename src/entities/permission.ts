@@ -8,6 +8,7 @@ import {
     ManyToOne,
     ManyToMany,
     PrimaryGeneratedColumn,
+    PrimaryColumn,
 } from 'typeorm'
 import { Role } from './role'
 
@@ -20,7 +21,7 @@ export class Permission extends BaseEntity {
     @Column({ name: 'role_id', nullable: true })
     public role_id?: string
 
-    @Column({ name: 'permission_id', nullable: false })
+    @PrimaryColumn({ name: 'permission_id' })
     public permission_name!: string
 
     // This is done to do a renaming without breaking the frontend. Will be

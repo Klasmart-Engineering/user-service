@@ -19,6 +19,7 @@ import { User, accountUUID } from './user'
 import { Class } from './class'
 import { School } from './school'
 import { Context } from '../main'
+import { Permission } from './permission'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from './schoolMembership'
 import { Model } from '../model'
@@ -446,6 +447,9 @@ export class Organization extends BaseEntity {
                 const tmp = await this.migrateRoles(schoolMemberships, manager)
                 newRoles = [...newRoles, ...tmp]
             }
+
+            const organizationRoles = (await this.roles({}, {}, {})) || []
+            await this.migratePermissions(organizationRoles, manager)
         })
 
         return newRoles
@@ -497,6 +501,57 @@ export class Organization extends BaseEntity {
                 }
             }
         }
+
+        return roles
+    }
+
+    private async migratePermissions(roles: Role[], manager: EntityManager) {
+        const newPermissionEntities = new Map<string, Permission>()
+
+        for (const role of roles) {
+            if (!role.system_role) {
+                const currentSytemPermissions = await Permission.find({
+                    where: {
+                        role_id: role.role_id,
+                    },
+                })
+
+                for (const { permission_name } of currentSytemPermissions) {
+                    let newPermission = newPermissionEntities.get(
+                        permission_name
+                    )
+
+                    if (!newPermission) {
+                        newPermission = await Permission.findOneOrFail({
+                            where: {
+                                permission_name: permission_name,
+                                role_id: null,
+                            },
+                        })
+                        newPermissionEntities.set(
+                            permission_name,
+                            newPermission
+                        )
+                    }
+
+                    const permissionRoles = (await newPermission.roles) || []
+                    const permissionRoleIds = await permissionRoles.map(
+                        (r: Role) => {
+                            return r.role_id
+                        }
+                    )
+
+                    if (!permissionRoleIds.includes(role.role_id)) {
+                        newPermission.roles = Promise.resolve([
+                            ...permissionRoles,
+                            role,
+                        ])
+                    }
+                }
+            }
+        }
+
+        await manager.save([...newPermissionEntities.values()])
 
         return roles
     }
