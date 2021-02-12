@@ -572,7 +572,7 @@ export class Organization extends BaseEntity {
             }
         }
 
-        await manager.save([...newPermissionEntities.values()])
+        await manager.save([...newPermissionEntities.values()], { chunk: 100 })
 
         return roles
     }
