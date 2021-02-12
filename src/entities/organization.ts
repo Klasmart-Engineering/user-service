@@ -522,30 +522,36 @@ export class Organization extends BaseEntity {
                     )
 
                     if (!newPermission) {
-                        newPermission = await Permission.findOneOrFail({
+                        newPermission = await Permission.findOne({
                             where: {
                                 permission_name: permission_name,
                                 role_id: null,
                             },
                         })
-                        newPermissionEntities.set(
-                            permission_name,
-                            newPermission
-                        )
+
+                        if (newPermission) {
+                            newPermissionEntities.set(
+                                permission_name,
+                                newPermission
+                            )
+                        }
                     }
 
-                    const permissionRoles = (await newPermission.roles) || []
-                    const permissionRoleIds = await permissionRoles.map(
-                        (r: Role) => {
-                            return r.role_id
-                        }
-                    )
+                    if (newPermission) {
+                        const permissionRoles =
+                            (await newPermission.roles) || []
+                        const permissionRoleIds = await permissionRoles.map(
+                            (r: Role) => {
+                                return r.role_id
+                            }
+                        )
 
-                    if (!permissionRoleIds.includes(role.role_id)) {
-                        newPermission.roles = Promise.resolve([
-                            ...permissionRoles,
-                            role,
-                        ])
+                        if (!permissionRoleIds.includes(role.role_id)) {
+                            newPermission.roles = Promise.resolve([
+                                ...permissionRoles,
+                                role,
+                            ])
+                        }
                     }
                 }
             }
