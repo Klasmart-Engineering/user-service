@@ -532,47 +532,50 @@ export class Organization extends BaseEntity {
                 })
 
                 for (const { permission_name } of currentSytemPermissions) {
-                    let newPermission = newPermissionEntities.get(
-                        permission_name
+                    const linkedPermission = await Permission.createQueryBuilder(
+                        'permission'
                     )
-
-                    if (!newPermission) {
-                        newPermission = await Permission.findOne({
-                            where: {
-                                permission_name: permission_name,
-                                role_id: null,
-                            },
+                        .select()
+                        .leftJoin('permission.roles', 'role')
+                        .where('role.role_id = :id', { id: role.role_id })
+                        .andWhere('permission.role_id is NULL')
+                        .andWhere('permission.permission_name = :name', {
+                            name: permission_name,
                         })
+                        .getOne()
 
-                        if (newPermission) {
-                            newPermissionEntities.set(
-                                permission_name,
-                                newPermission
-                            )
-                        }
-                    }
-
-                    if (newPermission) {
-                        const permissionRoles =
-                            (await newPermission.roles) || []
-                        const permissionRoleIds = await permissionRoles.map(
-                            (r: Role) => {
-                                return r.role_id
-                            }
+                    if (!linkedPermission) {
+                        let newPermission = newPermissionEntities.get(
+                            permission_name
                         )
 
-                        if (!permissionRoleIds.includes(role.role_id)) {
-                            newPermission.roles = Promise.resolve([
-                                ...permissionRoles,
-                                role,
-                            ])
+                        if (!newPermission) {
+                            newPermission = await Permission.findOne({
+                                where: {
+                                    permission_name: permission_name,
+                                    role_id: null,
+                                },
+                            })
+
+                            if (newPermission) {
+                                newPermissionEntities.set(
+                                    permission_name,
+                                    newPermission
+                                )
+                            }
+                        }
+
+                        if (newPermission) {
+                            await manager
+                                .createQueryBuilder()
+                                .relation(Permission, 'roles')
+                                .of(newPermission)
+                                .add(role)
                         }
                     }
                 }
             }
         }
-
-        await manager.save([...newPermissionEntities.values()], { chunk: 100 })
 
         return roles
     }
