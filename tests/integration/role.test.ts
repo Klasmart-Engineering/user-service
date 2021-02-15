@@ -405,7 +405,7 @@ describe("role", () => {
                         expect(gqlPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
                         let dbRole = await Role.findOneOrFail(roleId);
                         let dbPermissions = await dbRole.permissions || [];
-                        expect(dbPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
+                        expect(dbPermissions.map(permissionInfo)).to.deep.members([editRolePermission, nameOfPermission]);
 
                         gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: JoeAuthToken });
                         expect(gqlPermissions).to.be.empty;
@@ -467,7 +467,7 @@ describe("role", () => {
                         expect(gqlPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
                         let dbRole = await Role.findOneOrFail(roleId);
                         let dbPermissions = await dbRole.permissions || [];
-                        expect(dbPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
+                        expect(dbPermissions.map(permissionInfo)).to.deep.members([editRolePermission, nameOfPermission]);
 
                         gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: BillyAuthToken });
                         expect(gqlPermissions).to.be.empty;

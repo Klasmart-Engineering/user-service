@@ -275,49 +275,5 @@ describe("model", () => {
                 expect(dbPermissions).to.deep.members(resetPermissions)
             });
         });
-
-        context("when outdated default permissions exists", () => {
-            let organization: Organization;
-
-            beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                organization = await createOrganizationAndValidate(testClient, user.user_id);
-            });
-
-            it("updates the default roles permissions", async () => {
-                const { mutate } = testClient;
-                let dbRoles = await organization.roles({}, {}, {}) || []
-                let defaultPermissions = []
-                expect(dbRoles).not.to.be.empty;
-
-                for(const role of dbRoles){
-                  const permissions = await role.permissions || [];
-
-                  defaultPermissions.push(...permissions.map(permissionInfoFunc))
-
-                  if(role.role_name === "Organization Admin") { continue }
-
-                  await connection.manager.remove(permissions);
-                }
-
-                const gqlRoles = await createDefaultRoles(testClient, { authorization: JoeAuthToken });
-
-                organization = await Organization.findOneOrFail(organization.organization_id);
-                const dbNewRoles = await organization.roles({}, {}, {}) || []
-                expect(dbNewRoles).not.to.be.empty;
-
-                expect(gqlRoles.map(roleInfoFunc)).to.deep.equal(dbNewRoles?.map(roleInfoFunc));
-                let resetPermissions = []
-
-                for(const role of dbNewRoles){
-                  const permissions = await role.permissions || [];
-
-                  expect(permissions).not.to.be.empty
-                  resetPermissions.push(...permissions?.map(permissionInfoFunc))
-                }
-
-                expect(defaultPermissions).to.deep.members(resetPermissions)
-            });
-        });
     });
 });

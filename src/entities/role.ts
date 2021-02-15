@@ -4,9 +4,7 @@ import {
     Column,
     getManager,
     ManyToMany,
-    JoinColumn,
     JoinTable,
-    OneToMany,
     ManyToOne,
     getRepository,
     BaseEntity,
@@ -14,7 +12,6 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { Permission } from './permission'
-import { permissionInfo } from '../permissions/permissionInfo'
 import { Organization } from './organization'
 import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
@@ -52,8 +49,7 @@ export class Role extends BaseEntity {
     @JoinTable()
     public schoolMemberships?: Promise<SchoolMembership[]>
 
-    @OneToMany(() => Permission, (permission) => permission.role)
-    @JoinColumn()
+    @ManyToMany(() => Permission, (permission) => permission.roles)
     public permissions?: Promise<Permission[]>
 
     public async set(
@@ -290,68 +286,29 @@ export class Role extends BaseEntity {
             PermissionName.edit_role_permissions_30332
         )
 
-        const permissionDetails = await permissionInfo()
-        const oldPermissions = (await this.permissions) || []
-
-        const permissionEntities = [] as Permission[]
         const systemPermissionEntities = [] as Permission[]
 
-        for (const { permission_name } of oldPermissions) {
-            const systemPermission = await getRepository(Permission).findOne({
-                where: {
-                    role_id: null,
-                    permission_name: permission_name,
-                },
-            })
-
-            if (systemPermission) {
-                let roles = (await systemPermission.roles) || []
-                roles = roles.filter((role) => {
-                    return role.role_id != this.role_id
-                })
-                systemPermission.roles = Promise.resolve(roles)
-                systemPermissionEntities.push(systemPermission)
-            }
-        }
-
         for (const permission_name of permission_names) {
-            const permission = new Permission()
-            const permissionInf = permissionDetails.get(permission_name)
-
-            permission.permission_name = permission_name
-            permission.permission_id = permission_name
-            permission.permission_category = permissionInf?.category
-            permission.permission_level = permissionInf?.level
-            permission.permission_description = permissionInf?.description
-            permission.allow = true
-            permission.role = Promise.resolve(this)
-            permissionEntities.push(permission)
-
-            const systemPermission = await getRepository(Permission).findOne({
+            const systemPermission = await getRepository(
+                Permission
+            ).findOneOrFail({
                 where: {
                     role_id: null,
                     permission_name: permission_name,
                 },
             })
-
-            if (systemPermission) {
-                let roles = (await systemPermission.roles) || []
-                roles = roles.filter((role) => {
-                    return role.role_id != this.role_id
-                })
-                systemPermission.roles = Promise.resolve([...roles, this])
-                systemPermissionEntities.push(systemPermission)
-            }
+            systemPermissionEntities.push(systemPermission)
         }
 
         try {
             await getManager().transaction(async (manager) => {
-                await manager.remove(oldPermissions)
-                await manager.save(permissionEntities)
-                await manager.save(systemPermissionEntities)
+                this.permissions = Promise.resolve([])
+                await manager.save(this)
+                this.permissions = Promise.resolve(systemPermissionEntities)
+                await manager.save(this)
             })
 
-            return permissionEntities
+            return systemPermissionEntities
         } catch (e) {
             console.error(e)
         }
