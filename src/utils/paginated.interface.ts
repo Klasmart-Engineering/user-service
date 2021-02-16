@@ -34,21 +34,6 @@ export function fromCursorHash(s: string): CursorObject<any> {
     return JSON.parse(json) as CursorObject<any>
 }
 
-/*
-export const START_CURSOR = toCursorHash(new CursorObject<string>(START_KEY))
-
-export const END_CURSOR = toCursorHash(new CursorObject<string>(END_KEY))
-
-
-export const START_NUM_CURSOR = toCursorHash(
-    new CursorObject<number>(START_NUM_KEY)
-)
-
-export const END_NUM_CURSOR = toCursorHash(
-    new CursorObject<number>(END_NUM_KEY)
-)
-*/
-
 const totalRefresh = 5
 
 export function staleCursorTotal(c: CursorObject<any>): boolean {

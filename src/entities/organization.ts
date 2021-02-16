@@ -25,7 +25,6 @@ import { SchoolMembership } from './schoolMembership'
 import {
     CursorArgs,
     CursorObject,
-    END_KEY,
     Paginatable,
     Paginated,
     toCursorHash,

@@ -19,7 +19,6 @@ import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import {
     CursorObject,
-    END_KEY,
     Paginatable,
     Paginated,
     toCursorHash,
