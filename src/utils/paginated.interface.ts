@@ -206,7 +206,7 @@ export interface userQuery {
         startKey: any,
         endKey: any,
         ids?: string[]
-    ): Promise<Paginated<any, string>>
+    ): Promise<Paginated<any, stringable>>
 }
 
 export interface adminQuery {
@@ -220,7 +220,7 @@ export interface adminQuery {
         startKey: any,
         endKey: any,
         ids?: string[]
-    ): Promise<Paginated<any, string>>
+    ): Promise<Paginated<any, stringable>>
 }
 
 async function paginateAuth(token: any): Promise<User | undefined> {
