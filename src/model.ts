@@ -83,19 +83,25 @@ export class Model {
         const userEmail = token?.email
         const userPhone = token?.phone
 
-        let user;
+        let user
 
         if (userID && token) {
             if (userEmail) {
-                user = await this.userRepository.findOne({ email: userEmail, user_id: userID })
+                user = await this.userRepository.findOne({
+                    email: userEmail,
+                    user_id: userID,
+                })
             } else if (userPhone) {
-                user = await this.userRepository.findOne({ phone: userPhone, user_id: userID })
+                user = await this.userRepository.findOne({
+                    phone: userPhone,
+                    user_id: userID,
+                })
             }
         } else if (token) {
             const hashSource = userEmail || userPhone
             user = await this.userRepository.findOne({ user_id: token.id })
 
-            if(!user){
+            if (!user) {
                 user = new User()
                 user.user_id = accountUUID(hashSource)
             }
@@ -108,7 +114,7 @@ export class Model {
         return user
     }
 
-    private async updateUserWithTokenDetails(user : User, token : any) {
+    private async updateUserWithTokenDetails(user: User, token: any) {
         try {
             let modified = false
 
@@ -161,7 +167,6 @@ export class Model {
         }
     }
 
-
     public async newUser({
         given_name,
         family_name,
@@ -193,13 +198,17 @@ export class Model {
         const userPhone = context.token?.phone
         let user = undefined
 
-        if(userEmail) {
-            user = await User.findOne({ where: { email: userEmail, user_id: user_id } })
-        }else if(userPhone) {
-            user = await User.findOne({ where: { phone: userPhone, user_id: user_id  } })
+        if (userEmail) {
+            user = await User.findOne({
+                where: { email: userEmail, user_id: user_id },
+            })
+        } else if (userPhone) {
+            user = await User.findOne({
+                where: { phone: userPhone, user_id: user_id },
+            })
         }
 
-        if(!user) {
+        if (!user) {
             throw new Error(
                 `Not able to switch to user ${user_id}. Please try authenticating again`
             )
@@ -253,16 +262,14 @@ export class Model {
         const userPhone = context.token?.phone
         let users: User[] = []
 
-        if(userEmail) {
+        if (userEmail) {
             users = await User.find({ where: { email: userEmail } })
-        }else if(userPhone) {
+        } else if (userPhone) {
             users = await User.find({ where: { phone: userPhone } })
         }
 
-        if(users.length === 0) {
-            throw new Error(
-                `Please try authenticating again`
-            )
+        if (users.length === 0) {
+            throw new Error(`Please try authenticating again`)
         }
 
         return users
@@ -318,9 +325,7 @@ export class Model {
 
     public async getOrganizations({ organization_ids, scope }: any) {
         if (organization_ids) {
-            return await scope.whereInIds(
-                organization_ids
-            ).getMany()
+            return await scope.whereInIds(organization_ids).getMany()
         } else {
             return await scope.getMany()
         }
@@ -339,33 +344,34 @@ export class Model {
 
         await getManager().transaction(async (manager) => {
             await this._createSystemPermissions(manager, permissionEntities)
-        });
+        })
 
         return permissionEntities.values()
     }
 
-    private async _createSystemPermissions(manager: EntityManager = getManager(), permissionEntities: Map<string, Permission>) {
+    private async _createSystemPermissions(
+        manager: EntityManager = getManager(),
+        permissionEntities: Map<string, Permission>
+    ) {
         const permissionDetails = await permissionInfo()
 
         for (const permission_name of Object.values(PermissionName)) {
-            const permission = (await Permission.findOne({
-                where: {
-                    permission_name: permission_name,
-                    role_id: null
-                }
-            })) || new Permission()
+            const permission =
+                (await Permission.findOne({
+                    where: {
+                        permission_name: permission_name,
+                        role_id: null,
+                    },
+                })) || new Permission()
 
-            const permissionInf = permissionDetails.get(
-                permission_name
-            )
+            const permissionInf = permissionDetails.get(permission_name)
 
             permission.permission_name = permission_name
             permission.permission_id = permission_name
             permission.permission_category = permissionInf?.category
             permission.permission_level = permissionInf?.level
             permission.permission_group = permissionInf?.group
-            permission.permission_description =
-                permissionInf?.description
+            permission.permission_description = permissionInf?.description
             permission.allow = true
             permission.role_id = undefined
 
@@ -380,7 +386,7 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const roles  = new Map<string, Role>()
+        const roles = new Map<string, Role>()
         const permissionEntities = new Map<string, Permission>()
 
         if (info.operation.operation !== 'mutation') {
@@ -391,12 +397,16 @@ export class Model {
 
         await getManager().transaction(async (manager) => {
             await this._createDefaultRoles(manager, roles, permissionEntities)
-        });
+        })
 
         return roles.values()
     }
 
-    private async _createDefaultRoles(manager: EntityManager = getManager(), roles: Map<string, Role>, permissionEntities: Map<string, Permission>) {
+    private async _createDefaultRoles(
+        manager: EntityManager = getManager(),
+        roles: Map<string, Role>,
+        permissionEntities: Map<string, Permission>
+    ) {
         for (const { role_name, permissions } of [
             organizationAdminRole,
             schoolAdminRole,
@@ -404,18 +414,25 @@ export class Model {
             studentRole,
             teacherRole,
         ]) {
-            let role = await Role.findOne({ where: {
-                role_name: role_name,
-                system_role: true,
-                organization: { organization_id: null }
-            }})
+            let role = await Role.findOne({
+                where: {
+                    role_name: role_name,
+                    system_role: true,
+                    organization: { organization_id: null },
+                },
+            })
 
-            if(!role) {
+            if (!role) {
                 role = new Role()
                 role.role_name = role_name
                 role.system_role = true
             }
-            await this._assignPermissionsDefaultRoles(manager, role, permissionEntities, permissions)
+            await this._assignPermissionsDefaultRoles(
+                manager,
+                role,
+                permissionEntities,
+                permissions
+            )
 
             await role.save()
 
@@ -425,13 +442,17 @@ export class Model {
         return roles
     }
 
-    private async _assignPermissionsDefaultRoles(manager: EntityManager, role: Role, permissionEntities: Map<string, Permission>, permissions: string[]) {
-
-        const rolePermissions =[]
+    private async _assignPermissionsDefaultRoles(
+        manager: EntityManager,
+        role: Role,
+        permissionEntities: Map<string, Permission>,
+        permissions: string[]
+    ) {
+        const rolePermissions = []
 
         for (const permission_name of permissions) {
             const permission = permissionEntities.get(permission_name)
-            if ( permission ) {
+            if (permission) {
                 rolePermissions.push(permission)
             }
         }
