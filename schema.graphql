@@ -1,23 +1,77 @@
 directive @deprecated(
     reason: String = "No longer supported"
 ) on FIELD_DEFINITION
-directive @isAdmin(
-  entity: String
-)on FIELD_DEFINITION
+directive @isAdmin(entity: String) on FIELD_DEFINITION
+
+type UserConnection {
+    total: Int
+    edges: [User!]!
+    pageInfo: PageInfo!
+}
+
+type OrganizationConnection {
+    total: Int
+    edges: [Organization]!
+    pageInfo: PageInfo!
+}
+
+type RoleConnection {
+    total: Int
+    edges: [Role]!
+    pageInfo: PageInfo!
+}
+
+type ClassConnection {
+    total: Int
+    edges: [Class]!
+    pageInfo: PageInfo!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    endCursor: String!
+    startCursor: String!
+    hasPreviousPage: Boolean!
+}
 
 type Query {
     me: User
     user(user_id: ID!): User
     users: [User]
+    users_v1(
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): UserConnection!
     my_users: [User!]
+    before: String
 
     organization(organization_id: ID!): Organization
-    organizations(organization_ids: [ID!]): [Organization] @isAdmin(entity: "organization")
-
+    organizations(organization_ids: [ID!]): [Organization]
+        @isAdmin(entity: "organization")
+    organizations_v1(
+        organization_ids: [ID!]
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): OrganizationConnection!
     role(role_id: ID!): Role
     roles: [Role]
-
+    roles_v1(
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): RoleConnection!
     classes: [Class]
+    classes_v1(
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): ClassConnection!
     class(class_id: ID!): Class
 
     school(school_id: ID!): School

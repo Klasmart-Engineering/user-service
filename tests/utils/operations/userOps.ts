@@ -363,3 +363,27 @@ export async function mergeUser(testClient: ApolloServerTestClient, userId: stri
     const gqlUser = res.data?.user.merge as User;
     return gqlUser;
 }
+
+
+export function userToSuperPayload(user: User): any {
+    return {
+        "id": user.user_id,
+        "email": user.email,
+        "given_name": user.given_name,
+        "family_name": user.family_name,
+        "name": user.user_name,
+        "admin": true,
+        "iss": "calmid-debug"
+    }
+}
+
+export function userToPayload(user: User): any {
+    return {
+        "id": user.user_id,
+        "email": user.email,
+        "given_name": user.given_name,
+        "family_name": user.family_name,
+        "name": user.user_name,
+        "iss": "calmid-debug"
+    }
+}
