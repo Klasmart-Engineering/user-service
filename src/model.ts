@@ -228,6 +228,7 @@ export class Model {
         given_name,
         family_name,
         email,
+        phone,
         avatar,
     }: any) {
         console.info('Unauthenticated endpoint call setUser')
@@ -242,6 +243,9 @@ export class Model {
         }
         if (email !== undefined) {
             user.email = email
+        }
+        if (phone !== undefined) {
+            user.phone = phone
         }
         if (avatar !== undefined) {
             user.avatar = avatar

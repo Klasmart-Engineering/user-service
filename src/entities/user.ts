@@ -241,7 +241,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     }
 
     public async set(
-        { given_name, family_name, avatar }: any,
+        { given_name, family_name, email, phone, avatar }: any,
         context: any,
         info: GraphQLResolveInfo
     ) {
@@ -259,6 +259,12 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             }
             if (typeof family_name === 'string') {
                 this.family_name = family_name
+            }
+            if (email !== undefined) {
+                this.email = email
+            }
+            if (phone !== undefined) {
+                this.phone = phone
             }
             if (typeof avatar === 'string') {
                 this.avatar = avatar

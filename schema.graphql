@@ -80,12 +80,14 @@ type Mutation {
         given_name: String
         family_name: String
         email: String
+        phone: String
         avatar: String
     ): User
     newUser(
         given_name: String
         family_name: String
         email: String
+        phone: String
         avatar: String
     ): User
     switch_user(user_id: ID!): User
@@ -152,11 +154,12 @@ type User {
         given_name: String
         family_name: String
         email: String
+        phone: String
         avatar: String
     ): User
     createOrganization(
         organization_name: String
-        email: String
+        email: String  # Not being used in resolver.
         address1: String
         address2: String
         phone: String
