@@ -3,40 +3,56 @@ import { User } from '../entities/user'
 import { Context } from '../main'
 import { UserPermissions } from '../permissions/userPermissions'
 
-const START_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
-const END_KEY = '00000000-0000-0000-0000-000000000000'
+export const START_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+export const END_KEY = '00000000-0000-0000-0000-000000000000'
 
-interface stringable {
+export const START_NUM_KEY = 9999999999
+export const END_NUM_KEY = 0
+
+export interface stringable {
     toString(): string
 }
-export class CursorObject {
-    id: string
+
+export class CursorObject<K> {
+    id: K
     timeStamp?: number
     total?: number
-    constructor(id: string, total?: number, stamp?: number) {
-        this.id = id || END_KEY
+    constructor(id: K, endkey: K, total?: number, stamp?: number) {
+        this.id = id || endkey
         this.timeStamp = stamp
         this.total = total
     }
 }
 
-export const toCursorHash = (co: CursorObject): string => {
+export const toCursorHash = (co: CursorObject<any>): string => {
     const s = JSON.stringify(co)
     return Buffer.from(s).toString('base64')
 }
 
-export function fromCursorHash(s: string): CursorObject {
+export function fromCursorHash(s: string): CursorObject<any> {
     const json = Buffer.from(s, 'base64').toString('ascii')
-    return JSON.parse(json) as CursorObject
+    return JSON.parse(json) as CursorObject<any>
 }
 
-export const START_CURSOR = toCursorHash(new CursorObject(START_KEY))
+export const START_CURSOR = toCursorHash(
+    new CursorObject<string>(START_KEY, END_KEY)
+)
 
-export const END_CURSOR = toCursorHash(new CursorObject(END_KEY))
+export const END_CURSOR = toCursorHash(
+    new CursorObject<string>(END_KEY, END_KEY)
+)
+
+export const START_NUM_CURSOR = toCursorHash(
+    new CursorObject<number>(START_NUM_KEY, END_NUM_KEY)
+)
+
+export const END_NUM_CURSOR = toCursorHash(
+    new CursorObject<number>(END_NUM_KEY, END_NUM_KEY)
+)
 
 const totalRefresh = 5
 
-export function staleCursorTotal(c: CursorObject): boolean {
+export function staleCursorTotal(c: CursorObject<any>): boolean {
     return (
         c.timeStamp === undefined ||
         Date.now() - c.timeStamp < totalRefresh ||
@@ -102,10 +118,18 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
     let hasMoreDataBefore = false
     let hasMoreDataAfter = false
     if (after) {
-        hasMoreDataBefore = after.toString() !== START_KEY
+        if (typeof after === 'string') {
+            hasMoreDataBefore = after.toString() !== START_KEY.toString()
+        } else {
+            hasMoreDataBefore = after.toString() !== START_NUM_KEY.toString()
+        }
         hasMoreDataAfter = sortedData.length > limit
     } else if (before) {
-        hasMoreDataAfter = before.toString() !== END_KEY
+        if (typeof before === 'string') {
+            hasMoreDataAfter = before.toString() !== END_KEY.toString()
+        } else {
+            hasMoreDataAfter = before.toString() !== END_NUM_KEY.toString()
+        }
         hasMoreDataBefore = sortedData.length > limit
     }
 
@@ -192,8 +216,8 @@ export interface userQuery {
     (
         receiver: any,
         user: User,
-        cursor: CursorObject,
-        id: string,
+        cursor: CursorObject<any>,
+        id: any,
         direction: boolean,
         staleTotal: boolean,
         limit: number,
@@ -204,8 +228,8 @@ export interface userQuery {
 export interface adminQuery {
     (
         receiver: any,
-        cursor: CursorObject,
-        id: string,
+        cursor: CursorObject<any>,
+        id: any,
         direction: boolean,
         staleTotal: boolean,
         limit: number,
@@ -229,18 +253,19 @@ export async function v1_getPaginated(
     aq: adminQuery,
     uq: userQuery,
     empty: any,
+    stringcursor: boolean,
     { before, after, first, last, organization_ids }: CursorArgs
 ) {
     if (!after && !before) {
         if (first !== undefined) {
-            after = START_CURSOR
+            after = stringcursor ? START_CURSOR : START_NUM_CURSOR
         } else {
             if (last !== undefined) {
-                before = END_CURSOR
+                before = stringcursor ? END_CURSOR : END_NUM_CURSOR
             }
         }
         if (!after && !before) {
-            after = START_CURSOR
+            after = stringcursor ? START_CURSOR : START_NUM_CURSOR
         }
     }
     if (!last) last = DEFAULT_PAGE_SIZE

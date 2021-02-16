@@ -25,6 +25,7 @@ import { SchoolMembership } from './schoolMembership'
 import {
     CursorArgs,
     CursorObject,
+    END_KEY,
     Paginatable,
     Paginated,
     toCursorHash,
@@ -946,7 +947,7 @@ export class Organization
 
     public generateCursor(total?: number, timestamp?: number): string {
         return toCursorHash(
-            new CursorObject(this.organization_id, total, timestamp)
+            new CursorObject(this.organization_id, END_KEY, total, timestamp)
         )
     }
 }

@@ -26,6 +26,7 @@ import { School } from './school'
 import { Status } from './status'
 import {
     CursorObject,
+    END_KEY,
     Paginatable,
     Paginated,
     toCursorHash,
@@ -649,7 +650,9 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             : 0
     }
     public generateCursor(total?: number, timestamp?: number): string {
-        return toCursorHash(new CursorObject(this.user_id, total, timestamp))
+        return toCursorHash(
+            new CursorObject(this.user_id, END_KEY, total, timestamp)
+        )
     }
 }
 

@@ -300,7 +300,7 @@ export class Model {
 
     private async v1_usersWithAdminPermissions(
         receiver: Model,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -353,7 +353,7 @@ export class Model {
     private async v1_usersWithUserPermission(
         receiver: Model,
         user: User,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -399,6 +399,7 @@ export class Model {
             this.v1_usersWithAdminPermissions,
             this.v1_usersWithUserPermission,
             empty,
+            true,
             { before, after, first, last }
         )
     }
@@ -565,7 +566,7 @@ export class Model {
     }
     private async v1_organizationsWithAdminPermission(
         receiver: Model,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -652,7 +653,7 @@ export class Model {
     private async v1_organizationsWithUserPermission(
         receiver: Model,
         user: User,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -729,6 +730,7 @@ export class Model {
             this.v1_organizationsWithAdminPermission,
             this.v1_organizationsWithUserPermission,
             empty,
+            true,
             { before, after, first, last, organization_ids }
         )
     }
@@ -789,7 +791,7 @@ export class Model {
 
     private async v1_rolesWithAdminPermission(
         receiver: Model,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -840,7 +842,7 @@ export class Model {
     private async v1_rolesWithUserPermission(
         receiver: Model,
         user: User,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -940,6 +942,7 @@ export class Model {
             this.v1_rolesWithAdminPermission,
             this.v1_rolesWithUserPermission,
             empty,
+            true,
             { before, after, first, last }
         )
     }
@@ -969,7 +972,7 @@ export class Model {
 
     private async v1_classesWithAdminPermissions(
         receiver: Model,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -1020,7 +1023,7 @@ export class Model {
     private async v1_classesWithUserPermissions(
         receiver: Model,
         user: User,
-        cursor: CursorObject,
+        cursor: CursorObject<string>,
         id: string,
         direction: boolean,
         staleTotal: boolean,
@@ -1079,6 +1082,7 @@ export class Model {
             this.v1_classesWithAdminPermissions,
             this.v1_classesWithUserPermissions,
             empty,
+            true,
             { before, after, first, last }
         )
     }
