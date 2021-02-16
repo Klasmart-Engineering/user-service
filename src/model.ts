@@ -45,7 +45,7 @@ import {
     //staleCursorTotal,
     //END_CURSOR,
     //DEFAULT_PAGE_SIZE,
-    v1_getPaginated,
+    getPaginated,
 } from './utils/paginated.interface'
 
 export class Model {
@@ -405,7 +405,7 @@ export class Model {
             START_KEY,
             END_KEY
         )
-        return v1_getPaginated(
+        return getPaginated(
             this,
             context,
             this.v1_usersWithAdminPermissions,
@@ -749,7 +749,7 @@ export class Model {
             START_KEY,
             END_KEY
         )
-        return v1_getPaginated(
+        return getPaginated(
             this,
             context,
             this.v1_organizationsWithAdminPermission,
@@ -972,7 +972,7 @@ export class Model {
             START_KEY,
             END_KEY
         )
-        return v1_getPaginated(
+        return getPaginated(
             this,
             context,
             this.v1_rolesWithAdminPermission,
@@ -1123,7 +1123,7 @@ export class Model {
             START_KEY,
             END_KEY
         )
-        return v1_getPaginated(
+        return getPaginated(
             this,
             context,
             this.v1_classesWithAdminPermissions,

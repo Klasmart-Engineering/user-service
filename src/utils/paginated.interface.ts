@@ -233,7 +233,7 @@ async function paginateAuth(token: any): Promise<User | undefined> {
     return user
 }
 
-export async function v1_getPaginated(
+export async function getPaginated(
     receiver: any,
     context: Context,
     aq: adminQuery,
