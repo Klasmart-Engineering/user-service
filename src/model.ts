@@ -36,10 +36,12 @@ import { PermissionName } from './permissions/permissionNames'
 import {
     CursorArgs,
     CursorObject,
+    END_KEY,
     //START_CURSOR,
     //fromCursorHash,
     Paginated,
     paginateData,
+    START_KEY,
     //staleCursorTotal,
     //END_CURSOR,
     //DEFAULT_PAGE_SIZE,
@@ -305,6 +307,8 @@ export class Model {
         direction: boolean,
         staleTotal: boolean,
         limit: number,
+        startKey: string,
+        endKey: string,
         ids?: string[]
     ): Promise<Paginated<User, string>> {
         let timeStamp: number
@@ -345,6 +349,8 @@ export class Model {
             users,
             true,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -358,6 +364,8 @@ export class Model {
         direction: boolean,
         staleTotal: boolean,
         limit: number,
+        startKey: string,
+        endKey: string,
         ids?: string[]
     ) {
         let users = [] as User[]
@@ -378,6 +386,8 @@ export class Model {
             users,
             true,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -391,7 +401,9 @@ export class Model {
             Date.now(),
             [],
             true,
-            after ? first || 0 : last || 0
+            after ? first || 0 : last || 0,
+            START_KEY,
+            END_KEY
         )
         return v1_getPaginated(
             this,
@@ -399,7 +411,8 @@ export class Model {
             this.v1_usersWithAdminPermissions,
             this.v1_usersWithUserPermission,
             empty,
-            true,
+            START_KEY,
+            END_KEY,
             { before, after, first, last }
         )
     }
@@ -571,6 +584,8 @@ export class Model {
         direction: boolean,
         staleTotal: boolean,
         limit: number,
+        startKey: string,
+        endKey: string,
         organization_ids?: string[]
     ): Promise<Paginated<Organization, string>> {
         let timeStamp: number
@@ -622,6 +637,8 @@ export class Model {
                 organizations,
                 true,
                 limit,
+                startKey,
+                endKey,
                 direction ? undefined : id,
                 direction ? id : undefined
             )
@@ -645,6 +662,8 @@ export class Model {
             organizations,
             true,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -658,6 +677,8 @@ export class Model {
         direction: boolean,
         staleTotal: boolean,
         limit: number,
+        startKey: string,
+        endKey: string,
         organization_ids?: string[]
     ): Promise<Paginated<Organization, string>> {
         let timeStamp: number
@@ -708,6 +729,8 @@ export class Model {
             organizations,
             true,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -722,7 +745,9 @@ export class Model {
             Date.now(),
             [],
             true,
-            after ? first || 0 : last || 0
+            after ? first || 0 : last || 0,
+            START_KEY,
+            END_KEY
         )
         return v1_getPaginated(
             this,
@@ -730,7 +755,8 @@ export class Model {
             this.v1_organizationsWithAdminPermission,
             this.v1_organizationsWithUserPermission,
             empty,
-            true,
+            START_KEY,
+            END_KEY,
             { before, after, first, last, organization_ids }
         )
     }
@@ -795,7 +821,9 @@ export class Model {
         id: string,
         direction: boolean,
         staleTotal: boolean,
-        limit: number
+        limit: number,
+        startKey: string,
+        endKey: string
     ): Promise<Paginated<Role, string>> {
         let timeStamp: number
         let count: number
@@ -834,6 +862,8 @@ export class Model {
             roles,
             true,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -846,7 +876,9 @@ export class Model {
         id: string,
         direction: boolean,
         staleTotal: boolean,
-        limit: number
+        limit: number,
+        startKey: string,
+        endKey: string
     ): Promise<Paginated<Role, string>> {
         let timeStamp: number
         let count: number
@@ -920,6 +952,8 @@ export class Model {
             roles,
             false,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -934,7 +968,9 @@ export class Model {
             Date.now(),
             [],
             true,
-            after ? first || 0 : last || 0
+            after ? first || 0 : last || 0,
+            START_KEY,
+            END_KEY
         )
         return v1_getPaginated(
             this,
@@ -942,7 +978,8 @@ export class Model {
             this.v1_rolesWithAdminPermission,
             this.v1_rolesWithUserPermission,
             empty,
-            true,
+            START_KEY,
+            END_KEY,
             { before, after, first, last }
         )
     }
@@ -976,7 +1013,9 @@ export class Model {
         id: string,
         direction: boolean,
         staleTotal: boolean,
-        limit: number
+        limit: number,
+        startKey: string,
+        endKey: string
     ): Promise<Paginated<Class, string>> {
         let timeStamp: number
         let count: number
@@ -1015,6 +1054,8 @@ export class Model {
             classes,
             true,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -1027,7 +1068,9 @@ export class Model {
         id: string,
         direction: boolean,
         staleTotal: boolean,
-        limit: number
+        limit: number,
+        startKey: string,
+        endKey: string
     ): Promise<Paginated<Class, string>> {
         const teaching: Class[] =
             (await receiver.classRepository
@@ -1060,6 +1103,8 @@ export class Model {
             classes,
             false,
             limit,
+            startKey,
+            endKey,
             direction ? undefined : id,
             direction ? id : undefined
         )
@@ -1074,7 +1119,9 @@ export class Model {
             Date.now(),
             [],
             true,
-            after ? first || 0 : last || 0
+            after ? first || 0 : last || 0,
+            START_KEY,
+            END_KEY
         )
         return v1_getPaginated(
             this,
@@ -1082,7 +1129,8 @@ export class Model {
             this.v1_classesWithAdminPermissions,
             this.v1_classesWithUserPermissions,
             empty,
-            true,
+            START_KEY,
+            END_KEY,
             { before, after, first, last }
         )
     }

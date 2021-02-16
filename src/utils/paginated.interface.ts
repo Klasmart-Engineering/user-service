@@ -17,8 +17,8 @@ export class CursorObject<K> {
     id: K
     timeStamp?: number
     total?: number
-    constructor(id: K, endkey: K, total?: number, stamp?: number) {
-        this.id = id || endkey
+    constructor(id: K, total?: number, stamp?: number) {
+        this.id = id
         this.timeStamp = stamp
         this.total = total
     }
@@ -34,21 +34,20 @@ export function fromCursorHash(s: string): CursorObject<any> {
     return JSON.parse(json) as CursorObject<any>
 }
 
-export const START_CURSOR = toCursorHash(
-    new CursorObject<string>(START_KEY, END_KEY)
-)
+/*
+export const START_CURSOR = toCursorHash(new CursorObject<string>(START_KEY))
 
-export const END_CURSOR = toCursorHash(
-    new CursorObject<string>(END_KEY, END_KEY)
-)
+export const END_CURSOR = toCursorHash(new CursorObject<string>(END_KEY))
+
 
 export const START_NUM_CURSOR = toCursorHash(
-    new CursorObject<number>(START_NUM_KEY, END_NUM_KEY)
+    new CursorObject<number>(START_NUM_KEY)
 )
 
 export const END_NUM_CURSOR = toCursorHash(
-    new CursorObject<number>(END_NUM_KEY, END_NUM_KEY)
+    new CursorObject<number>(END_NUM_KEY)
 )
+*/
 
 const totalRefresh = 5
 
@@ -72,6 +71,8 @@ export class Paginated<T extends Paginatable<T, K>, K extends stringable> {
     public pageInfo: PageInfo
 
     constructor(
+        startId: K,
+        endId: K,
         total?: number,
         timestamp?: number,
         data?: T[],
@@ -89,11 +90,11 @@ export class Paginated<T extends Paginatable<T, K>, K extends stringable> {
                           total,
                           timestamp
                       )
-                    : END_CURSOR,
+                    : toCursorHash(new CursorObject<K>(endId)),
             startCursor:
                 this.edges.length > 0
                     ? this.edges[0].generateCursor(total, timestamp)
-                    : START_CURSOR,
+                    : toCursorHash(new CursorObject<K>(startId)),
         }
     }
 }
@@ -107,6 +108,8 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
     data: T[],
     isSorted: boolean,
     limit: number,
+    startKey: K,
+    endKey: K,
     before?: K,
     after?: K
 ): Paginated<T, K> {
@@ -118,18 +121,10 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
     let hasMoreDataBefore = false
     let hasMoreDataAfter = false
     if (after) {
-        if (typeof after === 'string') {
-            hasMoreDataBefore = after.toString() !== START_KEY.toString()
-        } else {
-            hasMoreDataBefore = after.toString() !== START_NUM_KEY.toString()
-        }
+        hasMoreDataBefore = after !== startKey
         hasMoreDataAfter = sortedData.length > limit
     } else if (before) {
-        if (typeof before === 'string') {
-            hasMoreDataAfter = before.toString() !== END_KEY.toString()
-        } else {
-            hasMoreDataAfter = before.toString() !== END_NUM_KEY.toString()
-        }
+        hasMoreDataAfter = before !== endKey
         hasMoreDataBefore = sortedData.length > limit
     }
 
@@ -140,6 +135,8 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
     const paginatedData = edgesToReturn(restrictedData, limit, before, after)
 
     const pageInfo = new Paginated(
+        startKey,
+        endKey,
         count,
         timestamp,
         paginatedData,
@@ -221,6 +218,8 @@ export interface userQuery {
         direction: boolean,
         staleTotal: boolean,
         limit: number,
+        startKey: any,
+        endKey: any,
         ids?: string[]
     ): Promise<Paginated<any, string>>
 }
@@ -233,6 +232,8 @@ export interface adminQuery {
         direction: boolean,
         staleTotal: boolean,
         limit: number,
+        startKey: any,
+        endKey: any,
         ids?: string[]
     ): Promise<Paginated<any, string>>
 }
@@ -253,19 +254,22 @@ export async function v1_getPaginated(
     aq: adminQuery,
     uq: userQuery,
     empty: any,
-    stringcursor: boolean,
+    startId: stringable,
+    endId: stringable,
     { before, after, first, last, organization_ids }: CursorArgs
 ) {
+    const start_cursor = toCursorHash(new CursorObject<stringable>(startId))
+    const end_cursor = toCursorHash(new CursorObject<stringable>(endId))
     if (!after && !before) {
         if (first !== undefined) {
-            after = stringcursor ? START_CURSOR : START_NUM_CURSOR
+            after = start_cursor
         } else {
             if (last !== undefined) {
-                before = stringcursor ? END_CURSOR : END_NUM_CURSOR
+                before = end_cursor
             }
         }
         if (!after && !before) {
-            after = stringcursor ? START_CURSOR : START_NUM_CURSOR
+            after = start_cursor
         }
     }
     if (!last) last = DEFAULT_PAGE_SIZE
@@ -275,7 +279,7 @@ export async function v1_getPaginated(
         ? fromCursorHash(after)
         : before
         ? fromCursorHash(before)
-        : fromCursorHash(END_CURSOR)
+        : fromCursorHash(end_cursor)
 
     const id = cursor.id
 
@@ -295,6 +299,8 @@ export async function v1_getPaginated(
                 after ? true : false,
                 staleTotal,
                 after ? first : last,
+                startId,
+                endId,
                 organization_ids
             )
         }
@@ -306,6 +312,8 @@ export async function v1_getPaginated(
             after ? true : false,
             staleTotal,
             after ? first : last,
+            startId,
+            endId,
             organization_ids
         )
     } catch (e) {

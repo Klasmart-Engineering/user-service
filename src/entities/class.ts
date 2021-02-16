@@ -19,7 +19,6 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import {
     CursorObject,
-    END_KEY,
     Paginatable,
     Paginated,
     toCursorHash,
@@ -626,8 +625,6 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
     }
 
     public generateCursor(total?: number, timestamp?: number): string {
-        return toCursorHash(
-            new CursorObject(this.class_id, END_KEY, total, timestamp)
-        )
+        return toCursorHash(new CursorObject(this.class_id, total, timestamp))
     }
 }

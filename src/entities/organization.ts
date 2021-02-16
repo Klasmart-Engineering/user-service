@@ -947,7 +947,7 @@ export class Organization
 
     public generateCursor(total?: number, timestamp?: number): string {
         return toCursorHash(
-            new CursorObject(this.organization_id, END_KEY, total, timestamp)
+            new CursorObject(this.organization_id, total, timestamp)
         )
     }
 }
