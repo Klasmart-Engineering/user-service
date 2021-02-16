@@ -300,7 +300,7 @@ export class Model {
         return await this.userRepository.find()
     }
 
-    private async v1_usersWithAdminPermissions(
+    private async usersWithAdminPermissions(
         receiver: Model,
         cursor: CursorObject<string>,
         id: string,
@@ -356,7 +356,7 @@ export class Model {
         )
     }
 
-    private async v1_usersWithUserPermission(
+    private async usersWithUserPermission(
         receiver: Model,
         user: User,
         cursor: CursorObject<string>,
@@ -408,8 +408,8 @@ export class Model {
         return getPaginated(
             this,
             context,
-            this.v1_usersWithAdminPermissions,
-            this.v1_usersWithUserPermission,
+            this.usersWithAdminPermissions,
+            this.usersWithUserPermission,
             empty,
             START_KEY,
             END_KEY,
@@ -577,7 +577,7 @@ export class Model {
 
         return roles
     }
-    private async v1_organizationsWithAdminPermission(
+    private async organizationsWithAdminPermission(
         receiver: Model,
         cursor: CursorObject<string>,
         id: string,
@@ -669,7 +669,7 @@ export class Model {
         )
     }
 
-    private async v1_organizationsWithUserPermission(
+    private async organizationsWithUserPermission(
         receiver: Model,
         user: User,
         cursor: CursorObject<string>,
@@ -752,8 +752,8 @@ export class Model {
         return getPaginated(
             this,
             context,
-            this.v1_organizationsWithAdminPermission,
-            this.v1_organizationsWithUserPermission,
+            this.organizationsWithAdminPermission,
+            this.organizationsWithUserPermission,
             empty,
             START_KEY,
             END_KEY,
@@ -815,7 +815,7 @@ export class Model {
         }
     }
 
-    private async v1_rolesWithAdminPermission(
+    private async rolesWithAdminPermission(
         receiver: Model,
         cursor: CursorObject<string>,
         id: string,
@@ -869,7 +869,7 @@ export class Model {
         )
     }
 
-    private async v1_rolesWithUserPermission(
+    private async rolesWithUserPermission(
         receiver: Model,
         user: User,
         cursor: CursorObject<string>,
@@ -975,8 +975,8 @@ export class Model {
         return getPaginated(
             this,
             context,
-            this.v1_rolesWithAdminPermission,
-            this.v1_rolesWithUserPermission,
+            this.rolesWithAdminPermission,
+            this.rolesWithUserPermission,
             empty,
             START_KEY,
             END_KEY,
@@ -1007,7 +1007,7 @@ export class Model {
         }
     }
 
-    private async v1_classesWithAdminPermissions(
+    private async classesWithAdminPermissions(
         receiver: Model,
         cursor: CursorObject<string>,
         id: string,
@@ -1061,7 +1061,7 @@ export class Model {
         )
     }
 
-    private async v1_classesWithUserPermissions(
+    private async classesWithUserPermissions(
         receiver: Model,
         user: User,
         cursor: CursorObject<string>,
@@ -1126,8 +1126,8 @@ export class Model {
         return getPaginated(
             this,
             context,
-            this.v1_classesWithAdminPermissions,
-            this.v1_classesWithUserPermissions,
+            this.classesWithAdminPermissions,
+            this.classesWithUserPermissions,
             empty,
             START_KEY,
             END_KEY,
