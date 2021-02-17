@@ -37,12 +37,11 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
 
     private nonAdminOrganizationScope(scope: any, token?: any) {
         scope
+            .select('Organization.organization_id')
+            .distinct(true)
             .innerJoin('Organization.memberships', 'OrganizationMembership')
             .andWhere('OrganizationMembership.user_id = :userId', {
                 userId: token?.id,
             })
-            .groupBy(
-                'Organization.organization_id, OrganizationMembership.user_id'
-            )
     }
 }

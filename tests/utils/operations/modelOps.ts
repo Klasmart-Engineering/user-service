@@ -6,7 +6,8 @@ import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
-import { UserConnection } from "../../../src/entities/user"
+import { UserConnection } from "../../../src/utils/pagingconnections";
+
 
 const CREATE_DEFAULT_ROLES = `
 mutation createDefaultRoles{

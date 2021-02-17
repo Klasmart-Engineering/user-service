@@ -16,8 +16,6 @@ export const createServer = (model: Model, context?: any) =>
             Query: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 users: (_parent, _args, ctx, _info) => model.getUsers(),
-                users_v1: (_parent, _args, ctx, _info) =>
-                    model.v1_getUsers(ctx, _args),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
@@ -28,12 +26,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getOrganization(organization_id),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),
-                organizations_v1: (_parent, _args, ctx, _info) =>
-                    model.v1_getOrganizations(ctx, _args),
-                roles_v1: (_parent, _args, ctx, _info) =>
-                    model.v1_getRoles(ctx, _args),
-                classes_v1: (_parent, _args, ctx, _info) =>
-                    model.v1_getClasses(ctx, _args),
+                organizations_v1: (_parent, args, ctx, _info) =>
+                    model.v1_getOrganizations(ctx, args),
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 classes: () => model.getClasses(),
                 school: (_parent, args, _context, _info) =>

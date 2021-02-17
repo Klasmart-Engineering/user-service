@@ -27,11 +27,8 @@ import { Status } from './status'
 import {
     CursorObject,
     Paginatable,
-    Paginated,
     toCursorHash,
 } from '../utils/paginated.interface'
-
-export class UserConnection extends Paginated<User, string> {}
 
 @Entity()
 export class User extends BaseEntity implements Paginatable<User, string> {

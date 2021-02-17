@@ -26,13 +26,10 @@ import {
     CursorArgs,
     CursorObject,
     Paginatable,
-    Paginated,
     toCursorHash,
 } from '../utils/paginated.interface'
 import { Model } from '../model'
 import { Status } from './status'
-
-export class OrganizationConnection extends Paginated<Organization, string> {}
 
 export function validateEmail(email?: string): boolean {
     const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/

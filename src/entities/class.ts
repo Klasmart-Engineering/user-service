@@ -20,11 +20,9 @@ import { Status } from './status'
 import {
     CursorObject,
     Paginatable,
-    Paginated,
+    //Paginated,
     toCursorHash,
 } from '../utils/paginated.interface'
-
-export class ClassConnection extends Paginated<Class, string> {}
 
 @Entity()
 @Check(`"class_name" <> ''`)

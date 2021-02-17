@@ -3,7 +3,7 @@ import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { Class, ClassConnection } from "../../src/entities/class";
+import { Class} from "../../src/entities/class";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createDefaultRoles } from "../utils/operations/modelOps";
@@ -19,6 +19,7 @@ import { addUserToSchool } from "../utils/operations/schoolOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { UserPermissions } from "../../src/permissions/userPermissions";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
+import { ClassConnection } from "../../src/utils/pagingconnections";
 
 const GET_CLASSES = `
     query getClasses {
@@ -118,149 +119,6 @@ describe("model.class", () => {
         });
     });
 
-     describe("getv1Classes", () => {
-        let user: User;
-        let user2: User;
-        const orgIds: string[] = []
-        let originalAdmins: string[];
-         beforeEach(async () => {
-             user2 = await createUserJoe(testClient);
-             user = await createUserBilly(testClient);
-             for (let i = 1; i < 10; i++) {
-                 let anne1 = {
-                     given_name: "Anne" + i,
-                     family_name: "Bob",
-                     email: "apollo" + i + "@calmid.com",
-                     avatar: "anne_avatar"
-                 } as User
-                 anne1 = await createUserAndValidate(testClient, anne1)
-                 const anne1Token = generateToken(userToPayload(anne1))
-                 const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, anne1Token);
-                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
-                 const role1Id = (await createRole(testClient, organization1.organization_id, "role " + i, "role description " + 1, anne1Token)).role_id;
-                 await addRoleToOrganizationMembership(testClient, user.user_id, organization1.organization_id, role1Id, { authorization: anne1Token });
-                 const school1 = await createSchool(testClient, organization1.organization_id, "school " + i, { authorization: anne1Token })
-                 await addUserToSchool(testClient, user.user_id, school1.school_id, { authorization: anne1Token })
-                 await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id, role1Id, { authorization: anne1Token })
-                 const cls1 = await createClass(testClient, organization1.organization_id, "class " + i, { authorization: anne1Token });
-                 await grantPermission(testClient, role1Id, PermissionName.add_students_to_class_20225, { authorization: anne1Token });
-                 await grantPermission(testClient, role1Id, PermissionName.add_teachers_to_class_20226, { authorization: anne1Token });
-                 if( (i % 2) > 0){ 
-                     await addTeacherToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
-                 } else {
-                    await addStudentToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
-                }
-             }
-
-         });
-
-        it("should get paged classes as admin", async () => {
-            const { query } = testClient;
-            const res = await query({
-                    query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
-                    variables:{first:5}
-                });
-
-            expect(res.errors, res.errors?.toString()).to.be.undefined;
-            const classesConn = res.data?.classes_v1 as ClassConnection;
-            expect(classesConn).to.exist;
-            expect(classesConn.total).to.equal(9)
-            let classes = classesConn.edges
-            expect(classes).to.have.lengthOf(5);
-            let pageInfo = classesConn.pageInfo
-            expect (pageInfo).to.exist
-            expect(pageInfo?.hasNextPage)
-            expect(!pageInfo?.hasPreviousPage)
-
-            const res2 = await query({
-                    query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
-                    variables:{after:pageInfo?.endCursor, first:5}
-                });
-
-            expect(res2.errors, res2.errors?.toString()).to.be.undefined;
-            const classesConn2 = res2.data?.classes_v1 as ClassConnection;
-            expect(classesConn2).to.exist;
-            expect(classesConn2.total).to.equal(9)
-            let classes2 = classesConn2.edges
-            expect(classes2).to.have.lengthOf(4);
-            let pageInfo2 = classesConn2.pageInfo
-            expect (pageInfo2).to.exist
-            expect(!pageInfo2?.hasNextPage)
-            expect(pageInfo2?.hasPreviousPage)
-
-            const res3 = await query({
-                    query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
-                    variables:{before:pageInfo2?.startCursor, last:5}
-                });
-
-            expect(res3.errors, res3.errors?.toString()).to.be.undefined;
-            const classesConn3 = res3.data?.classes_v1 as ClassConnection;
-            expect(classesConn3).to.exist;
-            expect(classesConn3.total).to.equal(9)
-            let classes3 = classesConn3.edges
-            expect(classes3).to.have.lengthOf(5);
-            let pageInfo3 = classesConn3.pageInfo
-            expect (pageInfo3).to.exist
-            expect(pageInfo3?.hasNextPage)
-            expect(!pageInfo3?.hasPreviousPage)
-        });
-        it("should get paged classes as user", async () => {
-            const { query } = testClient;
-            const res = await query({
-                    query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
-                    variables:{first:5}
-                });
-
-            expect(res.errors, res.errors?.toString()).to.be.undefined;
-            const classesConn = res.data?.classes_v1 as ClassConnection;
-            expect(classesConn).to.exist;
-            expect(classesConn.total).to.equal(9)
-            let classes = classesConn.edges
-            expect(classes).to.have.lengthOf(5);
-            let pageInfo = classesConn.pageInfo
-            expect (pageInfo).to.exist
-            expect(pageInfo?.hasNextPage)
-
-            const res2 = await query({
-                    query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
-                    variables:{after:pageInfo?.endCursor, first:5}
-                });
-
-            expect(res2.errors, res2.errors?.toString()).to.be.undefined;
-            const classesConn2 = res2.data?.classes_v1 as ClassConnection;
-            expect(classesConn2).to.exist;
-             expect(classesConn2.total).to.equal(9)
-            let classes2 = classesConn2.edges
-            expect(classes2).to.have.lengthOf(4);
-            let pageInfo2 = classesConn2.pageInfo
-            expect (pageInfo2).to.exist
-            expect(!pageInfo2?.hasNextPage)
-            expect(pageInfo2?.hasPreviousPage)
-
-            const res3 = await query({
-                    query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
-                    variables:{before:pageInfo2?.startCursor, last:5}
-                });
-
-            expect(res3.errors, res3.errors?.toString()).to.be.undefined;
-            const classesConn3 = res3.data?.classes_v1 as ClassConnection;
-            expect(classesConn3).to.exist;
-            expect(classesConn3.total).to.equal(9)
-            let classes3 = classesConn3.edges
-            expect(classes3).to.have.lengthOf(5);
-            let pageInfo3 = classesConn3.pageInfo
-            expect (pageInfo3).to.exist
-            expect(pageInfo3?.hasNextPage)
-            expect(!pageInfo3?.hasPreviousPage)
-            
-        });
-    }); 
     
 
     describe("getClass", () => {

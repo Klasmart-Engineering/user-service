@@ -20,11 +20,11 @@ import { PermissionName } from '../permissions/permissionNames'
 import {
     CursorObject,
     Paginatable,
-    Paginated,
+    //Paginated,
     toCursorHash,
 } from '../utils/paginated.interface'
 
-export class RoleConnection extends Paginated<Role, string> {}
+//export class RoleConnection extends Paginated<Role, string> {}
 
 @Entity()
 export class Role extends BaseEntity implements Paginatable<Role, string> {

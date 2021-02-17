@@ -3,7 +3,7 @@ import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { Organization, OrganizationConnection } from "../../src/entities/organization";
+import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createDefaultRoles, createUserAndValidate} from "../utils/operations/modelOps";
@@ -16,6 +16,7 @@ import { addRoleToOrganizationMembership } from "../utils/operations/organizatio
 import { createRole, addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
+import { OrganizationConnection } from "../../src/utils/pagingconnections";
 
 
 
@@ -217,8 +218,8 @@ describe("model.organization", () => {
             let pageInfo = organizationConn.pageInfo
             expect (pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
-            
-            
+
+
             const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
@@ -234,8 +235,9 @@ describe("model.organization", () => {
             let pageInfo2 = organizationConn2.pageInfo
             expect (pageInfo2).to.exist
             expect(!pageInfo2?.hasNextPage)
-            
+
         });
+
         it("should get paged organizations by ids as admin", async () => {
             const { query } = testClient;
             const res = await query({
@@ -254,8 +256,8 @@ describe("model.organization", () => {
             let pageInfo = organizationConn.pageInfo
             expect (pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
-            
-            
+
+
             const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
@@ -287,7 +289,7 @@ describe("model.organization", () => {
             expect (pageInfo3).to.exist
             expect (pageInfo3.hasPreviousPage)
             expect(pageInfo3?.hasNextPage)
-            
+
         });
 
         it("should get paged organizations as user", async () => {
@@ -308,8 +310,8 @@ describe("model.organization", () => {
             let pageInfo = organizationConn.pageInfo
             expect (pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
-            
-            
+
+
             const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: BillyAuthToken },
@@ -324,7 +326,7 @@ describe("model.organization", () => {
             let pageInfo2 = organizationConn2.pageInfo
             expect (pageInfo2).to.exist
             expect(!pageInfo2?.hasNextPage)
-            
+
         });
 
          it("should get paged organizations by ids as user", async () => {
@@ -343,8 +345,8 @@ describe("model.organization", () => {
             let pageInfo = organizationConn.pageInfo
             expect (pageInfo).to.exist
             expect(pageInfo?.hasNextPage)
-            
-            
+
+
             const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: BillyAuthToken },
@@ -359,7 +361,7 @@ describe("model.organization", () => {
             let pageInfo2 = organizationConn2.pageInfo
             expect (pageInfo2).to.exist
             expect(!pageInfo2?.hasNextPage)
-            
+
         });
     });
 

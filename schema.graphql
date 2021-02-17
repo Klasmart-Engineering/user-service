@@ -38,12 +38,6 @@ type Query {
     me: User
     user(user_id: ID!): User
     users: [User]
-    users_v1(
-        after: String
-        before: String
-        first: Int
-        last: Int
-    ): UserConnection!
     my_users: [User!]
     before: String
 
@@ -56,22 +50,11 @@ type Query {
         before: String
         first: Int
         last: Int
-    ): OrganizationConnection!
+    ): OrganizationConnection! @isAdmin(entity: "organization")
+
     role(role_id: ID!): Role
     roles: [Role]
-    roles_v1(
-        after: String
-        before: String
-        first: Int
-        last: Int
-    ): RoleConnection!
     classes: [Class]
-    classes_v1(
-        after: String
-        before: String
-        first: Int
-        last: Int
-    ): ClassConnection!
     class(class_id: ID!): Class
 
     school(school_id: ID!): School

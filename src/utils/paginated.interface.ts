@@ -1,13 +1,5 @@
-import { getRepository } from 'typeorm'
-import { User } from '../entities/user'
-import { Context } from '../main'
-import { UserPermissions } from '../permissions/userPermissions'
-
 export const START_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 export const END_KEY = '00000000-0000-0000-0000-000000000000'
-
-export const START_NUM_KEY = 9999999999
-export const END_NUM_KEY = 0
 
 export interface stringable {
     toString(): string
@@ -103,19 +95,18 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
         sortedData = data.sort((a, b) => a.compare(b))
     }
 
-    let hasMoreDataBefore = false
-    let hasMoreDataAfter = false
-    if (after) {
-        hasMoreDataBefore = after !== startKey
-        hasMoreDataAfter = sortedData.length > limit
-    } else if (before) {
-        hasMoreDataAfter = before !== endKey
-        hasMoreDataBefore = sortedData.length > limit
-    }
-
     // Throwing out values that are too big or small
     const restrictedData = applyCursorsToEdges(sortedData, before, after)
 
+    let hasMoreDataBefore = false
+    let hasMoreDataAfter = false
+    if (after !== undefined) {
+        hasMoreDataBefore = after !== startKey
+        hasMoreDataAfter = restrictedData.length > limit
+    } else if (before !== undefined) {
+        hasMoreDataAfter = before !== endKey
+        hasMoreDataBefore = restrictedData.length > limit
+    }
     // Restricting the data to the specified page size
     const paginatedData = edgesToReturn(restrictedData, limit, before, after)
 
@@ -192,116 +183,4 @@ export class CursorArgs {
     before?: string
     last?: number
     organization_ids?: string[]
-}
-
-export interface userQuery {
-    (
-        receiver: any,
-        user: User,
-        cursor: CursorObject<any>,
-        id: any,
-        direction: boolean,
-        staleTotal: boolean,
-        limit: number,
-        startKey: any,
-        endKey: any,
-        ids?: string[]
-    ): Promise<Paginated<any, stringable>>
-}
-
-export interface adminQuery {
-    (
-        receiver: any,
-        cursor: CursorObject<any>,
-        id: any,
-        direction: boolean,
-        staleTotal: boolean,
-        limit: number,
-        startKey: any,
-        endKey: any,
-        ids?: string[]
-    ): Promise<Paginated<any, stringable>>
-}
-
-async function paginateAuth(token: any): Promise<User | undefined> {
-    if (!token) {
-        return undefined
-    }
-    const user = await getRepository(User).findOne({
-        user_id: token.id,
-    })
-    return user
-}
-
-export async function getPaginated(
-    receiver: any,
-    context: Context,
-    aq: adminQuery,
-    uq: userQuery,
-    empty: any,
-    startId: stringable,
-    endId: stringable,
-    { before, after, first, last, organization_ids }: CursorArgs
-) {
-    const start_cursor = toCursorHash(new CursorObject<stringable>(startId))
-    const end_cursor = toCursorHash(new CursorObject<stringable>(endId))
-    if (!after && !before) {
-        if (first !== undefined) {
-            after = start_cursor
-        } else {
-            if (last !== undefined) {
-                before = end_cursor
-            }
-        }
-        if (!after && !before) {
-            after = start_cursor
-        }
-    }
-    if (!last) last = DEFAULT_PAGE_SIZE
-    if (!first) first = DEFAULT_PAGE_SIZE
-
-    const cursor = after
-        ? fromCursorHash(after)
-        : before
-        ? fromCursorHash(before)
-        : fromCursorHash(end_cursor)
-
-    const id = cursor.id
-
-    const staleTotal = staleCursorTotal(cursor)
-    const user = await paginateAuth(context.token)
-
-    if (user == undefined) {
-        return empty
-    }
-    const userPermissions = new UserPermissions(context.token)
-    try {
-        if (userPermissions.isAdmin) {
-            return aq(
-                receiver,
-                cursor,
-                id,
-                after ? true : false,
-                staleTotal,
-                after ? first : last,
-                startId,
-                endId,
-                organization_ids
-            )
-        }
-        return uq(
-            receiver,
-            user,
-            cursor,
-            id,
-            after ? true : false,
-            staleTotal,
-            after ? first : last,
-            startId,
-            endId,
-            organization_ids
-        )
-    } catch (e) {
-        console.error(e)
-    }
 }
