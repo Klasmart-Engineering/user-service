@@ -10,11 +10,18 @@ import {
     PrimaryGeneratedColumn,
     PrimaryColumn,
 } from 'typeorm'
+import {
+    CursorObject,
+    Paginatable,
+    toCursorHash,
+} from '../utils/paginated.interface'
 import { Role } from './role'
 
 @Entity()
 @Index(['role_id', 'permission_name'], { unique: true })
-export class Permission extends BaseEntity {
+export class Permission
+    extends BaseEntity
+    implements Paginatable<Permission, string> {
     @PrimaryGeneratedColumn()
     public id!: number
 
@@ -51,4 +58,26 @@ export class Permission extends BaseEntity {
 
     @Column({ nullable: true })
     public permission_description?: string
+
+    public compareKey(key: string): number {
+        return key > this.permission_name
+            ? 1
+            : key < this.permission_name
+            ? -1
+            : 0
+    }
+
+    public compare(other: Permission): number {
+        return other.permission_name > this.permission_name
+            ? 1
+            : other.permission_name < this.permission_name
+            ? -1
+            : 0
+    }
+
+    public generateCursor(total?: number, timestamp?: number): string {
+        return toCursorHash(
+            new CursorObject(this.permission_name, total, timestamp)
+        )
+    }
 }

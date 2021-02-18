@@ -44,6 +44,14 @@ export class UserPermissions {
         }
     }
 
+    public rejectIfNotAuthenticated() {
+        if (!this.user_id) {
+            throw new Error(
+                `User not authenticated. Please authenticate to proceed`
+            )
+        }
+    }
+
     public async rejectIfNotAllowed(
         { school_ids, organization_id }: PermissionContext,
         permission_name: PermissionName

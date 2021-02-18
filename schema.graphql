@@ -2,6 +2,7 @@ directive @deprecated(
     reason: String = "No longer supported"
 ) on FIELD_DEFINITION
 directive @isAdmin(entity: String) on FIELD_DEFINITION
+directive @isAuthenticated on FIELD_DEFINITION
 
 type UserConnection {
     total: Int
@@ -24,6 +25,12 @@ type RoleConnection {
 type ClassConnection {
     total: Int
     edges: [Class]!
+    pageInfo: PageInfo!
+}
+
+type PermissionConnection {
+    total: Int
+    edges: [Permission]!
     pageInfo: PageInfo!
 }
 
@@ -54,6 +61,12 @@ type Query {
 
     role(role_id: ID!): Role
     roles: [Role]
+    permissions(
+      after: String
+      before: String
+      first: Int
+      last: Int
+    ): PermissionConnection! @isAuthenticated
     classes: [Class]
     class(class_id: ID!): Class
 
@@ -88,6 +101,8 @@ type Mutation {
 
     create_default_roles(_: Int): [Role] @isAdmin
     create_system_permissions(_: Int): [Permission] @isAdmin
+    clear_duplicated_default_roles(_: Int): Boolean @isAdmin
+    clear_old_permissions(_: Int): Boolean @isAdmin
     role(role_id: ID!): Role
     roles: [Role]
 

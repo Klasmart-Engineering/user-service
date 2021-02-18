@@ -5,10 +5,11 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/testConfig";
-import { createDefaultRoles, getAllOrganizations, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { createDefaultRoles, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { Model } from "../../src/model";
 import { User } from "../../src/entities/user";
+import { Permission } from "../../src/entities/permission";
 import { UserPermissions } from "../../src/permissions/userPermissions";
 import { Organization } from "../../src/entities/organization";
 import chaiAsPromised from "chai-as-promised";
@@ -273,6 +274,92 @@ describe("model", () => {
                 }
 
                 expect(dbPermissions).to.deep.members(resetPermissions)
+            });
+        });
+    });
+
+    describe("getPermissions", () => {
+        let user: User;
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+        });
+
+        context("when user is not logged in", () => {
+            it("raises an error", async () => {
+                const fn = () => getPermissions(testClient, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+            });
+        });
+
+        context("when user is logged in", () => {
+            const permissionInfo = (permission: Permission) => { return permission.permission_id }
+
+            beforeEach(async () => {
+                const otherUser = await createUserBilly(testClient);
+            });
+
+            context("and the user is not an admin", () => {
+                it("returns paginated results", async () => {
+                    const gqlPermissions = await getPermissions(testClient, { authorization: BillyAuthToken });
+
+                    expect(gqlPermissions?.permissions?.edges).to.not.be.empty
+                    expect(gqlPermissions?.permissions?.pageInfo).to.not.be.empty
+                    expect(gqlPermissions?.permissions?.total).to.not.be.undefined
+                });
+
+                it("returns all the permissions available", async () => {
+                    let gqlPermissions = await getPermissions(testClient, { authorization: BillyAuthToken });
+                    const dbPermissions = await Permission.find({ where: { role_id: null } }) || []
+
+                    const permissions = gqlPermissions?.permissions?.edges || []
+                    let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
+
+                    while(hasNext) {
+                        const endCursor = gqlPermissions?.permissions?.pageInfo?.endCursor
+                        gqlPermissions = await getPermissions(testClient, { authorization: BillyAuthToken }, endCursor);
+                        const morePermissions = gqlPermissions?.permissions?.edges || []
+                        hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
+
+                        for(const permission of morePermissions) {
+                            permissions.push(permission)
+                        }
+                    }
+
+                    expect(permissions.map(permissionInfo)).to.deep.members(dbPermissions.map(permissionInfo))
+                });
+            });
+
+            context("and the user is an admin", () => {
+                it("returns paginated results", async () => {
+                    const gqlPermissions = await getPermissions(testClient, { authorization: JoeAuthToken });
+
+                    expect(gqlPermissions?.permissions?.edges).to.not.be.empty
+                    expect(gqlPermissions?.permissions?.pageInfo).to.not.be.empty
+                    expect(gqlPermissions?.permissions?.total).to.not.be.undefined
+                });
+
+                it("returns all the permissions available", async () => {
+                    let gqlPermissions = await getPermissions(testClient, { authorization: JoeAuthToken });
+                    const dbPermissions = await Permission.find({ where: { role_id: null } }) || []
+
+                    const permissions = gqlPermissions?.permissions?.edges || []
+                    let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
+
+                    while(hasNext) {
+                        const endCursor = gqlPermissions?.permissions?.pageInfo?.endCursor
+                        gqlPermissions = await getPermissions(testClient, { authorization: JoeAuthToken }, endCursor);
+                        const morePermissions = gqlPermissions?.permissions?.edges || []
+                        hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
+
+                        for(const permission of morePermissions) {
+                            permissions.push(permission)
+                        }
+                    }
+
+                    expect(permissions.map(permissionInfo)).to.deep.members(dbPermissions.map(permissionInfo))
+                });
             });
         });
     });

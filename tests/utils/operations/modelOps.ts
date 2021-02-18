@@ -152,6 +152,26 @@ const GET_ORGANIZATIONS = `
     }
 `;
 
+const GET_PERMISSIONS = `
+    query getPermissions($after: String) {
+       permissions(after: $after) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          edges {
+            permission_id
+            permission_name
+            permission_group
+            permission_level
+            permission_category
+            permission_description
+          }
+          total
+       }
+    }
+`;
+
 export async function createDefaultRoles( testClient: ApolloServerTestClient, headers?: Headers) {
     const { mutate } = testClient;
 
@@ -338,5 +358,19 @@ export async function getOrganizations(testClient: ApolloServerTestClient, organ
 
     const res = await gqlTry(operation);
     const gqlOrgs = res.data?.organizations as Organization[];
+    return gqlOrgs;
+}
+
+export async function getPermissions(testClient: ApolloServerTestClient, headers?: Headers, after?: string) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_PERMISSIONS,
+        variables: { after: after },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlOrgs = res.data
     return gqlOrgs;
 }

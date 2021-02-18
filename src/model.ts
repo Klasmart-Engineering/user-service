@@ -66,6 +66,7 @@ export class Model {
     private roleRepository: Repository<Role>
     private classRepository: Repository<Class>
     private schoolRepository: Repository<School>
+    private permissionRepository: Repository<Permission>
 
     constructor(connection: Connection) {
         this.connection = connection
@@ -78,6 +79,7 @@ export class Model {
         this.roleRepository = getRepository(Role, connection.name)
         this.classRepository = getRepository(Class, connection.name)
         this.schoolRepository = getRepository(School, connection.name)
+        this.permissionRepository = getRepository(Permission, connection.name)
     }
 
     public async getMyUser({ token, req }: Context) {
@@ -361,36 +363,33 @@ export class Model {
             return null
         }
 
-        await getManager().transaction(async (manager) => {
-            await this._createSystemPermissions(manager, permissionEntities)
-        })
+        await this._createSystemPermissions(permissionEntities)
 
         return permissionEntities.values()
     }
 
-    private async _createSystemPermissions(
-        manager: EntityManager = getManager(),
-        permissionEntities: Map<string, Permission>
-    ) {
+    private async _createSystemPermissions(permissionEntities: Map<string, Permission>, manager: EntityManager = getManager()) {
         const permissionDetails = await permissionInfo()
 
         for (const permission_name of Object.values(PermissionName)) {
-            const permission =
-                (await Permission.findOne({
-                    where: {
-                        permission_name: permission_name,
-                        role_id: null,
-                    },
-                })) || new Permission()
+            const permission = (await Permission.findOne({
+                where: {
+                    permission_name: permission_name,
+                    role_id: null
+                }
+            })) || new Permission()
 
-            const permissionInf = permissionDetails.get(permission_name)
+            const permissionInf = permissionDetails.get(
+                permission_name
+            )
 
             permission.permission_name = permission_name
             permission.permission_id = permission_name
             permission.permission_category = permissionInf?.category
             permission.permission_level = permissionInf?.level
             permission.permission_group = permissionInf?.group
-            permission.permission_description = permissionInf?.description
+            permission.permission_description =
+                permissionInf?.description
             permission.allow = true
             permission.role_id = undefined
 
@@ -398,6 +397,57 @@ export class Model {
         }
 
         await manager.save([...permissionEntities.values()])
+    }
+
+    public async clearOldPermissions(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        await getManager().transaction(async (manager) => {
+            await this._clearOldPermissions(manager)
+        });
+
+        return true
+    }
+
+    public async clearDuplicatedDefaultRoles(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        await getManager().transaction(async (manager) => {
+            await this._clearDuplicatedDefaultPermissions(manager)
+        });
+
+        return true
+    }
+
+    private async _clearOldPermissions(manager: EntityManager = getManager()) {
+        await Permission
+            .createQueryBuilder()
+            .delete()
+            .from(Permission)
+            .where("role_id is not NULL")
+            .execute()
+    }
+
+    private async _clearDuplicatedDefaultPermissions(manager: EntityManager = getManager()) {
+        await Role
+            .createQueryBuilder()
+            .delete()
+            .from(Role)
+            .where("system_role = :system_role", { system_role: false } )
+            .andWhere("role_name IN (:...names)", { names: ['Organization Admin', 'Parent', 'School Admin', 'Student', 'Teacher'] })
+            .execute()
     }
 
     public async createDefaultRoles(
@@ -412,7 +462,7 @@ export class Model {
             return null
         }
 
-        await this._createSystemPermissions(undefined, permissionEntities)
+        await this._createSystemPermissions(permissionEntities)
 
         await getManager().transaction(async (manager) => {
             await this._createDefaultRoles(manager, roles, permissionEntities)
@@ -513,6 +563,23 @@ export class Model {
         } catch (e) {
             console.error(e)
         }
+    }
+
+    public async getPermissions(
+        context: Context,
+        { after, before, first, last }: any
+    ) {
+        const scope = this.permissionRepository
+            .createQueryBuilder()
+            .where('Permission.role_id is NULL')
+
+        return getPaginated(this, 'permission', {
+            before,
+            after,
+            first,
+            last,
+            scope,
+        })
     }
 
     public async getClass({ class_id }: Class) {

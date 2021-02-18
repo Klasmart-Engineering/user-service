@@ -11,8 +11,17 @@ import {
 } from './paginated.interface'
 
 const entityCursorInfo = new Map<string, any>()
+entityCursorInfo.set('organization', {
+    startId: START_KEY,
+    endId: END_KEY,
+    cursorSearchKey: 'Organization.organization_id',
+})
 
-entityCursorInfo.set('organization', { startId: START_KEY, endId: END_KEY })
+entityCursorInfo.set('permission', {
+    startId: 'zzzzzzzz',
+    endId: 'A',
+    cursorSearchKey: 'Permission.permission_id',
+})
 
 export async function getPaginated(
     receiver: any,
@@ -62,16 +71,16 @@ export async function getPaginated(
 
     if (direction) {
         scope
-            .andWhere('Organization.organization_id < :id', {
+            .andWhere(`${cursorInfo?.cursorSearchKey} < :id`, {
                 id: id,
             })
-            .orderBy('Organization.organization_id', 'DESC')
+            .orderBy(cursorInfo?.cursorSearchKey, 'DESC')
     } else {
         scope
-            .andWhere('Organization.organization_id > :id', {
+            .andWhere(`${cursorInfo?.cursorSearchKey} > :id`, {
                 id: id,
             })
-            .orderBy('Organization.organization_id', 'ASC')
+            .orderBy(cursorInfo?.cursorSearchKey, 'ASC')
     }
     scope.limit(limit + 1)
 

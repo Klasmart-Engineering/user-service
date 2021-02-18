@@ -6,6 +6,7 @@ import { Model } from '../model'
 import { checkToken } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import { IsAdminDirective } from '../directives/isAdmin'
+import { IsAuthenticatedDirective } from '../directives/isAuthenticated'
 
 export const createServer = (model: Model, context?: any) =>
     new ApolloServer({
@@ -26,6 +27,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getOrganization(organization_id),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),
+                permissions: (_parent, args, ctx, _info) =>
+                    model.getPermissions(ctx, args),
                 organizations_v1: (_parent, args, ctx, _info) =>
                     model.v1_getOrganizations(ctx, args),
                 class: (_parent, args, _context, _info) => model.getClass(args),
@@ -46,6 +49,10 @@ export const createServer = (model: Model, context?: any) =>
                     model.createDefaultRoles(args, ctx, info),
                 create_system_permissions: (_parent, args, ctx, info) =>
                     model.createSystemPermissions(args, ctx, info),
+                clear_duplicated_default_roles: (_parent, args, ctx, info) =>
+                    model.clearDuplicatedDefaultRoles(args, ctx, info),
+                clear_old_permissions: (_parent, args, ctx, info) =>
+                    model.clearOldPermissions(args, ctx, info),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),
                 classes: () => model.getClasses(),
@@ -56,6 +63,7 @@ export const createServer = (model: Model, context?: any) =>
         },
         schemaDirectives: {
             isAdmin: IsAdminDirective,
+            isAuthenticated: IsAuthenticatedDirective,
         },
         subscriptions: {
             keepAlive: 1000,
