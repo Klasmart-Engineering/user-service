@@ -356,6 +356,19 @@ export class Model {
         })
     }
 
+    public async v1_getUsers(
+        context: Context,
+        { after, before, first, last, scope }: any
+    ) {
+        return getPaginated(this, 'user', {
+            before,
+            after,
+            first,
+            last,
+            scope,
+        })
+    }
+
     public async createSystemPermissions(
         args: any,
         context: Context,
@@ -378,9 +391,7 @@ export class Model {
         const permissionAttributes = []
 
         for (const permission_name of Object.values(PermissionName)) {
-            const permissionInf = permissionDetails.get(
-                permission_name
-            )
+            const permissionInf = permissionDetails.get(permission_name)
 
             permissionAttributes.push({
                 permission_name: permission_name,
@@ -393,18 +404,26 @@ export class Model {
             })
         }
 
-        await Permission
-            .createQueryBuilder()
+        await Permission.createQueryBuilder()
             .insert()
             .into(Permission)
             .values(permissionAttributes)
-            .orUpdate({ conflict_target: ['permission_id'], overwrite: ['permission_name', 'permission_category', 'permission_level', 'permission_group', 'permission_description', 'allow'] })
+            .orUpdate({
+                conflict_target: ['permission_id'],
+                overwrite: [
+                    'permission_name',
+                    'permission_category',
+                    'permission_level',
+                    'permission_group',
+                    'permission_description',
+                    'allow',
+                ],
+            })
             .execute()
     }
 
     private async _inactivateInvalidExistingPermissions() {
-        await Permission
-            .createQueryBuilder()
+        await Permission.createQueryBuilder()
             .update()
             .set({ allow: false })
             .where('Permission.allow = :allowed', {
@@ -415,7 +434,6 @@ export class Model {
             })
             .execute()
     }
-
 
     public async createDefaultRoles(
         args: any,
@@ -428,7 +446,7 @@ export class Model {
             return null
         }
 
-        await this.createSystemPermissions(args,context,info)
+        await this.createSystemPermissions(args, context, info)
 
         await getManager().transaction(async (manager) => {
             await this._createDefaultRoles(manager, roles)

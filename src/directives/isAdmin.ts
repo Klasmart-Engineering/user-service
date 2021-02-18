@@ -3,6 +3,7 @@ import { defaultFieldResolver } from 'graphql'
 import { getRepository } from 'typeorm'
 
 import { Organization } from '../entities/organization'
+import { User } from '../entities/user'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
@@ -15,6 +16,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 case 'organization':
                     scope = getRepository(Organization).createQueryBuilder()
                     break
+                case 'user':
+                    scope = getRepository(User).createQueryBuilder()
+                    break
                 default:
                     context.permissions.rejectIfNotAdmin()
             }
@@ -23,6 +27,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 switch (entity) {
                     case 'organization':
                         this.nonAdminOrganizationScope(scope, context.token)
+                        break
+                    case 'user':
+                        this.nonAdminUserScope(scope, context.token)
                         break
                     default:
                     // do nothing
@@ -33,6 +40,12 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
 
             return resolve.apply(this, [prnt, args, context, info])
         }
+    }
+
+    private nonAdminUserScope(scope: any, token?: any) {
+        scope.select('User').where('User.user_id = :userId', {
+            userId: token?.id,
+        })
     }
 
     private nonAdminOrganizationScope(scope: any, token?: any) {

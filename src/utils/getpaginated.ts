@@ -17,6 +17,12 @@ entityCursorInfo.set('organization', {
     cursorSearchKey: 'Organization.organization_id',
 })
 
+entityCursorInfo.set('user', {
+    startId: START_KEY,
+    endId: END_KEY,
+    cursorSearchKey: 'User.user_id',
+})
+
 entityCursorInfo.set('permission', {
     startId: 'zzzzzzzz',
     endId: 'A',

@@ -45,6 +45,13 @@ type Query {
     me: User
     user(user_id: ID!): User
     users: [User]
+    users_v1(
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): UserConnection! @isAdmin(entity: "user")
+
     my_users: [User!]
     before: String
 
@@ -62,10 +69,10 @@ type Query {
     role(role_id: ID!): Role
     roles: [Role]
     permissions(
-      after: String
-      before: String
-      first: Int
-      last: Int
+        after: String
+        before: String
+        first: Int
+        last: Int
     ): PermissionConnection! @isAuthenticated
     classes: [Class]
     class(class_id: ID!): Class
@@ -157,7 +164,7 @@ type User {
     ): User
     createOrganization(
         organization_name: String
-        email: String  # Not being used in resolver.
+        email: String # Not being used in resolver.
         address1: String
         address2: String
         phone: String
