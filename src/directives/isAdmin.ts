@@ -37,7 +37,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
 
     private nonAdminOrganizationScope(scope: any, token?: any) {
         scope
-            .select('Organization.organization_id')
+            .select('Organization')
             .distinct(true)
             .innerJoin('Organization.memberships', 'OrganizationMembership')
             .andWhere('OrganizationMembership.user_id = :userId', {

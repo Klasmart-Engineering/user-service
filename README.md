@@ -1,11 +1,11 @@
-| Statements                | Branches                | Functions                | Lines                |
-| ------------------------- | ----------------------- | ------------------------ | -------------------- |
+| Statements                                                            | Branches                                                            | Functions                                                            | Lines                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------- |
 | ![Statements](https://img.shields.io/badge/Coverage-68.92%25-red.svg) | ![Branches](https://img.shields.io/badge/Coverage-37.41%25-red.svg) | ![Functions](https://img.shields.io/badge/Coverage-67.04%25-red.svg) | ![Lines](https://img.shields.io/badge/Coverage-71.9%25-red.svg) |
 
 # Setup
 
-- `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres`
-- `npm i`
+-   `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres`
+-   `npm i`
 
 # Restart
 
@@ -26,11 +26,25 @@ Update the README coverage badges:
 
 Running tests during development:
 
-- `npm run test:unit`
-- `npm run test:integration`
-- `npm test` (to run all)
+-   `npm run test:unit`
+-   `npm run test:integration`
+-   `npm test` (to run all)
 
 Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-mocha-test-adapter) VSCode extension for a nice UI and more fine-grained control.
+
+Issues with using database with "npm start"
+
+The database is created without the default permissions. To do any thing useful you need create them.
+
+You need to create a user with Admin permissions and using that users token call the endpoint:
+
+mutation{
+create_default_roles {
+role_id
+role_name
+system_role
+}
+}
 
 # Diagnosing
 
@@ -39,8 +53,9 @@ It is possible to look at the postgres logs from the docker container
 (I don't recommend doing this but in extreme situations)
 
 Replace the docker currrent container with another that logs output
+
 1. `docker container stop postgres`
-2. `docker system prune -f --volumes` 
+2. `docker system prune -f --volumes`
 
 Then build a container that logs
 

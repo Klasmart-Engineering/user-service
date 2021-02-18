@@ -85,7 +85,9 @@ export async function getPaginated(
     scope.limit(limit + 1)
 
     const data = await scope.getMany()
-
+    if(!direction){
+         data.reverse()
+    } 
     return paginateData<any, string>(
         count,
         timeStamp,

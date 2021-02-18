@@ -176,194 +176,384 @@ describe("model.organization", () => {
         });
     });
     describe("getv1Organizations", () => {
-        let user: User;
-        const orgIds: string[] = []
+        context("We have 9 organizations", () => {
+            let user: User;
+            const orgIds: string[] = []
 
-        beforeEach (async () => {
-            orgIds.length = 0
-            await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
-            for (let i = 1; i < 10; i++) {
-                let anne1 = {
-                    given_name: "Anne"+i,
-                    family_name: "Bob",
-                    email: "apollo"+i+"@calmid.com",
-                    avatar: "anne_avatar"
-                } as User
-                anne1 = await createUserAndValidate(testClient, anne1)
-                const anne1Token = generateToken(userToPayload(anne1))
-                const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org "+i, anne1Token);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
-                if(i < 8){
-                    orgIds.push(organization1.organization_id)
+            beforeEach(async () => {
+                orgIds.length = 0
+                await createUserJoe(testClient);
+                user = await createUserBilly(testClient);
+                for (let i = 1; i < 10; i++) {
+                    let anne1 = {
+                        given_name: "Anne" + i,
+                        family_name: "Bob",
+                        email: "apollo" + i + "@calmid.com",
+                        avatar: "anne_avatar"
+                    } as User
+                    anne1 = await createUserAndValidate(testClient, anne1)
+                    const anne1Token = generateToken(userToPayload(anne1))
+                    const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, anne1Token);
+                    await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
+                    if (i < 8) {
+                        orgIds.push(organization1.organization_id)
+                    }
                 }
-            }
-        });
+            });
 
-        it("should get paged organizations as admin", async () => {
-            const { query } = testClient;
-            const res = await query({
+            it("should get paged organizations as admin", async () => {
+                const { query } = testClient;
+                const res = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
-                    variables:{first:5}
+                    variables: { first: 5 }
                 });
 
-            expect(res.errors, res.errors?.toString()).to.be.undefined;
-            const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
-            const total = organizationConn.total
-            expect(total).to.equal(9)
-            expect(organizationConn).to.exist;
-            let organizations = organizationConn.edges
-            expect(organizations).to.have.lengthOf(5);
-            let pageInfo = organizationConn.pageInfo
-            expect (pageInfo).to.exist
-            expect(pageInfo?.hasNextPage)
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                const total = organizationConn.total
+                expect(total).to.equal(9)
+                expect(organizationConn).to.exist;
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(5);
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasNextPage)
 
 
-            const res2 = await query({
+                const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
-                    variables:{after: pageInfo?.endCursor, first:5}
+                    variables: { after: pageInfo?.endCursor, first: 5 }
                 });
 
-            expect(res2.errors, res2.errors?.toString()).to.be.undefined;
-            const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn2).to.exist;
-            expect(organizationConn2.total).to.equal(total)
-            let organizations2 = organizationConn2.edges
-            expect(organizations2).to.have.lengthOf(4);
-            let pageInfo2 = organizationConn2.pageInfo
-            expect (pageInfo2).to.exist
-            expect(!pageInfo2?.hasNextPage)
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                expect(organizationConn2.total).to.equal(total)
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(4);
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasNextPage)
 
-        });
+            });
 
-        it("should get paged organizations by ids as admin", async () => {
-            const { query } = testClient;
-            const res = await query({
+            it("should get paged organizations as admin in reverse order", async () => {
+                const { query } = testClient;
+                const res = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
-                    variables:{organization_ids: orgIds,first:5}
+                    variables: { last: 5 }
                 });
 
-            expect(res.errors, res.errors?.toString()).to.be.undefined;
-            const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn).to.exist;
-            const total = organizationConn.total
-            expect(total).to.equal(orgIds.length)
-            let organizations = organizationConn.edges
-            expect(organizations).to.have.lengthOf(5);
-            let pageInfo = organizationConn.pageInfo
-            expect (pageInfo).to.exist
-            expect(pageInfo?.hasNextPage)
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                const total = organizationConn.total
+                expect(total).to.equal(9)
+                expect(organizationConn).to.exist;
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(5);
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasPreviousPage)
 
 
-            const res2 = await query({
+                const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
-                    variables:{organization_ids: orgIds, after: pageInfo?.endCursor, first:5}
+                    variables: { before: pageInfo?.startCursor, last: 5 }
                 });
 
-            expect(res2.errors, res2.errors?.toString()).to.be.undefined;
-            const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn2).to.exist;
-            expect(organizationConn2.total).to.equal(orgIds.length)
-            let organizations2 = organizationConn2.edges
-            expect(organizations2).to.have.lengthOf(2);
-            let pageInfo2 = organizationConn2.pageInfo
-            expect (pageInfo2).to.exist
-            expect (pageInfo2.hasPreviousPage)
-            expect(!pageInfo2?.hasNextPage)
-            const res3 = await query({
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                expect(organizationConn2.total).to.equal(total)
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(4);
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasPreviousPage)
+
+            });
+
+
+            it("should get paged organizations by ids as admin", async () => {
+                const { query } = testClient;
+                const res = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: JoeAuthToken },
-                    variables:{organization_ids: orgIds, before: pageInfo2?.startCursor, last:5}
+                    variables: { organization_ids: orgIds, first: 5 }
                 });
-            expect(res3.errors, res3.errors?.toString()).to.be.undefined;
-            const organizationConn3 = res3.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn3).to.exist;
-            expect(organizationConn3.total).to.equal(orgIds.length)
-            let organizations3 = organizationConn3.edges
-            expect(organizations3).to.have.lengthOf(5);
-            let pageInfo3 = organizationConn3.pageInfo
-            expect (pageInfo3).to.exist
-            expect (pageInfo3.hasPreviousPage)
-            expect(pageInfo3?.hasNextPage)
 
-        });
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn).to.exist;
+                const total = organizationConn.total
+                expect(total).to.equal(orgIds.length)
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(5);
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasNextPage)
 
-        it("should get paged organizations as user", async () => {
-            const { query } = testClient;
-            const res = await query({
+
+                const res2 = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: JoeAuthToken },
+                    variables: { organization_ids: orgIds, after: pageInfo?.endCursor, first: 5 }
+                });
+
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                expect(organizationConn2.total).to.equal(orgIds.length)
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(2);
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(pageInfo2.hasPreviousPage)
+                expect(!pageInfo2?.hasNextPage)
+                const res3 = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: JoeAuthToken },
+                    variables: { organization_ids: orgIds, before: pageInfo2?.startCursor, last: 5 }
+                });
+                expect(res3.errors, res3.errors?.toString()).to.be.undefined;
+                const organizationConn3 = res3.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn3).to.exist;
+                expect(organizationConn3.total).to.equal(orgIds.length)
+                let organizations3 = organizationConn3.edges
+                expect(organizations3).to.have.lengthOf(5);
+                let pageInfo3 = organizationConn3.pageInfo
+                expect(pageInfo3).to.exist
+                expect(pageInfo3.hasPreviousPage)
+                expect(pageInfo3?.hasNextPage)
+
+            });
+
+            it("should get paged organizations as user", async () => {
+                const { query } = testClient;
+                const res = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: BillyAuthToken },
-                    variables:{ organization_ids: orgIds,first:5}
+                    variables: { first: 5 }
                 });
 
-            expect(res.errors, res.errors?.toString()).to.be.undefined;
-            const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn).to.exist;
-            const total = organizationConn.total
-            expect(total).to.equal(7)
-            let organizations = organizationConn.edges
-            expect(organizations).to.have.lengthOf(5);
-            let pageInfo = organizationConn.pageInfo
-            expect (pageInfo).to.exist
-            expect(pageInfo?.hasNextPage)
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn).to.exist;
+                const total = organizationConn.total
+                expect(total).to.equal(9)
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(5);
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasNextPage)
 
 
-            const res2 = await query({
+                const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
                     headers: { authorization: BillyAuthToken },
-                    variables:{organization_ids: orgIds, after: pageInfo?.endCursor, first:5}
+                    variables: { after: pageInfo?.endCursor, first: 5 }
                 });
 
-            expect(res2.errors, res2.errors?.toString()).to.be.undefined;
-            const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn2).to.exist;
-            let organizations2 = organizationConn2.edges
-            expect(organizations2).to.have.lengthOf(2);
-            let pageInfo2 = organizationConn2.pageInfo
-            expect (pageInfo2).to.exist
-            expect(!pageInfo2?.hasNextPage)
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(4);
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasNextPage)
+
+            });
+
+            it("should get paged organizations as user in reverse order", async () => {
+                const { query } = testClient;
+                const res = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: BillyAuthToken },
+                    variables: { last: 5 }
+                });
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn).to.exist;
+                const total = organizationConn.total
+                expect(total).to.equal(9)
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(5);
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasPreviousPage)
+
+
+                const res2 = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: BillyAuthToken },
+                    variables: { before: pageInfo?.startCursor, last: 5 }
+                });
+
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(4);
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasPreviousPage)
+
+            });
+
+            it("should get paged organizations by ids as user", async () => {
+                const { query } = testClient;
+                const res = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: BillyAuthToken },
+                    variables: { organization_ids: orgIds, first: 5 }
+                });
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn).to.exist;
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(5);
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasNextPage)
+
+
+                const res2 = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: BillyAuthToken },
+                    variables: { organization_ids: orgIds, after: pageInfo?.endCursor, first: 5 }
+                });
+
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(2);
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasNextPage)
+
+            });
 
         });
+        context("We have only 2 organizations", () => {
 
-         it("should get paged organizations by ids as user", async () => {
-            const { query } = testClient;
-            const res = await query({
+            let user: User;
+            const orgIds: string[] = []
+            beforeEach(async () => {
+                orgIds.length = 0
+                await createUserJoe(testClient);
+                user = await createUserBilly(testClient);
+                for (let i = 1; i < 3; i++) {
+                    let anne1 = {
+                        given_name: "Anne" + i,
+                        family_name: "Bob",
+                        email: "apollo" + i + "@calmid.com",
+                        avatar: "anne_avatar"
+                    } as User
+                    anne1 = await createUserAndValidate(testClient, anne1)
+                    const anne1Token = generateToken(userToPayload(anne1))
+                    const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, anne1Token);
+                    await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
+                }
+            });
+
+            it("admin gets two diffent organizations (with name fields) from the front and back with a page size one", async () => {
+                const { query } = testClient;
+                const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
-                    variables:{organization_ids: orgIds,first:5}
+                    headers: { authorization: JoeAuthToken },
+                    variables: { first: 1 }
                 });
 
-            expect(res.errors, res.errors?.toString()).to.be.undefined;
-            const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn).to.exist;
-            let organizations = organizationConn.edges
-            expect(organizations).to.have.lengthOf(5);
-            let pageInfo = organizationConn.pageInfo
-            expect (pageInfo).to.exist
-            expect(pageInfo?.hasNextPage)
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                const total = organizationConn.total
+                expect(total).to.equal(2)
+                expect(organizationConn).to.exist;
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(1);
+                const firstId = organizations[0].organization_id
+                const firstName = organizations[0].organization_name
+                expect(firstName).to.exist
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasNextPage)
+                expect(!pageInfo?.hasPreviousPage)
 
 
-            const res2 = await query({
+                const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
-                    variables:{organization_ids: orgIds,after: pageInfo?.endCursor, first:5}
+                    headers: { authorization: JoeAuthToken },
+                    variables: { last: 1 }
                 });
 
-            expect(res2.errors, res2.errors?.toString()).to.be.undefined;
-            const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
-            expect(organizationConn2).to.exist;
-            let organizations2 = organizationConn2.edges
-            expect(organizations2).to.have.lengthOf(2);
-            let pageInfo2 = organizationConn2.pageInfo
-            expect (pageInfo2).to.exist
-            expect(!pageInfo2?.hasNextPage)
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                expect(organizationConn2.total).to.equal(total)
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(1);
+                const lastId = organizations2[0].organization_id
+                expect(lastId).to.not.equal(firstId)
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasNextPage)
+                expect(pageInfo2?.hasPreviousPage)
 
+            });
+            it("user gets two diffent organizations (with name fields) from the front and back with a page size one", async () => {
+                const { query } = testClient;
+                const res = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: BillyAuthToken },
+                    variables: { first: 1 }
+                });
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined;
+                const organizationConn = res.data?.organizations_v1 as OrganizationConnection;
+                const total = organizationConn.total
+                expect(total).to.equal(2)
+                expect(organizationConn).to.exist;
+                let organizations = organizationConn.edges
+                expect(organizations).to.have.lengthOf(1);
+                const firstId = organizations[0].organization_id
+                const firstName = organizations[0].organization_name
+                expect(firstName).to.exist
+                let pageInfo = organizationConn.pageInfo
+                expect(pageInfo).to.exist
+                expect(pageInfo?.hasNextPage)
+                expect(!pageInfo?.hasPreviousPage)
+
+
+
+                const res2 = await query({
+                    query: GET_V1_ORGANIZATIONS,
+                    headers: { authorization: BillyAuthToken },
+                    variables: { last: 1 }
+                });
+
+                expect(res2.errors, res2.errors?.toString()).to.be.undefined;
+                const organizationConn2 = res2.data?.organizations_v1 as OrganizationConnection;
+                expect(organizationConn2).to.exist;
+                expect(organizationConn2.total).to.equal(total)
+                let organizations2 = organizationConn2.edges
+                expect(organizations2).to.have.lengthOf(1);
+                const lastId = organizations2[0].organization_id
+                expect(lastId).to.not.equal(firstId)
+                let pageInfo2 = organizationConn2.pageInfo
+                expect(pageInfo2).to.exist
+                expect(!pageInfo2?.hasNextPage)
+                expect(pageInfo2?.hasPreviousPage)
+
+            });
         });
+
     });
-
-
 });
