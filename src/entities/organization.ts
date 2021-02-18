@@ -2,7 +2,6 @@ import {
     Column,
     PrimaryGeneratedColumn,
     Entity,
-    EntityManager,
     OneToMany,
     getRepository,
     getManager,
@@ -19,7 +18,6 @@ import { User, accountUUID } from './user'
 import { Class } from './class'
 import { School } from './school'
 import { Context } from '../main'
-import { Permission } from './permission'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from './schoolMembership'
 import {
@@ -429,163 +427,6 @@ export class Organization
         } catch (e) {
             console.error(e)
         }
-    }
-
-    // NOTE: This is a migration function. Will be deleted after migration is finished for
-    // all organizations
-    public async mapSystemRoles(
-        args: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation') {
-            return null
-        }
-
-        let newRoles: any[] = []
-
-        await getManager().transaction(async (manager) => {
-            const organizationMemberships = (await this.memberships) || []
-            newRoles = await this.migrateRoles(organizationMemberships, manager)
-
-            const schools = (await this.schools) || []
-            for (const school of schools) {
-                const schoolMemberships = (await school.memberships) || []
-
-                const tmp = await this.migrateRoles(schoolMemberships, manager)
-                newRoles = [...newRoles, ...tmp]
-            }
-        })
-
-        return newRoles
-    }
-
-    private async migrateRoles(memberships: any[], manager: EntityManager) {
-        const roles = []
-        const systemRoles = new Map()
-
-        for (const membership of memberships) {
-            const membershipRoles = (await membership.roles) || []
-            let newMembershipRoles = membershipRoles.slice()
-            const membershipRolesIds = await membershipRoles.map(
-                (role: Role) => {
-                    return role.role_id
-                }
-            )
-
-            for (const role of membershipRoles) {
-                const role_name = role.role_name
-                let systemRole = systemRoles.get(role_name)
-
-                if (!systemRole) {
-                    systemRole = await Role.findOne({
-                        where: {
-                            role_name: role_name,
-                            system_role: true,
-                        },
-                    })
-
-                    if (systemRole) {
-                        systemRoles.set(role.role_name, systemRole)
-                    }
-                }
-
-                if (systemRole) {
-                    const migrated = membershipRolesIds.includes(
-                        systemRole.role_id
-                    )
-
-                    if (!role.system_role && !migrated) {
-                        newMembershipRoles = [...newMembershipRoles, systemRole]
-                        membership.roles = Promise.resolve(newMembershipRoles)
-
-                        await manager.save(membership)
-
-                        roles.push(systemRole)
-                    }
-                }
-            }
-        }
-
-        return roles
-    }
-
-    public async mapSystemPermissions(
-        args: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation') {
-            return null
-        }
-
-        const roles = await this.roles({}, {}, {})
-
-        await getManager().transaction(async (manager) => {
-            await this.migratePermissions(roles, manager)
-        })
-
-        return roles
-    }
-
-    private async migratePermissions(roles: Role[], manager: EntityManager) {
-        const newPermissionEntities = new Map<string, Permission>()
-
-        for (const role of roles) {
-            if (!role.system_role) {
-                const currentSytemPermissions = await Permission.find({
-                    where: {
-                        role_id: role.role_id,
-                    },
-                })
-
-                for (const { permission_name } of currentSytemPermissions) {
-                    const linkedPermission = await Permission.createQueryBuilder(
-                        'permission'
-                    )
-                        .select()
-                        .leftJoin('permission.roles', 'role')
-                        .where('role.role_id = :id', { id: role.role_id })
-                        .andWhere('permission.role_id is NULL')
-                        .andWhere('permission.permission_name = :name', {
-                            name: permission_name,
-                        })
-                        .getOne()
-
-                    if (!linkedPermission) {
-                        let newPermission = newPermissionEntities.get(
-                            permission_name
-                        )
-
-                        if (!newPermission) {
-                            newPermission = await Permission.findOne({
-                                where: {
-                                    permission_name: permission_name,
-                                    role_id: null,
-                                },
-                            })
-
-                            if (newPermission) {
-                                newPermissionEntities.set(
-                                    permission_name,
-                                    newPermission
-                                )
-                            }
-                        }
-
-                        if (newPermission) {
-                            await manager
-                                .createQueryBuilder()
-                                .relation(Permission, 'roles')
-                                .of(newPermission)
-                                .add(role)
-                        }
-                    }
-                }
-            }
-        }
-
-        return roles
     }
 
     private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {

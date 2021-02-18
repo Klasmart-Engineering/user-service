@@ -6,7 +6,7 @@ import { createRole } from "./role.factory";
 export function createPermission(role : Role = createRole() ) {
     const permission = new Permission();
 
-    permission.role = Promise.resolve(role);
+    permission.roles = Promise.resolve([role]);
     permission.permission_id = faker.random.word();
     permission.permission_name = faker.random.word();
     permission.allow = true

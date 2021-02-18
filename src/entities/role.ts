@@ -119,7 +119,6 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
 
         try {
             const permission = await getRepository(Permission).findOneOrFail({
-                role_id: this.role_id,
                 permission_name,
             })
             return permission
@@ -148,37 +147,19 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
         )
 
         try {
-            const systemPermission = await getRepository(Permission).findOne({
+            const permission = await getRepository(Permission).findOneOrFail({
                 where: {
-                    role_id: null,
                     permission_name: permission_name,
                 },
             })
 
-            if (systemPermission) {
-                let roles = (await systemPermission.roles) || []
-                roles = roles.filter((role) => {
-                    return role.role_id != this.role_id
-                })
-                systemPermission.roles = Promise.resolve([...roles, this])
-
-                await systemPermission.save()
-            }
-
-            let permission = await getRepository(Permission).findOne({
-                where: {
-                    role_id: this.role_id,
-                    permission_name: permission_name,
-                },
+            let roles = (await permission.roles) || []
+            roles = roles.filter((role) => {
+                return role.role_id != this.role_id
             })
-
-            if (!permission) {
-                permission = new Permission()
-                permission.role_id = this.role_id
-                permission.permission_name = permission_name
-            }
-
+            permission.roles = Promise.resolve([...roles, this])
             permission.allow = true
+
             await permission.save()
 
             return permission
@@ -207,24 +188,20 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
         )
 
         try {
-            const systemPermission = await getRepository(Permission).findOne({
+            const permission = await getRepository(Permission).findOneOrFail({
                 where: {
-                    role_id: null,
                     permission_name: permission_name,
                 },
             })
 
-            if (systemPermission) {
-                let roles = (await systemPermission.roles) || []
-                roles = roles.filter((role) => {
-                    return role.role_id != this.role_id
-                })
-                systemPermission.roles = Promise.resolve(roles)
+            let roles = (await permission.roles) || []
+            roles = roles.filter((role) => {
+                return role.role_id != this.role_id
+            })
+            permission.roles = Promise.resolve(roles)
 
-                await systemPermission.save()
-            }
+            await permission.save()
 
-            await Permission.delete({ role_id: this.role_id, permission_name })
             return true
         } catch (e) {
             console.error(e)
@@ -241,10 +218,6 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
             return null
         }
 
-        if (this.system_role) {
-            context.permissions.rejectIfNotAdmin()
-        }
-
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
@@ -252,18 +225,11 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
         )
 
         try {
-            let permission = await getRepository(Permission).findOne({
+            const permission = await getRepository(Permission).findOneOrFail({
                 where: {
-                    role_id: this.role_id,
                     permission_name: permission_name,
                 },
             })
-
-            if (!permission) {
-                permission = new Permission()
-                permission.role_id = this.role_id
-                permission.permission_name = permission_name
-            }
 
             permission.allow = false
             await permission.save()
@@ -294,29 +260,26 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
             PermissionName.edit_role_permissions_30332
         )
 
-        const systemPermissionEntities = [] as Permission[]
+        const permissionEntities = [] as Permission[]
 
         for (const permission_name of permission_names) {
-            const systemPermission = await getRepository(
-                Permission
-            ).findOneOrFail({
+            const permission = await getRepository(Permission).findOneOrFail({
                 where: {
-                    role_id: null,
                     permission_name: permission_name,
                 },
             })
-            systemPermissionEntities.push(systemPermission)
+            permissionEntities.push(permission)
         }
 
         try {
             await getManager().transaction(async (manager) => {
                 this.permissions = Promise.resolve([])
                 await manager.save(this)
-                this.permissions = Promise.resolve(systemPermissionEntities)
+                this.permissions = Promise.resolve(permissionEntities)
                 await manager.save(this)
             })
 
-            return systemPermissionEntities
+            return permissionEntities
         } catch (e) {
             console.error(e)
         }

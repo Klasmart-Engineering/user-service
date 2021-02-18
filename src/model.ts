@@ -374,8 +374,7 @@ export class Model {
         for (const permission_name of Object.values(PermissionName)) {
             const permission = (await Permission.findOne({
                 where: {
-                    permission_name: permission_name,
-                    role_id: null
+                    permission_name: permission_name
                 }
             })) || new Permission()
 
@@ -391,7 +390,6 @@ export class Model {
             permission.permission_description =
                 permissionInf?.description
             permission.allow = true
-            permission.role_id = undefined
 
             permissionEntities.set(permission_name, permission)
         }
@@ -571,7 +569,6 @@ export class Model {
     ) {
         const scope = this.permissionRepository
             .createQueryBuilder()
-            .where('Permission.role_id is NULL')
 
         return getPaginated(this, 'permission', {
             before,

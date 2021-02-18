@@ -41,7 +41,6 @@ const GET_PERMISSION = `
             $permission_name: String!) {
         role(role_id: $role_id) {
             permission(permission_name: $permission_name) {
-                role_id
                 permission_name
                 allow
             }
@@ -55,7 +54,6 @@ const GRANT_PERMISSION = `
             $permission_name: String!) {
         role(role_id: $role_id) {
             grant(permission_name: $permission_name) {
-                role_id
                 permission_name
                 allow
             }
@@ -79,7 +77,6 @@ const DENY_PERMISSION = `
             $permission_name: String!) {
         role(role_id: $role_id) {
             deny(permission_name: $permission_name) {
-                role_id
                 permission_name
                 allow
             }
@@ -98,7 +95,6 @@ const EDIT_PERMISSIONS = `
                 permission_level
                 permission_category
                 permission_description
-                role_id
                 allow
             }
         }

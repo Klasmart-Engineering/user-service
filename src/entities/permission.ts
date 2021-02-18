@@ -2,12 +2,8 @@ import {
     BaseEntity,
     Column,
     Entity,
-    Index,
-    JoinColumn,
     JoinTable,
-    ManyToOne,
     ManyToMany,
-    PrimaryGeneratedColumn,
     PrimaryColumn,
 } from 'typeorm'
 import {
@@ -18,16 +14,9 @@ import {
 import { Role } from './role'
 
 @Entity()
-@Index(['role_id', 'permission_name'], { unique: true })
 export class Permission
     extends BaseEntity
     implements Paginatable<Permission, string> {
-    @PrimaryGeneratedColumn()
-    public id!: number
-
-    @Column({ name: 'role_id', nullable: true })
-    public role_id?: string
-
     @PrimaryColumn({ name: 'permission_id' })
     public permission_name!: string
 
@@ -35,10 +24,6 @@ export class Permission
     // updated once both coloumns are backfiled
     @Column({ name: 'permission_name', nullable: true })
     public permission_id?: string
-
-    @ManyToOne(() => Role, (role) => role.permission, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'role_id' })
-    public role?: Promise<Role>
 
     @ManyToMany(() => Role, (role) => role.permissions)
     @JoinTable()

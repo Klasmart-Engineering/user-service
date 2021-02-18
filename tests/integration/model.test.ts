@@ -232,7 +232,7 @@ describe("model", () => {
           return { role_id: role.role_id, role_name: role.role_name }
         };
         const permissionInfoFunc =  function (permission: any) {
-          return { permission_name: permission.permission_name, role_id: permission.role_id }
+          return { permission_name: permission.permission_name }
         };
 
         context("when updated default permissions exists", () => {
@@ -311,7 +311,7 @@ describe("model", () => {
 
                 it("returns all the permissions available", async () => {
                     let gqlPermissions = await getPermissions(testClient, { authorization: BillyAuthToken });
-                    const dbPermissions = await Permission.find({ where: { role_id: null } }) || []
+                    const dbPermissions = await Permission.find() || []
 
                     const permissions = gqlPermissions?.permissions?.edges || []
                     let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
@@ -342,7 +342,7 @@ describe("model", () => {
 
                 it("returns all the permissions available", async () => {
                     let gqlPermissions = await getPermissions(testClient, { authorization: JoeAuthToken });
-                    const dbPermissions = await Permission.find({ where: { role_id: null } }) || []
+                    const dbPermissions = await Permission.find() || []
 
                     const permissions = gqlPermissions?.permissions?.edges || []
                     let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean

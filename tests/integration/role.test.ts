@@ -153,7 +153,7 @@ describe("role", () => {
                     const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: BillyAuthToken });
 
                     expect(gqlPermission).to.exist;
-                    expect(gqlPermission).to.include({ role_id: roleId, permission_name: nameOfPermissionToGet });
+                    expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGet });
                 });
             });
 
@@ -175,7 +175,7 @@ describe("role", () => {
                     const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: BillyAuthToken });
 
                     expect(gqlPermission).to.exist;
-                    expect(gqlPermission).to.include({ role_id: roleId, permission_name: nameOfPermissionToGet });
+                    expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGet });
                 });
             });
 
@@ -189,6 +189,7 @@ describe("role", () => {
     });
 
     describe("grant", () => {
+        const roleInfo = (role: Role) => { return role.role_id }
         const nameOfPermissionToGrant = PermissionName.edit_groups_30330;
         let organizationId: string;
         let userId: string;
@@ -213,8 +214,9 @@ describe("role", () => {
                     const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
                     expect(fn()).to.be.rejected;
 
-                    const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
-                    expect(dbPermission).to.be.undefined;
+                    const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToGrant } });
+                    const permRoles = await dbPermission?.roles || []
+                    expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
                 });
             });
 
@@ -232,9 +234,12 @@ describe("role", () => {
                         it("should return the permission with 'allow' set to true and update the database entry", async () => {
                             const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
 
-                            const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
+                            const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                             expect(gqlPermission).to.exist;
-                            expect(gqlPermission).to.include({ role_id: roleId, permission_name: nameOfPermissionToGrant, allow: true });
+                            expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGrant, allow: true });
+                            const permRoles = await dbPermission?.roles || []
+                            expect(permRoles.map(roleInfo)).to.deep.include(roleId)
+
                             expect(dbPermission).to.include(gqlPermission);
                         });
                     });
@@ -243,9 +248,12 @@ describe("role", () => {
                         it("should return the permission with 'allow' set to true and create a database entry", async () => {
                             const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
 
-                            const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
+                            const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                             expect(gqlPermission).to.exist;
-                            expect(gqlPermission).to.include({ role_id: roleId, permission_name: nameOfPermissionToGrant, allow: true });
+                            expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGrant, allow: true });
+                            const permRoles = await dbPermission?.roles || []
+                            expect(permRoles.map(roleInfo)).to.deep.include(roleId)
+
                             expect(dbPermission).to.include(gqlPermission);
                         });
                     });
@@ -261,7 +269,7 @@ describe("role", () => {
                             const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                             expect(fn()).to.be.rejected;
 
-                            const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
+                            const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                             expect(dbPermission.allow).to.equal(false);
                         });
                     });
@@ -271,8 +279,9 @@ describe("role", () => {
                             const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: JoeAuthToken });
                             expect(fn()).to.be.rejected;
 
-                            const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
-                            expect(dbPermission).to.be.undefined;
+                            const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToGrant } });
+                            const permRoles = await dbPermission?.roles || []
+                            expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
                         });
                     });
                 });
@@ -293,9 +302,12 @@ describe("role", () => {
                     it("should return the permission with 'allow' set to true and update the database entry", async () => {
                         const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
 
-                        const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                         expect(gqlPermission).to.exist;
-                        expect(gqlPermission).to.include({ role_id: roleId, permission_name: nameOfPermissionToGrant, allow: true });
+                        expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGrant, allow: true });
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.deep.include(roleId)
+
                         expect(dbPermission).to.include(gqlPermission);
                     });
                 });
@@ -304,9 +316,12 @@ describe("role", () => {
                     it("should return the permission with 'allow' set to true and create a database entry", async () => {
                         const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
 
-                        const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                         expect(gqlPermission).to.exist;
-                        expect(gqlPermission).to.include({ role_id: roleId, permission_name: nameOfPermissionToGrant, allow: true });
+                        expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGrant, allow: true });
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.deep.include(roleId)
+
                         expect(dbPermission).to.include(gqlPermission);
                     });
                 });
@@ -322,7 +337,7 @@ describe("role", () => {
                         const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
                         expect(fn()).to.be.rejected;
 
-                        const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                         expect(dbPermission.allow).to.equal(false);
                     });
                 });
@@ -332,8 +347,9 @@ describe("role", () => {
                         const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: BillyAuthToken });
                         expect(fn()).to.be.rejected;
 
-                        const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToGrant } });
-                        expect(dbPermission).to.be.undefined;
+                        const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToGrant } });
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
                     });
                 });
             });
@@ -481,6 +497,7 @@ describe("role", () => {
     });
 
     describe("revoke", () => {
+        const roleInfo = (role: Role) => { return role.role_id }
         const nameOfPermissionToRevoke = PermissionName.view_role_permissions_30112;
         let organizationId: string;
         let userId: string;
@@ -506,7 +523,7 @@ describe("role", () => {
                     const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillyAuthToken });
                     expect(fn()).to.be.rejected;
 
-                    const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
+                    const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToRevoke } });
                     expect(dbPermission.allow).to.be.true;
                 });
             });
@@ -520,9 +537,11 @@ describe("role", () => {
                     it("should return true and delete the database entry", async () => {
                         const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: JoeAuthToken });
 
-                        const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
+                        const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToRevoke } });
                         expect(successful).to.be.true;
-                        expect(dbPermission).to.be.undefined;
+
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
                     });
                 });
 
@@ -531,7 +550,7 @@ describe("role", () => {
                         const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: JoeAuthToken });
                         expect(fn()).to.be.rejected;
 
-                        const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToRevoke } });
                         expect(dbPermission.allow).to.be.true;
                     });
                 });
@@ -547,9 +566,11 @@ describe("role", () => {
                 it("should return true and delete the database entry", async () => {
                     const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillyAuthToken });
 
-                    const dbPermission = await Permission.findOne({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
+                    const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToRevoke } });
                     expect(successful).to.be.true;
-                    expect(dbPermission).to.be.undefined;
+
+                    const permRoles = await dbPermission?.roles || []
+                    expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
                 });
             });
 
@@ -558,7 +579,7 @@ describe("role", () => {
                     const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: BillyAuthToken });
                     expect(fn()).to.be.rejected;
 
-                    const dbPermission = await Permission.findOneOrFail({ where: { role_id: roleId, permission_name: nameOfPermissionToRevoke } });
+                    const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToRevoke } });
                     expect(dbPermission.allow).to.be.true;
                 });
             });
