@@ -49,10 +49,6 @@ export const createServer = (model: Model, context?: any) =>
                     model.createDefaultRoles(args, ctx, info),
                 create_system_permissions: (_parent, args, ctx, info) =>
                     model.createSystemPermissions(args, ctx, info),
-                clear_duplicated_default_roles: (_parent, args, ctx, info) =>
-                    model.clearDuplicatedDefaultRoles(args, ctx, info),
-                clear_old_permissions: (_parent, args, ctx, info) =>
-                    model.clearOldPermissions(args, ctx, info),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),
                 classes: () => model.getClasses(),

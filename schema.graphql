@@ -103,8 +103,6 @@ type Mutation {
 
     create_default_roles(_: Int): [Role] @isAdmin
     create_system_permissions(_: Int): [Permission] @isAdmin
-    clear_duplicated_default_roles(_: Int): Boolean @isAdmin
-    clear_old_permissions(_: Int): Boolean @isAdmin
     role(role_id: ID!): Role
     roles: [Role]
 

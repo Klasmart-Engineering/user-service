@@ -3,15 +3,19 @@ import { latestPermissions } from "../../utils/latestPermissions";
 import { PermissionName } from "../../../src/permissions/permissionNames";
 
 describe("PermissionName", () => {
-  it("contains all the expected permissions", async () => {
-    const expectedPermissions = await latestPermissions();
-    for(const [ permissionCode , permissionInfo ] of expectedPermissions.entries()) {
-      const key = permissionCode as keyof typeof PermissionName;
+    it("contains all the expected permissions", async () => {
+        const expectedPermissions = await latestPermissions();
+        const expectedPermissionCodes = []
 
-      if(!permissionCode) { continue }
+        for(const [ permissionCode , permissionInfo ] of expectedPermissions.entries()) {
+            const key = permissionCode as keyof typeof PermissionName;
 
-      expect(PermissionName[key]).to.eq(permissionCode)
-    }
+            if(!permissionCode) { continue }
 
-  });
+            expectedPermissionCodes.push(permissionCode)
+            expect(PermissionName[key]).to.eq(permissionCode)
+        }
+
+        expect(expectedPermissionCodes).to.deep.members(Object.values(PermissionName))
+    });
 });
