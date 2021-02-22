@@ -57,6 +57,7 @@ describe("model.user", () => {
                 family_name: faker.name.lastName(),
                 email: faker.internet.email(),
                 avatar: "my new avatar",
+                date_of_birth: "03-1994",
             };
         });
 

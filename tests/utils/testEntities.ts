@@ -16,6 +16,7 @@ const joe = {
     family_name: "Brown",
     email: "joe@gmail.com",
     avatar: "joe_avatar",
+    date_of_birth: "03-1984",
 } as User;
 
 const billy = {

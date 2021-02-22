@@ -30,6 +30,7 @@ import { permissionInfo } from './permissions/permissionInfo'
 import { PermissionName } from './permissions/permissionNames'
 
 import { getPaginated } from './utils/getpaginated'
+import e from 'express'
 
 export class Model {
     public static async create() {
@@ -177,17 +178,37 @@ export class Model {
         email,
         phone,
         avatar,
+        date_of_birth,
     }: any) {
         console.info('Unauthenticated endpoint call newUser')
 
         const newUser = new User()
+        if (email) {
+            if (!validateEmail(email)) {
+                email = undefined
+            }
+        }
+        if (phone) {
+            if (!validatePhone(phone)) {
+                phone = undefined
+            }
+        }
+        if (date_of_birth) {
+            if (!validateDOB(date_of_birth)) {
+                date_of_birth = undefined
+            }
+        }
         const hashSource = email ?? phone
+        if (!hashSource) {
+            return null
+        }
         newUser.user_id = accountUUID(hashSource)
         newUser.given_name = given_name
         newUser.family_name = family_name
         newUser.email = email
         newUser.phone = phone
         newUser.avatar = avatar
+        newUser.date_of_birth = date_of_birth
 
         await this.manager.save(newUser)
         return newUser
@@ -230,8 +251,24 @@ export class Model {
         email,
         phone,
         avatar,
+        date_of_birth,
     }: any) {
         console.info('Unauthenticated endpoint call setUser')
+        if (email) {
+            if (!validateEmail(email)) {
+                email = undefined
+            }
+        }
+        if (phone) {
+            if (!validatePhone(phone)) {
+                phone = undefined
+            }
+        }
+        if (date_of_birth) {
+            if (!validateDOB(date_of_birth)) {
+                date_of_birth = undefined
+            }
+        }
 
         const user = await this.userRepository.findOneOrFail(user_id)
 
@@ -249,6 +286,9 @@ export class Model {
         }
         if (avatar !== undefined) {
             user.avatar = avatar
+        }
+        if (date_of_birth !== undefined) {
+            user.date_of_birth = date_of_birth
         }
 
         await this.manager.save(user)

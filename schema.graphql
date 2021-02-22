@@ -89,6 +89,7 @@ type Mutation {
         email: String
         phone: String
         avatar: String
+        date_of_birth: String
     ): User
     newUser(
         given_name: String
@@ -96,6 +97,7 @@ type Mutation {
         email: String
         phone: String
         avatar: String
+        date_of_birth: String
     ): User
     switch_user(user_id: ID!): User
 
