@@ -345,6 +345,7 @@ export class Organization
             given_name,
             family_name,
             date_of_birth,
+            username,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -374,6 +375,7 @@ export class Organization
                 given_name,
                 family_name,
                 date_of_birth,
+                username,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -391,6 +393,7 @@ export class Organization
             given_name,
             family_name,
             date_of_birth,
+            username,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -419,6 +422,7 @@ export class Organization
                 given_name,
                 family_name,
                 date_of_birth,
+                username,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -453,7 +457,8 @@ export class Organization
         phone?: string,
         given_name?: string,
         family_name?: string,
-        date_of_birth?: string
+        date_of_birth?: string,
+        username?: string
     ): Promise<User> {
         const hashSource = email ?? phone
         const user_id = accountUUID(hashSource)
@@ -470,6 +475,9 @@ export class Organization
         }
         if (date_of_birth !== undefined) {
             user.date_of_birth = date_of_birth
+        }
+        if (username !== undefined) {
+            user.username = username
         }
         return user
     }
@@ -539,6 +547,7 @@ export class Organization
         given_name?: string,
         family_name?: string,
         date_of_birth?: string,
+        username?: string,
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = []
@@ -565,6 +574,7 @@ export class Organization
                 given_name,
                 family_name,
                 date_of_birth,
+                username,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -581,7 +591,8 @@ export class Organization
                 phone,
                 given_name,
                 family_name,
-                date_of_birth
+                date_of_birth,
+                username
             )
             const membership = await this.membershipOrganization(
                 user,

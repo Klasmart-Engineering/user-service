@@ -178,6 +178,7 @@ export class Model {
         phone,
         avatar,
         date_of_birth,
+        username,
     }: any) {
         console.info('Unauthenticated endpoint call newUser')
 
@@ -208,6 +209,7 @@ export class Model {
         newUser.phone = phone
         newUser.avatar = avatar
         newUser.date_of_birth = date_of_birth
+        newUser.username = username
 
         await this.manager.save(newUser)
         return newUser
@@ -251,6 +253,7 @@ export class Model {
         phone,
         avatar,
         date_of_birth,
+        username,
     }: any) {
         console.info('Unauthenticated endpoint call setUser')
         if (email) {
@@ -288,6 +291,9 @@ export class Model {
         }
         if (date_of_birth !== undefined) {
             user.date_of_birth = date_of_birth
+        }
+        if (username !== undefined) {
+            user.username = username
         }
 
         await this.manager.save(user)
