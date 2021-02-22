@@ -30,7 +30,6 @@ import { permissionInfo } from './permissions/permissionInfo'
 import { PermissionName } from './permissions/permissionNames'
 
 import { getPaginated } from './utils/getpaginated'
-import e from 'express'
 
 export class Model {
     public static async create() {
