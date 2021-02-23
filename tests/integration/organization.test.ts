@@ -518,17 +518,15 @@ describe("organization", () => {
 
 
                 expect(schoolmemberships).to.exist
-                if(schoolmemberships){
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                }
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
 
                 expect(membership).to.exist
-                if(membership){
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser?.user_id)
-                }
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser?.user_id)
+
             });
 
             it("creates the user when no lowercase email provided", async () => {
@@ -549,17 +547,15 @@ describe("organization", () => {
                 expect(newUser?.username).to.equal("Buster")
 
                 expect(schoolmemberships).to.exist
-                if(schoolmemberships){
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                }
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+                
 
                 expect(membership).to.exist
-                if(membership){
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser?.user_id)
-                }
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser?.user_id)
+                
             });
 
             it("creates the user when email provided as phone", async () => {
@@ -574,24 +570,21 @@ describe("organization", () => {
                 let schoolmemberships = gqlresult?.schoolMemberships
 
                 expect(newUser).to.exist
-                if(newUser){
-                    expect(newUser.email).to.eq(phone)
-                    expect(newUser.phone).to.be.null
-                    expect(newUser.date_of_birth).to.be.null
-                    expect(newUser.username).to.equal("Buster")
-                }
+                
+                expect(newUser.email).to.eq(phone)
+                expect(newUser.phone).to.be.null
+                expect(newUser.date_of_birth).to.be.null
+                expect(newUser.username).to.equal("Buster")
+                
                 expect(schoolmemberships).to.exist
-                if(schoolmemberships){
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                }
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
                 
                 expect(membership).to.exist
-                if(membership){
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser?.user_id)
-                }
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser?.user_id)
+                
             });
 
             it("creates the user when phone provided", async () => {
@@ -605,23 +598,19 @@ describe("organization", () => {
                 let schoolmemberships = gqlresult?.schoolMemberships
 
                 expect(newUser).to.exist
-                if(newUser){
-                    expect(newUser.phone).to.equal(phone)
-                    expect(newUser?.username).to.equal("Buster")
-                }
+                expect(newUser.phone).to.equal(phone)
+                expect(newUser?.username).to.equal("Buster")
 
                 expect(schoolmemberships).to.exist
-                if(schoolmemberships){
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                }
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+                
 
                 expect(membership).to.exist
-                if(membership){
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser?.user_id)
-                }
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser?.user_id)
+                
             });
 
             it("creates the user when phone provided as email", async () => {
@@ -634,23 +623,20 @@ describe("organization", () => {
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
 
-                 if(newUser){
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.be.null
-                    expect(newUser.phone).to.eq(email)
-                 }
-
-                expect(schoolmemberships).to.exist
-                if(schoolmemberships){
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                }
-                if(membership){
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser?.user_id)
-                }
+                expect(newUser).to.exist
+                expect(newUser.email).to.be.null
+                expect(newUser.phone).to.eq(email)
+                
+                expect(schoolmemberships).to.exist         
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+                
+               
+                expect(membership).to.exist
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser?.user_id)
+                
             });
 
 
