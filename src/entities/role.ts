@@ -20,11 +20,8 @@ import { PermissionName } from '../permissions/permissionNames'
 import {
     CursorObject,
     Paginatable,
-    //Paginated,
     toCursorHash,
 } from '../utils/paginated.interface'
-
-//export class RoleConnection extends Paginated<Role, string> {}
 
 @Entity()
 export class Role extends BaseEntity implements Paginatable<Role, string> {
@@ -126,6 +123,7 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
             console.error(e)
         }
     }
+
     public async grant(
         { permission_name }: any,
         context: Context,

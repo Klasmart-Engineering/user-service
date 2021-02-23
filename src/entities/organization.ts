@@ -13,6 +13,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { OrganizationOwnership } from './organizationOwnership'
+import { AgeRange } from './ageRange'
 import { Role } from './role'
 import { User, accountUUID } from './user'
 import { Class } from './class'
@@ -137,6 +138,22 @@ export class Organization
     @OneToMany(() => Class, (class_) => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    public async ageRanges(
+        args: any,
+        context: any,
+        info: any
+    ): Promise<AgeRange[]> {
+        return AgeRange.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date

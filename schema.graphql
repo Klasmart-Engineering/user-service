@@ -203,6 +203,7 @@ type Organization {
     students: [OrganizationMembership]
     schools: [School]
     classes: [Class]
+    ageRanges: [AgeRange!]
 
     #query
     membersWithPermission(
@@ -400,6 +401,15 @@ type Class {
     delete(_: Int): Boolean
     # addSchedule(id: ID!, timestamp: Date): Boolean
     # removeSchedule(id: ID!): Boolean
+}
+
+type AgeRange {
+    id: ID!
+    name: String!
+    low_value: Int!
+    high_value: Int!
+    unit: String!
+    system: Boolean!
 }
 
 type ScheduleEntry {
