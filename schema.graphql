@@ -89,6 +89,8 @@ type Mutation {
         email: String
         phone: String
         avatar: String
+        date_of_birth: String
+        username: String
     ): User
     newUser(
         given_name: String
@@ -96,7 +98,9 @@ type Mutation {
         email: String
         phone: String
         avatar: String
-    ): User
+        date_of_birth: String
+        username: String
+    ): User @deprecated(reason: "Use the inviteUser() method")
     switch_user(user_id: ID!): User
 
     organization(
@@ -131,7 +135,7 @@ type User {
     phone: String
     date_of_birth: String
     avatar: String
-
+    username: String
     #connections
     """
     'my_organization' is the Organization that this user has created
@@ -223,6 +227,7 @@ type Organization {
         given_name: String
         family_name: String
         date_of_birth: String
+        username: String
         organization_role_ids: [ID!]
         school_ids: [ID!]
         school_role_ids: [ID!]
@@ -233,6 +238,7 @@ type Organization {
         given_name: String
         family_name: String
         date_of_birth: String
+        username: String
         organization_role_ids: [ID!]
         school_ids: [ID!]
         school_role_ids: [ID!]

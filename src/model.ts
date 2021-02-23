@@ -160,6 +160,9 @@ export class Model {
                     modified = true
                 }
             }
+            if (!user.username && token.username) {
+                user.username = token.username
+            }
 
             if (modified) {
                 await this.manager.save(user)
@@ -177,17 +180,40 @@ export class Model {
         email,
         phone,
         avatar,
+        date_of_birth,
+        username,
     }: any) {
         console.info('Unauthenticated endpoint call newUser')
 
         const newUser = new User()
+        if (email) {
+            if (!validateEmail(email)) {
+                email = undefined
+            }
+        }
+        if (phone) {
+            if (!validatePhone(phone)) {
+                phone = undefined
+            }
+        }
+        if (date_of_birth) {
+            date_of_birth = padShortDob(date_of_birth)
+            if (!validateDOB(date_of_birth)) {
+                date_of_birth = undefined
+            }
+        }
         const hashSource = email ?? phone
+        if (!hashSource) {
+            return null
+        }
         newUser.user_id = accountUUID(hashSource)
         newUser.given_name = given_name
         newUser.family_name = family_name
         newUser.email = email
         newUser.phone = phone
         newUser.avatar = avatar
+        newUser.date_of_birth = date_of_birth
+        newUser.username = username
 
         await this.manager.save(newUser)
         return newUser
@@ -230,8 +256,25 @@ export class Model {
         email,
         phone,
         avatar,
+        date_of_birth,
+        username,
     }: any) {
         console.info('Unauthenticated endpoint call setUser')
+        if (email) {
+            if (!validateEmail(email)) {
+                email = undefined
+            }
+        }
+        if (phone) {
+            if (!validatePhone(phone)) {
+                phone = undefined
+            }
+        }
+        if (date_of_birth) {
+            if (!validateDOB(date_of_birth)) {
+                date_of_birth = undefined
+            }
+        }
 
         const user = await this.userRepository.findOneOrFail(user_id)
 
@@ -249,6 +292,12 @@ export class Model {
         }
         if (avatar !== undefined) {
             user.avatar = avatar
+        }
+        if (date_of_birth !== undefined) {
+            user.date_of_birth = date_of_birth
+        }
+        if (username !== undefined) {
+            user.username = username
         }
 
         await this.manager.save(user)

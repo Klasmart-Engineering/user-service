@@ -24,18 +24,24 @@ const NEW_USER = `
             $given_name: String
             $family_name: String
             $email: String
-            $avatar: String) {
+            $avatar: String
+            $date_of_birth: String
+            $username: String) {
         newUser(
             given_name: $given_name
             family_name: $family_name
             email: $email
             avatar: $avatar
+            date_of_birth: $date_of_birth
+            username: $username
         ) {
             user_id
             given_name
             family_name
             email
             avatar
+            date_of_birth
+            username
         }
     }
 `;
@@ -46,19 +52,25 @@ const SET_USER = `
             $given_name: String
             $family_name: String
             $email: String
-            $avatar: String) {
+            $avatar: String
+            $date_of_birth: String
+            $username: String) {
         user(
             user_id: $user_id
             given_name: $given_name
             family_name: $family_name
             email: $email
             avatar: $avatar
+            date_of_birth: $date_of_birth
+            username: $username
         ) {
             user_id
             given_name
             family_name
             email
             avatar
+            date_of_birth
+            username
         }
     }
 `;
@@ -121,6 +133,7 @@ const GET_USER = `
             family_name
             email
             avatar
+            date_of_birth
         }
     }
 `;
