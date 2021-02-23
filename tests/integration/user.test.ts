@@ -403,7 +403,7 @@ describe("user", () => {
 
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
-            let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster",  new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster",  new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
@@ -413,10 +413,11 @@ describe("user", () => {
             expect(newUser.email).to.equal("bob@nowhere.com")
 
             expect(schoolmemberships).to.exist
-            expect(schoolmemberships.length).to.equal(1)
-            expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
-            expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
+            if(schoolmemberships){
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+            }
             expect(membership).to.exist
             expect(membership.organization_id).to.equal(organizationId)
             expect(membership.user_id).to.equal(newUser.user_id)
@@ -473,7 +474,7 @@ describe("user", () => {
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
 	        expect(oldUser).to.exist
-            let object = await organization["_setMembership"]("bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
@@ -483,10 +484,11 @@ describe("user", () => {
             expect(newUser.email).to.equal("bob@nowhere.com")
 
             expect(schoolmemberships).to.exist
-            expect(schoolmemberships.length).to.equal(1)
-            expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
-            expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
+            if(schoolmemberships){
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+            }
             expect(membership).to.exist
             expect(membership.organization_id).to.equal(organizationId)
             expect(membership.user_id).to.equal(newUser.user_id)
