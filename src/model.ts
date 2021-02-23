@@ -160,6 +160,9 @@ export class Model {
                     modified = true
                 }
             }
+            if (!user.username && token.username) {
+                user.username = token.username
+            }
 
             if (modified) {
                 await this.manager.save(user)
@@ -194,6 +197,7 @@ export class Model {
             }
         }
         if (date_of_birth) {
+            date_of_birth = padShortDob(date_of_birth)
             if (!validateDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
