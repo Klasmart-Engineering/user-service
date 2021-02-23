@@ -353,10 +353,16 @@ export class Organization
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        await context.permissions.rejectIfNotAllowed(
+        const restricted = !(await context.permissions.allowed(
             this,
             PermissionName.send_invitation_40882
-        )
+        ))
+        if (restricted) {
+            await context.permissions.rejectIfNotAllowed(
+                this,
+                PermissionName.join_organization_10881
+            )
+        }
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -370,6 +376,7 @@ export class Organization
             date_of_birth = padShortDob(date_of_birth)
 
             const result = await this._setMembership(
+                restricted,
                 email,
                 phone,
                 given_name,
@@ -417,6 +424,7 @@ export class Organization
             date_of_birth = padShortDob(date_of_birth)
 
             const result = await this._setMembership(
+                false,
                 email,
                 phone,
                 given_name,
@@ -542,6 +550,7 @@ export class Organization
     }
 
     private async _setMembership(
+        restricted: boolean,
         email?: string,
         phone?: string,
         given_name?: string,
@@ -602,6 +611,10 @@ export class Organization
                 schoolMemberships,
                 oldSchoolMemberships,
             ] = await this.membershipSchools(user, school_ids, schoolRoles)
+            if (restricted) {
+                await manager.save([user, membership, ...oldSchoolMemberships])
+                return { user, membership, oldSchoolMemberships }
+            }
             await manager.remove(oldSchoolMemberships)
             await manager.save([user, membership, ...schoolMemberships])
             return { user, membership, schoolMemberships }
