@@ -144,6 +144,12 @@ export class Organization
         context: any,
         info: any
     ): Promise<AgeRange[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_age_range_20112
+        )
+
         return AgeRange.find({
             where: [
                 { system: true, organization: { organization_id: null } },

@@ -151,6 +151,21 @@ const CREATE_AGE_RANGES = `
     }
 `;
 
+const LIST_AGE_RANGES = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            ageRanges {
+              id
+              name
+              system
+              high_value
+              low_value
+              unit
+            }
+        }
+    }
+`;
+
 export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, headers?: Headers) {
     const { mutate } = testClient;
     className = className ?? "My Class";
@@ -354,3 +369,17 @@ export async function createAgeRanges(testClient: ApolloServerTestClient, organi
     return gqlAgeRanges;
 }
 
+export async function listAgeRanges(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_AGE_RANGES,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlAgeRanges = res.data?.organization.ageRanges as AgeRange[];
+
+    return gqlAgeRanges;
+}
