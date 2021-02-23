@@ -3,6 +3,7 @@ import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
+import { AgeRange } from "../../src/entities/ageRange";
 import { User } from "../../src/entities/user";
 import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
@@ -10,7 +11,7 @@ import { createOrganizationAndValidate, userToPayload } from "../utils/operation
 import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, createSchool, createClass, createRole,  inviteUser, editMembership, deleteOrganization } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createAgeRanges, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, deleteOrganization } from "../utils/operations/organizationOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
@@ -22,6 +23,7 @@ import { OrganizationOwnership } from "../../src/entities/organizationOwnership"
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
 import { UserPermissions } from "../../src/permissions/userPermissions";
+import { createAgeRange } from "../factories/ageRange.factory";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 import { isRequiredArgument } from "graphql";
@@ -950,6 +952,169 @@ describe("organization", () => {
                         expect(dbOrganization.status).to.eq(Status.INACTIVE);
                         expect(dbOrganization.deleted_at).not.to.be.null;
                     });
+                });
+            });
+        });
+    });
+
+    describe("createAgeRanges", () => {
+        let user: User;
+        let organization : Organization;
+        let ageRange: AgeRange;
+
+        const ageRangeInfo = (ageRange: AgeRange) => {
+            return {
+                name: ageRange.name,
+                high_value: ageRange.high_value,
+                low_value: ageRange.low_value,
+                unit: ageRange.unit,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            ageRange = createAgeRange(organization)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to create age ranges in the organization", async () => {
+                const fn = () => createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+                const dbAgeRanges = await AgeRange.find({
+                    where: {
+                        organization: { organization_id: organization.organization_id },
+                    }
+                });
+                expect(dbAgeRanges).to.be.empty;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have create age range permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to create age ranges in the organization", async () => {
+                    const fn = () => createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                    const dbAgeRanges = await AgeRange.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbAgeRanges).to.be.empty;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.create_age_range_20222, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("creates all the age ranges in the organization", async () => {
+                    const gqlAgeRanges = await createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: BillyAuthToken });
+
+                    const dbAgeRanges = await AgeRange.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbAgeRanges).not.to.be.empty
+                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
+                });
+            });
+        });
+    });
+
+    describe("ageRanges", () => {
+        let user: User;
+        let organization : Organization;
+        let ageRange: AgeRange;
+
+        const ageRangeInfo = (ageRange: AgeRange) => {
+            return {
+                name: ageRange.name,
+                high_value: ageRange.high_value,
+                low_value: ageRange.low_value,
+                unit: ageRange.unit,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            ageRange = createAgeRange(organization)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list age ranges in the organization", async () => {
+                const fn = () => listAgeRanges(testClient, organization.organization_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+                const dbAgeRanges = await AgeRange.find({
+                    where: {
+                        organization: { organization_id: organization.organization_id },
+                    }
+                });
+                expect(dbAgeRanges).not.to.be.empty;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view age range permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to list age ranges in the organization", async () => {
+                const fn = () => listAgeRanges(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                    const dbAgeRanges = await AgeRange.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbAgeRanges).not.to.be.empty;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_age_range_20112, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the age ranges in the organization", async () => {
+                    const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    const dbAgeRanges = await AgeRange.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbAgeRanges).not.to.be.empty
+                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
                 });
             });
         });

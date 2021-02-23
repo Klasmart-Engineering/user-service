@@ -13,6 +13,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { OrganizationOwnership } from './organizationOwnership'
+import { AgeRange } from './ageRange'
 import { Role } from './role'
 import { User, accountUUID } from './user'
 import { Class } from './class'
@@ -137,6 +138,28 @@ export class Organization
     @OneToMany(() => Class, (class_) => class_.organization)
     @JoinColumn()
     public classes?: Promise<Class[]>
+
+    public async ageRanges(
+        args: any,
+        context: any,
+        info: any
+    ): Promise<AgeRange[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_age_range_20112
+        )
+
+        return AgeRange.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
@@ -720,6 +743,42 @@ export class Organization
         } catch (e) {
             console.error(e)
         }
+    }
+
+    public async createAgeRanges(
+        { age_ranges }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.create_age_range_20222
+        )
+
+        const ageRanges = []
+
+        for (const ageRangeDetail of age_ranges) {
+            const ageRange = new AgeRange()
+            ageRange.name = ageRangeDetail?.name
+            ageRange.low_value = ageRangeDetail?.low_value
+            ageRange.high_value = ageRangeDetail?.high_value
+            ageRange.unit = ageRangeDetail?.unit
+            ageRange.organization = Promise.resolve(this)
+
+            ageRanges.push(ageRange)
+        }
+
+        await getManager().save(ageRanges)
+
+        return ageRanges
     }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {

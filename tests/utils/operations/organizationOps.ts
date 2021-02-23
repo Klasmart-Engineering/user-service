@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { Class } from "../../../src/entities/class";
 import { Organization } from "../../../src/entities/organization";
 import { OrganizationMembership } from "../../../src/entities/organizationMembership";
+import { AgeRange } from "../../../src/entities/ageRange";
 import { Role } from "../../../src/entities/role";
 import { School } from "../../../src/entities/school";
 import { SchoolMembership } from "../../../src/entities/schoolMembership"
@@ -132,6 +133,39 @@ const EDIT_MEMBERSHIP = `
         }
     }
 `;
+
+const CREATE_AGE_RANGES = `
+    mutation myMutation(
+            $organization_id: ID!,
+            $age_ranges: [AgeRangeDetail]!) {
+        organization(organization_id: $organization_id) {
+            createAgeRanges(age_ranges: $age_ranges) {
+                 id
+                 name
+                 high_value
+                 low_value
+                 system
+                 unit
+            }
+        }
+    }
+`;
+
+const LIST_AGE_RANGES = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            ageRanges {
+              id
+              name
+              system
+              high_value
+              low_value
+              unit
+            }
+        }
+    }
+`;
+
 export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, headers?: Headers) {
     const { mutate } = testClient;
     className = className ?? "My Class";
@@ -320,4 +354,32 @@ export async function deleteOrganization(testClient: ApolloServerTestClient, org
     return gqlOrganization;
 }
 
+export async function createAgeRanges(testClient: ApolloServerTestClient, organizationId: string, ageRanges: any[], headers?: Headers) {
+    const { mutate } = testClient;
 
+    const operation = () => mutate({
+        mutation: CREATE_AGE_RANGES,
+        variables: { organization_id: organizationId, age_ranges: ageRanges },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlAgeRanges = res.data?.organization.createAgeRanges as AgeRange[];
+
+    return gqlAgeRanges;
+}
+
+export async function listAgeRanges(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_AGE_RANGES,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlAgeRanges = res.data?.organization.ageRanges as AgeRange[];
+
+    return gqlAgeRanges;
+}
