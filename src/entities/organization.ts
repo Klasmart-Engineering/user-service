@@ -739,6 +739,42 @@ export class Organization
         }
     }
 
+    public async createAgeRanges(
+        { age_ranges }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.create_age_range_20222
+        )
+
+        const ageRanges = []
+
+        for (const ageRangeDetail of age_ranges) {
+            const ageRange = new AgeRange()
+            ageRange.name = ageRangeDetail?.name
+            ageRange.low_value = ageRangeDetail?.low_value
+            ageRange.high_value = ageRangeDetail?.high_value
+            ageRange.unit = ageRangeDetail?.unit
+            ageRange.organization = Promise.resolve(this)
+
+            ageRanges.push(ageRange)
+        }
+
+        await getManager().save(ageRanges)
+
+        return ageRanges
+    }
+
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
         if (
             info.operation.operation !== 'mutation' ||

@@ -14,7 +14,7 @@ import { Organization } from './organization'
 @Entity()
 @Check(`"low_value" >= 0 AND "low_value" <= 99`)
 @Check(`"high_value" > 0 AND "high_value" <= 99`)
-@Unique(['low_value', 'high_value', 'organization'])
+@Unique(['low_value', 'high_value', 'unit', 'organization'])
 export class AgeRange extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
