@@ -418,6 +418,45 @@ export class Model {
         })
     }
 
+    public async v1_getRoles(
+        context: Context,
+        { after, before, first, last, scope }: any
+    ) {
+        if (!context.permissions.isAdmin && scope) {
+            const user_id = context.token?.id || ''
+            const orgScope = scope.clone()
+            const idsFromOrgs = await orgScope
+                .select('Role.role_id')
+                .innerJoin('Role.memberships', 'OrganizationMembership')
+                .innerJoin('OrganizationMembership.user', 'User')
+                .groupBy('Role.role_id, OrganizationMembership.user_id')
+                .where('OrganizationMembership.user_id = :user_id', {
+                    user_id: user_id,
+                })
+                .getRawMany()
+            const schoolScope = scope.clone()
+            const idsFromSchools = await schoolScope
+                .select('Role.role_id')
+                .innerJoin('Role.schoolMemberships', 'SchoolMembership')
+                .innerJoin('SchoolMembership.user', 'User')
+                .groupBy('Role.role_id, SchoolMembership.user_id')
+                .where('SchoolMembership.user_id = :user_id', {
+                    user_id: user_id,
+                })
+                .getMany()
+            const idcontainer = idsFromOrgs.concat(idsFromSchools)
+            const ids: string[] = idcontainer.map((x: any) => x.Role_role_id)
+            scope.whereInIds(ids)
+        }
+        return getPaginated(this, 'role', {
+            before,
+            after,
+            first,
+            last,
+            scope,
+        })
+    }
+
     public async createSystemPermissions(
         args: any,
         context: Context,

@@ -68,6 +68,14 @@ type Query {
 
     role(role_id: ID!): Role
     roles: [Role]
+
+    roles_v1(
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): RoleConnection! @isAdmin(entity: "role")
+
     permissions(
         after: String
         before: String

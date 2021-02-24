@@ -4,6 +4,7 @@ import { getRepository } from 'typeorm'
 
 import { Organization } from '../entities/organization'
 import { User } from '../entities/user'
+import { Role } from '../entities/role'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
@@ -18,6 +19,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                     break
                 case 'user':
                     scope = getRepository(User).createQueryBuilder()
+                    break
+                case 'role':
+                    scope = getRepository(Role).createQueryBuilder()
                     break
                 default:
                     context.permissions.rejectIfNotAdmin()
