@@ -37,6 +37,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.v1_getOrganizations(ctx, args),
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 classes: () => model.getClasses(),
+                classes_v1: (_parent, args, ctx, _info) =>
+                    model.v1_getClasses(ctx, args),
                 school: (_parent, args, _context, _info) =>
                     model.getSchool(args),
             },

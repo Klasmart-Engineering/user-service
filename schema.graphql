@@ -83,6 +83,13 @@ type Query {
         last: Int
     ): PermissionConnection! @isAuthenticated
     classes: [Class]
+    classes_v1(
+        after: String
+        before: String
+        first: Int
+        last: Int
+    ): ClassConnection! @isAdmin(entity: "class")
+
     class(class_id: ID!): Class
 
     school(school_id: ID!): School

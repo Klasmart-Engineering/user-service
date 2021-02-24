@@ -28,6 +28,12 @@ entityCursorInfo.set('role', {
     cursorSearchKey: 'Role.role_id',
 })
 
+entityCursorInfo.set('class', {
+    startId: START_KEY,
+    endId: END_KEY,
+    cursorSearchKey: 'Class.class_id',
+})
+
 entityCursorInfo.set('permission', {
     startId: 'zzzzzzzz',
     endId: 'A',

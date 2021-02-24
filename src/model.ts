@@ -685,4 +685,38 @@ export class Model {
             console.error(e)
         }
     }
+
+    public async v1_getClasses(
+        context: Context,
+        { after, before, first, last, scope }: any
+    ) {
+        if (!context.permissions.isAdmin && scope) {
+            const user_id = context.token?.id || ''
+            const teachingScope = scope.clone()
+            const idsFromTeaching: Class[] =
+                (await teachingScope
+                    .createQueryBuilder()
+                    .relation(User, 'classesTeaching')
+                    .of(user_id)
+                    .loadMany()) ?? []
+            const schoolScope = scope.clone()
+            const idsFromStudying: Class[] =
+                (await schoolScope
+                    .createQueryBuilder()
+                    .relation(User, 'classesStudying')
+                    .of(user_id)
+                    .loadMany()) ?? []
+
+            const idcontainer = idsFromStudying.concat(idsFromTeaching)
+            const ids: string[] = idcontainer.map((x: any) => x.class_id)
+            scope.whereInIds(ids)
+        }
+        return getPaginated(this, 'class', {
+            before,
+            after,
+            first,
+            last,
+            scope,
+        })
+    }
 }

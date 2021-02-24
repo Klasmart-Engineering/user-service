@@ -1,6 +1,7 @@
 import { SchemaDirectiveVisitor } from 'apollo-server-express'
 import { defaultFieldResolver } from 'graphql'
 import { getRepository } from 'typeorm'
+import { Class } from '../entities/class'
 
 import { Organization } from '../entities/organization'
 import { User } from '../entities/user'
@@ -22,6 +23,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                     break
                 case 'role':
                     scope = getRepository(Role).createQueryBuilder()
+                    break
+                case 'class':
+                    scope = getRepository(Class).createQueryBuilder()
                     break
                 default:
                     context.permissions.rejectIfNotAdmin()
