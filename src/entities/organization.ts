@@ -745,7 +745,7 @@ export class Organization
         }
     }
 
-    public async createAgeRanges(
+    public async createOrUpdateAgeRanges(
         { age_ranges }: any,
         context: Context,
         info: GraphQLResolveInfo
@@ -757,23 +757,49 @@ export class Organization
             return []
         }
 
+        let checkUpdatePermission = false
+        let checkCreatePermission = false
+        let checkAdminPermission = false
         const permisionContext = { organization_id: this.organization_id }
-        await context.permissions.rejectIfNotAllowed(
-            permisionContext,
-            PermissionName.create_age_range_20222
-        )
 
         const ageRanges = []
 
         for (const ageRangeDetail of age_ranges) {
-            const ageRange = new AgeRange()
-            ageRange.name = ageRangeDetail?.name
-            ageRange.low_value = ageRangeDetail?.low_value
-            ageRange.high_value = ageRangeDetail?.high_value
-            ageRange.unit = ageRangeDetail?.unit
+            checkUpdatePermission =
+                checkUpdatePermission || !!ageRangeDetail?.id
+            checkCreatePermission = checkCreatePermission || !ageRangeDetail?.id
+            checkAdminPermission =
+                checkAdminPermission || !!ageRangeDetail?.system
+
+            const ageRange =
+                (await AgeRange.findOne(ageRangeDetail?.id)) || new AgeRange()
+            ageRange.name = ageRangeDetail?.name || ageRange.name
+            ageRange.low_value = ageRangeDetail?.low_value || ageRange.low_value
+            ageRange.high_value =
+                ageRangeDetail?.high_value || ageRange.high_value
+            ageRange.unit = ageRangeDetail?.unit || ageRange.unit
             ageRange.organization = Promise.resolve(this)
+            ageRange.system = ageRangeDetail?.system || ageRange.system
 
             ageRanges.push(ageRange)
+        }
+
+        if (checkAdminPermission) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
+        if (checkCreatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.create_age_range_20222
+            )
+        }
+
+        if (checkUpdatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.edit_age_range_20332
+            )
         }
 
         await getManager().save(ageRanges)

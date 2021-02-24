@@ -12,6 +12,7 @@ export function createAgeRange(org: Organization = createOrganization()) {
     ageRange.high_value = faker.random.number({ 'min': 1, 'max': 99 });
     ageRange.unit = faker.random.arrayElement(Object.values(AgeRangeUnit))
     ageRange.organization = Promise.resolve(org)
+    ageRange.system = false
 
     return ageRange;
 }

@@ -656,7 +656,11 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     }
 }
 
-if(!process.env.DOMAIN) { console.log("Warning DOMAIN env varible not set, defaulting to kidsloop.net") }
+if (!process.env.DOMAIN) {
+    console.log(
+        'Warning DOMAIN env varible not set, defaulting to kidsloop.net'
+    )
+}
 const domain = process.env.DOMAIN || 'kidsloop.net'
 const accountNamespace = v5(domain, v5.DNS)
 

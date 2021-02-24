@@ -39,7 +39,7 @@ export class AgeRange extends BaseEntity {
     public organization?: Promise<Organization>
 
     @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
-    public created_at?: Date
+    public created_at!: Date
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date

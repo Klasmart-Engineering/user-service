@@ -11,7 +11,7 @@ import { createOrganizationAndValidate, userToPayload } from "../utils/operation
 import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, createAgeRanges, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, deleteOrganization } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, deleteOrganization } from "../utils/operations/organizationOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
@@ -556,12 +556,12 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
 
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser?.user_id)
-                
+
             });
 
             it("creates the user when email provided as phone", async () => {
@@ -576,21 +576,21 @@ describe("organization", () => {
                 let schoolmemberships = gqlresult?.schoolMemberships
 
                 expect(newUser).to.exist
-                
+
                 expect(newUser.email).to.eq(phone)
                 expect(newUser.phone).to.be.null
                 expect(newUser.date_of_birth).to.be.null
                 expect(newUser.username).to.equal("Buster")
-                
+
                 expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser?.user_id)
-                
+
             });
 
             it("creates the user when phone provided", async () => {
@@ -611,12 +611,12 @@ describe("organization", () => {
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
+
 
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser?.user_id)
-                
+
             });
 
             it("creates the user when phone provided as email", async () => {
@@ -632,17 +632,17 @@ describe("organization", () => {
                 expect(newUser).to.exist
                 expect(newUser.email).to.be.null
                 expect(newUser.phone).to.eq(email)
-                
-                expect(schoolmemberships).to.exist         
+
+                expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
                 expect(schoolmemberships[0].user_id).to.equal(newUser?.user_id)
                 expect(schoolmemberships[0].school_id).to.equal(schoolId)
-                
-               
+
+
                 expect(membership).to.exist
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser?.user_id)
-                
+
             });
 
             it("creates the user makes them linked to organization, they invite someone else", async () => {
@@ -957,7 +957,7 @@ describe("organization", () => {
         });
     });
 
-    describe("createAgeRanges", () => {
+    describe("createOrUpdateAgeRanges", () => {
         let user: User;
         let organization : Organization;
         let ageRange: AgeRange;
@@ -968,6 +968,7 @@ describe("organization", () => {
                 high_value: ageRange.high_value,
                 low_value: ageRange.low_value,
                 unit: ageRange.unit,
+                system: ageRange.system,
             }
         }
 
@@ -982,28 +983,9 @@ describe("organization", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to create age ranges in the organization", async () => {
-                const fn = () => createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: undefined });
-
-                expect(fn()).to.be.rejected;
-                const dbAgeRanges = await AgeRange.find({
-                    where: {
-                        organization: { organization_id: organization.organization_id },
-                    }
-                });
-                expect(dbAgeRanges).to.be.empty;
-            });
-        });
-
-        context("when authenticated", () => {
-            context("and the user does not have create age range permissions", () => {
-                beforeEach(async () => {
-                    const role = await createRole(testClient, organization.organization_id);
-                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
-                });
-
+            context("and it tries to create new age ranges", () => {
                 it("fails to create age ranges in the organization", async () => {
-                    const fn = () => createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: BillyAuthToken });
+                    const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: undefined });
 
                     expect(fn()).to.be.rejected;
                     const dbAgeRanges = await AgeRange.find({
@@ -1015,16 +997,23 @@ describe("organization", () => {
                 });
             });
 
-            context("and the user has all the permissions", () => {
+            context("and it tries to upate existing non system age ranges", () => {
+                let newAgeRange: any;
+
                 beforeEach(async () => {
-                    const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.create_age_range_20222, { authorization: JoeAuthToken });
-                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                    const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                    newAgeRange = {
+                        ...ageRangeInfo(ageRange),
+                        ...{ id: gqlAgeRanges[0].id, name: 'New Name' }
+                    }
                 });
 
-                it("creates all the age ranges in the organization", async () => {
-                    const gqlAgeRanges = await createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: BillyAuthToken });
 
+                it("fails to update age ranges in the organization", async () => {
+                    const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
                     const dbAgeRanges = await AgeRange.find({
                         where: {
                             organization: { organization_id: organization.organization_id },
@@ -1032,7 +1021,221 @@ describe("organization", () => {
                     });
 
                     expect(dbAgeRanges).not.to.be.empty
-                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
+                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq([ageRange].map(ageRangeInfo))
+                });
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have create age range permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to create new age ranges", () => {
+                    it("fails to create age ranges in the organization", async () => {
+                        const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbAgeRanges = await AgeRange.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+                        expect(dbAgeRanges).to.be.empty;
+                    });
+                });
+            });
+
+            context("and the user does not have edit age range permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to upate existing non system age ranges", () => {
+                    let newAgeRange: any;
+
+                    beforeEach(async () => {
+                        const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                        newAgeRange = {
+                            ...ageRangeInfo(ageRange),
+                            ...{ id: gqlAgeRanges[0].id, name: 'New Name' }
+                        }
+                    });
+
+
+                    it("fails to update age ranges in the organization", async () => {
+                        const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbAgeRanges = await AgeRange.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+
+                        expect(dbAgeRanges).not.to.be.empty
+                        expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq([ageRange].map(ageRangeInfo))
+                    });
+                });
+            });
+
+            context("and is a non admin user", () => {
+                context("and the user has all the permissions", () => {
+                    beforeEach(async () => {
+                        const role = await createRole(testClient, organization.organization_id);
+                        await grantPermission(testClient, role.role_id, PermissionName.create_age_range_20222, { authorization: JoeAuthToken });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_age_range_20332, { authorization: JoeAuthToken });
+                        await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                    });
+
+                    context("and it tries to create new age ranges", () => {
+                        it("creates all the age ranges in the organization", async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: BillyAuthToken });
+
+                            const dbAgeRanges = await AgeRange.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbAgeRanges).not.to.be.empty
+                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing non system age ranges", () => {
+                        let newAgeRange: any;
+
+                        beforeEach(async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                            newAgeRange = {
+                                ...ageRangeInfo(ageRange),
+                                ...{ id: gqlAgeRanges[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected age ranges in the organization", async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: BillyAuthToken });
+
+                            const dbAgeRanges = await AgeRange.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbAgeRanges).not.to.be.empty
+                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq([newAgeRange].map(ageRangeInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing system age ranges", () => {
+                        let newAgeRange: any;
+
+                        beforeEach(async () => {
+                            ageRange.system = true
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                            newAgeRange = {
+                                ...ageRangeInfo(ageRange),
+                                ...{ id: gqlAgeRanges[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("fails to update age ranges in the organization", async () => {
+                            const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: BillyAuthToken });
+
+                            expect(fn()).to.be.rejected;
+                            const dbAgeRanges = await AgeRange.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbAgeRanges).not.to.be.empty
+                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq([ageRange].map(ageRangeInfo))
+                        });
+                    });
+                });
+            });
+
+            context("and is an admin user", () => {
+                context("and the user has all the permissions", () => {
+                    context("and it tries to create new age ranges", () => {
+                        it("creates all the age ranges in the organization", async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                            const dbAgeRanges = await AgeRange.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbAgeRanges).not.to.be.empty
+                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing non system age ranges", () => {
+                        let newAgeRange: any;
+
+                        beforeEach(async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                            newAgeRange = {
+                                ...ageRangeInfo(ageRange),
+                                ...{ id: gqlAgeRanges[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected age ranges in the organization", async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: JoeAuthToken });
+
+                            const dbAgeRanges = await AgeRange.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbAgeRanges).not.to.be.empty
+                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq([newAgeRange].map(ageRangeInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing system age ranges", () => {
+                        let newAgeRange: any;
+
+                        beforeEach(async () => {
+                            ageRange.system = true
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+
+                            newAgeRange = {
+                                ...ageRangeInfo(ageRange),
+                                ...{ id: gqlAgeRanges[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected age ranges in the organization", async () => {
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: JoeAuthToken });
+
+                            const dbAgeRanges = await AgeRange.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbAgeRanges).not.to.be.empty
+                            expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq([newAgeRange].map(ageRangeInfo))
+                        });
+                    });
                 });
             });
         });
@@ -1060,7 +1263,7 @@ describe("organization", () => {
             ageRange = createAgeRange(organization)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-            await createAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+            await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {

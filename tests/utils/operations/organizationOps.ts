@@ -134,12 +134,12 @@ const EDIT_MEMBERSHIP = `
     }
 `;
 
-const CREATE_AGE_RANGES = `
+const CREATE_OR_UPDATE_AGE_RANGES = `
     mutation myMutation(
             $organization_id: ID!,
             $age_ranges: [AgeRangeDetail]!) {
         organization(organization_id: $organization_id) {
-            createAgeRanges(age_ranges: $age_ranges) {
+            createOrUpdateAgeRanges(age_ranges: $age_ranges) {
                  id
                  name
                  high_value
@@ -354,17 +354,17 @@ export async function deleteOrganization(testClient: ApolloServerTestClient, org
     return gqlOrganization;
 }
 
-export async function createAgeRanges(testClient: ApolloServerTestClient, organizationId: string, ageRanges: any[], headers?: Headers) {
+export async function createOrUpdateAgeRanges(testClient: ApolloServerTestClient, organizationId: string, ageRanges: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: CREATE_AGE_RANGES,
+        mutation: CREATE_OR_UPDATE_AGE_RANGES,
         variables: { organization_id: organizationId, age_ranges: ageRanges },
         headers: headers,
     });
 
     const res = await gqlTry(operation);
-    const gqlAgeRanges = res.data?.organization.createAgeRanges as AgeRange[];
+    const gqlAgeRanges = res.data?.organization.createOrUpdateAgeRanges as AgeRange[];
 
     return gqlAgeRanges;
 }

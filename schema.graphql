@@ -255,7 +255,7 @@ type Organization {
     createRole(role_name: String!, role_description: String!): Role
     createSchool(school_name: String): School
     createClass(class_name: String): Class
-    createAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
+    createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
     delete(_: Int): Boolean
 }
 
@@ -418,10 +418,12 @@ enum AgeRangeUnit {
 }
 
 input AgeRangeDetail {
-    name: String!
-    low_value: Int!
-    high_value: Int!
-    unit: AgeRangeUnit!
+    id: ID
+    name: String
+    low_value: Int
+    high_value: Int
+    unit: AgeRangeUnit
+    system: Boolean
 }
 
 type AgeRange {
