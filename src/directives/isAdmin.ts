@@ -3,7 +3,9 @@ import { defaultFieldResolver } from 'graphql'
 import { getRepository } from 'typeorm'
 import { Class } from '../entities/class'
 
+import { AgeRange } from '../entities/ageRange'
 import { Organization } from '../entities/organization'
+import { OrganizationMembership } from '../entities/organizationMembership'
 import { User } from '../entities/user'
 import { Role } from '../entities/role'
 
@@ -27,6 +29,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 case 'class':
                     scope = getRepository(Class).createQueryBuilder()
                     break
+                case 'ageRange':
+                    scope = getRepository(AgeRange).createQueryBuilder()
+                    break
                 default:
                     context.permissions.rejectIfNotAdmin()
             }
@@ -38,6 +43,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         break
                     case 'user':
                         this.nonAdminUserScope(scope, context.token)
+                        break
+                    case 'ageRange':
+                        this.nonAdminAgeRangeScope(scope, context)
                         break
                     default:
                     // do nothing
@@ -63,6 +71,21 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             .innerJoin('Organization.memberships', 'OrganizationMembership')
             .andWhere('OrganizationMembership.user_id = :userId', {
                 userId: token?.id,
+            })
+    }
+
+    private nonAdminAgeRangeScope(scope: any, context: any) {
+        scope
+            .innerJoin(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'OrganizationMembership.organization = AgeRange.organization'
+            )
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: context.permissions.getUserId(),
+            })
+            .orWhere('AgeRange.system = :system', {
+                system: true,
             })
     }
 }

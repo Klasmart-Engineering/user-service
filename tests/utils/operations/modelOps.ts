@@ -1,3 +1,4 @@
+import { AgeRange } from "../../../src/entities/ageRange";
 import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
 import { Role } from "../../../src/entities/role";
@@ -183,6 +184,20 @@ const GET_PERMISSIONS = `
           total
        }
     }
+`;
+
+const GET_AGE_RANGE = `
+query getAgeRange($id: ID!){
+  age_range(id: $id) {
+    id
+    name
+    low_value
+    high_value
+    unit
+    status
+    system
+  }
+}
 `;
 
 export async function createDefaultRoles( testClient: ApolloServerTestClient, headers?: Headers) {
@@ -387,3 +402,18 @@ export async function getPermissions(testClient: ApolloServerTestClient, headers
     const gqlOrgs = res.data
     return gqlOrgs;
 }
+
+export async function getAgeRange(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_AGE_RANGE,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlAgeRange = res.data?.age_range as AgeRange;
+    return gqlAgeRange;
+}
+

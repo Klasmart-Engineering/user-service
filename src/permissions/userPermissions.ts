@@ -36,6 +36,10 @@ export class UserPermissions {
         return UserPermissions.ADMIN_EMAILS.includes(token?.email)
     }
 
+    public getUserId() {
+        return this.user_id
+    }
+
     public rejectIfNotAdmin() {
         if (!this.isAdmin) {
             throw new Error(

@@ -5,9 +5,13 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/testConfig";
-import { createDefaultRoles, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { createAgeRange } from "../factories/ageRange.factory";
+import { createOrganization } from "../factories/organization.factory";
+import { createDefaultRoles, getAgeRange, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
+import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
+import { AgeRange } from "../../src/entities/ageRange";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
 import { UserPermissions } from "../../src/permissions/userPermissions";
@@ -359,6 +363,96 @@ describe("model", () => {
                     }
 
                     expect(permissions.map(permissionInfo)).to.deep.members(dbPermissions.map(permissionInfo))
+                });
+            });
+        });
+    });
+
+    describe("getAgeRange", () => {
+        let user: User;
+        let ageRange: AgeRange;
+        let organizationId: string;
+
+        const ageRangeInfo = (ageRange: AgeRange) => {
+            return {
+                id: ageRange.id,
+                name: ageRange.name,
+                high_value: ageRange.high_value,
+                low_value: ageRange.low_value,
+                unit: ageRange.unit,
+                system: ageRange.system,
+            }
+        }
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+            const org = createOrganization(user)
+            await connection.manager.save(org)
+            organizationId = org.organization_id
+            ageRange = createAgeRange(org)
+            await connection.manager.save(ageRange)
+        });
+
+        context("when user is not logged in", () => {
+            it("returns no age range", async () => {
+                const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: undefined });
+
+                expect(gqlAgeRange).to.be.null;
+            });
+        });
+
+        context("when user is logged in", () => {
+            let otherUserId: string;
+
+            beforeEach(async () => {
+                const otherUser = await createUserBilly(testClient);
+                otherUserId = otherUser.user_id
+            });
+
+            context("and the user is not an admin", () => {
+                context("and it belongs to the organization from the age range", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected age range", async () => {
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: BillyAuthToken });
+
+                        expect(gqlAgeRange).not.to.be.null;
+                        expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
+                    });
+                });
+
+                context("and it does not belongs to the organization from the age range", () => {
+                    it("returns no age range", async () => {
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: BillyAuthToken });
+
+                        expect(gqlAgeRange).to.be.null;
+                    });
+                });
+            });
+
+            context("and the user is an admin", () => {
+                context("and it belongs to the organization from the age range", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected age range", async () => {
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: JoeAuthToken });
+
+                        expect(gqlAgeRange).not.to.be.null;
+                        expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
+                    });
+                });
+
+                context("and it does not belongs to the organization from the age range", () => {
+                    it("returns the expected age range", async () => {
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: JoeAuthToken });
+
+                        expect(gqlAgeRange).not.to.be.null;
+                        expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
+                    });
                 });
             });
         });

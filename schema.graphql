@@ -93,6 +93,8 @@ type Query {
     class(class_id: ID!): Class
 
     school(school_id: ID!): School
+
+    age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
 }
 
 type Mutation {
@@ -136,6 +138,8 @@ type Mutation {
     class(class_id: ID!): Class
 
     school(school_id: ID!): School
+
+    age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
 }
 
 type User {
@@ -203,7 +207,7 @@ type Organization {
     address2: String
     phone: String
     shortCode: String
-    status: String
+    status: Status
 
     #connections
 
@@ -278,7 +282,7 @@ type OrganizationMembership {
     user_id: ID!
     organization_id: ID!
     join_timestamp: Date
-    status: String
+    status: Status
 
     #connections
     organization: Organization
@@ -302,7 +306,7 @@ type OrganizationOwnership {
     #properties
     user_id: ID!
     organization_id: ID!
-    status: String
+    status: Status
 
     #connections
     organization: Organization
@@ -315,7 +319,7 @@ type Role {
     #properties
     role_name: String
     role_description: String!
-    status: String!
+    status: Status!
     system_role: Boolean!
 
     #connections
@@ -349,7 +353,7 @@ type School {
 
     #properties
     school_name: String
-    status: String
+    status: Status
 
     #connections
     organization: Organization
@@ -368,7 +372,7 @@ type SchoolMembership {
     user_id: ID!
     school_id: ID!
     join_timestamp: Date
-    status: String
+    status: Status
 
     #connections
     user: User
@@ -390,7 +394,7 @@ type Class {
 
     #properties
     class_name: String
-    status: String
+    status: Status
 
     #connections
     organization: Organization
@@ -424,6 +428,11 @@ enum AgeRangeUnit {
   month
 }
 
+enum Status {
+  active
+  inactive
+}
+
 input AgeRangeDetail {
     id: ID
     name: String
@@ -440,6 +449,10 @@ type AgeRange {
     high_value: Int!
     unit: AgeRangeUnit!
     system: Boolean!
+    status: Status
+
+    # Mutations
+    delete(_: Int): Boolean
 }
 
 type ScheduleEntry {

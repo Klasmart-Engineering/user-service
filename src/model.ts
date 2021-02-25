@@ -21,6 +21,7 @@ import { schoolAdminRole } from './permissions/schoolAdmin'
 import { parentRole } from './permissions/parent'
 import { studentRole } from './permissions/student'
 import { teacherRole } from './permissions/teacher'
+import { AgeRange } from './entities/ageRange'
 import { Role } from './entities/role'
 import { Class } from './entities/class'
 import { Context } from './main'
@@ -67,6 +68,7 @@ export class Model {
     private classRepository: Repository<Class>
     private schoolRepository: Repository<School>
     private permissionRepository: Repository<Permission>
+    private ageRangeRepository: Repository<AgeRange>
 
     constructor(connection: Connection) {
         this.connection = connection
@@ -80,6 +82,7 @@ export class Model {
         this.classRepository = getRepository(Class, connection.name)
         this.schoolRepository = getRepository(School, connection.name)
         this.permissionRepository = getRepository(Permission, connection.name)
+        this.ageRangeRepository = getRepository(AgeRange, connection.name)
     }
 
     public async getMyUser({ token, req }: Context) {
@@ -610,6 +613,7 @@ export class Model {
             console.error(e)
         }
     }
+
     public async getRole({ role_id }: Role) {
         console.info('Unauthenticated endpoint call getRole')
 
@@ -620,6 +624,7 @@ export class Model {
             console.error(e)
         }
     }
+
     public async getRoles() {
         console.info('Unauthenticated endpoint call getRoles')
 
@@ -718,5 +723,13 @@ export class Model {
             last,
             scope,
         })
+    }
+
+    public async getAgeRange({ id, scope }: any, context: Context) {
+        const ageRange = await scope.andWhere('AgeRange.id = :id', {
+            id: id
+        }).getOne()
+
+        return ageRange
     }
 }
