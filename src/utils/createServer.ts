@@ -74,12 +74,15 @@ export const createServer = (model: Model, context?: any) =>
         subscriptions: {
             keepAlive: 1000,
             onConnect: async (
-                { authToken, sessionId }: any,
+                { authToken, sessionId, req }: any,
                 websocket,
                 connectionData: any
             ): Promise<Context> => {
                 const token = await checkToken(authToken)
-                const permissions = new UserPermissions(token && token.id)
+                const permissions = new UserPermissions(
+                    token && token.id,
+                    req.cookies
+                )
                 return { sessionId, token, websocket, permissions }
             },
         },
@@ -92,7 +95,7 @@ export const createServer = (model: Model, context?: any) =>
                 const encodedToken =
                     req.headers.authorization || req.cookies.access
                 const token = (await checkToken(encodedToken)) as any
-                const permissions = new UserPermissions(token)
+                const permissions = new UserPermissions(token, req.cookies)
 
                 return { token, permissions, res, req }
             }),

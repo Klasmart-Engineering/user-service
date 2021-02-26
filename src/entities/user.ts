@@ -79,7 +79,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call user membership by ${context.token?.id}`
+            `Unauthenticated endpoint call user membership by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -107,7 +107,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call user school_membership by ${context.token?.id}`
+            `Unauthenticated endpoint call user school_membership by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -142,7 +142,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call organizationsWithPermission by ${context.token?.id}`
+            `Unauthenticated endpoint call organizationsWithPermission by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -174,7 +174,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call schoolsWithPermission by ${context.token?.id}`
+            `Unauthenticated endpoint call schoolsWithPermission by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -246,7 +246,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call user set by ${context.token?.id}`
+            `Unauthenticated endpoint call user set by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -282,7 +282,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call createOrganization by ${context.token?.id}`
+            `Unauthenticated endpoint call createOrganization by ${context.permissions?.getUserId()}`
         )
 
         const active_organizations = await OrganizationOwnership.find({
@@ -352,7 +352,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call addOrganization by ${context.token?.id}`
+            `Unauthenticated endpoint call addOrganization by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -381,7 +381,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call addSchool by ${context.token?.id}`
+            `Unauthenticated endpoint call addSchool by ${context.permissions?.getUserId()}`
         )
 
         try {

@@ -101,7 +101,7 @@ export class SchoolMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call schoolMembership addRole by ${context.token?.id}`
+            `Unauthenticated endpoint call schoolMembership addRole by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -128,7 +128,7 @@ export class SchoolMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call schoolMembership addRoles by ${context.token?.id}`
+            `Unauthenticated endpoint call schoolMembership addRoles by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -165,7 +165,7 @@ export class SchoolMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call schoolMembership removeRole by ${context.token?.id}`
+            `Unauthenticated endpoint call schoolMembership removeRole by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -192,7 +192,7 @@ export class SchoolMembership extends BaseEntity {
 
     public async leave(args: any, context: any, info: GraphQLResolveInfo) {
         console.info(
-            `Unauthenticated endpoint call school leave by ${context.token?.id}`
+            `Unauthenticated endpoint call school leave by ${context.permissions?.getUserId()}`
         )
 
         try {

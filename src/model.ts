@@ -85,8 +85,8 @@ export class Model {
         this.ageRangeRepository = getRepository(AgeRange, connection.name)
     }
 
-    public async getMyUser({ token, req }: Context) {
-        const userID = req.cookies?.user_id
+    public async getMyUser({ token, permissions }: Context) {
+        const userID = permissions.getUserId()
         const userEmail = token?.email
         const userPhone = token?.phone
 
@@ -106,7 +106,6 @@ export class Model {
             }
         } else if (token) {
             const hashSource = userEmail || userPhone
-            user = await this.userRepository.findOne({ user_id: token.id })
 
             if (!user) {
                 user = new User()
@@ -115,19 +114,23 @@ export class Model {
         }
 
         if (user) {
-            user = await this.updateUserWithTokenDetails(user, token)
+            user = await this.updateUserWithTokenDetails(user, token, userID)
         }
 
         return user
     }
 
-    private async updateUserWithTokenDetails(user: User, token: any) {
+    private async updateUserWithTokenDetails(
+        user: User,
+        token: any,
+        userId?: string
+    ) {
         try {
             let modified = false
 
             //Ensure fields match
-            if (token.id && user.user_id !== token.id) {
-                user.user_id = token.id
+            if (userId && user.user_id !== userId) {
+                user.user_id = userId
                 modified = true
             }
 
@@ -426,7 +429,7 @@ export class Model {
         { after, before, first, last, scope }: any
     ) {
         if (!context.permissions.isAdmin && scope) {
-            const user_id = context.token?.id || ''
+            const user_id = context.permissions.getUserId() || ''
             const orgScope = scope.clone()
             const idsFromOrgs = await orgScope
                 .select('Role.role_id')
@@ -696,7 +699,7 @@ export class Model {
         { after, before, first, last, scope }: any
     ) {
         if (!context.permissions.isAdmin && scope) {
-            const user_id = context.token?.id || ''
+            const user_id = context.permissions.getUserId() || ''
             const teachingScope = scope.clone()
             const idsFromTeaching: Class[] =
                 (await teachingScope
@@ -726,9 +729,11 @@ export class Model {
     }
 
     public async getAgeRange({ id, scope }: any, context: Context) {
-        const ageRange = await scope.andWhere('AgeRange.id = :id', {
-            id: id
-        }).getOne()
+        const ageRange = await scope
+            .andWhere('AgeRange.id = :id', {
+                id: id,
+            })
+            .getOne()
 
         return ageRange
     }

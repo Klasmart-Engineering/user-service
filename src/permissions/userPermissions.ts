@@ -27,8 +27,12 @@ export class UserPermissions {
     private readonly user_id?: string
     public readonly isAdmin?: boolean
 
-    public constructor(token?: any) {
-        this.user_id = token?.id
+    public constructor(token?: any, cookies?: any) {
+        if (cookies && cookies.user_id) {
+            this.user_id = cookies.user_id
+        } else {
+            this.user_id = token?.id
+        }
         this.isAdmin = this.checkAdmin(token)
     }
 

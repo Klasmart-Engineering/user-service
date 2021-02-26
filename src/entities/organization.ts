@@ -97,7 +97,7 @@ export class Organization
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call organization membership by ${context.token?.id}`
+            `Unauthenticated endpoint call organization membership by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -213,7 +213,7 @@ export class Organization
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call membersWithPermission by ${context.token?.id}`
+            `Unauthenticated endpoint call membersWithPermission by ${context.permissions?.getUserId()}`
         )
 
         try {

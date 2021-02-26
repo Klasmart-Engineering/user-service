@@ -46,7 +46,7 @@ export class School extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call school membership by ${context.token?.id}`
+            `Unauthenticated endpoint call school membership by ${context.permissions?.getUserId()}`
         )
 
         try {

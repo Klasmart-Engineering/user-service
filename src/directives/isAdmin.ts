@@ -39,10 +39,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             if (!context.permissions.isAdmin && scope) {
                 switch (entity) {
                     case 'organization':
-                        this.nonAdminOrganizationScope(scope, context.token)
+                        this.nonAdminOrganizationScope(scope, context)
                         break
                     case 'user':
-                        this.nonAdminUserScope(scope, context.token)
+                        this.nonAdminUserScope(scope, context)
                         break
                     case 'ageRange':
                         this.nonAdminAgeRangeScope(scope, context)
@@ -58,19 +58,19 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         }
     }
 
-    private nonAdminUserScope(scope: any, token?: any) {
+    private nonAdminUserScope(scope: any, context?: any) {
         scope.select('User').where('User.user_id = :userId', {
-            userId: token?.id,
+            userId: context.permissions.getUserId(),
         })
     }
 
-    private nonAdminOrganizationScope(scope: any, token?: any) {
+    private nonAdminOrganizationScope(scope: any, context?: any) {
         scope
             .select('Organization')
             .distinct(true)
             .innerJoin('Organization.memberships', 'OrganizationMembership')
             .andWhere('OrganizationMembership.user_id = :userId', {
-                userId: token?.id,
+                userId: context.permissions.getUserId(),
             })
     }
 

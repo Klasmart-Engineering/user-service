@@ -91,7 +91,7 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call eligibleTeachers by ${context.token?.id}`
+            `Unauthenticated endpoint call eligibleTeachers by ${context.permissions?.getUserId()}`
         )
 
         return this._membersWithPermission(
@@ -105,7 +105,7 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call eligibleStudents by ${context.token?.id}`
+            `Unauthenticated endpoint call eligibleStudents by ${context.permissions?.getUserId()}`
         )
 
         return this._membersWithPermission(

@@ -51,7 +51,7 @@ export class OrganizationMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call schoolMemberships by ${context.token?.id}`
+            `Unauthenticated endpoint call schoolMemberships by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -135,7 +135,7 @@ export class OrganizationMembership extends BaseEntity {
 
     public async classesTeaching(context: any, info: GraphQLResolveInfo) {
         console.info(
-            `Unauthenticated endpoint call classesTeaching by ${context.token?.id}`
+            `Unauthenticated endpoint call classesTeaching by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -184,7 +184,7 @@ export class OrganizationMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call organizationMembership addRole by ${context.token?.id}`
+            `Unauthenticated endpoint call organizationMembership addRole by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -220,7 +220,7 @@ export class OrganizationMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call organizationMembership addRoles by ${context.token?.id}`
+            `Unauthenticated endpoint call organizationMembership addRoles by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -266,7 +266,7 @@ export class OrganizationMembership extends BaseEntity {
         info: GraphQLResolveInfo
     ) {
         console.info(
-            `Unauthenticated endpoint call organizationMembership removeRole by ${context.token?.id}`
+            `Unauthenticated endpoint call organizationMembership removeRole by ${context.permissions?.getUserId()}`
         )
 
         try {
@@ -293,7 +293,7 @@ export class OrganizationMembership extends BaseEntity {
     }
     public async leave(args: any, context: any, info: GraphQLResolveInfo) {
         console.info(
-            `Unauthenticated endpoint call organizationMembership leave by ${context.token?.id}`
+            `Unauthenticated endpoint call organizationMembership leave by ${context.permissions?.getUserId()}`
         )
 
         try {

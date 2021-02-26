@@ -297,7 +297,9 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     return result
 }
 
-export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string,  given_name?: string, family_name?: string ,date_of_birth?: string, username?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers) {
+
+
+export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string,  given_name?: string, family_name?: string ,date_of_birth?: string, username?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     let variables: any
     variables = { organization_id:organizationId}
@@ -333,6 +335,7 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
         mutation: EDIT_MEMBERSHIP,
         variables: variables,
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

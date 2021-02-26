@@ -493,9 +493,11 @@ describe("organization", () => {
             let schoolId: string;
             let oldSchoolId: string;
             let roleId: string
+            let otherUserId: string
 
             beforeEach(async () => {
                 user = await createUserJoe(testClient);
+                otherUserId = (await createUserBilly(testClient)).user_id
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
@@ -716,9 +718,14 @@ describe("organization", () => {
             let schoolId: string;
             let oldSchoolId: string;
             let roleId: string
+            let otherUserId: string
+            let otherUser:User
+ 
             beforeEach(async () => {
                 user = await createUserJoe(testClient);
                 userId = user.user_id
+                otherUser = await createUserBilly(testClient)
+                otherUserId = otherUser.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
@@ -839,7 +846,6 @@ describe("organization", () => {
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
             });
-
             context("and the organization is marked as inactive", () => {
                 beforeEach(async () => {
                     await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
@@ -855,6 +861,89 @@ describe("organization", () => {
                 });
             });
         });
+
+        context("The user_id is in a cookie and not the token of a user with the correct permissions", async () => {
+
+            let userId: string;
+            let organizationId: string;
+            let schoolId: string;
+            let oldSchoolId: string;
+            let roleId: string
+            let editorRoleId: string
+            let otherUserId: string
+            let otherUser: User
+            let idLessToken: string
+
+            beforeEach(async () => {
+                user = await createUserJoe(testClient);
+                userId = user.user_id
+                otherUser = await createUserBilly(testClient)
+                otherUserId = otherUser.user_id
+                organization = await createOrganizationAndValidate(testClient, user.user_id);
+                organizationId = organization.organization_id
+                role = await createRole(testClient, organization.organization_id, "student");
+                roleId = role.role_id
+                const editorRole = await createRole(testClient, organization.organization_id, "editor");
+                editorRoleId = editorRole.role_id
+                await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: JoeAuthToken });
+                await grantPermission(testClient, editorRoleId, PermissionName.edit_users_40330, { authorization: JoeAuthToken });
+                await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, editorRoleId, { authorization: JoeAuthToken });
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", { authorization: JoeAuthToken })).school_id;
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: JoeAuthToken });
+                const idLess = {
+                    email: otherUser.email,
+                    given_name: otherUser.given_name,
+                    family_name: otherUser.family_name,
+                    date_of_birth: otherUser.date_of_birth,
+                } as User
+                idLessToken = generateToken(userToPayload(idLess))
+
+            });
+
+            it("edits user when email etc with id-less token and cookie", async () => {
+                let email = "bob@nowhere.com"
+                let phone = undefined
+                let given = "Bob"
+                let family = "Smith"
+                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken }, { user_id: otherUserId })
+                let newUser = gqlresult.user
+                let membership = gqlresult.membership
+                let schoolmemberships = gqlresult.schoolMemberships
+                expect(newUser).to.exist
+                expect(newUser.email).to.equal(email)
+
+                expect(schoolmemberships).to.exist
+                expect(schoolmemberships.length).to.equal(1)
+                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
+                expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                expect(membership).to.exist
+                expect(membership.organization_id).to.equal(organizationId)
+                expect(membership.user_id).to.equal(newUser.user_id)
+            });
+                
+            it("fails to edits user when no cookie provided", async () => {
+                let email = "bob@nowhere.com"
+                let phone = undefined
+                let given = "Bob"
+                let family = "Smith"
+                try{
+                    let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken })
+                    expect(gqlresult).not.to.exist
+                }
+                catch(e){
+                    expect(e).to.exist
+                }
+            });
+
+            
+        });
+
+
+       
+        
     });
 
     describe("delete", () => {
