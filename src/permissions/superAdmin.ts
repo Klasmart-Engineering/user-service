@@ -161,7 +161,7 @@ export const superAdminRole = {
         PermissionName.view_org_calendar_511,
         PermissionName.view_school_calendar_512,
         PermissionName.create_event_520,
-        PermissionName.edit_event_523,
+        PermissionName.edit_event_530,
         PermissionName.override_live_classroom_recording_setting_531,
         PermissionName.delete_event_540,
         PermissionName.schedule_settings_580,

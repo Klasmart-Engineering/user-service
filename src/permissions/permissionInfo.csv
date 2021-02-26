@@ -67,27 +67,27 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 215,view_org_published_215,View Org Published,Library,Student,Gives users access to view org published,Operational
 216,view_my_archived_216,View My Archived,Library,Org Admin,Gives users access to view my archived,Archive
 217,view_org_archived_217,View Org Archived,Library,Org Admin,Gives users access to view org archived,Archive
-218,view_my_school_published_218,View My School Published,Accounts,Teacher,Gives users access to view my school published,Operational
-225,view_my_school_pending_225,View My School Pending,Accounts,School Admin,Gives users access to view my school pending,Pending
-226,view_my_school_archived_226,View My School Archived,Accounts,School Admin,Gives users access to view my school archived,Archive
-227,view_all_schools_published_227,View All Schools Published,Accounts,Org Admin,Gives users access to view all schools published,Operational
-228,view_all_schools_pending_228,View All Schools Pending,Accounts,Org Admin,Gives users access to view all schools pending,Pending
-229,view_all_schools_archived_229,View All Schools Archived,Accounts,Org Admin,Gives users access to view all schools archived,Archive
-220,create_lesson_material_220,Create Lesson Material,Accounts,Teacher,Gives users access to create lesson material,Create Content
-221,create_lesson_plan_221,Create Lesson Plan,Accounts,Teacher,Gives users access to create lesson plans,Create Content
-222,copy_content_222,Copy Content,Accounts,School Admin,Gives users access to copy content,Create Content
-223,create_my_schools_content_223,Create My Schools Content,Accounts,School Admin,Gives users access to create my schools content,Create Content
-224,create_all_schools_content_224,Create All Schools Content,Accounts,Org Admin,Gives users access to create all schools content,Create Content
-230,edit_my_unpublished_content_230,Edit My Unpublished Content,Accounts,Teacher,Gives users access to edit my unpublished content,Unpublished
-231,edit_org_unpublished_content_231,Edit Org Unpublished Content,Accounts,None,Gives users access to edit my org unpublished ontent,Unpublished
-232,edit_my_pending_content_232,Edit My Pending Content,Accounts,Teacher,Gives users access to edit my pending content,Pending
-233,edit_org_pending_content_233,Edit Org Pending Content,Accounts,Org Admin,Gives users access to edit org pending content,Pending
-234,edit_my_published_content_234,Edit My Published Content,Accounts,Teacher,Gives users access to edit my published content,Published
-235,edit_org_published_content_235,Edit Org Published Content,Accounts,Org Admin,Gives users access to edit org published content,Published
-236,edit_lesson_material_metadata_and_content_236,Edit Lesson Material Metadata and Content,Accounts,Org Admin,Gives users access to edit lesson material metadata and content,Edit Content
-237,edit_lesson_plan_metadata_237,Edit Lesson Plan Metadata,Accounts,Org Admin,Gives users access to edit lesson plan metadata,Edit Content
-238,edit_lesson_plan_content_238,Edit Lesson Plan Content,Accounts,Org Admin,Gives users access to edit lesson plan content,Edit Content
-239,download_lesson_plan_239,Download Lesson Plan,Accounts,Org Admin,Gives users access to download lesson plan,Operational
+218,view_my_school_published_218,View My School Published,Library,Teacher,Gives users access to view my school published,Operational
+225,view_my_school_pending_225,View My School Pending,Library,School Admin,Gives users access to view my school pending,Pending
+226,view_my_school_archived_226,View My School Archived,Library,School Admin,Gives users access to view my school archived,Archive
+227,view_all_schools_published_227,View All Schools Published,Library,Org Admin,Gives users access to view all schools published,Operational
+228,view_all_schools_pending_228,View All Schools Pending,Library,Org Admin,Gives users access to view all schools pending,Pending
+229,view_all_schools_archived_229,View All Schools Archived,Library,Org Admin,Gives users access to view all schools archived,Archive
+220,create_lesson_material_220,Create Lesson Material,Library,Teacher,Gives users access to create lesson material,Create Content
+221,create_lesson_plan_221,Create Lesson Plan,Library,Teacher,Gives users access to create lesson plans,Create Content
+222,copy_content_222,Copy Content,Library,School Admin,Gives users access to copy content,Create Content
+223,create_my_schools_content_223,Create My Schools Content,Library,School Admin,Gives users access to create my schools content,Create Content
+224,create_all_schools_content_224,Create All Schools Content,Library,Org Admin,Gives users access to create all schools content,Create Content
+230,edit_my_unpublished_content_230,Edit My Unpublished Content,Library,Teacher,Gives users access to edit my unpublished content,Unpublished
+231,edit_org_unpublished_content_231,Edit Org Unpublished Content,Library,None,Gives users access to edit my org unpublished ontent,Unpublished
+232,edit_my_pending_content_232,Edit My Pending Content,Library,Teacher,Gives users access to edit my pending content,Pending
+233,edit_org_pending_content_233,Edit Org Pending Content,Library,Org Admin,Gives users access to edit org pending content,Pending
+234,edit_my_published_content_234,Edit My Published Content,Library,Teacher,Gives users access to edit my published content,Published
+235,edit_org_published_content_235,Edit Org Published Content,Library,Org Admin,Gives users access to edit org published content,Published
+236,edit_lesson_material_metadata_and_content_236,Edit Lesson Material Metadata and Content,Library,Org Admin,Gives users access to edit lesson material metadata and content,Edit Content
+237,edit_lesson_plan_metadata_237,Edit Lesson Plan Metadata,Library,Org Admin,Gives users access to edit lesson plan metadata,Edit Content
+238,edit_lesson_plan_content_238,Edit Lesson Plan Content,Library,Org Admin,Gives users access to edit lesson plan content,Edit Content
+239,download_lesson_plan_239,Download Lesson Plan,Library,Org Admin,Gives users access to download lesson plan,Operational
 247,edit_my_schools_published_247,Edit My Schools Published,Library,School Admin,Gives users access to edit my schools published,Published
 248,edit_my_schools_pending_248,Edit My Schools Pending,Library,School Admin,Gives users access to my schools pending,Pending
 249,edit_all_schools_published_249,Edit All Schools Published,Library,Org Admin,Gives users access to edit all schools published,Published
@@ -227,6 +227,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 10111,view_my_organization_profile_10111,View My Organization Profile,Accounts,Student,Gives users access to view my organization profile,Organizational Profile
 10112,view_organization_details_10112,View Organization Details,Accounts,Student,Gives users access to view organization details,Organizational Profile
 10220,create_own_organization_10220,Create Own Organization,Accounts,Parent,Gives users access to create their own organization,Organizational Profile
+10221,reactivate_own_organization_10221,Reactivate Own Organization,Accounts,Org Admin,Gives users access to reactivate their closed organization account,Organizational Profile
 10330,edit_this_organization_10330,Edit This Organization,Accounts,Org Admin,Gives users access to edit this organization,Organizational Profile
 10331,edit_my_organization_10331,Edit My Organization,Accounts,Org Admin,Gives users access to edit my organization,Organizational Profile
 10332,edit_email_address_10332,Edit Email Address,Accounts,Org Admin,Gives users access to edit their email address,Organizational Profile
@@ -235,48 +236,59 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 10880,change_owner_10880,Change Owner,Accounts,Org Admin,Gives users access to change owners,Organizational Profile
 10881,join_organization_10881,Join Organization,Accounts,Student,Gives users access to join an organization,Organizational Profile
 10882,leave_organization_10882,Leave Organization,Accounts,Student,Gives users access to leave an organization,Organizational Profile
-20100,school_resources_20100,School Resources,Academic Profile,School Admin,Gives users access to School Resources (i.e. via icons/buttons),Schools
-20101,define_school_program_page_20101,Define School Program Page,Academic Profile,School Admin,Gives users access to define school program pages,Define School Program Page
-20102,define_age_ranges_page_20102,Define Age Ranges Page,Academic Profile,School Admin,Gives users access to define age ranges page,Age Range
-20103,define_grade_page_20103,Define Grade Page,Academic Profile,School Admin,Gives users access to define grade page,Grades
+20100,school_resources_20100,School Resources,Academic Profile,School Admin,Gives users access to School Resources (i.e. via icons/buttons),Schools --> Deprecate
+20101,define_school_program_page_20101,School Page,Academic Profile,School Admin,Gives users access to define school program pages,Schools
+20102,define_age_ranges_page_20102,Age Range Page,Academic Profile,School Admin,Gives users access to define age ranges page,Age Range
+20103,define_grade_page_20103,Grades Page,Academic Profile,School Admin,Gives users access to define grade page,Grades
+20104,define_class_page_20104,Class Page,Academic Profile,School Admin,Gives users access to define class page,Classes
+20105,define_program_page_20105,Program Page,Academic Profile,School Admin,Gives users access to define program page,Program
+20106,define_subject_page_20106,Subject Page,Academic Profile,School Admin,Gives users access to define subject page,Subjects
 20110,view_school_20110,View School,Academic Profile,School Admin,Gives users access to view school,Schools
-20111,view_program_20111,View Program,Academic Profile,School Admin,Gives users access to view program,Define School Program Page
+20111,view_program_20111,View Program,Academic Profile,School Admin,Gives users access to view program,Programs
 20112,view_age_range_20112,View Age Range,Academic Profile,School Admin,Gives users access to view age range,Age Range
 20113,view_grades_20113,View Grades,Academic Profile,School Admin,Gives users access to view grades,Grades
-20114,view_classes_20114,View Classes,Academic Profile,School Admin,Gives users access to view classes,View Classes
+20114,view_classes_20114,View Classes,Academic Profile,School Admin,Gives users access to view classes,Classes
+20115,view_subjects_20115,View Subjects,Academic Profile,School Admin,Gives users access to view subjects,Subjects
+20116,view_class_roster_20116,View Class Roster,Academic Profile,School Admin,Gives users access to view class roster,Classes
 20220,create_school_20220,Create School,Academic Profile,School Admin,Gives users access to create schools,Schools
-20221,create_program_20221,Create Program,Academic Profile,School Admin,Gives users access to create programs,Define School Program Page
+20221,create_program_20221,Create Program,Academic Profile,School Admin,Gives users access to create programs,Programs
 20222,create_age_range_20222,Create Age Range,Academic Profile,School Admin,Gives users access to create age ranges,Age Range
 20223,create_grade_20223,Create Grade,Academic Profile,School Admin,Gives users access to create grades,Grades
-20224,create_class_20224,Create Class,Academic Profile,School Admin,Gives users access to create classes,View Classes
-20225,add_students_to_class_20225,Add Students to Class,Academic Profile,School Admin,Gives users access to add students to class,View Classes
-20226,add_teachers_to_class_20226,Add Teachers to Class,Academic Profile,School Admin,Gives users access to add teachers to class,View Classes
+20224,create_class_20224,Create Class,Academic Profile,School Admin,Gives users access to create classes,Classes
+20225,add_students_to_class_20225,Add Students to Class,Academic Profile,School Admin,Gives users access to add students to class,Classes
+20226,add_teachers_to_class_20226,Add Teachers to Class,Academic Profile,School Admin,Gives users access to add teachers to class,Classes
+20227,create_subjects_20227,Create Subjects,Academic Profile,School Admin,Gives users access to create subjects,Subjects
 20330,edit_school_20330,Edit School,Academic Profile,School Admin,Gives users access to edit school,Schools
-20331,edit_program_20331,Edit Program,Academic Profile,School Admin,Gives users access to edit programs,Define School Program Page
+20331,edit_program_20331,Edit Program,Academic Profile,School Admin,Gives users access to edit programs,Programs
 20332,edit_age_range_20332,Edit Age Range,Academic Profile,School Admin,Gives users access to edit age range,Age Range
 20333,edit_grade_20333,Edit Grade,Academic Profile,School Admin,Gives users access to edit grades,Grades
-20334,edit_class_20334,Edit Class,Academic Profile,School Admin,Gives users access to edit class,View Classes
-20335,move_students_to_another_class_20335,Move Students to Another Class,Academic Profile,School Admin,Gives users access to move students to another class,View Classes
-20336,edit_teacher_in_class_20336,Edit Teacher in Class,Academic Profile,School Admin,Gives users access to edit teacher in class,View Classes
+20334,edit_class_20334,Edit Class,Academic Profile,School Admin,Gives users access to edit class,Classes
+20335,move_students_to_another_class_20335,Move Students to Another Class,Academic Profile,School Admin,Gives users access to move students to another class,Classes
+20336,edit_teacher_in_class_20336,Edit Teacher in Class,Academic Profile,School Admin,Gives users access to edit teacher in class,Classes
+20337,edit_subjects_20337,Edit Subjects,Academic Profile,School Admin,Gives users access to edit subjects,Subjects
+20338,edit_students_in_class_20338,Edit Students in Class,Academic Profile,School Admin,Gives users access to edit students in class,Classes
 20440,delete_school_20440,Delete School,Academic Profile,School Admin,Gives users access to delete schools,Schools
-20441,delete_program_20441,Delete Program,Academic Profile,School Admin,Gives users access to delete programs,Define School Program Page
+20441,delete_program_20441,Delete Program,Academic Profile,School Admin,Gives users access to delete programs,Programs
 20442,delete_age_range_20442,Delete Age Range,Academic Profile,School Admin,Gives users access to delete age ranges,Age Range
 20443,delete_grade_20443,Delete Grade,Academic Profile,School Admin,Gives users access to delete grades,Grades
-20444,delete_class_20444,Delete Class,Academic Profile,School Admin,Gives users access to delete classes,View Classes
-20445,delete_student_from_class_roster_20445,Delete Student from Class Roster,Academic Profile,School Admin,Gives users access to delete students from class rosters,View Classes
-20446,delete_teacher_from_class_20446,Delete Teacher from Class,Academic Profile,School Admin,Gives users access to delete teachers from class,View Classes
+20444,delete_class_20444,Delete Class,Academic Profile,School Admin,Gives users access to delete classes,Classes
+20445,delete_student_from_class_roster_20445,Delete Student from Class Roster,Academic Profile,School Admin,Gives users access to delete students from class rosters,Classes
+20446,delete_teacher_from_class_20446,Delete Teacher from Class,Academic Profile,School Admin,Gives users access to delete teachers from class,Classes
+20447,delete_subjects_20447,Delete Subjects,Academic Profile,School Admin,Gives users access to delete subjects,Subjects
 20880,upload_schools_20880,Upload Schools,Academic Profile,Org Admin,Gives users access to upload schools,Schools
 20881,download_schools_20881,Download Schools,Academic Profile,Org Admin,Gives users access to download schools,Schools
-20882,upload_program_20882,Upload Program,Academic Profile,Org Admin,Gives users access to upload programs,Define School Program Page
-20883,download_program_20883,Download Program,Academic Profile,Org Admin,Gives users access to download programs,Define School Program Page
-20884,upload_class_roster_with_teachers_20884,Upload Class Roster with Teachers,Academic Profile,Org Admin,Gives users access to upload class rosters with teachers,View Classes
-20885,download_class_roster_with_teachers_20885,Download Class Roster with Teachers,Academic Profile,Org Admin,Gives users access to download class rosters with teachers,View Classes
+20882,upload_program_20882,Upload Program,Academic Profile,Org Admin,Gives users access to upload programs,Programs
+20883,download_program_20883,Download Program,Academic Profile,Org Admin,Gives users access to download programs,Programs
+20884,upload_class_roster_with_teachers_20884,Upload Class Roster with Teachers,Academic Profile,Org Admin,Gives users access to upload class rosters with teachers,Classes
+20885,download_class_roster_with_teachers_20885,Download Class Roster with Teachers,Academic Profile,Org Admin,Gives users access to download class rosters with teachers,Classes
 20886,upload_age_range_20886,Upload Age Range,Academic Profile,Org Admin,Gives users access to upload age ranges,Age Range
 20887,download_age_range_20887,Download Age Range,Academic Profile,Org Admin,Gives users access to download age ranges,Age Range
 20888,upload_grades_20888,Upload Grades,Academic Profile,Org Admin,Gives users access to upload grades,Grades
 20889,download_grades_20889,Download Grades,Academic Profile,Org Admin,Gives users access to download grades,Grades
-20890,upload_classes_20890,Upload Classes,Academic Profile,Org Admin,Gives users access to upload classes,View Classes
-20891,download_classes_20891,Download Classes,Academic Profile,Org Admin,Gives users access to download classes,View Classes
+20890,upload_classes_20890,Upload Classes,Academic Profile,Org Admin,Gives users access to upload classes,Classes
+20891,download_classes_20891,Download Classes,Academic Profile,Org Admin,Gives users access to download classes,Classes
+20892,upload_subject_20892,Upload Subjects,Academic Profile,Org Admin,Gives users access to upload subjects,Subjects
+20893,download_subject_20893,Download Subjects,Academic Profile,Org Admin,Gives users access to download subjects,Subjects
 30100,groups_30100,Roles,Accounts,Org Admin,Gives users access to Roles Page (i.e. via icons/buttons),Roles
 30101,role_levels_30101,Role Levels,Accounts,Org Admin,Gives users access to view role levels,Roles
 30102,permissions_30102,Permissions,Accounts,Org Admin,Gives users access to view permissions,Roles
@@ -292,7 +304,9 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 30440,delete_groups_30440,Delete Groups,Accounts,Org Admin,Gives users access to delete groups,Roles
 40100,users_40100,Users,Accounts,Org Admin,Gives users access to Users Page (i.e. via icons/buttons),Users
 40101,view_user_page_40101,View User Page,Accounts,Org Admin,Gives users access to view user pages,Users
-40110,view_users_40110,View Users,Accounts,Org Admin,Gives users access to view users,Users
+40110,view_users_40110,View All Users,Accounts,Org Admin,Gives users access to view users,Users
+40111,view_my_school_users_40111,View My School Users,Accounts,School Admin,Give users access to view users in specific schools,Users
+40112,view_my_class_users_40112,View My Class Users,Accounts,Teacher,Gives users access to view users in taught classes,Users
 40220,create_users_40220,Create Users,Accounts,Org Admin,Gives users access to create users,Users
 40330,edit_users_40330,Edit Users,Accounts,Org Admin,Gives users access to edit users,Users
 40440,delete_users_40440,Delete Users,Accounts,Org Admin,Gives users access to delete users,Users
@@ -339,8 +353,8 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 78005,edit_bada_math_78005,Edit Bada Math,Library,Super Admin,Gives users access to edit Bada Math,Featured Programs
 78006,edit_bada_stem_78006,Edit Bada STEM,Library,Super Admin,Gives users access to edit Bada STEM,Featured Programs
 78007,edit_badanamu_esl_78007,Edit Badanamu ESL,Library,Super Admin,Gives users access to edit Badanamu ESL,Featured Programs
-78008,copy_featured_content_into_library_78008,Copy Featured Content into Library,,Org Admin,Gives user access to Copy Featured Content feature,Featured Programs
-78009,download_featured_content_78009,Download Featured Content,,Org Admin,Gives user access to Download Featured Content feture,Featured Programs
+78008,copy_featured_content_into_library_78008,Copy Featured Content into Library,Library,Org Admin,Gives user access to Copy Featured Content feature,Featured Programs
+78009,download_featured_content_78009,Download Featured Content,Library,Org Admin,Gives user access to Download Featured Content feture,Featured Programs
 79000,publish_featured_content_for_all_hub_79000,Publish featured content for all hub,Library,Super Admin,Gives users access to publish featured content for all hub,Featured Programs
 79001,publish_featured_content_for_specific_orgs_79001,Publish featured content for specific orgs,Library,Super Admin,Gives users access to publish featured content for specific organizations,Featured Programs
 79002,publish_featured_content_for_all_orgs_79002,Publish featured content for all orgs,Library,Super Admin,Gives users access to publish featured content for all organizations,Featured Programs
@@ -363,9 +377,9 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 85004,create_bada_read_85004,Create Bada Read,Library,Super Admin,Gives users access to create Bada Read,Free Programs
 85005,create_bada_math_85005,Create Bada Math,Library,Super Admin,Gives users access to create Bada Math,Free Programs
 85006,create_bada_stem_85006,Create Bada STEM,Library,Super Admin,Gives users access to create Bada STEM,Free Programs
-85007,undefined_75007,undefined,,,undefined,Free Programs
-85008,undefined_75008,undefined,,,undefined,Free Programs
-85009,unndefined_75009,unndefined,,,undefined,Free Programs
+85007,undefined_85007,undefined,,,undefined,Free Programs
+85008,undefined_85008,undefined,,,undefined,Free Programs
+85009,undefined_85009,undefined,,,undefined,Free Programs
 88000,edit_bada_rhyme_88000,Edit Bada Rhyme,Library,Super Admin,Gives users access to edit Bada Rhyme,Free Programs
 88001,edit_bada_genius_88001,Edit Bada Genius,Library,Super Admin,Gives users access to edit Bada Genius,Free Programs
 88002,edit_bada_talk_88002,Edit Bada Talk,Library,Super Admin,Gives users access to edit Bada Talk,Free Programs
@@ -376,6 +390,6 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 88007,edit_badanamu_esl_88007,Edit Badanamu ESL,Library,Super Admin,Gives users access to edit Badanamu ESL,Free Programs
 88008,copy_free_content_into_library_88008,Copy Free Content into Library,,Org Admin,Gives user access to Copy Free Content feature,Free Programs
 88009,download_free_content__88009,Download Free Content,,Org Admin,Gives user access to Download Free Content feture,Free Programs
-88900,publish_free_content_for_all_hub_89000,Publish free content for all hub,Library,Super Admin,Gives users access to publish free content for all hub,Free Programs
+89000,publish_free_content_for_all_hub_89000,Publish free content for all hub,Library,Super Admin,Gives users access to publish free content for all hub,Free Programs
 89001,publish_free_content_for_specific_orgs_79001,Publish free content for specific orgs,Library,Super Admin,Gives users access to publish free content for specific organizations,Free Programs
 89002,publish_free_content_for_all_orgs_79002,Publish free content for all orgs,Library,Super Admin,Gives users access to publish frree content for all organizations,Free Programs
