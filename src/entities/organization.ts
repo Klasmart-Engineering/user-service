@@ -775,9 +775,12 @@ export class Organization
                 (await AgeRange.findOne(ageRangeDetail?.id)) || new AgeRange()
             ageRange.name = ageRangeDetail?.name || ageRange.name
             ageRange.low_value = ageRangeDetail?.low_value || ageRange.low_value
+            ageRange.low_value_unit =
+                ageRangeDetail?.low_value_unit || ageRange.low_value_unit
             ageRange.high_value =
                 ageRangeDetail?.high_value || ageRange.high_value
-            ageRange.unit = ageRangeDetail?.unit || ageRange.unit
+            ageRange.high_value_unit =
+                ageRangeDetail?.high_value_unit || ageRange.high_value_unit
             ageRange.organization = Promise.resolve(this)
             ageRange.system = ageRangeDetail?.system || ageRange.system
 

@@ -720,7 +720,7 @@ describe("organization", () => {
             let roleId: string
             let otherUserId: string
             let otherUser:User
- 
+
             beforeEach(async () => {
                 user = await createUserJoe(testClient);
                 userId = user.user_id
@@ -923,7 +923,7 @@ describe("organization", () => {
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
             });
-                
+
             it("fails to edits user when no cookie provided", async () => {
                 let email = "bob@nowhere.com"
                 let phone = undefined
@@ -938,12 +938,12 @@ describe("organization", () => {
                 }
             });
 
-            
+
         });
 
 
-       
-        
+
+
     });
 
     describe("delete", () => {
@@ -1055,8 +1055,9 @@ describe("organization", () => {
             return {
                 name: ageRange.name,
                 high_value: ageRange.high_value,
+                high_value_unit: ageRange.high_value_unit,
                 low_value: ageRange.low_value,
-                unit: ageRange.unit,
+                low_value_unit: ageRange.low_value_unit,
                 system: ageRange.system,
             }
         }
@@ -1339,8 +1340,10 @@ describe("organization", () => {
             return {
                 name: ageRange.name,
                 high_value: ageRange.high_value,
+                high_value_unit: ageRange.high_value_unit,
                 low_value: ageRange.low_value,
-                unit: ageRange.unit,
+                low_value_unit: ageRange.low_value_unit,
+                system: ageRange.system,
             }
         }
 

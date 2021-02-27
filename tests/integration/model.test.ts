@@ -378,8 +378,9 @@ describe("model", () => {
                 id: ageRange.id,
                 name: ageRange.name,
                 high_value: ageRange.high_value,
+                high_value_unit: ageRange.high_value_unit,
                 low_value: ageRange.low_value,
-                unit: ageRange.unit,
+                low_value_unit: ageRange.low_value_unit,
                 system: ageRange.system,
             }
         }

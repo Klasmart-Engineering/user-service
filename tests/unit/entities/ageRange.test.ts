@@ -119,8 +119,9 @@ describe("AgeRange", () => {
                 expect(dbAgeRange.id).to.eq(ageRange.id)
                 expect(dbAgeRange.name).to.eq(ageRange.name)
                 expect(dbAgeRange.high_value).to.eq(ageRange.high_value)
+                expect(dbAgeRange.high_value_unit).to.eq(ageRange.high_value_unit)
                 expect(dbAgeRange.low_value).to.eq(ageRange.low_value)
-                expect(dbAgeRange.unit).to.eq(ageRange.unit)
+                expect(dbAgeRange.low_value_unit).to.eq(ageRange.low_value_unit)
                 const dbOrganization = await dbAgeRange.organization
                 expect(dbOrganization?.organization_id).to.eq(org.organization_id)
                 expect(dbAgeRange.created_at).not.to.be.null

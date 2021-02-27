@@ -192,8 +192,9 @@ query getAgeRange($id: ID!){
     id
     name
     low_value
+    low_value_unit
     high_value
-    unit
+    high_value_unit
     status
     system
   }

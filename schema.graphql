@@ -438,7 +438,8 @@ input AgeRangeDetail {
     name: String
     low_value: Int
     high_value: Int
-    unit: AgeRangeUnit
+    low_value_unit: AgeRangeUnit
+    high_value_unit: AgeRangeUnit
     system: Boolean
 }
 
@@ -447,7 +448,8 @@ type AgeRange {
     name: String!
     low_value: Int!
     high_value: Int!
-    unit: AgeRangeUnit!
+    low_value_unit: AgeRangeUnit!
+    high_value_unit: AgeRangeUnit!
     system: Boolean!
     status: Status
 

@@ -19,7 +19,13 @@ import { Status } from './status'
 @Entity()
 @Check(`"low_value" >= 0 AND "low_value" <= 99`)
 @Check(`"high_value" > 0 AND "high_value" <= 99`)
-@Unique(['low_value', 'high_value', 'unit', 'organization'])
+@Unique([
+    'low_value',
+    'high_value',
+    'low_value_unit',
+    'high_value_unit',
+    'organization',
+])
 export class AgeRange extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
@@ -34,7 +40,10 @@ export class AgeRange extends BaseEntity {
     public low_value!: number
 
     @Column({ type: 'enum', enum: AgeRangeUnit, nullable: false })
-    public unit!: AgeRangeUnit
+    public high_value_unit!: AgeRangeUnit
+
+    @Column({ type: 'enum', enum: AgeRangeUnit, nullable: false })
+    public low_value_unit!: AgeRangeUnit
 
     @Column({ nullable: false, default: false })
     public system?: boolean

@@ -143,9 +143,10 @@ const CREATE_OR_UPDATE_AGE_RANGES = `
                  id
                  name
                  high_value
+                 high_value_unit
                  low_value
+                 low_value_unit
                  system
-                 unit
             }
         }
     }
@@ -159,8 +160,9 @@ const LIST_AGE_RANGES = `
               name
               system
               high_value
+              high_value_unit
               low_value
-              unit
+              low_value_unit
             }
         }
     }
