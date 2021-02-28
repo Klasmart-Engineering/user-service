@@ -19,11 +19,10 @@ import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../utils/operations/schoolMembershipOps";
-import { createDefaultRoles, createUserAndValidate } from "../utils/operations/modelOps";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { gql } from "apollo-server-express";
 import { Class } from "../../src/entities/class";
 
@@ -41,19 +40,10 @@ describe("user", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection?.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("set", () => {

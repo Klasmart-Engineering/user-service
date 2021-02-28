@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import * as dotenv from 'dotenv'
 import { createServer } from './utils/createServer'
 import { UserPermissions } from './permissions/userPermissions'
+
 dotenv.config({ path: __dirname + '/../.env' })
 
 const routePrefix = process.env.ROUTE_PREFIX || ''

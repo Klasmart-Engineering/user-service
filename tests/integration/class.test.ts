@@ -12,7 +12,6 @@ import { Organization } from "../../src/entities/organization";
 import { accountUUID, User } from "../../src/entities/user";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -22,7 +21,7 @@ import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { createUserAndValidate, createDefaultRoles } from "../utils/operations/modelOps";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 chai.use(chaiAsPromised);
 
 describe("class", () => {
@@ -34,19 +33,10 @@ describe("class", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("set", () => {

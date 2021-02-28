@@ -10,7 +10,6 @@ import { BillyAuthToken, JoeAuthToken } from "../../utils/testConfig";
 import { createAgeRange } from "../../factories/ageRange.factory";
 import { createServer } from "../../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../../utils/testEntities";
-import { createDefaultRoles } from "../../utils/operations/modelOps";
 import { createOrganization } from "../../factories/organization.factory";
 import { createTestConnection } from "../../utils/testConnection";
 import { deleteAgeRange } from "../../utils/operations/ageRangeOps";
@@ -21,32 +20,21 @@ import { Organization } from "../../../src/entities/organization";
 import { PermissionName } from "../../../src/permissions/permissionNames";
 import { Status } from "../../../src/entities/status";
 import { User } from "../../../src/entities/user";
-import { UserPermissions } from "../../../src/permissions/userPermissions";
 
 use(chaiAsPromised);
 
 describe("ageRange", () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
-    let originalAdmins: string[]
 
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close()
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true)
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken })
     });
 
     describe("delete", () => {

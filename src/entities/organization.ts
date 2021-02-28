@@ -772,9 +772,14 @@ export class Organization
                 checkAdminPermission || !!ageRangeDetail?.system
 
             const ageRange =
-                (await AgeRange.findOne(ageRangeDetail?.id)) || new AgeRange()
+                (await AgeRange.findOne({ id: ageRangeDetail?.id })) ||
+                new AgeRange()
             ageRange.name = ageRangeDetail?.name || ageRange.name
-            ageRange.low_value = ageRangeDetail?.low_value || ageRange.low_value
+
+            if (ageRangeDetail?.low_value !== undefined) {
+                ageRange.low_value = ageRangeDetail.low_value
+            }
+
             ageRange.low_value_unit =
                 ageRangeDetail?.low_value_unit || ageRange.low_value_unit
             ageRange.high_value =
@@ -782,7 +787,10 @@ export class Organization
             ageRange.high_value_unit =
                 ageRangeDetail?.high_value_unit || ageRange.high_value_unit
             ageRange.organization = Promise.resolve(this)
-            ageRange.system = ageRangeDetail?.system || ageRange.system
+
+            if (ageRangeDetail?.system !== undefined) {
+                ageRange.system = ageRangeDetail.system
+            }
 
             ageRanges.push(ageRange)
         }

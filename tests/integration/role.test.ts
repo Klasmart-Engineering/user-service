@@ -9,8 +9,6 @@ import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createTestConnection } from "../utils/testConnection";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { PermissionName } from "../../src/permissions/permissionNames";
-import { UserPermissions } from "../../src/permissions/userPermissions";
-import { createDefaultRoles } from "../utils/operations/modelOps";
 import { denyPermission, editPermissions, getPermissionViaRole, grantPermission, revokePermission, updateRole, deleteRole } from "../utils/operations/roleOps";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { Permission } from "../../src/entities/permission";
@@ -26,21 +24,13 @@ describe("role", () => {
     let originalAdmins: string[];
 
     before(async () => {
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("set", () => {

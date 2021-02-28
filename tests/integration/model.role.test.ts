@@ -13,8 +13,7 @@ import { JoeAuthToken, BillyAuthToken, generateToken } from "../utils/testConfig
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
-import { createDefaultRoles, createUserAndValidate } from "../utils/operations/modelOps";
-import { UserPermissions } from "../../src/permissions/userPermissions";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
 import { RoleConnection } from "../../src/utils/pagingconnections";
 
@@ -65,19 +64,10 @@ describe("model.role", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("getRoles", () => {
@@ -289,5 +279,5 @@ describe("model.role", () => {
         })
     });
 
-   
+
 });

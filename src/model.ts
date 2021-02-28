@@ -16,19 +16,14 @@ import {
     normalizedLowercaseTrimmed,
     padShortDob,
 } from './entities/organization'
-import { organizationAdminRole } from './permissions/organizationAdmin'
-import { schoolAdminRole } from './permissions/schoolAdmin'
-import { parentRole } from './permissions/parent'
-import { studentRole } from './permissions/student'
-import { teacherRole } from './permissions/teacher'
+import AgeRangesInitializer from './initializers/ageRanges'
 import { AgeRange } from './entities/ageRange'
 import { Role } from './entities/role'
+import RolesInitializer from './initializers/roles'
 import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
-import { permissionInfo } from './permissions/permissionInfo'
-import { PermissionName } from './permissions/permissionNames'
 
 import { getPaginated } from './utils/getpaginated'
 
@@ -463,144 +458,6 @@ export class Model {
         })
     }
 
-    public async createSystemPermissions(
-        args: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const permissionEntities = new Map<string, Permission>()
-
-        if (info.operation.operation !== 'mutation') {
-            return null
-        }
-
-        await this._createSystemPermissions()
-        await this._inactivateInvalidExistingPermissions()
-
-        return permissionEntities.values()
-    }
-
-    private async _createSystemPermissions() {
-        const permissionDetails = await permissionInfo()
-        const permissionAttributes = []
-
-        for (const permission_name of Object.values(PermissionName)) {
-            const permissionInf = permissionDetails.get(permission_name)
-
-            permissionAttributes.push({
-                permission_name: permission_name,
-                permission_id: permission_name,
-                permission_category: permissionInf?.category,
-                permission_level: permissionInf?.level,
-                permission_group: permissionInf?.group,
-                permission_description: permissionInf?.description,
-                allow: true,
-            })
-        }
-
-        await Permission.createQueryBuilder()
-            .insert()
-            .into(Permission)
-            .values(permissionAttributes)
-            .orUpdate({
-                conflict_target: ['permission_id'],
-                overwrite: [
-                    'permission_name',
-                    'permission_category',
-                    'permission_level',
-                    'permission_group',
-                    'permission_description',
-                    'allow',
-                ],
-            })
-            .execute()
-    }
-
-    private async _inactivateInvalidExistingPermissions() {
-        await Permission.createQueryBuilder()
-            .update()
-            .set({ allow: false })
-            .where('Permission.allow = :allowed', {
-                allowed: true,
-            })
-            .andWhere('Permission.permission_id NOT IN (:...names)', {
-                names: Object.values(PermissionName),
-            })
-            .execute()
-    }
-
-    public async createDefaultRoles(
-        args: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const roles = new Map<string, Role>()
-
-        if (info.operation.operation !== 'mutation') {
-            return null
-        }
-
-        await this.createSystemPermissions(args, context, info)
-
-        await getManager().transaction(async (manager) => {
-            await this._createDefaultRoles(manager, roles)
-        })
-
-        return roles.values()
-    }
-
-    private async _createDefaultRoles(
-        manager: EntityManager = getManager(),
-        roles: Map<string, Role>
-    ) {
-        for (const { role_name, permissions } of [
-            organizationAdminRole,
-            schoolAdminRole,
-            parentRole,
-            studentRole,
-            teacherRole,
-        ]) {
-            let role = await Role.findOne({
-                where: {
-                    role_name: role_name,
-                    system_role: true,
-                    organization: { organization_id: null },
-                },
-            })
-
-            if (!role) {
-                role = new Role()
-                role.role_name = role_name
-                role.system_role = true
-            }
-
-            await this._assignPermissionsDefaultRoles(
-                manager,
-                role,
-                permissions
-            )
-
-            roles.set(role_name, role)
-        }
-
-        return roles
-    }
-
-    private async _assignPermissionsDefaultRoles(
-        manager: EntityManager,
-        role: Role,
-        permissions: string[]
-    ) {
-        role.permissions = Promise.resolve([])
-        await role.save()
-
-        await manager
-            .createQueryBuilder()
-            .relation(Role, 'permissions')
-            .of(role)
-            .add(permissions)
-    }
-
     public async setRole({ role_id, role_name }: Role) {
         console.info('Unauthenticated endpoint call setRole')
 
@@ -736,5 +593,12 @@ export class Model {
             .getOne()
 
         return ageRange
+    }
+
+    public async createOrUpdateSystemEntities() {
+        await RolesInitializer.run()
+        await AgeRangesInitializer.run()
+
+        return true
     }
 }

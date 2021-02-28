@@ -6,7 +6,6 @@ import { createServer } from "../../src/utils/createServer";
 import { Class} from "../../src/entities/class";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
-import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { accountUUID, User } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
@@ -17,7 +16,6 @@ import { grantPermission } from "../utils/operations/roleOps";
 import { createUserAndValidate } from "../utils/operations/modelOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
 import { ClassConnection } from "../../src/utils/pagingconnections";
 
@@ -66,19 +64,10 @@ describe("model.class", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("getClasses", () => {
@@ -119,7 +108,7 @@ describe("model.class", () => {
         });
     });
 
-    
+
 
     describe("getClass", () => {
         context("when none", () => {
@@ -187,7 +176,7 @@ describe("model.class", () => {
                  const cls1 = await createClass(testClient, organization1.organization_id, "class " + i, { authorization: anne1Token });
                  await grantPermission(testClient, role1Id, PermissionName.add_students_to_class_20225, { authorization: anne1Token });
                  await grantPermission(testClient, role1Id, PermissionName.add_teachers_to_class_20226, { authorization: anne1Token });
-                 if( (i % 2) > 0){ 
+                 if( (i % 2) > 0){
                      await addTeacherToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
                  } else {
                     await addStudentToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
@@ -300,8 +289,8 @@ describe("model.class", () => {
             expect (pageInfo3).to.exist
             expect(pageInfo3?.hasNextPage)
             expect(!pageInfo3?.hasPreviousPage)
-            
+
         });
-    }); 
-    
+    });
+
 });

@@ -1,8 +1,8 @@
 import { createConnection } from "typeorm";
 
-export const createTestConnection = (drop: boolean = false) => {
+export const createTestConnection = (drop: boolean = false, name: string = "default") => {
     return createConnection({
-        name: "default",
+        name: name,
         type: "postgres",
         host: "localhost",
         port: 5432,

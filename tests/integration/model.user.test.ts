@@ -9,7 +9,6 @@ import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
 import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { Paginated } from "../../src/utils/paginated.interface";
 
 describe("model.user", () => {
@@ -21,24 +20,13 @@ describe("model.user", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
     });
 
-
-    function reloadDatabase() {
-        return connection?.synchronize(true);
-    }
-
     describe("newUser", () => {
-        before(async () => await reloadDatabase());
-
         it("should create a new user", async () => {
             const user = await createUserJoe(testClient);
             expect(user).to.exist;
@@ -50,7 +38,6 @@ describe("model.user", () => {
         let modifiedUser: any;
 
         before(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
             modifiedUser = {
                 user_id: user.user_id,
@@ -75,7 +62,6 @@ describe("model.user", () => {
         let user: User;
 
         before(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -97,7 +83,6 @@ describe("model.user", () => {
         let user: User;
 
         before(async () => {
-            await reloadDatabase();
             user = await createUserJoe(testClient);
         });
 
@@ -112,7 +97,6 @@ describe("model.user", () => {
         let user: User;
         let originalAdmins: string[];
         beforeEach(async () => {
-            await reloadDatabase();
             await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             for (let i = 1; i < 10; i++) {

@@ -6,11 +6,10 @@ import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../../utils/testEntities";
 import { JoeAuthToken, BillyAuthToken } from "../../utils/testConfig";
-import { createDefaultRoles, getAllOrganizations } from "../../utils/operations/modelOps";
+import { getAllOrganizations } from "../../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { Model } from "../../../src/model";
 import { User } from "../../../src/entities/user";
-import { UserPermissions } from "../../../src/permissions/userPermissions";
 import { Organization } from "../../../src/entities/organization";
 import chaiAsPromised from "chai-as-promised";
 
@@ -25,19 +24,10 @@ describe("isAdmin", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("organizations", () => {

@@ -26,7 +26,7 @@ describe("validateEmail", () => {
             expect(validateEmail(address))
         })
     });
-  
+
     it("is an invalid email", async () => {
         [
             "#@%^%#$@#$@#.com",
@@ -56,7 +56,7 @@ describe("validateEmail", () => {
 
   describe("validatePhone", () => {
     it("is a valid phone", async () => {
-        [    
+        [
             "+61291920995",   //Australia Test line
             "+6498876986",    //NZ Test line
             "+442071838750",
@@ -72,15 +72,15 @@ describe("validateEmail", () => {
         })
 
     });
-  
+
     it("is an invalid phone", async () => {
         [
             "02077325632",
-            "+44(0)20-7732 5637" 
+            "+44(0)20-7732 5637"
         ].forEach(function(phone){
             expect(!validatePhone(phone))
         })
     });
   });
-  
-  
+
+

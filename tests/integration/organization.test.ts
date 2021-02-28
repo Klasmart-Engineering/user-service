@@ -8,7 +8,6 @@ import { User } from "../../src/entities/user";
 import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
-import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, deleteOrganization } from "../utils/operations/organizationOps";
@@ -22,7 +21,6 @@ import { OrganizationMembership } from "../../src/entities/organizationMembershi
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { createAgeRange } from "../factories/ageRange.factory";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
@@ -41,19 +39,10 @@ describe("organization", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection?.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("findOrCreateUser", async () => {
@@ -1355,7 +1344,7 @@ describe("organization", () => {
             ageRange = createAgeRange(organization)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-            await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+            const tmp = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {
@@ -1403,9 +1392,10 @@ describe("organization", () => {
                     const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: BillyAuthToken });
 
                     const dbAgeRanges = await AgeRange.find({
-                        where: {
-                            organization: { organization_id: organization.organization_id },
-                        }
+                        where: [
+                            { organization: { organization_id: organization.organization_id } },
+                            { system: true },
+                        ]
                     });
 
                     expect(dbAgeRanges).not.to.be.empty

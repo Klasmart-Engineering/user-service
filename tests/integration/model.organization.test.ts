@@ -6,10 +6,9 @@ import { createServer } from "../../src/utils/createServer";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
-import { createDefaultRoles, createUserAndValidate} from "../utils/operations/modelOps";
+import { createUserAndValidate} from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { accountUUID, User } from "../../src/entities/user";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { JoeAuthToken, BillyAuthToken, generateToken} from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
@@ -81,19 +80,10 @@ describe("model.organization", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("getOrganizations", () => {

@@ -129,8 +129,6 @@ type Mutation {
         shortCode: String
     ): Organization
 
-    create_default_roles(_: Int): [Role] @isAdmin
-    create_system_permissions(_: Int): [Permission] @isAdmin
     role(role_id: ID!): Role
     roles: [Role]
 
@@ -140,6 +138,8 @@ type Mutation {
     school(school_id: ID!): School
 
     age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+
+    createOrUpateSystemEntities(_: Int): Boolean @isAdmin
 }
 
 type User {

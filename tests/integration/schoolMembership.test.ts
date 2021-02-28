@@ -4,7 +4,6 @@ import { createServer } from "../../src/utils/createServer";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import {  ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
-import { createDefaultRoles } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate, createSchool, createRole } from "../utils/operations/organizationOps";
 import { addUserToSchool, getSchoolMembershipViaSchool } from "../utils/operations/schoolOps";
@@ -13,7 +12,6 @@ import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
 import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { Model } from "../../src/model";
 
 describe("SchoolMembership", () => {
@@ -32,19 +30,10 @@ describe("SchoolMembership", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     beforeEach(async () => {

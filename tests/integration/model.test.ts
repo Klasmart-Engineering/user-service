@@ -7,14 +7,13 @@ import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/testConfig";
 import { createAgeRange } from "../factories/ageRange.factory";
 import { createOrganization } from "../factories/organization.factory";
-import { createDefaultRoles, getAgeRange, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { getAgeRange, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
 import { AgeRange } from "../../src/entities/ageRange";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 import { Organization } from "../../src/entities/organization";
 import chaiAsPromised from "chai-as-promised";
 
@@ -23,25 +22,15 @@ use(chaiAsPromised);
 describe("model", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
-    let originalAdmins: string[];
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("switchUser", () => {
@@ -227,57 +216,6 @@ describe("model", () => {
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
                 });
-            });
-        });
-    });
-
-    describe("createDefaultRoles", () => {
-        const roleInfoFunc =  function (role: any) {
-          return { role_id: role.role_id, role_name: role.role_name }
-        };
-        const permissionInfoFunc =  function (permission: any) {
-          return { permission_name: permission.permission_name }
-        };
-
-        context("when updated default permissions exists", () => {
-            let organization: Organization;
-
-            beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                organization = await createOrganizationAndValidate(testClient, user.user_id);
-            });
-
-            it("does not modify the default roles permissions", async () => {
-                const { mutate } = testClient;
-                const dbRoles = await organization.roles({}, {}, {}) || []
-                let dbPermissions = []
-                expect(dbRoles).not.to.be.empty;
-
-                for(const role of dbRoles){
-                  const permissions = await role.permissions || [];
-
-                  expect(permissions).not.to.be.empty
-                  dbPermissions.push(...permissions.map(permissionInfoFunc))
-                }
-
-
-                const gqlRoles = await createDefaultRoles(testClient, { authorization: JoeAuthToken });
-
-                organization = await Organization.findOneOrFail(organization.organization_id);
-                const dbNewRoles = await organization.roles({}, {}, {}) || []
-                expect(dbNewRoles).not.to.be.empty;
-
-                expect(gqlRoles.map(roleInfoFunc)).to.deep.equal(dbNewRoles?.map(roleInfoFunc));
-                let resetPermissions = []
-
-                for(const role of dbNewRoles){
-                  const permissions = await role.permissions || [];
-
-                  expect(permissions).not.to.be.empty
-                  resetPermissions.push(...permissions?.map(permissionInfoFunc))
-                }
-
-                expect(dbPermissions).to.deep.members(resetPermissions)
             });
         });
     });

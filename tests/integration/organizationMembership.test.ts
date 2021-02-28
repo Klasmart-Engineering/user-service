@@ -18,9 +18,8 @@ import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
 import { Role } from "../../src/entities/role";
 import { addTeacherToClass } from "../utils/operations/classOps";
-import { createDefaultRoles, createUserAndValidate } from "../utils/operations/modelOps";
+import { createUserAndValidate } from "../utils/operations/modelOps";
 import { accountUUID, User } from "../../src/entities/user";
-import { UserPermissions } from "../../src/permissions/userPermissions";
 
 describe("organizationMembership", () => {
     let connection: Connection;
@@ -38,19 +37,10 @@ describe("organizationMembership", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-
-        originalAdmins = UserPermissions.ADMIN_EMAILS
-        UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
     });
 
     after(async () => {
-        UserPermissions.ADMIN_EMAILS = originalAdmins
         await connection?.close();
-    });
-
-    beforeEach(async () => {
-        await connection.synchronize(true);
-        await createDefaultRoles(testClient, { authorization: JoeAuthToken });
     });
 
     describe("schoolMemberships", () => {

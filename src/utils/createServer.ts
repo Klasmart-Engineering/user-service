@@ -53,10 +53,6 @@ export const createServer = (model: Model, context?: any) =>
                     model.newUser(args),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
-                create_default_roles: (_parent, args, ctx, info) =>
-                    model.createDefaultRoles(args, ctx, info),
-                create_system_permissions: (_parent, args, ctx, info) =>
-                    model.createSystemPermissions(args, ctx, info),
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.setRole(args),
                 classes: () => model.getClasses(),
@@ -65,6 +61,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSchool(args),
                 age_range: (_parent, args, ctx, _info) =>
                     model.getAgeRange(args, ctx),
+                createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
+                    model.createOrUpdateSystemEntities(),
             },
         },
         schemaDirectives: {

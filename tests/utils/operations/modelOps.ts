@@ -10,16 +10,6 @@ import { gqlTry } from "../gqlTry";
 import { UserConnection } from "../../../src/utils/pagingconnections";
 
 
-const CREATE_DEFAULT_ROLES = `
-mutation createDefaultRoles{
-  create_default_roles {
-    role_id
-    role_name
-    system_role
-  }
-}
-`
-
 const NEW_USER = `
     mutation myMutation(
             $given_name: String
@@ -200,19 +190,6 @@ query getAgeRange($id: ID!){
   }
 }
 `;
-
-export async function createDefaultRoles( testClient: ApolloServerTestClient, headers?: Headers) {
-    const { mutate } = testClient;
-
-    const operation = () => mutate({
-        mutation: CREATE_DEFAULT_ROLES,
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    const gqlRoles = res.data?.create_default_roles as Role[];
-    return gqlRoles;
-}
 
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
