@@ -1,6 +1,3 @@
-export const START_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
-export const END_KEY = '00000000-0000-0000-0000-000000000000'
-
 export interface stringable {
     toString(): string
 }
@@ -48,8 +45,6 @@ export class Paginated<T extends Paginatable<T, K>, K extends stringable> {
     public pageInfo: PageInfo
 
     constructor(
-        startId: K,
-        endId: K,
         total?: number,
         timestamp?: number,
         data?: T[],
@@ -67,11 +62,11 @@ export class Paginated<T extends Paginatable<T, K>, K extends stringable> {
                           total,
                           timestamp
                       )
-                    : toCursorHash(new CursorObject<K>(endId)),
+                    : undefined,
             startCursor:
                 this.edges.length > 0
                     ? this.edges[0].generateCursor(total, timestamp)
-                    : toCursorHash(new CursorObject<K>(startId)),
+                    : undefined,
         }
     }
 }
@@ -84,9 +79,8 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
     timestamp: number,
     data: T[],
     isSorted: boolean,
-    limit: number,
-    startKey: K,
-    endKey: K,
+    first?: number,
+    last?: number,
     before?: K,
     after?: K
 ): Paginated<T, K> {
@@ -100,19 +94,17 @@ export function paginateData<T extends Paginatable<T, K>, K extends stringable>(
 
     let hasMoreDataBefore = false
     let hasMoreDataAfter = false
-    if (after !== undefined) {
-        hasMoreDataBefore = after !== startKey
-        hasMoreDataAfter = restrictedData.length > limit
-    } else if (before !== undefined) {
-        hasMoreDataAfter = before !== endKey
-        hasMoreDataBefore = restrictedData.length > limit
+    if (first !== undefined) {
+        hasMoreDataBefore = after ? true : false
+        hasMoreDataAfter = restrictedData.length > first
+    } else if (last !== undefined) {
+        hasMoreDataAfter = before ? true : false
+        hasMoreDataBefore = restrictedData.length > last
     }
     // Restricting the data to the specified page size
-    const paginatedData = edgesToReturn(restrictedData, limit, before, after)
+    const paginatedData = edgesToReturn(restrictedData, first, last)
 
     const pageInfo = new Paginated(
-        startKey,
-        endKey,
         count,
         timestamp,
         paginatedData,
@@ -156,15 +148,16 @@ function applyCursorsToEdges<T extends Paginatable<T, K>, K extends stringable>(
 // https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
 function edgesToReturn<T extends Paginatable<T, K>, K extends stringable>(
     sortedData: T[],
-    limit: number,
-    before?: K,
-    after?: K
+    first?: number,
+    last?: number
 ): T[] {
-    if (sortedData.length > limit) {
-        if (after) {
-            sortedData = sortedData.slice(0, limit)
-        } else {
-            sortedData = sortedData.slice(-limit)
+    if (first) {
+        if (sortedData.length > first) {
+            sortedData = sortedData.slice(0, first)
+        }
+    } else {
+        if (last && sortedData.length > last) {
+            sortedData = sortedData.slice(-last)
         }
     }
     return sortedData

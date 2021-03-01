@@ -1,42 +1,30 @@
 import {
-    stringable,
-    toCursorHash,
-    CursorObject,
+    //   stringable,
+    //   toCursorHash,
+    //   CursorObject,
     DEFAULT_PAGE_SIZE,
     fromCursorHash,
     staleCursorTotal,
-    START_KEY,
-    END_KEY,
     paginateData,
 } from './paginated.interface'
 
 const entityCursorInfo = new Map<string, any>()
 entityCursorInfo.set('organization', {
-    startId: START_KEY,
-    endId: END_KEY,
     cursorSearchKey: 'Organization.organization_id',
 })
 
 entityCursorInfo.set('user', {
-    startId: START_KEY,
-    endId: END_KEY,
     cursorSearchKey: 'User.user_id',
 })
 entityCursorInfo.set('role', {
-    startId: START_KEY,
-    endId: END_KEY,
     cursorSearchKey: 'Role.role_id',
 })
 
 entityCursorInfo.set('class', {
-    startId: START_KEY,
-    endId: END_KEY,
     cursorSearchKey: 'Class.class_id',
 })
 
 entityCursorInfo.set('permission', {
-    startId: 'zzzzzzzz',
-    endId: 'A',
     cursorSearchKey: 'Permission.permission_id',
 })
 
@@ -46,40 +34,30 @@ export async function getPaginated(
     { before, after, first, last, scope }: any
 ) {
     const cursorInfo = entityCursorInfo.get(entityName)
-    const startCursor = toCursorHash(
-        new CursorObject<stringable>(cursorInfo?.startId)
-    )
-    const endCursor = toCursorHash(
-        new CursorObject<stringable>(cursorInfo?.endId)
-    )
 
-    if (!after && !before) {
-        if (first !== undefined) {
-            after = startCursor
-        } else {
-            if (last !== undefined) {
-                before = endCursor
-            }
-        }
-        if (!after && !before) {
-            after = startCursor
-        }
+    if (after && !first) {
+        first = DEFAULT_PAGE_SIZE
     }
-    if (!last) last = DEFAULT_PAGE_SIZE
-    if (!first) first = DEFAULT_PAGE_SIZE
-
+    if (before && !last) {
+        last = DEFAULT_PAGE_SIZE
+    }
     const cursor = after
         ? fromCursorHash(after)
         : before
         ? fromCursorHash(before)
-        : fromCursorHash(endCursor)
+        : undefined
 
-    const id = cursor.id
-    let timeStamp: number = cursor.timeStamp || 0
-    let count: number = cursor.total || 0
-    const limit = after ? first : last
-    const direction = after ? true : false
-    const staleTotal = staleCursorTotal(cursor)
+    const id = cursor?.id
+    let timeStamp: number = cursor?.timeStamp || 0
+    let count: number = cursor?.total || 0
+
+    const direction = last || before ? (after ? true : false) : true
+    if (direction) {
+        first = first || DEFAULT_PAGE_SIZE
+    } else {
+        last = last || DEFAULT_PAGE_SIZE
+    }
+    const staleTotal = cursor ? staleCursorTotal(cursor) : true
 
     if (staleTotal) {
         count = await scope.getCount()
@@ -87,19 +65,20 @@ export async function getPaginated(
     }
 
     if (direction) {
-        scope
-            .andWhere(`${cursorInfo?.cursorSearchKey} < :id`, {
+        if (after) {
+            scope.andWhere(`${cursorInfo?.cursorSearchKey} < :id`, {
                 id: id,
             })
-            .orderBy(cursorInfo?.cursorSearchKey, 'DESC')
+        }
+        scope.orderBy(cursorInfo?.cursorSearchKey, 'DESC').limit(first + 1)
     } else {
-        scope
-            .andWhere(`${cursorInfo?.cursorSearchKey} > :id`, {
+        if (before) {
+            scope.andWhere(`${cursorInfo?.cursorSearchKey} > :id`, {
                 id: id,
             })
-            .orderBy(cursorInfo?.cursorSearchKey, 'ASC')
+        }
+        scope.orderBy(cursorInfo?.cursorSearchKey, 'ASC').limit(last + 1)
     }
-    scope.limit(limit + 1)
 
     const data = await scope.getMany()
     if (!direction) {
@@ -110,9 +89,8 @@ export async function getPaginated(
         timeStamp,
         data,
         true,
-        limit,
-        cursorInfo?.startId,
-        cursorInfo?.endId,
+        first,
+        last,
         direction ? undefined : id,
         direction ? id : undefined
     )

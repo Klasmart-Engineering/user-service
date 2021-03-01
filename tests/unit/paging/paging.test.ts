@@ -80,7 +80,7 @@ describe("paginatedData", () => {
             let direction = true
             let first = true
             let end = false;
-            let id ="zzzzzzzzzzzzzzzzzzzzz"
+            let id : string |undefined
             let recordsRead = 0
             do {
                 let result = paginateData<Emailthing, string>(
@@ -88,9 +88,8 @@ describe("paginatedData", () => {
                     Date.now(),
                     emailArray,
                     false,
-                    10,
-                    "zzzzzzzzzzzzzzzzzzzzzz",
-                    "A",
+                    direction? 10: undefined,
+                    direction? undefined: 10,                    
                     direction ? undefined : id,
                     direction ? id : undefined
                 )
@@ -120,7 +119,7 @@ describe("paginatedData", () => {
 
             let first = true
             let end = false;
-            let id ="A"
+            let id : undefined | string
             let recordsRead = 0
 
             do {
@@ -129,11 +128,11 @@ describe("paginatedData", () => {
                     Date.now(),
                     emailArray,
                     false,
-                    10,
-                    "zzzzzzzzzzzzzzzzzzzzz",
-                    "A",
+                    direction? 10: undefined,
+                    direction? undefined: 10,                    
                     direction ? undefined : id,
                     direction ? id : undefined
+          
                 )
                 expect(result).to.exist
                 let pageInfo = result.pageInfo
@@ -174,7 +173,7 @@ describe("paginatedData", () => {
             let direction = true
             let first = true
             let end = false;
-            let id = 999999999999
+            let id: undefined | number
             let recordsRead = 0
 
             do {
@@ -183,11 +182,11 @@ describe("paginatedData", () => {
                     Date.now(),
                     numberArray,
                     false,
-                    10,
-                    999999999999999,
-                    0,
+                    direction? 10: undefined,
+                    direction? undefined: 10,                    
                     direction ? undefined : id,
                     direction ? id : undefined
+
                 )
                 expect(result).to.exist
                 let pageInfo = result.pageInfo
@@ -215,7 +214,7 @@ describe("paginatedData", () => {
 
             let first = true
             let end = false;
-            let id = 0
+            let id: undefined | number
             let recordsRead = 0
 
             do {
@@ -224,9 +223,8 @@ describe("paginatedData", () => {
                     Date.now(),
                     numberArray,
                     false,
-                    10,
-                    999999999999999,
-                    0,
+                    direction? 10: undefined,
+                    direction? undefined: 10,
                     direction ? undefined : id,
                     direction ? id : undefined
                 )

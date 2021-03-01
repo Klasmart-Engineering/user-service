@@ -29,6 +29,7 @@ Running tests during development:
 -   `npm run test:unit`
 -   `npm run test:integration`
 -   `npm test` (to run all)
+-   `node_modules/mocha/bin/mocha --require ts-node/register --file tests/testHelper.ts tests/integration/model.test.ts` (to run one test file)
 
 Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-mocha-test-adapter) VSCode extension for a nice UI and more fine-grained control.
 
