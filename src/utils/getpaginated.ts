@@ -1,7 +1,4 @@
 import {
-    //   stringable,
-    //   toCursorHash,
-    //   CursorObject,
     DEFAULT_PAGE_SIZE,
     fromCursorHash,
     staleCursorTotal,
