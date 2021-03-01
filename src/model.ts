@@ -595,6 +595,16 @@ export class Model {
         return ageRange
     }
 
+    public async getGrade({ id, scope }: any, context: Context) {
+        const grade = await scope
+            .andWhere('Grade.id = :id', {
+                id: id,
+            })
+            .getOne()
+
+        return grade
+    }
+
     public async createOrUpdateSystemEntities() {
         await RolesInitializer.run()
         await AgeRangesInitializer.run()

@@ -1,4 +1,5 @@
 import { AgeRange } from "../../../src/entities/ageRange";
+import { Grade } from "../../../src/entities/grade";
 import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
 import { Role } from "../../../src/entities/role";
@@ -187,6 +188,26 @@ query getAgeRange($id: ID!){
     high_value_unit
     status
     system
+  }
+}
+`;
+
+const GET_GRADE = `
+query getAgeRange($id: ID!){
+  grade(id: $id) {
+    id
+    name
+    age_range {
+      id
+    }
+    progress_from_grade {
+      id
+    }
+    progress_to_grade {
+      id
+    }
+    system
+    status
   }
 }
 `;
@@ -393,5 +414,19 @@ export async function getAgeRange(testClient: ApolloServerTestClient, id: string
     const res = await gqlTry(operation);
     const gqlAgeRange = res.data?.age_range as AgeRange;
     return gqlAgeRange;
+}
+
+export async function getGrade(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_GRADE,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlGrade = res.data?.grade as Grade;
+    return gqlGrade;
 }
 

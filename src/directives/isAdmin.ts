@@ -4,10 +4,11 @@ import { getRepository } from 'typeorm'
 import { Class } from '../entities/class'
 
 import { AgeRange } from '../entities/ageRange'
+import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { User } from '../entities/user'
 import { Role } from '../entities/role'
+import { User } from '../entities/user'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
@@ -32,6 +33,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 case 'ageRange':
                     scope = getRepository(AgeRange).createQueryBuilder()
                     break
+                case 'grade':
+                    scope = getRepository(Grade).createQueryBuilder()
+                    break
                 default:
                     context.permissions.rejectIfNotAdmin()
             }
@@ -46,6 +50,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         break
                     case 'ageRange':
                         this.nonAdminAgeRangeScope(scope, context)
+                        break
+                    case 'grade':
+                        this.nonAdminGradeScope(scope, context)
                         break
                     default:
                     // do nothing
@@ -85,6 +92,21 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 user_id: context.permissions.getUserId(),
             })
             .orWhere('AgeRange.system = :system', {
+                system: true,
+            })
+    }
+
+    private nonAdminGradeScope(scope: any, context: any) {
+        scope
+            .innerJoin(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'OrganizationMembership.organization = Grade.organization'
+            )
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: context.permissions.getUserId(),
+            })
+            .orWhere('Grade.system = :system', {
                 system: true,
             })
     }

@@ -6,12 +6,14 @@ import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/testConfig";
 import { createAgeRange } from "../factories/ageRange.factory";
+import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
-import { getAgeRange, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { getAgeRange, getGrade, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
 import { AgeRange } from "../../src/entities/ageRange";
+import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
 import { Organization } from "../../src/entities/organization";
@@ -391,6 +393,105 @@ describe("model", () => {
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
+                    });
+                });
+            });
+        });
+    });
+
+    describe("getGrade", () => {
+        let user: User;
+        let userId: string;
+        let otherUserId: string;
+        let organization : Organization;
+        let organizationId: string;
+        let grade: Grade;
+
+        let gradeDetails: any;
+
+        const gradeInfo = async (grade: Grade) => {
+            return {
+                name: grade.name,
+                age_range_id: (await grade.age_range)?.id,
+                progress_from_grade_id: (await grade.progress_from_grade)?.id,
+                progress_to_grade_id: (await grade.progress_to_grade)?.id,
+                system: grade.system,
+            }
+        }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            otherUserId = orgOwner.user_id
+            user = await createUserBilly(testClient);
+            userId = user.user_id
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            organizationId = organization.organization_id
+            const progressFromGrade = createGrade(organization)
+            await progressFromGrade.save()
+            const progressToGrade = createGrade(organization)
+            await progressToGrade.save()
+            const ageRange = createAgeRange(organization);
+            await ageRange.save()
+            grade = createGrade(organization, ageRange, progressFromGrade, progressToGrade)
+            await grade.save()
+            gradeDetails = await gradeInfo(grade)
+        });
+
+        context("when user is not logged in", () => {
+            it("returns no age range", async () => {
+                const gqlGrade = await getGrade(testClient, grade.id, { authorization: undefined });
+
+                expect(gqlGrade).to.be.null;
+            });
+        });
+
+        context("when user is logged in", () => {
+            context("and the user is not an admin", () => {
+                context("and it belongs to the organization from the grade", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected grade", async () => {
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: BillyAuthToken });
+
+                        expect(gqlGrade).not.to.be.null;
+                        const gqlGradeDetails = await gradeInfo(gqlGrade)
+                        expect(gqlGradeDetails).to.deep.eq(gradeDetails)
+                    });
+                });
+
+                context("and it does not belongs to the organization from the grade", () => {
+                    it("returns no grade", async () => {
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: BillyAuthToken });
+
+                        expect(gqlGrade).to.be.null;
+                    });
+                });
+            });
+
+            context("and the user is an admin", () => {
+                context("and it belongs to the organization from the grade", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected grade", async () => {
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: JoeAuthToken });
+
+                        expect(gqlGrade).not.to.be.null;
+                        const gqlGradeDetails = await gradeInfo(gqlGrade)
+                        expect(gqlGradeDetails).to.deep.eq(gradeDetails)
+                    });
+                });
+
+                context("and it does not belongs to the organization from the grade", () => {
+                    it("returns the expected grade", async () => {
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: JoeAuthToken });
+
+                        expect(gqlGrade).not.to.be.null;
+                        const gqlGradeDetails = await gradeInfo(gqlGrade)
+                        expect(gqlGradeDetails).to.deep.eq(gradeDetails)
                     });
                 });
             });

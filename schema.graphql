@@ -95,6 +95,8 @@ type Query {
     school(school_id: ID!): School
 
     age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+
+    grade(id: ID!): Grade @isAdmin(entity: "grade")
 }
 
 type Mutation {
@@ -138,6 +140,8 @@ type Mutation {
     school(school_id: ID!): School
 
     age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+
+    grade(id: ID!): Grade @isAdmin(entity: "grade")
 
     createOrUpateSystemEntities(_: Int): Boolean @isAdmin
 }
@@ -223,6 +227,7 @@ type Organization {
     schools: [School]
     classes: [Class]
     ageRanges: [AgeRange!]
+    grades: [Grade!]
 
     #query
     membersWithPermission(
@@ -267,6 +272,7 @@ type Organization {
     createSchool(school_name: String): School
     createClass(class_name: String): Class
     createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
+    createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
     delete(_: Int): Boolean
 }
 
@@ -443,6 +449,15 @@ input AgeRangeDetail {
     system: Boolean
 }
 
+input GradeDetail {
+    id: ID
+    name: String
+    age_range_id: ID
+    progress_from_grade_id: ID
+    progress_to_grade_id: ID
+    system: Boolean
+}
+
 type AgeRange {
     id: ID!
     name: String!
@@ -450,6 +465,19 @@ type AgeRange {
     high_value: Int!
     low_value_unit: AgeRangeUnit!
     high_value_unit: AgeRangeUnit!
+    system: Boolean!
+    status: Status
+
+    # Mutations
+    delete(_: Int): Boolean
+}
+
+type Grade {
+    id: ID!
+    name: String!
+    age_range: AgeRange
+    progress_from_grade: Grade
+    progress_to_grade: Grade
     system: Boolean!
     status: Status
 

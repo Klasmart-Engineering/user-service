@@ -43,6 +43,7 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSchool(args),
                 age_range: (_parent, args, ctx, _info) =>
                     model.getAgeRange(args, ctx),
+                grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),
             },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
@@ -61,6 +62,7 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSchool(args),
                 age_range: (_parent, args, ctx, _info) =>
                     model.getAgeRange(args, ctx),
+                grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),
                 createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
                     model.createOrUpdateSystemEntities(),
             },

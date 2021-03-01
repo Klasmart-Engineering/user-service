@@ -4,13 +4,14 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { AgeRange } from "../../src/entities/ageRange";
+import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, deleteOrganization } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, listGrades, deleteOrganization } from "../utils/operations/organizationOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
@@ -22,6 +23,7 @@ import { OrganizationOwnership } from "../../src/entities/organizationOwnership"
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
 import { createAgeRange } from "../factories/ageRange.factory";
+import { createGrade } from "../factories/grade.factory";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 import { isRequiredArgument } from "graphql";
@@ -1404,4 +1406,428 @@ describe("organization", () => {
             });
         });
     });
+
+    describe("createOrUpdateGrades", () => {
+        let user: User;
+        let organization : Organization;
+        let ageRange: AgeRange;
+        let progressFromGrade : Grade;
+        let progressToGrade : Grade;
+        let grade: Grade;
+
+        let progressFromGradeDetails: any;
+        let progressToGradeDetails: any;
+
+        const gradeInfo = async (grade: Grade) => {
+            return {
+                name: grade.name,
+                age_range_id: (await grade.age_range)?.id,
+                progress_from_grade_id: (await grade.progress_from_grade)?.id,
+                progress_to_grade_id: (await grade.progress_to_grade)?.id,
+                system: grade.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            progressFromGrade = createGrade(organization)
+            await progressFromGrade.save()
+            progressFromGradeDetails = await gradeInfo(progressFromGrade)
+            progressToGrade = createGrade(organization)
+            await progressToGrade.save()
+            progressToGradeDetails = await gradeInfo(progressToGrade)
+            ageRange = createAgeRange(organization);
+            await ageRange.save()
+            grade = createGrade(organization, ageRange, progressFromGrade, progressToGrade)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            context("and it tries to create new grades", () => {
+                it("fails to create grades in the organization", async () => {
+                    const gradeDetails = await gradeInfo(grade)
+
+                    const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbGrades = await Grade.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                    expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails])
+                });
+            });
+
+            context("and it tries to upate existing non system grades", () => {
+                let gradeDetails: any;
+                let newGrade: any;
+
+                beforeEach(async () => {
+                    gradeDetails = await gradeInfo(grade)
+                    const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                    newGrade = {
+                        ...gradeDetails,
+                        ...{ id: gqlGrades[0].id, name: 'New Name' }
+                    }
+                });
+
+
+                it("fails to update grades in the organization", async () => {
+                    const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbGrades = await Grade.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                    expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                });
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have create grades permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to create new grades", () => {
+                    it("fails to create grades in the organization", async () => {
+                        const gradeDetails = await gradeInfo(grade)
+
+                        const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbGrades = await Grade.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+                        const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                        expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails])
+                    });
+                });
+            });
+
+            context("and the user does not have edit age range permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to upate existing non system grades", () => {
+                    let gradeDetails: any;
+                    let newGrade: any;
+
+                    beforeEach(async () => {
+                        gradeDetails = await gradeInfo(grade)
+                        const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                        newGrade = {
+                            ...gradeDetails,
+                            ...{ id: gqlGrades[0].id, name: 'New Name' }
+                        }
+                    });
+
+
+                    it("fails to update grades in the organization", async () => {
+                        const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbGrades = await Grade.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+                        const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                        expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                    });
+                });
+            });
+
+            context("and is a non admin user", () => {
+                let gradeDetails: any;
+
+                context("and the user has all the permissions", () => {
+                    beforeEach(async () => {
+                        const role = await createRole(testClient, organization.organization_id);
+                        await grantPermission(testClient, role.role_id, PermissionName.create_grade_20223, { authorization: JoeAuthToken });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_grade_20333, { authorization: JoeAuthToken });
+                        await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                        gradeDetails = await gradeInfo(grade)
+                    });
+
+                    context("and it tries to create new grades", () => {
+                        it("creates all the grades in the organization", async () => {
+                            const gqlGrades =  await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: BillyAuthToken });
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                            expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing non system grades", () => {
+                        let newGrade: any;
+                        let newGradeDetails: any;
+
+                        beforeEach(async () => {
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                            newGrade = {
+                                ...gradeDetails,
+                                ...{ id: gqlGrades[0].id, name: 'New Name' }
+                            }
+
+                            newGradeDetails = {
+                                ...gradeDetails,
+                                ...{ name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected grades in the organization", async () => {
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: BillyAuthToken });
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+                            const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                            expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, newGradeDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing system age ranges", () => {
+                        let newGrade: any;
+
+                        beforeEach(async () => {
+                            gradeDetails.system = true
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                            newGrade = {
+                                ...gradeDetails,
+                                ...{ id: gqlGrades[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("fails to update age ranges in the organization", async () => {
+                            const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: BillyAuthToken });
+
+                            expect(fn()).to.be.rejected;
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+                            const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                            expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                        });
+                    });
+                });
+            });
+
+            context("and is an admin user", () => {
+                let gradeDetails: any;
+
+                beforeEach(async () => {
+                    gradeDetails = await gradeInfo(grade)
+                });
+
+                context("and the user has all the permissions", () => {
+                    context("and it tries to create grades", () => {
+                        it("creates all the grades in the organization", async () => {
+                            const gqlGrades =  await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                            expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing non system grades", () => {
+                        let newGrade: any;
+                        let newGradeDetails: any;
+
+                        beforeEach(async () => {
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                            newGrade = {
+                                ...gradeDetails,
+                                ...{ id: gqlGrades[0].id, name: 'New Name' }
+                            }
+
+                            newGradeDetails = {
+                                ...gradeDetails,
+                                ...{ name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected grades in the organization", async () => {
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: JoeAuthToken });
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+                            const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                            expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, newGradeDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing system age ranges", () => {
+                        let newGrade: any;
+                        let newGradeDetails: any;
+
+                        beforeEach(async () => {
+                            gradeDetails.system = true
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: JoeAuthToken });
+
+                            newGrade = {
+                                ...gradeDetails,
+                                ...{ id: gqlGrades[0].id, name: 'New Name' }
+                            }
+
+                            newGradeDetails = {
+                                ...gradeDetails,
+                                ...{ name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected grades in the organization", async () => {
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: JoeAuthToken });
+
+                            const dbGrades = await Grade.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+                            const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                            expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, newGradeDetails])
+                        });
+                    });
+                });
+            });
+        });
+    });
+
+    describe("grades", () => {
+        let user: User;
+        let organization : Organization;
+        let ageRange: AgeRange;
+        let progressFromGrade : Grade;
+        let progressToGrade : Grade;
+        let grade: Grade;
+
+        let gradeDetails: any;
+        let progressFromGradeDetails: any;
+        let progressToGradeDetails: any;
+
+        const gradeInfo = async (grade: Grade) => {
+            return {
+                name: grade.name,
+                age_range_id: (await grade.age_range)?.id,
+                progress_from_grade_id: (await grade.progress_from_grade)?.id,
+                progress_to_grade_id: (await grade.progress_to_grade)?.id,
+                system: grade.system,
+            }
+        }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            progressFromGrade = createGrade(organization)
+            await progressFromGrade.save()
+            progressFromGradeDetails = await gradeInfo(progressFromGrade)
+            progressToGrade = createGrade(organization)
+            await progressToGrade.save()
+            progressToGradeDetails = await gradeInfo(progressToGrade)
+            ageRange = createAgeRange(organization);
+            await ageRange.save()
+            grade = createGrade(organization, ageRange, progressFromGrade, progressToGrade)
+            await grade.save()
+            gradeDetails = await gradeInfo(grade)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list grades in the organization", async () => {
+                const fn = () => listGrades(testClient, organization.organization_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+                const dbGrades = await Grade.find({
+                    where: {
+                        organization: { organization_id: organization.organization_id },
+                    }
+                });
+                const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view grade permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to list grades in the organization", async () => {
+                    const fn = () => listGrades(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                    const dbGrades = await Grade.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    const dGradesDetails = await Promise.all(dbGrades.map(gradeInfo))
+                    expect(dGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_grades_20113, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the grades in the organization", async () => {
+                    const gqlGrades = await listGrades(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    const gqlGradesDetails = await Promise.all(gqlGrades.map(gradeInfo))
+                    expect(gqlGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
+                });
+            });
+        });
+    });
+
 });

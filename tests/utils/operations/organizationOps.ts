@@ -3,6 +3,7 @@ import { Class } from "../../../src/entities/class";
 import { Organization } from "../../../src/entities/organization";
 import { OrganizationMembership } from "../../../src/entities/organizationMembership";
 import { AgeRange } from "../../../src/entities/ageRange";
+import { Grade } from "../../../src/entities/grade";
 import { Role } from "../../../src/entities/role";
 import { School } from "../../../src/entities/school";
 import { SchoolMembership } from "../../../src/entities/schoolMembership"
@@ -163,6 +164,50 @@ const LIST_AGE_RANGES = `
               high_value_unit
               low_value
               low_value_unit
+            }
+        }
+    }
+`;
+
+const CREATE_OR_UPDATE_GRADES = `
+    mutation myMutation(
+            $organization_id: ID!,
+            $grades: [GradeDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdateGrades(grades: $grades) {
+                 id
+                 name
+                 age_range {
+                    id
+                 }
+                 progress_from_grade {
+                    id
+                 }
+                 progress_to_grade {
+                    id
+                 }
+                 system
+            }
+        }
+    }
+`;
+
+const LIST_GRADES = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            grades {
+                 id
+                 name
+                 age_range {
+                    id
+                 }
+                 progress_from_grade {
+                    id
+                 }
+                 progress_to_grade {
+                    id
+                 }
+                 system
             }
         }
     }
@@ -387,4 +432,34 @@ export async function listAgeRanges(testClient: ApolloServerTestClient, organiza
     const gqlAgeRanges = res.data?.organization.ageRanges as AgeRange[];
 
     return gqlAgeRanges;
+}
+
+export async function createOrUpdateGrades(testClient: ApolloServerTestClient, organizationId: string, grades: any[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CREATE_OR_UPDATE_GRADES,
+        variables: { organization_id: organizationId, grades: grades },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlGrades = res.data?.organization.createOrUpdateGrades as Grade[];
+
+    return gqlGrades;
+}
+
+export async function listGrades(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_GRADES,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlGrades = res.data?.organization.grades as Grade[];
+
+    return gqlGrades;
 }

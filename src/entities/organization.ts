@@ -14,6 +14,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { OrganizationOwnership } from './organizationOwnership'
 import { AgeRange } from './ageRange'
+import { Grade } from './grade'
 import { Role } from './role'
 import { User, accountUUID } from './user'
 import { Class } from './class'
@@ -151,6 +152,24 @@ export class Organization
         )
 
         return AgeRange.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
+
+    public async grades(args: any, context: any, info: any): Promise<Grade[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_grades_20113
+        )
+
+        return Grade.find({
             where: [
                 { system: true, organization: { organization_id: null } },
                 {
@@ -816,6 +835,87 @@ export class Organization
         await getManager().save(ageRanges)
 
         return ageRanges
+    }
+
+    public async createOrUpdateGrades(
+        { grades }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        let checkUpdatePermission = false
+        let checkCreatePermission = false
+        let checkAdminPermission = false
+        const permisionContext = { organization_id: this.organization_id }
+
+        const dbGrades = []
+
+        for (const gradeDetail of grades) {
+            checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
+            checkCreatePermission = checkCreatePermission || !gradeDetail?.id
+            checkAdminPermission = checkAdminPermission || !!gradeDetail?.system
+
+            const grade =
+                (await Grade.findOne({ id: gradeDetail?.id })) || new Grade()
+            grade.name = gradeDetail?.name || grade.name
+
+            if (gradeDetail?.age_range_id) {
+                const ageRange = await AgeRange.findOneOrFail({
+                    id: gradeDetail?.age_range_id,
+                })
+                grade.age_range = Promise.resolve(ageRange)
+            }
+
+            if (gradeDetail?.progress_from_grade_id) {
+                const progressFromGrade = await Grade.findOneOrFail({
+                    id: gradeDetail?.progress_from_grade_id,
+                })
+                grade.progress_from_grade = Promise.resolve(progressFromGrade)
+            }
+
+            if (gradeDetail?.progress_to_grade_id) {
+                const progressToGrade = await Grade.findOneOrFail({
+                    id: gradeDetail?.progress_to_grade_id,
+                })
+                grade.progress_to_grade = Promise.resolve(progressToGrade)
+            }
+
+            grade.organization = Promise.resolve(this)
+
+            if (gradeDetail?.system !== undefined) {
+                grade.system = gradeDetail.system
+            }
+
+            dbGrades.push(grade)
+        }
+
+        if (checkAdminPermission) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
+        if (checkCreatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.create_grade_20223
+            )
+        }
+
+        if (checkUpdatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.edit_grade_20333
+            )
+        }
+
+        await getManager().save(dbGrades)
+
+        return dbGrades
     }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
