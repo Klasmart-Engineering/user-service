@@ -412,7 +412,6 @@ describe("model", () => {
         const gradeInfo = async (grade: Grade) => {
             return {
                 name: grade.name,
-                age_range_id: (await grade.age_range)?.id,
                 progress_from_grade_id: (await grade.progress_from_grade)?.id,
                 progress_to_grade_id: (await grade.progress_to_grade)?.id,
                 system: grade.system,
@@ -430,9 +429,7 @@ describe("model", () => {
             await progressFromGrade.save()
             const progressToGrade = createGrade(organization)
             await progressToGrade.save()
-            const ageRange = createAgeRange(organization);
-            await ageRange.save()
-            grade = createGrade(organization, ageRange, progressFromGrade, progressToGrade)
+            grade = createGrade(organization, progressFromGrade, progressToGrade)
             await grade.save()
             gradeDetails = await gradeInfo(grade)
         });

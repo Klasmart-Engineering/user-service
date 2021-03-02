@@ -452,7 +452,6 @@ input AgeRangeDetail {
 input GradeDetail {
     id: ID
     name: String
-    age_range_id: ID
     progress_from_grade_id: ID
     progress_to_grade_id: ID
     system: Boolean
@@ -475,7 +474,6 @@ type AgeRange {
 type Grade {
     id: ID!
     name: String!
-    age_range: AgeRange
     progress_from_grade: Grade
     progress_to_grade: Grade
     system: Boolean!

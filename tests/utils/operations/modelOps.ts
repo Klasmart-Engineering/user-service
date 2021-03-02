@@ -197,9 +197,6 @@ query getAgeRange($id: ID!){
   grade(id: $id) {
     id
     name
-    age_range {
-      id
-    }
     progress_from_grade {
       id
     }

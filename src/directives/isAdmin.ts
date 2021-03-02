@@ -83,31 +83,33 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
 
     private nonAdminAgeRangeScope(scope: any, context: any) {
         scope
-            .innerJoin(
+            .leftJoinAndSelect(
                 OrganizationMembership,
                 'OrganizationMembership',
                 'OrganizationMembership.organization = AgeRange.organization'
             )
-            .where('OrganizationMembership.user_id = :user_id', {
-                user_id: context.permissions.getUserId(),
-            })
-            .orWhere('AgeRange.system = :system', {
-                system: true,
-            })
+            .where(
+                '(OrganizationMembership.user_id = :user_id OR AgeRange.system = :system)',
+                {
+                    user_id: context.permissions.getUserId(),
+                    system: true,
+                }
+            )
     }
 
     private nonAdminGradeScope(scope: any, context: any) {
         scope
-            .innerJoin(
+            .leftJoinAndSelect(
                 OrganizationMembership,
                 'OrganizationMembership',
                 'OrganizationMembership.organization = Grade.organization'
             )
-            .where('OrganizationMembership.user_id = :user_id', {
-                user_id: context.permissions.getUserId(),
-            })
-            .orWhere('Grade.system = :system', {
-                system: true,
-            })
+            .where(
+                '(OrganizationMembership.user_id = :user_id OR Grade.system = :system)',
+                {
+                    user_id: context.permissions.getUserId(),
+                    system: true,
+                }
+            )
     }
 }

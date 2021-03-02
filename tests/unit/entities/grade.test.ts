@@ -2,9 +2,7 @@
 import { expect, use } from "chai";
 import { Connection } from "typeorm";
 
-import { AgeRange } from "../../../src/entities/ageRange";
 import { createTestConnection } from "../../utils/testConnection";
-import { createAgeRange } from "../../factories/ageRange.factory";
 import { createGrade } from "../../factories/grade.factory";
 import { createOrganization } from "../../factories/organization.factory";
 import { Grade } from "../../../src/entities/grade";
@@ -17,7 +15,6 @@ use(chaiAsPromised);
 describe("Grade", () => {
     let connection: Connection;
     let manager : any;
-    let ageRange : AgeRange;
     let progressFromGrade : Grade;
     let progressToGrade : Grade;
     let grade : Grade;
@@ -37,8 +34,7 @@ describe("Grade", () => {
         org = createOrganization()
         progressFromGrade = createGrade(org)
         progressToGrade = createGrade(org)
-        ageRange = createAgeRange(org);
-        grade = createGrade(org, ageRange, progressFromGrade, progressToGrade)
+        grade = createGrade(org, progressFromGrade, progressToGrade)
     });
 
     describe(".new", () => {
@@ -46,7 +42,6 @@ describe("Grade", () => {
             beforeEach(async () => {
                 grade.system = undefined;
                 await manager.save(org);
-                await manager.save(ageRange);
                 await manager.save(progressFromGrade);
                 await manager.save(progressToGrade);
                 await manager.save(grade);
@@ -65,7 +60,6 @@ describe("Grade", () => {
             beforeEach(async () => {
                 grade.name = undefined;
                 await manager.save(org);
-                await manager.save(ageRange);
                 await manager.save(progressFromGrade);
                 await manager.save(progressToGrade);
             });
@@ -80,7 +74,6 @@ describe("Grade", () => {
         context("when all details are correct", () => {
             beforeEach(async () => {
                 await manager.save(org);
-                await manager.save(ageRange);
                 await manager.save(progressFromGrade);
                 await manager.save(progressToGrade);
                 await manager.save(grade);

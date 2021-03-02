@@ -1410,7 +1410,6 @@ describe("organization", () => {
     describe("createOrUpdateGrades", () => {
         let user: User;
         let organization : Organization;
-        let ageRange: AgeRange;
         let progressFromGrade : Grade;
         let progressToGrade : Grade;
         let grade: Grade;
@@ -1421,7 +1420,6 @@ describe("organization", () => {
         const gradeInfo = async (grade: Grade) => {
             return {
                 name: grade.name,
-                age_range_id: (await grade.age_range)?.id,
                 progress_from_grade_id: (await grade.progress_from_grade)?.id,
                 progress_to_grade_id: (await grade.progress_to_grade)?.id,
                 system: grade.system,
@@ -1439,9 +1437,7 @@ describe("organization", () => {
             progressToGrade = createGrade(organization)
             await progressToGrade.save()
             progressToGradeDetails = await gradeInfo(progressToGrade)
-            ageRange = createAgeRange(organization);
-            await ageRange.save()
-            grade = createGrade(organization, ageRange, progressFromGrade, progressToGrade)
+            grade = createGrade(organization, progressFromGrade, progressToGrade)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
         });
@@ -1739,7 +1735,6 @@ describe("organization", () => {
     describe("grades", () => {
         let user: User;
         let organization : Organization;
-        let ageRange: AgeRange;
         let progressFromGrade : Grade;
         let progressToGrade : Grade;
         let grade: Grade;
@@ -1751,7 +1746,6 @@ describe("organization", () => {
         const gradeInfo = async (grade: Grade) => {
             return {
                 name: grade.name,
-                age_range_id: (await grade.age_range)?.id,
                 progress_from_grade_id: (await grade.progress_from_grade)?.id,
                 progress_to_grade_id: (await grade.progress_to_grade)?.id,
                 system: grade.system,
@@ -1768,9 +1762,7 @@ describe("organization", () => {
             progressToGrade = createGrade(organization)
             await progressToGrade.save()
             progressToGradeDetails = await gradeInfo(progressToGrade)
-            ageRange = createAgeRange(organization);
-            await ageRange.save()
-            grade = createGrade(organization, ageRange, progressFromGrade, progressToGrade)
+            grade = createGrade(organization, progressFromGrade, progressToGrade)
             await grade.save()
             gradeDetails = await gradeInfo(grade)
             const organizationId = organization?.organization_id

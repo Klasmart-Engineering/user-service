@@ -9,7 +9,6 @@ import {
     PrimaryGeneratedColumn,
 } from 'typeorm'
 
-import { AgeRange } from './ageRange'
 import { Context } from '../main'
 import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from './organization'
@@ -26,10 +25,6 @@ export class Grade extends BaseEntity {
 
     @Column({ nullable: false, default: false })
     public system?: boolean
-
-    @OneToOne(() => AgeRange, (ageRange) => ageRange.id)
-    @JoinColumn({ name: 'age_range_id' })
-    public age_range?: Promise<AgeRange>
 
     @OneToOne(() => Grade, (grade) => grade.id)
     @JoinColumn({ name: 'progress_fom_grade_id' })

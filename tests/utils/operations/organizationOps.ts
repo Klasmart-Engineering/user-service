@@ -177,9 +177,6 @@ const CREATE_OR_UPDATE_GRADES = `
             createOrUpdateGrades(grades: $grades) {
                  id
                  name
-                 age_range {
-                    id
-                 }
                  progress_from_grade {
                     id
                  }
@@ -198,9 +195,6 @@ const LIST_GRADES = `
             grades {
                  id
                  name
-                 age_range {
-                    id
-                 }
                  progress_from_grade {
                     id
                  }

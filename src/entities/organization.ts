@@ -865,13 +865,6 @@ export class Organization
                 (await Grade.findOne({ id: gradeDetail?.id })) || new Grade()
             grade.name = gradeDetail?.name || grade.name
 
-            if (gradeDetail?.age_range_id) {
-                const ageRange = await AgeRange.findOneOrFail({
-                    id: gradeDetail?.age_range_id,
-                })
-                grade.age_range = Promise.resolve(ageRange)
-            }
-
             if (gradeDetail?.progress_from_grade_id) {
                 const progressFromGrade = await Grade.findOneOrFail({
                     id: gradeDetail?.progress_from_grade_id,
