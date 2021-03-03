@@ -128,10 +128,12 @@ describe("model", () => {
                     otherUser= await createUserBilly(testClient);
                 });
 
-                it("returns null", async () => {
+                it("returns a user based from the token", async () => {
                     const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: otherUser.user_id });
 
-                    expect(gqlUser).to.be.null
+                    expect(gqlUser).to.not.be.null
+                    expect(gqlUser.user_id).to.eq(user.user_id)
+                    expect(gqlUser.email).to.eq(user.email)
                 });
             });
         });

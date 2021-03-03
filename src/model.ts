@@ -13,7 +13,6 @@ import {
     validateDOB,
     validateEmail,
     validatePhone,
-    normalizedLowercaseTrimmed,
     padShortDob,
 } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
@@ -85,94 +84,27 @@ export class Model {
         const userEmail = token?.email
         const userPhone = token?.phone
 
-        let user
+        let user = await this.userRepository.findOne({
+            where: [
+                { email: userEmail, user_id: userID },
+                { phone: userPhone, user_id: userID }
+            ]
+        })
 
-        if (userID && token) {
-            if (userEmail) {
-                user = await this.userRepository.findOne({
-                    email: userEmail,
-                    user_id: userID,
-                })
-            } else if (userPhone) {
-                user = await this.userRepository.findOne({
-                    phone: userPhone,
-                    user_id: userID,
-                })
-            }
-        } else if (token) {
-            const hashSource = userEmail || userPhone
+        if (user) { return user }
 
-            if (!user) {
-                user = new User()
-                user.user_id = accountUUID(hashSource)
-            }
-        }
+        const hashSource = userEmail || userPhone
 
-        if (user) {
-            user = await this.updateUserWithTokenDetails(user, token, userID)
+        if (hashSource) {
+            user = new User()
+            user.user_id = accountUUID(hashSource)
+            user.email = userEmail
+            user.phone = userPhone
+
+            await user.save()
         }
 
         return user
-    }
-
-    private async updateUserWithTokenDetails(
-        user: User,
-        token: any,
-        userId?: string
-    ) {
-        try {
-            let modified = false
-
-            //Ensure fields match
-            if (userId && user.user_id !== userId) {
-                user.user_id = userId
-                modified = true
-            }
-
-            if (token.email && user.email !== token.email) {
-                token.email = normalizedLowercaseTrimmed(token.email)
-                if (validateEmail(token.email)) {
-                    user.email = token.email
-                    modified = true
-                }
-            }
-
-            if (token.phone && user.phone !== token.phone) {
-                if (validatePhone(token.phone)) {
-                    user.phone = token.phone
-                    modified = true
-                }
-            }
-
-            if (!user.given_name && token.given_name) {
-                user.given_name = token.given_name
-                modified = true
-            }
-
-            if (!user.family_name && token.family_name) {
-                user.family_name = token.family_name
-                modified = true
-            }
-
-            if (!user.date_of_birth && token.date_of_birth) {
-                token.date_of_birth = padShortDob(token.date_of_birth)
-                if (validateDOB(token.date_of_birth)) {
-                    user.date_of_birth = token.date_of_birth
-                    modified = true
-                }
-            }
-            if (!user.username && token.username) {
-                user.username = token.username
-            }
-
-            if (modified) {
-                await this.manager.save(user)
-            }
-
-            return user
-        } catch (e) {
-            console.error(e)
-        }
     }
 
     public async newUser({
