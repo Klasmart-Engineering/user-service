@@ -15,7 +15,13 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
 import { OrganizationMembership } from './organizationMembership'
-import { Organization } from './organization'
+import {
+    Organization,
+    padShortDob,
+    validateDOB,
+    validateEmail,
+    validatePhone,
+} from './organization'
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
 import { OrganizationOwnership } from './organizationOwnership'
@@ -241,7 +247,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     }
 
     public async set(
-        { given_name, family_name, email, phone, avatar }: any,
+        { given_name, family_name, email, phone, date_of_birth, avatar }: any,
         context: any,
         info: GraphQLResolveInfo
     ) {
@@ -253,18 +259,36 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             if (info.operation.operation !== 'mutation') {
                 return null
             }
-
             if (typeof given_name === 'string') {
                 this.given_name = given_name
             }
             if (typeof family_name === 'string') {
                 this.family_name = family_name
             }
+            if (email) {
+                if (!validateEmail(email)) {
+                    email = undefined
+                }
+            }
+            if (phone) {
+                if (!validatePhone(phone)) {
+                    phone = undefined
+                }
+            }
+            if (date_of_birth) {
+                date_of_birth = padShortDob(date_of_birth)
+                if (!validateDOB(date_of_birth)) {
+                    date_of_birth = undefined
+                }
+            }
             if (email !== undefined) {
                 this.email = email
             }
             if (phone !== undefined) {
                 this.phone = phone
+            }
+            if (date_of_birth !== undefined) {
+                this.date_of_birth = date_of_birth
             }
             if (typeof avatar === 'string') {
                 this.avatar = avatar

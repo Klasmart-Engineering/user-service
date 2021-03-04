@@ -37,15 +37,18 @@ const SET = `
             $user_id: ID!
             $given_name: String,
             $family_name: String,
+            $date_of_birth: String,
             $avatar: String) {
         user(user_id: $user_id) {
             set(
                 given_name: $given_name
                 family_name: $family_name
+                date_of_birth: $date_of_birth
                 avatar: $avatar
             ) {
                 given_name
                 family_name
+                date_of_birth
                 avatar
             }
         }
@@ -237,6 +240,7 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User,
         given_name: "Billy",
         family_name: "Bob",
         avatar: "new_avatar",
+        date_of_birth: "03-1983"
     };
 
     const operation = () => mutate({

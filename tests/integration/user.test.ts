@@ -56,6 +56,7 @@ describe("user", () => {
             const dbUser = await User.findOneOrFail({ where: { user_id: user.user_id } });
             expect(gqlUpdatedUser).to.exist;
             expect(dbUser).to.include(gqlUpdatedUser);
+            expect(dbUser.date_of_birth).to.eq(gqlUpdatedUser.date_of_birth)
         });
     });
 

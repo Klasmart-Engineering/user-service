@@ -187,6 +187,7 @@ type User {
         family_name: String
         email: String
         phone: String
+        date_of_birth: String
         avatar: String
     ): User
     createOrganization(
@@ -430,13 +431,13 @@ type Class {
 }
 
 enum AgeRangeUnit {
-  year
-  month
+    year
+    month
 }
 
 enum Status {
-  active
-  inactive
+    active
+    inactive
 }
 
 input AgeRangeDetail {
