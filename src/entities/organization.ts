@@ -6,6 +6,7 @@ import {
     getRepository,
     getManager,
     JoinColumn,
+    In,
     OneToOne,
     ManyToOne,
     BaseEntity,
@@ -14,14 +15,17 @@ import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
 import { OrganizationOwnership } from './organizationOwnership'
 import { AgeRange } from './ageRange'
+import { Category } from './category'
 import { Grade } from './grade'
 import { Role } from './role'
+import { Subcategory } from './subcategory'
 import { User, accountUUID } from './user'
 import { Class } from './class'
 import { School } from './school'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from './schoolMembership'
+import { Subject } from './subject'
 import {
     CursorArgs,
     CursorObject,
@@ -170,6 +174,72 @@ export class Organization
         )
 
         return Grade.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
+
+    public async categories(
+        args: any,
+        context: any,
+        info: any
+    ): Promise<Category[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_subjects_20115
+        )
+
+        return Category.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
+
+    public async subcategories(
+        args: any,
+        context: any,
+        info: any
+    ): Promise<Subcategory[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_subjects_20115
+        )
+
+        return Subcategory.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
+
+    public async subjects(
+        args: any,
+        context: any,
+        info: any
+    ): Promise<Subject[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_subjects_20115
+        )
+
+        return Subject.find({
             where: [
                 { system: true, organization: { organization_id: null } },
                 {
@@ -909,6 +979,228 @@ export class Organization
         await getManager().save(dbGrades)
 
         return dbGrades
+    }
+
+    public async createOrUpdateSubcategories(
+        { subcategories }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        let checkUpdatePermission = false
+        let checkCreatePermission = false
+        let checkAdminPermission = false
+        const permisionContext = { organization_id: this.organization_id }
+
+        const dbSubcategories = []
+
+        for (const subcategoryDetail of subcategories) {
+            checkUpdatePermission =
+                checkUpdatePermission || !!subcategoryDetail?.id
+            checkCreatePermission =
+                checkCreatePermission || !subcategoryDetail?.id
+            checkAdminPermission =
+                checkAdminPermission || !!subcategoryDetail?.system
+
+            const subcategory =
+                (await Subcategory.findOne({ id: subcategoryDetail?.id })) ||
+                new Subcategory()
+            subcategory.name = subcategoryDetail?.name || subcategory.name
+
+            subcategory.organization = Promise.resolve(this)
+
+            if (subcategoryDetail?.system !== undefined) {
+                subcategory.system = subcategoryDetail.system
+            }
+
+            dbSubcategories.push(subcategory)
+        }
+
+        if (checkAdminPermission) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
+        if (checkCreatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.create_subjects_20227
+            )
+        }
+
+        if (checkUpdatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.edit_subjects_20337
+            )
+        }
+
+        await getManager().save(dbSubcategories)
+
+        return dbSubcategories
+    }
+
+    public async createOrUpdateCategories(
+        { categories }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        let checkUpdatePermission = false
+        let checkCreatePermission = false
+        let checkAdminPermission = false
+        const permisionContext = { organization_id: this.organization_id }
+
+        const dbCategories = []
+
+        for (const categoryDetail of categories) {
+            checkUpdatePermission =
+                checkUpdatePermission || !!categoryDetail?.id
+            checkCreatePermission = checkCreatePermission || !categoryDetail?.id
+            checkAdminPermission =
+                checkAdminPermission || !!categoryDetail?.system
+
+            const category =
+                (await Category.findOne({ id: categoryDetail?.id })) ||
+                new Category()
+            category.name = categoryDetail?.name || category.name
+
+            category.organization = Promise.resolve(this)
+
+            if (categoryDetail?.subcategories) {
+                const subcategories = await this.getSubcategories(
+                    categoryDetail.subcategories
+                )
+                category.subcategories = Promise.resolve(subcategories)
+            }
+
+            if (categoryDetail?.system !== undefined) {
+                category.system = categoryDetail.system
+            }
+
+            dbCategories.push(category)
+        }
+
+        if (checkAdminPermission) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
+        if (checkCreatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.create_subjects_20227
+            )
+        }
+
+        if (checkUpdatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.edit_subjects_20337
+            )
+        }
+
+        await getManager().save(dbCategories)
+
+        return dbCategories
+    }
+
+    public async createOrUpdateSubjects(
+        { subjects }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        let checkUpdatePermission = false
+        let checkCreatePermission = false
+        let checkAdminPermission = false
+        const permisionContext = { organization_id: this.organization_id }
+
+        const dbSubjects = []
+
+        for (const subjectDetail of subjects) {
+            checkUpdatePermission = checkUpdatePermission || !!subjectDetail?.id
+            checkCreatePermission = checkCreatePermission || !subjectDetail?.id
+            checkAdminPermission =
+                checkAdminPermission || !!subjectDetail?.system
+
+            const subject =
+                (await Subject.findOne({ id: subjectDetail?.id })) ||
+                new Subject()
+            subject.name = subjectDetail?.name || subject.name
+
+            subject.organization = Promise.resolve(this)
+
+            if (subjectDetail?.categories) {
+                const categories = await this.getCategories(
+                    subjectDetail.categories
+                )
+                subject.categories = Promise.resolve(categories)
+            }
+
+            if (subjectDetail?.subcategories) {
+                const subcategories = await this.getSubcategories(
+                    subjectDetail.subcategories
+                )
+                subject.subcategories = Promise.resolve(subcategories)
+            }
+
+            if (subjectDetail?.system !== undefined) {
+                subject.system = subjectDetail.system
+            }
+
+            dbSubjects.push(subject)
+        }
+
+        if (checkAdminPermission) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
+        if (checkCreatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.create_subjects_20227
+            )
+        }
+
+        if (checkUpdatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.edit_subjects_20337
+            )
+        }
+
+        await getManager().save(dbSubjects)
+
+        return dbSubjects
+    }
+
+    private async getCategories(ids: string[]) {
+        return await Category.find({
+            where: { id: In(ids) },
+        })
+    }
+
+    private async getSubcategories(ids: string[]) {
+        return await Subcategory.find({
+            where: { id: In(ids) },
+        })
     }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {

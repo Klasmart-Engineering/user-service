@@ -4,10 +4,13 @@ import { getRepository } from 'typeorm'
 import { Class } from '../entities/class'
 
 import { AgeRange } from '../entities/ageRange'
+import { Category } from '../entities/category'
 import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
+import { Subcategory } from '../entities/subcategory'
+import { Subject } from '../entities/subject'
 import { User } from '../entities/user'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
@@ -36,6 +39,15 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 case 'grade':
                     scope = getRepository(Grade).createQueryBuilder()
                     break
+                case 'category':
+                    scope = getRepository(Category).createQueryBuilder()
+                    break
+                case 'subcategory':
+                    scope = getRepository(Subcategory).createQueryBuilder()
+                    break
+                case 'subject':
+                    scope = getRepository(Subject).createQueryBuilder()
+                    break
                 default:
                     context.permissions.rejectIfNotAdmin()
             }
@@ -53,6 +65,15 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         break
                     case 'grade':
                         this.nonAdminGradeScope(scope, context)
+                        break
+                    case 'category':
+                        this.nonAdminCategoryScope(scope, context)
+                        break
+                    case 'subcategory':
+                        this.nonAdminSubcategoryScope(scope, context)
+                        break
+                    case 'subject':
+                        this.nonAdminSubjectScope(scope, context)
                         break
                     default:
                     // do nothing
@@ -106,6 +127,54 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
             .where(
                 '(OrganizationMembership.user_id = :user_id OR Grade.system = :system)',
+                {
+                    user_id: context.permissions.getUserId(),
+                    system: true,
+                }
+            )
+    }
+
+    private nonAdminCategoryScope(scope: any, context: any) {
+        scope
+            .leftJoinAndSelect(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'OrganizationMembership.organization = Category.organization'
+            )
+            .where(
+                '(OrganizationMembership.user_id = :user_id OR Category.system = :system)',
+                {
+                    user_id: context.permissions.getUserId(),
+                    system: true,
+                }
+            )
+    }
+
+    private nonAdminSubcategoryScope(scope: any, context: any) {
+        scope
+            .leftJoinAndSelect(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'OrganizationMembership.organization = Subcategory.organization'
+            )
+            .where(
+                '(OrganizationMembership.user_id = :user_id OR Subcategory.system = :system)',
+                {
+                    user_id: context.permissions.getUserId(),
+                    system: true,
+                }
+            )
+    }
+
+    private nonAdminSubjectScope(scope: any, context: any) {
+        scope
+            .leftJoinAndSelect(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'OrganizationMembership.organization = Subject.organization'
+            )
+            .where(
+                '(OrganizationMembership.user_id = :user_id OR Subject.system = :system)',
                 {
                     user_id: context.permissions.getUserId(),
                     system: true,

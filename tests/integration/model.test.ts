@@ -8,7 +8,8 @@ import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/te
 import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
-import { getAgeRange, getGrade, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { createSubcategory } from "../factories/subcategory.factory";
+import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
@@ -17,6 +18,7 @@ import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
 import { Organization } from "../../src/entities/organization";
+import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 
 use(chaiAsPromised);
@@ -496,4 +498,92 @@ describe("model", () => {
             });
         });
     });
+
+    describe("getSubcategory", () => {
+        let user: User;
+        let subcategory: Subcategory;
+        let organizationId: string;
+
+        const subcategoryInfo = (subcategory: Subcategory) => {
+            return {
+                id: subcategory.id,
+                name: subcategory.name,
+                system: subcategory.system,
+            }
+        }
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+            const org = createOrganization(user)
+            await connection.manager.save(org)
+            organizationId = org.organization_id
+            subcategory = createSubcategory(org)
+            await connection.manager.save(subcategory)
+        });
+
+        context("when user is not logged in", () => {
+            it("returns no subcategory", async () => {
+                const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: undefined });
+
+                expect(gqlSubcategory).to.be.null;
+            });
+        });
+
+        context("when user is logged in", () => {
+            let otherUserId: string;
+
+            beforeEach(async () => {
+                const otherUser = await createUserBilly(testClient);
+                otherUserId = otherUser.user_id
+            });
+
+            context("and the user is not an admin", () => {
+                context("and it belongs to the organization from the subcategory", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected subcategory", async () => {
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: BillyAuthToken });
+
+                        expect(gqlSubcategory).not.to.be.null;
+                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
+                    });
+                });
+
+                context("and it does not belongs to the organization from the subcategory", () => {
+                    it("returns no subcategory", async () => {
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: BillyAuthToken });
+
+                        expect(gqlSubcategory).to.be.null;
+                    });
+                });
+            });
+
+            context("and the user is an admin", () => {
+                context("and it belongs to the organization from the subcategory", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected subcategory", async () => {
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: JoeAuthToken });
+
+                        expect(gqlSubcategory).not.to.be.null;
+                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
+                    });
+                });
+
+                context("and it does not belongs to the organization from the subcategory", () => {
+                    it("returns the expected subcategory", async () => {
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: JoeAuthToken });
+
+                        expect(gqlSubcategory).not.to.be.null;
+                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
+                    });
+                });
+            });
+        });
+    });
+
 });

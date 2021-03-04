@@ -4,7 +4,8 @@ import {
     Entity,
     getManager,
     JoinColumn,
-    OneToOne,
+    JoinTable,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm'
@@ -13,10 +14,11 @@ import { Context } from '../main'
 import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
+import { Subcategory } from './subcategory'
 import { Status } from './status'
 
 @Entity()
-export class Grade extends BaseEntity {
+export class Category extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
@@ -26,17 +28,13 @@ export class Grade extends BaseEntity {
     @Column({ nullable: false, default: false })
     public system?: boolean
 
-    @OneToOne(() => Grade, (grade) => grade.id)
-    @JoinColumn({ name: 'progress_from_grade_id' })
-    public progress_from_grade?: Promise<Grade>
-
-    @OneToOne(() => Grade, (grade) => grade.id)
-    @JoinColumn({ name: 'progress_to_grade_id' })
-    public progress_to_grade?: Promise<Grade>
-
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @ManyToMany(() => Subcategory)
+    @JoinTable()
+    public subcategories?: Promise<Subcategory[]>
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
@@ -63,7 +61,7 @@ export class Grade extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.delete_grade_20443
+            PermissionName.delete_subjects_20447
         )
 
         await getManager().transaction(async (manager) => {

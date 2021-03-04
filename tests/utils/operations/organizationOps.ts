@@ -3,10 +3,13 @@ import { Class } from "../../../src/entities/class";
 import { Organization } from "../../../src/entities/organization";
 import { OrganizationMembership } from "../../../src/entities/organizationMembership";
 import { AgeRange } from "../../../src/entities/ageRange";
+import { Category } from "../../../src/entities/category"
 import { Grade } from "../../../src/entities/grade";
 import { Role } from "../../../src/entities/role";
 import { School } from "../../../src/entities/school";
 import { SchoolMembership } from "../../../src/entities/schoolMembership"
+import { Subcategory } from "../../../src/entities/subcategory"
+import { Subject } from "../../../src/entities/subject"
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken, generateToken } from "../testConfig";
@@ -199,6 +202,103 @@ const LIST_GRADES = `
                     id
                  }
                  progress_to_grade {
+                    id
+                 }
+                 system
+            }
+        }
+    }
+`;
+
+const CREATE_OR_UPDATE_SUBCATEGORIES = `
+    mutation myMutation(
+            $organization_id: ID!,
+            $subcategories: [SubcategoryDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdateSubcategories(subcategories: $subcategories) {
+                 id
+                 name
+                 system
+            }
+        }
+    }
+`;
+
+const LIST_SUBCATEGORIES = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            subcategories {
+                 id
+                 name
+                 system
+            }
+        }
+    }
+`;
+
+const CREATE_OR_UPDATE_CATEGORIES = `
+    mutation myMutation(
+            $organization_id: ID!,
+            $categories: [CategoryDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdateCategories(categories: $categories) {
+                 id
+                 name
+                 subcategories {
+                    id
+                 }
+                 system
+            }
+        }
+    }
+`;
+
+const LIST_CATEGORIES = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            categories {
+                 id
+                 name
+                 subcategories {
+                    id
+                 }
+                 system
+            }
+        }
+    }
+`;
+
+
+const CREATE_OR_UPDATE_SUBJECTS = `
+    mutation myMutation(
+            $organization_id: ID!,
+            $subjects: [SubjectDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdateSubjects(subjects: $subjects) {
+                 id
+                 name
+                 categories {
+                    id
+                 }
+                 subcategories {
+                    id
+                 }
+                 system
+            }
+        }
+    }
+`;
+
+const LIST_SUBJECTS = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            subjects {
+                 id
+                 name
+                 categories {
+                    id
+                 }
+                 subcategories {
                     id
                  }
                  system
@@ -456,4 +556,94 @@ export async function listGrades(testClient: ApolloServerTestClient, organizatio
     const gqlGrades = res.data?.organization.grades as Grade[];
 
     return gqlGrades;
+}
+
+export async function createOrUpdateSubcategories(testClient: ApolloServerTestClient, organizationId: string, subcategories: any[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CREATE_OR_UPDATE_SUBCATEGORIES,
+        variables: { organization_id: organizationId, subcategories: subcategories },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubcategories = res.data?.organization.createOrUpdateSubcategories as Subcategory[];
+
+    return gqlSubcategories;
+}
+
+export async function listSubcategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_SUBCATEGORIES,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubcategories = res.data?.organization.subcategories as Subcategory[];
+
+    return gqlSubcategories;
+}
+
+export async function createOrUpdateCategories(testClient: ApolloServerTestClient, organizationId: string, categories: any[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CREATE_OR_UPDATE_CATEGORIES,
+        variables: { organization_id: organizationId, categories: categories },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlCategories = res.data?.organization.createOrUpdateCategories as Subcategory[];
+
+    return gqlCategories;
+}
+
+export async function listCategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_CATEGORIES,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlCategories = res.data?.organization.categories as Category[];
+
+    return gqlCategories;
+}
+
+export async function createOrUpdateSubjects(testClient: ApolloServerTestClient, organizationId: string, subjects: any[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CREATE_OR_UPDATE_SUBJECTS,
+        variables: { organization_id: organizationId, subjects: subjects },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubjects = res.data?.organization.createOrUpdateSubjects as Subject[];
+
+    return gqlSubjects;
+}
+
+export async function listSubjects(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_SUBJECTS,
+        variables: { organization_id: organizationId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubjects = res.data?.organization.subjects as Subject[];
+
+    return gqlSubjects;
 }

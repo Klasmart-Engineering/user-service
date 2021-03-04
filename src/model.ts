@@ -537,6 +537,36 @@ export class Model {
         return grade
     }
 
+    public async getCategory({ id, scope }: any, context: Context) {
+        const category = await scope
+            .andWhere('Category.id = :id', {
+                id: id,
+            })
+            .getOne()
+
+        return category
+    }
+
+    public async getSubcategory({ id, scope }: any, context: Context) {
+        const subcategory = await scope
+            .andWhere('Subcategory.id = :id', {
+                id: id,
+            })
+            .getOne()
+
+        return subcategory
+    }
+
+    public async getSubject({ id, scope }: any, context: Context) {
+        const subject = await scope
+            .andWhere('Subject.id = :id', {
+                id: id,
+            })
+            .getOne()
+
+        return subject
+    }
+
     public async createOrUpdateSystemEntities() {
         await RolesInitializer.run()
         await AgeRangesInitializer.run()

@@ -7,11 +7,14 @@ import { AgeRange } from "../../src/entities/ageRange";
 import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { School } from "../../src/entities/school";
+import { Category } from "../../src/entities/category";
+import { Subcategory } from "../../src/entities/subcategory";
+import { Subject } from "../../src/entities/subject";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, listGrades, deleteOrganization } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createOrUpdateSubcategories, createOrUpdateCategories, createOrUpdateSubjects, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, listGrades, listCategories, listSubcategories, listSubjects, deleteOrganization } from "../utils/operations/organizationOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
@@ -24,6 +27,9 @@ import { PermissionName } from "../../src/permissions/permissionNames";
 import { Role } from "../../src/entities/role";
 import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
+import { createCategory } from "../factories/category.factory";
+import { createSubcategory } from "../factories/subcategory.factory";
+import { createSubject } from "../factories/subject.factory";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
 import { isRequiredArgument } from "graphql";
@@ -1346,7 +1352,7 @@ describe("organization", () => {
             ageRange = createAgeRange(organization)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-            const tmp = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: JoeAuthToken });
+            await ageRange.save()
         });
 
         context("when not authenticated", () => {
@@ -1822,4 +1828,1134 @@ describe("organization", () => {
         });
     });
 
+    describe("createOrUpdateSubcategories", () => {
+        let user: User;
+        let organization : Organization;
+        let subcategory: Subcategory;
+        let newSubcategory: any;
+
+        const subcategoryInfo = (subcategory: Subcategory) => {
+            return {
+                name: subcategory.name,
+                system: subcategory.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            subcategory = createSubcategory(organization)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            context("and it tries to create new subcategories", () => {
+                it("fails to create subcstegories in the organization", async () => {
+                    const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbSubcategories = await Subcategory.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbSubcategories).to.be.empty;
+                });
+            });
+
+            context("and it tries to upate existing non system subcategories", () => {
+                beforeEach(async () => {
+                    const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                    newSubcategory = {
+                        ...subcategoryInfo(subcategory),
+                        ...{ id: gqlSubcategories[0].id, name: 'New Name' }
+                    }
+                });
+
+
+                it("fails to update subcategories in the organization", async () => {
+                    const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(newSubcategory)], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbSubcategories = await Subcategory.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbSubcategories).not.to.be.empty
+                    expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq([subcategory].map(subcategoryInfo))
+                });
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have create subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to create new subcategories", () => {
+                    it("fails to create subcstegories in the organization", async () => {
+                        const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbSubcategories = await Subcategory.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+                        expect(dbSubcategories).to.be.empty;
+                    });
+                });
+            });
+
+            context("and the user does not have edit subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to upate existing non system subcategories", () => {
+                    beforeEach(async () => {
+                        const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                        newSubcategory = {
+                            ...subcategoryInfo(subcategory),
+                            ...{ id: gqlSubcategories[0].id, name: 'New Name' }
+                        }
+                    });
+
+
+                    it("fails to update subcategories in the organization", async () => {
+                        const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbSubcategories = await Subcategory.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+
+                        expect(dbSubcategories).not.to.be.empty
+                        expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq([subcategory].map(subcategoryInfo))
+                    });
+                });
+            });
+
+            context("and is a non admin user", () => {
+                context("and the user has all the permissions", () => {
+                    beforeEach(async () => {
+                        const role = await createRole(testClient, organization.organization_id);
+                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: JoeAuthToken });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: JoeAuthToken });
+                        await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                    });
+
+                    context("and it tries to create new subcategories", () => {
+                        it("creates all the subcategories in the organization", async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: BillyAuthToken });
+
+                            const dbSubcategories = await Subcategory.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubcategories).not.to.be.empty
+                            expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing non system subcategories", () => {
+                        beforeEach(async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                            newSubcategory = {
+                                ...subcategoryInfo(subcategory),
+                                ...{ id: gqlSubcategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected subcategories in the organization", async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: BillyAuthToken });
+
+                            const dbSubcategories = await Subcategory.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubcategories).not.to.be.empty
+                            expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq([newSubcategory].map(subcategoryInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing system subcategories", () => {
+                        beforeEach(async () => {
+                            subcategory.system = true
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                            newSubcategory = {
+                                ...subcategoryInfo(subcategory),
+                                ...{ id: gqlSubcategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("fails to update subcategories in the organization", async () => {
+                            const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: BillyAuthToken });
+
+                            expect(fn()).to.be.rejected;
+                            const dbSubcategories = await Subcategory.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubcategories).not.to.be.empty
+                            expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq([subcategory].map(subcategoryInfo))
+                        });
+                    });
+                });
+            });
+
+            context("and is an admin user", () => {
+                context("and the user has all the permissions", () => {
+                    context("and it tries to create new subcategories", () => {
+                        it("creates all the subcategories in the organization", async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                            const dbSubcategories = await Subcategory.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubcategories).not.to.be.empty
+                            expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing non system subcategories", () => {
+                        beforeEach(async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                            newSubcategory = {
+                                ...subcategoryInfo(subcategory),
+                                ...{ id: gqlSubcategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected subcategories in the organization", async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: JoeAuthToken });
+
+                            const dbSubcategories = await Subcategory.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubcategories).not.to.be.empty
+                            expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq([newSubcategory].map(subcategoryInfo))
+                        });
+                    });
+
+                    context("and it tries to upate existing system subcategories", () => {
+                        beforeEach(async () => {
+                            subcategory.system = true
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: JoeAuthToken });
+
+                            newSubcategory = {
+                                ...subcategoryInfo(subcategory),
+                                ...{ id: gqlSubcategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected subcategories in the organization", async () => {
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: JoeAuthToken });
+
+                            const dbSubcategories = await Subcategory.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubcategories).not.to.be.empty
+                            expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq([newSubcategory].map(subcategoryInfo))
+                        });
+                    });
+                });
+            });
+        });
+    });
+
+    describe("subcategories", () => {
+        let user: User;
+        let organization : Organization;
+        let subcategory: Subcategory;
+
+        const subcategoryInfo = (subcategory: Subcategory) => {
+            return {
+                id: subcategory.id,
+                name: subcategory.name,
+                system: subcategory.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            subcategory = createSubcategory(organization)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await subcategory.save()
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list subcategories in the organization", async () => {
+                const fn = () => listSubcategories(testClient, organization.organization_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+                const dbSubcategories = await Subcategory.find({
+                    where: {
+                        organization: { organization_id: organization.organization_id },
+                    }
+                });
+                expect(dbSubcategories).not.to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to list subcategories in the organization", async () => {
+                    const fn = () => listSubcategories(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                    const dbSubcategories = await Subcategory.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbSubcategories).not.to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the subcategories in the organization", async () => {
+                    const gqlSubcategories = await listSubcategories(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    const dbSubcategories = await Subcategory.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbSubcategories).not.to.be.empty
+                    expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
+                });
+            });
+        });
+    });
+
+    describe("createOrUpdateCategories", () => {
+        let user: User;
+        let organization : Organization;
+        let category: Category;
+        let subcategory: Subcategory;
+        let newCategory: any;
+
+        let categoryDetails: any;
+
+        const subcategoryInfo = (subcategory: Subcategory) => {
+            return subcategory.id
+        }
+
+        const categoryInfo = async (category: Category) => {
+            return {
+                name: category.name,
+                subcategories: ((await category.subcategories) || []).map(subcategoryInfo),
+                system: category.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            subcategory = createSubcategory(organization)
+            await subcategory.save()
+            category = createCategory(organization, [subcategory])
+            categoryDetails = await categoryInfo(category)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            context("and it tries to create new categories", () => {
+                it("fails to create subcstegories in the organization", async () => {
+                    const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbCategories = await Category.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbCategories).to.be.empty;
+                });
+            });
+
+            context("and it tries to upate existing non system categories", () => {
+                beforeEach(async () => {
+                    const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                    newCategory = {
+                        ...categoryDetails,
+                        ...{ id: gqlCategories[0].id, name: 'New Name' }
+                    }
+                });
+
+
+                it("fails to update categories in the organization", async () => {
+                    const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [categoryInfo(newCategory)], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbCategories = await Category.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbCategories).not.to.be.empty
+                    const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                    expect(dbCategoryDetails).to.deep.eq([categoryDetails])
+                });
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have create subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to create new categories", () => {
+                    it("fails to create subcstegories in the organization", async () => {
+                        const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbCategories = await Category.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+                        expect(dbCategories).to.be.empty;
+                    });
+                });
+            });
+
+            context("and the user does not have edit subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to upate existing non system categories", () => {
+                    beforeEach(async () => {
+                        const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                        newCategory = {
+                            ...categoryDetails,
+                            ...{ id: gqlCategories[0].id, name: 'New Name' }
+                        }
+                    });
+
+
+                    it("fails to update categories in the organization", async () => {
+                        const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbCategories = await Category.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+
+                        expect(dbCategories).not.to.be.empty
+                        const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                        expect(dbCategoryDetails).to.deep.eq([categoryDetails])
+                    });
+                });
+            });
+
+            context("and is a non admin user", () => {
+                context("and the user has all the permissions", () => {
+                    beforeEach(async () => {
+                        const role = await createRole(testClient, organization.organization_id);
+                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: JoeAuthToken });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: JoeAuthToken });
+                        await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                    });
+
+                    context("and it tries to create new categories", () => {
+                        it("creates all the categories in the organization", async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: BillyAuthToken });
+
+                            const dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            const gqlCateryDetails = await Promise.all(gqlCategories.map(categoryInfo))
+                            expect(dbCategoryDetails).to.deep.eq(gqlCateryDetails)
+                        });
+                    });
+
+                    context("and it tries to upate existing non system categories", () => {
+                        beforeEach(async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                            newCategory = {
+                                ...categoryDetails,
+                                ...{ id: gqlCategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected categories in the organization", async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: BillyAuthToken });
+
+                            const dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            const newCategoryDetails = { ...categoryDetails, name: newCategory.name }
+                            expect(dbCategoryDetails).to.deep.eq([newCategoryDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing system categories", () => {
+                        beforeEach(async () => {
+                            category.system = true
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                            newCategory = {
+                                ...categoryDetails,
+                                ...{ id: gqlCategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("fails to update categories in the organization", async () => {
+                            const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: BillyAuthToken });
+
+                            expect(fn()).to.be.rejected;
+                            const dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            expect(dbCategoryDetails).to.deep.eq([categoryDetails])
+                        });
+                    });
+                });
+            });
+
+            context("and is an admin user", () => {
+                context("and the user has all the permissions", () => {
+                    context("and it tries to create new categories", () => {
+                        it("creates all the categories in the organization", async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                            const dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            const gqlCateryDetails = await Promise.all(gqlCategories.map(categoryInfo))
+                            expect(dbCategoryDetails).to.deep.eq(gqlCateryDetails)
+                        });
+                    });
+
+                    context("and it tries to upate existing non system categories", () => {
+                        beforeEach(async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                            newCategory = {
+                                ...categoryDetails,
+                                ...{ id: gqlCategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected categories in the organization", async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: JoeAuthToken });
+
+                            const dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            const newCategoryDetails = { ...categoryDetails, name: newCategory.name }
+                            expect(dbCategoryDetails).to.deep.eq([newCategoryDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing system categories", () => {
+                        beforeEach(async () => {
+                            category.system = true
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: JoeAuthToken });
+
+                            newCategory = {
+                                ...categoryDetails,
+                                ...{ id: gqlCategories[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected categories in the organization", async () => {
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: JoeAuthToken });
+
+                            const dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            const newCategoryDetails = { ...categoryDetails, name: newCategory.name }
+                            expect(dbCategoryDetails).to.deep.eq([newCategoryDetails])
+                        });
+                    });
+                });
+            });
+        });
+    });
+
+    describe("categories", () => {
+        let user: User;
+        let organization : Organization;
+        let subcategory: Subcategory;
+        let category: Category;
+
+        let categoryDetails: any;
+
+        const subcategoryInfo = (subcategory: Subcategory) => {
+            return subcategory.id
+        }
+
+        const categoryInfo = async (category: Category) => {
+            return {
+                name: category.name,
+                subcategories: ((await category.subcategories) || []).map(subcategoryInfo),
+                system: category.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            subcategory = createSubcategory(organization)
+            await subcategory.save()
+            category = createCategory(organization)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await category.save()
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list categories in the organization", async () => {
+                const fn = () => listCategories(testClient, organization.organization_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+                const dbCategories = await Category.find({
+                    where: {
+                        organization: { organization_id: organization.organization_id },
+                    }
+                });
+                expect(dbCategories).not.to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to list categories in the organization", async () => {
+                    const fn = () => listCategories(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                    const dbCategories = await Category.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbCategories).not.to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the categories in the organization", async () => {
+                    const gqlCategories = await listCategories(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    const dbCategories = await Category.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbCategories).not.to.be.empty
+                    const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                    const gqlCateryDetails = await Promise.all(gqlCategories.map(categoryInfo))
+                    expect(dbCategoryDetails).to.deep.eq(gqlCateryDetails)
+                });
+            });
+        });
+    });
+
+    describe("createOrUpdateSubjects", () => {
+        let user: User;
+        let organization : Organization;
+        let subject: Subject;
+        let category: Category;
+        let subcategory: Subcategory;
+        let newSubject: any;
+
+        let subjectDetails: any;
+
+        const categoryOrSubcategoryInfo = (category: any) => {
+            return category.id
+        }
+
+        const subjectInfo = async (subject: Subject) => {
+            return {
+                name: subject.name,
+                categories: ((await subject.categories) || []).map(categoryOrSubcategoryInfo),
+                subcategories: ((await subject.subcategories) || []).map(categoryOrSubcategoryInfo),
+                system: subject.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            category = createCategory(organization)
+            await category.save()
+            subcategory = createSubcategory(organization)
+            await subcategory.save()
+            subject = createSubject(organization, [category], [subcategory])
+            subjectDetails = await subjectInfo(subject)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            context("and it tries to create new categories", () => {
+                it("fails to create subcstegories in the organization", async () => {
+                    const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbSubjects = await Subject.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbSubjects).to.be.empty;
+                });
+            });
+
+            context("and it tries to upate existing non system categories", () => {
+                beforeEach(async () => {
+                    const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                    newSubject = {
+                        ...subjectDetails,
+                        ...{ id: gqlSubjects[0].id, name: 'New Name' }
+                    }
+                });
+
+
+                it("fails to update categories in the organization", async () => {
+                    const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [subjectInfo(newSubject)], { authorization: undefined });
+
+                    expect(fn()).to.be.rejected;
+                    const dbSubjects = await Subject.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbSubjects).not.to.be.empty
+                    const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                    expect(dbSubjectDetails).to.deep.eq([subjectDetails])
+                });
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have create subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to create new categories", () => {
+                    it("fails to create subcstegories in the organization", async () => {
+                        const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbSubjects = await Subject.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+                        expect(dbSubjects).to.be.empty;
+                    });
+                });
+            });
+
+            context("and the user does not have edit subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                context("and it tries to upate existing non system categories", () => {
+                    beforeEach(async () => {
+                        const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                        newSubject = {
+                            ...subjectDetails,
+                            ...{ id: gqlSubjects[0].id, name: 'New Name' }
+                        }
+                    });
+
+
+                    it("fails to update categories in the organization", async () => {
+                        const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: BillyAuthToken });
+
+                        expect(fn()).to.be.rejected;
+                        const dbSubjects = await Subject.find({
+                            where: {
+                                organization: { organization_id: organization.organization_id },
+                            }
+                        });
+
+                        expect(dbSubjects).not.to.be.empty
+                        const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                        expect(dbSubjectDetails).to.deep.eq([subjectDetails])
+                    });
+                });
+            });
+
+            context("and is a non admin user", () => {
+                context("and the user has all the permissions", () => {
+                    beforeEach(async () => {
+                        const role = await createRole(testClient, organization.organization_id);
+                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: JoeAuthToken });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: JoeAuthToken });
+                        await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                    });
+
+                    context("and it tries to create new categories", () => {
+                        it("creates all the categories in the organization", async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: BillyAuthToken });
+
+                            const dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            const gqlCateryDetails = await Promise.all(gqlSubjects.map(subjectInfo))
+                            expect(dbSubjectDetails).to.deep.eq(gqlCateryDetails)
+                        });
+                    });
+
+                    context("and it tries to upate existing non system categories", () => {
+                        beforeEach(async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                            newSubject = {
+                                ...subjectDetails,
+                                ...{ id: gqlSubjects[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected categories in the organization", async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: BillyAuthToken });
+
+                            const dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            const newSubjectDetails = { ...subjectDetails, name: newSubject.name }
+                            expect(dbSubjectDetails).to.deep.eq([newSubjectDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing system categories", () => {
+                        beforeEach(async () => {
+                            subject.system = true
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                            newSubject = {
+                                ...subjectDetails,
+                                ...{ id: gqlSubjects[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("fails to update categories in the organization", async () => {
+                            const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: BillyAuthToken });
+
+                            expect(fn()).to.be.rejected;
+                            const dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            expect(dbSubjectDetails).to.deep.eq([subjectDetails])
+                        });
+                    });
+                });
+            });
+
+            context("and is an admin user", () => {
+                context("and the user has all the permissions", () => {
+                    context("and it tries to create new categories", () => {
+                        it("creates all the categories in the organization", async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                            const dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            const gqlCateryDetails = await Promise.all(gqlSubjects.map(subjectInfo))
+                            expect(dbSubjectDetails).to.deep.eq(gqlCateryDetails)
+                        });
+                    });
+
+                    context("and it tries to upate existing non system categories", () => {
+                        beforeEach(async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                            newSubject = {
+                                ...subjectDetails,
+                                ...{ id: gqlSubjects[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected categories in the organization", async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: JoeAuthToken });
+
+                            const dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            const newSubjectDetails = { ...subjectDetails, name: newSubject.name }
+                            expect(dbSubjectDetails).to.deep.eq([newSubjectDetails])
+                        });
+                    });
+
+                    context("and it tries to upate existing system categories", () => {
+                        beforeEach(async () => {
+                            subject.system = true
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: JoeAuthToken });
+
+                            newSubject = {
+                                ...subjectDetails,
+                                ...{ id: gqlSubjects[0].id, name: 'New Name' }
+                            }
+                        });
+
+
+                        it("updates the expected categories in the organization", async () => {
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: JoeAuthToken });
+
+                            const dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            const newSubjectDetails = { ...subjectDetails, name: newSubject.name }
+                            expect(dbSubjectDetails).to.deep.eq([newSubjectDetails])
+                        });
+                    });
+                });
+            });
+        });
+    });
+
+    describe("subjects", () => {
+        let user: User;
+        let organization : Organization;
+        let category: Category;
+        let subcategory: Subcategory;
+        let subject: Subject;
+
+        let subjectDetails: any;
+
+        const categoryOrSubcategoryInfo = (category: any) => {
+            return category.id
+        }
+
+        const subjectInfo = async (subject: Subject) => {
+            return {
+                name: subject.name,
+                categories: ((await subject.categories) || []).map(categoryOrSubcategoryInfo),
+                subcategories: ((await subject.subcategories) || []).map(categoryOrSubcategoryInfo),
+                system: subject.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            category = createCategory(organization)
+            await category.save()
+            subcategory = createSubcategory(organization)
+            await subcategory.save()
+            subject = createSubject(organization, [category], [subcategory])
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await subject.save()
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list subjects in the organization", async () => {
+                const fn = () => listSubjects(testClient, organization.organization_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+                const dbSubjects = await Subject.find({
+                    where: {
+                        organization: { organization_id: organization.organization_id },
+                    }
+                });
+                expect(dbSubjects).not.to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to list subjects in the organization", async () => {
+                    const fn = () => listSubjects(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                    const dbSubjects = await Subject.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+                    expect(dbSubjects).not.to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the subjects in the organization", async () => {
+                    const gqlSubjects = await listSubjects(testClient, organization.organization_id, { authorization: BillyAuthToken });
+
+                    const dbSubjects = await Subject.find({
+                        where: {
+                            organization: { organization_id: organization.organization_id },
+                        }
+                    });
+
+                    expect(dbSubjects).not.to.be.empty
+                    const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                    const gqlSubjectDetails = await Promise.all(gqlSubjects.map(subjectInfo))
+                    expect(dbSubjectDetails).to.deep.eq(gqlSubjectDetails)
+                });
+            });
+        });
+    });
 });

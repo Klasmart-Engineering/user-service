@@ -1,4 +1,5 @@
 directive @deprecated(
+
     reason: String = "No longer supported"
 ) on FIELD_DEFINITION
 directive @isAdmin(entity: String) on FIELD_DEFINITION
@@ -97,6 +98,11 @@ type Query {
     age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
 
     grade(id: ID!): Grade @isAdmin(entity: "grade")
+
+    category(id: ID!): Category @isAdmin(entity: "category")
+    subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
+
+    subject(id: ID!): Category @isAdmin(entity: "subject")
 }
 
 type Mutation {
@@ -142,6 +148,11 @@ type Mutation {
     age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
 
     grade(id: ID!): Grade @isAdmin(entity: "grade")
+
+    category(id: ID!): Category @isAdmin(entity: "category")
+    subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
+
+    subject(id: ID!): Category @isAdmin(entity: "subject")
 
     createOrUpateSystemEntities(_: Int): Boolean @isAdmin
 }
@@ -229,6 +240,9 @@ type Organization {
     classes: [Class]
     ageRanges: [AgeRange!]
     grades: [Grade!]
+    categories: [Category!]
+    subcategories: [Subcategory!]
+    subjects: [Subject!]
 
     #query
     membersWithPermission(
@@ -274,6 +288,9 @@ type Organization {
     createClass(class_name: String): Class
     createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
     createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
+    createOrUpdateCategories(categories: [CategoryDetail]!): [Category]
+    createOrUpdateSubcategories(subcategories: [SubcategoryDetail]!): [Subcategory]
+    createOrUpdateSubjects(subjects: [SubjectDetail]!): [Subject]
     delete(_: Int): Boolean
 }
 
@@ -450,11 +467,32 @@ input AgeRangeDetail {
     system: Boolean
 }
 
+input CategoryDetail {
+    id: ID
+    name: String
+    subcategories: [ID!]
+    system: Boolean
+}
+
 input GradeDetail {
     id: ID
     name: String
     progress_from_grade_id: ID
     progress_to_grade_id: ID
+    system: Boolean
+}
+
+input SubcategoryDetail {
+    id: ID
+    name: String
+    system: Boolean
+}
+
+input SubjectDetail {
+    id: ID
+    name: String
+    categories: [ID!]
+    subcategories: [ID!]
     system: Boolean
 }
 
@@ -472,11 +510,44 @@ type AgeRange {
     delete(_: Int): Boolean
 }
 
+type Category {
+    id: ID!
+    name: String!
+    subcategories: [Subcategory!]
+    system: Boolean!
+    status: Status
+
+    # Mutations
+    delete(_: Int): Boolean
+}
+
 type Grade {
     id: ID!
     name: String!
     progress_from_grade: Grade
     progress_to_grade: Grade
+    system: Boolean!
+    status: Status
+
+    # Mutations
+    delete(_: Int): Boolean
+}
+
+type Subcategory {
+    id: ID!
+    name: String!
+    system: Boolean!
+    status: Status
+
+    # Mutations
+    delete(_: Int): Boolean
+}
+
+type Subject {
+    id: ID!
+    name: String!
+    categories: [Category!]
+    subcategories: [Subcategory!]
     system: Boolean!
     status: Status
 

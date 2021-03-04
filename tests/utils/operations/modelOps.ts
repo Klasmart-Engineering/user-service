@@ -3,6 +3,8 @@ import { Grade } from "../../../src/entities/grade";
 import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
 import { Role } from "../../../src/entities/role";
+import { Subcategory } from "../../../src/entities/subcategory";
+import { Subject } from "../../../src/entities/subject";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
 import { JoeAuthToken } from "../testConfig";
@@ -203,6 +205,28 @@ query getAgeRange($id: ID!){
     progress_to_grade {
       id
     }
+    system
+    status
+  }
+}
+`;
+
+const GET_SUBCATEGORY = `
+query getSubcategory($id: ID!){
+  subcategory(id: $id) {
+    id
+    name
+    system
+    status
+  }
+}
+`;
+
+const GET_SUBJECT = `
+query getSubject($id: ID!){
+  subject(id: $id) {
+    id
+    name
     system
     status
   }
@@ -427,3 +451,30 @@ export async function getGrade(testClient: ApolloServerTestClient, id: string, h
     return gqlGrade;
 }
 
+export async function getSubcategory(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_SUBCATEGORY,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubcategory = res.data?.subcategory as Subcategory;
+    return gqlSubcategory;
+}
+
+export async function getSubject(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_SUBJECT,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubject = res.data?.subject as Subject;
+    return gqlSubject;
+}
