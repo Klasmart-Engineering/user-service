@@ -17,6 +17,7 @@ import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { userToPayload, userToSuperPayload } from "../../utils/operations/userOps"
 import { utils } from "mocha";
+import { Program } from "../../../src/entities/program";
 
 const CREATE_CLASS = `
     mutation myMutation(
@@ -301,6 +302,32 @@ const LIST_SUBJECTS = `
                  subcategories {
                     id
                  }
+                 system
+            }
+        }
+    }
+`;
+
+const CREATE_OR_UPDATE_PROGRAMS = `
+    mutation myMutation(
+            $organization_id: ID!,
+            $programs: [ProgramDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdatePrograms(programs: $programs) {
+                 id
+                 name
+                 system
+            }
+        }
+    }
+`;
+
+const LIST_PROGRAMS = `
+    query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            programs {
+                 id
+                 name
                  system
             }
         }
@@ -638,12 +665,42 @@ export async function listSubjects(testClient: ApolloServerTestClient, organizat
 
     const operation = () => query({
         query: LIST_SUBJECTS,
+               variables: { organization_id: organizationId },
+        headers: headers,
+    });
+     const res = await gqlTry(operation);
+    const gqlSubjects = res.data?.organization.subjects as Subject[];
+
+    return gqlSubjects;
+}
+
+
+export async function createOrUpdatePrograms(testClient: ApolloServerTestClient, organizationId: string, programs: any[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CREATE_OR_UPDATE_PROGRAMS,
+        variables: { organization_id: organizationId, programs: programs },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlPrograms = res.data?.organization.createOrUpdatePrograms as Program[];
+
+    return gqlPrograms;
+}
+
+export async function listPrograms(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_PROGRAMS,
         variables: { organization_id: organizationId },
         headers: headers,
     });
 
     const res = await gqlTry(operation);
-    const gqlSubjects = res.data?.organization.subjects as Subject[];
+    const gqlPrograms = res.data?.organization.programs as Program[];
 
-    return gqlSubjects;
+    return gqlPrograms;
 }

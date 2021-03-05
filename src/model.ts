@@ -87,11 +87,13 @@ export class Model {
         let user = await this.userRepository.findOne({
             where: [
                 { email: userEmail, user_id: userID },
-                { phone: userPhone, user_id: userID }
-            ]
+                { phone: userPhone, user_id: userID },
+            ],
         })
 
-        if (user) { return user }
+        if (user) {
+            return user
+        }
 
         const hashSource = userEmail || userPhone
 
@@ -545,6 +547,16 @@ export class Model {
             .getOne()
 
         return category
+    }
+
+    public async getProgram({ id, scope }: any, context: Context) {
+        const program = await scope
+            .andWhere('Program.id = :id', {
+                id: id,
+            })
+            .getOne()
+
+        return program
     }
 
     public async getSubcategory({ id, scope }: any, context: Context) {

@@ -1,5 +1,4 @@
 directive @deprecated(
-
     reason: String = "No longer supported"
 ) on FIELD_DEFINITION
 directive @isAdmin(entity: String) on FIELD_DEFINITION
@@ -103,6 +102,7 @@ type Query {
     subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
 
     subject(id: ID!): Category @isAdmin(entity: "subject")
+    program(id: ID!): Program @isAdmin(entity: "program")
 }
 
 type Mutation {
@@ -153,6 +153,7 @@ type Mutation {
     subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
 
     subject(id: ID!): Category @isAdmin(entity: "subject")
+    program(id: ID!): Program @isAdmin(entity: "program")
 
     createOrUpateSystemEntities(_: Int): Boolean @isAdmin
 }
@@ -243,6 +244,7 @@ type Organization {
     categories: [Category!]
     subcategories: [Subcategory!]
     subjects: [Subject!]
+    programs: [Program!]
 
     #query
     membersWithPermission(
@@ -289,8 +291,11 @@ type Organization {
     createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
     createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
     createOrUpdateCategories(categories: [CategoryDetail]!): [Category]
-    createOrUpdateSubcategories(subcategories: [SubcategoryDetail]!): [Subcategory]
+    createOrUpdateSubcategories(
+        subcategories: [SubcategoryDetail]!
+    ): [Subcategory]
     createOrUpdateSubjects(subjects: [SubjectDetail]!): [Subject]
+    createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]
     delete(_: Int): Boolean
 }
 
@@ -534,6 +539,23 @@ type Grade {
 }
 
 type Subcategory {
+    id: ID!
+    name: String!
+    system: Boolean!
+    status: Status
+
+    # Mutations
+    delete(_: Int): Boolean
+}
+
+input ProgramDetail {
+    id: ID
+    name: String
+    system: Boolean
+    status: Status
+}
+
+type Program {
     id: ID!
     name: String!
     system: Boolean!

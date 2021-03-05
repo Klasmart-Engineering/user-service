@@ -12,6 +12,7 @@ import { Role } from '../entities/role'
 import { Subcategory } from '../entities/subcategory'
 import { Subject } from '../entities/subject'
 import { User } from '../entities/user'
+import { Program } from '../entities/program'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
@@ -48,6 +49,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 case 'subject':
                     scope = getRepository(Subject).createQueryBuilder()
                     break
+                case 'program':
+                    scope = getRepository(Program).createQueryBuilder()
+                    break
                 default:
                     context.permissions.rejectIfNotAdmin()
             }
@@ -74,6 +78,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         break
                     case 'subject':
                         this.nonAdminSubjectScope(scope, context)
+                        break
+                    case 'program':
+                        this.nonAdminProgamScope(scope, context)
                         break
                     default:
                     // do nothing
@@ -175,6 +182,22 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
             .where(
                 '(OrganizationMembership.user_id = :user_id OR Subject.system = :system)',
+                {
+                    user_id: context.permissions.getUserId(),
+                    system: true,
+                }
+            )
+    }
+
+    private nonAdminProgamScope(scope: any, context: any) {
+        scope
+            .leftJoinAndSelect(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'OrganizationMembership.organization = Program.organization'
+            )
+            .where(
+                '(OrganizationMembership.user_id = :user_id OR Program.system = :system)',
                 {
                     user_id: context.permissions.getUserId(),
                     system: true,

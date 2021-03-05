@@ -50,6 +50,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSubcategory(args, ctx),
                 subject: (_parent, args, ctx, _info) =>
                     model.getSubject(args, ctx),
+                program: (_parent, args, ctx, _info) =>
+                    model.getProgram(args, ctx),
             },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
@@ -75,6 +77,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getSubcategory(args, ctx),
                 subject: (_parent, args, ctx, _info) =>
                     model.getSubject(args, ctx),
+                program: (_parent, args, ctx, _info) =>
+                    model.getProgram(args, ctx),
                 createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
                     model.createOrUpdateSystemEntities(),
             },

@@ -9,7 +9,7 @@ import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
-import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers } from "../utils/operations/modelOps";
+import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
@@ -20,6 +20,8 @@ import { Permission } from "../../src/entities/permission";
 import { Organization } from "../../src/entities/organization";
 import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
+import { Program } from "../../src/entities/program";
+import { createProgram } from "../factories/program.factory";
 
 use(chaiAsPromised);
 
@@ -585,5 +587,92 @@ describe("model", () => {
             });
         });
     });
+    describe("getProgram", () => {
+        let user: User;
+        let program: Program;
+        let organizationId: string;
+
+        const programInfo = (program: Program) => {
+            return {
+                id: program.id,
+                name: program.name,
+                system: program.system,
+            }
+        }
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+            const org = createOrganization(user)
+            await connection.manager.save(org)
+            organizationId = org.organization_id
+            program = createProgram(org)
+            await connection.manager.save(program)
+        });
+
+        context("when user is not logged in", () => {
+            it("returns no program", async () => {
+                const gqlProgram = await getProgram(testClient, program.id, { authorization: undefined });
+
+                expect(gqlProgram).to.be.null;
+            });
+        });
+
+        context("when user is logged in", () => {
+            let otherUserId: string;
+
+            beforeEach(async () => {
+                const otherUser = await createUserBilly(testClient);
+                otherUserId = otherUser.user_id
+            });
+
+            context("and the user is not an admin", () => {
+                context("and it belongs to the organization from the program", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected program", async () => {
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: BillyAuthToken });
+
+                        expect(gqlProgram).not.to.be.null;
+                        expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
+                    });
+                });
+
+                context("and it does not belongs to the organization from the program", () => {
+                    it("returns no program", async () => {
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: BillyAuthToken });
+
+                        expect(gqlProgram).to.be.null;
+                    });
+                });
+            });
+
+            context("and the user is an admin", () => {
+                context("and it belongs to the organization from the program", () => {
+                    beforeEach(async () => {
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
+                    });
+
+                    it("returns the expected program", async () => {
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: JoeAuthToken });
+
+                        expect(gqlProgram).not.to.be.null;
+                        expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
+                    });
+                });
+
+                context("and it does not belongs to the organization from the program", () => {
+                    it("returns the expected program", async () => {
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: JoeAuthToken });
+
+                        expect(gqlProgram).not.to.be.null;
+                        expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
+                    });
+                });
+            });
+        });
+    });
+
 
 });

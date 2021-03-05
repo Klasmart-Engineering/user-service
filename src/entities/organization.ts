@@ -34,6 +34,7 @@ import {
 } from '../utils/paginated.interface'
 import { Model } from '../model'
 import { Status } from './status'
+import { Program } from './program'
 
 export function validateEmail(email?: string): boolean {
     const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -240,6 +241,28 @@ export class Organization
         )
 
         return Subject.find({
+            where: [
+                { system: true, organization: { organization_id: null } },
+                {
+                    system: false,
+                    organization: { organization_id: this.organization_id },
+                },
+            ],
+        })
+    }
+
+    public async programs(
+        args: any,
+        context: any,
+        info: any
+    ): Promise<Program[]> {
+        const permisionContext = { organization_id: this.organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_program_20111
+        )
+
+        return Program.find({
             where: [
                 { system: true, organization: { organization_id: null } },
                 {
@@ -1201,6 +1224,67 @@ export class Organization
         return await Subcategory.find({
             where: { id: In(ids) },
         })
+    }
+
+    public async createOrUpdatePrograms(
+        { programs }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return []
+        }
+
+        let checkUpdatePermission = false
+        let checkCreatePermission = false
+        let checkAdminPermission = false
+        const permisionContext = { organization_id: this.organization_id }
+
+        const dbPrograms = []
+
+        for (const programDetail of programs) {
+            checkUpdatePermission = checkUpdatePermission || !!programDetail?.id
+            checkCreatePermission = checkCreatePermission || !programDetail?.id
+            checkAdminPermission =
+                checkAdminPermission || !!programDetail?.system
+
+            const program =
+                (await Program.findOne({ id: programDetail?.id })) ||
+                new Program()
+            program.name = programDetail?.name || program.name
+
+            program.organization = Promise.resolve(this)
+
+            if (programDetail?.system !== undefined) {
+                program.system = programDetail.system
+            }
+
+            dbPrograms.push(program)
+        }
+
+        if (checkAdminPermission) {
+            context.permissions.rejectIfNotAdmin()
+        }
+
+        if (checkCreatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.create_program_20221
+            )
+        }
+
+        if (checkUpdatePermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.edit_program_20331
+            )
+        }
+        await getManager().save(dbPrograms)
+
+        return dbPrograms
     }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {

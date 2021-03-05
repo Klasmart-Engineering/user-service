@@ -11,6 +11,7 @@ import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { UserConnection } from "../../../src/utils/pagingconnections";
+import { Program } from "../../../src/entities/program";
 
 
 const NEW_USER = `
@@ -221,6 +222,18 @@ query getSubcategory($id: ID!){
   }
 }
 `;
+
+const GET_PROGRAM = `
+query getProgram($id: ID!){
+  program(id: $id) {
+    id
+    name
+    system
+    status
+  }
+}
+`;
+
 
 const GET_SUBJECT = `
 query getSubject($id: ID!){
@@ -477,4 +490,18 @@ export async function getSubject(testClient: ApolloServerTestClient, id: string,
     const res = await gqlTry(operation);
     const gqlSubject = res.data?.subject as Subject;
     return gqlSubject;
+}
+
+export async function getProgram(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_PROGRAM,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlProgram = res.data?.program as Program;
+    return gqlProgram;
 }
