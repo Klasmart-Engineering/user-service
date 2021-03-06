@@ -389,6 +389,7 @@ type School {
     memberships: [SchoolMembership]
     membership(user_id: ID!): SchoolMembership
     classes: [Class]
+    programs: [Program!]
 
     #mutations
     set(school_name: String): School

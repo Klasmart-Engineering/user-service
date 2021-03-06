@@ -4,6 +4,7 @@ import { gqlTry } from "../gqlTry";
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
 import { School } from "../../../src/entities/school";
 import { Organization } from "../../../src/entities/organization";
+import { Program } from "../../../src/entities/program";
 import { Class } from "../../../src/entities/class";
 
 const GET_ORGANIZATION = `
@@ -75,6 +76,18 @@ const ADD_USER_TO_SCHOOL = `
                 school_id
             }
         }
+    }
+`;
+
+const LIST_PROGRAMS = `
+    mutation listPrograms($id: ID!) {
+       school(school_id: $id) {
+          programs {
+            id
+            name
+            system
+          }
+       }
     }
 `;
 
@@ -182,4 +195,19 @@ export async function deleteSchool(testClient: ApolloServerTestClient, schoolId:
     const res = await gqlTry(operation);
     const gqlSchool = res.data?.school.delete as boolean;
     return gqlSchool;
+}
+
+export async function listPrograms(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_PROGRAMS,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlPrograms = res.data?.school.programs as Program[];
+
+    return gqlPrograms;
 }

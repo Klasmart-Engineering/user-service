@@ -22,6 +22,7 @@ import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { OrganizationMembership } from './organizationMembership'
+import { Program } from './program'
 
 @Entity()
 @Check(`"school_name" <> ''`)
@@ -66,6 +67,29 @@ export class School extends BaseEntity {
     @ManyToMany(() => Class, (class_) => class_.schools)
     @JoinTable()
     public classes?: Promise<Class[]>
+
+    public async programs(
+        args: any,
+        context: Context,
+        info: any
+    ): Promise<Program[]> {
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_school_20110
+        )
+
+        const programs: Program[] = []
+        const classes = (await this.classes) || []
+
+        for (const cls of classes) {
+            const clsPrograms = (await cls.programs) || []
+            programs.push(...clsPrograms)
+        }
+
+        return programs
+    }
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date

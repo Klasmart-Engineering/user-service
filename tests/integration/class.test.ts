@@ -1758,7 +1758,7 @@ describe("class", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to list age ranges in the class", async () => {
+            it("fails to list grades in the class", async () => {
                 const fn = () => listPrograms(testClient, cls.class_id, { authorization: undefined });
 
                 expect(fn()).to.be.rejected;
@@ -1767,7 +1767,7 @@ describe("class", () => {
 
         context("when authenticated", () => {
             context("and the user does not have view class permissions", () => {
-                it("fails to list age ranges in the class", async () => {
+                it("fails to list grades in the class", async () => {
                     const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
 
                     expect(fn()).to.be.rejected;
@@ -1781,7 +1781,7 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("lists all the age ranges in the class", async () => {
+                it("lists all the grades in the class", async () => {
                     const gqlGrades = await listGrades(testClient, cls.class_id, { authorization: BillyAuthToken });
 
                     expect(gqlGrades).not.to.be.empty
@@ -1821,7 +1821,7 @@ describe("class", () => {
         });
 
         context("when not authenticated", () => {
-            it("fails to list age ranges in the class", async () => {
+            it("fails to list subjects in the class", async () => {
                 const fn = () => listPrograms(testClient, cls.class_id, { authorization: undefined });
 
                 expect(fn()).to.be.rejected;
@@ -1830,7 +1830,7 @@ describe("class", () => {
 
         context("when authenticated", () => {
             context("and the user does not have view class permissions", () => {
-                it("fails to list age ranges in the class", async () => {
+                it("fails to list subjects in the class", async () => {
                     const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
 
                     expect(fn()).to.be.rejected;
@@ -1844,7 +1844,7 @@ describe("class", () => {
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
-                it("lists all the age ranges in the class", async () => {
+                it("lists all the subjects in the class", async () => {
                     const gqlSubjects = await listSubjects(testClient, cls.class_id, { authorization: BillyAuthToken });
 
                     expect(gqlSubjects).not.to.be.empty
