@@ -433,6 +433,10 @@ type Class {
     # schedule: [ScheduleEntry]
 
     # query
+    programs: [Program!]
+    age_ranges: [AgeRange!]
+    grades: [Grade!]
+    subjects: [Subject!]
     eligibleTeachers: [User]
     eligibleStudents: [User]
 
@@ -446,7 +450,9 @@ type Class {
     removeStudent(user_id: ID!): Boolean
     editSchools(school_ids: [ID!]): [School]
     addSchool(school_id: ID!): School
+    editPrograms(program_ids: [ID!]): [Program]
     removeSchool(school_id: ID!): Boolean
+
     delete(_: Int): Boolean
     # addSchedule(id: ID!, timestamp: Date): Boolean
     # removeSchedule(id: ID!): Boolean
@@ -560,8 +566,15 @@ type Program {
     name: String!
     system: Boolean!
     status: Status
+    age_ranges: [AgeRange!]
+    grades: [Grade!]
+    subjects: [Subject!]
 
     # Mutations
+    editAgeRanges(age_range_ids: [ID!]): [AgeRange]
+    editGrades(grade_ids: [ID!]): [Grade]
+    editSubjects(subject_ids: [ID!]): [Subject]
+
     delete(_: Int): Boolean
 }
 

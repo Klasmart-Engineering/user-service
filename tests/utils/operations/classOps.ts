@@ -1,5 +1,9 @@
+import { AgeRange } from "../../../src/entities/ageRange";
 import { Class } from "../../../src/entities/class";
+import { Grade } from "../../../src/entities/grade";
+import { Program } from "../../../src/entities/program";
 import { School } from "../../../src/entities/school";
+import { Subject } from "../../../src/entities/subject";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { Headers } from 'node-mocks-http';
@@ -128,6 +132,74 @@ const EDIT_SCHOOLS_IN_CLASS = `
                 school_id
             }
         }
+    }
+`;
+
+const LIST_PROGRAMS = `
+    mutation listPrograms($id: ID!) {
+       class(class_id: $id) {
+          programs {
+            id
+            name
+            age_ranges {
+               id
+            }
+            grades {
+               id
+            }
+            subjects {
+               id
+            }
+            system
+          }
+       }
+    }
+`;
+
+const LIST_AGE_RANGES = `
+    mutation listAgeRanges($id: ID!) {
+       class(class_id: $id) {
+          age_ranges {
+            id
+            name
+            system
+          }
+       }
+    }
+`;
+
+const LIST_GRADES = `
+    mutation listGrades($id: ID!) {
+       class(class_id: $id) {
+          grades {
+            id
+            name
+            system
+          }
+       }
+    }
+`;
+
+const LIST_SUBJECTS = `
+    mutation listSubjects($id: ID!) {
+       class(class_id: $id) {
+          subjects {
+            id
+            name
+            system
+          }
+       }
+    }
+`;
+
+const EDIT_PROGRAM_CLASS = `
+    mutation editProgramClass($id: ID!, $program_ids: [ID!]) {
+       class(class_id: $id) {
+          editPrograms(program_ids: $program_ids) {
+            id
+            name
+          }
+       }
     }
 `;
 
@@ -315,6 +387,80 @@ export async function removeSchoolFromClass(testClient: ApolloServerTestClient, 
     const res = await gqlTry(operation);
     const successful = res.data?.class.removeSchool as boolean;
     return successful;
+}
+
+export async function listPrograms(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_PROGRAMS,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlPrograms = res.data?.class.programs as Program[];
+
+    return gqlPrograms;
+}
+
+export async function listAgeRanges(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_AGE_RANGES,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlAgeRanges = res.data?.class.age_ranges as AgeRange[];
+
+    return gqlAgeRanges;
+}
+
+export async function listGrades(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_GRADES,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlGrades = res.data?.class.grades as Grade[];
+
+    return gqlGrades;
+}
+
+export async function listSubjects(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: LIST_SUBJECTS,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubjects = res.data?.class.subjects as Subject[];
+
+    return gqlSubjects;
+}
+
+export async function editPrograms( testClient: ApolloServerTestClient, id: string, program_ids: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: EDIT_PROGRAM_CLASS,
+        variables: { id: id, program_ids: program_ids },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlPrograms = res.data?.class?.editPrograms as Program[];
+    return gqlPrograms;
 }
 
 export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {

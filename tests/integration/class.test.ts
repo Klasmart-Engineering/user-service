@@ -1,14 +1,18 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
 import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
+import { AgeRange } from "../../src/entities/ageRange";
+import { Grade } from "../../src/entities/grade";
 import { Class } from "../../src/entities/class";
+import { Subject } from "../../src/entities/subject";
 import { Status } from "../../src/entities/status";
-import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, updateClass, deleteClass, removeTeacherInClass, removeSchoolFromClass, removeStudentInClass, eligibleTeachers, eligibleStudents } from "../utils/operations/classOps";
+import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, editPrograms, updateClass, deleteClass, listPrograms, listAgeRanges, listGrades, listSubjects, removeTeacherInClass, removeSchoolFromClass, removeStudentInClass, eligibleTeachers, eligibleStudents } from "../utils/operations/classOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
+import { Program } from "../../src/entities/program";
 import { accountUUID, User } from "../../src/entities/user";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
@@ -18,11 +22,15 @@ import { addRoleToOrganizationMembership } from "../utils/operations/organizatio
 import { denyPermission, grantPermission } from "../utils/operations/roleOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import chaiAsPromised from "chai-as-promised";
-import chai from "chai"
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { createUserAndValidate } from "../utils/operations/modelOps";
-chai.use(chaiAsPromised);
+import { createAgeRange } from "../factories/ageRange.factory";
+import { createGrade } from "../factories/grade.factory";
+import { createSubject } from "../factories/subject.factory";
+import { createProgram } from "../factories/program.factory";
+
+use(chaiAsPromised);
 
 describe("class", () => {
     let connection: Connection;
@@ -1508,6 +1516,339 @@ describe("class", () => {
                         expect(dbClass.status).to.eq(Status.INACTIVE);
                         expect(dbClass.deleted_at).not.to.be.null;
                     });
+                });
+            });
+        });
+    });
+
+    describe("programs", () => {
+        let user: User;
+        let organization : Organization;
+        let cls: Class;
+        let program: Program;
+
+        let programDetails: any;
+
+        const entityInfo = (entity: any) => {
+            return entity.id
+        }
+
+        const programInfo = async (program: Program) => {
+            return {
+                name: program.name,
+                age_ranges: ((await program.age_ranges) || []).map(entityInfo),
+                grades: ((await program.grades) || []).map(entityInfo),
+                subjects: ((await program.subjects) || []).map(entityInfo),
+                system: program.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            program = createProgram(organization)
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await program.save()
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+        });
+
+        it("lists all the programs in the class", async () => {
+            programDetails = await programInfo(program)
+
+            const gqlPrograms = await listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+            const dbClass = await Class.findOneOrFail(cls.class_id)
+            const dbPrograms = await dbClass.programs || []
+
+            const gqlProgramDetails = await Promise.all(gqlPrograms.map(programInfo))
+            const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+
+            expect(dbPrograms).not.to.be.empty
+            expect(gqlProgramDetails).to.deep.eq([programDetails])
+            expect(gqlProgramDetails).to.deep.eq(dbProgramDetails)
+        });
+    });
+
+    describe("editPrograms", () => {
+        let organization : Organization;
+        let cls: Class;
+        let program: Program;
+        let organizationId: string;
+        let otherUserId: string;
+
+        const programInfo = (program: any) => { return program.id }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            organizationId = organization.organization_id
+            cls = await createClass(testClient, organization.organization_id);
+
+            const otherUser = await createUserBilly(testClient);
+            otherUserId = otherUser.user_id
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+
+            program = createProgram(organization)
+            await program.save()
+        });
+
+        context("when not authenticated", () => {
+            it("throws a permission error", async () => {
+                const fn = () => editPrograms(testClient, cls.class_id, [program.id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
+
+                const dbPrograms = await cls.programs || []
+                expect(dbPrograms).to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            let role: any;
+
+            beforeEach(async () => {
+                role = await createRole(testClient, organizationId);
+                await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, role.role_id);
+            });
+
+            context("and the user does not have edit class permissions", () => {
+                it("throws a permission error", async () => {
+                    const fn = () => editPrograms(testClient, cls.class_id, [program.id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
+                    const dbPrograms = await cls.programs || []
+                    expect(dbPrograms).to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                });
+
+                it("edits the class programs", async () => {
+                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbPrograms = await dbClass.programs || []
+                    expect(dbPrograms).to.be.empty
+
+                    let gqlPrograms = await editPrograms(testClient, cls.class_id, [program.id], { authorization: BillyAuthToken });
+
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbPrograms = await dbClass.programs || []
+                    expect(dbPrograms).not.to.be.empty
+                    expect(dbPrograms.map(programInfo)).to.deep.eq(gqlPrograms.map(programInfo))
+
+                    gqlPrograms = await editPrograms(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbPrograms = await dbClass.programs || []
+                    expect(dbPrograms).to.be.empty
+                });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                    });
+
+                    it("does not edit the class programs", async () => {
+                        const gqlPrograms = await  editPrograms(testClient, cls.class_id, [program.id], { authorization: BillyAuthToken });
+                        expect(gqlPrograms).to.be.null;
+
+                        const dbPrograms = await cls.programs || []
+                        expect(dbPrograms).to.be.empty
+                    });
+                });
+            });
+        });
+    });
+
+    describe("age_ranges", () => {
+        let user: User;
+        let organization : Organization;
+        let cls: Class;
+        let ageRange: AgeRange;
+        let program: Program;
+
+        const ageRangeInfo = (ageRange: any) => {
+            return {
+                id: ageRange.id,
+                name: ageRange.name,
+                system: ageRange.system
+            }
+        }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            ageRange = createAgeRange(organization)
+            await ageRange.save()
+            program = createProgram(organization, [ageRange], [], [])
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await program.save()
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list age ranges in the class", async () => {
+                const fn = () => listPrograms(testClient, cls.class_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view class permissions", () => {
+                it("fails to list age ranges in the class", async () => {
+                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the age ranges in the class", async () => {
+                    const gqlAgeRanges = await listAgeRanges(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+                    expect(gqlAgeRanges).not.to.be.empty
+                    expect(gqlAgeRanges.map(ageRangeInfo)).to.deep.eq([ageRangeInfo(ageRange)])
+                });
+            });
+        });
+    });
+
+    describe("grades", () => {
+        let user: User;
+        let organization : Organization;
+        let cls: Class;
+        let grade: Grade;
+        let program: Program;
+
+        const gradeInfo = (grade: any) => {
+            return {
+                id: grade.id,
+                name: grade.name,
+                system: grade.system
+            }
+        }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            grade = createGrade(organization)
+            await grade.save()
+            program = createProgram(organization, [], [grade], [])
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await program.save()
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list age ranges in the class", async () => {
+                const fn = () => listPrograms(testClient, cls.class_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view class permissions", () => {
+                it("fails to list age ranges in the class", async () => {
+                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the age ranges in the class", async () => {
+                    const gqlGrades = await listGrades(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+                    expect(gqlGrades).not.to.be.empty
+                    expect(gqlGrades.map(gradeInfo)).to.deep.eq([gradeInfo(grade)])
+                });
+            });
+        });
+    });
+
+    describe("subjects", () => {
+        let user: User;
+        let organization : Organization;
+        let cls: Class;
+        let subject: Subject;
+        let program: Program;
+
+        const subjectInfo = (subject: any) => {
+            return {
+                id: subject.id,
+                name: subject.name,
+                system: subject.system
+            }
+        }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            subject = createSubject(organization)
+            await subject.save()
+            program = createProgram(organization, [], [], [subject])
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await program.save()
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list age ranges in the class", async () => {
+                const fn = () => listPrograms(testClient, cls.class_id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view class permissions", () => {
+                it("fails to list age ranges in the class", async () => {
+                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the age ranges in the class", async () => {
+                    const gqlSubjects = await listSubjects(testClient, cls.class_id, { authorization: BillyAuthToken });
+
+                    expect(gqlSubjects).not.to.be.empty
+                    expect(gqlSubjects.map(subjectInfo)).to.deep.eq([subjectInfo(subject)])
                 });
             });
         });

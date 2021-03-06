@@ -4,23 +4,28 @@ import {
     Column,
     Check,
     Entity,
+    JoinTable,
     Unique,
     getManager,
     getRepository,
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    In,
 } from 'typeorm'
+import { AgeRange } from './ageRange'
+import { Grade } from './grade'
 import { Organization } from './organization'
 import { School } from './school'
 import { User } from './user'
 import { Context } from '../main'
+import { Program } from './program'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
+import { Subject } from './subject'
 import {
     CursorObject,
     Paginatable,
-    //Paginated,
     toCursorHash,
 } from '../utils/paginated.interface'
 
@@ -48,6 +53,79 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
 
     @ManyToMany(() => User, (user) => user.classesStudying)
     public students?: Promise<User[]>
+
+    @ManyToMany(() => Program)
+    @JoinTable()
+    public programs?: Promise<Program[]>
+
+    public async age_ranges(
+        args: any,
+        context: Context,
+        info: any
+    ): Promise<AgeRange[]> {
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_classes_20114
+        )
+
+        const ageRanges: AgeRange[] = []
+        const programs = (await this.programs) || []
+
+        for (const program of programs) {
+            const programAgeRanges = (await program.age_ranges) || []
+            ageRanges.push(...programAgeRanges)
+        }
+
+        return ageRanges
+    }
+
+    public async grades(
+        args: any,
+        context: Context,
+        info: any
+    ): Promise<Grade[]> {
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_classes_20114
+        )
+
+        const grades: Grade[] = []
+        const programs = (await this.programs) || []
+
+        for (const program of programs) {
+            const programGrades = (await program.grades) || []
+            grades.push(...programGrades)
+        }
+
+        return grades
+    }
+
+    public async subjects(
+        args: any,
+        context: Context,
+        info: any
+    ): Promise<Subject[]> {
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_classes_20114
+        )
+
+        const subjects: Subject[] = []
+        const programs = (await this.programs) || []
+
+        for (const program of programs) {
+            const programSubjects = (await program.subjects) || []
+            subjects.push(...programSubjects)
+        }
+
+        return subjects
+    }
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
@@ -575,6 +653,44 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
             console.error(e)
         }
         return false
+    }
+
+    public async editPrograms(
+        { program_ids }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_class_20334
+        )
+
+        const validPrograms: Program[] = await this.getPrograms(program_ids)
+        this.programs = Promise.resolve(validPrograms)
+
+        await this.save()
+
+        return validPrograms
+    }
+
+    private async getPrograms(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Program.find({
+            where: { id: In(ids) },
+        })
     }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
