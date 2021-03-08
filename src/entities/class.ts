@@ -58,74 +58,17 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
     @JoinTable()
     public programs?: Promise<Program[]>
 
-    public async age_ranges(
-        args: any,
-        context: Context,
-        info: any
-    ): Promise<AgeRange[]> {
-        const organization_id = (await this.organization)?.organization_id
-        const permisionContext = { organization_id: organization_id }
-        await context.permissions.rejectIfNotAllowed(
-            permisionContext,
-            PermissionName.view_classes_20114
-        )
+    @ManyToMany(() => AgeRange)
+    @JoinTable()
+    public age_ranges?: Promise<AgeRange[]>
 
-        const ageRanges: AgeRange[] = []
-        const programs = (await this.programs) || []
+    @ManyToMany(() => Grade)
+    @JoinTable()
+    public grades?: Promise<Grade[]>
 
-        for (const program of programs) {
-            const programAgeRanges = (await program.age_ranges) || []
-            ageRanges.push(...programAgeRanges)
-        }
-
-        return ageRanges
-    }
-
-    public async grades(
-        args: any,
-        context: Context,
-        info: any
-    ): Promise<Grade[]> {
-        const organization_id = (await this.organization)?.organization_id
-        const permisionContext = { organization_id: organization_id }
-        await context.permissions.rejectIfNotAllowed(
-            permisionContext,
-            PermissionName.view_classes_20114
-        )
-
-        const grades: Grade[] = []
-        const programs = (await this.programs) || []
-
-        for (const program of programs) {
-            const programGrades = (await program.grades) || []
-            grades.push(...programGrades)
-        }
-
-        return grades
-    }
-
-    public async subjects(
-        args: any,
-        context: Context,
-        info: any
-    ): Promise<Subject[]> {
-        const organization_id = (await this.organization)?.organization_id
-        const permisionContext = { organization_id: organization_id }
-        await context.permissions.rejectIfNotAllowed(
-            permisionContext,
-            PermissionName.view_classes_20114
-        )
-
-        const subjects: Subject[] = []
-        const programs = (await this.programs) || []
-
-        for (const program of programs) {
-            const programSubjects = (await program.subjects) || []
-            subjects.push(...programSubjects)
-        }
-
-        return subjects
-    }
+    @ManyToMany(() => Subject)
+    @JoinTable()
+    public subjects?: Promise<Subject[]>
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
@@ -681,6 +624,122 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
         await this.save()
 
         return validPrograms
+    }
+
+    public async editAgeRanges(
+        { age_range_ids }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_class_20334
+        )
+
+        const validAgeRanges: AgeRange[] = await this.getAgeRanges(
+            age_range_ids
+        )
+        this.age_ranges = Promise.resolve(validAgeRanges)
+
+        await this.save()
+
+        return validAgeRanges
+    }
+
+    public async editGrades(
+        { grade_ids }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_class_20334
+        )
+
+        const validGrades: Grade[] = await this.getGrades(grade_ids)
+        this.grades = Promise.resolve(validGrades)
+
+        await this.save()
+
+        return validGrades
+    }
+
+    public async editSubjects(
+        { subject_ids }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_class_20334
+        )
+
+        const validSubjects: Subject[] = await this.getSubjects(subject_ids)
+        this.subjects = Promise.resolve(validSubjects)
+
+        await this.save()
+
+        return validSubjects
+    }
+
+    private async getAgeRanges(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await AgeRange.find({
+            where: { id: In(ids) },
+        })
+    }
+
+    private async getGrades(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Grade.find({
+            where: { id: In(ids) },
+        })
+    }
+
+    private async getSubjects(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Subject.find({
+            where: { id: In(ids) },
+        })
     }
 
     private async getPrograms(ids: string[]) {

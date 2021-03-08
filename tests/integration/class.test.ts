@@ -8,7 +8,7 @@ import { Grade } from "../../src/entities/grade";
 import { Class } from "../../src/entities/class";
 import { Subject } from "../../src/entities/subject";
 import { Status } from "../../src/entities/status";
-import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, editPrograms, updateClass, deleteClass, listPrograms, listAgeRanges, listGrades, listSubjects, removeTeacherInClass, removeSchoolFromClass, removeStudentInClass, eligibleTeachers, eligibleStudents } from "../utils/operations/classOps";
+import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, editAgeRanges, editGrades, editSubjects, editPrograms, updateClass, deleteClass, listPrograms, listAgeRanges, listGrades, listSubjects, removeTeacherInClass, removeSchoolFromClass, removeStudentInClass, eligibleTeachers, eligibleStudents } from "../utils/operations/classOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
@@ -1687,6 +1687,7 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             ageRange = createAgeRange(organization)
             await ageRange.save()
+            await editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: JoeAuthToken });
             program = createProgram(organization, [ageRange], [], [])
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
@@ -1750,6 +1751,7 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             grade = createGrade(organization)
             await grade.save()
+            await editGrades(testClient, cls.class_id, [grade.id], { authorization: JoeAuthToken });
             program = createProgram(organization, [], [grade], [])
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
@@ -1813,6 +1815,7 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             subject = createSubject(organization)
             await subject.save()
+            await editSubjects(testClient, cls.class_id, [subject.id], { authorization: JoeAuthToken });
             program = createProgram(organization, [], [], [subject])
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
@@ -1849,6 +1852,267 @@ describe("class", () => {
 
                     expect(gqlSubjects).not.to.be.empty
                     expect(gqlSubjects.map(subjectInfo)).to.deep.eq([subjectInfo(subject)])
+                });
+            });
+        });
+    });
+
+    describe("editAgeRanges", () => {
+        let organization : Organization;
+        let cls: Class;
+        let ageRange: AgeRange;
+        let otherUserId: string;
+
+        const ageRangeInfo = (ageRange: any) => { return ageRange.id }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            const otherUser = await createUserBilly(testClient);
+            otherUserId = otherUser.user_id
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: JoeAuthToken });
+            ageRange = createAgeRange(organization)
+            await ageRange.save()
+        });
+
+        context("when not authenticated", () => {
+            it("throws a permission error", async () => {
+                const fn = () => editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
+
+                const dbAgeRanges = await cls.age_ranges || []
+                expect(dbAgeRanges).to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            let role: any;
+
+            beforeEach(async () => {
+                role = await createRole(testClient, organization.organization_id);
+                await addRoleToOrganizationMembership(testClient, otherUserId, organization.organization_id, role.role_id);
+            });
+
+            context("and the user does not have edit class permissions", () => {
+                it("throws a permission error", async () => {
+                    const fn = () => editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
+                    const dbAgeRanges = await cls.age_ranges || []
+                    expect(dbAgeRanges).to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                });
+
+                it("edits the class age ranges", async () => {
+                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbAgeRanges = await dbClass.age_ranges || []
+                    expect(dbAgeRanges).to.be.empty
+
+                    let gqlAgeRanges = await editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: BillyAuthToken });
+
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbAgeRanges = await dbClass.age_ranges || []
+                    expect(dbAgeRanges).not.to.be.empty
+                    expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
+
+                    gqlAgeRanges = await editAgeRanges(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbAgeRanges = await dbClass.age_ranges || []
+                    expect(dbAgeRanges).to.be.empty
+                });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                    });
+
+                    it("does not edit the class age ranges", async () => {
+                        const gqlAgeRanges = await  editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: BillyAuthToken });
+                        expect(gqlAgeRanges).to.be.null;
+
+                        const dbAgeRanges = await cls.age_ranges || []
+                        expect(dbAgeRanges).to.be.empty
+                    });
+                });
+            });
+        });
+    });
+
+    describe("editGrades", () => {
+        let organization : Organization;
+        let cls: Class;
+        let grade: Grade;
+        let otherUserId: string;
+
+        const gradeInfo = (grade: any) => { return grade.id }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            const otherUser = await createUserBilly(testClient);
+            otherUserId = otherUser.user_id
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: JoeAuthToken });
+            grade = createGrade(organization)
+            await grade.save()
+        });
+
+        context("when not authenticated", () => {
+            it("throws a permission error", async () => {
+                const fn = () => editGrades(testClient, cls.class_id, [grade.id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
+
+                const dbGrades = await cls.grades || []
+                expect(dbGrades).to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            let role: any;
+
+            beforeEach(async () => {
+                role = await createRole(testClient, organization.organization_id);
+                await addRoleToOrganizationMembership(testClient, otherUserId, organization.organization_id, role.role_id);
+            });
+
+            context("and the user does not have edit class permissions", () => {
+                it("throws a permission error", async () => {
+                    const fn = () => editGrades(testClient, cls.class_id, [grade.id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
+                    const dbGrades = await cls.grades || []
+                    expect(dbGrades).to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                });
+
+                it("edits the class grades", async () => {
+                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbGrades = await dbClass.grades || []
+                    expect(dbGrades).to.be.empty
+
+                    let gqlGrades = await editGrades(testClient, cls.class_id, [grade.id], { authorization: BillyAuthToken });
+
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbGrades = await dbClass.grades || []
+                    expect(dbGrades).not.to.be.empty
+                    expect(dbGrades.map(gradeInfo)).to.deep.eq(gqlGrades.map(gradeInfo))
+
+                    gqlGrades = await editGrades(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbGrades = await dbClass.grades || []
+                    expect(dbGrades).to.be.empty
+                });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                    });
+
+                    it("does not edit the class grades", async () => {
+                        const gqlGrades = await  editGrades(testClient, cls.class_id, [grade.id], { authorization: BillyAuthToken });
+                        expect(gqlGrades).to.be.null;
+
+                        const dbGrades = await cls.grades || []
+                        expect(dbGrades).to.be.empty
+                    });
+                });
+            });
+        });
+    });
+
+    describe("editSubjects", () => {
+        let organization : Organization;
+        let cls: Class;
+        let subject: Subject;
+        let otherUserId: string;
+
+        const subjectInfo = (subject: any) => { return subject.id }
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            cls = await createClass(testClient, organization.organization_id);
+            const otherUser = await createUserBilly(testClient);
+            otherUserId = otherUser.user_id
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: JoeAuthToken });
+            subject = createSubject(organization)
+            await subject.save()
+        });
+
+        context("when not authenticated", () => {
+            it("throws a permission error", async () => {
+                const fn = () => editSubjects(testClient, cls.class_id, [subject.id], { authorization: undefined });
+                expect(fn()).to.be.rejected;
+
+                const dbSubjects = await cls.subjects || []
+                expect(dbSubjects).to.be.empty
+            });
+        });
+
+        context("when authenticated", () => {
+            let role: any;
+
+            beforeEach(async () => {
+                role = await createRole(testClient, organization.organization_id);
+                await addRoleToOrganizationMembership(testClient, otherUserId, organization.organization_id, role.role_id);
+            });
+
+            context("and the user does not have edit class permissions", () => {
+                it("throws a permission error", async () => {
+                    const fn = () => editSubjects(testClient, cls.class_id, [subject.id], { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
+                    const dbSubjects = await cls.subjects || []
+                    expect(dbSubjects).to.be.empty
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                });
+
+                it("edits the class subjects", async () => {
+                    let dbClass = await Class.findOneOrFail(cls.class_id)
+                    let dbSubjects = await dbClass.subjects || []
+                    expect(dbSubjects).to.be.empty
+
+                    let gqlSubjects = await editSubjects(testClient, cls.class_id, [subject.id], { authorization: BillyAuthToken });
+
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbSubjects = await dbClass.subjects || []
+                    expect(dbSubjects).not.to.be.empty
+                    expect(dbSubjects.map(subjectInfo)).to.deep.eq(gqlSubjects.map(subjectInfo))
+
+                    gqlSubjects = await editSubjects(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    dbClass = await Class.findOneOrFail(cls.class_id)
+                    dbSubjects = await dbClass.subjects || []
+                    expect(dbSubjects).to.be.empty
+                });
+
+                context("and the class is marked as inactive", () => {
+                    beforeEach(async () => {
+                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                    });
+
+                    it("does not edit the class subjects", async () => {
+                        const gqlSubjects = await  editSubjects(testClient, cls.class_id, [subject.id], { authorization: BillyAuthToken });
+                        expect(gqlSubjects).to.be.null;
+
+                        const dbSubjects = await cls.subjects || []
+                        expect(dbSubjects).to.be.empty
+                    });
                 });
             });
         });

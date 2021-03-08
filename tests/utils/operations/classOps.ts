@@ -203,6 +203,39 @@ const EDIT_PROGRAM_CLASS = `
     }
 `;
 
+const EDIT_AGE_RANGE_CLASS = `
+    mutation editAgeRangesClass($id: ID!, $age_range_ids: [ID!]) {
+       class(class_id: $id) {
+          editAgeRanges(age_range_ids: $age_range_ids) {
+            id
+            name
+          }
+       }
+    }
+`;
+
+const EDIT_GRADES_CLASS = `
+    mutation editGradesClass($id: ID!, $grade_ids: [ID!]) {
+       class(class_id: $id) {
+          editGrades(grade_ids: $grade_ids) {
+            id
+            name
+          }
+       }
+    }
+`;
+
+const EDIT_SUBJECTS_CLASS = `
+    mutation editSubjectsClass($id: ID!, $subject_ids: [ID!]) {
+       class(class_id: $id) {
+          editSubjects(subject_ids: $subject_ids) {
+            id
+            name
+          }
+       }
+    }
+`;
+
 const REMOVE_SCHOOL = `
     mutation myMutation(
             $class_id: ID!
@@ -461,6 +494,48 @@ export async function editPrograms( testClient: ApolloServerTestClient, id: stri
     const res = await gqlTry(operation);
     const gqlPrograms = res.data?.class?.editPrograms as Program[];
     return gqlPrograms;
+}
+
+export async function editAgeRanges( testClient: ApolloServerTestClient, id: string, age_range_ids: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: EDIT_AGE_RANGE_CLASS,
+        variables: { id: id, age_range_ids: age_range_ids },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlAgeRanges = res.data?.class?.editAgeRanges as AgeRange[];
+    return gqlAgeRanges;
+}
+
+export async function editGrades( testClient: ApolloServerTestClient, id: string, grade_ids: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: EDIT_GRADES_CLASS,
+        variables: { id: id, grade_ids: grade_ids },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlGrades = res.data?.class?.editGrades as Grade[];
+    return gqlGrades;
+}
+
+export async function editSubjects( testClient: ApolloServerTestClient, id: string, subject_ids: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: EDIT_SUBJECTS_CLASS,
+        variables: { id: id, subject_ids: subject_ids },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubjects = res.data?.class?.editSubjects as Subject[];
+    return gqlSubjects;
 }
 
 export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {

@@ -452,6 +452,9 @@ type Class {
     editSchools(school_ids: [ID!]): [School]
     addSchool(school_id: ID!): School
     editPrograms(program_ids: [ID!]): [Program]
+    editAgeRanges(age_range_ids: [ID!]): [AgeRange]
+    editGrades(grade_ids: [ID!]): [Grade]
+    editSubjects(subject_ids: [ID!]): [Subject]
     removeSchool(school_id: ID!): Boolean
 
     delete(_: Int): Boolean
