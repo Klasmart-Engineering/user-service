@@ -7,6 +7,7 @@ import {
     OneToMany,
     getRepository,
     getManager,
+    In,
     JoinColumn,
     ManyToMany,
     JoinTable,
@@ -68,28 +69,9 @@ export class School extends BaseEntity {
     @JoinTable()
     public classes?: Promise<Class[]>
 
-    public async programs(
-        args: any,
-        context: Context,
-        info: any
-    ): Promise<Program[]> {
-        const organization_id = (await this.organization)?.organization_id
-        const permisionContext = { organization_id: organization_id }
-        await context.permissions.rejectIfNotAllowed(
-            permisionContext,
-            PermissionName.view_school_20110
-        )
-
-        const programs: Program[] = []
-        const classes = (await this.classes) || []
-
-        for (const cls of classes) {
-            const clsPrograms = (await cls.programs) || []
-            programs.push(...clsPrograms)
-        }
-
-        return programs
-    }
+    @ManyToMany(() => Program)
+    @JoinTable()
+    public programs?: Promise<Program[]>
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
@@ -168,6 +150,44 @@ export class School extends BaseEntity {
         } catch (e) {
             console.error(e)
         }
+    }
+
+    public async editPrograms(
+        { program_ids }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_school_20330
+        )
+
+        const validPrograms: Program[] = await this.getPrograms(program_ids)
+        this.programs = Promise.resolve(validPrograms)
+
+        await this.save()
+
+        return validPrograms
+    }
+
+    private async getPrograms(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Program.find({
+            where: { id: In(ids) },
+        })
     }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {

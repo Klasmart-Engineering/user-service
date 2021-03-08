@@ -394,6 +394,7 @@ type School {
     #mutations
     set(school_name: String): School
     addUser(user_id: ID!): SchoolMembership
+    editPrograms(program_ids: [ID!]): [Program]
     delete(_: Int): Boolean
 }
 

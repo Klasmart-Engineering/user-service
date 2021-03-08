@@ -91,6 +91,17 @@ const LIST_PROGRAMS = `
     }
 `;
 
+const EDIT_PROGRAM = `
+    mutation editProgramClass($id: ID!, $program_ids: [ID!]) {
+       school(school_id: $id) {
+          editPrograms(program_ids: $program_ids) {
+            id
+            name
+          }
+       }
+    }
+`;
+
 const DELETE_SCHOOL = `
     mutation myMutation($school_id: ID!) {
         school(school_id: $school_id) {
@@ -209,5 +220,19 @@ export async function listPrograms(testClient: ApolloServerTestClient, id: strin
     const res = await gqlTry(operation);
     const gqlPrograms = res.data?.school.programs as Program[];
 
+    return gqlPrograms;
+}
+
+export async function editPrograms( testClient: ApolloServerTestClient, id: string, program_ids: string[], headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: EDIT_PROGRAM,
+        variables: { id: id, program_ids: program_ids },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlPrograms = res.data?.school?.editPrograms as Program[];
     return gqlPrograms;
 }
