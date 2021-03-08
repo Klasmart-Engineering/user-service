@@ -81,6 +81,27 @@ const DELETE_ORGANIZATION = `
     }
 `;
 
+const UPDATE_ORGANIZATION = `
+    mutation myMutation(
+            $organization_id: ID!
+            $organization_name: String,
+            $address1: String,
+            $address2: String,
+            $phone: String,
+            $shortCode: String) {
+        organization(organization_id: $organization_id) {
+            set(organization_name: $organization_name, address1: $address1, address2: $address2, phone: $phone, shortCode: $shortCode) {
+                organization_id
+                organization_name
+                address1
+                address2
+                phone
+                shortCode
+            }
+        }
+    }
+`;
+
 const INVITE_USER = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
         organization(organization_id: $organization_id) {
@@ -703,4 +724,25 @@ export async function listPrograms(testClient: ApolloServerTestClient, organizat
     const gqlPrograms = res.data?.organization.programs as Program[];
 
     return gqlPrograms;
+}
+
+export async function updateOrganization(
+        testClient: ApolloServerTestClient,
+        organizationId: string,
+        mods: { organization_name?: string,
+        address1?: string,
+        address2?: string,
+        phone?: string,
+        shortCode?: string },
+        headers?: Headers) {
+    const { mutate } = testClient;
+    const operation = () => mutate({
+        mutation: UPDATE_ORGANIZATION,
+        variables: { organization_id: organizationId, ...mods },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlOrganization = res.data?.organization.set as Organization;
+    return gqlOrganization;
 }

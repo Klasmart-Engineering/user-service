@@ -14,7 +14,7 @@ import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
-import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createOrUpdateSubcategories, createOrUpdateCategories, createOrUpdateSubjects, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, listGrades, listCategories, listSubcategories, listSubjects, deleteOrganization, listPrograms, createOrUpdatePrograms } from "../utils/operations/organizationOps";
+import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createOrUpdateSubcategories, createOrUpdateCategories, createOrUpdateSubjects, createSchool, createClass, createRole,  inviteUser, editMembership, listAgeRanges, listGrades, listCategories, listSubcategories, listSubjects, deleteOrganization, listPrograms, createOrUpdatePrograms, updateOrganization } from "../utils/operations/organizationOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
@@ -54,6 +54,76 @@ describe("organization", () => {
     after(async () => {
         await connection?.close();
     });
+
+    describe("set", async () => {
+        let organizationId: string;
+        const mods = {
+            organization_name: "New Name",
+            address1: "New address 1",
+            address2: "New address 2",
+            phone: "010-1111-2222",
+            shortCode: "SC"
+        }
+
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+            organization = await createOrganizationAndValidate(testClient, user.user_id);
+            organizationId = organization.organization_id;
+        });
+
+        context("when organization is inactive", () => {
+            beforeEach(async () => {
+                await deleteOrganization(testClient, organizationId, { authorization: JoeAuthToken });
+            });
+
+            it("returns null and database entry is not modified", async () => {
+                const gqlOrg = await updateOrganization(testClient, organizationId, mods);
+
+                expect(gqlOrg).to.be.null;
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                expect(dbOrg).to.not.include(mods);
+            });
+        });
+
+        context("when authorized within organization", () => {
+            let idOfUserMakingMod: string;
+            const authTokenOfUserMakingMod = BillyAuthToken;
+
+            beforeEach(async () => {
+                idOfUserMakingMod = (await createUserBilly(testClient)).user_id;
+                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: JoeAuthToken });
+                const editOrgRole = await createRole(testClient, organizationId);
+                await grantPermission(testClient, editOrgRole.role_id, PermissionName.edit_an_organization_details_5, { authorization: JoeAuthToken });
+                await addRoleToOrganizationMembership(testClient, idOfUserMakingMod, organization.organization_id, editOrgRole.role_id);
+            });
+
+            it("returns the modified organization, and database entry is modified", async () => {
+                const gqlOrg = await updateOrganization(testClient, organizationId, mods, { authorization: authTokenOfUserMakingMod });
+
+                expect(gqlOrg).to.include(mods);
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                expect(dbOrg).to.include(mods);
+            });
+        });
+
+        context("when not authorized within organization", () => {
+            let idOfUserMakingMod: string;
+            const authTokenOfUserMakingMod = BillyAuthToken;
+
+            beforeEach(async () => {
+                idOfUserMakingMod = (await createUserBilly(testClient)).user_id;
+                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: JoeAuthToken });
+            });
+
+            it("should throw a permission exception and not mutate the database entry", async () => {
+                const fn = () => updateOrganization(testClient, organizationId, mods, { authorization: authTokenOfUserMakingMod });
+                expect(fn()).to.be.rejected;
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                expect(dbOrg).to.not.include(mods);
+            });
+        });
+    });
+
     describe("findOrCreateUser", async () => {
         beforeEach(async () => {
             user = await createUserJoe(testClient);
