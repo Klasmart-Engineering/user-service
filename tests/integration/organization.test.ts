@@ -2570,20 +2570,18 @@ describe("organization", () => {
         let organization : Organization;
         let subject: Subject;
         let category: Category;
-        let subcategory: Subcategory;
         let newSubject: any;
 
         let subjectDetails: any;
 
-        const categoryOrSubcategoryInfo = (category: any) => {
+        const categoryInfo = (category: any) => {
             return category.id
         }
 
         const subjectInfo = async (subject: Subject) => {
             return {
                 name: subject.name,
-                categories: ((await subject.categories) || []).map(categoryOrSubcategoryInfo),
-                subcategories: ((await subject.subcategories) || []).map(categoryOrSubcategoryInfo),
+                categories: ((await subject.categories) || []).map(categoryInfo),
                 system: subject.system,
             }
         }
@@ -2595,9 +2593,7 @@ describe("organization", () => {
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             category = createCategory(organization)
             await category.save()
-            subcategory = createSubcategory(organization)
-            await subcategory.save()
-            subject = createSubject(organization, [category], [subcategory])
+            subject = createSubject(organization, [category])
             subjectDetails = await subjectInfo(subject)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
@@ -2707,6 +2703,7 @@ describe("organization", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
                         await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: JoeAuthToken });
+                        await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: JoeAuthToken });
                         await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: JoeAuthToken });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                     });
@@ -2867,20 +2864,18 @@ describe("organization", () => {
         let user: User;
         let organization : Organization;
         let category: Category;
-        let subcategory: Subcategory;
         let subject: Subject;
 
         let subjectDetails: any;
 
-        const categoryOrSubcategoryInfo = (category: any) => {
+        const categoryInfo = (category: any) => {
             return category.id
         }
 
         const subjectInfo = async (subject: Subject) => {
             return {
                 name: subject.name,
-                categories: ((await subject.categories) || []).map(categoryOrSubcategoryInfo),
-                subcategories: ((await subject.subcategories) || []).map(categoryOrSubcategoryInfo),
+                categories: ((await subject.categories) || []).map(categoryInfo),
                 system: subject.system,
             }
         }
@@ -2892,9 +2887,7 @@ describe("organization", () => {
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             category = createCategory(organization)
             await category.save()
-            subcategory = createSubcategory(organization)
-            await subcategory.save()
-            subject = createSubject(organization, [category], [subcategory])
+            subject = createSubject(organization, [category])
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
             await subject.save()
@@ -2958,6 +2951,7 @@ describe("organization", () => {
             });
         });
     });
+
      describe("createOrUpdatePrograms", () => {
         let user: User;
         let organization : Organization;
@@ -2979,9 +2973,9 @@ describe("organization", () => {
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
-            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);   
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             program = createProgram(organization)
-            await program.save()        
+            await program.save()
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
         });
@@ -3020,10 +3014,10 @@ describe("organization", () => {
 
                 });
 
-                
+
                 it("fails to update programs in the organization", async () => {
                     const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: undefined });
-                   
+
                     expect(fn()).to.be.rejected;
                     const dbPrograms = await Program.find({
                         where: {
@@ -3035,7 +3029,7 @@ describe("organization", () => {
                 });
             });
         });
-    
+
         context("when authenticated", () => {
             context("and the user does not have create programs permissions", () => {
                 beforeEach(async () => {
@@ -3046,7 +3040,7 @@ describe("organization", () => {
                 context("and it tries to create new programs", () => {
                     it("fails to create programs in the organization", async () => {
                         const programDetails = await programInfo(program)
-                        
+
                         const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
 
                         expect(fn()).to.be.rejected;
@@ -3129,7 +3123,7 @@ describe("organization", () => {
 
                             newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
                             newProgramDetails = [programDetails,{ name: 'New Name', system: false }]
-                            
+
                         });
 
 
@@ -3192,7 +3186,7 @@ describe("organization", () => {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
-                            
+
                             const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
 
                             expect(dProgramsDetails).to.deep.eq([programDetails,programDetails])
@@ -3216,7 +3210,7 @@ describe("organization", () => {
                         });
 
 
-                        it("updates the expected programs in the organization", async () => {                            
+                        it("updates the expected programs in the organization", async () => {
                             const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: JoeAuthToken });
 
                             const dbPrograms = await Program.find({
@@ -3227,7 +3221,7 @@ describe("organization", () => {
                             const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
                             expect(dProgramsDetails).to.deep.eq(newProgramDetails)
                         });
-                        
+
                     });
 
                     context("and it tries to upate existing system programs", () => {
@@ -3257,14 +3251,14 @@ describe("organization", () => {
                             const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
                             expect(dProgramsDetails).to.deep.eq(newProgramDetails)
                         });
-                        
+
                     });
-                    
-                }); 
-                
-            }); 
-        
-        }); 
+
+                });
+
+            });
+
+        });
     });
 
 
@@ -3290,9 +3284,9 @@ describe("organization", () => {
         beforeEach(async () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
-            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);   
+            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             program = createProgram(organization)
-            await program.save()        
+            await program.save()
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
         });
@@ -3331,10 +3325,10 @@ describe("organization", () => {
 
                 });
 
-                
+
                 it("fails to update programs in the organization", async () => {
                     const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: undefined });
-                   
+
                     expect(fn()).to.be.rejected;
                     const dbPrograms = await Program.find({
                         where: {
@@ -3346,7 +3340,7 @@ describe("organization", () => {
                 });
             });
         });
-    
+
         context("when authenticated", () => {
             context("and the user does not have create programs permissions", () => {
                 beforeEach(async () => {
@@ -3357,7 +3351,7 @@ describe("organization", () => {
                 context("and it tries to create new programs", () => {
                     it("fails to create programs in the organization", async () => {
                         const programDetails = await programInfo(program)
-                        
+
                         const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
 
                         expect(fn()).to.be.rejected;
@@ -3440,7 +3434,7 @@ describe("organization", () => {
 
                             newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
                             newProgramDetails = [programDetails,{ name: 'New Name', system: false }]
-                            
+
                         });
 
 
@@ -3503,7 +3497,7 @@ describe("organization", () => {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
-                            
+
                             const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
 
                             expect(dProgramsDetails).to.deep.eq([programDetails,programDetails])
@@ -3527,7 +3521,7 @@ describe("organization", () => {
                         });
 
 
-                        it("updates the expected programs in the organization", async () => {                            
+                        it("updates the expected programs in the organization", async () => {
                             const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: JoeAuthToken });
 
                             const dbPrograms = await Program.find({
@@ -3538,7 +3532,7 @@ describe("organization", () => {
                             const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
                             expect(dProgramsDetails).to.deep.eq(newProgramDetails)
                         });
-                        
+
                     });
 
                     context("and it tries to upate existing system programs", () => {
@@ -3568,25 +3562,25 @@ describe("organization", () => {
                             const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
                             expect(dProgramsDetails).to.deep.eq(newProgramDetails)
                         });
-                        
+
                     });
-                    
-                }); 
-                
-            }); 
-        
-        }); 
+
+                });
+
+            });
+
+        });
     });
 
 
     describe("programs", () => {
         let user: User;
         let organization : Organization;
-       
+
         let program: Program;
 
         let programDetails: any;
-        
+
 
         const programInfo = async (program: Program) => {
             return {
@@ -3600,7 +3594,7 @@ describe("organization", () => {
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             program = createProgram(organization)
-            await program.save()   
+            await program.save()
             programDetails = await programInfo(program)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });

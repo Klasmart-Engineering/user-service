@@ -1177,13 +1177,6 @@ export class Organization
                 subject.categories = Promise.resolve(categories)
             }
 
-            if (subjectDetail?.subcategories) {
-                const subcategories = await this.getSubcategories(
-                    subjectDetail.subcategories
-                )
-                subject.subcategories = Promise.resolve(subcategories)
-            }
-
             if (subjectDetail?.system !== undefined) {
                 subject.system = subjectDetail.system
             }

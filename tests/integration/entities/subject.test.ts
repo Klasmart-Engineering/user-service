@@ -6,17 +6,21 @@ import { ApolloServerTestClient, createTestClient } from "../../utils/createTest
 import { addUserToOrganizationAndValidate, createRole } from "../../utils/operations/organizationOps";
 import { addRoleToOrganizationMembership } from "../../utils/operations/organizationMembershipOps";
 import { BillyAuthToken, JoeAuthToken } from "../../utils/testConfig";
+import { Category } from "../../../src/entities/category";
+import { createCategory } from "../../factories/category.factory";
 import { createServer } from "../../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../../utils/testEntities";
 import { createOrganization } from "../../factories/organization.factory";
+import { createSubcategory } from "../../factories/subcategory.factory";
 import { createSubject } from "../../factories/subject.factory";
 import { createTestConnection } from "../../utils/testConnection";
-import { deleteSubject } from "../../utils/operations/subjectOps";
+import { deleteSubject, describeSubject } from "../../utils/operations/subjectOps";
 import { grantPermission } from "../../utils/operations/roleOps";
 import { Model } from "../../../src/model";
 import { Role } from "../../../src/entities/role";
 import { Organization } from "../../../src/entities/organization";
 import { PermissionName } from "../../../src/permissions/permissionNames";
+import { Subcategory } from "../../../src/entities/subcategory";
 import { Subject } from "../../../src/entities/subject";
 import { Status } from "../../../src/entities/status";
 import { User } from "../../../src/entities/user";
@@ -35,6 +39,86 @@ describe("Subject", () => {
 
     after(async () => {
         await connection?.close()
+    });
+
+    describe("subject", () => {
+        let user: User;
+        let organization : Organization;
+        let category: Category;
+        let subcategory: Subcategory;
+        let subject: Subject;
+
+        const categoryInfo = (category: any) => {
+            return category.id
+        }
+
+        const subjectInfo = async (subject: any) => {
+            return {
+                name: subject.name,
+                categories: ((await subject.categories) || []).map(categoryInfo),
+                subcategories: ((await subject.subcategories) || []).map(categoryInfo),
+                system: subject.system,
+            }
+        }
+
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            user = await createUserBilly(testClient);
+            organization = createOrganization()
+            await organization.save()
+            subcategory = createSubcategory(organization)
+            await subcategory.save()
+            category = createCategory(organization, [subcategory])
+            await category.save()
+            subject = createSubject(organization, [category])
+            const organizationId = organization?.organization_id
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await subject.save()
+        });
+
+        context("when not authenticated", () => {
+            it("fails to list subjects in the organization", async () => {
+                const fn = () => describeSubject(testClient, subject.id, { authorization: undefined });
+
+                expect(fn()).to.be.rejected;
+            });
+        });
+
+        context("when authenticated", () => {
+            context("and the user does not have view subject permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("fails to list subjects in the organization", async () => {
+                    const fn = () => describeSubject(testClient, subject.id, { authorization: BillyAuthToken });
+
+                    expect(fn()).to.be.rejected;
+                });
+            });
+
+            context("and the user has all the permissions", () => {
+                beforeEach(async () => {
+                    const role = await createRole(testClient, organization.organization_id);
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: JoeAuthToken });
+                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
+                });
+
+                it("lists all the subjects in the organization", async () => {
+                    const subjectDetails = {
+                        name: subject.name,
+                        categories: [category.id],
+                        subcategories: [subcategory.id],
+                        system: subject.system
+                    }
+                    const gqlSubject = await describeSubject(testClient, subject.id, { authorization: BillyAuthToken });
+                    const gqlSubjectDetails = await subjectInfo(gqlSubject)
+                    expect(subjectDetails).to.deep.eq(gqlSubjectDetails)
+                });
+            });
+        });
     });
 
     describe("delete", () => {

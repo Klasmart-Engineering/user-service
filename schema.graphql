@@ -101,7 +101,7 @@ type Query {
     category(id: ID!): Category @isAdmin(entity: "category")
     subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
 
-    subject(id: ID!): Category @isAdmin(entity: "subject")
+    subject(id: ID!): Subject @isAdmin(entity: "subject")
     program(id: ID!): Program @isAdmin(entity: "program")
 }
 
@@ -152,7 +152,7 @@ type Mutation {
     category(id: ID!): Category @isAdmin(entity: "category")
     subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
 
-    subject(id: ID!): Category @isAdmin(entity: "subject")
+    subject(id: ID!): Subject @isAdmin(entity: "subject")
     program(id: ID!): Program @isAdmin(entity: "program")
 
     createOrUpateSystemEntities(_: Int): Boolean @isAdmin
@@ -504,7 +504,6 @@ input SubjectDetail {
     id: ID
     name: String
     categories: [ID!]
-    subcategories: [ID!]
     system: Boolean
 }
 

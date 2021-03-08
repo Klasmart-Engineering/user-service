@@ -37,9 +37,28 @@ export class Subject extends BaseEntity {
     @JoinTable()
     public categories?: Promise<Category[]>
 
-    @ManyToMany(() => Subcategory)
-    @JoinTable()
-    public subcategories?: Promise<Subcategory[]>
+    public async subcategories(
+        args: any,
+        context: Context,
+        info: any
+    ): Promise<Subcategory[]> {
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.view_subjects_20115
+        )
+
+        const dbSubcategories: Subcategory[] = []
+        const categories = (await this.categories) || []
+
+        for (const category of categories) {
+            const categorySubcategories = (await category.subcategories) || []
+            dbSubcategories.push(...categorySubcategories)
+        }
+
+        return dbSubcategories
+    }
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status

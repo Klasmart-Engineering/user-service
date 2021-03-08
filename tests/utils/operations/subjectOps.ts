@@ -3,6 +3,23 @@ import { Headers } from 'node-mocks-http';
 import { ApolloServerTestClient } from "../createTestClient";
 import { gqlTry } from "../gqlTry";
 
+import { Subject } from "../../../src/entities/subject";
+
+const DESCRIBE_SUBJECT = `
+    query describeSubject($id: ID!) {
+        subject(id: $id) {
+            name
+            categories {
+                id
+            }
+            subcategories {
+                id
+            }
+            system
+        }
+    }
+`;
+
 const DELETE_SUBJECT = `
     mutation deleteSubject($id: ID!) {
         subject(id: $id) {
@@ -25,3 +42,17 @@ export async function deleteSubject( testClient: ApolloServerTestClient, id: str
     return gqlBool;
 }
 
+export async function describeSubject(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: DESCRIBE_SUBJECT,
+        variables: { id: id },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubject = res.data?.subject as Subject;
+
+    return gqlSubject;
+}
