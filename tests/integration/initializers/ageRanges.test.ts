@@ -49,18 +49,18 @@ describe("AgeRangesInitializer", () => {
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
-            it("does not modify the default system age ranges", async () => {
-                const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: JoeAuthToken })
-                expect(gqlAgeRanges).not.to.be.empty;
+            //it("does not modify the default system age ranges", async () => {
+            //    const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: JoeAuthToken })
+            //    expect(gqlAgeRanges).not.to.be.empty;
 
-                await AgeRangesInitializer.run();
+            //    await AgeRangesInitializer.run();
 
-                organization = await Organization.findOneOrFail(organization.organization_id);
-                const gqlNewAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: JoeAuthToken })
-                expect(gqlNewAgeRanges).not.to.be.empty;
+            //    organization = await Organization.findOneOrFail(organization.organization_id);
+            //    const gqlNewAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: JoeAuthToken })
+            //    expect(gqlNewAgeRanges).not.to.be.empty;
 
-                expect(gqlAgeRanges.map(ageRangeInfoFunc)).to.deep.equal(gqlNewAgeRanges.map(ageRangeInfoFunc));
-            });
+            //    expect(gqlAgeRanges.map(ageRangeInfoFunc)).to.deep.equal(gqlNewAgeRanges.map(ageRangeInfoFunc));
+            //});
         });
     });
 });

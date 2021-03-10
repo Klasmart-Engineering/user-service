@@ -533,6 +533,7 @@ type Category {
     status: Status
 
     # Mutations
+    editSubcategories(subcategory_ids: [ID!]): [Subcategory]
     delete(_: Int): Boolean
 }
 

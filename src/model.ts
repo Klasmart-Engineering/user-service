@@ -17,8 +17,13 @@ import {
 } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
 import { AgeRange } from './entities/ageRange'
+import CategoriesInitializer from './initializers/categories'
+import GradesInitializer from './initializers/grades'
 import { Role } from './entities/role'
+import ProgramsInitializer from './initializers/programs'
 import RolesInitializer from './initializers/roles'
+import SubcategoriesInitializer from './initializers/subcategories'
+import SubjectsInitializer from './initializers/subjects'
 import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
@@ -582,6 +587,11 @@ export class Model {
     public async createOrUpdateSystemEntities() {
         await RolesInitializer.run()
         await AgeRangesInitializer.run()
+        await GradesInitializer.run()
+        await SubcategoriesInitializer.run()
+        await CategoriesInitializer.run()
+        await SubjectsInitializer.run()
+        await ProgramsInitializer.run()
 
         return true
     }

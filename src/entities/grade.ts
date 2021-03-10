@@ -4,7 +4,6 @@ import {
     Entity,
     getManager,
     JoinColumn,
-    OneToOne,
     ManyToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm'
@@ -26,11 +25,11 @@ export class Grade extends BaseEntity {
     @Column({ nullable: false, default: false })
     public system?: boolean
 
-    @OneToOne(() => Grade, (grade) => grade.id)
+    @ManyToOne(() => Grade, (grade) => grade.id)
     @JoinColumn({ name: 'progress_from_grade_id' })
     public progress_from_grade?: Promise<Grade>
 
-    @OneToOne(() => Grade, (grade) => grade.id)
+    @ManyToOne(() => Grade, (grade) => grade.id)
     @JoinColumn({ name: 'progress_to_grade_id' })
     public progress_to_grade?: Promise<Grade>
 

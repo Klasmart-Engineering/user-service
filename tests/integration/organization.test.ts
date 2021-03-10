@@ -2262,7 +2262,7 @@ describe("organization", () => {
             return subcategory.id
         }
 
-        const categoryInfo = async (category: Category) => {
+        const categoryInfo = async (category: any) => {
             return {
                 name: category.name,
                 subcategories: ((await category.subcategories) || []).map(subcategoryInfo),
@@ -2420,18 +2420,32 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: BillyAuthToken });
+                            let gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: BillyAuthToken });
 
-                            const dbCategories = await Category.find({
+                            let dbCategories = await Category.find({
                                 where: {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
 
                             expect(dbCategories).not.to.be.empty
-                            const dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
-                            const newCategoryDetails = { ...categoryDetails, name: newCategory.name }
+                            let dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            let newCategoryDetails = { ...categoryDetails, name: newCategory.name }
                             expect(dbCategoryDetails).to.deep.eq([newCategoryDetails])
+
+                            newCategory.subcategories= []
+                            gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: BillyAuthToken });
+
+                            dbCategories = await Category.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbCategories).not.to.be.empty
+                            dbCategoryDetails = await Promise.all(dbCategories.map(categoryInfo))
+                            const gqlCateryDetails = await Promise.all(gqlCategories.map(categoryInfo))
+                            expect(dbCategoryDetails).to.deep.eq(gqlCateryDetails)
                         });
                     });
 
@@ -2807,18 +2821,32 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: BillyAuthToken });
+                            let gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: BillyAuthToken });
 
-                            const dbSubjects = await Subject.find({
+                            let dbSubjects = await Subject.find({
                                 where: {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
 
                             expect(dbSubjects).not.to.be.empty
-                            const dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
-                            const newSubjectDetails = { ...subjectDetails, name: newSubject.name }
+                            let dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            let newSubjectDetails = { ...subjectDetails, name: newSubject.name }
                             expect(dbSubjectDetails).to.deep.eq([newSubjectDetails])
+
+                            newSubject.categories= []
+                            gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: BillyAuthToken });
+
+                            dbSubjects = await Subject.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbSubjects).not.to.be.empty
+                            dbSubjectDetails = await Promise.all(dbSubjects.map(subjectInfo))
+                            const gqlSubjectDetails = await Promise.all(gqlSubjects.map(subjectInfo))
+                            expect(dbSubjectDetails).to.deep.eq(gqlSubjectDetails)
                         });
                     });
 

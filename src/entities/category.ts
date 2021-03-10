@@ -3,6 +3,7 @@ import {
     Column,
     Entity,
     getManager,
+    In,
     JoinColumn,
     JoinTable,
     ManyToMany,
@@ -44,6 +45,46 @@ export class Category extends BaseEntity {
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
+
+    public async editSubcategories(
+        { subcategory_ids }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organization_id = (await this.organization)?.organization_id
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const permisionContext = { organization_id: organization_id }
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_subjects_20337
+        )
+
+        const validSubcategories: Subcategory[] = await this.getSubcategories(
+            subcategory_ids
+        )
+        this.subcategories = Promise.resolve(validSubcategories)
+
+        await this.save()
+
+        return validSubcategories
+    }
+
+    private async getSubcategories(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Subcategory.find({
+            where: { id: In(ids) },
+        })
+    }
 
     public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
         const organization_id = (await this.organization)?.organization_id

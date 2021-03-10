@@ -1208,12 +1208,20 @@ export class Organization
     }
 
     private async getCategories(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
         return await Category.find({
             where: { id: In(ids) },
         })
     }
 
     private async getSubcategories(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
         return await Subcategory.find({
             where: { id: In(ids) },
         })

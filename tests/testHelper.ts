@@ -1,6 +1,5 @@
 import { Connection } from "typeorm";
 
-import AgeRangesInitializer from '../src/initializers/ageRanges'
 import { ApolloServerTestClient } from "./utils/createTestClient";
 import { createTestConnection } from "./utils/testConnection";
 import RoleInitializer from '../src/initializers/roles'
@@ -24,7 +23,6 @@ after(async () => {
 
 beforeEach(async () => {
     await RoleInitializer.run()
-    await AgeRangesInitializer.run()
 });
 
 afterEach(async () => {
