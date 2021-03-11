@@ -170,7 +170,7 @@ describe("model.class", () => {
                  await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
                  const role1Id = (await createRole(testClient, organization1.organization_id, "role " + i, "role description " + 1, anne1Token)).role_id;
                  await addRoleToOrganizationMembership(testClient, user.user_id, organization1.organization_id, role1Id, { authorization: anne1Token });
-                 const school1 = await createSchool(testClient, organization1.organization_id, "school " + i, { authorization: anne1Token })
+                 const school1 = await createSchool(testClient, organization1.organization_id, "school " + i, undefined, { authorization: anne1Token })
                  await addUserToSchool(testClient, user.user_id, school1.school_id, { authorization: anne1Token })
                  await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id, role1Id, { authorization: anne1Token })
                  const cls1 = await createClass(testClient, organization1.organization_id, "class " + i, { authorization: anne1Token });

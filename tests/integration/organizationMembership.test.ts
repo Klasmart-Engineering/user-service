@@ -56,8 +56,8 @@ describe("organizationMembership", () => {
                 userId = org1Owner.user_id;
                 organization1Id = (await createOrganizationAndValidate(testClient, org1Owner.user_id, "org 1")).organization_id;
                 organization2Id = (await createOrganizationAndValidate(testClient, org2Owner.user_id, "org 2")).organization_id;
-                school1Id = (await createSchool(testClient, organization1Id, "school 1", { authorization: JoeAuthToken })).school_id;
-                school2Id = (await createSchool(testClient, organization2Id, "school 2", { authorization: BillyAuthToken })).school_id;
+                school1Id = (await createSchool(testClient, organization1Id, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
+                school2Id = (await createSchool(testClient, organization2Id, "school 2", undefined, { authorization: BillyAuthToken })).school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organization1Id, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, userId, organization2Id, { authorization: BillyAuthToken });
                 await addUserToSchool(testClient, userId, school1Id, { authorization: JoeAuthToken });
@@ -96,8 +96,8 @@ describe("organizationMembership", () => {
             const organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, tokenOfOrg2Owner)).organization_id;
             await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization1Id, tokenOfOrg1Owner);
             await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization2Id, tokenOfOrg2Owner);
-            school1Id = (await createSchool(testClient, organization1Id, "School 1", { authorization: tokenOfOrg1Owner })).school_id;
-            school2Id = (await createSchool(testClient, organization2Id, "School 2", { authorization: tokenOfOrg2Owner })).school_id;
+            school1Id = (await createSchool(testClient, organization1Id, "School 1", undefined, { authorization: tokenOfOrg1Owner })).school_id;
+            school2Id = (await createSchool(testClient, organization2Id, "School 2", undefined, { authorization: tokenOfOrg2Owner })).school_id;
             await addUserToSchool(testClient, idOfUserToBeQueried, school1Id, { authorization: tokenOfOrg1Owner });
             await addUserToSchool(testClient, idOfUserToBeQueried, school2Id, { authorization: tokenOfOrg2Owner });
             await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
@@ -364,8 +364,8 @@ describe("organizationMembership", () => {
                 organization1Id = (await createOrganizationAndValidate(testClient, org1Owner.user_id, "org 1")).organization_id;
                 organization2Id = (await createOrganizationAndValidate(testClient, org2Owner.user_id, "org 2", BillyAuthToken)).organization_id;
 
-                school1Id = (await createSchool(testClient, organization1Id, "school 1", { authorization: JoeAuthToken })).school_id;
-                school2Id = (await createSchool(testClient, organization2Id, "school 2", { authorization: BillyAuthToken })).school_id;
+                school1Id = (await createSchool(testClient, organization1Id, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
+                school2Id = (await createSchool(testClient, organization2Id, "school 2", undefined, { authorization: BillyAuthToken })).school_id;
                 await addUserToOrganizationAndValidate(testClient, org1Owner.user_id, organization1Id, { authorization: JoeAuthToken });
                 await addUserToOrganizationAndValidate(testClient, org2Owner.user_id, organization2Id, { authorization: BillyAuthToken });
                 role1 = await createRole(testClient, organization1Id, "student", "student role", JoeAuthToken);

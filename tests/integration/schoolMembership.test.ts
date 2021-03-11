@@ -40,7 +40,7 @@ describe("SchoolMembership", () => {
         const orgOwner = await createUserJoe(testClient);
         userId = (await createUserBilly(testClient)).user_id;
         organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-        school = await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })
+        school = await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })
         schoolId = school?.school_id;
         await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
         await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })

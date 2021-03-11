@@ -35,6 +35,15 @@ import {
 import { Model } from '../model'
 import { Status } from './status'
 import { Program } from './program'
+import { generateShortCode, SHORTCODE_MAXLEN } from '../utils/shortcode'
+
+export function validateShortCode(code: string): boolean {
+    const shortcode_re = /^[A-Z|0-9]+$/
+    if (code && code.length < SHORTCODE_MAXLEN && code.match(shortcode_re)) {
+        return true
+    }
+    return false
+}
 
 export function validateEmail(email?: string): boolean {
     const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -308,7 +317,9 @@ export class Organization
                 this.phone = phone
             }
             if (typeof shortCode === 'string') {
-                this.shortCode = shortCode
+                if (validateShortCode(shortCode)) {
+                    this.shortCode = shortCode
+                }
             }
 
             await this.save()
@@ -828,7 +839,7 @@ export class Organization
     }
 
     public async createSchool(
-        { school_name }: any,
+        { school_name, shortcode }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -845,9 +856,17 @@ export class Organization
             PermissionName.create_school_20220
         )
 
+        if (shortcode) {
+            if (!validateShortCode(shortcode)) {
+                console.log('invalid shortcode', shortcode)
+                return null
+            }
+        }
+
         try {
             const school = new School()
             school.school_name = school_name
+            school.shortcode = shortcode || generateShortCode(school_name)
             school.organization = Promise.resolve(this)
             await school.save()
 

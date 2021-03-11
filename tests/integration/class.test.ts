@@ -194,7 +194,7 @@ describe("class", () => {
 
             context("via school permission", () => {
                 beforeEach(async () => {
-                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", undefined,{ authorization: orgOwnerToken }))?.school_id;
                     await addUserToSchool(testClient, teacherId, schoolId, { authorization: orgOwnerToken });
                     await addUserToSchool(testClient, studentId, schoolId, { authorization: orgOwnerToken });
                     await addRoleToSchoolMembership(testClient, teacherId, schoolId, teacherRoleId);
@@ -245,7 +245,7 @@ describe("class", () => {
 
             context("via school permission", () => {
                 beforeEach(async () => {
-                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: orgOwnerToken }))?.school_id;
                     await addUserToSchool(testClient, teacherId, schoolId, { authorization: orgOwnerToken });
                     await addRoleToSchoolMembership(testClient, teacherId, schoolId, teacherRoleId);
                 });
@@ -306,7 +306,7 @@ describe("class", () => {
 
             context("via school permission", () => {
                 beforeEach(async () => {
-                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: orgOwnerToken }))?.school_id;
                     await addUserToSchool(testClient, teacherId, schoolId, { authorization: orgOwnerToken });
                     await addUserToSchool(testClient, studentId, schoolId, { authorization: orgOwnerToken });
                     await addRoleToSchoolMembership(testClient, teacherId, schoolId, teacherRoleId);
@@ -357,7 +357,7 @@ describe("class", () => {
 
             context("via school permission", () => {
                 beforeEach(async () => {
-                    const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: orgOwnerToken }))?.school_id;
+                    const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: orgOwnerToken }))?.school_id;
                     await addUserToSchool(testClient, studentId, schoolId, { authorization: orgOwnerToken });
                     await addRoleToSchoolMembership(testClient, studentId, schoolId, studentRoleId);
                 });
@@ -684,7 +684,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: JoeAuthToken }))?.school_id;
+                const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
                 classId = (await createClass(testClient, organizationId))?.class_id;
@@ -1037,7 +1037,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                const schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: JoeAuthToken }))?.school_id;
+                const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
                 classId = (await createClass(testClient, organizationId))?.class_id;
@@ -1092,7 +1092,7 @@ describe("class", () => {
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
             cls = await createClass(testClient, organization.organization_id);
-            school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+            school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {
@@ -1211,7 +1211,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+                school = await createSchool(testClient, organization.organization_id, "my school",  undefined, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
@@ -1240,7 +1240,7 @@ describe("class", () => {
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+                school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
@@ -1267,7 +1267,7 @@ describe("class", () => {
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+                school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
                 await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
@@ -1324,7 +1324,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: JoeAuthToken }))?.school_id;
+                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
                 classId = (await createClass(testClient, organizationId))?.class_id;
@@ -1355,7 +1355,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: JoeAuthToken }))?.school_id;
+                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
                 classId = (await createClass(testClient, organizationId))?.class_id;
@@ -1406,7 +1406,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "My School", { authorization: JoeAuthToken }))?.school_id;
+                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
                 classId = (await createClass(testClient, organizationId))?.class_id;

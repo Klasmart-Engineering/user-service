@@ -51,12 +51,14 @@ const CREATE_ROLE = `
 const CREATE_SCHOOL = `
     mutation myMutation(
             $organization_id: ID!
-            $school_name: String) {
+            $school_name: String
+            $shortcode: String) {
         organization(organization_id: $organization_id) {
-            createSchool(school_name: $school_name) {
+            createSchool(school_name: $school_name, shortcode: $shortcode) {
                 school_id
                 school_name
                 status
+                shortcode
             }
         }
     }
@@ -398,15 +400,23 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
     return gqlRole;
 }
 
-export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, headers?: Headers) {
+export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, shortcode?:string, headers?: Headers) {
     const { mutate } = testClient;
     schoolName = schoolName ?? "My School";
 
+    const variables = { organization_id: organizationId, school_name:schoolName} as any
+    
+    if(shortcode){
+        variables.shortcode = shortcode
+    }
+
     const operation = () => mutate({
         mutation: CREATE_SCHOOL,
-        variables: { organization_id: organizationId, school_name: schoolName },
+        variables: variables,
         headers: headers,
     });
+
+    
 
     const res = await gqlTry(operation);
     const gqlSchool = res.data?.organization.createSchool as School;

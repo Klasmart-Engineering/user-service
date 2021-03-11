@@ -289,7 +289,7 @@ describe("organization", () => {
 
         context("when school name is empty", () => {
             it("does not create the school", async () => {
-                const school = await createSchool(testClient, organizationId, "", { authorization: JoeAuthToken });
+                const school = await createSchool(testClient, organizationId, "", undefined, { authorization: JoeAuthToken });
 
                 expect(school).to.be.null
                 const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -301,24 +301,42 @@ describe("organization", () => {
 
         context("when school name is not empty", () => {
             it("creates the school", async () => {
-                const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+                const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
 
                 expect(school).not.to.be.null
+                expect(school.shortcode.length).to.equal(10)
+                expect(school.shortcode).to.match(/[A-Z|0-9]+/)
                 const dbSchool = await Organization.findOneOrFail(organizationId);
                 const orgSchools = await dbSchool.schools || []
                 expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
 
             });
 
+            it("creates the school with a custom shortcode ", async () => {
+                const school = await createSchool(testClient, organizationId, "some school 1", "MYSHORT1", { authorization: JoeAuthToken });
+
+                expect(school).not.to.be.null
+                expect(school.shortcode).to.equal("MYSHORT1")
+                const dbSchool = await Organization.findOneOrFail(organizationId);
+                const orgSchools = await dbSchool.schools || []
+                expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+
+            });
+
+            it("if fails to create the school with an invalid custom shortcode ", async () => {
+                const school = await createSchool(testClient, organizationId, "some school 1", "myverywrong1", { authorization: JoeAuthToken });
+                expect(school).to.be.null
+            });
+
             context("and the school name is duplicated in the same organization", () => {
                 let oldSchool : any;
 
                 beforeEach(async () => {
-                    oldSchool = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+                    oldSchool = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
                 });
 
                 it("does not create the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
 
                     expect(school).to.be.null
                     const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -327,7 +345,25 @@ describe("organization", () => {
 
                 });
             });
+/*
+            context("and the school shortcode is duplicated in the same organization", () => {
+                let oldSchool : any;
 
+                beforeEach(async () => {
+                    oldSchool = await createSchool(testClient, organizationId, "some school 1", "ASHORT1", { authorization: JoeAuthToken });
+                });
+
+                it("does not create the school", async () => {
+                    const school = await createSchool(testClient, organizationId, "some school 2", "ASHORT1", { authorization: JoeAuthToken });
+
+                    expect(school).to.be.null
+                    const dbSchool = await Organization.findOneOrFail(organizationId);
+                    const orgSchools = await dbSchool.schools || []
+                    expect(orgSchools.map(schoolInfo)).to.deep.eq([oldSchool.school_id])
+
+                });
+            });
+*/
             context("and the school name is duplicated in different organizations", () => {
                 let otherSchool : any;
 
@@ -336,11 +372,11 @@ describe("organization", () => {
                     const otherUserId = otherUser.user_id
                     const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
                     const otherOrganizationId = otherOrganization.organization_id
-                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", { authorization: BillyAuthToken });
+                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", undefined, { authorization: BillyAuthToken });
                 });
 
                 it("creates the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
 
                     expect(school).not.to.be.null
                     const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -357,7 +393,7 @@ describe("organization", () => {
                     });
 
                     it("fails to create school in the organization", async () => {
-                        const school = await createSchool(testClient, organizationId, "some school 1", { authorization: JoeAuthToken });
+                        const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
 
                         expect(school).to.be.null
                         const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -366,6 +402,30 @@ describe("organization", () => {
                     });
                 });
             });
+            context("and the school shortcode is duplicated in different organizations", () => {
+                let otherSchool : any;
+
+                beforeEach(async () => {
+                    const otherUser = await createUserBilly(testClient);
+                    const otherUserId = otherUser.user_id
+                    const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
+                    const otherOrganizationId = otherOrganization.organization_id
+                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", "ASHORT1", { authorization: BillyAuthToken });
+                });
+
+                it("creates the school", async () => {
+                    const school = await createSchool(testClient, organizationId, "some school 2", "ASHORT1", { authorization: JoeAuthToken });
+
+                    expect(school).not.to.be.null
+                    const dbSchool = await Organization.findOneOrFail(organizationId);
+                    const orgSchools = await dbSchool.schools || []
+                    expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+                    expect(school.school_id).to.not.eq(otherSchool.school_id)
+                    expect(school.shortcode).to.eq(otherSchool.shortcode)
+
+                });
+            });
+
         });
     })
 
@@ -380,7 +440,7 @@ describe("organization", () => {
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
-                schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
                 await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
             });
 
@@ -413,7 +473,7 @@ describe("organization", () => {
                 organizationId = organization.organization_id
                 role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
-                schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
             });
 
             it("should create the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
@@ -498,8 +558,8 @@ describe("organization", () => {
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", { authorization: JoeAuthToken })).school_id;
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: JoeAuthToken })).school_id;
                 await addUserToSchool(testClient, userId, oldSchoolId, { authorization: JoeAuthToken });
             });
             it("should find the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
@@ -571,8 +631,8 @@ describe("organization", () => {
                 organizationId = organization.organization_id
                 role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", { authorization: JoeAuthToken })).school_id;
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: JoeAuthToken })).school_id;
                 await addUserToSchool(testClient, userId, oldSchoolId, { authorization: JoeAuthToken});
             });
 
@@ -797,8 +857,8 @@ describe("organization", () => {
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", { authorization: JoeAuthToken })).school_id;
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: JoeAuthToken })).school_id;
                 await addUserToSchool(testClient, userId, oldSchoolId, { authorization: JoeAuthToken });
             });
 
@@ -956,8 +1016,8 @@ describe("organization", () => {
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: JoeAuthToken });
                 await grantPermission(testClient, editorRoleId, PermissionName.edit_users_40330, { authorization: JoeAuthToken });
                 await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, editorRoleId, { authorization: JoeAuthToken });
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", { authorization: JoeAuthToken })).school_id;
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: JoeAuthToken })).school_id;
                 await addUserToSchool(testClient, userId, oldSchoolId, { authorization: JoeAuthToken });
                 const idLess = {
                     email: otherUser.email,
@@ -1023,7 +1083,7 @@ describe("organization", () => {
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-            const school = await createSchool(testClient, organizationId, "school", { authorization: JoeAuthToken });
+            const school = await createSchool(testClient, organizationId, "school", undefined, { authorization: JoeAuthToken });
         });
 
         context("when not authenticated", () => {

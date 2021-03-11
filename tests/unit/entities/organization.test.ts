@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { validateEmail, validatePhone} from "../../../src/entities/organization"
+import { validateEmail, validatePhone, validateShortCode} from "../../../src/entities/organization"
 
 describe("validateEmail", () => {
     it("is a valid email", async () => {
@@ -83,4 +83,27 @@ describe("validateEmail", () => {
     });
   });
 
+ describe("validateShortCode", () => {
+    it("is a valid shortcode", async () => {
+        [
+            "1929990995",   
+            "ABCDEF345U",    
+            "P5X"
+             
+        ].forEach(function(code){
+            expect(validateShortCode(code))
+        })
+    });
+    it("is an invalid shortcode", async () => {
+        [
+            "1929 90995",   
+            "abcdeF345U",    
+            "The thing about",
+            "P5/DS56YU="      
+        ].forEach(function(code){
+            expect(!validateShortCode(code))
+        })
+
+    });
+});
 

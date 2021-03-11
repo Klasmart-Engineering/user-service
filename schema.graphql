@@ -286,7 +286,7 @@ type Organization {
         school_role_ids: [ID!]
     ): MembershipUpdate
     createRole(role_name: String!, role_description: String!): Role
-    createSchool(school_name: String): School
+    createSchool(school_name: String, shortcode: String): School
     createClass(class_name: String): Class
     createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
     createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
@@ -382,6 +382,7 @@ type School {
 
     #properties
     school_name: String
+    shortcode: String
     status: Status
 
     #connections
@@ -392,7 +393,7 @@ type School {
     programs: [Program!]
 
     #mutations
-    set(school_name: String): School
+    set(school_name: String, shortcode: String): School
     addUser(user_id: ID!): SchoolMembership
     editPrograms(program_ids: [ID!]): [Program]
     delete(_: Int): Boolean

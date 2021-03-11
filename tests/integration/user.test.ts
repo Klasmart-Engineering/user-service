@@ -127,7 +127,7 @@ describe("user", () => {
         context("when one", () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
-                const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+                const school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
                 await addUserToSchool(testClient, user.user_id, school.school_id, { authorization: JoeAuthToken })
             });
 
@@ -145,7 +145,7 @@ describe("user", () => {
         beforeEach(async () => {
             user = await createUserJoe(testClient);
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
-            const school = await createSchool(testClient, organization.organization_id, "my school", { authorization: JoeAuthToken });
+            const school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
             schoolId = school.school_id;
             await addUserToSchool(testClient, user.user_id, schoolId, { authorization: JoeAuthToken });
         });
@@ -291,8 +291,8 @@ describe("user", () => {
             const organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, tokenOfOrg2Owner)).organization_id;
             await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization1Id, tokenOfOrg1Owner);
             await addOrganizationToUserAndValidate(testClient, idOfUserToBeQueried, organization2Id, tokenOfOrg2Owner);
-            school1Id = (await createSchool(testClient, organization1Id, "School 1", { authorization: tokenOfOrg1Owner })).school_id;
-            school2Id = (await createSchool(testClient, organization2Id, "School 2", { authorization: tokenOfOrg2Owner })).school_id;
+            school1Id = (await createSchool(testClient, organization1Id, "School 1", undefined, { authorization: tokenOfOrg1Owner })).school_id;
+            school2Id = (await createSchool(testClient, organization2Id, "School 2", undefined, { authorization: tokenOfOrg2Owner })).school_id;
             await addUserToSchool(testClient, idOfUserToBeQueried, school1Id, { authorization: tokenOfOrg1Owner });
             await addUserToSchool(testClient, idOfUserToBeQueried, school2Id, { authorization: tokenOfOrg2Owner });
             await addUserToSchool(testClient, idOfOrg1Owner, school1Id, { authorization: tokenOfOrg1Owner });
@@ -381,7 +381,7 @@ describe("user", () => {
             organizationId = organization.organization_id
             role = await createRole(testClient, organization.organization_id, "student");
             roleId = role.role_id
-            schoolId = (await createSchool(testClient, organizationId, "school 1", { authorization: JoeAuthToken })).school_id;
+            schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
         });
         it("should merge one user into another deleting the source user", async () => {
 

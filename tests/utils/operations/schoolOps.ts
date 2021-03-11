@@ -56,11 +56,13 @@ const GET_MEMBERSHIP = `
 const UPDATE_SCHOOL = `
     mutation myMutation(
             $school_id: ID!
-            $school_name: String) {
+            $school_name: String
+            $shortcode: String) {
         school(school_id: $school_id) {
-            set(school_name: $school_name) {
+            set(school_name: $school_name, shortcode: $shortcode) {
                 school_id
                 school_name
+                shortcode
             }
         }
     }
@@ -166,12 +168,16 @@ export async function getSchoolMembershipViaSchool(testClient: ApolloServerTestC
     return gqlMembership;
 }
 
-export async function updateSchool(testClient: ApolloServerTestClient, schoolId: string, schoolName: string, headers?: Headers) {
+export async function updateSchool(testClient: ApolloServerTestClient, schoolId: string, schoolName: string, shortCode?: string, headers?: Headers) {
     const { mutate } = testClient;
 
+    const variables = { school_id: schoolId, school_name: schoolName } as any
+    if(shortCode){
+        variables.shortcode = shortCode
+    }
     const operation = () => mutate({
         mutation: UPDATE_SCHOOL,
-        variables: { school_id: schoolId, school_name: schoolName },
+        variables: variables,
         headers: headers,
     });
 

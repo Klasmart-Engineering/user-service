@@ -79,7 +79,7 @@ describe("userPermissions", () => {
             const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             organizationId = organization.organization_id;
             await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: JoeAuthToken });
-            const school = await createSchool(testClient, organizationId, "my school", { authorization: JoeAuthToken });
+            const school = await createSchool(testClient, organizationId, "my school", undefined, { authorization: JoeAuthToken });
             schoolId = school.school_id;
             await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
             const testOrgRole = await createRole(testClient, organizationId, "test_role");
