@@ -880,12 +880,16 @@ export class Organization
             checkUpdatePermission =
                 checkUpdatePermission || !!ageRangeDetail?.id
             checkCreatePermission = checkCreatePermission || !ageRangeDetail?.id
-            checkAdminPermission =
-                checkAdminPermission || !!ageRangeDetail?.system
 
             const ageRange =
                 (await AgeRange.findOne({ id: ageRangeDetail?.id })) ||
                 new AgeRange()
+
+            checkAdminPermission =
+                checkAdminPermission ||
+                ageRange.system ||
+                !!ageRangeDetail?.system
+
             ageRange.name = ageRangeDetail?.name || ageRange.name
 
             if (ageRangeDetail?.low_value !== undefined) {
@@ -952,10 +956,13 @@ export class Organization
         for (const gradeDetail of grades) {
             checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
             checkCreatePermission = checkCreatePermission || !gradeDetail?.id
-            checkAdminPermission = checkAdminPermission || !!gradeDetail?.system
 
             const grade =
                 (await Grade.findOne({ id: gradeDetail?.id })) || new Grade()
+
+            checkAdminPermission =
+                checkAdminPermission || grade.system || !!gradeDetail?.system
+
             grade.name = gradeDetail?.name || grade.name
 
             if (gradeDetail?.progress_from_grade_id) {
@@ -1028,12 +1035,16 @@ export class Organization
                 checkUpdatePermission || !!subcategoryDetail?.id
             checkCreatePermission =
                 checkCreatePermission || !subcategoryDetail?.id
-            checkAdminPermission =
-                checkAdminPermission || !!subcategoryDetail?.system
 
             const subcategory =
                 (await Subcategory.findOne({ id: subcategoryDetail?.id })) ||
                 new Subcategory()
+
+            checkAdminPermission =
+                checkAdminPermission ||
+                subcategory.system ||
+                !!subcategoryDetail?.system
+
             subcategory.name = subcategoryDetail?.name || subcategory.name
 
             subcategory.organization = Promise.resolve(this)
@@ -1091,12 +1102,16 @@ export class Organization
             checkUpdatePermission =
                 checkUpdatePermission || !!categoryDetail?.id
             checkCreatePermission = checkCreatePermission || !categoryDetail?.id
-            checkAdminPermission =
-                checkAdminPermission || !!categoryDetail?.system
 
             const category =
                 (await Category.findOne({ id: categoryDetail?.id })) ||
                 new Category()
+
+            checkAdminPermission =
+                checkAdminPermission ||
+                category.system ||
+                !!categoryDetail?.system
+
             category.name = categoryDetail?.name || category.name
 
             category.organization = Promise.resolve(this)
@@ -1160,12 +1175,16 @@ export class Organization
         for (const subjectDetail of subjects) {
             checkUpdatePermission = checkUpdatePermission || !!subjectDetail?.id
             checkCreatePermission = checkCreatePermission || !subjectDetail?.id
-            checkAdminPermission =
-                checkAdminPermission || !!subjectDetail?.system
 
             const subject =
                 (await Subject.findOne({ id: subjectDetail?.id })) ||
                 new Subject()
+
+            checkAdminPermission =
+                checkAdminPermission ||
+                subject.system ||
+                !!subjectDetail?.system
+
             subject.name = subjectDetail?.name || subject.name
 
             subject.organization = Promise.resolve(this)
@@ -1249,12 +1268,16 @@ export class Organization
         for (const programDetail of programs) {
             checkUpdatePermission = checkUpdatePermission || !!programDetail?.id
             checkCreatePermission = checkCreatePermission || !programDetail?.id
-            checkAdminPermission =
-                checkAdminPermission || !!programDetail?.system
 
             const program =
                 (await Program.findOne({ id: programDetail?.id })) ||
                 new Program()
+
+            checkAdminPermission =
+                checkAdminPermission ||
+                program.system ||
+                !!programDetail?.system
+
             program.name = programDetail?.name || program.name
 
             program.organization = Promise.resolve(this)

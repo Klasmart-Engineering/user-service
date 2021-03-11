@@ -74,15 +74,22 @@ export class GradesInitializer {
 
     public async run() {
         for (const systemGrade of this.SYSTEM_GRADES) {
-            const grade =
-                (await Grade.findOne({ id: systemGrade.id })) || new Grade()
+            const gradeAttributes = {
+                id: systemGrade.id,
+                name: systemGrade.name,
+                system: true,
+                organization_id: null,
+            }
 
-            grade.id = systemGrade.id
-            grade.name = systemGrade.name
-            grade.system = systemGrade.system
-            grade.organization = undefined
-
-            await grade.save()
+            await Grade.createQueryBuilder()
+                .insert()
+                .into(Grade)
+                .values(gradeAttributes)
+                .orUpdate({
+                    conflict_target: ['id'],
+                    overwrite: ['name', 'system', 'organization_id'],
+                })
+                .execute()
         }
 
         for (const systemGrade of this.SYSTEM_GRADES) {

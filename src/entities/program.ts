@@ -4,6 +4,7 @@ import {
     Entity,
     getManager,
     In,
+    JoinColumn,
     JoinTable,
     ManyToMany,
     ManyToOne,
@@ -45,6 +46,7 @@ export class Program extends BaseEntity {
     public subjects?: Promise<Subject[]>
 
     @ManyToOne(() => Organization, (organization) => organization.programs)
+    @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 
     @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })

@@ -73,9 +73,22 @@ export class ProgramsInitializer {
 
     public async run() {
         for (const systemProgram of this.SYSTEM_PROGRAMS) {
-            const program =
-                (await Program.findOne({ id: systemProgram.id })) ||
-                new Program()
+            const programAttributes = {
+                id: systemProgram.id,
+                name: systemProgram.name,
+                system: true,
+                organization_id: null,
+            }
+
+            await Program.createQueryBuilder()
+                .insert()
+                .into(Program)
+                .values(programAttributes)
+                .orUpdate({
+                    conflict_target: ['id'],
+                    overwrite: ['name', 'system', 'organization_id'],
+                })
+                .execute()
 
             const subjects =
                 (await Subject.find({
@@ -90,13 +103,12 @@ export class ProgramsInitializer {
                     where: { id: In(systemProgram.grades) },
                 })) || []
 
-            program.id = systemProgram.id
-            program.name = systemProgram.name
+            const program = await Program.findOneOrFail({
+                id: systemProgram.id,
+            })
             program.subjects = Promise.resolve(subjects)
             program.age_ranges = Promise.resolve(ageRanges)
             program.grades = Promise.resolve(grades)
-            program.system = true
-            program.organization = undefined
 
             await program.save()
         }

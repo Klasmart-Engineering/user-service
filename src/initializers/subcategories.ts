@@ -44,17 +44,22 @@ export class SubcategoriesInitializer {
 
     public async run() {
         for (const systemSubcategory of this.SYSTEM_SUBCATEGORIES) {
-            const subcategory =
-                (await Subcategory.findOne({
-                    id: systemSubcategory.id,
-                })) || new Subcategory()
+            const subcategoryAttributes = {
+                id: systemSubcategory.id,
+                name: systemSubcategory.name,
+                system: true,
+                organization_id: null,
+            }
 
-            subcategory.id = systemSubcategory.id
-            subcategory.name = systemSubcategory.name
-            subcategory.system = true
-            subcategory.organization = undefined
-
-            await subcategory.save()
+            await Subcategory.createQueryBuilder()
+                .insert()
+                .into(Subcategory)
+                .values(subcategoryAttributes)
+                .orUpdate({
+                    conflict_target: ['id'],
+                    overwrite: ['name', 'system', 'organization_id'],
+                })
+                .execute()
         }
     }
 }

@@ -137,21 +137,32 @@ export class CategoriesInitializer {
 
     public async run() {
         for (const systemCategory of this.SYSTEM_CATEGORIES) {
-            const category =
-                (await Category.findOne({ id: systemCategory.id })) ||
-                new Category()
+            const categoryAttributes = {
+                id: systemCategory.id,
+                name: systemCategory.name,
+                system: true,
+                organization_id: null,
+            }
+
+            await Category.createQueryBuilder()
+                .insert()
+                .into(Category)
+                .values(categoryAttributes)
+                .orUpdate({
+                    conflict_target: ['id'],
+                    overwrite: ['name', 'system', 'organization_id'],
+                })
+                .execute()
 
             const subcategories =
                 (await Subcategory.find({
                     where: { id: In(systemCategory.subcategories) },
                 })) || []
 
-            category.id = systemCategory.id
-            category.name = systemCategory.name
+            const category = await Category.findOneOrFail({
+                id: systemCategory.id,
+            })
             category.subcategories = Promise.resolve(subcategories)
-            category.system = true
-            category.organization = undefined
-
             await category.save()
         }
     }

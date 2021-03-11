@@ -1,4 +1,3 @@
-import { getManager } from 'typeorm'
 import { AgeRange } from '../entities/ageRange'
 import { AgeRangeUnit } from '../entities/ageRangeUnit'
 
@@ -55,25 +54,35 @@ export class AgeRangesInitializer {
     ]
 
     public async run() {
-        // Delete all records to update uuids. This will go away after first run
-        const oldSystemRanges = await AgeRange.find({ where: { system: true } })
-        await getManager().remove(oldSystemRanges)
-
         for (const systemAgeRange of this.SYSTEM_AGE_RANGES) {
-            const ageRange =
-                (await AgeRange.findOne({ id: systemAgeRange.id })) ||
-                new AgeRange()
+            const ageRangeAttributes = {
+                id: systemAgeRange.id,
+                name: systemAgeRange.name,
+                low_value: systemAgeRange.low_value,
+                low_value_unit: systemAgeRange.low_value_unit,
+                high_value: systemAgeRange.high_value,
+                high_value_unit: systemAgeRange.high_value_unit,
+                system: true,
+                organization_id: null,
+            }
 
-            ageRange.id = systemAgeRange.id
-            ageRange.name = systemAgeRange.name
-            ageRange.low_value = systemAgeRange.low_value
-            ageRange.low_value_unit = systemAgeRange.low_value_unit
-            ageRange.high_value = systemAgeRange.high_value
-            ageRange.high_value_unit = systemAgeRange.high_value_unit
-            ageRange.system = true
-            ageRange.organization = undefined
-
-            await ageRange.save()
+            await AgeRange.createQueryBuilder()
+                .insert()
+                .into(AgeRange)
+                .values(ageRangeAttributes)
+                .orUpdate({
+                    conflict_target: ['id'],
+                    overwrite: [
+                        'name',
+                        'low_value',
+                        'low_value_unit',
+                        'high_value',
+                        'high_value_unit',
+                        'system',
+                        'organization_id',
+                    ],
+                })
+                .execute()
         }
     }
 }

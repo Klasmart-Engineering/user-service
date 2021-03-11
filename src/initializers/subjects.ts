@@ -47,20 +47,32 @@ export class SubjectsInitializer {
 
     public async run() {
         for (const systemSubject of this.SYSTEM_SUBJECTS) {
-            const subject =
-                (await Subject.findOne({ id: systemSubject.id })) ||
-                new Subject()
+            const subjectAttributes = {
+                id: systemSubject.id,
+                name: systemSubject.name,
+                system: true,
+                organization_id: null,
+            }
+
+            await Subject.createQueryBuilder()
+                .insert()
+                .into(Subject)
+                .values(subjectAttributes)
+                .orUpdate({
+                    conflict_target: ['id'],
+                    overwrite: ['name', 'system', 'organization_id'],
+                })
+                .execute()
 
             const categories =
                 (await Category.find({
                     where: { id: In(systemSubject.categories) },
                 })) || []
 
-            subject.id = systemSubject.id
-            subject.name = systemSubject.name
+            const subject = await Subject.findOneOrFail({
+                id: systemSubject.id,
+            })
             subject.categories = Promise.resolve(categories)
-            subject.system = true
-            subject.organization = undefined
 
             await subject.save()
         }
