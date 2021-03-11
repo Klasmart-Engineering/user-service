@@ -1,7 +1,9 @@
-FROM node:14
+FROM node:lts-alpine
 WORKDIR /usr/src/app
 COPY ./package*.json ./
-RUN npm i
+RUN npm i --production
+RUN npm audit fix --production
+RUN npm i ts-node
 COPY ./src ./src
 COPY ./tsconfig.json .
 COPY ./schema.graphql .
