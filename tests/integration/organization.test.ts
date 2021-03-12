@@ -3110,330 +3110,27 @@ describe("organization", () => {
         });
     });
 
-     describe("createOrUpdatePrograms", () => {
-        let user: User;
-        let organization : Organization;
-        let progressFromProgram : Program;
-        let progressToProgram : Program;
-        let program: Program;
-
-        let progressFromProgramDetails: any;
-        let progressToProgramDetails: any;
-
-        const programInfo = async (program: Program) => {
-            return {
-                name: program.name,
-                system: program.system,
-            }
-        }
-
-
-        beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
-            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-            program = createProgram(organization)
-            await program.save()
-            const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-        });
-
-        context("when not authenticated", () => {
-            context("and it tries to create new programs", () => {
-                it("fails to create programs in the organization", async () => {
-                    const programDetails = await programInfo(program)
-                    const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: undefined });
-
-                    expect(fn()).to.be.rejected;
-                    const dbPrograms = await Program.find({
-                        where: {
-                            organization: { organization_id: organization.organization_id },
-                        }
-                    });
-                    const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                    expect(dProgramsDetails).to.deep.eq([programDetails])
-                });
-            });
-
-            context("and it tries to upate existing non system programs", () => {
-                let programDetails: any;
-                let newProgram: any;
-                beforeEach(async () => {
-                    programDetails = await programInfo(program)
-
-                    newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
-
-                    const dbPrograms = await Program.find({
-                        where: {
-                            organization: { organization_id: organization.organization_id },
-                        }
-                    });
-                    const dProgramsDetails = await Promise.all(dbPrograms)//.map(programInfo))
-
-                });
-
-
-                it("fails to update programs in the organization", async () => {
-                    const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: undefined });
-
-                    expect(fn()).to.be.rejected;
-                    const dbPrograms = await Program.find({
-                        where: {
-                            organization: { organization_id: organization.organization_id },
-                        }
-                    });
-                    const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                    expect(dProgramsDetails).to.deep.eq( [programDetails])
-                });
-            });
-        });
-
-        context("when authenticated", () => {
-            context("and the user does not have create programs permissions", () => {
-                beforeEach(async () => {
-                    const role = await createRole(testClient, organization.organization_id);
-                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
-                });
-
-                context("and it tries to create new programs", () => {
-                    it("fails to create programs in the organization", async () => {
-                        const programDetails = await programInfo(program)
-
-                        const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
-
-                        expect(fn()).to.be.rejected;
-                        const dbPrograms = await Program.find({
-                            where: {
-                                organization: { organization_id: organization.organization_id },
-                            }
-                        });
-                        const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                        expect(dProgramsDetails).to.deep.eq([programDetails])
-                    });
-                });
-            });
-
-            context("and the user does not have edit program permissions", () => {
-                beforeEach(async () => {
-                    const role = await createRole(testClient, organization.organization_id);
-                    await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
-                });
-
-                context("and it tries to upate existing non system programs", () => {
-                    let programDetails: any;
-                    let newProgram: any;
-
-                    beforeEach(async () => {
-                        programDetails = await programInfo(program)
-                        //const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
-
-                        newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
-                    });
-
-
-                    it("fails to update programs in the organization", async () => {
-                        const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: BillyAuthToken });
-
-                        expect(fn()).to.be.rejected;
-                        const dbPrograms = await Program.find({
-                            where: {
-                                organization: { organization_id: organization.organization_id },
-                            }
-                        });
-                        const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                        expect(dProgramsDetails).to.deep.eq([programDetails])
-                    });
-                });
-            });
-
-            context("and is a non admin user", () => {
-                let programDetails: any;
-
-                context("and the user has all the permissions", () => {
-                    beforeEach(async () => {
-                        const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_program_20221, { authorization: JoeAuthToken });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: JoeAuthToken });
-                        await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
-                        programDetails = await programInfo(program)
-                    });
-
-                    context("and it tries to create new programs", () => {
-                        it("creates all the programs in the organization", async () => {
-                            const gqlPrograms =  await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
-
-                            const dbPrograms = await Program.find({
-                                where: {
-                                    organization: { organization_id: organization.organization_id },
-                                }
-                            });
-
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq([programDetails,programDetails])
-                        });
-                    });
-
-                    context("and it tries to upate existing non system programs", () => {
-                        let newProgram: any;
-                        let newProgramDetails: any;
-
-                        beforeEach(async () => {
-
-                            newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
-                            newProgramDetails = [programDetails,{ name: 'New Name', system: false }]
-
-                        });
-
-
-
-
-
-                        it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: BillyAuthToken });
-
-                            const dbPrograms = await Program.find({
-                                where: {
-                                    organization: { organization_id: organization.organization_id },
-                                }
-                            });
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq(newProgramDetails)
-                        });
-                    });
-
-                    context("and it tries to upate existing system programs", () => {
-                        let newProgram: any;
-
-                        beforeEach(async () => {
-                            programDetails.system = true
-
-                            newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
-                        });
-
-
-                        it("fails to update programs in the organization", async () => {
-                            const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: BillyAuthToken });
-
-                            expect(fn()).to.be.rejected;
-                            const dbPrograms = await Program.find({
-                                where: {
-                                    organization: { organization_id: organization.organization_id },
-                                }
-                            });
-                            programDetails.system = false
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq([programDetails])
-                        });
-                    });
-                });
-            });
-
-            context("and is an admin user", () => {
-                let programDetails: any;
-
-                beforeEach(async () => {
-                    programDetails = await programInfo(program)
-                });
-
-                context("and the user has all the permissions", () => {
-                    context("and it tries to create programs", () => {
-                        it("creates all the programs in the organization", async () => {
-                            const gqlPrograms =  await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
-                            const dbPrograms = await Program.find({
-                                where: {
-                                    organization: { organization_id: organization.organization_id },
-                                }
-                            });
-
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-
-                            expect(dProgramsDetails).to.deep.eq([programDetails,programDetails])
-                        });
-                    });
-
-                    context("and it tries to upate existing non system programs", () => {
-                        let newProgram: any;
-                        let newProgramDetails: any;
-                        beforeEach(async () => {
-
-                            newProgram = [
-                                programDetails,
-                                { id: program.id, name: 'New Name', system: programDetails.system }
-                            ]
-
-                            newProgramDetails = [
-                                programDetails,
-                                { name: 'New Name' ,system: programDetails.system}
-                            ]
-                        });
-
-
-                        it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: JoeAuthToken });
-
-                            const dbPrograms = await Program.find({
-                                where: {
-                                    organization: { organization_id: organization.organization_id },
-                                }
-                            });
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq(newProgramDetails)
-                        });
-
-                    });
-
-                    context("and it tries to upate existing system programs", () => {
-                        let newProgram: any;
-                        let newProgramDetails: any;
-
-                        beforeEach(async () => {
-                            programDetails.system = true
-
-                            newProgram = [programDetails,{ id: program.id, name: 'New Name', system:programDetails.system}]
-                            newProgramDetails = [
-                                programDetails,
-                                { name: 'New Name', system:programDetails.system}
-                            ]
-                        });
-
-
-
-                        it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: JoeAuthToken });
-
-                            const dbPrograms = await Program.find({
-                                where: {
-                                    organization: { organization_id: organization.organization_id },
-                                }
-                            });
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq(newProgramDetails)
-                        });
-
-                    });
-
-                });
-
-            });
-
-        });
-    });
-
-
-
     describe("createOrUpdatePrograms", () => {
         let user: User;
         let organization : Organization;
-        let progressFromProgram : Program;
-        let progressToProgram : Program;
         let program: Program;
+        let ageRange: AgeRange;
+        let grade: Grade;
+        let subject: Subject;
+        let newProgram: any;
 
-        let progressFromProgramDetails: any;
-        let progressToProgramDetails: any;
+        let programDetails: any;
 
-        const programInfo = async (program: Program) => {
+        const entityInfo = (entity: any) => {
+            return entity.id
+        }
+
+        const programInfo = async (program: any) => {
             return {
                 name: program.name,
+                age_ranges: ((await program.age_ranges) || []).map(entityInfo),
+                grades: ((await program.grades) || []).map(entityInfo),
+                subjects: ((await program.subjects) || []).map(entityInfo),
                 system: program.system,
             }
         }
@@ -3443,8 +3140,14 @@ describe("organization", () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-            program = createProgram(organization)
-            await program.save()
+            ageRange = createAgeRange(organization)
+            await ageRange.save()
+            grade = createGrade(organization)
+            await grade.save()
+            subject = createSubject(organization)
+            await subject.save()
+            program = createProgram(organization, [ageRange], [grade], [subject])
+            programDetails = await programInfo(program)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
         });
@@ -3452,7 +3155,6 @@ describe("organization", () => {
         context("when not authenticated", () => {
             context("and it tries to create new programs", () => {
                 it("fails to create programs in the organization", async () => {
-                    const programDetails = await programInfo(program)
                     const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: undefined });
 
                     expect(fn()).to.be.rejected;
@@ -3461,31 +3163,23 @@ describe("organization", () => {
                             organization: { organization_id: organization.organization_id },
                         }
                     });
-                    const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                    expect(dProgramsDetails).to.deep.eq([programDetails])
+                    expect(dbPrograms).to.be.empty;
                 });
             });
 
             context("and it tries to upate existing non system programs", () => {
-                let programDetails: any;
-                let newProgram: any;
                 beforeEach(async () => {
-                    programDetails = await programInfo(program)
+                    const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
 
-                    newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
-
-                    const dbPrograms = await Program.find({
-                        where: {
-                            organization: { organization_id: organization.organization_id },
-                        }
-                    });
-                    const dProgramsDetails = await Promise.all(dbPrograms)//.map(programInfo))
-
+                    newProgram = {
+                        ...programDetails,
+                        ...{ id: gqlPrograms[0].id, name: 'New Name' }
+                    }
                 });
 
 
                 it("fails to update programs in the organization", async () => {
-                    const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: undefined });
+                    const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programInfo(newProgram)], { authorization: undefined });
 
                     expect(fn()).to.be.rejected;
                     const dbPrograms = await Program.find({
@@ -3493,14 +3187,16 @@ describe("organization", () => {
                             organization: { organization_id: organization.organization_id },
                         }
                     });
-                    const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                    expect(dProgramsDetails).to.deep.eq( [programDetails])
+
+                    expect(dbPrograms).not.to.be.empty
+                    const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                    expect(dbProgramDetails).to.deep.eq([programDetails])
                 });
             });
         });
 
         context("when authenticated", () => {
-            context("and the user does not have create programs permissions", () => {
+            context("and the user does not have create program permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
@@ -3508,8 +3204,6 @@ describe("organization", () => {
 
                 context("and it tries to create new programs", () => {
                     it("fails to create programs in the organization", async () => {
-                        const programDetails = await programInfo(program)
-
                         const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
 
                         expect(fn()).to.be.rejected;
@@ -3518,8 +3212,7 @@ describe("organization", () => {
                                 organization: { organization_id: organization.organization_id },
                             }
                         });
-                        const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                        expect(dProgramsDetails).to.deep.eq([programDetails])
+                        expect(dbPrograms).to.be.empty;
                     });
                 });
             });
@@ -3531,14 +3224,13 @@ describe("organization", () => {
                 });
 
                 context("and it tries to upate existing non system programs", () => {
-                    let programDetails: any;
-                    let newProgram: any;
-
                     beforeEach(async () => {
-                        programDetails = await programInfo(program)
-                        //const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
+                        const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
 
-                        newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
+                        newProgram = {
+                            ...programDetails,
+                            ...{ id: gqlPrograms[0].id, name: 'New Name' }
+                        }
                     });
 
 
@@ -3551,27 +3243,26 @@ describe("organization", () => {
                                 organization: { organization_id: organization.organization_id },
                             }
                         });
-                        const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                        expect(dProgramsDetails).to.deep.eq([programDetails])
+
+                        expect(dbPrograms).not.to.be.empty
+                        const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                        expect(dbProgramDetails).to.deep.eq([programDetails])
                     });
                 });
             });
 
             context("and is a non admin user", () => {
-                let programDetails: any;
-
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
                         await grantPermission(testClient, role.role_id, PermissionName.create_program_20221, { authorization: JoeAuthToken });
                         await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: JoeAuthToken });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
-                        programDetails = await programInfo(program)
                     });
 
                     context("and it tries to create new programs", () => {
                         it("creates all the programs in the organization", async () => {
-                            const gqlPrograms =  await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: BillyAuthToken });
 
                             const dbPrograms = await Program.find({
                                 where: {
@@ -3579,46 +3270,65 @@ describe("organization", () => {
                                 }
                             });
 
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq([programDetails,programDetails])
+                            expect(dbPrograms).not.to.be.empty
+                            const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            const gqlCateryDetails = await Promise.all(gqlPrograms.map(programInfo))
+                            expect(dbProgramDetails).to.deep.eq(gqlCateryDetails)
                         });
                     });
 
                     context("and it tries to upate existing non system programs", () => {
-                        let newProgram: any;
-                        let newProgramDetails: any;
-
                         beforeEach(async () => {
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
 
-                            newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
-                            newProgramDetails = [programDetails,{ name: 'New Name', system: false }]
-
+                            newProgram = {
+                                ...programDetails,
+                                ...{ id: gqlPrograms[0].id, name: 'New Name' }
+                            }
                         });
 
 
-
-
-
                         it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: BillyAuthToken });
+                            let gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: BillyAuthToken });
 
-                            const dbPrograms = await Program.find({
+                            let dbPrograms = await Program.find({
                                 where: {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq(newProgramDetails)
+
+                            expect(dbPrograms).not.to.be.empty
+                            let dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            let newProgramDetails = { ...programDetails, name: newProgram.name }
+                            expect(dbProgramDetails).to.deep.eq([newProgramDetails])
+
+                            newProgram.age_ranges = []
+                            newProgram.grades= []
+                            newProgram.subjects = []
+                            gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: BillyAuthToken });
+
+                            dbPrograms = await Program.find({
+                                where: {
+                                    organization: { organization_id: organization.organization_id },
+                                }
+                            });
+
+                            expect(dbPrograms).not.to.be.empty
+                            dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            const gqlCateryDetails = await Promise.all(gqlPrograms.map(programInfo))
+                            expect(dbProgramDetails).to.deep.eq(gqlCateryDetails)
                         });
                     });
 
                     context("and it tries to upate existing system programs", () => {
-                        let newProgram: any;
-
                         beforeEach(async () => {
-                            programDetails.system = true
+                            program.system = true
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
 
-                            newProgram = [programDetails,{ id: program.id, name: 'New Name' }]
+                            newProgram = {
+                                ...programDetails,
+                                ...{ id: gqlPrograms[0].id, name: 'New Name' }
+                            }
                         });
 
 
@@ -3631,105 +3341,92 @@ describe("organization", () => {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
-                            programDetails.system = false
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq([programDetails])
+
+                            expect(dbPrograms).not.to.be.empty
+                            const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            expect(dbProgramDetails).to.deep.eq([programDetails])
                         });
                     });
                 });
             });
 
             context("and is an admin user", () => {
-                let programDetails: any;
-
-                beforeEach(async () => {
-                    programDetails = await programInfo(program)
-                });
-
                 context("and the user has all the permissions", () => {
-                    context("and it tries to create programs", () => {
+                    context("and it tries to create new programs", () => {
                         it("creates all the programs in the organization", async () => {
-                            const gqlPrograms =  await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
+
                             const dbPrograms = await Program.find({
                                 where: {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
 
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-
-                            expect(dProgramsDetails).to.deep.eq([programDetails,programDetails])
+                            expect(dbPrograms).not.to.be.empty
+                            const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            const gqlCateryDetails = await Promise.all(gqlPrograms.map(programInfo))
+                            expect(dbProgramDetails).to.deep.eq(gqlCateryDetails)
                         });
                     });
 
                     context("and it tries to upate existing non system programs", () => {
-                        let newProgram: any;
-                        let newProgramDetails: any;
                         beforeEach(async () => {
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
 
-                            newProgram = [
-                                programDetails,
-                                { id: program.id, name: 'New Name', system: programDetails.system }
-                            ]
-
-                            newProgramDetails = [
-                                programDetails,
-                                { name: 'New Name' ,system: programDetails.system}
-                            ]
+                            newProgram = {
+                                ...programDetails,
+                                ...{ id: gqlPrograms[0].id, name: 'New Name' }
+                            }
                         });
 
 
                         it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: JoeAuthToken });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: JoeAuthToken });
 
                             const dbPrograms = await Program.find({
                                 where: {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq(newProgramDetails)
-                        });
 
+                            expect(dbPrograms).not.to.be.empty
+                            const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            const newProgramDetails = { ...programDetails, name: newProgram.name }
+                            expect(dbProgramDetails).to.deep.eq([newProgramDetails])
+                        });
                     });
 
                     context("and it tries to upate existing system programs", () => {
-                        let newProgram: any;
-                        let newProgramDetails: any;
-
                         beforeEach(async () => {
-                            programDetails.system = true
+                            program.system = true
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: JoeAuthToken });
 
-                            newProgram = [programDetails,{ id: program.id, name: 'New Name', system:programDetails.system}]
-                            newProgramDetails = [
-                                programDetails,
-                                { name: 'New Name', system:programDetails.system}
-                            ]
+                            newProgram = {
+                                ...programDetails,
+                                ...{ id: gqlPrograms[0].id, name: 'New Name' }
+                            }
                         });
 
 
-
                         it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, newProgram, { authorization: JoeAuthToken });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: JoeAuthToken });
 
                             const dbPrograms = await Program.find({
                                 where: {
                                     organization: { organization_id: organization.organization_id },
                                 }
                             });
-                            const dProgramsDetails = await Promise.all(dbPrograms.map(programInfo))
-                            expect(dProgramsDetails).to.deep.eq(newProgramDetails)
+
+                            expect(dbPrograms).not.to.be.empty
+                            const dbProgramDetails = await Promise.all(dbPrograms.map(programInfo))
+                            const newProgramDetails = { ...programDetails, name: newProgram.name }
+                            expect(dbProgramDetails).to.deep.eq([newProgramDetails])
                         });
-
                     });
-
                 });
-
             });
-
         });
     });
-
 
     describe("programs", () => {
         let user: User;

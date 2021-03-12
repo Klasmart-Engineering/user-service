@@ -339,6 +339,15 @@ const CREATE_OR_UPDATE_PROGRAMS = `
             createOrUpdatePrograms(programs: $programs) {
                  id
                  name
+                 age_ranges {
+                    id
+                 }
+                 grades {
+                    id
+                 }
+                 subjects {
+                    id
+                 }
                  system
             }
         }
@@ -405,7 +414,7 @@ export async function createSchool(testClient: ApolloServerTestClient, organizat
     schoolName = schoolName ?? "My School";
 
     const variables = { organization_id: organizationId, school_name:schoolName} as any
-    
+
     if(shortcode){
         variables.shortcode = shortcode
     }
@@ -416,7 +425,7 @@ export async function createSchool(testClient: ApolloServerTestClient, organizat
         headers: headers,
     });
 
-    
+
 
     const res = await gqlTry(operation);
     const gqlSchool = res.data?.organization.createSchool as School;

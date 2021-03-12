@@ -512,6 +512,17 @@ input SubjectDetail {
     system: Boolean
 }
 
+input ProgramDetail {
+    id: ID
+    name: String
+    system: Boolean
+    age_ranges: [ID!]
+    grades: [ID!]
+    subjects: [ID!]
+    status: Status
+}
+
+
 type AgeRange {
     id: ID!
     name: String!
@@ -558,13 +569,6 @@ type Subcategory {
 
     # Mutations
     delete(_: Int): Boolean
-}
-
-input ProgramDetail {
-    id: ID
-    name: String
-    system: Boolean
-    status: Status
 }
 
 type Program {

@@ -1265,6 +1265,36 @@ export class Organization
         })
     }
 
+    private async getAgeRanges(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await AgeRange.find({
+            where: { id: In(ids) },
+        })
+    }
+
+    private async getGrades(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Grade.find({
+            where: { id: In(ids) },
+        })
+    }
+
+    private async getSubjects(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Subject.find({
+            where: { id: In(ids) },
+        })
+    }
+
     public async createOrUpdatePrograms(
         { programs }: any,
         context: Context,
@@ -1300,6 +1330,23 @@ export class Organization
             program.name = programDetail?.name || program.name
 
             program.organization = Promise.resolve(this)
+
+            if (programDetail?.age_ranges !== undefined) {
+                const ageRanges = await this.getAgeRanges(
+                    programDetail.age_ranges
+                )
+                program.age_ranges = Promise.resolve(ageRanges)
+            }
+
+            if (programDetail?.grades !== undefined) {
+                const grades = await this.getGrades(programDetail.grades)
+                program.grades = Promise.resolve(grades)
+            }
+
+            if (programDetail?.subjects !== undefined) {
+                const subjects = await this.getSubjects(programDetail.subjects)
+                program.subjects = Promise.resolve(subjects)
+            }
 
             if (programDetail?.system !== undefined) {
                 program.system = programDetail.system
