@@ -7,7 +7,7 @@ export class SubjectsInitializer {
     SYSTEM_SUBJECTS = [
         {
             id: '5e9a201e-9c2f-4a92-bb6f-1ccf8177bb71',
-            name: 'Non specified',
+            name: 'None Specified',
             categories: ['2d5ea951-836c-471e-996e-76823a992689'],
         },
         {

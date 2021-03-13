@@ -7,7 +7,7 @@ export class CategoriesInitializer {
     SYSTEM_CATEGORIES = [
         {
             id: '2d5ea951-836c-471e-996e-76823a992689',
-            name: 'Non specified',
+            name: 'None Specified',
             subcategories: ['40a232cd-d6e8-4ec1-97ec-4e4df7d00a78'],
         },
         {

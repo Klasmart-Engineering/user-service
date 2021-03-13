@@ -2,7 +2,7 @@ import { Subcategory } from '../entities/subcategory'
 
 export class SubcategoriesInitializer {
     SYSTEM_SUBCATEGORIES = [
-        { id: '40a232cd-d6e8-4ec1-97ec-4e4df7d00a78', name: 'Non specified' },
+        { id: '40a232cd-d6e8-4ec1-97ec-4e4df7d00a78', name: 'None Specified' },
         {
             id: '2b6b5d54-0243-4c7e-917a-1627f107f198',
             name: 'Speaking & Listening',

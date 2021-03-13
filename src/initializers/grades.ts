@@ -4,13 +4,13 @@ export class GradesInitializer {
     SYSTEM_GRADES = [
         {
             id: '98461ca1-06a1-432a-97d0-4e1dff33e1a5',
-            name: 'Non specified',
+            name: 'None Specified',
             system: true,
         },
         {
             id: '0ecb8fa9-d77e-4dd3-b220-7e79704f1b03',
             name: 'PreK-1',
-            progress_from_grade: 'Non specified',
+            progress_from_grade: 'None Specified',
             progress_to_grade: 'PreK-2',
             system: true,
         },
@@ -32,13 +32,13 @@ export class GradesInitializer {
             id: 'e4d16af5-5b8f-4051-b065-13acf6c694be',
             name: 'Grade 1',
             progress_from_grade: 'Kindergarten',
-            progress_to_grade: 'Non specified',
+            progress_to_grade: 'None Specified',
             system: true,
         },
         {
             id: 'b20eaf10-3e40-4ef7-9d74-93a13782d38f',
             name: 'PreK-3',
-            progress_from_grade: 'Non specified',
+            progress_from_grade: 'None Specified',
             progress_to_grade: 'PreK-4',
             system: true,
         },
@@ -67,7 +67,7 @@ export class GradesInitializer {
             id: '781e8a08-29e8-4171-8392-7e8ac9f183a0',
             name: 'PreK-7',
             progress_from_grade: 'PreK-6',
-            progress_to_grade: 'Non specified',
+            progress_to_grade: 'None Specified',
             system: true,
         },
     ]

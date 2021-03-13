@@ -9,7 +9,7 @@ export class ProgramsInitializer {
     SYSTEM_PROGRAMS = [
         {
             id: '7565ae11-8130-4b7d-ac24-1d9dd6f792f2',
-            name: 'Non specified',
+            name: 'None Specified',
             subjects: ['5e9a201e-9c2f-4a92-bb6f-1ccf8177bb71'],
             age_ranges: ['023eeeb1-5f72-4fa3-a2a7-63603607ac2b'],
             grades: ['98461ca1-06a1-432a-97d0-4e1dff33e1a5'],

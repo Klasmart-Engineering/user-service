@@ -5,7 +5,7 @@ export class AgeRangesInitializer {
     SYSTEM_AGE_RANGES = [
         {
             id: '023eeeb1-5f72-4fa3-a2a7-63603607ac2b',
-            name: 'Non specified',
+            name: 'None Specified',
             low_value: 0,
             low_value_unit: AgeRangeUnit.YEAR,
             high_value: 99,
