@@ -26,7 +26,6 @@ export const studentRole = {
         PermissionName.view_my_calendar_510,
         PermissionName.class_reports_604,
         PermissionName.student_reports_605,
-        PermissionName.view_my_reports_614,
         PermissionName.organizational_profile_10100,
         PermissionName.view_all_organization_details_page_10101,
         PermissionName.view_my_organization_profile_10111,
