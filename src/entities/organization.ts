@@ -39,7 +39,7 @@ import { generateShortCode, SHORTCODE_MAXLEN } from '../utils/shortcode'
 
 export function validateShortCode(code: string): boolean {
     const shortcode_re = /^[A-Z|0-9]+$/
-    if (code && code.length < SHORTCODE_MAXLEN && code.match(shortcode_re)) {
+    if (code && code.length <= SHORTCODE_MAXLEN && code.match(shortcode_re)) {
         return true
     }
     return false
