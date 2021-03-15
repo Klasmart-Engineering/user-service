@@ -69,6 +69,101 @@ export class ProgramsInitializer {
                 '781e8a08-29e8-4171-8392-7e8ac9f183a0',
             ],
         },
+        {
+            id: 'b39edb9a-ab91-4245-94a4-eb2b5007c033',
+            name: 'Bada Genius',
+            subjects: ['66a453b0-d38f-472e-b055-7a94a94d66c4'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+            ],
+            grades: ['98461ca1-06a1-432a-97d0-4e1dff33e1a5'],
+        },
+        {
+            id: '4591423a-2619-4ef8-a900-f5d924939d02',
+            name: 'Bada Math',
+            subjects: ['36c4f793-9aa3-4fb8-84f0-68a2ab920d5a'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+                '145edddc-2019-43d9-97e1-c5830e7ed689',
+                '21f1da64-b6c8-4e74-9fef-09d08cfd8e6c',
+            ],
+            grades: [
+                'd7e2e258-d4b3-4e95-b929-49ae702de4be',
+                '3e7979f6-7375-450a-9818-ddb09b250bb2',
+                '81dcbcc6-3d70-4bdf-99bc-14833c57c628',
+                '100f774a-3d7e-4be5-9c2c-ae70f40f0b50',
+                '9d3e591d-06a6-4fc4-9714-cf155a15b415',
+            ],
+        },
+        {
+            id: '7a8c5021-142b-44b1-b60b-275c29d132fe',
+            name: 'Bada Read',
+            subjects: ['b997e0d1-2dd7-40d8-847a-b8670247e96b'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+                '21f1da64-b6c8-4e74-9fef-09d08cfd8e6c',
+            ],
+            grades: ['98461ca1-06a1-432a-97d0-4e1dff33e1a5'],
+        },
+        {
+            id: '93f293e8-2c6a-47ad-bc46-1554caac99e4',
+            name: 'Bada Rhyme',
+            subjects: ['49c8d5ee-472b-47a6-8c57-58daf863c2e1'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+            ],
+            grades: ['98461ca1-06a1-432a-97d0-4e1dff33e1a5'],
+        },
+        {
+            id: '56e24fa0-e139-4c80-b365-61c9bc42cd3f',
+            name: 'Bada Sound',
+            subjects: ['b19f511e-a46b-488d-9212-22c0369c8afd'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+                '21f1da64-b6c8-4e74-9fef-09d08cfd8e6c',
+            ],
+            grades: ['98461ca1-06a1-432a-97d0-4e1dff33e1a5'],
+        },
+        {
+            id: 'd1bbdcc5-0d80-46b0-b98e-162e7439058f',
+            name: 'Bada STEM',
+            subjects: ['29d24801-0089-4b8e-85d3-77688e961efb'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+                '145edddc-2019-43d9-97e1-c5830e7ed689',
+                '21f1da64-b6c8-4e74-9fef-09d08cfd8e6c',
+            ],
+            grades: [
+                'd7e2e258-d4b3-4e95-b929-49ae702de4be',
+                '3e7979f6-7375-450a-9818-ddb09b250bb2',
+                '81dcbcc6-3d70-4bdf-99bc-14833c57c628',
+                '100f774a-3d7e-4be5-9c2c-ae70f40f0b50',
+                '9d3e591d-06a6-4fc4-9714-cf155a15b415',
+            ],
+        },
+        {
+            id: 'f6617737-5022-478d-9672-0354667e0338',
+            name: 'Bada Talk',
+            subjects: ['f037ee92-212c-4592-a171-ed32fb892162'],
+            age_ranges: [
+                '7965d220-619d-400f-8cab-42bd98c7d23c',
+                'bb7982cd-020f-4e1a-93fc-4a6874917f07',
+                'fe0b81a4-5b02-4548-8fb0-d49cd4a4604a',
+            ],
+            grades: ['98461ca1-06a1-432a-97d0-4e1dff33e1a5'],
+        },
     ]
 
     public async run() {
