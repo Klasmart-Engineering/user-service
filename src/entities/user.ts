@@ -64,6 +64,9 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     public date_of_birth?: string
 
     @Column({ nullable: true })
+    public gender?: string
+
+    @Column({ nullable: true })
     public avatar?: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
@@ -247,7 +250,15 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     }
 
     public async set(
-        { given_name, family_name, email, phone, date_of_birth, avatar }: any,
+        {
+            given_name,
+            family_name,
+            email,
+            phone,
+            date_of_birth,
+            gender,
+            avatar,
+        }: any,
         context: any,
         info: GraphQLResolveInfo
     ) {
@@ -290,6 +301,10 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             if (date_of_birth !== undefined) {
                 this.date_of_birth = date_of_birth
             }
+            if (gender !== undefined) {
+                this.gender = gender
+            }
+
             if (typeof avatar === 'string') {
                 this.avatar = avatar
             }
@@ -454,6 +469,15 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             let memberships = ourMemberships || []
             let schoolmemberships = ourSchoolMemberships || []
 
+            if (otherUser.gender) {
+                this.gender = otherUser.gender
+            }
+            if (otherUser.username) {
+                this.username = otherUser.username
+            }
+            if (otherUser.date_of_birth) {
+                this.date_of_birth = otherUser.date_of_birth
+            }
             memberships = this.mergeOrganizationMemberships(
                 memberships,
                 otherMemberships

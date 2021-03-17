@@ -57,6 +57,7 @@ describe("user", () => {
             expect(gqlUpdatedUser).to.exist;
             expect(dbUser).to.include(gqlUpdatedUser);
             expect(dbUser.date_of_birth).to.eq(gqlUpdatedUser.date_of_birth)
+            expect(dbUser.gender).to.eq(gqlUpdatedUser.gender)
         });
     });
 
@@ -394,7 +395,7 @@ describe("user", () => {
 
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
-            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster",  new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster",  "Male", new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
@@ -465,7 +466,7 @@ describe("user", () => {
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
 	        expect(oldUser).to.exist
-            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "Male", new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
@@ -473,6 +474,7 @@ describe("user", () => {
             // newUser has memberships
             expect(newUser).to.exist
             expect(newUser.email).to.equal("bob@nowhere.com")
+            expect(newUser.gender).to.equal("Male")
 
             expect(schoolmemberships).to.exist
             if(schoolmemberships){

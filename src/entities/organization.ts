@@ -492,6 +492,7 @@ export class Organization
             family_name,
             date_of_birth,
             username,
+            gender,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -529,6 +530,7 @@ export class Organization
                 family_name,
                 date_of_birth,
                 username,
+                gender,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -547,6 +549,7 @@ export class Organization
             family_name,
             date_of_birth,
             username,
+            gender,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -577,6 +580,7 @@ export class Organization
                 family_name,
                 date_of_birth,
                 username,
+                gender,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -612,7 +616,8 @@ export class Organization
         given_name?: string,
         family_name?: string,
         date_of_birth?: string,
-        username?: string
+        username?: string,
+        gender?: string
     ): Promise<User> {
         const hashSource = email ?? phone
         const user_id = accountUUID(hashSource)
@@ -632,6 +637,9 @@ export class Organization
         }
         if (username !== undefined) {
             user.username = username
+        }
+        if (gender !== undefined) {
+            user.gender = gender
         }
         return user
     }
@@ -703,6 +711,7 @@ export class Organization
         family_name?: string,
         date_of_birth?: string,
         username?: string,
+        gender?: string,
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = []
@@ -730,6 +739,7 @@ export class Organization
                 family_name,
                 date_of_birth,
                 username,
+                gender,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -747,7 +757,8 @@ export class Organization
                 given_name,
                 family_name,
                 date_of_birth,
-                username
+                username,
+                gender
             )
             const membership = await this.membershipOrganization(
                 user,
@@ -1449,16 +1460,16 @@ export class Organization
         return key > this.organization_id
             ? 1
             : key < this.organization_id
-            ? -1
-            : 0
+                ? -1
+                : 0
     }
 
     public compare(other: Organization): number {
         return other.organization_id > this.organization_id
             ? 1
             : other.organization_id < this.organization_id
-            ? -1
-            : 0
+                ? -1
+                : 0
     }
 
     public generateCursor(total?: number, timestamp?: number): string {

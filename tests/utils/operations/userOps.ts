@@ -37,18 +37,24 @@ const SET = `
             $user_id: ID!
             $given_name: String,
             $family_name: String,
+            $username: String
             $date_of_birth: String,
+            $gender: String
             $avatar: String) {
         user(user_id: $user_id) {
             set(
                 given_name: $given_name
                 family_name: $family_name
+                username: $username
                 date_of_birth: $date_of_birth
+                gender: $gender
                 avatar: $avatar
             ) {
                 given_name
                 family_name
+                username
                 date_of_birth
+                gender
                 avatar
             }
         }
@@ -239,8 +245,10 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User,
     const userMods = {
         given_name: "Billy",
         family_name: "Bob",
+        username: "Big Ears",
         avatar: "new_avatar",
-        date_of_birth: "03-1983"
+        date_of_birth: "03-1983",
+        gender: "Male"
     };
 
     const operation = () => mutate({
