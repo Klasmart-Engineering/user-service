@@ -284,7 +284,7 @@ export class Model {
         address1,
         address2,
         phone,
-        shortcode,
+        shortCode,
     }: Organization) {
         console.info('Unauthenticated endpoint call setOrganization')
 
@@ -304,8 +304,8 @@ export class Model {
         if (phone !== undefined) {
             organization.phone = phone
         }
-        if (shortcode !== undefined) {
-            organization.shortcode = shortcode
+        if (shortCode !== undefined) {
+            organization.shortCode = shortCode
         }
 
         await this.manager.save(organization)

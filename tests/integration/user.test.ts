@@ -231,22 +231,20 @@ describe("user", () => {
         it("should create an organization", async () => {
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             expect(organization).to.exist;
-            expect(organization.shortcode).to.match(shortcode_re)
-            expect(organization.shortcode?.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
+            expect(organization.shortCode).to.match(shortcode_re)
+            expect(organization.shortCode?.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
         });
         it("should create an organization with a custom short code", async () => {
             const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "HAPPY1");
             expect(organization).to.exist;
-            expect(organization.shortcode).to.match(shortcode_re)
-            expect(organization.shortcode).to.match(shortcode_re)
-            expect(organization.shortcode).to.equal("HAPPY1")
+            expect(organization.shortCode).to.match(shortcode_re)
+            expect(organization.shortCode).to.equal("HAPPY1")
         });
          it("should create an organization with an uppercased custom short code", async () => {
             const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "happy1");
             expect(organization).to.exist;
-            expect(organization.shortcode).to.match(shortcode_re)
-            expect(organization.shortcode).to.match(shortcode_re)
-            expect(organization.shortcode).to.equal("HAPPY1")
+            expect(organization.shortCode).to.match(shortcode_re)
+            expect(organization.shortCode).to.equal("HAPPY1")
         });
         it("should fail to create an organization with a bad short code", async () => {
             const organization = await createOrganization(testClient, user.user_id, "A name", "very wrong");

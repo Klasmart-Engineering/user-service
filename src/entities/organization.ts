@@ -93,7 +93,7 @@ export class Organization
     public phone?: string
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
-    public shortcode?: string
+    public shortCode?: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
@@ -285,7 +285,7 @@ export class Organization
     public deleted_at?: Date
 
     public async set(
-        { organization_name, address1, address2, phone, shortcode }: any,
+        { organization_name, address1, address2, phone, shortCode }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -315,10 +315,10 @@ export class Organization
             if (typeof phone === 'string') {
                 this.phone = phone
             }
-            if (typeof shortcode === 'string') {
-                shortcode = shortcode.toUpperCase()
-                if (validateShortCode(shortcode)) {
-                    this.shortcode = shortcode
+            if (typeof shortCode === 'string') {
+                shortCode = shortCode.toUpperCase()
+                if (validateShortCode(shortCode)) {
+                    this.shortCode = shortCode
                 }
             }
 

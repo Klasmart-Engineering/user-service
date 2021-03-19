@@ -213,7 +213,7 @@ type User {
         address1: String
         address2: String
         phone: String
-        shortcode: String
+        shortCode: String
     ): Organization
     merge(other_id: String): User
     addOrganization(organization_id: ID!): OrganizationMembership
@@ -228,7 +228,7 @@ type Organization {
     address1: String
     address2: String
     phone: String
-    shortcode: String
+    shortCode: String
     status: Status
 
     #connections
@@ -264,7 +264,7 @@ type Organization {
         address1: String
         address2: String
         phone: String
-        shortcode: String
+        shortCode: String
     ): Organization
     setPrimaryContact(user_id: ID!): User
     addUser(user_id: ID!, shortcode: String): OrganizationMembership

@@ -63,7 +63,7 @@ describe("organization", () => {
             address1: "New address 1",
             address2: "New address 2",
             phone: "010-1111-2222",
-            shortcode: "SC"
+            shortCode: "SC"
         }
 
         beforeEach(async () => {
