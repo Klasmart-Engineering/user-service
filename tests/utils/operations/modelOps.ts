@@ -21,7 +21,8 @@ const NEW_USER = `
             $email: String
             $avatar: String
             $date_of_birth: String
-            $username: String) {
+            $username: String
+            $gender: String) {
         newUser(
             given_name: $given_name
             family_name: $family_name
@@ -29,6 +30,7 @@ const NEW_USER = `
             avatar: $avatar
             date_of_birth: $date_of_birth
             username: $username
+            gender:$gender
         ) {
             user_id
             given_name
@@ -37,6 +39,7 @@ const NEW_USER = `
             avatar
             date_of_birth
             username
+            gender
         }
     }
 `;

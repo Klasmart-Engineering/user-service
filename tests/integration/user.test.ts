@@ -28,6 +28,7 @@ import { Class } from "../../src/entities/class";
 
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
+import { SHORTCODE_DEFAULT_MAXLEN } from "../../src/utils/shortcode";
 chai.use(chaiAsPromised);
 
 describe("user", () => {
@@ -222,6 +223,7 @@ describe("user", () => {
     });
 
     describe("createOrganization", () => {
+        const shortcode_re = /^[A-Z|0-9]+$/
         beforeEach(async () => {
             user = await createUserJoe(testClient);
         });
@@ -229,6 +231,26 @@ describe("user", () => {
         it("should create an organization", async () => {
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             expect(organization).to.exist;
+            expect(organization.shortcode).to.match(shortcode_re)
+            expect(organization.shortcode?.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
+        });
+        it("should create an organization with a custom short code", async () => {
+            const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "HAPPY1");
+            expect(organization).to.exist;
+            expect(organization.shortcode).to.match(shortcode_re)
+            expect(organization.shortcode).to.match(shortcode_re)
+            expect(organization.shortcode).to.equal("HAPPY1")
+        });
+         it("should create an organization with an uppercased custom short code", async () => {
+            const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "happy1");
+            expect(organization).to.exist;
+            expect(organization.shortcode).to.match(shortcode_re)
+            expect(organization.shortcode).to.match(shortcode_re)
+            expect(organization.shortcode).to.equal("HAPPY1")
+        });
+        it("should fail to create an organization with a bad short code", async () => {
+            const organization = await createOrganization(testClient, user.user_id, "A name", "very wrong");
+            expect(organization).to.not.exist;   
         });
 
         it("creates the organization ownership", async () => {
@@ -395,7 +417,7 @@ describe("user", () => {
 
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
-            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster",  "Male", new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster",  "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
@@ -466,7 +488,7 @@ describe("user", () => {
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
 	        expect(oldUser).to.exist
-            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "Male", new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership

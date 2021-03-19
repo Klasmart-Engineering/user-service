@@ -362,7 +362,7 @@ describe("organizationMembership", () => {
                 org2Owner = await createUserBilly(testClient);
                 userId = org1Owner.user_id;
                 organization1Id = (await createOrganizationAndValidate(testClient, org1Owner.user_id, "org 1")).organization_id;
-                organization2Id = (await createOrganizationAndValidate(testClient, org2Owner.user_id, "org 2", BillyAuthToken)).organization_id;
+                organization2Id = (await createOrganizationAndValidate(testClient, org2Owner.user_id, "org 2", undefined, BillyAuthToken)).organization_id;
 
                 school1Id = (await createSchool(testClient, organization1Id, "school 1", undefined, { authorization: JoeAuthToken })).school_id;
                 school2Id = (await createSchool(testClient, organization2Id, "school 2", undefined, { authorization: BillyAuthToken })).school_id;
@@ -406,12 +406,12 @@ describe("organizationMembership", () => {
             const idOfOrg2Owner = (await createUserBilly(testClient)).user_id;
             idOfUserToBeQueried = idOfOrg1Owner;
             idOfAnotherTeacher = idOfOrg2Owner;
-            organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner, "Org 1", JoeAuthToken)).organization_id;
-            organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, "Org 2", BillyAuthToken)).organization_id;
+            organization1Id = (await createOrganizationAndValidate(testClient, idOfOrg1Owner, "Org 1", undefined, JoeAuthToken)).organization_id;
+            organization2Id = (await createOrganizationAndValidate(testClient, idOfOrg2Owner, "Org 2", undefined, BillyAuthToken)).organization_id;
             await addOrganizationToUser(testClient, idOfUserToBeQueried, organization2Id, BillyAuthToken);
-            org1Class1Id = (await createClass(testClient, organization1Id, "Class 1", { authorization: JoeAuthToken })).class_id;
-            org2Class1Id = (await createClass(testClient, organization2Id, "Class 1", { authorization: BillyAuthToken })).class_id;
-            org2Class2Id = (await createClass(testClient, organization2Id, "Class 2", { authorization: BillyAuthToken })).class_id;
+            org1Class1Id = (await createClass(testClient, organization1Id, "Class 1", undefined, { authorization: JoeAuthToken })).class_id;
+            org2Class1Id = (await createClass(testClient, organization2Id, "Class 1", undefined, { authorization: BillyAuthToken })).class_id;
+            org2Class2Id = (await createClass(testClient, organization2Id, "Class 2", undefined, { authorization: BillyAuthToken })).class_id;
         });
 
         context("when user being queried is a teacher for class 1 in organization 2", () => {

@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { validateEmail, validatePhone, validateShortCode} from "../../../src/entities/organization"
+import { validateEmail, validatePhone} from "../../../src/entities/organization"
+import { MEMBERSHIP_SHORTCODE_MAXLEN } from "../../../src/entities/organizationMembership";
 
 describe("validateEmail", () => {
     it("is a valid email", async () => {
@@ -81,34 +82,4 @@ describe("validateEmail", () => {
         })
     });
   });
-
- describe("validateShortCode", () => {
-    it("is a valid shortcode", async () => {
-        [
-            "1929990995",   
-            "ABCDEF345U", 
-            "1234567890",   
-            "P5X"
-             
-        ].every(function(code){
-            const res = validateShortCode(code)
-            expect (res).is.equal(true)
-            return res
-        })
-    });
-    it("is an invalid shortcode", async () => {
-        [
-            "1929 90995",   
-            "abcdeF345U",    
-            "The thing about",
-            "P5/DS56YU=",
-            "1234567890A"      
-        ].every(function(code){
-            const res = !validateShortCode(code)
-            expect (res).is.equal(true)
-            return res
-        })
-
-    });
-});
 

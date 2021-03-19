@@ -18,13 +18,13 @@ import { GraphQLResolveInfo } from 'graphql'
 import { User } from './user'
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
-import { Organization, validateShortCode } from './organization'
+import { Organization } from './organization'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { OrganizationMembership } from './organizationMembership'
 import { Program } from './program'
-import { SHORTCODE_MAXLEN } from '../utils/shortcode'
+import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 
 @Entity()
 @Check(`"school_name" <> ''`)
@@ -36,7 +36,7 @@ export class School extends BaseEntity {
     @Column({ nullable: false })
     public school_name!: string
 
-    @Column({ nullable: true, length: SHORTCODE_MAXLEN })
+    @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
     public shortcode!: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
@@ -105,8 +105,11 @@ export class School extends BaseEntity {
             if (typeof school_name === 'string') {
                 this.school_name = school_name
             }
-            if (typeof shortcode === 'string' && validateShortCode(shortcode)) {
-                this.shortcode = shortcode
+            if (typeof shortcode === 'string') {
+                shortcode = shortcode.toUpperCase()
+                if (validateShortCode(shortcode)) {
+                    this.shortcode = shortcode
+                }
             }
 
             await this.save()

@@ -12,7 +12,10 @@ import {
     BaseEntity,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
-import { OrganizationMembership } from './organizationMembership'
+import {
+    MEMBERSHIP_SHORTCODE_MAXLEN,
+    OrganizationMembership,
+} from './organizationMembership'
 import { OrganizationOwnership } from './organizationOwnership'
 import { AgeRange } from './ageRange'
 import { Category } from './category'
@@ -35,15 +38,11 @@ import {
 import { Model } from '../model'
 import { Status } from './status'
 import { Program } from './program'
-import { generateShortCode, SHORTCODE_MAXLEN } from '../utils/shortcode'
-
-export function validateShortCode(code: string): boolean {
-    const shortcode_re = /^[A-Z|0-9]+$/
-    if (code && code.length <= SHORTCODE_MAXLEN && code.match(shortcode_re)) {
-        return true
-    }
-    return false
-}
+import {
+    generateShortCode,
+    SHORTCODE_DEFAULT_MAXLEN,
+    validateShortCode,
+} from '../utils/shortcode'
 
 export function validateEmail(email?: string): boolean {
     const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -79,7 +78,7 @@ export class Organization
     extends BaseEntity
     implements Paginatable<Organization, string> {
     @PrimaryGeneratedColumn('uuid')
-    public readonly organization_id!: string
+    public organization_id!: string
 
     @Column({ nullable: true })
     public organization_name?: string
@@ -93,8 +92,8 @@ export class Organization
     @Column({ nullable: true })
     public phone?: string
 
-    @Column({ nullable: true })
-    public shortCode?: string
+    @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
+    public shortcode?: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
@@ -286,7 +285,7 @@ export class Organization
     public deleted_at?: Date
 
     public async set(
-        { organization_name, address1, address2, phone, shortCode }: any,
+        { organization_name, address1, address2, phone, shortcode }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -316,9 +315,10 @@ export class Organization
             if (typeof phone === 'string') {
                 this.phone = phone
             }
-            if (typeof shortCode === 'string') {
-                if (validateShortCode(shortCode)) {
-                    this.shortCode = shortCode
+            if (typeof shortcode === 'string') {
+                shortcode = shortcode.toUpperCase()
+                if (validateShortCode(shortcode)) {
+                    this.shortcode = shortcode
                 }
             }
 
@@ -451,7 +451,7 @@ export class Organization
     }
 
     public async addUser(
-        { user_id }: any,
+        { user_id, shortcode }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -470,12 +470,23 @@ export class Organization
 
         try {
             const user = await getRepository(User).findOneOrFail(user_id)
-
+            if (typeof shortcode === 'string') {
+                shortcode = shortcode.toUpperCase()
+                shortcode = validateShortCode(
+                    shortcode,
+                    MEMBERSHIP_SHORTCODE_MAXLEN
+                )
+                    ? shortcode
+                    : undefined
+            }
             const membership = new OrganizationMembership()
             membership.organization_id = this.organization_id
             membership.organization = Promise.resolve(this)
             membership.user_id = user_id
             membership.user = Promise.resolve(user)
+            membership.shortcode =
+                shortcode ||
+                generateShortCode(user_id, MEMBERSHIP_SHORTCODE_MAXLEN)
             await membership.save()
 
             return membership
@@ -493,6 +504,7 @@ export class Organization
             date_of_birth,
             username,
             gender,
+            shortcode,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -531,6 +543,7 @@ export class Organization
                 date_of_birth,
                 username,
                 gender,
+                shortcode,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -550,6 +563,7 @@ export class Organization
             date_of_birth,
             username,
             gender,
+            shortcode,
             organization_role_ids,
             school_ids,
             school_role_ids,
@@ -581,6 +595,7 @@ export class Organization
                 date_of_birth,
                 username,
                 gender,
+                shortcode,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -646,7 +661,8 @@ export class Organization
 
     private async membershipOrganization(
         user: User,
-        organizationRoles: Role[]
+        organizationRoles: Role[],
+        shortcode?: string
     ): Promise<OrganizationMembership> {
         const user_id = user.user_id
         const organization_id = this.organization_id
@@ -660,6 +676,10 @@ export class Organization
         membership.user = Promise.resolve(user)
         membership.organization = Promise.resolve(this)
         membership.roles = Promise.resolve(organizationRoles)
+        membership.shortcode =
+            shortcode ||
+            membership.shortcode ||
+            generateShortCode(user_id, MEMBERSHIP_SHORTCODE_MAXLEN)
         return membership
     }
 
@@ -712,6 +732,7 @@ export class Organization
         date_of_birth?: string,
         username?: string,
         gender?: string,
+        shortcode?: string,
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = []
@@ -729,6 +750,12 @@ export class Organization
         if (!validateDOB(date_of_birth)) {
             date_of_birth = undefined
         }
+        if (typeof shortcode === 'string') {
+            shortcode = shortcode.toUpperCase()
+            if (!validateShortCode(shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)) {
+                shortcode = undefined
+            }
+        }
 
         return getManager().transaction(async (manager) => {
             console.log(
@@ -740,6 +767,7 @@ export class Organization
                 date_of_birth,
                 username,
                 gender,
+                shortcode,
                 organization_role_ids,
                 school_ids,
                 school_role_ids
@@ -762,7 +790,8 @@ export class Organization
             )
             const membership = await this.membershipOrganization(
                 user,
-                organizationRoles
+                organizationRoles,
+                shortcode
             )
             const [
                 schoolMemberships,
@@ -818,7 +847,7 @@ export class Organization
     }
 
     public async createClass(
-        { class_name }: any,
+        { class_name, shortcode }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -835,10 +864,19 @@ export class Organization
             PermissionName.create_class_20224
         )
 
+        if (typeof shortcode === 'string') {
+            shortcode = shortcode.toUpperCase()
+            if (!validateShortCode(shortcode)) {
+                console.log('invalid shortcode', shortcode)
+                return null
+            }
+        }
+
         try {
             const manager = getManager()
 
             const _class = new Class()
+            _class.shortcode = shortcode || generateShortCode(class_name)
             _class.class_name = class_name
             _class.organization = Promise.resolve(this)
             await manager.save(_class)
@@ -867,7 +905,8 @@ export class Organization
             PermissionName.create_school_20220
         )
 
-        if (shortcode) {
+        if (typeof shortcode === 'string') {
+            shortcode = shortcode.toUpperCase()
             if (!validateShortCode(shortcode)) {
                 console.log('invalid shortcode', shortcode)
                 return null
@@ -1460,16 +1499,16 @@ export class Organization
         return key > this.organization_id
             ? 1
             : key < this.organization_id
-                ? -1
-                : 0
+            ? -1
+            : 0
     }
 
     public compare(other: Organization): number {
         return other.organization_id > this.organization_id
             ? 1
             : other.organization_id < this.organization_id
-                ? -1
-                : 0
+            ? -1
+            : 0
     }
 
     public generateCursor(total?: number, timestamp?: number): string {

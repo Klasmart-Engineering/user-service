@@ -28,6 +28,7 @@ import {
     Paginatable,
     toCursorHash,
 } from '../utils/paginated.interface'
+import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 
 @Entity()
 @Check(`"class_name" <> ''`)
@@ -41,6 +42,9 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
+
+    @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
+    public shortcode!: string
 
     @ManyToOne(() => Organization, (organization) => organization.classes)
     public organization?: Promise<Organization>
@@ -74,7 +78,7 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
     public deleted_at?: Date
 
     public async set(
-        { class_name }: any,
+        { class_name, shortcode }: any,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -96,6 +100,12 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
         try {
             if (typeof class_name === 'string') {
                 this.class_name = class_name
+            }
+            if (typeof shortcode === 'string') {
+                shortcode = shortcode.toUpperCase()
+                if (validateShortCode(shortcode)) {
+                    this.shortcode = shortcode
+                }
             }
 
             await this.save()

@@ -116,6 +116,7 @@ type Mutation {
         avatar: String
         date_of_birth: String
         username: String
+        gender: String
     ): User
     newUser(
         given_name: String
@@ -125,6 +126,7 @@ type Mutation {
         avatar: String
         date_of_birth: String
         username: String
+        gender: String
     ): User @deprecated(reason: "Use the inviteUser() method")
     switch_user(user_id: ID!): User
 
@@ -211,7 +213,7 @@ type User {
         address1: String
         address2: String
         phone: String
-        shortCode: String
+        shortcode: String
     ): Organization
     merge(other_id: String): User
     addOrganization(organization_id: ID!): OrganizationMembership
@@ -226,7 +228,7 @@ type Organization {
     address1: String
     address2: String
     phone: String
-    shortCode: String
+    shortcode: String
     status: Status
 
     #connections
@@ -262,10 +264,10 @@ type Organization {
         address1: String
         address2: String
         phone: String
-        shortCode: String
+        shortcode: String
     ): Organization
     setPrimaryContact(user_id: ID!): User
-    addUser(user_id: ID!): OrganizationMembership
+    addUser(user_id: ID!, shortcode: String): OrganizationMembership
     inviteUser(
         email: String
         phone: String
@@ -274,6 +276,7 @@ type Organization {
         date_of_birth: String
         username: String
         gender: String
+        shortcode: String
         organization_role_ids: [ID!]
         school_ids: [ID!]
         school_role_ids: [ID!]
@@ -286,13 +289,14 @@ type Organization {
         date_of_birth: String
         username: String
         gender: String
+        shortcode: String
         organization_role_ids: [ID!]
         school_ids: [ID!]
         school_role_ids: [ID!]
     ): MembershipUpdate
     createRole(role_name: String!, role_description: String!): Role
     createSchool(school_name: String, shortcode: String): School
-    createClass(class_name: String): Class
+    createClass(class_name: String, shortcode: String): Class
     createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
     createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
     createOrUpdateCategories(categories: [CategoryDetail]!): [Category]
@@ -315,6 +319,7 @@ type OrganizationMembership {
     #properties
     user_id: ID!
     organization_id: ID!
+    shortcode: String
     join_timestamp: Date
     status: Status
 
@@ -432,7 +437,7 @@ type Class {
     #properties
     class_name: String
     status: Status
-
+    shortcode: String
     #connections
     organization: Organization
     schools: [School]
@@ -449,7 +454,7 @@ type Class {
     eligibleStudents: [User]
 
     #mutations
-    set(class_name: String): Class
+    set(class_name: String, shortcode: String): Class
     addTeacher(user_id: ID!): User
     editTeachers(teacher_ids: [ID!]): [User]
     removeTeacher(user_id: ID!): Boolean

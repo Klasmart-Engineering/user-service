@@ -183,7 +183,7 @@ describe("model.organization", () => {
                     } as User
                     anne1 = await createUserAndValidate(testClient, anne1)
                     const anne1Token = generateToken(userToPayload(anne1))
-                    const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, anne1Token);
+                    const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, undefined, anne1Token);
                     await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
                     if (i < 8) {
                         orgIds.push(organization1.organization_id)
@@ -449,7 +449,7 @@ describe("model.organization", () => {
                     } as User
                     anne1 = await createUserAndValidate(testClient, anne1)
                     const anne1Token = generateToken(userToPayload(anne1))
-                    const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, anne1Token);
+                    const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, undefined,  anne1Token);
                     await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
                 }
             });

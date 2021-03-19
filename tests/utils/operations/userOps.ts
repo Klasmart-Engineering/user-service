@@ -10,11 +10,12 @@ import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 
 const CREATE_ORGANIZATION = `
-    mutation myMutation($user_id: ID!, $organization_name: String) {
+    mutation myMutation($user_id: ID!, $organization_name: String, $shortcode: String) {
         user(user_id: $user_id) {
-            createOrganization(organization_name: $organization_name) {
+            createOrganization(organization_name: $organization_name, shortcode: $shortcode) {
                 organization_id
                 organization_name
+                shortcode
                 status
             }
         }
@@ -171,10 +172,11 @@ export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,
     organizationName?: string,
+    shortcode?: string,
     token?: string
 ): Promise<Organization> {
     organizationName = organizationName ?? "My Organization";
-    const gqlOrganization = await createOrganization(testClient, userId, organizationName,token)
+    const gqlOrganization = await createOrganization(testClient, userId, organizationName, shortcode, token)
 
     expect(gqlOrganization).to.exist;
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
@@ -187,16 +189,21 @@ export async function createOrganization(
     testClient: ApolloServerTestClient,
     userId: string,
     organizationName: string,
+    shortcode?: string,
     token?: string
 ): Promise<Organization> {
 
     token = token ?? JoeAuthToken
+    const variables =  { user_id: userId, organization_name: organizationName } as any
 
+    if(shortcode){
+        variables.shortcode = shortcode
+    }
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_ORGANIZATION,
-        variables: { user_id: userId, organization_name: organizationName },
+        variables: variables,
         headers: { authorization: token },
     });
 

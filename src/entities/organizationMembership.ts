@@ -19,6 +19,7 @@ import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
 import { Class } from './class'
 
+export const MEMBERSHIP_SHORTCODE_MAXLEN = 16
 @Entity()
 export class OrganizationMembership extends BaseEntity {
     @PrimaryColumn()
@@ -32,6 +33,9 @@ export class OrganizationMembership extends BaseEntity {
 
     @CreateDateColumn()
     public join_timestamp?: Date
+
+    @Column({ nullable: true, length: MEMBERSHIP_SHORTCODE_MAXLEN })
+    public shortcode!: string
 
     @ManyToOne(() => User, (user) => user.memberships)
     public user?: Promise<User>

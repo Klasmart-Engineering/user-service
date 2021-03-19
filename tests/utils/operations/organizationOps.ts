@@ -22,11 +22,13 @@ import { Program } from "../../../src/entities/program";
 const CREATE_CLASS = `
     mutation myMutation(
             $organization_id: ID!
-            $class_name: String) {
+            $class_name: String
+            $shortcode: String) {
         organization(organization_id: $organization_id) {
-            createClass(class_name: $class_name) {
+            createClass(class_name: $class_name, shortcode: $shortcode) {
                 class_id
                 class_name
+                shortcode
                 status
             }
         }
@@ -90,24 +92,24 @@ const UPDATE_ORGANIZATION = `
             $address1: String,
             $address2: String,
             $phone: String,
-            $shortCode: String) {
+            $shortcode: String) {
         organization(organization_id: $organization_id) {
-            set(organization_name: $organization_name, address1: $address1, address2: $address2, phone: $phone, shortCode: $shortCode) {
+            set(organization_name: $organization_name, address1: $address1, address2: $address2, phone: $phone, shortcode: $shortcode) {
                 organization_id
                 organization_name
                 address1
                 address2
                 phone
-                shortCode
+                shortcode
             }
         }
     }
 `;
 
 const INVITE_USER = `
-    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String , $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
+    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
         organization(organization_id: $organization_id) {
-            inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, date_of_birth:$date_of_birth, username: $username, gender: $gender, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
+            inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
                 user{
                     user_id
                     email
@@ -121,6 +123,7 @@ const INVITE_USER = `
                 }
                 membership{
                     user_id
+                    shortcode
                     organization_id
                     join_timestamp
                 }
@@ -135,9 +138,9 @@ const INVITE_USER = `
 `;
 
 const EDIT_MEMBERSHIP = `
-    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
+    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!] ) {
         organization(organization_id: $organization_id) {
-            editMembership(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name,  date_of_birth:$date_of_birth, username: $username, gender: $gender, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
+            editMembership(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name,  date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids){
                 user{
                     user_id
                     email
@@ -151,6 +154,7 @@ const EDIT_MEMBERSHIP = `
                 }
                 membership{
                     user_id
+                    shortcode
                     organization_id
                     join_timestamp
                 }
@@ -368,14 +372,21 @@ const LIST_PROGRAMS = `
     }
 `;
 
-export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, headers?: Headers) {
+export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, shortcode?:string, headers?: Headers) {
     const { mutate } = testClient;
     className = className ?? "My Class";
     headers = headers ?? { authorization: JoeAuthToken };
 
+    const variables =  {  organization_id: organizationId } as any
+    if (className){
+        variables.class_name = className
+    }
+    if (shortcode){
+        variables.shortcode = shortcode
+    }
     const operation = () => mutate({
         mutation: CREATE_CLASS,
-        variables: { organization_id: organizationId, class_name: className },
+        variables: variables,
         headers: headers,
     });
 
@@ -464,7 +475,7 @@ export async function addUserToOrganization(testClient: ApolloServerTestClient, 
     const gqlMembership = res.data?.organization.addUser as OrganizationMembership;
     return gqlMembership;
 }
-export async function inviteUser(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers) {
+export async function inviteUser(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers) {
     const { mutate } = testClient;
     let variables: any
     variables = { organization_id: organizationId }
@@ -489,7 +500,10 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     if (gender !== undefined) {
         variables.gender = gender
     }
-    if (organization_role_ids !== undefined) {
+    if (shortcode !== undefined){
+       variables.shortcode = shortcode
+    }
+    if (organization_role_ids !== undefined){
         variables.organization_role_ids = organization_role_ids
     }
     if (school_ids !== undefined) {
@@ -512,7 +526,7 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
 
 
 
-export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any) {
+export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     let variables: any
     variables = { organization_id: organizationId }
@@ -537,7 +551,10 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
     if (gender !== undefined) {
         variables.gender = gender
     }
-    if (organization_role_ids !== undefined) {
+    if (shortcode !== undefined){
+       variables.shortcode = shortcode
+    }
+    if (organization_role_ids !== undefined){
         variables.organization_role_ids = organization_role_ids
     }
     if (school_ids !== undefined) {

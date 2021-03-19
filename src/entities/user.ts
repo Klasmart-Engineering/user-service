@@ -25,7 +25,7 @@ import {
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
 import { OrganizationOwnership } from './organizationOwnership'
-import { v5 } from 'uuid'
+import { v5, v4 as uuid_v4 } from 'uuid'
 import { createHash } from 'crypto'
 import { Role } from './role'
 import { School } from './school'
@@ -35,6 +35,7 @@ import {
     Paginatable,
     toCursorHash,
 } from '../utils/paginated.interface'
+import { generateShortCode, validateShortCode } from '../utils/shortcode'
 
 @Entity()
 export class User extends BaseEntity implements Paginatable<User, string> {
@@ -316,7 +317,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
         }
     }
     public async createOrganization(
-        { organization_name, address1, address2, phone, shortCode }: any,
+        { organization_name, address1, address2, phone, shortcode }: any,
         context: any,
         info: GraphQLResolveInfo
     ) {
@@ -339,14 +340,21 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             if (my_organization) {
                 throw new Error('Only one organization per user')
             }
-
+            if (typeof shortcode === 'string') {
+                shortcode = shortcode.toUpperCase()
+                if (!validateShortCode(shortcode)) {
+                    throw new Error('Invalid shortcode')
+                }
+            }
             const organization = new Organization()
             await getManager().transaction(async (manager) => {
+                organization.organization_id = uuid_v4()
                 organization.organization_name = organization_name
                 organization.address1 = address1
                 organization.address2 = address2
                 organization.phone = phone
-                organization.shortCode = shortCode
+                organization.shortcode =
+                    shortcode || generateShortCode(organization.organization_id)
                 organization.owner = Promise.resolve(this)
                 organization.primary_contact = Promise.resolve(this)
                 await manager.save(organization)
@@ -633,6 +641,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
                     membership.user = Promise.resolve(this)
                     membership.organization = fromMembership.organization
                     membership.status = fromMembership.status
+
                     if (fromMembership.roles !== undefined) {
                         membership.roles = Promise.resolve(fromMembership.roles)
                     }

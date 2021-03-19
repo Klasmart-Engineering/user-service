@@ -90,7 +90,7 @@ describe("model.class", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id, JoeAuthToken);
-                await createClass(testClient, organization.organization_id,undefined,{ authorization: JoeAuthToken });
+                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: JoeAuthToken });
             });
 
             it("should return an array containing one class", async () => {
@@ -130,8 +130,8 @@ describe("model.class", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, JoeAuthToken);
-                cls = await createClass(testClient, organization.organization_id,undefined,{ authorization: JoeAuthToken });
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined, JoeAuthToken);
+                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: JoeAuthToken });
             });
 
             it("should return the class associated with the specified ID", async () => {
@@ -166,14 +166,14 @@ describe("model.class", () => {
                  } as User
                  anne1 = await createUserAndValidate(testClient, anne1)
                  const anne1Token = generateToken(userToPayload(anne1))
-                 const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, anne1Token);
+                 const organization1 = await createOrganizationAndValidate(testClient, anne1.user_id, "org " + i, undefined, anne1Token);
                  await addUserToOrganizationAndValidate(testClient, user.user_id, organization1.organization_id, { authorization: anne1Token });
                  const role1Id = (await createRole(testClient, organization1.organization_id, "role " + i, "role description " + 1, anne1Token)).role_id;
                  await addRoleToOrganizationMembership(testClient, user.user_id, organization1.organization_id, role1Id, { authorization: anne1Token });
                  const school1 = await createSchool(testClient, organization1.organization_id, "school " + i, undefined, { authorization: anne1Token })
                  await addUserToSchool(testClient, user.user_id, school1.school_id, { authorization: anne1Token })
                  await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id, role1Id, { authorization: anne1Token })
-                 const cls1 = await createClass(testClient, organization1.organization_id, "class " + i, { authorization: anne1Token });
+                 const cls1 = await createClass(testClient, organization1.organization_id, "class " + i, undefined, { authorization: anne1Token });
                  await grantPermission(testClient, role1Id, PermissionName.add_students_to_class_20225, { authorization: anne1Token });
                  await grantPermission(testClient, role1Id, PermissionName.add_teachers_to_class_20226, { authorization: anne1Token });
                  if( (i % 2) > 0){
