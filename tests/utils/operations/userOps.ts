@@ -8,6 +8,7 @@ import { ApolloServerTestClient } from "../createTestClient";
 import { gqlTry } from "../gqlTry";
 import { JoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
+import { Subject } from "../../../src/entities/subject";
 
 const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
@@ -161,6 +162,19 @@ const GET_CLASSES_STUDYING = `
         user(user_id: $user_id) {
             classesStudying {
                 class_id
+            }
+        }
+    }
+`;
+
+const GET_SUBJECTS_TEACHING = `
+    query myQuery($user_id: ID!) {
+        user(user_id: $user_id) {
+            subjectsTeaching {
+                id
+                name
+                system
+                status
             }
         }
     }
@@ -491,4 +505,19 @@ export function userToPayload(user: User): any {
         payload.id = user.user_id
     }
     return payload
+}
+
+
+export async function getSubjectsTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: GET_SUBJECTS_TEACHING,
+        variables: { user_id: userId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlSubjects = res.data?.user.subjectsTeaching as Subject[];
+    return gqlSubjects;
 }

@@ -199,7 +199,7 @@ export class Model {
         date_of_birth,
         username,
         alternate_email,
-        alternate_phone
+        alternate_phone,
     }: any) {
         console.info('Unauthenticated endpoint call setUser')
         if (email) {
@@ -394,6 +394,9 @@ export class Model {
                 .getMany()
             const idcontainer = idsFromOrgs.concat(idsFromSchools)
             const ids: string[] = idcontainer.map((x: any) => x.Role_role_id)
+            if (ids.length === 0) {
+                ids.push('ffffffff-ffff-ffff-ffff-ffffffffffff')
+            }
             scope.whereInIds(ids)
         }
         return getPaginated(this, 'role', {
@@ -521,6 +524,9 @@ export class Model {
 
             const idcontainer = idsFromStudying.concat(idsFromTeaching)
             const ids: string[] = idcontainer.map((x: any) => x.class_id)
+            if (ids.length === 0) {
+                ids.push('ffffffff-ffff-ffff-ffff-ffffffffffff')
+            }
             scope.whereInIds(ids)
         }
         return getPaginated(this, 'class', {

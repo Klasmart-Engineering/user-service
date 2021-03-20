@@ -17,6 +17,7 @@ import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Subcategory } from './subcategory'
 import { Status } from './status'
+import { Class } from './class'
 
 @Entity()
 export class Subject extends BaseEntity {
@@ -36,6 +37,9 @@ export class Subject extends BaseEntity {
     @ManyToMany(() => Category)
     @JoinTable()
     public categories?: Promise<Category[]>
+
+    @ManyToMany(() => Class, (_class) => _class.subjects)
+    public classes?: Promise<Class[]>
 
     public async subcategories(
         args: any,

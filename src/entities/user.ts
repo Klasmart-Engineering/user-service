@@ -36,6 +36,7 @@ import {
     toCursorHash,
 } from '../utils/paginated.interface'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
+import { Context } from '../main'
 
 @Entity()
 export class User extends BaseEntity implements Paginatable<User, string> {
@@ -265,6 +266,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             family_name,
             email,
             phone,
+            username,
             date_of_birth,
             gender,
             avatar,
@@ -309,6 +311,9 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             }
             if (phone !== undefined) {
                 this.phone = phone
+            }
+            if (username !== undefined) {
+                this.username = username
             }
             if (date_of_birth !== undefined) {
                 this.date_of_birth = date_of_birth
@@ -379,6 +384,20 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             console.error(e)
             return false
         }
+    }
+    public async subjectsTeaching(
+        { scope }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        scope = scope
+            .innerJoin('Subject.classes', 'Class')
+            .innerJoin('Class.teachers', 'User')
+            .andWhere('User.user_id = :user_id', {
+                user_id: this.user_id,
+            })
+
+        return await scope.getMany()
     }
 
     public async createOrganization(

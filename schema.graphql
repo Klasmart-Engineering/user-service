@@ -200,6 +200,7 @@ type User {
         permission_name: String!
     ): [OrganizationMembership]
     schoolsWithPermission(permission_name: String!): [SchoolMembership]
+    subjectsTeaching: [Subject] @isAdmin(entity: "subject")
 
     #mutations
     set(

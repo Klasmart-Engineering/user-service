@@ -94,8 +94,8 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
     }
 
     private nonAdminUserScope(scope: any, context?: any) {
-        scope.select('User').where('User.user_id = :userId', {
-            userId: context.permissions.getUserId(),
+        scope.select('User').where('User.user_id = :d_userId', {
+            d_userId: context.permissions.getUserId(),
         })
     }
 
@@ -104,8 +104,8 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             .select('Organization')
             .distinct(true)
             .innerJoin('Organization.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.user_id = :userId', {
-                userId: context.permissions.getUserId(),
+            .andWhere('OrganizationMembership.user_id = :d_userId', {
+                d_userId: context.permissions.getUserId(),
             })
     }
 
@@ -117,9 +117,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = AgeRange.organization'
             )
             .where(
-                '(OrganizationMembership.user_id = :user_id OR AgeRange.system = :system)',
+                '(OrganizationMembership.user_id = :d_user_id OR AgeRange.system = :system)',
                 {
-                    user_id: context.permissions.getUserId(),
+                    d_user_id: context.permissions.getUserId(),
                     system: true,
                 }
             )
@@ -133,9 +133,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = Grade.organization'
             )
             .where(
-                '(OrganizationMembership.user_id = :user_id OR Grade.system = :system)',
+                '(OrganizationMembership.user_id = :d_user_id OR Grade.system = :system)',
                 {
-                    user_id: context.permissions.getUserId(),
+                    d_user_id: context.permissions.getUserId(),
                     system: true,
                 }
             )
@@ -149,9 +149,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = Category.organization'
             )
             .where(
-                '(OrganizationMembership.user_id = :user_id OR Category.system = :system)',
+                '(OrganizationMembership.user_id = :d_user_id OR Category.system = :system)',
                 {
-                    user_id: context.permissions.getUserId(),
+                    d_user_id: context.permissions.getUserId(),
                     system: true,
                 }
             )
@@ -165,9 +165,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = Subcategory.organization'
             )
             .where(
-                '(OrganizationMembership.user_id = :user_id OR Subcategory.system = :system)',
+                '(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)',
                 {
-                    user_id: context.permissions.getUserId(),
+                    d_user_id: context.permissions.getUserId(),
                     system: true,
                 }
             )
@@ -181,9 +181,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = Subject.organization'
             )
             .where(
-                '(OrganizationMembership.user_id = :user_id OR Subject.system = :system)',
+                '(OrganizationMembership.user_id = :d_user_id OR Subject.system = :system)',
                 {
-                    user_id: context.permissions.getUserId(),
+                    d_user_id: context.permissions.getUserId(),
                     system: true,
                 }
             )
@@ -197,9 +197,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = Program.organization'
             )
             .where(
-                '(OrganizationMembership.user_id = :user_id OR Program.system = :system)',
+                '(OrganizationMembership.user_id = :d_user_id OR Program.system = :system)',
                 {
-                    user_id: context.permissions.getUserId(),
+                    d_user_id: context.permissions.getUserId(),
                     system: true,
                 }
             )

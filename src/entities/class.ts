@@ -70,7 +70,7 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
     @JoinTable()
     public grades?: Promise<Grade[]>
 
-    @ManyToMany(() => Subject)
+    @ManyToMany(() => Subject, (subject) => subject.classes)
     @JoinTable()
     public subjects?: Promise<Subject[]>
 
