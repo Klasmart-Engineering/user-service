@@ -76,6 +76,12 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
 
+    @Column({ nullable: true })
+    public alternate_email?: string
+
+    @Column({ nullable: true })
+    public alternate_phone?: string
+
     @OneToMany(() => OrganizationMembership, (membership) => membership.user)
     @JoinColumn({
         name: 'organization_id',
@@ -259,6 +265,8 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             date_of_birth,
             gender,
             avatar,
+            alternate_email,
+            alternate_phone
         }: any,
         context: any,
         info: GraphQLResolveInfo
@@ -308,6 +316,14 @@ export class User extends BaseEntity implements Paginatable<User, string> {
 
             if (typeof avatar === 'string') {
                 this.avatar = avatar
+            }
+
+            if (alternate_email && validateEmail(alternate_email)) {
+                this.alternate_email = alternate_email
+            }
+
+            if (alternate_phone && validatePhone(alternate_phone)) {
+                this.alternate_phone = alternate_phone
             }
 
             await this.save()

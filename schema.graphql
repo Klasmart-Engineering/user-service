@@ -116,6 +116,8 @@ type Mutation {
         avatar: String
         date_of_birth: String
         username: String
+        alternate_email: String
+        alternate_phone: String
         gender: String
     ): User
     newUser(
@@ -173,6 +175,8 @@ type User {
     date_of_birth: String
     avatar: String
     username: String
+    alternate_email: String
+    alternate_phone: String
     gender: String
     #connections
     """
@@ -206,6 +210,8 @@ type User {
         date_of_birth: String
         gender: String
         avatar: String
+        alternate_email: String
+        alternate_phone: String
     ): User
     createOrganization(
         organization_name: String
@@ -280,6 +286,8 @@ type Organization {
         organization_role_ids: [ID!]
         school_ids: [ID!]
         school_role_ids: [ID!]
+        alternate_email: String
+        alternate_phone: String
     ): MembershipUpdate
     editMembership(
         email: String
@@ -293,6 +301,8 @@ type Organization {
         organization_role_ids: [ID!]
         school_ids: [ID!]
         school_role_ids: [ID!]
+        alternate_email: String
+        alternate_phone: String
     ): MembershipUpdate
     createRole(role_name: String!, role_description: String!): Role
     createSchool(school_name: String, shortcode: String): School

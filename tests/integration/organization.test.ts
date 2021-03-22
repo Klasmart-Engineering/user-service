@@ -784,7 +784,7 @@ describe("organization", () => {
     });
 
     describe("inviteUser", async () => {
-        context("We have an email or phone, profile_name, given_name, family_name, date_of_birth, organization_role_ids, school_ids and school_role_ids", () => {
+        context("We have an email or phone, profile_name, given_name, family_name, date_of_birth, organization_role_ids, school_ids, school_role_ids, alternate_email, alternate_phone", () => {
             let userId: string;
             let organizationId: string;
             let schoolId: string;
@@ -824,11 +824,12 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(schoolId),
                     new Array(roleId),
-                    { authorization: JoeAuthToken }
+                    { authorization: JoeAuthToken },
                 )
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
+                
 
                 expect(newUser).to.exist
                 expect(newUser?.email).to.equal(email)
@@ -1082,6 +1083,34 @@ describe("organization", () => {
                 expect(membership.shortcode).to.not.equal("RANGER 13")
             });
 
+            it("creates the user with alternate_email and altnernate_phone when provided", async () => {
+                let email = "bob@nowhere.com"
+                let alternate_email  = "some@email.com"
+                let alternate_phone  = "+123456789"
+                let gqlresult = await inviteUser(
+                    testClient,
+                    organizationId,
+                    email,
+                    undefined,
+                    undefined, undefined,
+                    undefined,
+                    "Bunter",
+                    "Male",
+                    undefined,
+                    new Array(roleId),
+                    Array(schoolId),
+                    new Array(roleId),
+                    { authorization: JoeAuthToken },
+                    alternate_email, alternate_phone
+                )
+                let newUser = gqlresult?.user
+
+                expect(newUser).to.exist
+                expect(newUser?.email).to.equal(email)
+                expect(newUser?.alternate_email).to.equal(alternate_email)
+                expect(newUser?.alternate_phone).to.equal(alternate_phone)
+            });
+
             context("and the organization is marked as inactive", () => {
                 beforeEach(async () => {
                     await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });
@@ -1241,6 +1270,26 @@ describe("organization", () => {
                 expect(membership.organization_id).to.equal(organizationId)
                 expect(membership.user_id).to.equal(newUser.user_id)
             });
+
+            it("edits user when alternate_email and alternate_password are provided", async () => {
+                let email = "bob@nowhere.com"
+                let alternate_email = "a@a.com"
+                let alternate_phone = "+123456789"
+                let gqlresult = await editMembership(
+                    testClient, 
+                    organizationId, 
+                    email, undefined, undefined, undefined, 
+                    undefined, undefined, undefined, undefined, 
+                    new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken }, undefined,
+                    alternate_email, alternate_phone)
+                let newUser = gqlresult.user
+                expect(newUser).to.exist
+                expect(newUser.email).to.equal(email)
+                expect(newUser.alternate_email).to.equal(alternate_email)
+                expect(newUser.alternate_phone).to.equal(alternate_phone)
+
+            });
+            
             context("and the organization is marked as inactive", () => {
                 beforeEach(async () => {
                     await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });

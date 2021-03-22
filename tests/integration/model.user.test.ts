@@ -46,6 +46,8 @@ describe("model.user", () => {
                 email: faker.internet.email(),
                 avatar: "my new avatar",
                 date_of_birth: "03-1994",
+                alternate_email: "a@a.com",
+                alternate_phone: "+123456789"
             };
         });
 

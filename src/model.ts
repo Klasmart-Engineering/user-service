@@ -198,6 +198,8 @@ export class Model {
         avatar,
         date_of_birth,
         username,
+        alternate_email,
+        alternate_phone
     }: any) {
         console.info('Unauthenticated endpoint call setUser')
         if (email) {
@@ -238,6 +240,13 @@ export class Model {
         }
         if (username !== undefined) {
             user.username = username
+        }
+        if (alternate_email && validateEmail(alternate_email)) {
+            user.alternate_email = alternate_email
+        }
+
+        if (alternate_phone) {
+            user.alternate_phone = alternate_phone
         }
 
         await this.manager.save(user)
@@ -287,7 +296,6 @@ export class Model {
         shortCode,
     }: Organization) {
         console.info('Unauthenticated endpoint call setOrganization')
-
         const organization = await this.organizationRepository.findOneOrFail(
             organization_id
         )

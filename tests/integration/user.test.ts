@@ -59,6 +59,8 @@ describe("user", () => {
             expect(dbUser).to.include(gqlUpdatedUser);
             expect(dbUser.date_of_birth).to.eq(gqlUpdatedUser.date_of_birth)
             expect(dbUser.gender).to.eq(gqlUpdatedUser.gender)
+            expect(dbUser.alternate_email).to.eq(gqlUpdatedUser.alternate_email)
+            expect(dbUser.alternate_phone).to.eq(gqlUpdatedUser.alternate_phone)
         });
     });
 

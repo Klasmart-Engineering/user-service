@@ -52,7 +52,9 @@ const SET_USER = `
             $email: String
             $avatar: String
             $date_of_birth: String
-            $username: String) {
+            $username: String
+            $alternate_email: String
+            $alternate_phone: String) {
         user(
             user_id: $user_id
             given_name: $given_name
@@ -61,6 +63,8 @@ const SET_USER = `
             avatar: $avatar
             date_of_birth: $date_of_birth
             username: $username
+            alternate_email: $alternate_email
+            alternate_phone: $alternate_phone
         ) {
             user_id
             given_name
@@ -69,6 +73,8 @@ const SET_USER = `
             avatar
             date_of_birth
             username
+            alternate_email
+            alternate_phone
         }
     }
 `;
