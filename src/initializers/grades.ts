@@ -1,4 +1,5 @@
 import { Grade } from '../entities/grade'
+import { Status } from '../entities/status'
 
 export class GradesInitializer {
     SYSTEM_GRADES = [
@@ -99,6 +100,7 @@ export class GradesInitializer {
                 name: systemGrade.name,
                 system: true,
                 organization_id: null,
+                status: Status.ACTIVE,
             }
 
             await Grade.createQueryBuilder()
@@ -107,7 +109,7 @@ export class GradesInitializer {
                 .values(gradeAttributes)
                 .orUpdate({
                     conflict_target: ['id'],
-                    overwrite: ['name', 'system', 'organization_id'],
+                    overwrite: ['name', 'system', 'organization_id', 'status'],
                 })
                 .execute()
         }

@@ -4,6 +4,7 @@ import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
 import { Program } from '../entities/program'
 import { Subject } from '../entities/subject'
+import { Status } from '../entities/status'
 
 export class ProgramsInitializer {
     SYSTEM_PROGRAMS = [
@@ -173,6 +174,7 @@ export class ProgramsInitializer {
                 name: systemProgram.name,
                 system: true,
                 organization_id: null,
+                status: Status.ACTIVE,
             }
 
             await Program.createQueryBuilder()
@@ -181,7 +183,7 @@ export class ProgramsInitializer {
                 .values(programAttributes)
                 .orUpdate({
                     conflict_target: ['id'],
-                    overwrite: ['name', 'system', 'organization_id'],
+                    overwrite: ['name', 'system', 'organization_id', 'status'],
                 })
                 .execute()
 

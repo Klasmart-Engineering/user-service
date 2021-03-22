@@ -2,6 +2,7 @@ import { In } from 'typeorm'
 
 import { Category } from '../entities/category'
 import { Subject } from '../entities/subject'
+import { Status } from '../entities/status'
 
 export class SubjectsInitializer {
     SYSTEM_SUBJECTS = [
@@ -149,6 +150,7 @@ export class SubjectsInitializer {
                 name: systemSubject.name,
                 system: true,
                 organization_id: null,
+                status: Status.ACTIVE,
             }
 
             await Subject.createQueryBuilder()
@@ -157,7 +159,7 @@ export class SubjectsInitializer {
                 .values(subjectAttributes)
                 .orUpdate({
                     conflict_target: ['id'],
-                    overwrite: ['name', 'system', 'organization_id'],
+                    overwrite: ['name', 'system', 'organization_id', 'status'],
                 })
                 .execute()
 

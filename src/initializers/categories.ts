@@ -2,6 +2,7 @@ import { In } from 'typeorm'
 
 import { Category } from '../entities/category'
 import { Subcategory } from '../entities/subcategory'
+import { Status } from '../entities/status'
 
 export class CategoriesInitializer {
     SYSTEM_CATEGORIES = [
@@ -690,6 +691,7 @@ export class CategoriesInitializer {
                 name: systemCategory.name,
                 system: true,
                 organization_id: null,
+                status: Status.ACTIVE,
             }
 
             await Category.createQueryBuilder()
@@ -698,7 +700,7 @@ export class CategoriesInitializer {
                 .values(categoryAttributes)
                 .orUpdate({
                     conflict_target: ['id'],
-                    overwrite: ['name', 'system', 'organization_id'],
+                    overwrite: ['name', 'system', 'organization_id', 'status'],
                 })
                 .execute()
 

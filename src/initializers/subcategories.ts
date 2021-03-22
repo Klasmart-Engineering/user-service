@@ -1,4 +1,5 @@
 import { Subcategory } from '../entities/subcategory'
+import { Status } from '../entities/status'
 
 export class SubcategoriesInitializer {
     SYSTEM_SUBCATEGORIES = [
@@ -239,6 +240,7 @@ export class SubcategoriesInitializer {
                 name: systemSubcategory.name,
                 system: true,
                 organization_id: null,
+                status: Status.ACTIVE,
             }
 
             await Subcategory.createQueryBuilder()
@@ -247,7 +249,7 @@ export class SubcategoriesInitializer {
                 .values(subcategoryAttributes)
                 .orUpdate({
                     conflict_target: ['id'],
-                    overwrite: ['name', 'system', 'organization_id'],
+                    overwrite: ['name', 'system', 'organization_id', 'status'],
                 })
                 .execute()
         }

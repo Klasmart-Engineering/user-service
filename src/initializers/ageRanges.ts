@@ -1,5 +1,6 @@
 import { AgeRange } from '../entities/ageRange'
 import { AgeRangeUnit } from '../entities/ageRangeUnit'
+import { Status } from '../entities/status'
 
 export class AgeRangesInitializer {
     SYSTEM_AGE_RANGES = [
@@ -64,6 +65,7 @@ export class AgeRangesInitializer {
                 high_value_unit: systemAgeRange.high_value_unit,
                 system: true,
                 organization_id: null,
+                status: Status.ACTIVE,
             }
 
             await AgeRange.createQueryBuilder()
@@ -80,6 +82,7 @@ export class AgeRangesInitializer {
                         'high_value_unit',
                         'system',
                         'organization_id',
+                        'status',
                     ],
                 })
                 .execute()
