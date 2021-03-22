@@ -204,6 +204,7 @@ export const schoolAdminRole = {
         PermissionName.edit_teacher_in_class_20336,
         PermissionName.edit_subjects_20337,
         PermissionName.edit_students_in_class_20338,
+        PermissionName.view_user_page_40101,
         PermissionName.view_my_school_users_40111,
         PermissionName.create_my_school_users_40221,
         PermissionName.edit_my_school_users_40331,

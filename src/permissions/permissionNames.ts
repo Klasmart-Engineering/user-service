@@ -16,6 +16,7 @@ export enum PermissionName {
     view_folder_290 = 'view_folder_290',
     edit_folder_291 = 'edit_folder_291',
     delete_folder_292 = 'delete_folder_292',
+    bulk_visibility_settings_293 = 'bulk_visibility_settings_293',
     logos_1000 = 'logos_1000',
     my_account_1010 = 'my_account_1010',
     my_settings_1020 = 'my_settings_1020',

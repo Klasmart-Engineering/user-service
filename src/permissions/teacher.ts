@@ -133,7 +133,6 @@ export const teacherRole = {
         PermissionName.view_subjects_20115,
         PermissionName.join_organization_10881,
         PermissionName.leave_organization_10882,
-        PermissionName.school_resources_20100,
         PermissionName.view_my_class_users_40112,
         PermissionName.create_my_class_users_40222,
         PermissionName.edit_my_class_users_40332,
