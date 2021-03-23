@@ -34,6 +34,8 @@ export const parentRole = {
         PermissionName.create_own_organization_10220,
         PermissionName.join_organization_10881,
         PermissionName.leave_organization_10882,
+        PermissionName.view_program_20111,
+        PermissionName.view_subjects_20115,
         PermissionName.view_my_users_40113,
         PermissionName.create_my_users_40223,
         PermissionName.edit_my_users_40333,

@@ -33,6 +33,8 @@ export const studentRole = {
         PermissionName.create_own_organization_10220,
         PermissionName.join_organization_10881,
         PermissionName.leave_organization_10882,
+        PermissionName.view_program_20111,
+        PermissionName.view_subjects_20115,
         PermissionName.support_60100,
         PermissionName.online_support_60101,
         PermissionName.use_free_as_recommended_content_for_study_81008,
