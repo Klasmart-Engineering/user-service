@@ -175,6 +175,7 @@ type User {
     date_of_birth: String
     avatar: String
     username: String
+    primary: Boolean
     alternate_email: String
     alternate_phone: String
     gender: String
@@ -224,6 +225,7 @@ type User {
     merge(other_id: String): User
     addOrganization(organization_id: ID!): OrganizationMembership
     addSchool(school_id: ID!): OrganizationMembership
+    setPrimary(_: Int): Boolean @isAdmin(entity: "user")
 }
 
 type Organization {

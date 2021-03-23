@@ -68,6 +68,36 @@ const SET = `
     }
 `;
 
+const SET_EMAIL = `
+    mutation myMutation(
+            $user_id: ID!
+            $email: String) {
+        user(user_id: $user_id) {
+            set(
+                email: $email
+            ) {
+                email
+            }
+        }
+    }
+`;
+
+const SET_PRIMARY = `
+    mutation myMutation($user_id: ID!) {
+        user(user_id: $user_id) {
+            setPrimary
+        }
+    }
+`;
+
+const GET_PRIMARY = `
+    query myQuery($user_id: ID!) {
+        user(user_id: $user_id) {
+            primary
+        }
+    }
+`;
+
 const GET_ORGANIZATION_MEMBERSHIPS = `
     query myQuery($user_id: ID!) {
         user(user_id: $user_id) {
@@ -274,6 +304,51 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User,
 
     const res = await gqlTry(operation);
     const gqlUser = res.data?.user.set as User;
+    return gqlUser;
+}
+
+export async function updateUserEmail(
+    testClient: ApolloServerTestClient,
+    user: User,
+    email: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient;
+    const userMod = { email };
+
+    const operation = () => mutate({
+        mutation: SET_EMAIL,
+        variables: { user_id: user.user_id, ...userMod },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlUser = res.data?.user as User;
+    return gqlUser;
+}
+
+export async function setPrimaryUser(
+    testClient: ApolloServerTestClient,
+    user: User,
+    headers?: Headers
+) {
+    const { mutate, query } = testClient;
+
+    const mutationOperation = () => mutate({
+        mutation: SET_PRIMARY,
+        variables: { user_id: user.user_id },
+        headers: headers,
+    });
+    await gqlTry(mutationOperation);
+
+    const queryOperation = () => query({
+        query: GET_PRIMARY,
+        variables: { user_id: user.user_id },
+        headers: headers,
+    });
+    const res = await gqlTry(queryOperation);
+
+    const gqlUser = res.data?.user as User;
     return gqlUser;
 }
 

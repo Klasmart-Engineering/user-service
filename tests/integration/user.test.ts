@@ -6,7 +6,21 @@ import { createServer } from "../../src/utils/createServer";
 import { accountUUID, User } from "../../src/entities/user";
 import { OrganizationMembership } from "../../src/entities/organizationMembership";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
-import { createOrganizationAndValidate, createOrganization, getClassesStudying, getClassesTeaching, getOrganizationMembership, getOrganizationMemberships, getSchoolMembership, getSchoolMemberships, getUserSchoolMembershipsWithPermission, mergeUser, updateUser } from "../utils/operations/userOps";
+import {
+    createOrganizationAndValidate,
+    createOrganization,
+    getClassesStudying,
+    getClassesTeaching,
+    getOrganizationMembership,
+    getOrganizationMemberships,
+    getSchoolMembership,
+    getSchoolMemberships,
+    getUserSchoolMembershipsWithPermission,
+    mergeUser,
+    updateUser,
+    setPrimaryUser,
+    updateUserEmail
+} from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass } from "../utils/operations/classOps";
@@ -36,6 +50,7 @@ describe("user", () => {
     let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
     let user: User;
+    let user2: User;
 
     before(async () => {
         connection = await createTestConnection();
@@ -61,6 +76,102 @@ describe("user", () => {
             expect(dbUser.gender).to.eq(gqlUpdatedUser.gender)
             expect(dbUser.alternate_email).to.eq(gqlUpdatedUser.alternate_email)
             expect(dbUser.alternate_phone).to.eq(gqlUpdatedUser.alternate_phone)
+        });
+    });
+
+    describe("setPrimary", () => {
+        beforeEach(async () => {
+            user = await createUserJoe(testClient);
+            user2 = await createUserBilly(testClient);
+        });
+
+        context("when primary user doesn't exists", () => {
+            it("should set an user as primary", async () => {
+                const gqlPrimaryUser = await setPrimaryUser(
+                    testClient,
+                    user,
+                    { authorization: JoeAuthToken }
+                );
+                const dbUser = await User.findOneOrFail({
+                    where: { user_id: user.user_id }
+                });
+    
+                expect(gqlPrimaryUser).to.exist;
+                expect(dbUser).to.include(gqlPrimaryUser);
+                expect(dbUser.primary).to.eq(gqlPrimaryUser.primary);
+            });
+        });
+
+        context("when primary user already exists", () => {
+            it("should unset it and set another as primary", 
+            async () => {
+                await updateUserEmail(
+                    testClient,
+                    user2,
+                    user.email as string,
+                    { authorization: BillyAuthToken }
+                );
+
+                const gqlPrimaryUser = await setPrimaryUser(
+                    testClient,
+                    user,
+                    { authorization: JoeAuthToken }
+                );
+                const gqlNewPrimaryUser = await setPrimaryUser(
+                    testClient,
+                    user2,
+                    { authorization: BillyAuthToken }
+                );
+
+                const dbUser = await User.findOneOrFail({
+                    where: { user_id: user.user_id }
+                });
+                const dbNewPrimaryUser = await User.findOneOrFail({
+                    where: { user_id: user2.user_id }
+                });
+
+                expect(gqlPrimaryUser).to.exist;
+                expect(dbUser.primary).to.eql(false);
+
+                expect(gqlNewPrimaryUser).to.exist;
+                expect(dbNewPrimaryUser).to.include(gqlNewPrimaryUser);
+                expect(dbNewPrimaryUser.primary).to.eql(true);
+            });
+        });
+
+        it("should unset the current primary user and set another as primary", 
+        async () => {
+            await updateUserEmail(
+                testClient,
+                user2,
+                user.email as string,
+                { authorization: BillyAuthToken }
+            );
+
+            const gqlPrimaryUser = await setPrimaryUser(
+                testClient,
+                user,
+                { authorization: JoeAuthToken }
+            );
+            const gqlNewPrimaryUser = await setPrimaryUser(
+                testClient,
+                user2,
+                { authorization: BillyAuthToken }
+            );
+
+            const dbUser = await User.findOneOrFail({
+                where: { user_id: user.user_id }
+            });
+            const dbNewPrimaryUser = await User.findOneOrFail({
+                where: { user_id: user2.user_id }
+            });
+
+            expect(gqlPrimaryUser).to.exist;
+            expect(dbUser.primary).to.eql(false);
+
+            expect(gqlNewPrimaryUser).to.exist;
+            expect(dbNewPrimaryUser).to.include(gqlNewPrimaryUser);
+            expect(dbNewPrimaryUser.primary).to.eql(true);
         });
     });
 

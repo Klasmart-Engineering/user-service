@@ -76,6 +76,9 @@ export class User extends BaseEntity implements Paginatable<User, string> {
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
 
+    @Column({ type: 'boolean', default: false })
+    public primary!: boolean
+
     @Column({ nullable: true })
     public alternate_email?: string
 
@@ -332,6 +335,52 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             console.error(e)
         }
     }
+
+    public async setPrimary(
+        { scope }: any,
+        context: any,
+        info: GraphQLResolveInfo
+    ) {
+        try {
+            // If the operation is not a mutation, abort the process
+            if (info.operation.operation !== 'mutation') {
+                return false
+            }
+
+            const user = await scope
+                .andWhere('User.user_id = :user_id', { user_id: this.user_id })
+                .getOne()
+
+            // Finding the primary user in this account
+            const primaryUser = await getRepository(User).findOne({
+                where: [
+                    {
+                        email: user.email,
+                        phone: user.phone,
+                        primary: true,
+                    },
+                ],
+            })
+
+            await getManager().transaction(async (manager) => {
+                if (primaryUser && primaryUser.user_id !== user.user_id) {
+                    /* Setting current primary user as false
+                    and putting as primary the given user */
+                    primaryUser.primary = false
+                    await manager.save(primaryUser)
+                }
+
+                user.primary = true
+                await manager.save(user)
+            })
+
+            return true
+        } catch (e) {
+            console.error(e)
+            return false
+        }
+    }
+
     public async createOrganization(
         { organization_name, address1, address2, phone, shortCode }: any,
         context: any,
