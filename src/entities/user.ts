@@ -266,7 +266,7 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             gender,
             avatar,
             alternate_email,
-            alternate_phone
+            alternate_phone,
         }: any,
         context: any,
         info: GraphQLResolveInfo

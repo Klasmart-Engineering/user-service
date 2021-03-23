@@ -44,7 +44,7 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
     public status!: Status
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
-    public shortcode!: string
+    public shortcode?: string
 
     @ManyToOne(() => Organization, (organization) => organization.classes)
     public organization?: Promise<Organization>

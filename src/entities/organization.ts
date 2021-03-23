@@ -509,7 +509,7 @@ export class Organization
             school_ids,
             school_role_ids,
             alternate_email,
-            alternate_phone
+            alternate_phone,
         }: any,
         context: Context,
         info: GraphQLResolveInfo
@@ -574,7 +574,7 @@ export class Organization
             school_ids,
             school_role_ids,
             alternate_email,
-            alternate_phone
+            alternate_phone,
         }: any,
         context: Context,
         info: GraphQLResolveInfo
@@ -811,8 +811,8 @@ export class Organization
                 given_name,
                 family_name,
                 date_of_birth,
-                username, 
-                alternate_email, 
+                username,
+                alternate_email,
                 alternate_phone,
                 gender
             )
@@ -892,11 +892,10 @@ export class Organization
             PermissionName.create_class_20224
         )
 
-        if (typeof shortcode === 'string') {
+        if (shortcode?.length > 0) {
             shortcode = shortcode.toUpperCase()
             if (!validateShortCode(shortcode)) {
-                console.log('invalid shortcode', shortcode)
-                return null
+                throw 'Invalid shortcode provided'
             }
         }
 
@@ -933,11 +932,10 @@ export class Organization
             PermissionName.create_school_20220
         )
 
-        if (typeof shortcode === 'string') {
+        if (shortcode?.length > 0) {
             shortcode = shortcode.toUpperCase()
             if (!validateShortCode(shortcode)) {
-                console.log('invalid shortcode', shortcode)
-                return null
+                throw 'Invalid shortcode provided'
             }
         }
 

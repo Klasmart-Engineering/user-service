@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
 import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
@@ -31,12 +31,12 @@ import { createCategory } from "../factories/category.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
 import { createSubject } from "../factories/subject.factory";
 import chaiAsPromised from "chai-as-promised";
-import chai from "chai"
 import { isRequiredArgument } from "graphql";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
 import { SHORTCODE_DEFAULT_MAXLEN } from "../../src/utils/shortcode";
-chai.use(chaiAsPromised);
+
+use(chaiAsPromised);
 
 describe("organization", () => {
     let connection: Connection;
@@ -206,34 +206,66 @@ describe("organization", () => {
             });
         });
 
+        context("when class shortcode is undefined", () => {
+            it("it creates the class", async () => {
+                const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: JoeAuthToken });
+
+                expect(cls).not.to.be.null
+                expect(cls.shortcode).not.to.be.undefined
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                const orgClasses = await dbOrg.classes || []
+                expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
+                expect(cls.status).to.eq(Status.ACTIVE)
+            });
+        });
+
+        context("when class shortcode is empty", () => {
+            it("it creates the class", async () => {
+                const cls = await createClass(testClient, organizationId, "Some Class 1", "", { authorization: JoeAuthToken });
+
+                expect(cls).not.to.be.null
+                expect(cls.shortcode).not.to.be.empty
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                const orgClasses = await dbOrg.classes || []
+                expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
+                expect(cls.status).to.eq(Status.ACTIVE)
+            });
+        });
+
+        context("when class shortcode is not empty", () => {
+            context("and the shortcode is valid", () => {
+                it("it creates the class", async () => {
+                    const cls = await createClass(testClient, organizationId, "Some Class 1", "BLOB2", { authorization: JoeAuthToken });
+
+                    expect(cls).not.to.be.null
+                    expect(cls.shortcode).to.match(shortcode_re)
+                    expect(cls.shortcode).to.equal("BLOB2")
+                    const dbOrg = await Organization.findOneOrFail(organizationId);
+                    const orgClasses = await dbOrg.classes || []
+                    expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
+                    expect(cls.status).to.eq(Status.ACTIVE)
+                });
+            });
+
+            context("and the shortcode is not valid", () => {
+                it("fails to create a class", async () => {
+                    const fn = () => createClass(testClient, organizationId, "Some Class 1", "very horrid", { authorization: JoeAuthToken });
+                    expect(fn()).to.be.rejected;
+                });
+            });
+        });
+
         context("when class name is not empty", () => {
             it("creates the class", async () => {
                 const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: JoeAuthToken });
 
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).to.match(shortcode_re)
-                expect(cls.shortcode.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
+                expect(cls.shortcode?.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
                 const dbOrg = await Organization.findOneOrFail(organizationId);
                 const orgClasses = await dbOrg.classes || []
                 expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
                 expect(cls.status).to.eq(Status.ACTIVE)
-            });
-
-            it("and it creates the class with a custom shortcode", async () => {
-                const cls = await createClass(testClient, organizationId, "Some Class 1", "BLOB2", { authorization: JoeAuthToken });
-
-                expect(cls).not.to.be.null
-                expect(cls.shortcode).to.match(shortcode_re)
-                expect(cls.shortcode).to.equal("BLOB2")
-                const dbOrg = await Organization.findOneOrFail(organizationId);
-                const orgClasses = await dbOrg.classes || []
-                expect(orgClasses.map(classInfo)).to.deep.eq([cls.class_id])
-                expect(cls.status).to.eq(Status.ACTIVE)
-            });
-
-            it("and fails to create a class with a bad shortcode", async () => {
-                const cls = await createClass(testClient, organizationId, "Some Class 1", "very horrid", { authorization: JoeAuthToken });
-                expect(cls).to.be.null              
             });
 
             context("and the class name is duplicated in the same organization", () => {
@@ -319,33 +351,65 @@ describe("organization", () => {
             });
         });
 
+        context("when school shortcode is undefined", () => {
+            it("creates the school", async () => {
+                const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
+
+                expect(school).not.to.be.null
+                expect(school.shortcode).not.to.be.undefined
+                const dbSchool = await Organization.findOneOrFail(organizationId);
+                const orgSchools = await dbSchool.schools || []
+                expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+
+            });
+        });
+
+        context("when school shortcode is empty", () => {
+            it("creates the school", async () => {
+                const school = await createSchool(testClient, organizationId, "some school 1", "", { authorization: JoeAuthToken });
+
+                expect(school).not.to.be.null
+                expect(school.shortcode).not.to.be.empty
+                const dbSchool = await Organization.findOneOrFail(organizationId);
+                const orgSchools = await dbSchool.schools || []
+                expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+
+            });
+        });
+
+        context("when school shortcode is not empty", () => {
+            context("and the shortcode is valid", () => {
+                it("creates the school", async () => {
+                    const school = await createSchool(testClient, organizationId, "some school 1", "myshort1", { authorization: JoeAuthToken });
+
+                    expect(school).not.to.be.null
+                    expect(school.shortcode).to.equal("MYSHORT1")
+                    const dbSchool = await Organization.findOneOrFail(organizationId);
+                    const orgSchools = await dbSchool.schools || []
+                    expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
+
+                });
+            });
+
+            context("and the shortcode is not valid", () => {
+                it("fails to create the school", async () => {
+                    const fn = () => createSchool(testClient, organizationId, "some school 1", "myverywrong1", { authorization: JoeAuthToken });
+                    expect(fn()).to.be.rejected;
+                });
+            });
+        });
+
         context("when school name is not empty", () => {
             it("creates the school", async () => {
                 const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: JoeAuthToken });
 
                 expect(school).not.to.be.null
-                expect(school.shortcode.length).to.equal(10)
+                expect(school.shortcode?.length).to.equal(10)
                 expect(school.shortcode).to.match(/[A-Z|0-9]+/)
                 const dbSchool = await Organization.findOneOrFail(organizationId);
                 const orgSchools = await dbSchool.schools || []
                 expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
 
-            });
-
-            it("creates the school with a custom shortcode ", async () => {
-                const school = await createSchool(testClient, organizationId, "some school 1", "MYSHORT1", { authorization: JoeAuthToken });
-
-                expect(school).not.to.be.null
-                expect(school.shortcode).to.equal("MYSHORT1")
-                const dbSchool = await Organization.findOneOrFail(organizationId);
-                const orgSchools = await dbSchool.schools || []
-                expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
-
-            });
-
-            it("if fails to create the school with an invalid custom shortcode ", async () => {
-                const school = await createSchool(testClient, organizationId, "some school 1", "myverywrong1", { authorization: JoeAuthToken });
-                expect(school).to.be.null
             });
 
             context("and the school name is duplicated in the same organization", () => {
@@ -365,7 +429,7 @@ describe("organization", () => {
 
                 });
             });
-  
+
             context("and the school name is duplicated in different organizations", () => {
                 let otherSchool: any;
 
@@ -675,8 +739,8 @@ describe("organization", () => {
                 expect(membership.shortcode).to.equal("FLAFEL3")
             });
 
-            context("We find the user, make the user a member of the organization", () => {            
-                it("should set the school in the schools membership for the user", async () => {               
+            context("We find the user, make the user a member of the organization", () => {
+                it("should set the school in the schools membership for the user", async () => {
                     let email = user.email
                     let given = user.given_name
                     let family = user.family_name
@@ -705,7 +769,7 @@ describe("organization", () => {
                     expect(gqlSchoolMemberships).to.have.lengthOf(1);
                     expect(gqlSchoolMemberships[0].school_id).to.equal(schoolId);
                 });
-           
+
                 it(" it should set a custom shortcode", async () => {
                     let email = user.email
                     let given = user.given_name
@@ -713,7 +777,7 @@ describe("organization", () => {
                     let object = await organization["_setMembership"](false, email, undefined, given, family, undefined, "Bunter", "Male", "FLAFEL3", new Array(roleId), Array(schoolId), new Array(roleId))
 
                     let membership = object.membership
-                
+
                     expect(membership).to.exist
                     expect(membership.shortcode).to.match(shortcode_re)
                     expect(membership.shortcode).to.equal("FLAFEL3")
@@ -725,7 +789,7 @@ describe("organization", () => {
                     let object = await organization["_setMembership"](false, email, undefined, given, family, undefined, "Bunter", "Male", "polkadot 45", new Array(roleId), Array(schoolId), new Array(roleId))
 
                     let membership = object.membership
-   
+
                     expect(membership).to.exist
                     expect(membership.organization_id).to.equal(organizationId)
                     expect(membership.shortcode).to.match(shortcode_re)
@@ -736,9 +800,9 @@ describe("organization", () => {
                     let given = user.given_name
                     let family = user.family_name
                     let object = await organization["_setMembership"](false, email, undefined, given, family, undefined, "Bunter", "Male", "polkadot45", new Array(roleId), Array(schoolId), new Array(roleId))
-               
+
                     let membership = object.membership
-              
+
                     expect(membership).to.exist
                     expect(membership.organization_id).to.equal(organizationId)
                     expect(membership.shortcode).to.match(shortcode_re)
@@ -829,7 +893,7 @@ describe("organization", () => {
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
-                
+
 
                 expect(newUser).to.exist
                 expect(newUser?.email).to.equal(email)
@@ -1276,10 +1340,10 @@ describe("organization", () => {
                 let alternate_email = "a@a.com"
                 let alternate_phone = "+123456789"
                 let gqlresult = await editMembership(
-                    testClient, 
-                    organizationId, 
-                    email, undefined, undefined, undefined, 
-                    undefined, undefined, undefined, undefined, 
+                    testClient,
+                    organizationId,
+                    email, undefined, undefined, undefined,
+                    undefined, undefined, undefined, undefined,
                     new Array(roleId), Array(schoolId), new Array(roleId), { authorization: JoeAuthToken }, undefined,
                     alternate_email, alternate_phone)
                 let newUser = gqlresult.user
@@ -1289,7 +1353,7 @@ describe("organization", () => {
                 expect(newUser.alternate_phone).to.equal(alternate_phone)
 
             });
-            
+
             context("and the organization is marked as inactive", () => {
                 beforeEach(async () => {
                     await deleteOrganization(testClient, organization.organization_id, { authorization: JoeAuthToken });

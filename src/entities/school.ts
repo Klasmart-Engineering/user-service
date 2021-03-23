@@ -37,7 +37,7 @@ export class School extends BaseEntity {
     public school_name!: string
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
-    public shortcode!: string
+    public shortcode?: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status

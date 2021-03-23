@@ -173,6 +173,18 @@ describe("school", () => {
                     await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId);
                 });
 
+                context("and the shortcode for the school has not been specified", () => {
+                    it("does not modify the original shortcode", async () => {
+                        const gqlSchool = await updateSchool(testClient, schoolId, originalSchoolName,  undefined,{ authorization: BillyAuthToken });
+
+                        const dbSchool = await School.findOneOrFail({ where: { school_id: schoolId } });
+                        expect(gqlSchool).to.exist;
+                        expect(school.shortcode).not.to.be.undefined
+                        expect(gqlSchool.shortcode).to.eq(school.shortcode)
+                        expect(dbSchool).to.include(gqlSchool);
+                    });
+                });
+
                 it("should return the modified school and update the database entry", async () => {
                     const gqlSchool = await updateSchool(testClient, schoolId, newSchoolName,  "MYSHORT2",{ authorization: BillyAuthToken });
 
