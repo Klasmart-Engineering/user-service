@@ -397,65 +397,63 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             throw new Error('Only one active organization per user')
         }
 
-        try {
-            if (info.operation.operation !== 'mutation') {
-                return null
-            }
-            const my_organization = await this.my_organization
-            if (my_organization) {
-                throw new Error('Only one organization per user')
-            }
-            if (typeof shortCode === 'string') {
-                shortCode = shortCode.toUpperCase()
-                if (!validateShortCode(shortCode)) {
-                    throw new Error('Invalid shortcode')
-                }
-            }
-            const organization = new Organization()
-            await getManager().transaction(async (manager) => {
-                organization.organization_id = uuid_v4()
-                organization.organization_name = organization_name
-                organization.address1 = address1
-                organization.address2 = address2
-                organization.phone = phone
-                organization.shortCode =
-                    shortCode || generateShortCode(organization.organization_id)
-                organization.owner = Promise.resolve(this)
-                organization.primary_contact = Promise.resolve(this)
-                await manager.save(organization)
-
-                const adminRoles = [
-                    await Role.findOneOrFail({
-                        where: {
-                            role_name: 'Organization Admin',
-                            system_role: true,
-                            organization: { organization_id: null },
-                        },
-                    }),
-                ]
-
-                const membership = new OrganizationMembership()
-                membership.user = Promise.resolve(this)
-                membership.user_id = this.user_id
-                membership.organization = Promise.resolve(organization)
-                membership.organization_id = organization.organization_id
-                if (adminRoles) {
-                    membership.roles = Promise.resolve(adminRoles)
-                }
-                organization.memberships = Promise.resolve([membership])
-                await manager.save(membership)
-
-                const organizationOwnership = new OrganizationOwnership()
-                organizationOwnership.user_id = this.user_id
-                organizationOwnership.organization_id =
-                    organization.organization_id
-                await manager.save(organizationOwnership)
-            })
-
-            return organization
-        } catch (e) {
-            console.error(e)
+        if (info.operation.operation !== 'mutation') {
+            return null
         }
+
+        const my_organization = await this.my_organization
+        if (my_organization) {
+            throw new Error('Only one organization per user')
+        }
+
+        if (shortCode?.length > 0) {
+            shortCode = shortCode.toUpperCase()
+            if (!validateShortCode(shortCode)) {
+                throw 'Invalid shortcode provided'
+            }
+        }
+
+        const organization = new Organization()
+        await getManager().transaction(async (manager) => {
+            organization.organization_id = uuid_v4()
+            organization.organization_name = organization_name
+            organization.address1 = address1
+            organization.address2 = address2
+            organization.phone = phone
+            organization.shortCode =
+                shortCode || generateShortCode(organization.organization_id)
+            organization.owner = Promise.resolve(this)
+            organization.primary_contact = Promise.resolve(this)
+            await manager.save(organization)
+
+            const adminRoles = [
+                await Role.findOneOrFail({
+                    where: {
+                        role_name: 'Organization Admin',
+                        system_role: true,
+                        organization: { organization_id: null },
+                    },
+                }),
+            ]
+
+            const membership = new OrganizationMembership()
+            membership.user = Promise.resolve(this)
+            membership.user_id = this.user_id
+            membership.organization = Promise.resolve(organization)
+            membership.organization_id = organization.organization_id
+            if (adminRoles) {
+                membership.roles = Promise.resolve(adminRoles)
+            }
+            organization.memberships = Promise.resolve([membership])
+            await manager.save(membership)
+
+            const organizationOwnership = new OrganizationOwnership()
+            organizationOwnership.user_id = this.user_id
+            organizationOwnership.organization_id = organization.organization_id
+            await manager.save(organizationOwnership)
+        })
+
+        return organization
     }
 
     public async addOrganization(

@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
 import { Connection } from "typeorm"
 import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
@@ -41,9 +41,9 @@ import { gql } from "apollo-server-express";
 import { Class } from "../../src/entities/class";
 
 import chaiAsPromised from "chai-as-promised";
-import chai from "chai"
 import { SHORTCODE_DEFAULT_MAXLEN } from "../../src/utils/shortcode";
-chai.use(chaiAsPromised);
+
+use(chaiAsPromised);
 
 describe("user", () => {
     let connection: Connection;
@@ -95,7 +95,7 @@ describe("user", () => {
                 const dbUser = await User.findOneOrFail({
                     where: { user_id: user.user_id }
                 });
-    
+
                 expect(gqlPrimaryUser).to.exist;
                 expect(dbUser).to.include(gqlPrimaryUser);
                 expect(dbUser.primary).to.eq(gqlPrimaryUser.primary);
@@ -103,7 +103,7 @@ describe("user", () => {
         });
 
         context("when primary user already exists", () => {
-            it("should unset it and set another as primary", 
+            it("should unset it and set another as primary",
             async () => {
                 await updateUserEmail(
                     testClient,
@@ -139,7 +139,7 @@ describe("user", () => {
             });
         });
 
-        it("should unset the current primary user and set another as primary", 
+        it("should unset the current primary user and set another as primary",
         async () => {
             await updateUserEmail(
                 testClient,
@@ -347,21 +347,42 @@ describe("user", () => {
             expect(organization.shortCode).to.match(shortcode_re)
             expect(organization.shortCode?.length).to.equal(SHORTCODE_DEFAULT_MAXLEN)
         });
-        it("should create an organization with a custom short code", async () => {
-            const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "HAPPY1");
-            expect(organization).to.exist;
-            expect(organization.shortCode).to.match(shortcode_re)
-            expect(organization.shortCode).to.equal("HAPPY1")
+
+        context("when organization shortcode is undefined", () => {
+            it("creates an organization", async () => {
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined);
+                expect(organization).to.exist;
+                expect(organization.shortCode).to.match(shortcode_re)
+                expect(organization.shortCode).not.to.be.undefined
+            });
         });
-         it("should create an organization with an uppercased custom short code", async () => {
-            const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "happy1");
-            expect(organization).to.exist;
-            expect(organization.shortCode).to.match(shortcode_re)
-            expect(organization.shortCode).to.equal("HAPPY1")
+
+        context("when organization shortcode is empty", () => {
+            it("creates an organization", async () => {
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "");
+                expect(organization).to.exist;
+                expect(organization.shortCode).to.match(shortcode_re)
+                expect(organization.shortCode).not.to.be.empty
+            });
         });
-        it("should fail to create an organization with a bad short code", async () => {
-            const organization = await createOrganization(testClient, user.user_id, "A name", "very wrong");
-            expect(organization).to.not.exist;   
+
+        context("when organization shortcode is not empty", () => {
+            context("and the shortcode is valid", () => {
+                it("creates an organization", async () => {
+                    const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, "happy1");
+                    expect(organization).to.exist;
+                    expect(organization.shortCode).to.match(shortcode_re)
+                    expect(organization.shortCode).to.equal("HAPPY1")
+                });
+            });
+
+            context("and the shortcode is not valid", () => {
+                it("should fail to create an organization with a bad short code", async () => {
+                    const fn = () => createOrganization(testClient, user.user_id, "A name", "very wrong");
+
+                    expect(fn()).to.be.rejected;
+                });
+            });
         });
 
         it("creates the organization ownership", async () => {
