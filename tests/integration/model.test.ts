@@ -46,7 +46,6 @@ import AgeRangesInitializer from "../../src/initializers/ageRanges";
 import SubjectsInitializer from "../../src/initializers/subjects";
 import GradesInitializer from "../../src/initializers/grades";
 
-
 use(chaiAsPromised);
 
 describe("model", () => {
@@ -986,6 +985,8 @@ describe("model", () => {
                 expect(result.mimetype).eq(mimetype);
                 expect(result.encoding).eq(encoding);
 
+                const usersCount = await User.count({ where: { email: 'test@test.com' } });
+                expect(usersCount).eq(1);
                 const schoolsCreated = await School.count();
                 expect(schoolsCreated).gt(0);
             });
@@ -1105,7 +1106,7 @@ describe("model", () => {
 
                 const usersCount = await User.count({ where: { email: 'test@test.com' } });
                 expect(usersCount).eq(1);
-                
+
             });
         });
     });
