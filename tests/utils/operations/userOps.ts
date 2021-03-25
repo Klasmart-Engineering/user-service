@@ -218,6 +218,17 @@ mutation myMutation($user_id: ID!, $other_id: String) {
 }
 `;
 
+const ADD_SCHOOL = `
+    mutation myMutation($user_id: ID!, $school_id: ID!) {
+        user(user_id: $user_id) {
+            addSchool(school_id: $school_id) {
+                user_id
+                school_id
+            }
+        }
+    }
+`;
+
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,
@@ -520,4 +531,18 @@ export async function getSubjectsTeaching(testClient: ApolloServerTestClient, us
     const res = await gqlTry(operation);
     const gqlSubjects = res.data?.user.subjectsTeaching as Subject[];
     return gqlSubjects;
+}
+
+export async function addSchoolToUser(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: ADD_SCHOOL,
+        variables: { user_id: userId, school_id: schoolId },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    const gqlMembership = res.data?.user.addSchool as SchoolMembership;
+    return gqlMembership;
 }

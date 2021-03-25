@@ -20,7 +20,8 @@ import {
     updateUser,
     setPrimaryUser,
     updateUserEmail,
-    getSubjectsTeaching
+    getSubjectsTeaching,
+    addSchoolToUser
 } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
@@ -37,8 +38,6 @@ import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../util
 import { createUserAndValidate } from "../utils/operations/modelOps";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
-import { Status } from "../../src/entities/status";
-import { gql } from "apollo-server-express";
 import { Class } from "../../src/entities/class";
 
 import chaiAsPromised from "chai-as-promised";
@@ -836,6 +835,41 @@ describe("user", () => {
                         expect(gqlSubjects[0].id).to.equal(subject_id)
                     });
                 });
+            });
+        });
+    });
+
+    describe("addSchool", () => {
+        let idOfUserPerformingOperation: string;
+        let schoolId: string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id)).organization_id;
+            idOfUserPerformingOperation = (await createUserBilly(testClient)).user_id;
+            schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken })).school_id;
+            const role = await createRole(testClient, organizationId);
+            await addRoleToOrganizationMembership(testClient, user.user_id, organizationId, role.role_id);
+        });
+
+        it("user should join the specified school", async () => {
+            const membership = await addSchoolToUser(testClient, user.user_id, schoolId);
+            expect(membership).to.exist;
+        });
+
+        context("when not authorized within organization", () => {
+            beforeEach(async () => {
+                //await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            });
+
+            it("should throw a permission exception and not mutate the database entries", async () => {
+                const fn = () => addSchoolToUser(testClient, user.user_id, schoolId, { authorization: BillyAuthToken });
+                expect(fn()).to.be.rejected;
+                const dbSchool = await SchoolMembership.findOneOrFail( user_id: idOfUserPerformingOperation);
+                const schools = await dbClass.schools;
+                const classes = await dbSchool.classes;
+                expect(classes).to.be.empty;
+                expect(schools).to.be.empty;
             });
         });
     });

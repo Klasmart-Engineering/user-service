@@ -587,6 +587,7 @@ describe("model", () => {
             });
         });
     });
+
     describe("getProgram", () => {
         let user: User;
         let program: Program;
@@ -672,6 +673,14 @@ describe("model", () => {
                 });
             });
         });
+    });
+
+    describe("getSubject", () => {
+        // TODO: add tests
+    });
+
+    describe("getSchool", () => {
+        // TODO: add tests
     });
 
 

@@ -706,4 +706,168 @@ describe("role", () => {
             });
         });
     });
+
+    describe("deny", () => {
+        const roleInfo = (role: Role) => { return role.role_id }
+        const nameOfPermissionToDeny = PermissionName.edit_groups_30330;
+        let organizationId: string;
+        let userId: string;
+        let roleId: string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            userId = (await createUserBilly(testClient)).user_id;
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: JoeAuthToken });
+        });
+
+        context("when is a system role", () => {
+            beforeEach(async () => {
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: JoeAuthToken });
+            });
+
+            context("and the user is not an admin", () => {
+                beforeEach(async () => {
+                    await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: JoeAuthToken });
+                });
+
+                it("raises a permission exception", async () => {
+                    const fn = () => denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: BillyAuthToken });
+                    expect(fn()).to.be.rejected;
+
+                    const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToDeny } });
+                    const permRoles = await dbPermission?.roles || []
+                    expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
+                });
+            });
+
+            context("and the user is an admin", () => {
+                context("when user has the 'edit role permissions' permission within the organization", () => {
+                    context("and permission entry exists with allow set to true", () => {
+                        beforeEach(async () => {
+                            await grantPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                        });
+
+                        it("should return the permission with 'allow' set to false and update the database entry", async () => {
+                            const gqlPermission = await denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+
+                            const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToDeny } });
+                            expect(gqlPermission).to.exist;
+                            expect(gqlPermission).to.include({ permission_name: nameOfPermissionToDeny, allow: false });
+                            const permRoles = await dbPermission?.roles || []
+                            expect(permRoles.map(roleInfo)).to.deep.include(roleId)
+
+                            expect(dbPermission).to.include(gqlPermission);
+                        });
+                    });
+
+                    context("and permission entry does not exist", () => {
+                        it("should return the permission with 'allow' set to false and create a database entry", async () => {
+                            const gqlPermission = await denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+
+                            const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToDeny } });
+                            expect(gqlPermission).to.exist;
+                            expect(gqlPermission).to.include({ permission_name: nameOfPermissionToDeny, allow: false });
+                            const permRoles = await dbPermission?.roles || []
+                            expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
+
+                            expect(dbPermission).to.include(gqlPermission);
+                        });
+                    });
+                });
+
+                context("when user does not have the 'edit role permissions' permission within the organization", () => {
+                    context("and permission entry exists with allow set to false", () => {
+                        beforeEach(async () => {
+                            await grantPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                        });
+
+                        it("should throw a permission exception, and not create a database entry", async () => {
+                            const fn = () => denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                            expect(fn()).to.be.rejected;
+
+                            const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToDeny } });
+                            expect(dbPermission.allow).to.equal(true);
+                        });
+                    });
+
+                    context("and permission entry does not exist", () => {
+                        it("should throw a permission exception, and not create a database entry", async () => {
+                            const fn = () => denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                            expect(fn()).to.be.rejected;
+
+                            const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToDeny } });
+                            const permRoles = await dbPermission?.roles || []
+                            expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
+                        });
+                    });
+                });
+            });
+        });
+
+        context("when is not a system role", () => {
+            context("when user has the 'edit role permissions' permission within the organization", () => {
+                context("and permission entry exists with allow set to true", () => {
+                    beforeEach(async () => {
+                        await grantPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                    });
+
+                    it("should return the permission with 'allow' set to false and update the database entry", async () => {
+                        const gqlPermission = await denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToDeny } });
+                        expect(gqlPermission).to.exist;
+                        expect(gqlPermission).to.include({ permission_name: nameOfPermissionToDeny, allow: false });
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.deep.include(roleId)
+
+                        expect(dbPermission).to.include(gqlPermission);
+                    });
+                });
+
+                context("and permission entry does not exist", () => {
+                    it("should return the permission with 'allow' set to false and create a database entry", async () => {
+                        const gqlPermission = await denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToDeny } });
+                        expect(gqlPermission).to.exist;
+                        expect(gqlPermission).to.include({ permission_name: nameOfPermissionToDeny, allow: false });
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
+
+                        expect(dbPermission).to.include(gqlPermission);
+                    });
+                });
+            });
+
+            context("when user does not have the 'edit role permissions' permission within the organization", () => {
+                context("and permission entry exists with allow set to false", () => {
+                    beforeEach(async () => {
+                        await grantPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                    });
+
+                    it("should throw a permission exception, and not create a database entry", async () => {
+                        const fn = () => denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                        expect(fn()).to.be.rejected;
+
+                        const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToDeny } });
+                        expect(dbPermission.allow).to.equal(true);
+                    });
+                });
+
+                context("and permission entry does not exist", () => {
+                    it("should throw a permission exception, and not create a database entry", async () => {
+                        const fn = () => denyPermission(testClient, roleId, nameOfPermissionToDeny, { authorization: JoeAuthToken });
+                        expect(fn()).to.be.rejected;
+
+                        const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToDeny } });
+                        const permRoles = await dbPermission?.roles || []
+                        expect(permRoles.map(roleInfo)).to.not.deep.include(roleId)
+                    });
+                });
+            });
+        });
+    });
 });
