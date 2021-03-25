@@ -408,22 +408,6 @@ export class Model {
         })
     }
 
-    public async setRole({ role_id, role_name }: Role) {
-        console.info('Unauthenticated endpoint call setRole')
-
-        try {
-            const role = await this.roleRepository.findOneOrFail(role_id)
-
-            if (role_name !== undefined) {
-                role.role_name = role_name
-            }
-
-            return role
-        } catch (e) {
-            console.error(e)
-        }
-    }
-
     public async getRole({ role_id }: Role) {
         console.info('Unauthenticated endpoint call getRole')
 
