@@ -30,6 +30,7 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 
 import { getPaginated } from './utils/getpaginated'
+import { readCSV } from './utils/readCSV'
 
 export class Model {
     public static async create() {
@@ -592,5 +593,19 @@ export class Model {
         await ProgramsInitializer.run()
 
         return true
+    }
+
+    // This is just for reference to make the endpoints for each entity/relation,
+    // can be removed in the future
+    public async genericCSVFileUpload(args: any) {
+        console.log(args)
+        const { file } = await args.file
+
+        return await readCSV(
+            file,
+            (row) => console.log(row),
+            (error) => console.log('Error in generic upload CSV file: ', error),
+            () => console.log('Generic Upload CSV File finished')
+        )
     }
 }

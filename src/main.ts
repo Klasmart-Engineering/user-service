@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import * as dotenv from 'dotenv'
 import { createServer } from './utils/createServer'
 import { UserPermissions } from './permissions/userPermissions'
+import { graphqlUploadExpress } from 'graphql-upload'
 
 dotenv.config({ path: __dirname + '/../.env' })
 
@@ -33,6 +34,7 @@ async function main() {
         const server = createServer(model)
 
         const app = express()
+        app.use(graphqlUploadExpress({ maxFileSize: 10000, maxFiles: 10 }))
         app.use(cookieParser())
         server.applyMiddleware({
             app,

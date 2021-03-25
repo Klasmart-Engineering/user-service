@@ -7,6 +7,7 @@ import { checkToken } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import { IsAdminDirective } from '../directives/isAdmin'
 import { IsAuthenticatedDirective } from '../directives/isAuthenticated'
+import { IsMIMETypeDirective } from '../directives/isMIMEType'
 
 export const createServer = (model: Model, context?: any) =>
     new ApolloServer({
@@ -81,11 +82,17 @@ export const createServer = (model: Model, context?: any) =>
                     model.getProgram(args, ctx),
                 createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
                     model.createOrUpdateSystemEntities(),
+
+                // This is just for reference to make the endpoints for each entity/relation,
+                // can be removed in the future
+                //genericCSVFileUpload: (_parent, args) =>
+                //    model.genericCSVFileUpload(args),
             },
         },
         schemaDirectives: {
             isAdmin: IsAdminDirective,
             isAuthenticated: IsAuthenticatedDirective,
+            isMIMEType: IsMIMETypeDirective,
         },
         subscriptions: {
             keepAlive: 1000,
@@ -120,4 +127,5 @@ export const createServer = (model: Model, context?: any) =>
                 'request.credentials': 'include',
             },
         },
+        uploads: false,
     })
