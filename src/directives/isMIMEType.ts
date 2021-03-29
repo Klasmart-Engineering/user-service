@@ -12,7 +12,7 @@ export class IsMIMETypeDirective extends SchemaDirectiveVisitor {
             context: any,
             info: any
         ) => {
-            const { file } = await args.file
+            const file = await args.file.promise
 
             if (file.mimetype !== mimetype) {
                 return null

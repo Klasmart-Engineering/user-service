@@ -30,7 +30,8 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 
 import { getPaginated } from './utils/getpaginated'
-import { readCSV } from './utils/readCSV'
+import { readCSVFile } from './utils/csv/readFile'
+import { formatCSVRow } from './utils/csv/formatRow'
 
 export class Model {
     public static async create() {
@@ -601,10 +602,11 @@ export class Model {
         console.log(args)
         const { file } = await args.file
 
-        return await readCSV(
+        return await readCSVFile(
             file,
-            (row) => console.log(row),
-            (error) => console.log('Error in generic upload CSV file: ', error),
+            this,
+            (row, rowCounter) => console.log(rowCounter, formatCSVRow(row)),
+            (error) => `Error in generic upload CSV file: ${error.message}`,
             () => console.log('Generic Upload CSV File finished')
         )
     }

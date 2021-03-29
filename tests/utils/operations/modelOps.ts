@@ -1,3 +1,5 @@
+import { ReadStream } from "fs";
+
 import { AgeRange } from "../../../src/entities/ageRange";
 import { Grade } from "../../../src/entities/grade";
 import { User } from "../../../src/entities/user";
@@ -253,6 +255,16 @@ query getSubject($id: ID!){
     status
   }
 }
+`;
+
+const GENERIC_CSV_UPLOAD_MUTATION = `
+    mutation GenericCSVFileUpload($file: Upload!) {
+        genericCSVFileUpload(file: $file) {
+            filename
+            mimetype
+            encoding
+        }
+    }
 `;
 
 /**
@@ -513,4 +525,51 @@ export async function getProgram(testClient: ApolloServerTestClient, id: string,
     const res = await gqlTry(operation);
     const gqlProgram = res.data?.program as Program;
     return gqlProgram;
+}
+
+function fileMockInput(
+    file: ReadStream,
+    filename: string,
+    mimetype: string,
+    encoding: string
+) {
+    return {
+        resolve: () => {},
+        reject: () => {},
+        promise: new Promise((resolve) => {
+            resolve({
+                filename,
+                mimetype,
+                encoding,
+                createReadStream: () => file,
+            })
+        }),
+        file: {
+            filename,
+            mimetype,
+            encoding,
+            createReadStream: () => file,
+        }
+    };
+}
+
+export async function uploadFile(
+    testClient: ApolloServerTestClient,
+    { file, filename, mimetype, encoding }: any,
+    headers?: Headers
+) {
+    const variables =  {
+        file: fileMockInput(file, filename, mimetype, encoding)
+    };
+
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: GENERIC_CSV_UPLOAD_MUTATION,
+        variables: variables,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    return res.data?.genericCSVFileUpload;
 }

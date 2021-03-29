@@ -11,6 +11,7 @@ import { convertNodeHttpToRequest, runHttpQuery } from 'apollo-server-core';
 import { ApolloServer } from 'apollo-server-express';
 import { GraphQLResponse } from 'apollo-server-types';
 import { print, DocumentNode } from 'graphql';
+import { graphqlUploadExpress } from 'graphql-upload';
 import httpMocks, { RequestOptions, ResponseOptions, Headers } from 'node-mocks-http';
 
 type StringOrAst = string | DocumentNode;
@@ -116,6 +117,7 @@ export interface ApolloServerTestClient {
  */
 export const createTestClient = (server: ApolloServer): ApolloServerTestClient => {
     const app = express();
+    app.use(graphqlUploadExpress({ maxFileSize: 10000, maxFiles: 10 }));
     server.applyMiddleware({ app });
 
     const test = async ({ query, mutation, ...args }: Query | Mutation): Promise<GraphQLResponse> => {

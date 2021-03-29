@@ -85,8 +85,8 @@ export const createServer = (model: Model, context?: any) =>
 
                 // This is just for reference to make the endpoints for each entity/relation,
                 // can be removed in the future
-                //genericCSVFileUpload: (_parent, args) =>
-                //    model.genericCSVFileUpload(args),
+                genericCSVFileUpload: (_parent, args) =>
+                    model.genericCSVFileUpload(args),
             },
         },
         schemaDirectives: {
