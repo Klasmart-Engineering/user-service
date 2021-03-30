@@ -83,10 +83,8 @@ export const createServer = (model: Model, context?: any) =>
                 createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
                     model.createOrUpdateSystemEntities(),
 
-                // This is just for reference to make the endpoints for each entity/relation,
-                // can be removed in the future
-                genericCSVFileUpload: (_parent, args) =>
-                    model.genericCSVFileUpload(args),
+                classesCSVFileUpload: (_parent, args) =>
+                    model.classesCSVFileUpload(args),
             },
         },
         schemaDirectives: {

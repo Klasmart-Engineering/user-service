@@ -257,9 +257,9 @@ query getSubject($id: ID!){
 }
 `;
 
-const GENERIC_CSV_UPLOAD_MUTATION = `
-    mutation GenericCSVFileUpload($file: Upload!) {
-        genericCSVFileUpload(file: $file) {
+const CLASSES_CSV_UPLOAD_MUTATION = `
+    mutation ClassesCSVFileUpload($file: Upload!) {
+        classesCSVFileUpload(file: $file) {
             filename
             mimetype
             encoding
@@ -565,11 +565,11 @@ export async function uploadFile(
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: GENERIC_CSV_UPLOAD_MUTATION,
+        mutation: CLASSES_CSV_UPLOAD_MUTATION,
         variables: variables,
         headers: headers,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.genericCSVFileUpload;
+    return res.data?.classesCSVFileUpload;
 }

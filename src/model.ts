@@ -8,6 +8,7 @@ import {
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User, accountUUID } from './entities/user'
+import { Program } from './entities/program'
 import {
     Organization,
     validateDOB,
@@ -30,8 +31,8 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 
 import { getPaginated } from './utils/getpaginated'
-import { readCSVFile } from './utils/csv/readFile'
-import { formatCSVRow } from './utils/csv/formatRow'
+import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
+import { getClassFromCsvRow } from './utils/csv/class'
 
 export class Model {
     public static async create() {
@@ -70,6 +71,7 @@ export class Model {
     private schoolRepository: Repository<School>
     private permissionRepository: Repository<Permission>
     private ageRangeRepository: Repository<AgeRange>
+    private programRepository: Repository<Program>
 
     constructor(connection: Connection) {
         this.connection = connection
@@ -84,6 +86,7 @@ export class Model {
         this.schoolRepository = getRepository(School, connection.name)
         this.permissionRepository = getRepository(Permission, connection.name)
         this.ageRangeRepository = getRepository(AgeRange, connection.name)
+        this.programRepository = getRepository(Program, connection.name)
     }
 
     public async getMyUser({ token, permissions }: Context) {
@@ -596,18 +599,8 @@ export class Model {
         return true
     }
 
-    // This is just for reference to make the endpoints for each entity/relation,
-    // can be removed in the future
-    public async genericCSVFileUpload(args: any) {
-        console.log(args)
-        const { file } = await args.file
-
-        return await readCSVFile(
-            file,
-            this,
-            (row, rowCounter) => console.log(rowCounter, formatCSVRow(row)),
-            (error) => `Error in generic upload CSV file: ${error.message}`,
-            () => console.log('Generic Upload CSV File finished')
-        )
+    public async classesCSVFileUpload(args: any) {
+        const { file } = await args.file;
+        return createEntityFromCsvWithRollBack(this.connection, file, getClassFromCsvRow)
     }
 }

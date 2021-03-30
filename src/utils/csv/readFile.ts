@@ -1,14 +1,10 @@
 import csv = require('csv-parser')
 import { Upload } from '../../types/upload'
 import { File } from '../../types/file'
-import { Model } from '../../model'
 
 export async function readCSVFile(
     file: Upload,
-    model: Model,
-    onData: (row: any, rowNumber: number, model: Model) => void,
-    onError: (error: any) => string,
-    onEnd: () => void
+    onData: (row: any, rowNumber: number) => void,
 ) {
     const { filename, mimetype, encoding } = file
     let rowCounter = 0 // Do not count header
@@ -19,10 +15,9 @@ export async function readCSVFile(
 
             for await (const chunk of stream) {
                 rowCounter += 1
-                await onData(chunk, rowCounter, model)
+                await onData(chunk, rowCounter)
 
                 if (!stream.readableLength) {
-                    onEnd()
                     resolve({
                         mimetype,
                         encoding,
@@ -31,8 +26,7 @@ export async function readCSVFile(
                 }
             }
         } catch (error) {
-            const errorMessage = onError(error)
-            reject(errorMessage)
+            reject(error)
         }
     })
 }

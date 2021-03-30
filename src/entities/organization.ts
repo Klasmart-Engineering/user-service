@@ -1387,7 +1387,6 @@ export class Organization
         let checkCreatePermission = false
         let checkAdminPermission = false
         const permisionContext = { organization_id: this.organization_id }
-
         const dbPrograms = []
 
         for (const programDetail of programs) {
@@ -1397,7 +1396,6 @@ export class Organization
             const program =
                 (await Program.findOne({ id: programDetail?.id })) ||
                 new Program()
-
             checkAdminPermission =
                 checkAdminPermission ||
                 program.system ||
