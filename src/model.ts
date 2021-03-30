@@ -33,6 +33,7 @@ import { Permission } from './entities/permission'
 import { getPaginated } from './utils/getpaginated'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { getClassFromCsvRow } from './utils/csv/class'
+import { processGradeFromCSVRow } from './entities/csv/grades'
 
 export class Model {
     public static async create() {
@@ -600,7 +601,20 @@ export class Model {
     }
 
     public async classesCSVFileUpload(args: any) {
-        const { file } = await args.file;
-        return createEntityFromCsvWithRollBack(this.connection, file, getClassFromCsvRow)
+        const { file } = await args.file
+        return createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            getClassFromCsvRow
+        )
+    }
+
+    public async gradesCSVFileUpload(args: any) {
+        const { file } = await args.file
+        return createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processGradeFromCSVRow
+        )
     }
 }
