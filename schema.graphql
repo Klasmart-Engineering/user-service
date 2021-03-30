@@ -169,9 +169,7 @@ type Mutation {
 
     createOrUpateSystemEntities(_: Int): Boolean @isAdmin
 
-    # This is just for reference to make the endpoints for each entity/relation,
-    # will be removed in the future
-    classesCSVFileUpload(file: Upload!): File @isAdmin @isMIMEType(mimetype: "text/csv")
+    uploadUsersFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
 }
 
 type User {

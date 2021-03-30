@@ -13,7 +13,7 @@ function formatCSVRow(row: any) {
 
     return row
 }
-export async function createEntityFromCsvWithRollBack(connection: Connection, file: any, functionToProcessEntityFromCsvRow: any) {
+export async function createEntityFromCsvWithRollBack(connection: Connection, file: any, functionToSaveEntityFromCsvRow: any) {
     const queryRunner = connection.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -22,8 +22,7 @@ export async function createEntityFromCsvWithRollBack(connection: Connection, fi
             file,
             async (row, rowCounter) => {
                 row = formatCSVRow(row)
-                const c = await functionToProcessEntityFromCsvRow(row, rowCounter);
-                await queryRunner.manager.save(c)
+                await functionToSaveEntityFromCsvRow(queryRunner.manager, row, rowCounter);
             })
         console.log('Generic Upload CSV File finished')
         await queryRunner.commitTransaction()
