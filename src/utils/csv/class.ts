@@ -21,12 +21,11 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
 
     // check if class exists in manager
     const classInManager = await manager.findOne(Class,{where:{class_name, organization: org}})
-    const classInDB = await Class.findOne({where:{class_name, organization: org}})
+    console.log('***classInManager',classInManager)
+    
     let c
     if (classInManager) {
         c = classInManager
-    } else if(classInDB) {
-        c = classInDB
     } else {
         c = new Class()
         c.class_name = class_name
@@ -53,7 +52,7 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
         programToAdd = await Program.findOne({
             where:[
                 {name: program_name, organization:org},
-                {name: program_name, organization:null},
+                {name: program_name, organization:null, system: true},
             ]
         })
         if (!programToAdd) {
