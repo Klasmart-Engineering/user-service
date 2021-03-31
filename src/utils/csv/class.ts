@@ -21,7 +21,6 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
 
     // check if class exists in manager
     const classInManager = await manager.findOne(Class,{where:{class_name, organization: org}})
-    console.log('***classInManager',classInManager)
     
     let c
     if (classInManager) {
