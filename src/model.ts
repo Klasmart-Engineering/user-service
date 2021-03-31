@@ -8,7 +8,6 @@ import {
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User, accountUUID } from './entities/user'
-import { Program } from './entities/program'
 import {
     Organization,
     validateDOB,
@@ -29,11 +28,12 @@ import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
-
 import { getPaginated } from './utils/getpaginated'
+import { processUserFromCSVRow } from './utils/csv/user'
+import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
-import { getClassFromCsvRow } from './utils/csv/class'
 import { processGradeFromCSVRow } from './entities/csv/grades'
+import { processOrganizationFromCSVRow } from './utils/csv/organization'
 
 export class Model {
     public static async create() {
@@ -72,7 +72,6 @@ export class Model {
     private schoolRepository: Repository<School>
     private permissionRepository: Repository<Permission>
     private ageRangeRepository: Repository<AgeRange>
-    private programRepository: Repository<Program>
 
     constructor(connection: Connection) {
         this.connection = connection
@@ -87,7 +86,6 @@ export class Model {
         this.schoolRepository = getRepository(School, connection.name)
         this.permissionRepository = getRepository(Permission, connection.name)
         this.ageRangeRepository = getRepository(AgeRange, connection.name)
-        this.programRepository = getRepository(Program, connection.name)
     }
 
     public async getMyUser({ token, permissions }: Context) {
@@ -600,16 +598,64 @@ export class Model {
         return true
     }
 
-    public async classesCSVFileUpload(args: any) {
+    public async uploadOrganizationsFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
         const { file } = await args.file
-        return createEntityFromCsvWithRollBack(
+        await createEntityFromCsvWithRollBack(
             this.connection,
             file,
-            getClassFromCsvRow
+            processOrganizationFromCSVRow
         )
+
+        return file
     }
 
-    public async gradesCSVFileUpload(args: any) {
+    public async uploadUsersFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processUserFromCSVRow
+        )
+
+        return file
+    }
+
+    public async uploadClassesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processClassFromCSVRow
+        )
+
+        return file
+    }
+
+    public async uploadGradesFromCSV(args: any) {
         const { file } = await args.file
         return createEntityFromCsvWithRollBack(
             this.connection,

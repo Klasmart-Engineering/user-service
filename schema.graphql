@@ -169,8 +169,10 @@ type Mutation {
 
     createOrUpateSystemEntities(_: Int): Boolean @isAdmin
 
-    classesCSVFileUpload(file: Upload!): File @isAdmin @isMIMEType(mimetype: "text/csv")
-    gradesCSVFileUpload(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadOrganizationsFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadUsersFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadClassesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadGradesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
 }
 
 type User {

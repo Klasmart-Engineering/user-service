@@ -82,11 +82,14 @@ export const createServer = (model: Model, context?: any) =>
                     model.getProgram(args, ctx),
                 createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
                     model.createOrUpdateSystemEntities(),
-
-                classesCSVFileUpload: (_parent, args) =>
-                    model.classesCSVFileUpload(args),
-                gradesCSVFileUpload: (_parent, args) =>
-                    model.gradesCSVFileUpload(args),
+                uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadOrganizationsFromCSV(args, ctx, info),
+                uploadUsersFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadUsersFromCSV(args, ctx, info),
+                uploadClassesFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadClassesFromCSV(args, ctx, info),
+                uploadGradesFromCSV: (_parent, args) =>
+                    model.uploadGradesFromCSV(args),
             },
         },
         schemaDirectives: {
