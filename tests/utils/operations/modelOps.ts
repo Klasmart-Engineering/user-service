@@ -267,6 +267,16 @@ const USER_CSV_UPLOAD_MUTATION = `
     }
 `;
 
+const CLASS_CSV_UPLOAD_MUTATION = `
+    mutation classCSVFileUpload($file: Upload!) {
+        uploadClassesFromCSV(file: $file) {
+            filename
+            mimetype
+            encoding
+        }
+    }
+`;
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -572,4 +582,25 @@ export async function uploadFile(
 
     const res = await gqlTry(operation);
     return res.data?.uploadOrganizationsFromCSV;
+}
+
+export async function uploadClassesFile(
+    testClient: ApolloServerTestClient,
+    { file, filename, mimetype, encoding }: any,
+    headers?: Headers
+) {
+    const variables =  {
+        file: fileMockInput(file, filename, mimetype, encoding)
+    };
+
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: CLASS_CSV_UPLOAD_MUTATION,
+        variables: variables,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    return res.data?.uploadClassesFromCSV;
 }

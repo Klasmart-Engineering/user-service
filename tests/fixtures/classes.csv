@@ -1,3 +1,6 @@
 organization_name,class_name,class_shortcode,school_name,program_name
 my-org,class1,,test-school,outdoor activities
-my-org,class2,3XABK3ZZS1,,outdoor activities
+my-org,class2,3XABK3ZZS1,test-school,Bada Read
+my-org,class3
+my-org,class4,,test-school,outdoor activities
+my-org,class4,,test-school2,Bada Read

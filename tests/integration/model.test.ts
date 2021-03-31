@@ -1,5 +1,7 @@
 import { expect, use } from "chai";
 import { Connection } from "typeorm";
+import fs from 'fs';
+import { resolve } from 'path';
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
@@ -9,7 +11,7 @@ import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
-import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram } from "../utils/operations/modelOps";
+import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram, uploadClassesFile} from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
@@ -22,6 +24,9 @@ import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
+import { createSchool } from "../factories/school.factory";
+import { Class } from "../../src/entities/class";
+import { School } from "../../src/entities/school";
 
 use(chaiAsPromised);
 
@@ -674,5 +679,118 @@ describe("model", () => {
         });
     });
 
+    describe("UploadClassessCsv", ()=> {
+        let expectedOrg: Organization
+        let expectedProg: Program
+        let expectedNoneProg: Program
+        let expectedSystemProg: Program
+        let expectedSchool: School
+        let expectedSchool2: School
+        beforeEach(async () => {
+            expectedOrg = createOrganization()
+            expectedOrg.organization_name = "my-org"
+            await connection.manager.save(expectedOrg)
 
+            expectedProg = createProgram(expectedOrg)
+            expectedProg.name = "outdoor activities"
+            await connection.manager.save(expectedProg)
+
+            expectedSystemProg = createProgram()
+            expectedSystemProg.organization = undefined
+            expectedSystemProg.name = "Bada Read"
+            expectedSystemProg.system = true
+            await connection.manager.save(expectedSystemProg)
+
+            expectedNoneProg = createProgram()
+            expectedNoneProg.organization = undefined
+            expectedNoneProg.name = "None Specified"
+            expectedNoneProg.system = true
+            await connection.manager.save(expectedNoneProg)
+
+            expectedSchool = createSchool(expectedOrg, 'test-school')
+            await connection.manager.save(expectedSchool)
+
+            expectedSchool2 = createSchool(expectedOrg, 'test-school2')
+            await connection.manager.save(expectedSchool2)
+        })
+
+        context("when I upload csv for classes", ()=>{
+            beforeEach(async ()=>{
+                const filename = "classes.csv";
+                const file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const mimetype = "text/csv";
+                const encoding = "7bit";
+
+                await uploadClassesFile(testClient, { file, filename, mimetype, encoding }, { authorization: JoeAuthToken });
+            })
+            it('should create a class with school and program when present', async()=>{
+                const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
+                const schools = await dbClass.schools || []
+                const programs = await dbClass.programs || []
+                
+                expect(schools.length).to.equal(1)
+                expect(programs.length).to.equal(1)
+            })
+            it('should create a class with specified shortcode and system program', async()=>{
+                const dbClass = await Class.findOneOrFail({where:{class_name:"class2", organization:expectedOrg}});
+
+                const schools = await dbClass.schools || []
+                const programs = await dbClass.programs || []
+                
+                expect(dbClass.shortcode).to.equal("3XABK3ZZS1")
+                expect(schools.length).to.equal(1)
+                expect(programs.length).to.equal(1)
+                expect(programs[0].name).to.equal('Bada Read')
+            })
+            it('should create a class with no school and none specified program', async()=>{
+                const dbClass = await Class.findOneOrFail({where:{class_name:"class3", organization:expectedOrg}});
+                const schools = await dbClass.schools || []
+                const programs = await dbClass.programs || []
+
+                expect(schools.length).to.equal(0)
+                expect(programs.length).to.equal(1)
+                expect(programs[0].name).to.equal('None Specified')
+            })
+            it('should create a class with multiple schools and programs', async()=>{
+                const dbClass = await Class.findOneOrFail({where:{class_name:"class4", organization:expectedOrg}});
+                const schools = await dbClass.schools || []
+                const programs = await dbClass.programs || []
+                
+                expect(schools.length).to.equal(2)
+                expect(programs.length).to.equal(2)
+            })
+        })
+
+        context("when I upload csv for classes with malformed rows", ()=>{
+            it('should throw an error (missing org/classname) and rollback when all transactions', async()=>{
+                const filename = "classes-bad.csv";
+                const file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const mimetype = "text/csv";
+                const encoding = "7bit";
+                try{
+                    await uploadClassesFile(testClient, { file, filename, mimetype, encoding }, { authorization: JoeAuthToken })
+                } catch (err) {
+                    expect(err).to.contain(Error(`Unexpected error value: "missing organization_name or class_name at row 2"`))
+                }
+
+                const dbClass = await Class.find()
+                expect(dbClass.length).to.equal(0)
+            })
+
+            it('should throw an error (invalid school)', async()=>{
+                const filename = "classes-bad-school.csv";
+                const file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const mimetype = "text/csv";
+                const encoding = "7bit";
+                try{
+                    await uploadClassesFile(testClient, { file, filename, mimetype, encoding }, { authorization: JoeAuthToken })
+                } catch (err) {
+                    expect(err).to.contain(Error(`Unexpected error value: "missing organization_name or class_name at row 2"`))
+                }
+
+                const dbClass = await Class.find()
+                expect(dbClass.length).to.equal(0)
+            })
+        })
+    })
 });
