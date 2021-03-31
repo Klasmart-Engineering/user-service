@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, Not } from 'typeorm'
 import { Organization } from '../../entities/organization';
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
@@ -13,19 +13,27 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
     if (!org) {
         throw `Organisation at row ${rowCount} doesn't exist`
     }
-    const classExits = await Class.findOne({where:{class_name, organization: org}})
-    if (classExits) {
-        throw `Duplicate class name ${class_name} at row ${rowCount}`
-    }
-    if(class_shortcode && await Class.findOne({where:{shortcode: class_shortcode, organization: org}})) {
+    // 
+    if(class_shortcode && await Class.findOne({where:{shortcode: class_shortcode, organization: org, class_name: Not(class_name)}})) {
         throw `Duplicate class classShortCode ${class_name} at row ${rowCount}`
     } 
-    const c = new Class();
-    c.class_name = class_name
-    const gShortCode = generateShortCode(class_name)
-    c.shortcode = class_shortcode || gShortCode
-    c.organization = Promise.resolve(org)
+
+    // check if class exists in manager
+    let classInManager = await manager.findOne(Class,{where:{class_name, organization: org}})
+    let classInDB = await Class.findOne({where:{class_name, organization: org}})
+    let c
+    if (classInManager) {
+        c = classInManager
+    } else if(classInDB) {
+        c = classInDB
+    } else {
+        c = new Class()
+        c.class_name = class_name
+        c.shortcode = class_shortcode || generateShortCode(class_name)
+        c.organization = Promise.resolve(org)
+    }
     
+    let existingSchools = await c.schools || []
     if (school_name) {
         const school = await School.findOne({ 
             where: { school_name, organization: org}
@@ -33,21 +41,27 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
         if(!school) {
             throw `School at row ${rowCount} doesn't exist for Organisation ${organization_name}`
         }
-        c.schools = school_name && Promise.resolve([school])
+        existingSchools.push(school)
     }
+    c.schools = Promise.resolve(existingSchools)
+    
+    let existingPrograms = await c.programs || []
+    let programToAdd
     if (program_name) {
-        const program = await Program.findOne({
+        programToAdd = await Program.findOne({
             where:{name: program_name, organization:org}
         })
-        if (!program) {
+        if (!programToAdd) {
             throw `Program at row ${rowCount} not associated for Organisation ${organization_name}`
         }
-        c.programs = Promise.resolve([program])
-
+        existingPrograms.push(programToAdd)
     } else {
         // get program with none specified 
-        const noneProgram = await Program.findOne({where:{name: 'None Specified'}})
-        c.programs = noneProgram && Promise.resolve([noneProgram])
+        programToAdd = await Program.findOne({where:{name: 'None Specified'}}) 
+        if (programToAdd) {
+            existingPrograms.push(programToAdd)
+        }
     }
+    c.programs = Promise.resolve(existingPrograms)
     await manager.save(c)
 }
