@@ -84,6 +84,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.createOrUpdateSystemEntities(),
                 uploadUsersFromCSV: (_parent, args, ctx, info) =>
                     model.uploadUsersFromCSV(args, ctx, info),
+                uploadClassesFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadClassesFromCSV(args, ctx, info),
             },
         },
         schemaDirectives: {

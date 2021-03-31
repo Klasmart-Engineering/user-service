@@ -32,6 +32,7 @@ import { Permission } from './entities/permission'
 import { getPaginated } from './utils/getpaginated'
 
 import { processUserFromCSVRow } from './utils/csv/user'
+import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 
 export class Model {
@@ -604,6 +605,17 @@ export class Model {
 
         const { file } = await args.file
         await createEntityFromCsvWithRollBack( this.connection, file, processUserFromCSVRow)
+
+        return file
+    }
+
+    public async uploadClassesFromCSV(args: any, context: Context, info: GraphQLResolveInfo) {
+        if ( info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(this.connection, file, processClassFromCSVRow)
 
         return file
     }

@@ -1,10 +1,11 @@
+import { EntityManager } from 'typeorm'
 import { Organization } from '../../entities/organization';
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
 import { generateShortCode } from '../shortcode'
 
-export const getClassFromCsvRow = async ({organization_name, class_name, class_shortcode, school_name, program_name}:any, rowCount: number) => {
+export const processClassFromCSVRow = async (manager: EntityManager, {organization_name, class_name, class_shortcode, school_name, program_name}:any, rowCount: number) => {
     if(!organization_name || !class_name) {
         throw `missing organization_name or class_name at row ${rowCount}`
     }
@@ -48,5 +49,5 @@ export const getClassFromCsvRow = async ({organization_name, class_name, class_s
         const noneProgram = await Program.findOne({where:{name: 'None Specified'}})
         c.programs = noneProgram && Promise.resolve([noneProgram])
     }
-    return c;
+    await manager.save(c)
 }
