@@ -181,7 +181,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 446,delete_my_pending_learning_outcome_446,Delete My Pending Learning Outcome,Assessments,Teacher,Gives users access to delete my pending learning outcomes,Pending
 447,delete_org_pending_learning_outcome_447,Delete Org Pending Learning Outcome,Assessments,School Admin,Gives users access to delete org pending learning outcomes,Pending
 448,delete_published_learning_outcome_448,Delete Published Learning Outcome,Assessments,School Admin,Gives users access to delete published learning outcomes,Published Learning Outcome
-449,delete_unpublish_milestone_449,Delete Unpublish Milestone,Assessments,School Admin,Gives users access to delete unpublished milestones,Milestones
+449,delete_unpublished_milestone_449,Delete Unpublished Milestone,Assessments,School Admin,Gives users access to delete unpublished milestones,Milestones
 450,delete_published_milestone_450,Delete Published Milestone,Assessments,School Admin,Gives users access to delete published milestones,Milestones
 451,delete_unpublished_standard_451,Delete Unpublished Standard,Assessments,School Admin,Gives users access to delete unpublished standards,Standards
 452,delete_published_standard_452,Delete Published Standard,Assessments,School Admin,Gives users access to delete published standards,Standards

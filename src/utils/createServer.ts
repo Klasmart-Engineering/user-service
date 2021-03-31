@@ -82,6 +82,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.getProgram(args, ctx),
                 createOrUpateSystemEntities: (_parent, _args, _ctx, _info) =>
                     model.createOrUpdateSystemEntities(),
+                uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadOrganizationsFromCSV(args, ctx, info),
                 uploadUsersFromCSV: (_parent, args, ctx, info) =>
                     model.uploadUsersFromCSV(args, ctx, info),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>

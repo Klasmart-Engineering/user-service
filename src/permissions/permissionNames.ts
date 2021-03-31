@@ -179,7 +179,7 @@ export enum PermissionName {
     delete_my_pending_learning_outcome_446 = 'delete_my_pending_learning_outcome_446',
     delete_org_pending_learning_outcome_447 = 'delete_org_pending_learning_outcome_447',
     delete_published_learning_outcome_448 = 'delete_published_learning_outcome_448',
-    delete_unpublish_milestone_449 = 'delete_unpublish_milestone_449',
+    delete_unpublished_milestone_449 = 'delete_unpublished_milestone_449',
     delete_published_milestone_450 = 'delete_published_milestone_450',
     delete_unpublished_standard_451 = 'delete_unpublished_standard_451',
     delete_published_standard_452 = 'delete_published_standard_452',

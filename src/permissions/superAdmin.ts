@@ -145,7 +145,7 @@ export const superAdminRole = {
         PermissionName.delete_my_pending_learning_outcome_446,
         PermissionName.delete_org_pending_learning_outcome_447,
         PermissionName.delete_published_learning_outcome_448,
-        PermissionName.delete_unpublish_milestone_449,
+        PermissionName.delete_unpublished_milestone_449,
         PermissionName.delete_published_milestone_450,
         PermissionName.delete_unpublished_standard_451,
         PermissionName.delete_published_standard_452,
