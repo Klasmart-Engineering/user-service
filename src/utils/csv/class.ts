@@ -19,8 +19,8 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
     } 
 
     // check if class exists in manager
-    let classInManager = await manager.findOne(Class,{where:{class_name, organization: org}})
-    let classInDB = await Class.findOne({where:{class_name, organization: org}})
+    const classInManager = await manager.findOne(Class,{where:{class_name, organization: org}})
+    const classInDB = await Class.findOne({where:{class_name, organization: org}})
     let c
     if (classInManager) {
         c = classInManager
@@ -33,7 +33,7 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
         c.organization = Promise.resolve(org)
     }
     
-    let existingSchools = await c.schools || []
+    const existingSchools = await c.schools || []
     if (school_name) {
         const school = await School.findOne({ 
             where: { school_name, organization: org}
@@ -45,7 +45,7 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
     }
     c.schools = Promise.resolve(existingSchools)
     
-    let existingPrograms = await c.programs || []
+    const existingPrograms = await c.programs || []
     let programToAdd
     if (program_name) {
         programToAdd = await Program.findOne({
