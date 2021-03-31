@@ -30,9 +30,9 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 
 import { getPaginated } from './utils/getpaginated'
-
-import { processUserFromCSVRow } from './utils/csv/user'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
+import { processOrganizationFromCSVRow } from './utils/csv/organization'
+import { processUserFromCSVRow } from './utils/csv/user'
 
 export class Model {
     public static async create() {
@@ -597,13 +597,40 @@ export class Model {
         return true
     }
 
-    public async uploadUsersFromCSV(args: any, context: Context, info: GraphQLResolveInfo) {
-        if ( info.operation.operation !== 'mutation') {
+    public async uploadOrganizationsFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
             return null
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack( this.connection, file, processUserFromCSVRow)
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processOrganizationFromCSVRow
+        )
+
+        return file
+    }
+
+    public async uploadUsersFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processUserFromCSVRow
+        )
 
         return file
     }
