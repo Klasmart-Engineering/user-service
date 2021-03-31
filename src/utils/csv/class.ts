@@ -4,8 +4,9 @@ import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
 import { generateShortCode } from '../shortcode'
+import { ClassRow } from '../../types/csv/classRow'
 
-export const processClassFromCSVRow = async (manager: EntityManager, {organization_name, class_name, class_shortcode, school_name, program_name}:any, rowCount: number) => {
+export const processClassFromCSVRow = async (manager: EntityManager, {organization_name, class_name, class_shortcode, school_name, program_name}:ClassRow, rowCount: number) => {
     if(!organization_name || !class_name) {
         throw `missing organization_name or class_name at row ${rowCount}`
     }
@@ -13,7 +14,7 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
     if (!org) {
         throw `Organisation at row ${rowCount} doesn't exist`
     }
-    // 
+    
     if(class_shortcode && await Class.findOne({where:{shortcode: class_shortcode, organization: org, class_name: Not(class_name)}})) {
         throw `Duplicate class classShortCode ${class_name} at row ${rowCount}`
     } 
@@ -48,8 +49,12 @@ export const processClassFromCSVRow = async (manager: EntityManager, {organizati
     const existingPrograms = await c.programs || []
     let programToAdd
     if (program_name) {
+        // does the program belong to organisation or a system program
         programToAdd = await Program.findOne({
-            where:{name: program_name, organization:org}
+            where:[
+                {name: program_name, organization:org},
+                {name: program_name, organization:null},
+            ]
         })
         if (!programToAdd) {
             throw `Program at row ${rowCount} not associated for Organisation ${organization_name}`
