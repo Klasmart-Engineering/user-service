@@ -1,7 +1,8 @@
+import { Stream } from "stream";
 import { ReadStream } from "typeorm/platform/PlatformTools";
 import { ApolloServerTestClient } from "../../createTestClient";
 import { gqlTry } from "../../gqlTry";
-import { fileMockInput } from "../isMIMETypeDirectiveOps";
+
 
 const UPLOAD_ORGANIZATIONS_MUTATION = `
     mutation UploadOrganizationsFromCSV($file: Upload!) {
@@ -22,6 +23,25 @@ const UPLOAD_ORGANIZATIONS_QUERY = `
         }
     }
 `;
+
+function fileMockInput(file: Stream, filename: string, mimetype: string, encoding: string) {
+    return {
+        resolve: () => {},
+        reject: () => {},
+        promise: new Promise((resolve) => resolve({
+            filename,
+            mimetype,
+            encoding,
+            createReadStream: () => file
+        })),
+        file: {
+            filename,
+            mimetype,
+            encoding,
+            createReadStream: () => file
+        }
+    }
+}
 
 export async function uploadOrganizations(
     testClient: ApolloServerTestClient,
@@ -56,10 +76,10 @@ export async function queryUploadOrganizations(
         file: fileMockInput(file, filename, mimetype, encoding)
     };
 
-    const { mutate } = testClient;
+    const { query } = testClient;
 
-    const operation = () => mutate({
-        mutation: UPLOAD_ORGANIZATIONS_QUERY,
+    const operation = () => query({
+        query: UPLOAD_ORGANIZATIONS_QUERY,
         variables: variables,
     });
 
