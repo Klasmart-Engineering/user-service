@@ -267,6 +267,16 @@ const USER_CSV_UPLOAD_MUTATION = `
     }
 `;
 
+const SCHOOLS_CSV_UPLOAD_MUTATION = `
+    mutation UploadSchoolsFromCSV($file: Upload!) {
+        uploadSchoolsFromCSV(file: $file) {
+            filename
+            mimetype
+            encoding
+        }
+    }
+`;
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -551,6 +561,48 @@ function fileMockInput(
             createReadStream: () => file,
         }
     };
+}
+
+export async function uploadClassesFile(
+    testClient: ApolloServerTestClient,
+    { file, filename, mimetype, encoding }: any,
+    headers?: Headers
+) {
+    const variables = {
+        file: fileMockInput(file, filename, mimetype, encoding)
+    };
+
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: USER_CSV_UPLOAD_MUTATION,
+        variables: variables,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    return res.data?.uploadOrganizationsFromCSV;
+}
+
+export async function uploadSchoolsFile(
+    testClient: ApolloServerTestClient,
+    { file, filename, mimetype, encoding }: any,
+    headers?: Headers
+) {
+    const variables =  {
+        file: fileMockInput(file, filename, mimetype, encoding)
+    };
+
+    const { mutate } = testClient;
+
+    const operation = () => mutate({
+        mutation: SCHOOLS_CSV_UPLOAD_MUTATION,
+        variables: variables,
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    return res.data?.uploadSchoolsFromCSV;
 }
 
 export async function uploadFile(

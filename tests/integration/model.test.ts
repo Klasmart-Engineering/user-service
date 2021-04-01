@@ -1,5 +1,7 @@
 import { expect, use } from "chai";
 import { Connection } from "typeorm";
+import fs from 'fs';
+import { resolve } from 'path';
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
@@ -9,7 +11,7 @@ import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
-import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram } from "../utils/operations/modelOps";
+import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram, uploadSchoolsFile } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
@@ -25,6 +27,7 @@ import { createProgram } from "../factories/program.factory";
 import { queryUploadOrganizations, uploadOrganizations } from "../utils/operations/csv/uploadOrganizations";
 import fs, { ReadStream } from 'fs';
 import { resolve } from 'path';
+import { School } from "../../src/entities/school";
 
 use(chaiAsPromised);
 
@@ -73,7 +76,7 @@ describe("model", () => {
                 let otherUser: User;
 
                 beforeEach(async () => {
-                    otherUser= await createUserBilly(testClient);
+                    otherUser = await createUserBilly(testClient);
                 });
 
                 it("raises an error", async () => {
@@ -103,7 +106,7 @@ describe("model", () => {
 
             context("and the user_id cookie is provided", () => {
                 it("returns null", async () => {
-                    const gqlUser = await me(testClient, { authorization: undefined}, { user_id: user.user_id });
+                    const gqlUser = await me(testClient, { authorization: undefined }, { user_id: user.user_id });
 
                     expect(gqlUser).to.be.null
                 });
@@ -113,8 +116,8 @@ describe("model", () => {
         context("when user is logged in", () => {
             context("and no user_id cookie is provided", () => {
                 it("creates and returns the expected user", async () => {
-                    const gqlUserWithoutId = await me(testClient, { authorization: JoeAuthWithoutIdToken}, { user_id: user.user_id });
-                    const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: user.user_id });
+                    const gqlUserWithoutId = await me(testClient, { authorization: JoeAuthWithoutIdToken }, { user_id: user.user_id });
+                    const gqlUser = await me(testClient, { authorization: JoeAuthToken }, { user_id: user.user_id });
 
                     expect(gqlUserWithoutId.user_id).to.eq(gqlUser.user_id)
                 });
@@ -122,7 +125,7 @@ describe("model", () => {
 
             context("and the correct user_id cookie is provided", () => {
                 it("returns the expected user", async () => {
-                    const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: user.user_id });
+                    const gqlUser = await me(testClient, { authorization: JoeAuthToken }, { user_id: user.user_id });
 
                     expect(gqlUser.user_id).to.eq(user.user_id)
                 });
@@ -132,11 +135,11 @@ describe("model", () => {
                 let otherUser: User;
 
                 beforeEach(async () => {
-                    otherUser= await createUserBilly(testClient);
+                    otherUser = await createUserBilly(testClient);
                 });
 
                 it("returns a user based from the token", async () => {
-                    const gqlUser = await me(testClient, { authorization: JoeAuthToken}, { user_id: otherUser.user_id });
+                    const gqlUser = await me(testClient, { authorization: JoeAuthToken }, { user_id: otherUser.user_id });
 
                     expect(gqlUser).to.not.be.null
                     expect(gqlUser.user_id).to.eq(user.user_id)
@@ -269,13 +272,13 @@ describe("model", () => {
                     const permissions = gqlPermissions?.permissions?.edges || []
                     let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
 
-                    while(hasNext) {
+                    while (hasNext) {
                         const endCursor = gqlPermissions?.permissions?.pageInfo?.endCursor
                         gqlPermissions = await getPermissions(testClient, { authorization: BillyAuthToken }, endCursor);
                         const morePermissions = gqlPermissions?.permissions?.edges || []
                         hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
 
-                        for(const permission of morePermissions) {
+                        for (const permission of morePermissions) {
                             permissions.push(permission)
                         }
                     }
@@ -300,13 +303,13 @@ describe("model", () => {
                     const permissions = gqlPermissions?.permissions?.edges || []
                     let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
 
-                    while(hasNext) {
+                    while (hasNext) {
                         const endCursor = gqlPermissions?.permissions?.pageInfo?.endCursor
                         gqlPermissions = await getPermissions(testClient, { authorization: JoeAuthToken }, endCursor);
                         const morePermissions = gqlPermissions?.permissions?.edges || []
                         hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
 
-                        for(const permission of morePermissions) {
+                        for (const permission of morePermissions) {
                             permissions.push(permission)
                         }
                     }
@@ -412,7 +415,7 @@ describe("model", () => {
         let user: User;
         let userId: string;
         let otherUserId: string;
-        let organization : Organization;
+        let organization: Organization;
         let organizationId: string;
         let grade: Grade;
 
