@@ -32,8 +32,9 @@ import { getPaginated } from './utils/getpaginated'
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
-import { processGradeFromCSVRow } from './entities/csv/grades'
+import { processGradeFromCSVRow } from './utils/csv/grade'
 import { processOrganizationFromCSVRow } from './utils/csv/organization'
+import { setGradeFromTo } from './utils/csv/setGradeFromToFields'
 
 export class Model {
     public static async create() {
@@ -657,10 +658,9 @@ export class Model {
 
     public async uploadGradesFromCSV(args: any) {
         const { file } = await args.file
-        return createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processGradeFromCSVRow
-        )
+        return createEntityFromCsvWithRollBack(this.connection, file, [
+            processGradeFromCSVRow,
+            setGradeFromTo,
+        ])
     }
 }

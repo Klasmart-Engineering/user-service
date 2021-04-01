@@ -23,14 +23,23 @@ export async function createEntityFromCsvWithRollBack(
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {
-        await readCSVFile(file, async (row, rowCounter) => {
-            row = formatCSVRow(row)
-            await functionToProcessEntityFromCsvRow(
-                queryRunner.manager,
-                row,
-                rowCounter
-            )
-        })
+        if (Array.isArray(functionToProcessEntityFromCsvRow)) {
+            for (let functionEntity of functionToProcessEntityFromCsvRow) {
+                await readCSVFile(file, async (row, rowCounter) => {
+                    row = formatCSVRow(row)
+                    await functionEntity(queryRunner.manager, row, rowCounter)
+                })
+            }
+        } else {
+            await readCSVFile(file, async (row, rowCounter) => {
+                row = formatCSVRow(row)
+                await functionToProcessEntityFromCsvRow(
+                    queryRunner.manager,
+                    row,
+                    rowCounter
+                )
+            })
+        }
         console.log('CSV file upload finished')
         await queryRunner.commitTransaction()
     } catch (error) {
