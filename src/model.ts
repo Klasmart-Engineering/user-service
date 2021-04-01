@@ -675,11 +675,21 @@ export class Model {
         return file
     }
 
-    public async uploadGradesFromCSV(args: any) {
+    public async uploadGradesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
         const { file } = await args.file
-        return createEntityFromCsvWithRollBack(this.connection, file, [
+        await createEntityFromCsvWithRollBack(this.connection, file, [
             processGradeFromCSVRow,
             setGradeFromTo,
         ])
+
+        return file
     }
 }

@@ -1,7 +1,5 @@
 import { expect, use } from "chai";
 import { Connection } from "typeorm";
-import fs from 'fs';
-import { resolve } from 'path';
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
