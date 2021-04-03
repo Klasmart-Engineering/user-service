@@ -33,6 +33,7 @@ import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { processOrganizationFromCSVRow } from './utils/csv/organization'
+import { processSchoolFromCSVRow } from './utils/csv/school'
 
 export class Model {
     public static async create() {
@@ -635,13 +636,39 @@ export class Model {
         return file
     }
 
-    public async uploadClassesFromCSV(args: any, context: Context, info: GraphQLResolveInfo) {
-        if ( info.operation.operation !== 'mutation') {
+    public async uploadClassesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
             return null
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(this.connection, file, processClassFromCSVRow)
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processClassFromCSVRow
+        )
+
+        return file
+    }
+
+    public async uploadSchoolsFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processSchoolFromCSVRow
+        )
 
         return file
     }

@@ -88,6 +88,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.uploadUsersFromCSV(args, ctx, info),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadClassesFromCSV(args, ctx, info),
+                uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadSchoolsFromCSV(args, ctx, info),
             },
         },
         schemaDirectives: {

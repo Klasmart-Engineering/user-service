@@ -1,12 +1,12 @@
 import { EntityManager } from 'typeorm'
 
 import { Class } from '../../entities/class'
-import { Organization, validateDOB } from '../../entities/organization'
+import { Organization, validateDOB, normalizedLowercaseTrimmed } from '../../entities/organization'
 import { OrganizationMembership, MEMBERSHIP_SHORTCODE_MAXLEN } from '../../entities/organizationMembership'
 import { Role } from '../../entities/role'
 import { School } from '../../entities/school'
 import { SchoolMembership } from '../../entities/schoolMembership'
-import { User } from '../../entities/user'
+import { User, accountUUID } from '../../entities/user'
 import { UserRow } from '../../types/csv/userRow'
 import {
     generateShortCode,
@@ -88,13 +88,33 @@ export const processUserFromCSVRow = async (manager: EntityManager, row: UserRow
     }
 
 
+    let email = row.user_email
+    let phone = row.user_phone
+
+    if (email) {
+        email = normalizedLowercaseTrimmed(email)
+    }
+
+    if (phone) {
+        phone = normalizedLowercaseTrimmed(phone)
+    }
+
+    const hashSource = email ?? phone
     const user = await manager.findOne(User, {
-        where: { email: row.user_email, phone: row.user_phone },
+        where: [
+            { email: email, phone: null },
+            { email: null, phone: phone },
+            { email: email, phone: phone },
+        ]
     }) || new User()
 
-    if(row.user_email) {
+    user.user_id = accountUUID(hashSource)
+
+    if(email) {
         user.email = row.user_email
-    }else if(row.user_phone) {
+    }
+
+    if(phone) {
         user.phone = row.user_phone
     }
 
