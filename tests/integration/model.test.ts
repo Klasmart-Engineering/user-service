@@ -26,8 +26,6 @@ import { queryUploadOrganizations, uploadOrganizations } from "../utils/operatio
 import fs, { ReadStream } from 'fs';
 import { resolve } from 'path';
 import { queryUploadGrades, uploadGrades } from "../utils/operations/csv/uploadGrades";
-import { createUser } from "../factories/user.factory";
-import { organizationAdminRole } from "../../src/permissions/organizationAdmin";
 
 use(chaiAsPromised);
 
@@ -781,25 +779,15 @@ describe("model", () => {
             it("should create grades", async () => {
                 const filename = correctFilename;
 
-                try {
-                    const orgs = await Organization.find({ where: {
-                        deleted_at: null
-                    } });
-    
-                    console.log('LAS ORGS', orgs)
-    
-                    file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-    
-                    const result = await uploadGrades(testClient, file, filename, mimetype, encoding);
-                    expect(result.filename).eq(filename);
-                    expect(result.mimetype).eq(mimetype);
-                    expect(result.encoding).eq(encoding);
-    
-                    const gradesCreated = await Grade.count();
-                    expect(gradesCreated).gt(0);
-                } catch (error) {
-                    console.log('errorson: ', error)
-                }
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadGrades(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const gradesCreated = await Grade.count();
+                expect(gradesCreated).gt(0);
             });
         });
     });
