@@ -2,7 +2,6 @@ import { EntityManager } from 'typeorm'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
 import { GradeRow } from '../../types/csv/gradeRow'
-import { organizationGradeIds } from './grade'
 
 let noneSpecifiedGrade: Grade | undefined = undefined
 
@@ -37,7 +36,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
     return gradeFound
 }
 
-export async function setGradeFromTo(
+export async function setGradeFromToFields(
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number
@@ -46,7 +45,6 @@ export async function setGradeFromTo(
     let organization: Organization
     let toGrade: Grade
     let fromGrade: Grade
-    const { organization_id, grade_id } = organizationGradeIds[rowNumber - 1]
 
     const {
         organization_name,
@@ -90,7 +88,9 @@ export async function setGradeFromTo(
             })
         }
 
-        organization = await Organization.findOneOrFail(organization_id)
+        organization = await Organization.findOneOrFail({
+            where: { organization_name },
+        })
 
         if (progress_from_grade_name) {
             fromGrade = await findOrFailGradeInDatabaseOrTransaction(
@@ -114,7 +114,14 @@ export async function setGradeFromTo(
             toGrade = noneSpecifiedGrade
         }
 
-        grade = await manager.findOneOrFail(Grade, grade_id)
+        grade = await manager.findOneOrFail(Grade, {
+            where: {
+                name: grade_name,
+                system: false,
+                status: 'active',
+                organization: organization,
+            },
+        })
 
         grade.progress_from_grade = Promise.resolve(fromGrade)
         grade.progress_to_grade = Promise.resolve(toGrade)

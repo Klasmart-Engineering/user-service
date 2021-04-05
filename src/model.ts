@@ -34,7 +34,7 @@ import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { processGradeFromCSVRow } from './utils/csv/grade'
 import { processOrganizationFromCSVRow } from './utils/csv/organization'
-import { setGradeFromTo } from './utils/csv/setGradeFromToFields'
+import { setGradeFromToFields } from './utils/csv/setGradeFromToFields'
 import { processSchoolFromCSVRow } from './utils/csv/school'
 
 export class Model {
@@ -687,7 +687,7 @@ export class Model {
         const { file } = await args.file
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processGradeFromCSVRow,
-            setGradeFromTo,
+            setGradeFromToFields,
         ])
 
         return file

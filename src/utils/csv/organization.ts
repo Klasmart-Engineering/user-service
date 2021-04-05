@@ -3,7 +3,10 @@ import { v4 as uuid_v4 } from 'uuid'
 import { accountUUID, User } from '../../entities/user'
 import { OrganizationRow } from '../../types/csv/organizationRow'
 import { generateShortCode, validateShortCode } from '../shortcode'
-import { normalizedLowercaseTrimmed, Organization } from '../../entities/organization'
+import {
+    normalizedLowercaseTrimmed,
+    Organization,
+} from '../../entities/organization'
 import {
     MEMBERSHIP_SHORTCODE_MAXLEN,
     OrganizationMembership,

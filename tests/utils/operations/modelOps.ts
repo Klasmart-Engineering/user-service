@@ -14,6 +14,7 @@ import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { UserConnection } from "../../../src/utils/pagingconnections";
 import { Program } from "../../../src/entities/program";
+import { Stream } from "stream";
 
 
 const NEW_USER = `
@@ -537,30 +538,23 @@ export async function getProgram(testClient: ApolloServerTestClient, id: string,
     return gqlProgram;
 }
 
-function fileMockInput(
-    file: ReadStream,
-    filename: string,
-    mimetype: string,
-    encoding: string
-) {
+export function fileMockInput(file: Stream, filename: string, mimetype: string, encoding: string) {
     return {
         resolve: () => {},
         reject: () => {},
-        promise: new Promise((resolve) => {
-            resolve({
-                filename,
-                mimetype,
-                encoding,
-                createReadStream: () => file,
-            })
-        }),
+        promise: new Promise((resolve) => resolve({
+            filename,
+            mimetype,
+            encoding,
+            createReadStream: () => file
+        })),
         file: {
             filename,
             mimetype,
             encoding,
-            createReadStream: () => file,
+            createReadStream: () => file
         }
-    };
+    }
 }
 
 export async function uploadClassesFile(

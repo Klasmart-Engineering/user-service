@@ -3,13 +3,6 @@ import { GradeRow } from '../../types/csv/gradeRow'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
 
-interface OrganizationGradeIds {
-    organization_id: string
-    grade_id: string
-}
-
-export let organizationGradeIds: OrganizationGradeIds[] = []
-
 async function findGradeInDatabaseOrTransaction(
     manager: EntityManager,
     organization: Organization,
@@ -44,10 +37,6 @@ export async function processGradeFromCSVRow(
     let organization: Organization | undefined
 
     const { organization_name, grade_name } = row
-
-    if (rowNumber === 1 && organizationGradeIds.length) {
-        organizationGradeIds = []
-    }
 
     try {
         if (!organization_name) {
@@ -86,11 +75,6 @@ export async function processGradeFromCSVRow(
         grade.system = false
 
         await manager.save(grade)
-
-        organizationGradeIds.push({
-            organization_id: organization.organization_id,
-            grade_id: grade.id,
-        })
     } catch (error) {
         throw new Error(`[row ${rowNumber}]. ${error.message}`)
     }

@@ -4,9 +4,9 @@ import { gqlTry } from "../../gqlTry";
 import { fileMockInput } from "../modelOps";
 
 
-const UPLOAD_ORGANIZATIONS_MUTATION = `
-    mutation UploadOrganizationsFromCSV($file: Upload!) {
-        uploadOrganizationsFromCSV(file: $file) {
+const UPLOAD_GRADES_MUTATION = `
+    mutation UploadGradesFromCSV($file: Upload!) {
+        uploadGradesFromCSV(file: $file) {
             filename
             mimetype
             encoding
@@ -14,9 +14,9 @@ const UPLOAD_ORGANIZATIONS_MUTATION = `
     }
 `;
 
-const UPLOAD_ORGANIZATIONS_QUERY = `
-    query UploadOrganizationsFromCSV($file: Upload!) {
-        uploadOrganizationsFromCSV(file: $file) {
+const UPLOAD_GRADES_QUERY = `
+    query UploadGradesFromCSV($file: Upload!) {
+        uploadGradesFromCSV(file: $file) {
             filename
             mimetype
             encoding
@@ -24,7 +24,7 @@ const UPLOAD_ORGANIZATIONS_QUERY = `
     }
 `;
 
-export async function uploadOrganizations(
+export async function uploadGrades(
     testClient: ApolloServerTestClient,
     file: ReadStream,
     filename: string,
@@ -38,15 +38,15 @@ export async function uploadOrganizations(
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: UPLOAD_ORGANIZATIONS_MUTATION,
+        mutation: UPLOAD_GRADES_MUTATION,
         variables: variables,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    return res.data?.uploadGradesFromCSV;
 }
 
-export async function queryUploadOrganizations(
+export async function queryUploadGrades(
     testClient: ApolloServerTestClient,
     file: ReadStream,
     filename: string,
@@ -60,10 +60,10 @@ export async function queryUploadOrganizations(
     const { query } = testClient;
 
     const operation = () => query({
-        query: UPLOAD_ORGANIZATIONS_QUERY,
+        query: UPLOAD_GRADES_QUERY,
         variables: variables,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    return res.data?.uploadGradesFromCSV;
 }

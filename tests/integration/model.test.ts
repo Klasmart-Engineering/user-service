@@ -25,7 +25,9 @@ import { createProgram } from "../factories/program.factory";
 import { queryUploadOrganizations, uploadOrganizations } from "../utils/operations/csv/uploadOrganizations";
 import fs, { ReadStream } from 'fs';
 import { resolve } from 'path';
-import { School } from "../../src/entities/school";
+import { queryUploadGrades, uploadGrades } from "../utils/operations/csv/uploadGrades";
+import { createUser } from "../factories/user.factory";
+import { organizationAdminRole } from "../../src/permissions/organizationAdmin";
 
 use(chaiAsPromised);
 
@@ -704,7 +706,7 @@ describe("model", () => {
                 const filename = wrongFileName;
                 file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
 
-                const fn = async () => await queryUploadOrganizations(testClient, file, filename, mimetype, encoding);
+                const fn = async () => await uploadOrganizations(testClient, file, filename, mimetype, encoding);
                 expect(fn()).to.be.rejected;
 
                 const organizationsCreated = await Organization.count();
@@ -724,6 +726,80 @@ describe("model", () => {
 
                 const organizationsCreated = await Organization.count();
                 expect(organizationsCreated).gt(0);
+            });
+        });
+    });
+
+    describe("uploadGradesFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const correctFilename = 'gradesExample.csv';
+        const wrongFilename = 'gradesWrong.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                const filename = correctFilename;
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadGrades(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const gradesCreated = await Grade.count();
+                expect(gradesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                const filename = wrongFilename;
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadGrades(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const gradesCreated = await Grade.count();
+                expect(gradesCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                const user = await createUserJoe(testClient);
+                const org = await createOrganization(user)
+                org.organization_name = 'Company 1';
+                // await org.save();
+                await connection.manager.save(org);
+    
+                const user2 = await createUserBilly(testClient);
+                const org2 = await createOrganization(user2);
+                org2.organization_name = 'Company 2';
+                // await org2.save();
+                await connection.manager.save(org2);
+            });
+
+            it("should create grades", async () => {
+                const filename = correctFilename;
+
+                try {
+                    const orgs = await Organization.find({ where: {
+                        deleted_at: null
+                    } });
+    
+                    console.log('LAS ORGS', orgs)
+    
+                    file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+    
+                    const result = await uploadGrades(testClient, file, filename, mimetype, encoding);
+                    expect(result.filename).eq(filename);
+                    expect(result.mimetype).eq(mimetype);
+                    expect(result.encoding).eq(encoding);
+    
+                    const gradesCreated = await Grade.count();
+                    expect(gradesCreated).gt(0);
+                } catch (error) {
+                    console.log('errorson: ', error)
+                }
             });
         });
     });

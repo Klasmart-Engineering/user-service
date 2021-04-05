@@ -4,7 +4,7 @@ import { File } from '../../types/file'
 
 export async function readCSVFile(
     file: Upload,
-    onData: (row: any, rowNumber: number) => void,
+    onData: (row: any, rowNumber: number) => void
 ) {
     const { filename, mimetype, encoding } = file
     let rowCounter = 0 // Do not count header
