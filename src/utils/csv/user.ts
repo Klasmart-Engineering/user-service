@@ -193,7 +193,7 @@ export const processUserFromCSVRow = async (manager: EntityManager, row: UserRow
         if((organizationRole || schoolRole) && cls) {
             const roleName  = organizationRole?.role_name || schoolRole?.role_name
 
-            if(roleName === 'Student') {
+            if(roleName?.includes('Student')) {
                 const students = (await cls.students) || []
 
                 if(!students.includes(user)){
@@ -201,7 +201,7 @@ export const processUserFromCSVRow = async (manager: EntityManager, row: UserRow
                     cls.students = Promise.resolve(students)
                 }
 
-            }else if(roleName === 'Teacher'){
+            }else if(roleName?.includes('Teacher')){
                 const teachers = (await cls.teachers) || []
 
                 if(!teachers.includes(user)){
