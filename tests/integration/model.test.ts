@@ -24,7 +24,10 @@ import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
-import { School } from "../../src/entities/school";
+import { ReadStream } from 'fs';
+import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
+import { Role } from "../../src/entities/role";
+import { before } from "mocha";
 
 use(chaiAsPromised);
 
@@ -590,6 +593,7 @@ describe("model", () => {
             });
         });
     });
+
     describe("getProgram", () => {
         let user: User;
         let program: Program;
@@ -673,6 +677,59 @@ describe("model", () => {
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
                     });
                 });
+            });
+        });
+    });
+
+    describe("uploadRolesFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'rolesExample.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadRoles(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const rolesCreated = await Role.count({ where: { system_role: false } });
+                expect(rolesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadRoles(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const rolesCreated = await Role.count({ where: { system_role: false } });
+                expect(rolesCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                for (let i = 1; i <= 4; i += 1) {
+                    let org = await createOrganization();
+                    org.organization_name = `Company ${i}`;
+                    await connection.manager.save(org);
+                }
+            });
+
+            it("should create roles", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadRoles(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const rolesCreated = await Role.count({ where: { system_role: false } });
+                expect(rolesCreated).gt(0);
             });
         });
     });

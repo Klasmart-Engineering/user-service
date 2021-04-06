@@ -1,11 +1,11 @@
 import { ReadStream } from "typeorm/platform/PlatformTools";
 import { ApolloServerTestClient } from "../../createTestClient";
 import { gqlTry } from "../../gqlTry";
-import { fileMockInput } from "../isMIMETypeDirectiveOps";
+import { fileMockInput } from "../modelOps";
 
-const UPLOAD_ORGANIZATIONS_MUTATION = `
-    mutation UploadOrganizationsFromCSV($file: Upload!) {
-        uploadOrganizationsFromCSV(file: $file) {
+const UPLOAD_ROLES_MUTATION = `
+    mutation UploadRolesFromCSV($file: Upload!) {
+        uploadRolesFromCSV(file: $file) {
             filename
             mimetype
             encoding
@@ -13,9 +13,9 @@ const UPLOAD_ORGANIZATIONS_MUTATION = `
     }
 `;
 
-const UPLOAD_ORGANIZATIONS_QUERY = `
-    query UploadOrganizationsFromCSV($file: Upload!) {
-        uploadOrganizationsFromCSV(file: $file) {
+const UPLOAD_ROLES_QUERY = `
+    query UploadRolesFromCSV($file: Upload!) {
+        uploadRolesFromCSV(file: $file) {
             filename
             mimetype
             encoding
@@ -23,7 +23,7 @@ const UPLOAD_ORGANIZATIONS_QUERY = `
     }
 `;
 
-export async function uploadOrganizations(
+export async function uploadRoles(
     testClient: ApolloServerTestClient,
     file: ReadStream,
     filename: string,
@@ -37,15 +37,15 @@ export async function uploadOrganizations(
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: UPLOAD_ORGANIZATIONS_MUTATION,
+        mutation: UPLOAD_ROLES_MUTATION,
         variables: variables,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    return res.data?.uploadRolesFromCSV;
 }
 
-export async function queryUploadOrganizations(
+export async function queryUploadRoles(
     testClient: ApolloServerTestClient,
     file: ReadStream,
     filename: string,
@@ -56,13 +56,13 @@ export async function queryUploadOrganizations(
         file: fileMockInput(file, filename, mimetype, encoding)
     };
 
-    const { mutate } = testClient;
+    const { query } = testClient;
 
-    const operation = () => mutate({
-        mutation: UPLOAD_ORGANIZATIONS_QUERY,
+    const operation = () => query({
+        query: UPLOAD_ROLES_QUERY,
         variables: variables,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    return res.data?.uploadRolesFromCSV;
 }

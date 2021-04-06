@@ -13,23 +13,29 @@ function formatCSVRow(row: any) {
 
     return row
 }
-export async function createEntityFromCsvWithRollBack(connection: Connection, file: any, functionToSaveEntityFromCsvRow: any) {
+export async function createEntityFromCsvWithRollBack(
+    connection: Connection,
+    file: any,
+    functionToSaveEntityFromCsvRow: any
+) {
     const queryRunner = connection.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {
-        await readCSVFile(
-            file,
-            async (row, rowCounter) => {
-                row = formatCSVRow(row)
-                await functionToSaveEntityFromCsvRow(queryRunner.manager, row, rowCounter);
-            })
+        await readCSVFile(file, async (row, rowCounter) => {
+            row = formatCSVRow(row)
+            await functionToSaveEntityFromCsvRow(
+                queryRunner.manager,
+                row,
+                rowCounter
+            )
+        })
         console.log('Generic Upload CSV File finished')
         await queryRunner.commitTransaction()
-    } catch(error) {
+    } catch (error) {
         console.log('Error in generic upload CSV file: ', error)
         await queryRunner.rollbackTransaction()
-        throw error;
+        throw error
     } finally {
         await queryRunner.release()
     }
