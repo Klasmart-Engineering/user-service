@@ -4,7 +4,6 @@ import { AgeRange } from "../../../src/entities/ageRange";
 import { Grade } from "../../../src/entities/grade";
 import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
-import { Role } from "../../../src/entities/role";
 import { Subcategory } from "../../../src/entities/subcategory";
 import { Subject } from "../../../src/entities/subject";
 import { expect } from "chai";
