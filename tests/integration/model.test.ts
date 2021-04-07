@@ -985,8 +985,6 @@ describe("model", () => {
                 expect(result.mimetype).eq(mimetype);
                 expect(result.encoding).eq(encoding);
 
-                const usersCount = await User.count({ where: { email: 'test@test.com' } });
-                expect(usersCount).eq(1);
                 const schoolsCreated = await School.count();
                 expect(schoolsCreated).gt(0);
             });
@@ -1106,7 +1104,7 @@ describe("model", () => {
 
                 const usersCount = await User.count({ where: { email: 'test@test.com' } });
                 expect(usersCount).eq(1);
-
+                
             });
         });
     });
