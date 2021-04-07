@@ -4,33 +4,36 @@ import fs from 'fs';
 import { resolve } from 'path';
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
+import { createClass } from "../factories/class.factory";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { JoeAuthToken, JoeAuthWithoutIdToken, BillyAuthToken } from "../utils/testConfig";
 import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
+import { createRole } from "../factories/role.factory";
+import { createSchool } from "../factories/school.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
 import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram, uploadSchoolsFile } from "../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
 import { AgeRange } from "../../src/entities/ageRange";
+import { Class } from "../../src/entities/class";
 import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
 import { Organization } from "../../src/entities/organization";
-import { Class } from "../../src/entities/class";
-import { School } from "../../src/entities/school";
 import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
-import { createSchool } from "../factories/school.factory";
 import { ReadStream } from 'fs';
 import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
 import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploadClasses";
+import { queryUploadUsers, uploadUsers } from "../utils/operations/csv/uploadUsers";
 import { Role } from "../../src/entities/role";
+import { School } from "../../src/entities/school";
 import { before } from "mocha";
 
 use(chaiAsPromised);
@@ -772,7 +775,7 @@ describe("model", () => {
             let expectedOrg: Organization
             let expectedProg: Program
             let expectedSchool: School
-                
+
             beforeEach(async ()=>{
                 filename = "classes.csv";
                 file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
@@ -785,9 +788,9 @@ describe("model", () => {
                 await connection.manager.save(expectedProg)
 
                 expectedSchool = createSchool(expectedOrg, 'test-school')
-                await connection.manager.save(expectedSchool)    
+                await connection.manager.save(expectedSchool)
             });
-            
+
             it("should create classes", async () => {
                 const result = await uploadClasses(testClient, file, filename, mimetype, encoding);
                 const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
@@ -799,6 +802,72 @@ describe("model", () => {
                 expect(result.encoding).eq(encoding);
                 expect(schools.length).to.equal(1)
                 expect(programs.length).to.equal(1)
+            });
+        });
+    });
+
+    describe("uploadUsersFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'users_example.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadUsers(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const usersCount = await User.count();
+                expect(usersCount).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadUsers(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const usersCount = await User.count();
+                expect(usersCount).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            let organization: Organization;
+            let role: Role;
+            let school: School;
+            let cls: Class;
+
+            beforeEach(async () => {
+                organization = createOrganization()
+                organization.organization_name = 'Apollo 1 Org'
+                await connection.manager.save(organization)
+                school = createSchool(organization)
+                school.school_name = 'School I'
+                await connection.manager.save(school)
+                role = createRole('Teacher', organization)
+                await connection.manager.save(role)
+                const anotherRole = createRole('School Admin', organization)
+                await connection.manager.save(anotherRole)
+                cls = createClass([school], organization)
+                cls.class_name = 'Class I'
+                await connection.manager.save(cls)
+            });
+
+            it("should create the user", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadUsers(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const usersCount = await User.count({ where: { email: 'test@test.com' } });
+                expect(usersCount).eq(1);
             });
         });
     });
