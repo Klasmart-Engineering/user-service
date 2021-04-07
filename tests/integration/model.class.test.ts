@@ -9,7 +9,7 @@ import { createOrganizationAndValidate, userToPayload } from "../utils/operation
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { accountUUID, User } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { JoeAuthToken, BillyAuthToken, generateToken } from "../utils/testConfig";
+import { getJoeAuthToken, getBillyAuthToken, generateToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
 import { grantPermission } from "../utils/operations/roleOps";
@@ -89,8 +89,8 @@ describe("model.class", () => {
         context("when one", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, JoeAuthToken);
-                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: JoeAuthToken });
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, getJoeAuthToken());
+                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: getJoeAuthToken() });
             });
 
             it("should return an array containing one class", async () => {
@@ -130,8 +130,8 @@ describe("model.class", () => {
 
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined, JoeAuthToken);
-                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: JoeAuthToken });
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined, getJoeAuthToken());
+                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: getJoeAuthToken() });
             });
 
             it("should return the class associated with the specified ID", async () => {
@@ -177,9 +177,9 @@ describe("model.class", () => {
                  await grantPermission(testClient, role1Id, PermissionName.add_students_to_class_20225, { authorization: anne1Token });
                  await grantPermission(testClient, role1Id, PermissionName.add_teachers_to_class_20226, { authorization: anne1Token });
                  if( (i % 2) > 0){
-                     await addTeacherToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
+                     await addTeacherToClass(testClient, cls1.class_id, user.user_id, { authorization: getBillyAuthToken() });
                  } else {
-                    await addStudentToClass(testClient, cls1.class_id, user.user_id, { authorization: BillyAuthToken });
+                    await addStudentToClass(testClient, cls1.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 }
              }
 
@@ -189,7 +189,7 @@ describe("model.class", () => {
             const { query } = testClient;
             const res = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables:{first:5}
                 });
 
@@ -206,7 +206,7 @@ describe("model.class", () => {
 
             const res2 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables:{after:pageInfo?.endCursor, first:5}
                 });
 
@@ -223,7 +223,7 @@ describe("model.class", () => {
 
             const res3 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables:{before:pageInfo2?.startCursor, last:5}
                 });
 
@@ -242,7 +242,7 @@ describe("model.class", () => {
             const { query } = testClient;
             const res = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables:{first:5}
                 });
 
@@ -258,7 +258,7 @@ describe("model.class", () => {
 
             const res2 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables:{after:pageInfo?.endCursor, first:5}
                 });
 
@@ -275,7 +275,7 @@ describe("model.class", () => {
 
             const res3 = await query({
                     query: GET_V1_CLASSES,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables:{before:pageInfo2?.startCursor, last:5}
                 });
 

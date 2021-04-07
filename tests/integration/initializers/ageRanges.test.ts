@@ -7,7 +7,7 @@ import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
 import { createUserJoe } from "../../utils/testEntities";
-import { JoeAuthToken } from "../../utils/testConfig";
+import { getJoeAuthToken } from "../../utils/testConfig";
 import { listAgeRanges } from "../../utils/operations/organizationOps";
 import { Model } from "../../../src/model";
 import { Organization } from "../../../src/entities/organization";
@@ -54,13 +54,13 @@ describe("AgeRangesInitializer", () => {
             });
 
             it("does not modify the default system age ranges", async () => {
-                const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: JoeAuthToken })
+                const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getJoeAuthToken() })
                 expect(gqlAgeRanges).not.to.be.empty;
 
                 await AgeRangesInitializer.run();
 
                 organization = await Organization.findOneOrFail(organization.organization_id);
-                const gqlNewAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: JoeAuthToken })
+                const gqlNewAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getJoeAuthToken() })
                 expect(gqlNewAgeRanges).not.to.be.empty;
 
                 expect(gqlAgeRanges.map(ageRangeInfoFunc)).to.deep.equal(gqlNewAgeRanges.map(ageRangeInfoFunc));

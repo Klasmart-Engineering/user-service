@@ -9,7 +9,7 @@ import { createOrganizationAndValidate, userToPayload } from "../utils/operation
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { accountUUID, User } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { JoeAuthToken, BillyAuthToken, generateToken } from "../utils/testConfig";
+import { getJoeAuthToken, getBillyAuthToken, generateToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 import { addUserToSchool } from "../utils/operations/schoolOps";
@@ -190,7 +190,7 @@ describe("model.role", () => {
                 }
                 const res = await query({
                     query: GET_V1_ROLES,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: variables
                 });
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -212,7 +212,7 @@ describe("model.role", () => {
                     }
                     const res1 = await query({
                         query: GET_V1_ROLES,
-                        headers: { authorization: JoeAuthToken },
+                        headers: { authorization: getJoeAuthToken() },
                         variables: variables
                     });
                     expect(res1.errors, res1.errors?.toString()).to.be.undefined;
@@ -232,7 +232,7 @@ describe("model.role", () => {
             const { query } = testClient;
             const res = await query({
                 query: GET_V1_ROLES,
-                headers: { authorization: BillyAuthToken },
+                headers: { authorization: getBillyAuthToken() },
                 variables: { first: 5 }
             });
 
@@ -249,7 +249,7 @@ describe("model.role", () => {
 
             const res2 = await query({
                 query: GET_V1_ROLES,
-                headers: { authorization: BillyAuthToken },
+                headers: { authorization: getBillyAuthToken() },
                 variables: { after: pageInfo?.endCursor, first: 5 }
             });
 
@@ -265,7 +265,7 @@ describe("model.role", () => {
             const before = pageInfo2?.startCursor
             const res3 = await query({
                 query: GET_V1_ROLES,
-                headers: { authorization: BillyAuthToken },
+                headers: { authorization: getBillyAuthToken() },
                 variables: { before: pageInfo2?.startCursor, last: 5 }
             });
             expect(res2.errors, res3.errors?.toString()).to.be.undefined;

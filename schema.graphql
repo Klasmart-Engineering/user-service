@@ -175,6 +175,7 @@ type Mutation {
     uploadClassesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadGradesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadSchoolsFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadRolesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
 }
 
 type User {

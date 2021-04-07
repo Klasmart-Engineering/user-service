@@ -1,7 +1,7 @@
 import { ApolloServerTestClient } from "../createTestClient";
 import { Headers } from "node-mocks-http"
 import { gqlTry } from "../gqlTry";
-import { JoeAuthToken } from "../testConfig";
+import { getJoeAuthToken } from "../testConfig";
 import { Role } from "../../../src/entities/role";
 import { SchoolMembership } from "../../../src/entities/schoolMembership";
 
@@ -75,7 +75,7 @@ query myQuery($user_id: ID!  $school_id: ID!, $permission_name: ID!){
 
 export async function addRoleToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleId: string, headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeAuthToken() };
 
     const operation = () => mutate({
         mutation: ADD_ROLE_TO_SCHOOL_MEMBERSHIP,
@@ -90,7 +90,7 @@ export async function addRoleToSchoolMembership(testClient: ApolloServerTestClie
 
 export async function addRolesToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleIds: string[], headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeAuthToken() };
 
     const operation = () => mutate({
         mutation: ADD_ROLES_TO_SCHOOL_MEMBERSHIP,
@@ -105,7 +105,7 @@ export async function addRolesToSchoolMembership(testClient: ApolloServerTestCli
 
 export async function removeRoleToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleId: string, headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeAuthToken() };
 
     const operation = () => mutate({
         mutation: REMOVE_ROLE_TO_SCHOOL_MEMBERSHIP,
@@ -120,7 +120,7 @@ export async function removeRoleToSchoolMembership(testClient: ApolloServerTestC
 
 export async function leaveSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeAuthToken() };
 
     const operation = () => mutate({
         mutation: LEAVE_SCHOOL,

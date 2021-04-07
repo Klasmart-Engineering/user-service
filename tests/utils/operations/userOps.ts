@@ -6,7 +6,7 @@ import { SchoolMembership } from "../../../src/entities/schoolMembership";
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
 import { gqlTry } from "../gqlTry";
-import { JoeAuthToken } from "../testConfig";
+import { getJoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { Subject } from "../../../src/entities/subject";
 
@@ -243,7 +243,7 @@ export async function createOrganization(
     token?: string
 ): Promise<Organization> {
 
-    token = token ?? JoeAuthToken
+    token = token ?? getJoeAuthToken()
     const variables =  { user_id: userId, organization_name: organizationName } as any
 
     if(shortCode){
@@ -284,7 +284,7 @@ export async function addOrganizationToUserAndValidate(testClient: ApolloServerT
 export async function addOrganizationToUser(testClient: ApolloServerTestClient, userId: string, organizationId: string, token?: string) {
     const { mutate } = testClient;
 
-    token = token ?? JoeAuthToken;
+    token = token ?? getJoeAuthToken();
 
     const operation = () => mutate({
         mutation: ADD_ORGANIZATION_TO_USER,
@@ -467,7 +467,7 @@ export async function getUserSchoolMembershipsWithPermission(testClient: ApolloS
 export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers){
     const { mutate } = testClient;
 
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeAuthToken() };
     console.log("userId:",userId,"otherId:",otherId)
     const operation = () => mutate({
         mutation: MERGE_USER,

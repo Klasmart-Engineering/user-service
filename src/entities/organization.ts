@@ -16,13 +16,14 @@ import {
     MEMBERSHIP_SHORTCODE_MAXLEN,
     OrganizationMembership,
 } from './organizationMembership'
+import { v4 as uuid_v4 } from 'uuid'
 import { OrganizationOwnership } from './organizationOwnership'
 import { AgeRange } from './ageRange'
 import { Category } from './category'
 import { Grade } from './grade'
 import { Role } from './role'
 import { Subcategory } from './subcategory'
-import { User, accountUUID } from './user'
+import { User } from './user'
 import { Class } from './class'
 import { School } from './school'
 import { Context } from '../main'
@@ -540,6 +541,7 @@ export class Organization
 
             const result = await this._setMembership(
                 restricted,
+                false,
                 email,
                 phone,
                 given_name,
@@ -599,6 +601,7 @@ export class Organization
 
             const result = await this._setMembership(
                 false,
+                true,
                 email,
                 phone,
                 given_name,
@@ -639,6 +642,7 @@ export class Organization
     }
 
     private async findOrCreateUser(
+        edit: boolean,
         email?: string,
         phone?: string,
         given_name?: string,
@@ -649,13 +653,34 @@ export class Organization
         alternate_phone?: string,
         gender?: string
     ): Promise<User> {
-        const hashSource = email ?? phone
-        const user_id = accountUUID(hashSource)
-        const user =
-            (await getRepository(User).findOne({ user_id })) || new User()
+        let user_id: string
+        let user: User
+        if (edit) {
+            const scope = getRepository(User).createQueryBuilder('user')
+            if (email) {
+                scope.where('email = :email', { email: email })
+            } else {
+                scope.where('phone = :phone', { phone: phone })
+            }
+            if (username) {
+                scope.andWhere('username = :username', { username: username })
+            }
+            const users = await scope.getMany()
+            if (users && users.length > 0) {
+                user = users[0]
+            } else {
+                user_id = uuid_v4()
+                user = new User()
+                user.user_id = user_id
+            }
+        } else {
+            user_id = uuid_v4()
+            user = new User()
+            user.user_id = user_id
+        }
         user.email = email
         user.phone = phone
-        user.user_id = user_id
+
         if (given_name !== undefined) {
             user.given_name = given_name
         }
@@ -747,6 +772,7 @@ export class Organization
 
     private async _setMembership(
         restricted: boolean,
+        edit: boolean,
         email?: string,
         phone?: string,
         given_name?: string,
@@ -806,6 +832,7 @@ export class Organization
                 school_role_ids.map((role_id) => roleLookup(role_id))
             )
             const user = await this.findOrCreateUser(
+                edit,
                 email,
                 phone,
                 given_name,

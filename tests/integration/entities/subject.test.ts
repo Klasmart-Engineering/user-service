@@ -5,7 +5,7 @@ import chaiAsPromised from "chai-as-promised";
 import { ApolloServerTestClient, createTestClient } from "../../utils/createTestClient";
 import { addUserToOrganizationAndValidate, createRole } from "../../utils/operations/organizationOps";
 import { addRoleToOrganizationMembership } from "../../utils/operations/organizationMembershipOps";
-import { BillyAuthToken, JoeAuthToken } from "../../utils/testConfig";
+import { getBillyAuthToken, getJoeAuthToken } from "../../utils/testConfig";
 import { Category } from "../../../src/entities/category";
 import { createCategory } from "../../factories/category.factory";
 import { createServer } from "../../../src/utils/createServer";
@@ -73,7 +73,7 @@ describe("Subject", () => {
             await category.save()
             subject = createSubject(organization, [category])
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             await subject.save()
         });
 
@@ -93,7 +93,7 @@ describe("Subject", () => {
                 });
 
                 it("fails to list subjects in the organization", async () => {
-                    const fn = () => describeSubject(testClient, subject.id, { authorization: BillyAuthToken });
+                    const fn = () => describeSubject(testClient, subject.id, { authorization: getBillyAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -102,7 +102,7 @@ describe("Subject", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -113,7 +113,7 @@ describe("Subject", () => {
                         subcategories: [subcategory.id],
                         system: subject.system
                     }
-                    const gqlSubject = await describeSubject(testClient, subject.id, { authorization: BillyAuthToken });
+                    const gqlSubject = await describeSubject(testClient, subject.id, { authorization: getBillyAuthToken() });
                     const gqlSubjectDetails = await subjectInfo(gqlSubject)
                     expect(subjectDetails).to.deep.eq(gqlSubjectDetails)
                 });
@@ -166,15 +166,15 @@ describe("Subject", () => {
 
                 context("and belongs to the organization from the subject", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
                         roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: JoeAuthToken });
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
                     });
 
                     context("with a non system subject", () => {
                         context("and has delete subject permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: JoeAuthToken });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
                             });
 
                             it("deletes the expected subject", async () => {
@@ -183,7 +183,7 @@ describe("Subject", () => {
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
                                 expect(dbSubject.deleted_at).to.be.null
 
-                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: BillyAuthToken })
+                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
 
                                 expect(gqlBool).to.be.true
                                 dbSubject = await Subject.findOneOrFail(subject.id)
@@ -193,11 +193,11 @@ describe("Subject", () => {
 
                             context("with the subject already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                                    await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
                                 });
 
                                 it("cannot delete the subject", async () => {
-                                    const gqlBool = await deleteSubject(testClient, subject.id, { authorization: BillyAuthToken })
+                                    const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
 
                                     expect(gqlBool).to.be.false
                                     const dbSubject = await Subject.findOneOrFail(subject.id)
@@ -209,7 +209,7 @@ describe("Subject", () => {
 
                         context("and does not have delete subject permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubject(testClient, subject.id, { authorization: BillyAuthToken })
+                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
@@ -226,11 +226,11 @@ describe("Subject", () => {
 
                         context("and has delete subject permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: JoeAuthToken });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubject(testClient, subject.id, { authorization: BillyAuthToken })
+                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
@@ -240,7 +240,7 @@ describe("Subject", () => {
 
                         context("and does not have delete subject permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubject(testClient, subject.id, { authorization: BillyAuthToken })
+                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
@@ -259,7 +259,7 @@ describe("Subject", () => {
                         expect(dbSubject.status).to.eq(Status.ACTIVE)
                         expect(dbSubject.deleted_at).to.be.null
 
-                        const gqlBool = await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                        const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
 
                         expect(gqlBool).to.be.true
                         dbSubject = await Subject.findOneOrFail(subject.id)
@@ -270,7 +270,7 @@ describe("Subject", () => {
 
                 context("and belongs to the organization from the subject", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     context("with a non system subject", () => {
@@ -280,7 +280,7 @@ describe("Subject", () => {
                             expect(dbSubject.status).to.eq(Status.ACTIVE)
                             expect(dbSubject.deleted_at).to.be.null
 
-                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbSubject = await Subject.findOneOrFail(subject.id)
@@ -290,11 +290,11 @@ describe("Subject", () => {
 
                         context("with the subject already deleted", () => {
                             beforeEach(async () => {
-                                await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                                await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
                             });
 
                             it("cannot delete the subject", async () => {
-                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
@@ -316,7 +316,7 @@ describe("Subject", () => {
                             expect(dbSubject.status).to.eq(Status.ACTIVE)
                             expect(dbSubject.deleted_at).to.be.null
 
-                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbSubject = await Subject.findOneOrFail(subject.id)
@@ -326,11 +326,11 @@ describe("Subject", () => {
 
                         context("with the subject already deleted", () => {
                             beforeEach(async () => {
-                                await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                                await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
                             });
 
                             it("cannot delete the subject", async () => {
-                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: JoeAuthToken })
+                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbSubject = await Subject.findOneOrFail(subject.id)

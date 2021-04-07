@@ -1,17 +1,28 @@
 import { User } from "../../src/entities/user";
 import { ApolloServerTestClient } from "./createTestClient";
 import { createUserAndValidate } from "./operations/modelOps";
+import { userToPayload } from "./operations/userOps";
+import { generateToken, setBillyAuthToken, setJoeAuthToken, setJoeAuthWithoutIdToken } from "./testConfig";
 
-export function createUserJoe(testClient: ApolloServerTestClient) {
-    return createUserAndValidate(testClient, joe);
+export async function createUserJoe(testClient: ApolloServerTestClient) {
+    const joeUser = await createUserAndValidate(testClient, joe);
+    if(joeUser) {
+        setJoeAuthToken(generateToken(userToPayload(joeUser)))
+        setJoeAuthWithoutIdToken(generateToken(userToPayload(joe)))
+        
+    }
+    return joeUser
 }
 
-export function createUserBilly(testClient: ApolloServerTestClient) {
-    return createUserAndValidate(testClient, billy);
+export async function createUserBilly(testClient: ApolloServerTestClient) {
+    const billyUser = await createUserAndValidate(testClient, billy);
+    if(billyUser) {
+        setBillyAuthToken(generateToken(userToPayload(billyUser)))
+    }
+    return billyUser
 }
 
 const joe = {
-    user_id: "c6d4feed-9133-5529-8d72-1003526d1b13",
     given_name: "Joe",
     family_name: "Brown",
     email: "joe@gmail.com",
@@ -21,7 +32,6 @@ const joe = {
 } as User;
 
 const billy = {
-    user_id: "fcf922e5-25c9-5dce-be9f-987a600c1356",
     given_name: "Billy",
     family_name: "Bob",
     email: "billy@gmail.com",

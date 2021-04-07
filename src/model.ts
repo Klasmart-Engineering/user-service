@@ -7,7 +7,7 @@ import {
     Repository,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
-import { User, accountUUID } from './entities/user'
+import { User } from './entities/user'
 import {
     Organization,
     validateDOB,
@@ -28,6 +28,8 @@ import { Class } from './entities/class'
 import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
+import { v4 as uuid_v4 } from 'uuid'
+
 import { getPaginated } from './utils/getpaginated'
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
@@ -36,6 +38,7 @@ import { processGradeFromCSVRow } from './utils/csv/grade'
 import { processOrganizationFromCSVRow } from './utils/csv/organization'
 import { setGradeFromToFields } from './utils/csv/setGradeFromToFields'
 import { processSchoolFromCSVRow } from './utils/csv/school'
+import { processRoleFromCSVRow } from './utils/csv/role'
 
 export class Model {
     public static async create() {
@@ -91,9 +94,9 @@ export class Model {
     }
 
     public async getMyUser({ token, permissions }: Context) {
-        const userID = permissions.getUserId()
-        const userEmail = token?.email
-        const userPhone = token?.phone
+        let userID = permissions.getUserId()
+        let userEmail = token?.email
+        let userPhone = token?.phone
 
         let user = await this.userRepository.findOne({
             where: [
@@ -106,11 +109,30 @@ export class Model {
             return user
         }
 
-        const hashSource = userEmail || userPhone
+        if (token?.id && userID != token?.id) {
+            userID = token?.id
+            user = await this.userRepository.findOne({
+                where: [
+                    { email: userEmail, user_id: userID },
+                    { phone: userPhone, user_id: userID },
+                ],
+            })
+        }
 
-        if (hashSource) {
+        if (user) {
+            return user
+        }
+
+        if (userEmail && !validateEmail(userEmail)) {
+            userEmail = undefined
+        }
+        if (userPhone && !validatePhone(userPhone)) {
+            userPhone = undefined
+        }
+
+        if (userEmail || userPhone) {
             user = new User()
-            user.user_id = accountUUID(hashSource)
+            user.user_id = uuid_v4()
             user.email = userEmail
             user.phone = userPhone
 
@@ -148,11 +170,10 @@ export class Model {
                 date_of_birth = undefined
             }
         }
-        const hashSource = email ?? phone
-        if (!hashSource) {
+        if (!(email ?? phone)) {
             return null
         }
-        newUser.user_id = accountUUID(hashSource)
+        newUser.user_id = uuid_v4()
         newUser.given_name = given_name
         newUser.family_name = family_name
         newUser.email = email
@@ -689,6 +710,25 @@ export class Model {
             processGradeFromCSVRow,
             setGradeFromToFields,
         ])
+
+        return file
+    }
+
+    public async uploadRolesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            processRoleFromCSVRow
+        )
 
         return file
     }

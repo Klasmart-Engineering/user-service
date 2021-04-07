@@ -4,12 +4,11 @@ import { AgeRange } from "../../../src/entities/ageRange";
 import { Grade } from "../../../src/entities/grade";
 import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
-import { Role } from "../../../src/entities/role";
 import { Subcategory } from "../../../src/entities/subcategory";
 import { Subject } from "../../../src/entities/subject";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
-import { JoeAuthToken } from "../testConfig";
+import { getJoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { UserConnection } from "../../../src/utils/pagingconnections";
@@ -268,6 +267,16 @@ const USER_CSV_UPLOAD_MUTATION = `
     }
 `;
 
+const CLASS_CSV_UPLOAD_MUTATION = `
+    mutation classCSVFileUpload($file: Upload!) {
+        uploadClassesFromCSV(file: $file) {
+            filename
+            mimetype
+            encoding
+        }
+    }
+`;
+
 const SCHOOLS_CSV_UPLOAD_MUTATION = `
     mutation UploadSchoolsFromCSV($file: Upload!) {
         uploadSchoolsFromCSV(file: $file) {
@@ -285,7 +294,7 @@ export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user, { authorization: JoeAuthToken });
+    const gqlUser = await createUser(testClient, user, { authorization: getJoeAuthToken() });
     const dbUser = await User.findOneOrFail({ where: { email: user.email } });
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
@@ -569,13 +578,13 @@ export async function uploadClassesFile(
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: USER_CSV_UPLOAD_MUTATION,
+        mutation: CLASS_CSV_UPLOAD_MUTATION,
         variables: variables,
         headers: headers,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    return res.data?.uploadClassesFromCSV;
 }
 
 export async function uploadSchoolsFile(
