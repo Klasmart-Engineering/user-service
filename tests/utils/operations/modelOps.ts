@@ -267,6 +267,16 @@ const USER_CSV_UPLOAD_MUTATION = `
     }
 `;
 
+const CLASS_CSV_UPLOAD_MUTATION = `
+    mutation classCSVFileUpload($file: Upload!) {
+        uploadClassesFromCSV(file: $file) {
+            filename
+            mimetype
+            encoding
+        }
+    }
+`;
+
 const SCHOOLS_CSV_UPLOAD_MUTATION = `
     mutation UploadSchoolsFromCSV($file: Upload!) {
         uploadSchoolsFromCSV(file: $file) {
@@ -568,13 +578,13 @@ export async function uploadClassesFile(
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: USER_CSV_UPLOAD_MUTATION,
+        mutation: CLASS_CSV_UPLOAD_MUTATION,
         variables: variables,
         headers: headers,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    return res.data?.uploadClassesFromCSV;
 }
 
 export async function uploadSchoolsFile(

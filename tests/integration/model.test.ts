@@ -20,12 +20,16 @@ import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
 import { Organization } from "../../src/entities/organization";
+import { Class } from "../../src/entities/class";
+import { School } from "../../src/entities/school";
 import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
+import { createSchool } from "../factories/school.factory";
 import { ReadStream } from 'fs';
 import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
+import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploadClasses";
 import { Role } from "../../src/entities/role";
 import { before } from "mocha";
 
@@ -730,6 +734,71 @@ describe("model", () => {
 
                 const rolesCreated = await Role.count({ where: { system_role: false } });
                 expect(rolesCreated).gt(0);
+            });
+        });
+    });
+
+    describe("uploadClassesFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        let filename = 'classes-bad.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadClasses(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const classesCreated = await Class.count();
+                expect(classesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadClasses(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const classesreated = await Class.count();
+                expect(classesreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            let expectedOrg: Organization
+            let expectedProg: Program
+            let expectedSchool: School
+                
+            beforeEach(async ()=>{
+                filename = "classes.csv";
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                expectedOrg = createOrganization()
+                expectedOrg.organization_name = "my-org"
+                await connection.manager.save(expectedOrg)
+
+                expectedProg = createProgram(expectedOrg)
+                expectedProg.name = "outdoor activities"
+                await connection.manager.save(expectedProg)
+
+                expectedSchool = createSchool(expectedOrg, 'test-school')
+                await connection.manager.save(expectedSchool)    
+            });
+            
+            it("should create classes", async () => {
+                const result = await uploadClasses(testClient, file, filename, mimetype, encoding);
+                const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
+                const schools = await dbClass.schools || []
+                const programs = await dbClass.programs || []
+
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+                expect(schools.length).to.equal(1)
+                expect(programs.length).to.equal(1)
             });
         });
     });
