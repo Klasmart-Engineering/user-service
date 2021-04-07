@@ -1,4 +1,4 @@
 organization_name,grade_name,progress_from_grade_name,progress_to_grade_name
-,Kinder,,First Grade
-Company 1,First Grade,Kinder,Second Grade
+Company 1,Kinder,,First Grade
+Company 1,First Grade,Kinder,Second
 Company 1,Second Grade,First Grade,Third Grade

@@ -1,8 +1,8 @@
-import { ReadStream } from "typeorm/platform/PlatformTools";
+import { Stream } from "stream";
 import { ApolloServerTestClient } from "../../createTestClient";
 import { gqlTry } from "../../gqlTry";
 import { fileMockInput } from "../modelOps";
-
+import { ReadStream } from "fs-capacitor";
 
 const UPLOAD_GRADES_MUTATION = `
     mutation UploadGradesFromCSV($file: Upload!) {
@@ -48,7 +48,7 @@ export async function uploadGrades(
 
 export async function queryUploadGrades(
     testClient: ApolloServerTestClient,
-    file: ReadStream,
+    file: Stream,
     filename: string,
     mimetype: string,
     encoding: string
