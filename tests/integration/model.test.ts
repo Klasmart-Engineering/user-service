@@ -685,55 +685,6 @@ describe("model", () => {
         });
     });
 
-    describe("uploadOrganizationsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const correctFileName = 'organizationsExample.csv';
-        const wrongFileName = 'organizationsWrong.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                const filename = correctFileName;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                const filename = wrongFileName;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            it("should create organizations", async () => {
-                const filename = correctFileName
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).gt(0);
-            });
-        });
-    });
-
     describe("uploadGradesFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
