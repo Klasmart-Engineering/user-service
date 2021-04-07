@@ -1,5 +1,6 @@
 import { Connection } from 'typeorm'
 import { readCSVFile } from './readFile'
+import { readCSVFileMultipleCallbacks } from './readFileMultipleCallbacks'
 
 function formatCSVRow(row: any) {
     const keys = Object.keys(row)
@@ -24,12 +25,11 @@ export async function createEntityFromCsvWithRollBack(
     await queryRunner.startTransaction()
     try {
         if (Array.isArray(functionToProcessEntityFromCsvRow)) {
-            for (let functionEntity of functionToProcessEntityFromCsvRow) {
-                await readCSVFile(file, async (row, rowCounter) => {
-                    row = formatCSVRow(row)
-                    await functionEntity(queryRunner.manager, row, rowCounter)
-                })
-            }
+            await readCSVFileMultipleCallbacks(
+                queryRunner.manager,
+                file,
+                functionToProcessEntityFromCsvRow
+            )
         } else {
             await readCSVFile(file, async (row, rowCounter) => {
                 row = formatCSVRow(row)

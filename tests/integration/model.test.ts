@@ -763,17 +763,18 @@ describe("model", () => {
 
         context("when file data is correct", () => {
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                const org = await createOrganization(user)
+                const org = await createOrganization()
                 org.organization_name = 'Company 1';
-                // await org.save();
                 await connection.manager.save(org);
-    
-                const user2 = await createUserBilly(testClient);
-                const org2 = await createOrganization(user2);
+
+                const org2 = await createOrganization();
                 org2.organization_name = 'Company 2';
-                // await org2.save();
                 await connection.manager.save(org2);
+
+                const noneSpecifiedGrade = new Grade();
+                noneSpecifiedGrade.name = 'None Specified';
+                noneSpecifiedGrade.system = true;
+                await connection.manager.save(noneSpecifiedGrade);
             });
 
             it("should create grades", async () => {

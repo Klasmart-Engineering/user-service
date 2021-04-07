@@ -14,7 +14,7 @@
     "test": "npm run test:unit && npm run test:integration",
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
     "make-badges": "istanbul-badges-readme",
-    "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/directives/isMIMEType.test.ts --timeout 5000"
+    "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/model.test.ts --timeout 5000"
   },
   "repository": {
     "type": "git",
@@ -67,6 +67,7 @@
     "graphql-upload": "11.0.0",
     "jsonwebtoken": "8.5.1",
     "pg": "8.4.1",
+    "rereadable-stream": "^1.4.9",
     "stream": "0.0.2",
     "type-graphql": "1.1.1",
     "typeorm": "0.2.28",
