@@ -8,7 +8,7 @@ import { getUser, getUsers, updateUser, createUserAndValidate, getv1Users } from
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
-import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
+import { getBillyAuthToken, getJoeAuthToken } from "../utils/testConfig";
 import { Paginated } from "../../src/utils/paginated.interface";
 
 describe("model.user", () => {
@@ -52,7 +52,7 @@ describe("model.user", () => {
         });
 
         it("should modify an existing user", async () => {
-            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: JoeAuthToken });
+            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: getJoeAuthToken() });
             expect(gqlUser).to.exist;
             expect(gqlUser).to.include(modifiedUser);
             const dbUser = await User.findOneOrFail(user.user_id);
@@ -68,7 +68,7 @@ describe("model.user", () => {
         });
 
         it("should get users", async () => {
-            const gqlUsers = await getUsers(testClient, { authorization: JoeAuthToken });
+            const gqlUsers = await getUsers(testClient, { authorization: getJoeAuthToken() });
 
             expect(gqlUsers).to.exist;
             expect(gqlUsers.length).to.equal(1);
@@ -89,7 +89,7 @@ describe("model.user", () => {
         });
 
         it("should get user by ID", async () => {
-            const gqlUser = await getUser(testClient, user.user_id, { authorization: JoeAuthToken });
+            const gqlUser = await getUser(testClient, user.user_id, { authorization: getJoeAuthToken() });
             expect(gqlUser).to.exist;
             expect(user).to.include(gqlUser);
         });
@@ -126,7 +126,7 @@ describe("model.user", () => {
             let oldUsers: User[] = []
             do {
                 page++
-                const gqlUserConnection = await getv1Users(testClient, after, before, first, last, { authorization: JoeAuthToken });
+                const gqlUserConnection = await getv1Users(testClient, after, before, first, last, { authorization: getJoeAuthToken() });
                 expect(gqlUserConnection).to.exist;
                 let users = gqlUserConnection.edges
                 let total = gqlUserConnection.total
@@ -157,7 +157,7 @@ describe("model.user", () => {
 
         });
         it("should get paged users as user", async () => {
-            const gqlUserConnection = await getv1Users(testClient, undefined, undefined, undefined, undefined, { authorization: BillyAuthToken });
+            const gqlUserConnection = await getv1Users(testClient, undefined, undefined, undefined, undefined, { authorization: getBillyAuthToken() });
             expect(gqlUserConnection).to.exist;
             let users = gqlUserConnection.edges
             let total = gqlUserConnection.total

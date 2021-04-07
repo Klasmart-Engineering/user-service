@@ -5,7 +5,7 @@ import { ApolloServerTestClient, createTestClient } from "../../utils/createTest
 import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../../utils/testEntities";
-import { JoeAuthToken, BillyAuthToken } from "../../utils/testConfig";
+import { getJoeAuthToken, getBillyAuthToken } from "../../utils/testConfig";
 import { getAllOrganizations } from "../../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { Model } from "../../../src/model";
@@ -58,7 +58,7 @@ describe("isAdmin", () => {
 
             context("and the user is an admin", () => {
                 it("returns all the organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: JoeAuthToken });
+                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
@@ -69,7 +69,7 @@ describe("isAdmin", () => {
 
             context("and the user is not an admin", () => {
                 it("returns only the organizations it belongs to", async () => {
-                    const gqlOrgs = await getAllOrganizations( testClient, { authorization: BillyAuthToken });
+                    const gqlOrgs = await getAllOrganizations( testClient, { authorization: getBillyAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([otherOrganization.organization_id]);
                 });

@@ -13,11 +13,11 @@ import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
 import { Program } from "../../src/entities/program";
-import { accountUUID, User } from "../../src/entities/user";
+import { User } from "../../src/entities/user";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
+import { getBillyAuthToken, getJoeAuthToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { denyPermission, grantPermission } from "../utils/operations/roleOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
@@ -57,8 +57,8 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const editClassRole = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, editClassRole.role_id);
             });
 
@@ -83,7 +83,7 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
@@ -96,7 +96,7 @@ describe("class", () => {
             it("should throw a permission exception and not mutate the database entry", async () => {
                 const newClassName = "New Class Name"
                 const originalClassName = cls.class_name;
-                const fn = () => updateClass(testClient, cls.class_id, newClassName, { authorization: BillyAuthToken });
+                const fn = () => updateClass(testClient, cls.class_id, newClassName, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 expect(dbClass.class_name).to.equal(originalClassName);
@@ -110,10 +110,10 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const editClassRole = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                await grantPermission(testClient, editClassRole.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, editClassRole.role_id);
             });
 
@@ -123,7 +123,7 @@ describe("class", () => {
 
             it("should update class name", async () => {
                 const newClassName = "New Class Name"
-                const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: BillyAuthToken });
+                const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: getBillyAuthToken() });
                 expect(gqlClass).to.exist;
                 expect(gqlClass.class_name).to.equal(newClassName);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -132,13 +132,13 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                 });
 
                 it("does not update the class name", async () => {
                     const newClassName = "New Class Name";
                     const originalClassName = cls.class_name;
-                    const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: BillyAuthToken });
+                    const gqlClass = await updateClass(testClient, cls.class_id, newClassName, { authorization: getBillyAuthToken() });
 
                     expect(gqlClass).to.be.null;
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -157,12 +157,12 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = JoeAuthToken;
+            const orgOwnerToken = getJoeAuthToken();
 
             beforeEach(async () => {
                 orgOwnerId = (await createUserJoe(testClient))?.user_id;
-                const teacherInfo = { user_id: accountUUID("teacher@gmail.com"), email: "teacher@gmail.com" } as User;
-                const studentInfo = { user_id: accountUUID("student@gmail.com"), email: "student@gmail.com" } as User;
+                const teacherInfo = { email: "teacher@gmail.com" } as User;
+                const studentInfo = { email: "student@gmail.com" } as User;
                 teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
                 studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
                 organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
@@ -217,11 +217,11 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = JoeAuthToken;
+            const orgOwnerToken = getJoeAuthToken();
 
             beforeEach(async () => {
                 orgOwnerId = (await createUserJoe(testClient))?.user_id;
-                const teacherInfo = { user_id: accountUUID("teacher@gmail.com"), email: "teacher@gmail.com" } as User;
+                const teacherInfo = { email: "teacher@gmail.com" } as User;
                 teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
                 organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
                 await addUserToOrganizationAndValidate(testClient, teacherId, organizationId, { authorization: orgOwnerToken });
@@ -269,12 +269,12 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = JoeAuthToken;
+            const orgOwnerToken = getJoeAuthToken();
 
             beforeEach(async () => {
                 orgOwnerId = (await createUserJoe(testClient))?.user_id;
-                const teacherInfo = { user_id: accountUUID("teacher@gmail.com"), email: "teacher@gmail.com" } as User;
-                const studentInfo = { user_id: accountUUID("student@gmail.com"), email: "student@gmail.com" } as User;
+                const teacherInfo = { email: "teacher@gmail.com" } as User;
+                const studentInfo = { email: "student@gmail.com" } as User;
                 teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
                 studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
                 organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
@@ -329,11 +329,11 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = JoeAuthToken;
+            const orgOwnerToken = getJoeAuthToken();
 
             beforeEach(async () => {
                 orgOwnerId = (await createUserJoe(testClient))?.user_id;
-                const studentInfo = { user_id: accountUUID("student@gmail.com"), email: "student@gmail.com" } as User;
+                const studentInfo = { email: "student@gmail.com" } as User;
                 studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
                 organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
                 await addUserToOrganizationAndValidate(testClient, studentId, organizationId, { authorization: orgOwnerToken });
@@ -381,7 +381,7 @@ describe("class", () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             cls = await createClass(testClient, organization.organization_id);
         });
 
@@ -402,12 +402,12 @@ describe("class", () => {
             context("and the user does not have delete teacher permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("should throw a permission exception and not mutate the database entries", async () => {
-                    const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbTeacher = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -421,12 +421,12 @@ describe("class", () => {
             context("and the user does not have add teacher permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("should throw a permission exception and not mutate the database entries", async () => {
-                    const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    const fn = () => editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbTeacher = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -447,13 +447,13 @@ describe("class", () => {
 
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("edits teachers in class", async () => {
-                    let gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    let gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                     expect(gqlTeacher.map(userInfo)).to.deep.eq([user.user_id]);
                     let dbTeacher = await User.findOneOrFail(user.user_id);
                     let dbClass = await Class.findOneOrFail(cls.class_id);
@@ -462,7 +462,7 @@ describe("class", () => {
                     expect(teachers.map(userInfo)).to.deep.eq([user.user_id]);
                     expect(classesTeaching.map(classInfo)).to.deep.eq([cls.class_id]);
 
-                    gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     expect(gqlTeacher).to.be.empty;
                     dbTeacher = await User.findOneOrFail(user.user_id);
                     dbClass = await Class.findOneOrFail(cls.class_id);
@@ -474,11 +474,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                     });
 
                     it("does not edit the teachers in class", async () => {
-                        const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                        const gqlTeacher = await editTeachersInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
 
                         expect(gqlTeacher).to.be.null;
                         const dbTeacher = await User.findOneOrFail(user.user_id);
@@ -504,8 +504,8 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: getJoeAuthToken() });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
@@ -529,14 +529,14 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
             it("should throw a permission exception and not mutate the database entries", async () => {
-                const fn = () => addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                const fn = () => addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -555,15 +555,15 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.add_teachers_to_class_20226, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
             it("should add teacher to class", async () => {
-                const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 expect(gqlTeacher).to.exist;
                 expect(user).to.include(gqlTeacher);
                 const dbTeacher = await User.findOneOrFail(user.user_id);
@@ -578,11 +578,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                 });
 
                 it("does not add the teacher in class", async () => {
-                    const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                    const gqlTeacher = await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
 
                     expect(gqlTeacher).to.be.null;
                     const dbTeacher = await User.findOneOrFail(user.user_id);
@@ -612,15 +612,15 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
-                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: getJoeAuthToken() });
             });
 
             it("should throw a permission exception and not mutate the database entries", async () => {
-                const fn = () => removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                const fn = () => removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -639,16 +639,16 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
-                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, cls.class_id, user.user_id, { authorization: getJoeAuthToken() });
             });
 
             it("removes the teacher from class", async () => {
-                const gqlTeacher = await removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                const gqlTeacher = await removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 expect(gqlTeacher).to.be.true;
                 const dbTeacher = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -660,11 +660,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                 });
 
                 it("fails to remove teacher in class", async () => {
-                    const gqlTeacher = await removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                    const gqlTeacher = await removeTeacherInClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                     expect(gqlTeacher).to.be.null;
                     const dbTeacher = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -684,19 +684,19 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
+                const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: getJoeAuthToken() }))?.school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
-                await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+                await addSchoolToClass(testClient, classId, schoolId, { authorization: getJoeAuthToken() });
                 const role = await createRole(testClient, organizationId);
-                await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.delete_teacher_from_class_20446, { authorization: getJoeAuthToken() });
                 await addRoleToSchoolMembership(testClient, userId, schoolId, role.role_id);
-                await addTeacherToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("removes the teacher from class", async () => {
-                const gqlTeacher = await removeTeacherInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                const gqlTeacher = await removeTeacherInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
 
                 expect(gqlTeacher).to.be.true;
                 const dbTeacher = await User.findOneOrFail(userId);
@@ -709,11 +709,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, classId, { authorization: getJoeAuthToken() });
                 });
 
                 it("fails to remove teacher in class", async () => {
-                    const gqlTeacher = await removeTeacherInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                    const gqlTeacher = await removeTeacherInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
 
                     expect(gqlTeacher).to.be.null;
                     const dbTeacher = await User.findOneOrFail(userId);
@@ -736,7 +736,7 @@ describe("class", () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             cls = await createClass(testClient, organization.organization_id);
         });
 
@@ -757,12 +757,12 @@ describe("class", () => {
             context("and the user does not have delete student permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("should throw a permission exception and not mutate the database entries", async () => {
-                    const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbStudent = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -776,12 +776,12 @@ describe("class", () => {
             context("and the user does not have add student permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("should throw a permission exception and not mutate the database entries", async () => {
-                    const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    const fn = () => editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbStudent = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -802,13 +802,13 @@ describe("class", () => {
 
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("edits students in class", async () => {
-                    let gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                    let gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                     expect(gqlStudent.map(userInfo)).to.deep.eq([user.user_id]);
                     let dbStudent = await User.findOneOrFail(user.user_id);
                     let dbClass = await Class.findOneOrFail(cls.class_id);
@@ -817,7 +817,7 @@ describe("class", () => {
                     expect(students.map(userInfo)).to.deep.eq([user.user_id]);
                     expect(classesStudying.map(classInfo)).to.deep.eq([cls.class_id]);
 
-                    gqlStudent = await editStudentsInClass(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlStudent = await editStudentsInClass(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     expect(gqlStudent).to.be.empty;
                     dbStudent = await User.findOneOrFail(user.user_id);
                     dbClass = await Class.findOneOrFail(cls.class_id);
@@ -829,11 +829,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                     });
 
                     it("does not edit the students in class", async () => {
-                        const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: BillyAuthToken });
+                        const gqlStudent = await editStudentsInClass(testClient, cls.class_id, [user.user_id], { authorization: getBillyAuthToken() });
                         expect(gqlStudent).to.be.null;
                         const dbStudent = await User.findOneOrFail(user.user_id);
                         const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -858,8 +858,8 @@ describe("class", () => {
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: getJoeAuthToken() });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
@@ -883,14 +883,14 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
             it("should throw a permission exception and not mutate the database entries", async () => {
-                const fn = () => addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                const fn = () => addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbStudent = await User.findOneOrFail(user.user_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -909,15 +909,15 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.add_students_to_class_20225, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
             it("should add student to class", async () => {
-                const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                 expect(gqlStudent).to.exist;
                 expect(user).to.include(gqlStudent);
                 const dbStudent = await User.findOneOrFail(user.user_id);
@@ -932,11 +932,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                 });
 
                 it("does not add the student to class", async () => {
-                    const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: BillyAuthToken });
+                    const gqlStudent = await addStudentToClass(testClient, cls.class_id, user.user_id, { authorization: getBillyAuthToken() });
                     expect(gqlStudent).to.be.null;
                     const dbStudent = await User.findOneOrFail(user.user_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -965,15 +965,15 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
                 const emptyRole = await createRole(testClient, organizationId);
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, emptyRole.role_id);
-                await addStudentToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addStudentToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("should throw a permission exception and not mutate the database entries", async () => {
-                const fn = () => removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                const fn = () => removeStudentInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbStudent = await User.findOneOrFail(userId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -992,16 +992,16 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
                 const role = await createRole(testClient, organizationId);
-                await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, role.role_id);
-                await addStudentToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addStudentToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("removes the student from class", async () => {
-                const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
                 expect(gqlStudent).to.be.true;
                 const dbStudent = await User.findOneOrFail(userId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -1013,11 +1013,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, classId, { authorization: getJoeAuthToken() });
                 });
 
                 it("fails to remove student from class", async () => {
-                    const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                    const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
                     expect(gqlStudent).to.be.null;
                     const dbStudents = await User.findOneOrFail(userId);
                     const dbClass = await Class.findOneOrFail(classId);
@@ -1037,19 +1037,19 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
+                const schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: getJoeAuthToken() }))?.school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
-                await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+                await addSchoolToClass(testClient, classId, schoolId, { authorization: getJoeAuthToken() });
                 const role = await createRole(testClient, organizationId);
-                await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.delete_student_from_class_roster_20445, { authorization: getJoeAuthToken() });
                 await addRoleToSchoolMembership(testClient, userId, schoolId, role.role_id);
-                await addStudentToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addStudentToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("removes the student from class", async () => {
-                const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
 
                 expect(gqlStudent).to.be.true;
                 const dbStudent = await User.findOneOrFail(userId);
@@ -1062,11 +1062,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, classId, { authorization: getJoeAuthToken() });
                 });
 
                 it("fails to remove student in class", async () => {
-                    const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: BillyAuthToken });
+                    const gqlStudent = await removeStudentInClass(testClient, classId, userId, { authorization: getBillyAuthToken() });
 
                     expect(gqlStudent).to.be.null;
                     const dbStudent = await User.findOneOrFail(userId);
@@ -1090,9 +1090,9 @@ describe("class", () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             cls = await createClass(testClient, organization.organization_id);
-            school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
+            school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: getJoeAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -1112,12 +1112,12 @@ describe("class", () => {
             context("and the user does not have edit school permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("should throw a permission exception and not mutate the database entries", async () => {
-                    const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbSchool = await School.findOneOrFail(school.school_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1131,12 +1131,12 @@ describe("class", () => {
             context("and the user does not have edit class permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("should throw a permission exception and not mutate the database entries", async () => {
-                    const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    const fn = () => editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbSchool = await School.findOneOrFail(school.school_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1157,13 +1157,13 @@ describe("class", () => {
 
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("edits schools in class", async () => {
-                    let gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                    let gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: getBillyAuthToken() });
                     expect(gqlSchool.map(schoolInfo)).to.deep.eq([school.school_id]);
                     let dbSchool = await School.findOneOrFail(school.school_id);
                     let dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1172,7 +1172,7 @@ describe("class", () => {
                     expect(schools.map(schoolInfo)).to.deep.eq([school.school_id]);
                     expect(classes.map(classInfo)).to.deep.eq([cls.class_id]);
 
-                    gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     expect(gqlSchool).to.be.empty;
                     dbSchool = await School.findOneOrFail(school.school_id);
                     dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1184,11 +1184,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                     });
 
                     it("does not edit the schools in class", async () => {
-                        const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: BillyAuthToken });
+                        const gqlSchool = await editSchoolsInClass(testClient, cls.class_id, [school.school_id], { authorization: getBillyAuthToken() });
                         expect(gqlSchool).to.be.null;
                         const dbSchool = await School.findOneOrFail(school.school_id);
                         const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1211,11 +1211,11 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                school = await createSchool(testClient, organization.organization_id, "my school",  undefined, { authorization: JoeAuthToken });
+                school = await createSchool(testClient, organization.organization_id, "my school",  undefined, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: getJoeAuthToken() });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
@@ -1239,15 +1239,15 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+                school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const emptyRole = await createRole(testClient, organization.organization_id);
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, emptyRole.role_id);
             });
 
             it("should throw a permission exception and not mutate the database entries", async () => {
-                const fn = () => addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
+                const fn = () => addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbSchool = await School.findOneOrFail(school.school_id);
                 const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1266,16 +1266,16 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 const user = await createUserBilly(testClient);
                 const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
-                school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: JoeAuthToken });
+                await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+                school = await createSchool(testClient, organization.organization_id, "my school", undefined, { authorization: getJoeAuthToken() });
                 cls = await createClass(testClient, organization.organization_id);
                 const role = await createRole(testClient, organization.organization_id);
-                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.edit_school_20330, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
             });
 
             it("should add school to class", async () => {
-                const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
+                const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: getBillyAuthToken() });
                 expect(gqlSchool).to.exist;
                 expect(school).to.include(gqlSchool);
                 const dbSchool = await School.findOneOrFail(school.school_id);
@@ -1290,11 +1290,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                 });
 
                 it("does not add the school to class", async () => {
-                    const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: BillyAuthToken });
+                    const gqlSchool = await addSchoolToClass(testClient, cls.class_id, school.school_id, { authorization: getBillyAuthToken() });
                     expect(gqlSchool).to.be.null;
                     const dbSchool = await School.findOneOrFail(school.school_id);
                     const dbClass = await Class.findOneOrFail(cls.class_id);
@@ -1324,18 +1324,18 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
+                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: getJoeAuthToken() }))?.school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
-                await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+                await addSchoolToClass(testClient, classId, schoolId, { authorization: getJoeAuthToken() });
                 const emptyRole = await createRole(testClient, organizationId);
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, emptyRole.role_id);
-                await addTeacherToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("should throw a permission exception and not mutate the database entries", async () => {
-                const fn = () => removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
+                const fn = () => removeSchoolFromClass(testClient, classId, schoolId, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbSchool = await School.findOneOrFail(schoolId);
                 const dbClass = await Class.findOneOrFail(classId);
@@ -1355,19 +1355,19 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
+                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: getJoeAuthToken() }))?.school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
-                await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+                await addSchoolToClass(testClient, classId, schoolId, { authorization: getJoeAuthToken() });
                 const role = await createRole(testClient, organizationId);
-                await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 await addRoleToOrganizationMembership(testClient, userId, organizationId, role.role_id);
-                await addTeacherToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("removes the school from class", async () => {
-                const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
+                const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: getBillyAuthToken() });
 
                 expect(gqlTeacher).to.be.true;
                 const dbSchool = await School.findOneOrFail(schoolId);
@@ -1380,11 +1380,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, classId, { authorization: getJoeAuthToken() });
                 });
 
                 it("fails to remove school from class", async () => {
-                    const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
+                    const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: getBillyAuthToken() });
 
                     expect(gqlTeacher).to.be.null;
                     const dbSchool = await School.findOneOrFail(schoolId);
@@ -1406,19 +1406,19 @@ describe("class", () => {
                 const orgOwner = await createUserJoe(testClient);
                 userId = (await createUserBilly(testClient))?.user_id;
                 const organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id))?.organization_id;
-                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: JoeAuthToken }))?.school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-                await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken });
+                schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: getJoeAuthToken() }))?.school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() });
                 classId = (await createClass(testClient, organizationId))?.class_id;
-                await addSchoolToClass(testClient, classId, schoolId, { authorization: JoeAuthToken });
+                await addSchoolToClass(testClient, classId, schoolId, { authorization: getJoeAuthToken() });
                 const role = await createRole(testClient, organizationId);
-                await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 await addRoleToSchoolMembership(testClient, userId, schoolId, role.role_id);
-                await addTeacherToClass(testClient, classId, userId, { authorization: JoeAuthToken });
+                await addTeacherToClass(testClient, classId, userId, { authorization: getJoeAuthToken() });
             });
 
             it("removes the school from class", async () => {
-                const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
+                const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: getBillyAuthToken() });
 
                 expect(gqlTeacher).to.be.true;
                 const dbSchool = await School.findOneOrFail(schoolId);
@@ -1431,11 +1431,11 @@ describe("class", () => {
 
             context("and the class is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteClass(testClient, classId, { authorization: JoeAuthToken });
+                    await deleteClass(testClient, classId, { authorization: getJoeAuthToken() });
                 });
 
                 it("fails to remove school from class", async () => {
-                    const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: BillyAuthToken });
+                    const gqlTeacher = await removeSchoolFromClass(testClient, classId, schoolId, { authorization: getBillyAuthToken() });
 
                     expect(gqlTeacher).to.be.null;
                     const dbSchool = await School.findOneOrFail(schoolId);
@@ -1459,13 +1459,13 @@ describe("class", () => {
             const orgOwner = await createUserJoe(testClient);
             user = await createUserBilly(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             cls = await createClass(testClient, organization.organization_id);
         });
 
         context("when not authenticated", () => {
             it("should throw a permission exception and not mutate the database entry", async () => {
-                const fn = () => deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                const fn = () => deleteClass(testClient, cls.class_id, { authorization: getBillyAuthToken() });
                 expect(fn()).to.be.rejected;
                 const dbClass = await Class.findOneOrFail(cls.class_id);
                 expect(dbClass.status).to.eq(Status.ACTIVE);
@@ -1481,7 +1481,7 @@ describe("class", () => {
                 });
 
                 it("should throw a permission exception and not mutate the database entry", async () => {
-                    const fn = () => deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const fn = () => deleteClass(testClient, cls.class_id, { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     expect(dbClass.status).to.eq(Status.ACTIVE);
@@ -1492,12 +1492,12 @@ describe("class", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_class_20444, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_class_20444, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("deletes the class", async () => {
-                    const successful = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const successful = await deleteClass(testClient, cls.class_id, { authorization: getBillyAuthToken() });
                     expect(successful).to.be.true;
                     const dbClass = await Class.findOneOrFail(cls.class_id);
                     expect(dbClass.status).to.eq(Status.INACTIVE);
@@ -1506,11 +1506,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken });
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() });
                     });
 
                     it("fails to delete the class", async () => {
-                        const successful = await deleteClass(testClient, cls.class_id, { authorization: BillyAuthToken });
+                        const successful = await deleteClass(testClient, cls.class_id, { authorization: getBillyAuthToken() });
                         expect(successful).to.be.null;
                         const dbClass = await Class.findOneOrFail(cls.class_id);
                         expect(dbClass.status).to.eq(Status.INACTIVE);
@@ -1551,15 +1551,15 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             program = createProgram(organization)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             await program.save()
-            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: getJoeAuthToken() });
         });
 
         it("lists all the programs in the class", async () => {
             programDetails = await programInfo(program)
 
-            const gqlPrograms = await listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+            const gqlPrograms = await listPrograms(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
             const dbClass = await Class.findOneOrFail(cls.class_id)
             const dbPrograms = await dbClass.programs || []
@@ -1591,7 +1591,7 @@ describe("class", () => {
 
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
 
             program = createProgram(organization)
             await program.save()
@@ -1617,7 +1617,7 @@ describe("class", () => {
 
             context("and the user does not have edit class permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editPrograms(testClient, cls.class_id, [program.id], { authorization: BillyAuthToken });
+                    const fn = () => editPrograms(testClient, cls.class_id, [program.id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
 
                     const dbPrograms = await cls.programs || []
@@ -1627,7 +1627,7 @@ describe("class", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 });
 
                 it("edits the class programs", async () => {
@@ -1635,14 +1635,14 @@ describe("class", () => {
                     let dbPrograms = await dbClass.programs || []
                     expect(dbPrograms).to.be.empty
 
-                    let gqlPrograms = await editPrograms(testClient, cls.class_id, [program.id], { authorization: BillyAuthToken });
+                    let gqlPrograms = await editPrograms(testClient, cls.class_id, [program.id], { authorization: getBillyAuthToken() });
 
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbPrograms = await dbClass.programs || []
                     expect(dbPrograms).not.to.be.empty
                     expect(dbPrograms.map(programInfo)).to.deep.eq(gqlPrograms.map(programInfo))
 
-                    gqlPrograms = await editPrograms(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlPrograms = await editPrograms(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbPrograms = await dbClass.programs || []
                     expect(dbPrograms).to.be.empty
@@ -1650,11 +1650,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() })
                     });
 
                     it("does not edit the class programs", async () => {
-                        const gqlPrograms = await  editPrograms(testClient, cls.class_id, [program.id], { authorization: BillyAuthToken });
+                        const gqlPrograms = await  editPrograms(testClient, cls.class_id, [program.id], { authorization: getBillyAuthToken() });
                         expect(gqlPrograms).to.be.null;
 
                         const dbPrograms = await cls.programs || []
@@ -1687,12 +1687,12 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             ageRange = createAgeRange(organization)
             await ageRange.save()
-            await editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: JoeAuthToken });
+            await editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: getJoeAuthToken() });
             program = createProgram(organization, [ageRange], [], [])
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             await program.save()
-            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: getJoeAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -1706,7 +1706,7 @@ describe("class", () => {
         context("when authenticated", () => {
             context("and the user does not have view class permissions", () => {
                 it("fails to list age ranges in the class", async () => {
-                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -1715,12 +1715,12 @@ describe("class", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the age ranges in the class", async () => {
-                    const gqlAgeRanges = await listAgeRanges(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const gqlAgeRanges = await listAgeRanges(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
                     expect(gqlAgeRanges).not.to.be.empty
                     expect(gqlAgeRanges.map(ageRangeInfo)).to.deep.eq([ageRangeInfo(ageRange)])
@@ -1751,12 +1751,12 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             grade = createGrade(organization)
             await grade.save()
-            await editGrades(testClient, cls.class_id, [grade.id], { authorization: JoeAuthToken });
+            await editGrades(testClient, cls.class_id, [grade.id], { authorization: getJoeAuthToken() });
             program = createProgram(organization, [], [grade], [])
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             await program.save()
-            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: getJoeAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -1770,7 +1770,7 @@ describe("class", () => {
         context("when authenticated", () => {
             context("and the user does not have view class permissions", () => {
                 it("fails to list grades in the class", async () => {
-                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -1779,12 +1779,12 @@ describe("class", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the grades in the class", async () => {
-                    const gqlGrades = await listGrades(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const gqlGrades = await listGrades(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
                     expect(gqlGrades).not.to.be.empty
                     expect(gqlGrades.map(gradeInfo)).to.deep.eq([gradeInfo(grade)])
@@ -1815,12 +1815,12 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             subject = createSubject(organization)
             await subject.save()
-            await editSubjects(testClient, cls.class_id, [subject.id], { authorization: JoeAuthToken });
+            await editSubjects(testClient, cls.class_id, [subject.id], { authorization: getJoeAuthToken() });
             program = createProgram(organization, [], [], [subject])
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
             await program.save()
-            await editPrograms(testClient, cls.class_id, [program.id], { authorization: JoeAuthToken });
+            await editPrograms(testClient, cls.class_id, [program.id], { authorization: getJoeAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -1834,7 +1834,7 @@ describe("class", () => {
         context("when authenticated", () => {
             context("and the user does not have view class permissions", () => {
                 it("fails to list subjects in the class", async () => {
-                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const fn = () => listPrograms(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -1843,12 +1843,12 @@ describe("class", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_classes_20114, { authorization: getJoeAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the subjects in the class", async () => {
-                    const gqlSubjects = await listSubjects(testClient, cls.class_id, { authorization: BillyAuthToken });
+                    const gqlSubjects = await listSubjects(testClient, cls.class_id, { authorization: getBillyAuthToken() });
 
                     expect(gqlSubjects).not.to.be.empty
                     expect(gqlSubjects.map(subjectInfo)).to.deep.eq([subjectInfo(subject)])
@@ -1871,7 +1871,7 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: getJoeAuthToken() });
             ageRange = createAgeRange(organization)
             await ageRange.save()
         });
@@ -1896,7 +1896,7 @@ describe("class", () => {
 
             context("and the user does not have edit class permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: BillyAuthToken });
+                    const fn = () => editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
 
                     const dbAgeRanges = await cls.age_ranges || []
@@ -1906,7 +1906,7 @@ describe("class", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 });
 
                 it("edits the class age ranges", async () => {
@@ -1914,14 +1914,14 @@ describe("class", () => {
                     let dbAgeRanges = await dbClass.age_ranges || []
                     expect(dbAgeRanges).to.be.empty
 
-                    let gqlAgeRanges = await editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: BillyAuthToken });
+                    let gqlAgeRanges = await editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: getBillyAuthToken() });
 
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbAgeRanges = await dbClass.age_ranges || []
                     expect(dbAgeRanges).not.to.be.empty
                     expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
 
-                    gqlAgeRanges = await editAgeRanges(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlAgeRanges = await editAgeRanges(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbAgeRanges = await dbClass.age_ranges || []
                     expect(dbAgeRanges).to.be.empty
@@ -1929,11 +1929,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() })
                     });
 
                     it("does not edit the class age ranges", async () => {
-                        const gqlAgeRanges = await  editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: BillyAuthToken });
+                        const gqlAgeRanges = await  editAgeRanges(testClient, cls.class_id, [ageRange.id], { authorization: getBillyAuthToken() });
                         expect(gqlAgeRanges).to.be.null;
 
                         const dbAgeRanges = await cls.age_ranges || []
@@ -1958,7 +1958,7 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: getJoeAuthToken() });
             grade = createGrade(organization)
             await grade.save()
         });
@@ -1983,7 +1983,7 @@ describe("class", () => {
 
             context("and the user does not have edit class permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editGrades(testClient, cls.class_id, [grade.id], { authorization: BillyAuthToken });
+                    const fn = () => editGrades(testClient, cls.class_id, [grade.id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
 
                     const dbGrades = await cls.grades || []
@@ -1993,7 +1993,7 @@ describe("class", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 });
 
                 it("edits the class grades", async () => {
@@ -2001,14 +2001,14 @@ describe("class", () => {
                     let dbGrades = await dbClass.grades || []
                     expect(dbGrades).to.be.empty
 
-                    let gqlGrades = await editGrades(testClient, cls.class_id, [grade.id], { authorization: BillyAuthToken });
+                    let gqlGrades = await editGrades(testClient, cls.class_id, [grade.id], { authorization: getBillyAuthToken() });
 
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbGrades = await dbClass.grades || []
                     expect(dbGrades).not.to.be.empty
                     expect(dbGrades.map(gradeInfo)).to.deep.eq(gqlGrades.map(gradeInfo))
 
-                    gqlGrades = await editGrades(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlGrades = await editGrades(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbGrades = await dbClass.grades || []
                     expect(dbGrades).to.be.empty
@@ -2016,11 +2016,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() })
                     });
 
                     it("does not edit the class grades", async () => {
-                        const gqlGrades = await  editGrades(testClient, cls.class_id, [grade.id], { authorization: BillyAuthToken });
+                        const gqlGrades = await  editGrades(testClient, cls.class_id, [grade.id], { authorization: getBillyAuthToken() });
                         expect(gqlGrades).to.be.null;
 
                         const dbGrades = await cls.grades || []
@@ -2045,7 +2045,7 @@ describe("class", () => {
             cls = await createClass(testClient, organization.organization_id);
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: JoeAuthToken });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organization.organization_id, { authorization: getJoeAuthToken() });
             subject = createSubject(organization)
             await subject.save()
         });
@@ -2070,7 +2070,7 @@ describe("class", () => {
 
             context("and the user does not have edit class permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editSubjects(testClient, cls.class_id, [subject.id], { authorization: BillyAuthToken });
+                    const fn = () => editSubjects(testClient, cls.class_id, [subject.id], { authorization: getBillyAuthToken() });
                     expect(fn()).to.be.rejected;
 
                     const dbSubjects = await cls.subjects || []
@@ -2080,7 +2080,7 @@ describe("class", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: JoeAuthToken });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
                 });
 
                 it("edits the class subjects", async () => {
@@ -2088,14 +2088,14 @@ describe("class", () => {
                     let dbSubjects = await dbClass.subjects || []
                     expect(dbSubjects).to.be.empty
 
-                    let gqlSubjects = await editSubjects(testClient, cls.class_id, [subject.id], { authorization: BillyAuthToken });
+                    let gqlSubjects = await editSubjects(testClient, cls.class_id, [subject.id], { authorization: getBillyAuthToken() });
 
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbSubjects = await dbClass.subjects || []
                     expect(dbSubjects).not.to.be.empty
                     expect(dbSubjects.map(subjectInfo)).to.deep.eq(gqlSubjects.map(subjectInfo))
 
-                    gqlSubjects = await editSubjects(testClient, cls.class_id, [], { authorization: BillyAuthToken });
+                    gqlSubjects = await editSubjects(testClient, cls.class_id, [], { authorization: getBillyAuthToken() });
                     dbClass = await Class.findOneOrFail(cls.class_id)
                     dbSubjects = await dbClass.subjects || []
                     expect(dbSubjects).to.be.empty
@@ -2103,11 +2103,11 @@ describe("class", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteClass(testClient, cls.class_id, { authorization: JoeAuthToken })
+                        await deleteClass(testClient, cls.class_id, { authorization: getJoeAuthToken() })
                     });
 
                     it("does not edit the class subjects", async () => {
-                        const gqlSubjects = await  editSubjects(testClient, cls.class_id, [subject.id], { authorization: BillyAuthToken });
+                        const gqlSubjects = await  editSubjects(testClient, cls.class_id, [subject.id], { authorization: getBillyAuthToken() });
                         expect(gqlSubjects).to.be.null;
 
                         const dbSubjects = await cls.subjects || []

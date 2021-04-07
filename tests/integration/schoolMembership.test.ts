@@ -8,7 +8,7 @@ import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate, createSchool, createRole } from "../utils/operations/organizationOps";
 import { addUserToSchool, getSchoolMembershipViaSchool } from "../utils/operations/schoolOps";
 import { addRoleToSchoolMembership, addRolesToSchoolMembership, removeRoleToSchoolMembership, leaveSchool } from "../utils/operations/schoolMembershipOps";
-import { BillyAuthToken, JoeAuthToken } from "../utils/testConfig";
+import { getBillyAuthToken, getJoeAuthToken } from "../utils/testConfig";
 import { School } from "../../src/entities/school";
 import { Status } from "../../src/entities/status";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
@@ -40,11 +40,11 @@ describe("SchoolMembership", () => {
         const orgOwner = await createUserJoe(testClient);
         userId = (await createUserBilly(testClient)).user_id;
         organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-        school = await createSchool(testClient, organizationId, "school 1", undefined, { authorization: JoeAuthToken })
+        school = await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })
         schoolId = school?.school_id;
-        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: JoeAuthToken });
-        await addUserToSchool(testClient, userId, schoolId, { authorization: JoeAuthToken })
-        schoolMembership = await getSchoolMembershipViaSchool(testClient, schoolId, userId, { authorization: BillyAuthToken });
+        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+        await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() })
+        schoolMembership = await getSchoolMembershipViaSchool(testClient, schoolId, userId, { authorization: getBillyAuthToken() });
     });
 
     describe("addRole", () => {
@@ -69,7 +69,7 @@ describe("SchoolMembership", () => {
 
         context("when the school is inactive", () => {
             beforeEach(async () => {
-                await leaveSchool(testClient, userId, schoolId, { authorization: BillyAuthToken });
+                await leaveSchool(testClient, userId, schoolId, { authorization: getBillyAuthToken() });
             });
 
             it("does not add the role to the school membership", async () => {
@@ -108,7 +108,7 @@ describe("SchoolMembership", () => {
 
         context("when the school is inactive", () => {
             beforeEach(async () => {
-                await leaveSchool(testClient, userId, schoolId, { authorization: BillyAuthToken });
+                await leaveSchool(testClient, userId, schoolId, { authorization: getBillyAuthToken() });
             });
 
             it("does not add the roles to the school membership", async () => {
@@ -149,7 +149,7 @@ describe("SchoolMembership", () => {
 
         context("when the school is inactive", () => {
             beforeEach(async () => {
-                await leaveSchool(testClient, userId, schoolId, { authorization: BillyAuthToken });
+                await leaveSchool(testClient, userId, schoolId, { authorization: getBillyAuthToken() });
             });
 
             it("adds the role to the school membership", async () => {
@@ -175,7 +175,7 @@ describe("SchoolMembership", () => {
 
         context("when the school membership is active", () => {
             it("leaves the school membership", async () => {
-                const leftGql = await leaveSchool(testClient, userId, schoolId, { authorization: BillyAuthToken });
+                const leftGql = await leaveSchool(testClient, userId, schoolId, { authorization: getBillyAuthToken() });
                 const dbMembership = await SchoolMembership.findOneOrFail({ where: { user_id: userId, school_id: schoolId } });
 
                 expect(leftGql).to.be.true
@@ -187,11 +187,11 @@ describe("SchoolMembership", () => {
 
         context("when the school membership is inactive", () => {
             beforeEach(async () => {
-                await leaveSchool(testClient, userId, schoolId, { authorization: BillyAuthToken });
+                await leaveSchool(testClient, userId, schoolId, { authorization: getBillyAuthToken() });
             });
 
             it("does not leave the school membership", async () => {
-                const leftGql = await leaveSchool(testClient, userId, schoolId, { authorization: BillyAuthToken });
+                const leftGql = await leaveSchool(testClient, userId, schoolId, { authorization: getBillyAuthToken() });
                 const dbMembership = await SchoolMembership.findOneOrFail({ where: { user_id: userId, school_id: schoolId } });
 
                 expect(leftGql).to.be.null

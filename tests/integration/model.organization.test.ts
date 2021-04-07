@@ -10,7 +10,7 @@ import { createUserAndValidate} from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { accountUUID, User } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { JoeAuthToken, BillyAuthToken, generateToken} from "../utils/testConfig";
+import { getJoeAuthToken, getBillyAuthToken, generateToken} from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { createRole, addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
@@ -93,7 +93,7 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -114,7 +114,7 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -133,7 +133,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: accountUUID() },
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -155,7 +155,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: organization.organization_id },
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -195,7 +195,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { first: 5 }
                 });
 
@@ -213,7 +213,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { after: pageInfo?.endCursor, first: 5 }
                 });
 
@@ -233,7 +233,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { last: 5 }
                 });
 
@@ -251,7 +251,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { before: pageInfo?.startCursor, last: 5 }
                 });
 
@@ -272,7 +272,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { organization_ids: orgIds, first: 5 }
                 });
 
@@ -290,7 +290,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { organization_ids: orgIds, after: pageInfo?.endCursor, first: 5 }
                 });
 
@@ -306,7 +306,7 @@ describe("model.organization", () => {
                 expect(!pageInfo2?.hasNextPage)
                 const res3 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { organization_ids: orgIds, before: pageInfo2?.startCursor, last: 5 }
                 });
                 expect(res3.errors, res3.errors?.toString()).to.be.undefined;
@@ -326,7 +326,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { first: 5 }
                 });
 
@@ -344,7 +344,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { after: pageInfo?.endCursor, first: 5 }
                 });
 
@@ -363,7 +363,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { last: 5 }
                 });
 
@@ -381,7 +381,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { before: pageInfo?.startCursor, last: 5 }
                 });
 
@@ -400,7 +400,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { organization_ids: orgIds, first: 5 }
                 });
 
@@ -416,7 +416,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { organization_ids: orgIds, after: pageInfo?.endCursor, first: 5 }
                 });
 
@@ -458,7 +458,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { first: 1 }
                 });
 
@@ -480,7 +480,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: JoeAuthToken },
+                    headers: { authorization: getJoeAuthToken() },
                     variables: { last: 1 }
                 });
 
@@ -502,7 +502,7 @@ describe("model.organization", () => {
                 const { query } = testClient;
                 const res = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { first: 1 }
                 });
 
@@ -525,7 +525,7 @@ describe("model.organization", () => {
 
                 const res2 = await query({
                     query: GET_V1_ORGANIZATIONS,
-                    headers: { authorization: BillyAuthToken },
+                    headers: { authorization: getBillyAuthToken() },
                     variables: { last: 1 }
                 });
 

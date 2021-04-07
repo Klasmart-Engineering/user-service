@@ -12,7 +12,7 @@ import { Subcategory } from "../../../src/entities/subcategory"
 import { Subject } from "../../../src/entities/subject"
 import { User } from "../../../src/entities/user";
 import { ApolloServerTestClient } from "../createTestClient";
-import { JoeAuthToken, generateToken } from "../testConfig";
+import { getJoeAuthToken, generateToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { userToPayload, userToSuperPayload } from "../../utils/operations/userOps"
@@ -379,7 +379,7 @@ const LIST_PROGRAMS = `
 export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, shortcode?:string, headers?: Headers) {
     const { mutate } = testClient;
     className = className ?? "My Class";
-    headers = headers ?? { authorization: JoeAuthToken };
+    headers = headers ?? { authorization: getJoeAuthToken() };
 
     const variables =  {  organization_id: organizationId } as any
     if (className){
@@ -413,7 +413,7 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
     roleName = roleName ?? "My Role";
     roleDescription = roleDescription ?? "My Role Description";
     if (token === undefined) {
-        token = JoeAuthToken
+        token = getJoeAuthToken()
     }
     const operation = () => mutate({
         mutation: CREATE_ROLE,
