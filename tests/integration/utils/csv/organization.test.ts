@@ -13,6 +13,8 @@ import { OrganizationOwnership } from "../../../../src/entities/organizationOwne
 import { OrganizationMembership } from "../../../../src/entities/organizationMembership";
 import { OrganizationRow } from "../../../../src/types/csv/organizationRow";
 import { processOrganizationFromCSVRow } from "../../../../src/utils/csv/organization";
+import { createOrganization } from "../../../factories/organization.factory";
+import { createUser } from "../../../factories/user.factory";
 
 use(chaiAsPromised);
 
@@ -79,6 +81,49 @@ describe("processOrganizationFromCSVRow", () => {
     context("when the owner shortcode is invalid", () => {
         beforeEach(async () => {
             row = { ...row, owner_shortcode: '£$%' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const organization = await Organization.findOne({
+                where: { organization_name: row.organization_name }
+            })
+
+            expect(organization).to.be.undefined
+        });
+    });
+
+    context("when the given organization already exists", () => {
+        beforeEach(async () => {
+            const existentOrganization = await createOrganization()
+            await connection.manager.save(existentOrganization)
+
+            row = { ...row, organization_name: String(existentOrganization.organization_name) }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const organization = await Organization.findOne({
+                where: { organization_name: row.organization_name }
+            })
+
+            expect(organization).to.exist
+        });
+    });
+
+    context("when the given owner already has an organization", () => {
+        beforeEach(async () => {
+            const existentOwner = await createUser()
+            await connection.manager.save(existentOwner)
+
+            const existentOrganization = await createOrganization(existentOwner)
+            await connection.manager.save(existentOrganization)
+
+            row = { ...row, owner_email: String(existentOwner.email) }
         })
 
         it("throws an error", async () => {

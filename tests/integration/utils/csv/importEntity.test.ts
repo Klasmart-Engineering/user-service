@@ -62,7 +62,7 @@ describe("createEntityFromCsvWithRollBack", () => {
         it("creates all the expected entities", async () => {
             await createEntityFromCsvWithRollBack(connection, file, [processOrganizationFromCSVRow]);
             organizationCount = await connection.manager.getRepository(Organization).count();
-            expect(organizationCount).eq(1);
+            expect(organizationCount).gt(0);
         });
     });
 });
