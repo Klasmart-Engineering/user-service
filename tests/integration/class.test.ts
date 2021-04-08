@@ -34,7 +34,6 @@ use(chaiAsPromised);
 
 describe("class", () => {
     let connection: Connection;
-    let originalAdmins: string[];
     let testClient: ApolloServerTestClient;
 
     before(async () => {

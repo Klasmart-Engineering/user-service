@@ -31,6 +31,7 @@ import { createProgram } from "../factories/program.factory";
 import { ReadStream } from 'fs';
 import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
 import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploadClasses";
+import { queryUploadSubCategories, uploadSubCategories } from "../utils/operations/csv/uploadSubcategories";
 import { queryUploadUsers, uploadUsers } from "../utils/operations/csv/uploadUsers";
 import { Role } from "../../src/entities/role";
 import { School } from "../../src/entities/school";
@@ -806,6 +807,55 @@ describe("model", () => {
         });
     });
 
+    describe("uploadSubCategoriesFromCSV", () => {
+        const filename = 'subcategories.csv';
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const fn = async () => await queryUploadSubCategories(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const subCategoriesCreated = await Subcategory.count();
+                expect(subCategoriesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const fn = async () => await uploadSubCategories(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const subCategoriesCreated = await Subcategory.count();
+                expect(subCategoriesCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            it("should create subcategories", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                let expectedOrg: Organization
+                expectedOrg = createOrganization()
+                expectedOrg.organization_name = "my-org"
+                await connection.manager.save(expectedOrg)
+         
+                const result = await uploadSubCategories(testClient, file, filename, mimetype, encoding);
+
+                const dbSubcategory = await Subcategory.findOneOrFail({where:{name:"sc1", organization:expectedOrg}});
+                
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+                expect(dbSubcategory).to.be.not.null;
+            });
+        });
+    });
+
     describe("uploadUsersFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
@@ -871,4 +921,5 @@ describe("model", () => {
             });
         });
     });
+
 });
