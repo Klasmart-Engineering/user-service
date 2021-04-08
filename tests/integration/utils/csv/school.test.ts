@@ -1,0 +1,222 @@
+import { use, expect } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { Connection } from "typeorm";
+import { Organization } from "../../../../src/entities/organization";
+import { Program } from "../../../../src/entities/program";
+import { School } from "../../../../src/entities/school";
+import AgeRangesInitializer from "../../../../src/initializers/ageRanges";
+import CategoriesInitializer from "../../../../src/initializers/categories";
+import GradesInitializer from "../../../../src/initializers/grades";
+import ProgramsInitializer from "../../../../src/initializers/programs";
+import SubcategoriesInitializer from "../../../../src/initializers/subcategories";
+import SubjectsInitializer from "../../../../src/initializers/subjects";
+import { Model } from "../../../../src/model";
+import { SchoolRow } from "../../../../src/types/csv/schoolRow";
+import { createServer } from "../../../../src/utils/createServer";
+import { processSchoolFromCSVRow } from "../../../../src/utils/csv/school";
+import { createOrganization } from "../../../factories/organization.factory";
+import { ApolloServerTestClient, createTestClient } from "../../../utils/createTestClient";
+import { createTestConnection } from "../../../utils/testConnection";
+
+use(chaiAsPromised);
+
+describe("processSchoolFromCSVRow", () => {
+    let connection: Connection;
+    let testClient: ApolloServerTestClient;
+    let row: SchoolRow;
+    let organization: Organization;
+
+    before(async () => {
+        connection = await createTestConnection();
+        const server = createServer(new Model(connection));
+        testClient = createTestClient(server);
+    });
+
+    after(async () => {
+        await connection?.close();
+    });
+
+    beforeEach(async () => {
+        organization = await createOrganization();
+        organization.organization_name = 'Company 1';
+        await connection.manager.save(organization);
+        await AgeRangesInitializer.run()
+        await GradesInitializer.run()
+        await SubjectsInitializer.run()
+        await SubcategoriesInitializer.run()
+        await CategoriesInitializer.run()
+        await ProgramsInitializer.run() 
+          
+        row = {
+            organization_name: 'Company 1',
+            school_name: 'School 1',
+            school_shortcode: 'SCHOOL1',
+            program_name: 'Math'
+        }
+    });
+
+    context("when the organization name is not provided", () => {
+        beforeEach(() => {
+            row = { ...row, organization_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when the school name is not provided", () => {
+        beforeEach(() => {
+            row = { ...row, school_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when the program name is not provided", () => {
+        beforeEach(() => {
+            row = { ...row, program_name: '' }
+        })
+
+        it("It works by adding the default program", async () => {
+            await processSchoolFromCSVRow(connection.manager, row, 1);
+
+
+             const school = await School.findOneOrFail({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization
+                }
+            });
+
+            const organizationInSchool = await school.organization;
+
+            expect(school).to.exist;
+            expect(school.school_name).eq(row.school_name);
+            expect(school.status).eq('active');
+            expect(organizationInSchool?.organization_name).eq(row.organization_name);
+        });
+    });
+
+    context("when the provided organization doesn't exists", () => {
+        beforeEach(() => {
+            row = { ...row, organization_name: 'Company 10' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when the provided program name doesn't exists", () => {
+        beforeEach(() => {
+            row = { ...row, program_name: 'non_existent_program123' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when the provided program already exists in the current school", () => {
+        beforeEach(async () => {
+            let programs: Program[] = [];
+            const programFound = await Program.findOneOrFail(
+                {
+                    where:{
+                        name: row.program_name
+                    }
+                });
+            const school = new School();
+
+            programs.push(programFound)
+            school.school_name = row.school_name;
+            school.organization = Promise.resolve(organization);
+            school.programs = Promise.resolve(programs);
+            await connection.manager.save(school);
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.exist
+        });
+    });
+
+    context("when all data provided is valid", () => {
+        it("creates the schools with its relations", async () => {
+            await processSchoolFromCSVRow(connection.manager, row, 1);
+
+            const school = await School.findOneOrFail({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization
+                }
+            });
+
+            const organizationInSchool = await school.organization;
+
+            expect(school).to.exist;
+            expect(school.school_name).eq(row.school_name);
+            expect(school.status).eq('active');
+            expect(organizationInSchool?.organization_name).eq(row.organization_name);
+        });
+    });
+});

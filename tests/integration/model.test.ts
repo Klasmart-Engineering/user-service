@@ -35,9 +35,17 @@ import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploa
 import { queryUploadSubCategories, uploadSubCategories } from "../utils/operations/csv/uploadSubcategories";
 import { queryUploadUsers, uploadUsers } from "../utils/operations/csv/uploadUsers";
 import { Role } from "../../src/entities/role";
-import { School } from "../../src/entities/school";
 import { before } from "mocha";
 import { queryUploadOrganizations, uploadOrganizations } from "../utils/operations/csv/uploadOrganizations";
+import { School } from "../../src/entities/school";
+import { queryUploadSchools, uploadSchools } from "../utils/operations/csv/uploadSchools";
+import ProgramsInitializer from "../../src/initializers/programs";
+import CategoriesInitializer from "../../src/initializers/categories";
+import SubcategoriesInitializer from "../../src/initializers/subcategories";
+import AgeRangesInitializer from "../../src/initializers/ageRanges";
+import SubjectsInitializer from "../../src/initializers/subjects";
+import GradesInitializer from "../../src/initializers/grades";
+
 
 use(chaiAsPromised);
 
@@ -690,6 +698,7 @@ describe("model", () => {
             });
         });
     });
+  
 
     describe("uploadOrganizationsFromCSV", () => {
         let file: ReadStream;
@@ -923,6 +932,66 @@ describe("model", () => {
         });
     });
 
+
+    describe("uploadSchoolsFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'schoolsExample.csv';
+
+        beforeEach(async () => {
+            await AgeRangesInitializer.run()
+            await GradesInitializer.run()
+            await SubjectsInitializer.run()
+            await SubcategoriesInitializer.run()
+            await CategoriesInitializer.run()
+            await ProgramsInitializer.run()   
+        });
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const fn = async () => await queryUploadSchools(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const schoolsCreated = await School.count();
+                expect(schoolsCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const fn = async () => await uploadSchools(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const schoolsCreated = await School.count();
+                expect(schoolsCreated).eq(0);
+            });
+        });
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                for (let i = 1; i <= 4; i += 1) {
+                    let org = createOrganization();
+                    org.organization_name = `Company ${i}`;
+                    await connection.manager.save(org);
+                }
+            });
+
+            it("should create schools", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadSchools(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const schoolsCreated = await School.count();
+                expect(schoolsCreated).gt(0);
+            });
+        })
+    })
+
     describe("uploadSubCategoriesFromCSV", () => {
         const filename = 'subcategories.csv';
         let file: ReadStream;
@@ -977,6 +1046,7 @@ describe("model", () => {
         const mimetype = 'text/csv';
         const encoding = '7bit';
         const filename = 'users_example.csv';
+    
 
         context("when operation is not a mutation", () => {
             it("should throw an error", async () => {
@@ -1028,14 +1098,17 @@ describe("model", () => {
                 file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
 
                 const result = await uploadUsers(testClient, file, filename, mimetype, encoding);
+ 
                 expect(result.filename).eq(filename);
                 expect(result.mimetype).eq(mimetype);
                 expect(result.encoding).eq(encoding);
 
                 const usersCount = await User.count({ where: { email: 'test@test.com' } });
                 expect(usersCount).eq(1);
+                
             });
         });
     });
 
 });
+
