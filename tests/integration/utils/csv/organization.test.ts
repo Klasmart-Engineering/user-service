@@ -1,8 +1,6 @@
 import chaiAsPromised from "chai-as-promised";
 import { Connection } from "typeorm";
 import { expect, use } from "chai";
-import fs, { ReadStream } from 'fs';
-
 import { Model } from "../../../../src/model";
 import { createServer } from "../../../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../../../utils/createTestClient";

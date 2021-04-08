@@ -3,9 +3,10 @@ import { ApolloServerTestClient } from "../../createTestClient";
 import { gqlTry } from "../../gqlTry";
 import { fileMockInput } from "../modelOps";
 
-const UPLOAD_CLASSES_MUTATION = `
-    mutation UploadClassesFromCSV($file: Upload!) {
-        uploadClassesFromCSV(file: $file) {
+
+const UPLOAD_GRADES_MUTATION = `
+    mutation UploadGradesFromCSV($file: Upload!) {
+        uploadGradesFromCSV(file: $file) {
             filename
             mimetype
             encoding
@@ -13,9 +14,9 @@ const UPLOAD_CLASSES_MUTATION = `
     }
 `;
 
-const UPLOAD_CLASSES_QUERY = `
-    query UploadClassesFromCSV($file: Upload!) {
-        uploadClassesFromCSV(file: $file) {
+const UPLOAD_GRADES_QUERY = `
+    query UploadGradesFromCSV($file: Upload!) {
+        uploadGradesFromCSV(file: $file) {
             filename
             mimetype
             encoding
@@ -23,7 +24,7 @@ const UPLOAD_CLASSES_QUERY = `
     }
 `;
 
-export async function uploadClasses(
+export async function uploadGrades(
     testClient: ApolloServerTestClient,
     file: ReadStream,
     filename: string,
@@ -37,17 +38,15 @@ export async function uploadClasses(
     const { mutate } = testClient;
 
     const operation = () => mutate({
-        mutation: UPLOAD_CLASSES_MUTATION,
+        mutation: UPLOAD_GRADES_MUTATION,
         variables: variables,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadClassesFromCSV;
+    return res.data?.uploadGradesFromCSV;
 }
 
-export async function 
-
-queryUploadClasses(
+export async function queryUploadGrades(
     testClient: ApolloServerTestClient,
     file: ReadStream,
     filename: string,
@@ -61,10 +60,10 @@ queryUploadClasses(
     const { query } = testClient;
 
     const operation = () => query({
-        query: UPLOAD_CLASSES_QUERY,
+        query: UPLOAD_GRADES_QUERY,
         variables: variables,
     });
 
     const res = await gqlTry(operation);
-    return res.data?.uploadClassesFromCSV;
+    return res.data?.uploadGradesFromCSV;
 }

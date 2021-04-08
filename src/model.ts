@@ -34,6 +34,7 @@ import { getPaginated } from './utils/getpaginated'
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
+import { processGradeFromCSVRow, setGradeFromToFields } from './utils/csv/grade'
 import { processOrganizationFromCSVRow } from './utils/csv/organization'
 import { processSchoolFromCSVRow } from './utils/csv/school'
 import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
@@ -682,6 +683,24 @@ export class Model {
         const { file } = await args.file
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSchoolFromCSVRow,
+        ])
+
+        return file
+    }
+
+    public async uploadGradesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processGradeFromCSVRow,
+            setGradeFromToFields,
         ])
 
         return file

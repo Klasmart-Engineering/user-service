@@ -1,7 +1,5 @@
 import { expect, use } from "chai";
 import { Connection } from "typeorm";
-import fs from 'fs';
-import { resolve } from 'path';
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
 import { createClass } from "../factories/class.factory";
@@ -28,6 +26,9 @@ import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
+import fs from 'fs';
+import { resolve } from 'path';
+import { queryUploadGrades, uploadGrades } from "../utils/operations/csv/uploadGrades";
 import { ReadStream } from 'fs';
 import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
 import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploadClasses";
@@ -788,6 +789,71 @@ describe("model", () => {
 
                 const rolesCreated = await Role.count({ where: { system_role: false } });
                 expect(rolesCreated).gt(0);
+            });
+        });
+    });
+
+    describe("uploadGradesFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const correctFilename = 'gradesExample.csv';
+        const wrongFilename = 'gradesWrong.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                const filename = correctFilename;
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadGrades(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const gradesCreated = await Grade.count();
+                expect(gradesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                const filename = wrongFilename;
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadGrades(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const gradesCreated = await Grade.count();
+                expect(gradesCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                const org = await createOrganization()
+                org.organization_name = 'Company 1';
+                await connection.manager.save(org);
+
+                const org2 = await createOrganization();
+                org2.organization_name = 'Company 2';
+                await connection.manager.save(org2);
+
+                const noneSpecifiedGrade = new Grade();
+                noneSpecifiedGrade.name = 'None Specified';
+                noneSpecifiedGrade.system = true;
+                await connection.manager.save(noneSpecifiedGrade);
+            });
+
+            it("should create grades", async () => {
+                const filename = correctFilename;
+
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadGrades(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const gradesCreated = await Grade.count();
+                expect(gradesCreated).gt(0);
             });
         });
     });

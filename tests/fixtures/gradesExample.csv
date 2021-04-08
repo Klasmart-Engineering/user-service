@@ -1,0 +1,27 @@
+organization_name,grade_name,progress_from_grade_name,progress_to_grade_name
+Company 1,Kinder,,First Grade
+Company 1,First Grade,Kinder,Second Grade
+Company 1,Second Grade,First Grade,Third Grade
+Company 1,Third Grade,Second Grade,Fourth Grade 
+Company 1,Fourth Grade ,Third Grade,Fifth Grade
+Company 1,Fifth Grade,Fourth Grade ,Sixth Grade
+Company 1,Sixth Grade,Fifth Grade,Seventh Grade
+Company 1,Seventh Grade,Sixth Grade,Eighth Grade
+Company 1,Eighth Grade,Seventh Grade,Ninth Grade
+Company 1,Ninth Grade,Eighth Grade,Tenth Grade
+Company 1,Tenth Grade,Ninth Grade,Eleventh Grade
+Company 1,Eleventh Grade,Tenth Grade,Twelfth Grade
+Company 1,Twelfth Grade,Eleventh Grade,
+Company 2,Kinder,,First Grade
+Company 2,First Grade,Kinder,Second Grade
+Company 2,Second Grade,First Grade,Third Grade
+Company 2,Third Grade,Second Grade,Fourth Grade 
+Company 2,Fourth Grade ,Third Grade,Fifth Grade
+Company 2,Fifth Grade,Fourth Grade ,Sixth Grade
+Company 2,Sixth Grade,Fifth Grade,Seventh Grade
+Company 2,Seventh Grade,Sixth Grade,Eighth Grade
+Company 2,Eighth Grade,Seventh Grade,Ninth Grade
+Company 2,Ninth Grade,Eighth Grade,Tenth Grade
+Company 2,Tenth Grade,Ninth Grade,Eleventh Grade
+Company 2,Eleventh Grade,Tenth Grade,Twelfth Grade
+Company 2,Twelfth Grade,Eleventh Grade,
