@@ -45,6 +45,7 @@ import SubcategoriesInitializer from "../../src/initializers/subcategories";
 import AgeRangesInitializer from "../../src/initializers/ageRanges";
 import SubjectsInitializer from "../../src/initializers/subjects";
 import GradesInitializer from "../../src/initializers/grades";
+import { School } from "../../src/entities/school";
 
 use(chaiAsPromised);
 
