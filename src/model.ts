@@ -630,11 +630,9 @@ export class Model {
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processOrganizationFromCSVRow
-        )
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processOrganizationFromCSVRow,
+        ])
 
         return file
     }
@@ -649,11 +647,9 @@ export class Model {
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processUserFromCSVRow
-        )
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processUserFromCSVRow,
+        ])
 
         return file
     }
@@ -668,11 +664,9 @@ export class Model {
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processClassFromCSVRow
-        )
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processClassFromCSVRow,
+        ])
 
         return file
     }
@@ -686,11 +680,9 @@ export class Model {
             return null
         }
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processSchoolFromCSVRow
-        )
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processSchoolFromCSVRow,
+        ])
 
         return file
     }
@@ -705,11 +697,9 @@ export class Model {
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processSubCategoriesFromCSVRow
-        )
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processSubCategoriesFromCSVRow,
+        ])
 
         return file
     }
@@ -724,11 +714,9 @@ export class Model {
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(
-            this.connection,
-            file,
-            processRoleFromCSVRow
-        )
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processRoleFromCSVRow,
+        ])
 
         return file
     }

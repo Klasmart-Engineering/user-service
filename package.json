@@ -67,6 +67,7 @@
     "graphql-upload": "11.0.0",
     "jsonwebtoken": "8.5.1",
     "pg": "8.4.1",
+    "rereadable-stream": "1.4.9",
     "stream": "0.0.2",
     "type-graphql": "1.1.1",
     "typeorm": "0.2.28",

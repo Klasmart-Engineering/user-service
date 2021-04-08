@@ -38,7 +38,7 @@ describe("createEntityFromCsvWithRollBack", () => {
         });
 
         it("does not create any entities", async () => {
-            const fn = () => createEntityFromCsvWithRollBack(connection, file, processOrganizationFromCSVRow);
+            const fn = () => createEntityFromCsvWithRollBack(connection, file, [processOrganizationFromCSVRow]);
             expect(fn()).to.be.rejected;
 
             organizationCount = await connection.manager.getRepository(Organization).count();
@@ -60,7 +60,7 @@ describe("createEntityFromCsvWithRollBack", () => {
         });
 
         it("creates all the expected entities", async () => {
-            await createEntityFromCsvWithRollBack(connection, file, processOrganizationFromCSVRow);
+            await createEntityFromCsvWithRollBack(connection, file, [processOrganizationFromCSVRow]);
             organizationCount = await connection.manager.getRepository(Organization).count();
             expect(organizationCount).eq(1);
         });

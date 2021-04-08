@@ -1,35 +1,22 @@
 import { Connection } from 'typeorm'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { Upload } from '../../types/upload'
 import { readCSVFile } from './readFile'
 
-function formatCSVRow(row: any) {
-    const keys = Object.keys(row)
-    const formattedValues = Object.values(row).map((value) => {
-        return value || null
-    })
-
-    keys.forEach((key, index) => {
-        Object.assign(row, { [key]: formattedValues[index] })
-    })
-
-    return row
-}
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
-    file: any,
-    functionToSaveEntityFromCsvRow: any
+    file: Upload,
+    functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[]
 ) {
     const queryRunner = connection.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {
-        await readCSVFile(file, async (row, rowCounter) => {
-            row = formatCSVRow(row)
-            await functionToSaveEntityFromCsvRow(
-                queryRunner.manager,
-                row,
-                rowCounter
-            )
-        })
+        await readCSVFile(
+            queryRunner.manager,
+            file,
+            functionsToSaveEntityFromCsvRow
+        )
         console.log('Generic Upload CSV File finished')
         await queryRunner.commitTransaction()
     } catch (error) {
