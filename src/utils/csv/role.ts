@@ -53,14 +53,17 @@ export async function processRoleFromCSVRow(
                 role_name,
                 status: 'active',
                 system_role: false,
-                organization: { organization_name },
+                organization,
             },
         })
 
         if (role) {
             rolePermissions = (await role?.permissions) || []
+            const permissionNames = rolePermissions.map(
+                ({ permission_name }) => permission_name
+            )
 
-            if (rolePermissions.includes(permission)) {
+            if (permissionNames.includes(permission_id)) {
                 throw new Error(
                     `Provided permission with id ${permission_id} already exists for this role`
                 )
