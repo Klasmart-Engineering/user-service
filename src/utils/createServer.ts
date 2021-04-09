@@ -96,6 +96,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.uploadSubCategoriesFromCSV(args, ctx, info),
                 uploadRolesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadRolesFromCSV(args, ctx, info),
+                uploadSubjectsFromCSV: (_parent, args, ctx, info) =>
+                    model.uploadSubjectsFromCSV(args, ctx, info),
             },
         },
         schemaDirectives: {

@@ -45,6 +45,8 @@ import SubcategoriesInitializer from "../../src/initializers/subcategories";
 import AgeRangesInitializer from "../../src/initializers/ageRanges";
 import SubjectsInitializer from "../../src/initializers/subjects";
 import GradesInitializer from "../../src/initializers/grades";
+import { queryUploadSubjects, uploadSubjects } from "../utils/operations/csv/uploadSubjects";
+import { Subject } from "../../src/entities/subject";
 
 
 use(chaiAsPromised);
@@ -611,7 +613,6 @@ describe("model", () => {
             });
         });
     });
-
     describe("getProgram", () => {
         let user: User;
         let program: Program;
@@ -749,6 +750,7 @@ describe("model", () => {
         });
     });
 
+
     describe("uploadRolesFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
@@ -798,6 +800,62 @@ describe("model", () => {
 
                 const rolesCreated = await Role.count({ where: { system_role: false } });
                 expect(rolesCreated).gt(0);
+            });
+        });
+    });
+    
+    describe("uploadSubjectsFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'subjectsExample.csv';
+        beforeEach(async () => {
+            await SubcategoriesInitializer.run()
+            await CategoriesInitializer.run()
+        });
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadSubjects(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const subjectsCreated = await Subject.count({ where: { system: false } });
+                expect(subjectsCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadSubjects(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const subjectsCreated = await Subject.count({ where: { system: false } });
+                expect(subjectsCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                for (let i = 1; i <= 4; i += 1) {
+                    let org = await createOrganization();
+                    org.organization_name = `Company ${i}`;
+                    await connection.manager.save(org);
+                }
+            });
+
+            it("should create subjects", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadSubjects(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const subjectsCreated = await Subject.count({ where: { system: false } });
+                expect(subjectsCreated).gt(0);
             });
         });
     });
