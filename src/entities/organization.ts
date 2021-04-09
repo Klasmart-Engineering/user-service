@@ -542,6 +542,7 @@ export class Organization
             const result = await this._setMembership(
                 restricted,
                 false,
+                undefined,
                 email,
                 phone,
                 given_name,
@@ -564,6 +565,7 @@ export class Organization
 
     public async editMembership(
         {
+            user_id,
             email,
             phone,
             given_name,
@@ -602,6 +604,7 @@ export class Organization
             const result = await this._setMembership(
                 false,
                 true,
+                user_id,
                 email,
                 phone,
                 given_name,
@@ -643,6 +646,7 @@ export class Organization
 
     private async findOrCreateUser(
         edit: boolean,
+        user_id?: string,
         email?: string,
         phone?: string,
         given_name?: string,
@@ -653,17 +657,16 @@ export class Organization
         alternate_phone?: string,
         gender?: string
     ): Promise<User> {
-        let user_id: string
         let user: User
         if (edit) {
             const scope = getRepository(User).createQueryBuilder('user')
             if (email) {
-                scope.where('email = :email', { email: email })
+                scope.where('email = :email', { email })
             } else {
-                scope.where('phone = :phone', { phone: phone })
+                scope.where('phone = :phone', { phone })
             }
-            if (username) {
-                scope.andWhere('username = :username', { username: username })
+            if (user_id) {
+                scope.andWhere('user_id = :user_id', { user_id })
             }
             const users = await scope.getMany()
             if (users && users.length > 0) {
@@ -773,6 +776,7 @@ export class Organization
     private async _setMembership(
         restricted: boolean,
         edit: boolean,
+        user_id?: string,
         email?: string,
         phone?: string,
         given_name?: string,
@@ -812,6 +816,7 @@ export class Organization
                 '_setMembership',
                 email,
                 phone,
+                user_id,
                 given_name,
                 family_name,
                 date_of_birth,
@@ -833,6 +838,7 @@ export class Organization
             )
             const user = await this.findOrCreateUser(
                 edit,
+                user_id,
                 email,
                 phone,
                 given_name,

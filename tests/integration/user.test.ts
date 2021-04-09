@@ -553,7 +553,7 @@ describe("user", () => {
 
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
-            let object = await organization["_setMembership"](false, false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, false, undefined, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership
@@ -624,7 +624,7 @@ describe("user", () => {
             // oldUser is a bare user with no memberships
             let oldUser = await createUserAndValidate(testClient, anne)
 	        expect(oldUser).to.exist
-            let object = await organization["_setMembership"](false, false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+            let object = await organization["_setMembership"](false, false, undefined, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
             let newUser = object.user
             let membership = object.membership

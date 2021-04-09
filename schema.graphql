@@ -175,7 +175,8 @@ type Mutation {
     uploadClassesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadGradesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadSchoolsFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
-    uploadSubCategoriesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadSubCategoriesFromCSV(file: Upload!): File
+        @isMIMEType(mimetype: "text/csv")
     uploadRolesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadSubjectsFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
 }
@@ -311,6 +312,7 @@ type Organization {
         alternate_phone: String
     ): MembershipUpdate
     editMembership(
+        user_id: String
         email: String
         phone: String
         given_name: String

@@ -21,6 +21,7 @@ const NEW_USER = `
             $given_name: String
             $family_name: String
             $email: String
+            $phone: String
             $avatar: String
             $date_of_birth: String
             $username: String
@@ -29,6 +30,7 @@ const NEW_USER = `
             given_name: $given_name
             family_name: $family_name
             email: $email
+            phone: $phone
             avatar: $avatar
             date_of_birth: $date_of_birth
             username: $username
@@ -38,6 +40,7 @@ const NEW_USER = `
             given_name
             family_name
             email
+            phone
             avatar
             date_of_birth
             username
@@ -295,7 +298,7 @@ export async function createUserAndValidate(
     user: User
 ): Promise<User> {
     const gqlUser = await createUser(testClient, user, { authorization: getJoeAuthToken() });
-    const dbUser = await User.findOneOrFail({ where: { email: user.email } });
+    const dbUser = await User.findOneOrFail({ where: [{ email: user.email },{ phone: user.phone }]});
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
     expect(dbUser).to.include(user);

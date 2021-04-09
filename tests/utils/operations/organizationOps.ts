@@ -140,9 +140,9 @@ const INVITE_USER = `
 `;
 
 const EDIT_MEMBERSHIP = `
-    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email:String, $alternate_phone:String) {
+    mutation myMutation($organization_id: ID!, $user_id: String, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email:String, $alternate_phone:String) {
         organization(organization_id: $organization_id) {
-            editMembership(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name,  date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email:$alternate_email, alternate_phone:$alternate_phone){
+            editMembership(user_id: $user_id, email: $email, phone:$phone, given_name: $given_name, family_name:$family_name,  date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email:$alternate_email, alternate_phone:$alternate_phone){
                 user{
                     user_id
                     email
@@ -484,43 +484,43 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     const { mutate } = testClient;
     let variables: any
     variables = { organization_id: organizationId }
-    if (email !== undefined) {
+    if (email) {
         variables.email = email
     }
-    if (phone !== undefined) {
+    if (phone) {
         variables.phone = phone
     }
-    if (given_name !== undefined) {
+    if (given_name) {
         variables.given_name = given_name
     }
-    if (family_name !== undefined) {
+    if (family_name) {
         variables.family_name = family_name
     }
-    if (date_of_birth !== undefined) {
+    if (date_of_birth) {
         variables.date_of_birth = date_of_birth
     }
-    if (username !== undefined) {
+    if (username) {
         variables.username = username
     }
-    if (gender !== undefined) {
+    if (gender) {
         variables.gender = gender
     }
-    if (shortcode !== undefined){
+    if (shortcode){
        variables.shortcode = shortcode
     }
-    if (organization_role_ids !== undefined){
+    if (organization_role_ids){
         variables.organization_role_ids = organization_role_ids
     }
-    if (school_ids !== undefined) {
+    if (school_ids) {
         variables.school_ids = school_ids
     }
-    if (school_role_ids !== undefined) {
+    if (school_role_ids) {
         variables.school_role_ids = school_role_ids
     }
-    if(alternate_email !== undefined){
+    if(alternate_email){
         variables.alternate_email = alternate_email
     }
-    if(alternate_phone !== undefined){
+    if(alternate_phone){
         variables.alternate_phone = alternate_phone
     }
     const operation = () => mutate({
@@ -536,47 +536,51 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
 
 
 
-export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any, alternate_email?: string, alternate_phone?: string) {
+export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, user_id?: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any, alternate_email?: string, alternate_phone?: string) {
     const { mutate } = testClient;
     let variables: any
     variables = { organization_id: organizationId }
-    if (email !== undefined) {
+    
+    if (user_id) {
+        variables.user_id = user_id
+    }
+    if (email) {
         variables.email = email
     }
-    if (phone !== undefined) {
+    if (phone) {
         variables.phone = phone
     }
-    if (given_name !== undefined) {
+    if (given_name) {
         variables.given_name = given_name
     }
-    if (family_name !== undefined) {
+    if (family_name) {
         variables.family_name = family_name
     }
-    if (date_of_birth !== undefined) {
+    if (date_of_birth) {
         variables.date_of_birth = date_of_birth
     }
-    if (username !== undefined) {
+    if (username) {
         variables.username = username
     }
-    if (gender !== undefined) {
+    if (gender) {
         variables.gender = gender
     }
-    if (shortcode !== undefined){
+    if (shortcode){
        variables.shortcode = shortcode
     }
-    if (organization_role_ids !== undefined){
+    if (organization_role_ids){
         variables.organization_role_ids = organization_role_ids
     }
-    if (school_ids !== undefined) {
+    if (school_ids) {
         variables.school_ids = school_ids
     }
-    if (school_role_ids !== undefined) {
+    if (school_role_ids) {
         variables.school_role_ids = school_role_ids
     }
-    if (alternate_email !== undefined) {
+    if (alternate_email) {
         variables.alternate_email = alternate_email
     }
-    if (alternate_phone !== undefined) {
+    if (alternate_phone) {
         variables.alternate_phone = alternate_phone
     }
 

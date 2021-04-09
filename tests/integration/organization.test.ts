@@ -12,7 +12,7 @@ import { Subcategory } from "../../src/entities/subcategory";
 import { Subject } from "../../src/entities/subject";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
-import { myUsers } from "../utils/operations/modelOps";
+import { createUserAndValidate, myUsers } from "../utils/operations/modelOps";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createOrUpdateSubcategories, createOrUpdateCategories, createOrUpdateSubjects, createSchool, createClass, createRole, inviteUser, editMembership, listAgeRanges, listGrades, listCategories, listSubcategories, listSubjects, deleteOrganization, listPrograms, createOrUpdatePrograms, updateOrganization } from "../utils/operations/organizationOps";
@@ -54,14 +54,14 @@ describe("organization", () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
-     
+
     });
 
     after(async () => {
         await connection?.close();
     });
 
- 
+
     describe("set", async () => {
         let organizationId: string;
         const mods = {
@@ -94,7 +94,7 @@ describe("organization", () => {
 
         context("when authorized within organization", () => {
             let idOfUserMakingMod: string;
-            let authTokenOfUserMakingMod:string 
+            let authTokenOfUserMakingMod: string
 
             beforeEach(async () => {
                 idOfUserMakingMod = (await createUserBilly(testClient)).user_id;
@@ -145,21 +145,21 @@ describe("organization", () => {
         it("should assign the old user to the exsting user", async () => {
             let oldUser: User
             let email = user.email ?? ""
-            oldUser = await organization["findOrCreateUser"](true, email, undefined, user.given_name, user.family_name)
+            oldUser = await organization["findOrCreateUser"](true, user.user_id, email, undefined, user.given_name, user.family_name)
             expect(oldUser).to.exist
             expect(oldUser.user_id).to.equal(user.user_id)
 
         });
         it("should assign the new user to a new user with an email", async () => {
             let newUser: User
-            newUser = await organization["findOrCreateUser"](false,"bob@nowhere.com",undefined, "Bob", "Smith")
+            newUser = await organization["findOrCreateUser"](false, undefined, "bob@nowhere.com", undefined, "Bob", "Smith")
             expect(newUser).to.exist
             expect(newUser.email).to.equal("bob@nowhere.com")
         });
 
         it("should assign the new user to a new user with a phone number", async () => {
             let newUser: User
-            newUser = await organization["findOrCreateUser"](false, undefined, "+44207344141","Bob", "Smith")
+            newUser = await organization["findOrCreateUser"](false, undefined, undefined, "+44207344141", "Bob", "Smith")
             expect(newUser).to.exist
             expect(newUser.phone).to.equal("+44207344141")
         });
@@ -551,7 +551,7 @@ describe("organization", () => {
 
             it("should create the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
 
-                let object = await organization["_setMembership"](false, false, undefined, "+44207344141", "Bob", "Smith", undefined, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+                let object = await organization["_setMembership"](false, false, undefined, undefined, "+44207344141", "Bob", "Smith", undefined, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
                 let newUser = object.user
                 let membership = object.membership
@@ -573,7 +573,7 @@ describe("organization", () => {
             });
             it("should create the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
 
-                let object = await organization["_setMembership"](false, false, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+                let object = await organization["_setMembership"](false, false, undefined, "bob@nowhere.com", undefined, "Bob", "Smith", undefined, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
                 let newUser = object.user
                 let membership = object.membership
@@ -598,7 +598,7 @@ describe("organization", () => {
                 let email = user.email ?? "anyone@email.com"
                 let given = user.given_name ?? "anyone"
                 let family = user.family_name ?? "at_all"
-                let object = await organization["_setMembership"](false, true, email, undefined, given, family, undefined, user.username, "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+                let object = await organization["_setMembership"](false, true, user.user_id, email, undefined, given, family, undefined, user.username, "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
                 let newUser = object.user
                 let membership = object.membership
@@ -641,7 +641,7 @@ describe("organization", () => {
                 let email = user.email
                 let given = user.given_name
                 let family = user.family_name
-                let object = await organization["_setMembership"](false, true, email, undefined, given, family, undefined, user.username, "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+                let object = await organization["_setMembership"](false, true, user.user_id, email, undefined, given, family, undefined, user.username, "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
                 let newUser = object.user
                 let membership = object.membership
@@ -672,7 +672,7 @@ describe("organization", () => {
                 let email = user.email
                 let given = user.given_name
                 let family = user.family_name
-                let object = await organization["_setMembership"](false, true, email, undefined, given, family, undefined, undefined, "Male", "FLAFEL3", new Array(roleId), Array(schoolId), new Array(roleId))
+                let object = await organization["_setMembership"](false, true, user.user_id, email, undefined, given, family, undefined, undefined, "Male", "FLAFEL3", new Array(roleId), Array(schoolId), new Array(roleId))
 
                 let newUser = object.user
                 let membership = object.membership
@@ -682,7 +682,7 @@ describe("organization", () => {
                 expect(newUser.user_id).to.equal(user.user_id)
 
                 expect(schoolmemberships).to.exist
-                if(schoolmemberships){
+                if (schoolmemberships) {
                     expect(schoolmemberships.length).to.equal(1)
                     expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                     expect(schoolmemberships[0].school_id).to.equal(schoolId)
@@ -699,7 +699,7 @@ describe("organization", () => {
                     let email = user.email
                     let given = user.given_name
                     let family = user.family_name
-                    let object = await organization["_setMembership"](false, true, email, undefined, given, family, undefined, undefined, "Male" ,undefined, new Array(roleId), Array(schoolId), new Array(roleId))
+                    let object = await organization["_setMembership"](false, true, user.user_id, email, undefined, given, family, undefined, undefined, "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId))
 
                     let newUser = object.user
                     let membership = object.membership
@@ -709,7 +709,7 @@ describe("organization", () => {
                     expect(newUser.user_id).to.equal(user.user_id)
 
                     expect(schoolmemberships).to.exist
-                    if(schoolmemberships){
+                    if (schoolmemberships) {
                         expect(schoolmemberships.length).to.equal(1)
                         expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
                         expect(schoolmemberships[0].school_id).to.equal(schoolId)
@@ -729,7 +729,7 @@ describe("organization", () => {
                     let email = user.email
                     let given = user.given_name
                     let family = user.family_name
-                    let object = await organization["_setMembership"](false, false, email, undefined, given, family, undefined, "Bunter", "Male", "FLAFEL3", new Array(roleId), Array(schoolId), new Array(roleId))
+                    let object = await organization["_setMembership"](false, false, undefined, email, undefined, given, family, undefined, "Bunter", "Male", "FLAFEL3", new Array(roleId), Array(schoolId), new Array(roleId))
 
                     let membership = object.membership
 
@@ -741,7 +741,7 @@ describe("organization", () => {
                     let email = user.email
                     let given = user.given_name
                     let family = user.family_name
-                    let object = await organization["_setMembership"](false, false, email, undefined, given, family, undefined, "Bunter", "Male", "polkadot 45", new Array(roleId), Array(schoolId), new Array(roleId))
+                    let object = await organization["_setMembership"](false, false, undefined, email, undefined, given, family, undefined, "Bunter", "Male", "polkadot 45", new Array(roleId), Array(schoolId), new Array(roleId))
 
                     let membership = object.membership
 
@@ -754,7 +754,7 @@ describe("organization", () => {
                     let email = user.email
                     let given = user.given_name
                     let family = user.family_name
-                    let object = await organization["_setMembership"](false, false, email, undefined, given, family, undefined, "Bunter", "Male", "polkadot45", new Array(roleId), Array(schoolId), new Array(roleId))
+                    let object = await organization["_setMembership"](false, false, undefined, email, undefined, given, family, undefined, "Bunter", "Male", "polkadot45", new Array(roleId), Array(schoolId), new Array(roleId))
 
                     let membership = object.membership
 
@@ -777,8 +777,8 @@ describe("organization", () => {
                 let email = user.email
                 let given = user.given_name
                 let family = user.family_name
-                try{
-                    let object = await organization["_setMembership"](false, false, email, undefined, given, family, undefined, "Bunter", "Male", undefined, [roleId,role2id], Array(schoolId), new Array(roleId))
+                try {
+                    let object = await organization["_setMembership"](false, false, undefined, email, undefined, given, family, undefined, "Bunter", "Male", undefined, [roleId, role2id], Array(schoolId), new Array(roleId))
                     expect(false).true
                 }
                 catch (e) {
@@ -1038,13 +1038,13 @@ describe("organization", () => {
                 expect(schoolmemberships).to.not.exist
             });
 
-             it("creates user with custom shortcode", async () => {
+            it("creates user with custom shortcode", async () => {
                 let email = "bob@nowhere.com"
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "RANGER13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "RANGER13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1061,7 +1061,7 @@ describe("organization", () => {
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1078,7 +1078,7 @@ describe("organization", () => {
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger 13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger 13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1091,8 +1091,8 @@ describe("organization", () => {
 
             it("creates the user with alternate_email and altnernate_phone when provided", async () => {
                 let email = "bob@nowhere.com"
-                let alternate_email  = "some@email.com"
-                let alternate_phone  = "+123456789"
+                let alternate_email = "some@email.com"
+                let alternate_phone = "+123456789"
                 let gqlresult = await inviteUser(
                     testClient,
                     organizationId,
@@ -1156,13 +1156,13 @@ describe("organization", () => {
                 roleId = role.role_id
                 oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
                 schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getJoeAuthToken() })).school_id;
-                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeAuthToken()});
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeAuthToken() });
                 let email = "bob@nowhere.com"
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 existingUser = gqlresult?.user
                 expect(existingUser).to.exist
                 expect(existingUser?.email).to.equal(email)
@@ -1176,7 +1176,7 @@ describe("organization", () => {
                 let given = "Joanne"
                 let family = existingUser.family_name
                 let dateOfBirth = "04-2018"
-                let gqlresult = await inviteUser( testClient, organizationId, email, phone, given, family, dateOfBirth, "Jo", "Female", undefined, new Array(roleId), Array(newSchoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Jo", "Female", undefined, new Array(roleId), Array(newSchoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1202,7 +1202,7 @@ describe("organization", () => {
 
                 expect(gqlMyUsers).to.exist
                 expect(gqlMyUsers.length).to.equal(2)
-                
+
 
             });
         });
@@ -1236,12 +1236,22 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    email: email,
+                } as User
+
+                bob = await createUserAndValidate(testClient, bob)
+
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
                 expect(newUser).to.exist
                 expect(newUser.email).to.equal(email)
+                expect(newUser.user_id).to.equal(bob.user_id)
 
                 expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
@@ -1260,13 +1270,21 @@ describe("organization", () => {
                 let phone = "bob.dylan@nowhere.com"
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    email: phone,
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
+
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
                 expect(newUser).to.exist
                 expect(newUser.email).to.eq(phone)
                 expect(newUser.phone).to.be.null
+                expect(newUser.user_id).to.eq(bob.user_id)
 
                 expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
@@ -1283,12 +1301,20 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    email: email,
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
+
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
                 expect(newUser).to.exist
                 expect(newUser.email).to.equal(email)
+                expect(newUser.user_id).to.eq(bob.user_id)
 
                 expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
@@ -1305,12 +1331,19 @@ describe("organization", () => {
                 let phone = "+44207344141"
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    phone: phone,
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
                 expect(newUser).to.exist
                 expect(newUser.phone).to.equal(phone)
+                expect(newUser.user_id).to.eq(bob.user_id)
 
                 expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
@@ -1327,13 +1360,20 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    phone: email,
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
                 expect(newUser).to.exist
                 expect(newUser.email).to.be.null
                 expect(newUser.phone).to.eq(email)
+                expect(newUser.user_id).to.eq(bob.user_id)
 
                 expect(schoolmemberships).to.exist
                 expect(schoolmemberships.length).to.equal(1)
@@ -1347,11 +1387,19 @@ describe("organization", () => {
 
             it("edits user when alternate_email and alternate_password are provided", async () => {
                 let email = "bob@nowhere.com"
+                let given = "Bob"
+                let family = "Smith"
                 let alternate_email = "a@a.com"
                 let alternate_phone = "+123456789"
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    email: email,
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
                 let gqlresult = await editMembership(
                     testClient,
-                    organizationId,
+                    organizationId, bob.user_id,
                     email, undefined, undefined, undefined,
                     undefined, undefined, undefined, undefined,
                     new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() }, undefined,
@@ -1359,6 +1407,7 @@ describe("organization", () => {
                 let newUser = gqlresult.user
                 expect(newUser).to.exist
                 expect(newUser.email).to.equal(email)
+                expect(newUser.user_id).to.eq(bob.user_id)
                 expect(newUser.alternate_email).to.equal(alternate_email)
                 expect(newUser.alternate_phone).to.equal(alternate_phone)
 
@@ -1374,7 +1423,13 @@ describe("organization", () => {
                     let phone = "+44207344141"
                     let given = "Bob"
                     let family = "Smith"
-                    let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                    let bob = {
+                        given_name: given,
+                        family_name: family,
+                        phone: phone,
+                    } as User
+                    bob = await createUserAndValidate(testClient, bob)
+                    let gqlresult = await editMembership(testClient, organizationId, undefined, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
                     expect(gqlresult).to.be.null
                 });
             });
@@ -1425,7 +1480,13 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken }, { user_id: otherUserId })
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    email: email
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken }, { user_id: otherUserId })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -1444,24 +1505,94 @@ describe("organization", () => {
 
             it("fails to edits user when no cookie provided", async () => {
                 let email = "bob@nowhere.com"
+                let phone: string | undefined = undefined
+                let given = "Bob"
+                let family = "Smith"
+                let bob = {
+                    given_name: given,
+                    family_name: family,
+                    email: email
+                } as User
+                bob = await createUserAndValidate(testClient, bob)
+
+                const fn = () => editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken })
+
+                expect(fn()).to.be.rejected
+
+
+            });
+        });
+        context("We create two users with the same email address", () => {
+            let userId: string;
+            let organizationId: string;
+            let schoolId: string;
+            let roleId: string
+            let otherUserId: string
+            let createdUser1Id: string
+            let createdUser2Id: string
+            let email: string
+
+            beforeEach(async () => {
+                user = await createUserJoe(testClient);
+                otherUserId = (await createUserBilly(testClient)).user_id
+                userId = user.user_id
+                let organization1 = await createOrganizationAndValidate(testClient, user.user_id);
+                let organization1Id = organization1.organization_id
+                role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
+                roleId = role.role_id
+                let school1Id = (await createSchool(testClient, organization1Id, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
+                organization = await createOrganizationAndValidate(testClient, otherUserId,"other Org", "OTHERORG", getBillyAuthToken());
+                organizationId = organization.organization_id
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getBillyAuthToken() })).school_id;
+                
+                email = "bob@nowhere.com"
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                try {
-                    let gqlresult = await editMembership(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken })
-                    expect(gqlresult).not.to.exist
-                }
-                catch (e) {
-                    expect(e).to.exist
-                }
+                let dateOfBirth = "02-1978"
+                let gqlresult = await inviteUser(
+                    testClient,
+                    organization1Id,
+                    email,
+                    phone,
+                    given, family,
+                    dateOfBirth,
+                    "Bunter",
+                    "Male",
+                    undefined,
+                    new Array(roleId),
+                    Array(school1Id),
+                    new Array(roleId),
+                    { authorization: getJoeAuthToken() },
+                )
+                let createdUser = gqlresult?.user
+                createdUser1Id = createdUser.user_id
+                gqlresult = await inviteUser(
+                    testClient,
+                    organization1Id,
+                    email,
+                    phone,
+                    given, family,
+                    dateOfBirth,
+                    "Bunty",
+                    "Female",
+                    undefined,
+                    new Array(roleId),
+                    Array(school1Id),
+                    new Array(roleId),
+                    { authorization: getJoeAuthToken() },
+                )
+                createdUser = gqlresult?.user
+                createdUser2Id = createdUser.user_id
             });
-
-
+            it("joins the correct user to another organization", async () => {
+                let gqlresult = await editMembership(testClient, organizationId, createdUser2Id, email, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let newUser = gqlresult.user
+                expect(newUser.user_id).to.eq(createdUser2Id)
+                expect(newUser.username).to.eq("Bunty")
+                expect(newUser.user_id).to.not.eq(createdUser1Id)
+            });
         });
-
-
-
-
     });
 
     describe("delete", () => {
@@ -3899,7 +4030,3 @@ describe("organization", () => {
         });
     });
 });
-
-
-
-
