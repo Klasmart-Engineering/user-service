@@ -34,7 +34,7 @@ async function main() {
         const server = createServer(model)
 
         const app = express()
-        app.use(graphqlUploadExpress({ maxFileSize: 10000, maxFiles: 10 }))
+        app.use(graphqlUploadExpress({ maxFileSize: 50000, maxFiles: 10 }))
         app.use(cookieParser())
         server.applyMiddleware({
             app,

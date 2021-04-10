@@ -10,12 +10,12 @@ import { createRole } from "../../../factories/role.factory";
 import { createSchool } from "../../../factories/school.factory";
 import { createTestConnection } from "../../../utils/testConnection";
 import { createUser } from "../../../factories/user.factory";
-import { generateShortCode} from '../../../../src/utils/shortcode'
+import { generateShortCode } from '../../../../src/utils/shortcode'
 import { Class } from "../../../../src/entities/class";
-import { User, accountUUID } from "../../../../src/entities/user";
+import { User } from "../../../../src/entities/user";
 import { UserRow } from "../../../../src/types/csv/userRow";
 import { Model } from "../../../../src/model";
-import { Organization, normalizedLowercaseTrimmed } from "../../../../src/entities/organization";
+import { Organization } from "../../../../src/entities/organization";
 import { OrganizationMembership } from "../../../../src/entities/organizationMembership";
 import { Role } from "../../../../src/entities/role";
 import { School } from "../../../../src/entities/school";
@@ -233,7 +233,7 @@ describe("processUserFromCSVRow", () => {
                 where: { email: row.user_email }
             })
 
-            expect(dbUser.user_id).to.eq(accountUUID(normalizedLowercaseTrimmed(row.user_email)))
+            expect(dbUser.user_id).to.not.be.empty
             expect(dbUser.email).to.eq(row.user_email)
             expect(dbUser.phone).to.be.null
             expect(dbUser.given_name).to.eq(row.user_given_name)

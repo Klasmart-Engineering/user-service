@@ -6,12 +6,13 @@ import { OrganizationMembership, MEMBERSHIP_SHORTCODE_MAXLEN } from '../../entit
 import { Role } from '../../entities/role'
 import { School } from '../../entities/school'
 import { SchoolMembership } from '../../entities/schoolMembership'
-import { User, accountUUID } from '../../entities/user'
+import { User } from '../../entities/user'
 import { UserRow } from '../../types/csv/userRow'
 import {
     generateShortCode,
     validateShortCode,
 } from '../shortcode'
+import { v4 as uuid_v4 } from 'uuid'
 
 export const processUserFromCSVRow = async (manager: EntityManager, row: UserRow, rowCount: number) => {
     if(!row.organization_name) {
@@ -99,16 +100,24 @@ export const processUserFromCSVRow = async (manager: EntityManager, row: UserRow
         phone = normalizedLowercaseTrimmed(phone)
     }
 
-    const hashSource = email ?? phone
-    const user = await manager.findOne(User, {
+    const personalInfo = {
+        given_name: row.user_given_name,
+        family_name: row.user_family_name,
+        date_of_birth: row.user_date_of_birth,
+        gender: row.user_gender,
+    }
+    let user = await manager.findOne(User, {
         where: [
-            { email: email, phone: null },
-            { email: null, phone: phone },
-            { email: email, phone: phone },
+            { email: email, phone: null, ...personalInfo },
+            { email: null, phone: phone, ...personalInfo },
+            { email: email, phone: phone, ...personalInfo },
         ]
-    }) || new User()
+    })
 
-    user.user_id = accountUUID(hashSource)
+    if(!user) {
+        user = new User()
+        user.user_id = uuid_v4()
+    }
 
     if(email) {
         user.email = row.user_email

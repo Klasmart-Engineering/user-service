@@ -699,7 +699,7 @@ describe("model", () => {
             });
         });
     });
-  
+
 
     describe("uploadOrganizationsFromCSV", () => {
         let file: ReadStream;
@@ -803,7 +803,7 @@ describe("model", () => {
             });
         });
     });
-    
+
     describe("uploadSubjectsFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
@@ -1003,7 +1003,7 @@ describe("model", () => {
             await SubjectsInitializer.run()
             await SubcategoriesInitializer.run()
             await CategoriesInitializer.run()
-            await ProgramsInitializer.run()   
+            await ProgramsInitializer.run()
         });
 
         context("when operation is not a mutation", () => {
@@ -1086,11 +1086,11 @@ describe("model", () => {
                 expectedOrg = createOrganization()
                 expectedOrg.organization_name = "my-org"
                 await connection.manager.save(expectedOrg)
-         
+
                 const result = await uploadSubCategories(testClient, file, filename, mimetype, encoding);
 
                 const dbSubcategory = await Subcategory.findOneOrFail({where:{name:"sc1", organization:expectedOrg}});
-                
+
                 expect(result.filename).eq(filename);
                 expect(result.mimetype).eq(mimetype);
                 expect(result.encoding).eq(encoding);
@@ -1104,7 +1104,7 @@ describe("model", () => {
         const mimetype = 'text/csv';
         const encoding = '7bit';
         const filename = 'users_example.csv';
-    
+
 
         context("when operation is not a mutation", () => {
             it("should throw an error", async () => {
@@ -1156,14 +1156,14 @@ describe("model", () => {
                 file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
 
                 const result = await uploadUsers(testClient, file, filename, mimetype, encoding);
- 
+
                 expect(result.filename).eq(filename);
                 expect(result.mimetype).eq(mimetype);
                 expect(result.encoding).eq(encoding);
 
                 const usersCount = await User.count({ where: { email: 'test@test.com' } });
-                expect(usersCount).eq(1);
-                
+                expect(usersCount).eq(2);
+
             });
         });
     });
