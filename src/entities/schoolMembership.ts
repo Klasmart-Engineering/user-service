@@ -7,7 +7,6 @@ import {
     ManyToMany,
     BaseEntity,
     getRepository,
-    createQueryBuilder,
     getManager,
 } from 'typeorm'
 import { User } from './user'
@@ -47,52 +46,19 @@ export class SchoolMembership extends BaseEntity {
         context: any,
         info: GraphQLResolveInfo
     ) {
-        try {
-            let results = await createQueryBuilder('SchoolMembership')
-                .innerJoinAndSelect('SchoolMembership.school', 'School')
-                .innerJoinAndSelect('School.organization', 'SchoolOrganization')
-                .innerJoinAndSelect(
-                    'SchoolOrganization.memberships',
-                    'OrgMembership'
-                )
-                .innerJoinAndSelect('OrgMembership.roles', 'Role')
-                .innerJoinAndSelect('Role.permissions', 'Permission')
-                .where(
-                    'OrgMembership.user_id = :user_id AND SchoolMembership.user_id = :user_id',
-                    { user_id: this.user_id }
-                )
-                .andWhere('SchoolMembership.school_id = :school_id', {
-                    school_id: this.school_id,
-                })
-                .andWhere('Permission.permission_name = :permission_name', {
-                    permission_name,
-                })
-                .getRawMany()
+        const school = await this.school
+        const schoolOrg = await school?.organization
 
-            if (results.length === 0) {
-                results = await createQueryBuilder('SchoolMembership')
-                    .innerJoinAndSelect('SchoolMembership.roles', 'Role')
-                    .innerJoinAndSelect('Role.permissions', 'Permission')
-                    .where('SchoolMembership.user_id = :user_id', {
-                        user_id: this.user_id,
-                    })
-                    .andWhere('SchoolMembership.school_id = :school_id', {
-                        school_id: this.school_id,
-                    })
-                    .andWhere('Permission.permission_name = :permission_name', {
-                        permission_name,
-                    })
-                    .getRawMany()
-            }
-
-            if (results.length === 0) {
-                return false
-            }
-
-            return results.every((v) => v.Permission_allow)
-        } catch (e) {
-            console.error(e)
+        const permisionContext = {
+            organization_id: schoolOrg?.organization_id,
+            school_ids: [this.school_id],
+            user_id: this.user_id,
         }
+
+        return await context.permissions.allowed(
+            permisionContext,
+            permission_name
+        )
     }
 
     public async addRole(

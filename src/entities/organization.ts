@@ -515,13 +515,14 @@ export class Organization
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        const user_id = context.permissions.getUserId()
         const restricted = !(await context.permissions.allowed(
-            this,
+            { organization_id: this.organization_id, user_id },
             PermissionName.send_invitation_40882
         ))
         if (restricted) {
             await context.permissions.rejectIfNotAllowed(
-                this,
+                { organization_id: this.organization_id, user_id },
                 PermissionName.join_organization_10881
             )
         }

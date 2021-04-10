@@ -1,5 +1,6 @@
 import { getRepository } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { User } from '../entities/user'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
@@ -8,6 +9,7 @@ import { superAdminRole } from './superAdmin'
 interface PermissionContext {
     school_ids?: string[]
     organization_id?: string
+    user_id?: string
 }
 
 export class UserPermissions {
@@ -25,6 +27,7 @@ export class UserPermissions {
     private _schoolPermissions?: Promise<Map<string, Set<string>>>
 
     private readonly user_id?: string
+    private readonly email: string
     public readonly isAdmin?: boolean
 
     public constructor(token?: any, cookies?: any) {
@@ -33,19 +36,26 @@ export class UserPermissions {
         } else {
             this.user_id = token?.id
         }
-        this.isAdmin = this.checkAdmin(token)
+        this.email = token?.email || ''
+        this.isAdmin = this.isAdminEmail(this.email)
     }
 
-    private checkAdmin(token?: any) {
-        return UserPermissions.ADMIN_EMAILS.includes(token?.email)
+    private isAdminEmail(email: string) {
+        return UserPermissions.ADMIN_EMAILS.includes(email)
     }
 
     public getUserId() {
         return this.user_id
     }
 
+    private async isUserAdmin(user_id?: string) {
+        const user = await User.findOne({ user_id })
+
+        return this.isAdminEmail(user?.email || '')
+    }
+
     public rejectIfNotAdmin() {
-        if (!this.isAdmin) {
+        if (!this.isAdminEmail(this.email)) {
             throw new Error(
                 `User(${this.user_id}) does not have Admin permissions`
             )
@@ -65,7 +75,7 @@ export class UserPermissions {
         permission_name: PermissionName
     ) {
         const isAllowed = await this.allowed(
-            { school_ids, organization_id },
+            { school_ids, organization_id, user_id: this.user_id },
             permission_name
         )
 
@@ -74,6 +84,7 @@ export class UserPermissions {
                 `User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`
             )
         }
+
         if (!isAllowed && school_ids) {
             throw new Error(
                 `User(${
@@ -81,6 +92,7 @@ export class UserPermissions {
                 }) does not have Permission(${permission_name}) in Schools(${school_ids?.toString()})`
             )
         }
+
         if (!isAllowed) {
             throw new Error(
                 `User(${this.user_id}) does not have Permission(${permission_name})`
@@ -89,14 +101,17 @@ export class UserPermissions {
     }
 
     public async allowed(
-        { school_ids, organization_id }: PermissionContext,
+        { school_ids, organization_id, user_id }: PermissionContext,
         permission_name: PermissionName
     ) {
+        const isAdmin = await this.isUserAdmin(user_id)
         let output =
-            this.isAdmin && superAdminRole.permissions.includes(permission_name)
+            isAdmin && superAdminRole.permissions.includes(permission_name)
 
         if (!output && organization_id) {
-            const allOrganizationPermisions = await this.organizationPermissions()
+            const allOrganizationPermisions = await this.organizationPermissions(
+                user_id
+            )
             const organizationPermissions = allOrganizationPermisions.get(
                 organization_id
             )
@@ -110,7 +125,7 @@ export class UserPermissions {
         }
 
         if (!output && school_ids) {
-            const allSchoolPermissions = await this.schoolPermissions()
+            const allSchoolPermissions = await this.schoolPermissions(user_id)
             for (const id of school_ids) {
                 const schoolPermissions = allSchoolPermissions.get(id)
                 if (
@@ -126,7 +141,9 @@ export class UserPermissions {
         return output
     }
 
-    private async organizationPermissions(): Promise<Map<string, Set<string>>> {
+    private async organizationPermissions(
+        user_id?: string
+    ): Promise<Map<string, Set<string>>> {
         if (!this._organizationPermissions) {
             this._organizationPermissions = new Promise<
                 Map<string, Set<string>>
@@ -136,7 +153,7 @@ export class UserPermissions {
                         string,
                         Set<string>
                     >()
-                    if (!this.user_id) {
+                    if (!user_id) {
                         resolve(organizationPermissions)
                         return
                     }
@@ -151,7 +168,7 @@ export class UserPermissions {
                             'OrganizationMembership.organization_id, Permission.permission_name'
                         )
                         .where('OrganizationMembership.user_id = :user_id', {
-                            user_id: this.user_id,
+                            user_id,
                         })
                         .andWhere('Role.status = :status', {
                             status: Status.ACTIVE,
@@ -189,13 +206,15 @@ export class UserPermissions {
         return this._organizationPermissions
     }
 
-    private async schoolPermissions(): Promise<Map<string, Set<string>>> {
+    private async schoolPermissions(
+        user_id?: string
+    ): Promise<Map<string, Set<string>>> {
         if (!this._schoolPermissions) {
             this._schoolPermissions = new Promise<Map<string, Set<string>>>(
                 async (resolve, reject) => {
                     try {
                         const schoolPermissions = new Map<string, Set<string>>()
-                        if (!this.user_id) {
+                        if (!user_id) {
                             resolve(schoolPermissions)
                             return
                         }
@@ -210,7 +229,7 @@ export class UserPermissions {
                                 'SchoolMembership.school_id, Permission.permission_name'
                             )
                             .where('SchoolMembership.user_id = :user_id', {
-                                user_id: this.user_id,
+                                user_id,
                             })
                             .andWhere('Role.status = :status', {
                                 status: Status.ACTIVE,

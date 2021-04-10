@@ -9,7 +9,7 @@ import { Class } from "../../src/entities/class";
 import { Subject } from "../../src/entities/subject";
 import { Status } from "../../src/entities/status";
 import { addSchoolToClass, addStudentToClass, addTeacherToClass, editTeachersInClass, editStudentsInClass, editSchoolsInClass, editAgeRanges, editGrades, editSubjects, editPrograms, updateClass, deleteClass, listPrograms, listAgeRanges, listGrades, listSubjects, removeTeacherInClass, removeSchoolFromClass, removeStudentInClass, eligibleTeachers, eligibleStudents } from "../utils/operations/classOps";
-import { createOrganizationAndValidate } from "../utils/operations/userOps";
+import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
 import { Organization } from "../../src/entities/organization";
 import { Program } from "../../src/entities/program";
@@ -17,7 +17,7 @@ import { User } from "../../src/entities/user";
 import { addUserToOrganizationAndValidate, createClass, createRole, createSchool } from "../utils/operations/organizationOps";
 import { School } from "../../src/entities/school";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { getBillyAuthToken, getJoeAuthToken } from "../utils/testConfig";
+import { getBillyAuthToken, getJoeAuthToken, generateToken } from "../utils/testConfig";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { denyPermission, grantPermission } from "../utils/operations/roleOps";
 import { PermissionName } from "../../src/permissions/permissionNames";
@@ -156,10 +156,12 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = getJoeAuthToken();
+            let orgOwnerToken: string;
 
             beforeEach(async () => {
-                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const orgOwner = await createUserJoe(testClient)
+                orgOwnerId = orgOwner?.user_id;
+                orgOwnerToken = generateToken(userToPayload(orgOwner))
                 const teacherInfo = { email: "teacher@gmail.com" } as User;
                 const studentInfo = { email: "student@gmail.com" } as User;
                 teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
@@ -216,10 +218,12 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = getJoeAuthToken();
+            let orgOwnerToken: string;
 
             beforeEach(async () => {
-                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const orgOwner = await createUserJoe(testClient)
+                orgOwnerId = orgOwner?.user_id;
+                orgOwnerToken = generateToken(userToPayload(orgOwner))
                 const teacherInfo = { email: "teacher@gmail.com" } as User;
                 teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
                 organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;
@@ -268,10 +272,12 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = getJoeAuthToken();
+            let orgOwnerToken: string;
 
             beforeEach(async () => {
-                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const orgOwner = await createUserJoe(testClient)
+                orgOwnerId = orgOwner?.user_id;
+                orgOwnerToken = generateToken(userToPayload(orgOwner))
                 const teacherInfo = { email: "teacher@gmail.com" } as User;
                 const studentInfo = { email: "student@gmail.com" } as User;
                 teacherId = (await createUserAndValidate(testClient, teacherInfo))?.user_id;
@@ -328,10 +334,12 @@ describe("class", () => {
             let classId: string;
             let organizationId: string;
             let orgOwnerId: string;
-            const orgOwnerToken = getJoeAuthToken();
+            let orgOwnerToken: string;
 
             beforeEach(async () => {
-                orgOwnerId = (await createUserJoe(testClient))?.user_id;
+                const orgOwner = await createUserJoe(testClient)
+                orgOwnerId = orgOwner?.user_id;
+                orgOwnerToken = generateToken(userToPayload(orgOwner))
                 const studentInfo = { email: "student@gmail.com" } as User;
                 studentId = (await createUserAndValidate(testClient, studentInfo))?.user_id;
                 organizationId = (await createOrganizationAndValidate(testClient, orgOwnerId))?.organization_id;

@@ -7,7 +7,6 @@ import {
     ManyToMany,
     BaseEntity,
     getRepository,
-    createQueryBuilder,
     getManager,
 } from 'typeorm'
 import { User } from './user'
@@ -162,24 +161,15 @@ export class OrganizationMembership extends BaseEntity {
         context: any,
         info: GraphQLResolveInfo
     ) {
-        const results = await createQueryBuilder('OrganizationMembership')
-            .innerJoinAndSelect('OrganizationMembership.roles', 'Role')
-            .innerJoinAndSelect('Role.permissions', 'Permission')
-            .where('OrganizationMembership.user_id = :user_id', {
-                user_id: this.user_id,
-            })
-            .andWhere(
-                'OrganizationMembership.organization_id = :organization_id',
-                { organization_id: this.organization_id }
-            )
-            .andWhere('Permission.permission_name = :permission_name', {
-                permission_name,
-            })
-            .getRawMany()
-        if (results.length === 0) {
-            return false
+        const permisionContext = {
+            organization_id: this.organization_id,
+            user_id: this.user_id,
         }
-        return results.every((v) => v.Permission_allow)
+
+        return await context.permissions.allowed(
+            permisionContext,
+            permission_name
+        )
     }
 
     public async addRole(

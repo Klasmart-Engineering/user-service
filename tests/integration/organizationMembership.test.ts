@@ -80,7 +80,7 @@ describe("organizationMembership", () => {
         let org2RoleId: string;
         let idOfUserToBeQueried: string;
         let tokenOfOrg1Owner:string
-        let tokenOfOrg2Owner:string 
+        let tokenOfOrg2Owner:string
         const permissionName = PermissionName.edit_groups_30330;
         const userToBeQueried = {
             email: "testuser@gmail.com",
@@ -111,7 +111,7 @@ describe("organizationMembership", () => {
 
         context("when user being queried has the specified permission in a school's organization", () => {
             beforeEach(async () =>{
-                await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+                await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
             });
 
             it("should return an array containing one school membership", async () => {

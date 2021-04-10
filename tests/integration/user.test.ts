@@ -464,7 +464,7 @@ describe("user", () => {
 
         context("when user being queried has the specified permission in a school's organization", () => {
             beforeEach(async () => {
-                await addRoleToOrganizationMembership(testClient, idOfUserToBeQueried, organization1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
+                await addRoleToSchoolMembership(testClient, idOfUserToBeQueried, school1Id, org1RoleId, { authorization: tokenOfOrg1Owner });
             });
 
             it("should return an array containing one school membership", async () => {
@@ -735,7 +735,7 @@ describe("user", () => {
         let role: Role;
         let otherUser: User;
 
- 
+
         beforeEach(async () => {
             user = await createUserJoe(testClient);
             otherUser =  await createUserBilly(testClient);
@@ -802,11 +802,11 @@ describe("user", () => {
                     it("should return an empty", async () => {
                         const gqlSubjects = await getSubjectsTeaching(testClient, user.user_id, { authorization: getBillyAuthToken() });
                         expect(gqlSubjects).to.be.empty;
-                        
+
                     });
 
                 });
-            });       
+            });
         });
         context("and is an admin user", () => {
             context("and the admin user is not a member of the organization", () => {
@@ -819,8 +819,8 @@ describe("user", () => {
                         grantPermission(testClient, role.role_id, 'add_teachers_to_class_20226', { authorization: getBillyAuthToken() })
                         grantPermission(testClient, role.role_id, 'create_subjects_20227', { authorization: getBillyAuthToken() })
                         grantPermission(testClient, role.role_id, 'edit_subjects_20337', { authorization: getBillyAuthToken() })
-                        grantPermission(testClient, role.role_id, 'edit_class_20334', { authorization: getBillyAuthToken() })   
-                       
+                        grantPermission(testClient, role.role_id, 'edit_class_20334', { authorization: getBillyAuthToken() })
+
                         cls = await createClass(testClient, organization.organization_id, getBillyAuthToken());
                         await addTeacherToClass(testClient, cls.class_id, otherUser.user_id, { authorization: getBillyAuthToken() });
                         await addRoleToOrganizationMembership(testClient, otherUser.user_id, organization.organization_id, role.role_id, { authorization: getBillyAuthToken()});
