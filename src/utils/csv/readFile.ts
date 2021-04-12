@@ -33,7 +33,7 @@ export async function readCSVFile(
     callbacks: CreateEntityRowCallback[]
 ) {
     const { filename, mimetype, encoding } = file
-    let rowCounter = 0 // Do not count header
+    let rowCounter: number
     let csvStream
 
     return new Promise<File>(async (resolve, reject) => {
@@ -45,7 +45,7 @@ export async function readCSVFile(
                 csvStream = i
                     ? rereadableStream.rewind().pipe(csv())
                     : readStream.pipe(csv())
-
+                rowCounter = 0
                 for await (let chunk of csvStream) {
                     rowCounter += 1
                     chunk = formatCSVRow(chunk)
