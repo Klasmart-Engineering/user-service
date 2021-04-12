@@ -45,7 +45,7 @@ export async function readCSVFile(
                 csvStream = i
                     ? rereadableStream.rewind().pipe(csv())
                     : readStream.pipe(csv())
-
+                rowCounter = 0
                 for await (let chunk of csvStream) {
                     rowCounter += 1
                     chunk = formatCSVRow(chunk)
