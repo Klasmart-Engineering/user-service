@@ -39,6 +39,7 @@ import { processOrganizationFromCSVRow } from './utils/csv/organization'
 import { processSchoolFromCSVRow } from './utils/csv/school'
 import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
 import { processRoleFromCSVRow } from './utils/csv/role'
+import { processCategoryFromCSVRow } from './utils/csv/category'
 import { processSubjectFromCSVRow } from './utils/csv/subject'
 
 export class Model {
@@ -736,6 +737,23 @@ export class Model {
         const { file } = await args.file
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processRoleFromCSVRow,
+        ])
+
+        return file
+    }
+
+    public async uploadCategoriesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processCategoryFromCSVRow,
         ])
 
         return file

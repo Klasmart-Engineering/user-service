@@ -37,6 +37,8 @@ import { queryUploadUsers, uploadUsers } from "../utils/operations/csv/uploadUse
 import { Role } from "../../src/entities/role";
 import { before } from "mocha";
 import { queryUploadOrganizations, uploadOrganizations } from "../utils/operations/csv/uploadOrganizations";
+import { Category } from "../../src/entities/category";
+import { queryUploadCategories, uploadCategories } from "../utils/operations/csv/uploadCategories";
 import { School } from "../../src/entities/school";
 import { queryUploadSchools, uploadSchools } from "../utils/operations/csv/uploadSchools";
 import ProgramsInitializer from "../../src/initializers/programs";
@@ -700,7 +702,6 @@ describe("model", () => {
         });
     });
 
-
     describe("uploadOrganizationsFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
@@ -749,7 +750,6 @@ describe("model", () => {
             });
         });
     });
-
 
     describe("uploadRolesFromCSV", () => {
         let file: ReadStream;
@@ -990,7 +990,6 @@ describe("model", () => {
         });
     });
 
-
     describe("uploadSchoolsFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
@@ -1164,6 +1163,68 @@ describe("model", () => {
                 const usersCount = await User.count({ where: { email: 'test@test.com' } });
                 expect(usersCount).eq(2);
 
+            });
+        });
+    });
+
+    describe("uploadCategoriesFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'categoriesExample.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadCategories(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const categoriesCreated = await Category.count({ where: { system: false } });
+                expect(categoriesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadCategories(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const categoriesCreated = await Category.count({ where: { system: false } });
+                expect(categoriesCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                for (let i = 1; i <= 2; i += 1) {
+                    let org = await createOrganization();
+                    org.organization_name = `Company ${i}`;
+                    await connection.manager.save(org);
+
+                    let subcategory = await createSubcategory(org);
+                    subcategory.name = `Subcategory ${i}`;
+                    await connection.manager.save(subcategory);
+                }
+
+                const noneSpecifiedSubcategory = new Subcategory();
+                noneSpecifiedSubcategory.name = 'None Specified';
+                noneSpecifiedSubcategory.system = true;
+                await connection.manager.save(noneSpecifiedSubcategory);
+            });
+
+            it("should create categories", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadCategories(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const categoriesCreated = await Category.count({ where: { system: false } });
+                expect(categoriesCreated).gt(0);
             });
         });
     });
