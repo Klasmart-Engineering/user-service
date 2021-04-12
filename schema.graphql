@@ -312,7 +312,7 @@ type Organization {
         alternate_phone: String
     ): MembershipUpdate
     editMembership(
-        user_id: String
+        user_id: ID
         email: String
         phone: String
         given_name: String
