@@ -60,6 +60,10 @@ export async function readCSVFile(
                     }
                 }
             }
+            if (rowCounter === 0) {
+                const mess = 'Empty input file: ${filename}'
+                throw new Error(mess)
+            }
         } catch (error) {
             reject(error)
         }
