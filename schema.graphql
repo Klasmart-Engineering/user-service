@@ -180,6 +180,7 @@ type Mutation {
     uploadRolesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadCategoriesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadSubjectsFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
+    uploadProgramsFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
     uploadAgeRangesFromCSV(file: Upload!): File @isMIMEType(mimetype: "text/csv")
 }
 

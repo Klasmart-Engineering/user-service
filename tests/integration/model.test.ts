@@ -49,6 +49,9 @@ import SubjectsInitializer from "../../src/initializers/subjects";
 import GradesInitializer from "../../src/initializers/grades";
 import { queryUploadSubjects, uploadSubjects } from "../utils/operations/csv/uploadSubjects";
 import { Subject } from "../../src/entities/subject";
+import { createSubject } from "../factories/subject.factory";
+import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
+import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
 import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 
 
@@ -1226,6 +1229,120 @@ describe("model", () => {
 
                 const categoriesCreated = await Category.count({ where: { system: false } });
                 expect(categoriesCreated).gt(0);
+            });
+        });
+    });
+
+    describe("uploadProgramsFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'programsExample.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const fn = async () => await queryUploadPrograms(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const programsCreated = await Program.count({ where: { system: false } });
+                expect(programsCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+                const fn = async () => await uploadPrograms(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const programsCreated = await Program.count({ where: { system: false } });
+                expect(programsCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                for (let i = 1; i <= 3; i += 1) {
+                    let org = await createOrganization();
+                    org.organization_name = `Company ${i}`;
+                    await connection.manager.save(org);
+
+                    for (let i = 1; i <= 3; i += 1) {
+                        let subject = await createSubject(org);
+                        subject.name = `Subject ${i}`;
+                        await connection.manager.save(subject);
+                    }
+
+                    const ageRange1 = await createAgeRange(org);
+                    ageRange1.name = '6 - 7 year(s)';
+                    ageRange1.low_value = 6;
+                    ageRange1.high_value = 7;
+                    ageRange1.low_value_unit = AgeRangeUnit.YEAR;
+                    ageRange1.high_value_unit = AgeRangeUnit.YEAR;
+                    await connection.manager.save(ageRange1);
+
+                    const ageRange2 = await createAgeRange(org);
+                    ageRange2.name = '9 - 10 year(s)';
+                    ageRange2.low_value = 9;
+                    ageRange2.high_value = 10;
+                    ageRange2.low_value_unit = AgeRangeUnit.YEAR;
+                    ageRange2.high_value_unit = AgeRangeUnit.YEAR;
+                    await connection.manager.save(ageRange2);
+
+                    const ageRange3 = await createAgeRange(org);
+                    ageRange3.name = '24 - 30 month(s)';
+                    ageRange3.low_value = 24;
+                    ageRange3.high_value = 30;
+                    ageRange3.low_value_unit = AgeRangeUnit.MONTH;
+                    ageRange3.high_value_unit = AgeRangeUnit.MONTH;
+                    ageRange3.system = false;
+                    await connection.manager.save(ageRange3);
+
+                    const grade1 = await createGrade(org);
+                    grade1.name = 'First Grade';
+                    await connection.manager.save(grade1);
+
+                    const grade2 = await createGrade(org);
+                    grade2.name = 'Second Grade';
+                    await connection.manager.save(grade2);
+
+                    const grade3 = await createGrade(org);
+                    grade3.name = 'Third Grade';
+                    await connection.manager.save(grade3);
+                }
+
+                const noneSpecifiedAgeRange = new AgeRange();
+                noneSpecifiedAgeRange.name = 'None Specified';
+                noneSpecifiedAgeRange.low_value = 0;
+                noneSpecifiedAgeRange.high_value = 99;
+                noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR;
+                noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR;
+                noneSpecifiedAgeRange.system = true;
+                await connection.manager.save(noneSpecifiedAgeRange);
+
+                const noneSpecifiedGrade = new Grade();
+                noneSpecifiedGrade.name = 'None Specified';
+                noneSpecifiedGrade.system = true;
+                await connection.manager.save(noneSpecifiedGrade);
+
+                const noneSpecifiedSubject = new Subject();
+                noneSpecifiedSubject.name = 'None Specified';
+                noneSpecifiedSubject.system = true;
+                await connection.manager.save(noneSpecifiedSubject);
+            });
+
+            it("should create programs", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadPrograms(testClient, file, filename, mimetype, encoding);
+
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const programsCreated = await Program.count({ where: { system: false } });
+                expect(programsCreated).eq(12);
             });
         });
     });
