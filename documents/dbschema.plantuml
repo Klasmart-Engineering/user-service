@@ -1,121 +1,289 @@
 @startuml
+enum Status {
+    active
+    inactive
+}
+
 class User {
-  user_id : uuid
-  full_name : string
-  given_name : string
-  family_name: string
-  username : string
-  email : string
-  phone : string
-  avatar : string
+    user_id : uuid
+    given_name : string
+    family_name: string
+    username : string
+    email : string
+    phone : string
+    date_of_birth : string
+    gender : string
+    status : Status
+    primary : boolean
+    alternate_email : string
+    alternate_phone : string
+    deleted_at : timestamp
+    avatar : string
+    myOrganizationOrganizationId : uuid
 }
 
 class Class {
-  class_id : uuid
-  class_name : string
-  organizationOrganizationId : uuid
-  status : status
-  deleted_at : timestamp
+    class_id : uuid
+    class_name : string
+    organizationOrganizationId : uuid
+    shortcode : string
+    status : status
+    deleted_at : timestamp
+}
+
+class ClassAgeRangesAgeRange {
+    classClassId : uuid
+    ageRangeId : uuid
+}
+
+class ClassGradesGrade {
+    classClassId : uuid
+    gradeId : uuid
+}
+
+class ClassSubjectsSubject {
+    classClassId : uuid
+    subjectId : uuid
+}
+
+class ClassProgramsProgram {
+    classClassId : uuid
+    programId : uuid
 }
 
 class Organization {
-  organization_id : uuid
-  organization_name : string
-  address1 : string
-  address2 : string
-  phone : string
-  shortCode : string
-  status : status
-  primaryContactUserId : uuid
-  deleted_at : timestamp
+    organization_id : uuid
+    organization_name : string
+    address1 : string
+    address2 : string
+    phone : string
+    shortCode : string
+    status : status
+    primaryContactUserId : uuid
+    deleted_at : timestamp
 }
 
 class OrganizationMembership {
-  user_id : string
-  organization_id : string
-  join_timestamp : timestamp
-  userUserId : uuid
-  organizationOrganizationId : uuid
+    user_id : string
+    organization_id : string
+    join_timestamp : timestamp
+    shortcode : string
+    status : Status
+    deleted_at : timestamp
+    userUserId : uuid
+    organizationOrganizationId : uuid
 }
 
 class Permission {
-  role_id : uuid
-  permission_id : string
-  permission_name : string
-  permission_category : string
-  permission_group : string
-  permission_level : string
-  allow : boolean
-  permission_description : string
+    role_id : uuid
+    permission_id : string
+    permission_name : string
+    permission_category : string
+    permission_group : string
+    permission_level : string
+    allow : boolean
+    permission_description : string
 }
 
 class Role {
-  role_id : uuid
-  role_name : string
-  status : status
-  system_role : bool
-  deleted_at : timestamp
-  organizationOrganizationId : uuid
+    role_id : uuid
+    role_name : string
+    status : status
+    system_role : bool
+    deleted_at : timestamp
+    organizationOrganizationId : uuid
 }
 
 class School {
-  school_id : uuid
-  school_name : string
-  status : status
-  organizationOrganizationId : uuid
-  deleted_at : timestamp
+    school_id : uuid
+    school_name : string
+    status : status
+    organizationOrganizationId : uuid
+    deleted_at : timestamp
+}
+
+class SchoolProgramsProgram {
+    schoolSchoolId : uuid
+    programId : uuid
 }
 
 class SchoolMembership {
-  user_id : string
-  school_id : string
-  join_timestamp : timestamp
-  userUserId : uuid
-  schoolSchoolId : uuid
+    user_id : string
+    school_id : string
+    join_timestamp : timestamp
+    deleted_at : timestamp
+    status : Status
+    userUserId : uuid
+    schoolSchoolId : uuid
 }
 
 class Attendance {
-  user_id : string
-  room_id : string
-  session_id : string
-  join_timestamp : timestamp
-  leave_timestamp : timestamp
+    user_id : string
+    room_id : string
+    session_id : string
+    join_timestamp : timestamp
+    leave_timestamp : timestamp
 }
 
 class RoleMembershipsOrganizationMembership {
-  roleRoleId : uuid
-  organizationMembershipUserId : string
-  organizationMembershipOrganizationId : string
+    roleRoleId : uuid
+    organizationMembershipUserId : string
+    organizationMembershipOrganizationId : string
 }
 
 class RoleSchoolMembershipsSchoolMembership {
-  roleRoleId : uuid
-  schoolMembershipUserId : string
-  schoolMembershipSchoolId : string
+    roleRoleId : uuid
+    schoolMembershipUserId : string
+    schoolMembershipSchoolId : string
 }
 
 class UserClassesStudyingcClass {
-  userUserId : uuid
-  classClassId : uuid
+    userUserId : uuid
+    classClassId : uuid
 }
 
 class UserClassesTeachingClass {
-  userUserId : uuid
-  classClassId : uuid
+    userUserId : uuid
+    classClassId : uuid
 }
 
 class SchoolClassesClass {
-  schoolSchoolId : uuid
-  classClassId : uuid
+    schoolSchoolId : uuid
+    classClassId : uuid
+}
+
+enum AgeRangeUnit {
+    month
+    year
+}
+
+class AgeRange {
+    id : uuid
+    name : string
+    high_value : integer
+    low_value : integer
+    high_value_unit : AgeRangeUnit
+    low_value_unit : AgeRangeUnit
+    system : boolean
+    status : Status
+    created_at : timestamp
+    deleted_at : timestamp
+    organization_id : uuid
+}
+
+class Subcategory {
+    id : uuid
+    name : string
+    system : boolean
+    status : Status
+    created_at : timestamp
+    deleted_at : timestamp
+    organization_id : uuid
+}
+
+class Grade {
+    id : uuid
+    name : string
+    system : boolean
+    status : Status
+    created_at : timestamp
+    progress_from_grade_id : uuid
+    progress_to_grade_id : uuid
+    deleted_at : timestamp
+    organization_id : uuid
+}
+
+class Category {
+    id : uuid
+    name : string
+    system : boolean
+    status : Status
+    created_at : timestamp
+    deleted_at : timestamp
+    organization_id : uuid
+}
+
+class CategorySubcategoriesSubcategory {
+    categoryId : uuid
+    subcategoryId : uuid
+}
+
+class Subject {
+    id : uuid
+    name : string
+    system : boolean
+    status : Status
+    created_at : timestamp
+    deleted_at : timestamp
+    organization_id : uuid
+}
+
+class SubjectCategoriesCategory {
+    subjectId : uuid
+    categoryId : uuid
+}
+
+class Program {
+    id : uuid
+    name : string
+    system : boolean
+    status : Status
+    created_at : timestamp
+    deleted_at : timestamp
+    organization_id : uuid
+}
+
+class ProgramAgeRangesAgeRange {
+    programId : uuid
+    ageRangeId : uuid
+}
+
+class ProgramGradesGrade {
+    programId : uuid
+    gradeId : uuid
+}
+
+class ProgramSubjectsSubject {
+    programId : uuid
+    subjectId : uuid
 }
 
 Role -- "*" Organization
 User -- "0..1" Organization
+AgeRange "*" --* "0..1" Organization
+Subcategory "*" --* "0..1" Organization
+Grade "*" --* "0..1" Organization
+Grade --* "0..1" Grade
+Category "*" --* "0..1" Organization
+Category "*" *-- "*" CategorySubcategoriesSubcategory
+CategorySubcategoriesSubcategory "*" --* "*" Subcategory
+Subject "*" --* "0..1" Organization
+Subject "*" *-- "*" SubjectCategoriesCategory
+SubjectCategoriesCategory "*" --* "*" Category
+Program "*" --* "0..1" Organization
+Program "*" *-- "*" ProgramAgeRangesAgeRange
+ProgramAgeRangesAgeRange "*" --* "*" AgeRange
+Program "*" *-- "*" ProgramGradesGrade
+ProgramGradesGrade "*" --* "*" Grade
+Program "*" *-- "*" ProgramSubjectsSubject
+ProgramSubjectsSubject "*" --* "*" Subject
 User "0..1" *-- "*" OrganizationMembership
 OrganizationMembership "*" --* "0..1" Organization
 Class -- "0..1" Organization
+Class "0..1" *-- "*" SchoolClassesClass
+SchoolClassesClass "*" --* "0..1" School
+Class "*" *-- "*" ClassAgeRangesAgeRange
+ClassAgeRangesAgeRange "*" --* "*" AgeRange
+Class "*" *-- "*" ClassGradesGrade
+ClassGradesGrade "*" --* "*" Grade
+Class "*" *-- "*" ClassSubjectsSubject
+ClassSubjectsSubject "*" --* "*" Subject
+Class "*" *-- "*" ClassProgramsProgram
+ClassProgramsProgram "*" --* "*" Program
 Permission --* "0..1" Role
 School -- "0..1" Organization
+School "*" *-- "*" SchoolProgramsProgram
+SchoolProgramsProgram "*" --* "*" Program
 User "0..1" *-- "*" SchoolMembership
 SchoolMembership "*" --* "0..1" School
 RoleMembershipsOrganizationMembership "*" --* "1" Role
@@ -126,8 +294,6 @@ UserClassesStudyingcClass "*" --* "1" User
 UserClassesStudyingcClass "*" --* "1" Class
 UserClassesTeachingClass "*" --* "1" User
 UserClassesTeachingClass "*" --* "1" Class
-SchoolClassesClass "*" --* "1" School
-SchoolClassesClass "*" --* "1" Class
 
 @enduml
 
