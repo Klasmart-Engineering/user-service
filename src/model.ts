@@ -41,6 +41,7 @@ import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
 import { processRoleFromCSVRow } from './utils/csv/role'
 import { processCategoryFromCSVRow } from './utils/csv/category'
 import { processSubjectFromCSVRow } from './utils/csv/subject'
+import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
 
 export class Model {
     public static async create() {
@@ -771,6 +772,23 @@ export class Model {
         const { file } = await args.file
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSubjectFromCSVRow,
+        ])
+
+        return file
+    }
+
+    public async uploadAgeRangesFromCSV(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return null
+        }
+
+        const { file } = await args.file
+        await createEntityFromCsvWithRollBack(this.connection, file, [
+            processAgeRangeFromCSVRow,
         ])
 
         return file

@@ -49,6 +49,7 @@ import SubjectsInitializer from "../../src/initializers/subjects";
 import GradesInitializer from "../../src/initializers/grades";
 import { queryUploadSubjects, uploadSubjects } from "../utils/operations/csv/uploadSubjects";
 import { Subject } from "../../src/entities/subject";
+import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 
 
 use(chaiAsPromised);
@@ -1229,5 +1230,57 @@ describe("model", () => {
         });
     });
 
+    describe("uploadAgeRangesFromCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'ageRangesExample.csv';
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await queryUploadAgeRanges(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
+                expect(ageRangesCreated).eq(0);
+            });
+        });
+
+        context("when file data is not correct", () => {
+            it("should throw an error", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const fn = async () => await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejected;
+
+                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
+                expect(ageRangesCreated).eq(0);
+            });
+        });
+
+        context("when file data is correct", () => {
+            beforeEach(async () => {
+                for (let i = 1; i <= 2; i += 1) {
+                    let org = await createOrganization();
+                    org.organization_name = `Company ${i}`;
+                    await connection.manager.save(org);
+                }
+            });
+
+            it("should create age ranges", async () => {
+                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+                const result = await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
+                expect(result.filename).eq(filename);
+                expect(result.mimetype).eq(mimetype);
+                expect(result.encoding).eq(encoding);
+
+                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
+                expect(ageRangesCreated).eq(17);
+            });
+        });
+    });
 });
 
