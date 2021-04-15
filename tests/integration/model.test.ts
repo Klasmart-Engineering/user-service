@@ -1048,7 +1048,7 @@ describe("model", () => {
                 expect(result.encoding).eq(encoding);
 
                 const schoolsCreated = await School.count();
-                expect(schoolsCreated).gt(0);
+                expect(schoolsCreated).eq(6);
             });
         })
     })

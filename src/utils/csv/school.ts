@@ -23,7 +23,7 @@ export async function processSchoolFromCSVRow(
             throw new Error(`Mandatory School name is empty`)
         }
 
-        if (row.school_shortcode.length > SHORTCODE_DEFAULT_MAXLEN) {
+        if (row.school_shortcode?.length > SHORTCODE_DEFAULT_MAXLEN) {
             throw new Error(
                 `School shortcode '${row.school_shortcode}' is ${row.school_shortcode.length} characters long, it must be no more than ${SHORTCODE_DEFAULT_MAXLEN} characters`
             )
@@ -97,7 +97,9 @@ export async function processSchoolFromCSVRow(
         }
         for (const p of existingPrograms) {
             if (p.id === programToAdd.id) {
-                throw `Program '${row.program_name}' is already related to '${row.school_name}'`
+                throw new Error(
+                    `Program '${row.program_name}' is already related to '${row.school_name}'`
+                )
             }
         }
         existingPrograms.push(programToAdd)

@@ -46,7 +46,7 @@ describe("processSchoolFromCSVRow", () => {
         await SubcategoriesInitializer.run()
         await CategoriesInitializer.run()
         await ProgramsInitializer.run() 
-          
+
         row = {
             organization_name: 'Company 1',
             school_name: 'School 1',
@@ -211,12 +211,25 @@ describe("processSchoolFromCSVRow", () => {
                 }
             });
 
+            const programDB = await connection.manager.findOneOrFail(Program, { where: {
+                name: row.program_name,
+                system: true,
+                organization: null
+            }});
+
             const organizationInSchool = await school.organization;
+            const programsInSchool = await school.programs || [];
+
+            const EntityInfo = (entityValue: any) => {
+                return entityValue;
+            }
 
             expect(school).to.exist;
             expect(school.school_name).eq(row.school_name);
+            expect(school.shortcode).eq(row.school_shortcode);
             expect(school.status).eq('active');
             expect(organizationInSchool?.organization_name).eq(row.organization_name);
+            expect(programsInSchool.map(EntityInfo)).to.deep.eq([EntityInfo(programDB)]);
         });
     });
 });
