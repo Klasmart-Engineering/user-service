@@ -33,6 +33,7 @@ describe("processUserFromCSVRow", () => {
     let organization: Organization;
     let role: Role;
     let school: School;
+    let fileErrors: string[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -77,7 +78,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const user = await User.findOne({
@@ -94,7 +95,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const user = await User.findOne({
@@ -111,7 +112,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -126,7 +127,7 @@ describe("processUserFromCSVRow", () => {
         it("throws an error", async () => {
             for(const date_of_birth of ['01-01-2020', '01/2020', '2020-01', '01/01/2020']){
                 row = { ...row, user_date_of_birth: date_of_birth }
-                const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+                const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
                 expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
@@ -142,7 +143,7 @@ describe("processUserFromCSVRow", () => {
         it("throws an error", async () => {
             for(const shortcode of ['de/f', '$abc', '@1234']){
                 row = { ...row, user_shortcode: shortcode }
-                const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+                const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
                 expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
@@ -160,7 +161,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -177,7 +178,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -194,7 +195,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -211,7 +212,7 @@ describe("processUserFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processUserFromCSVRow(connection.manager, row, 1);
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -227,7 +228,7 @@ describe("processUserFromCSVRow", () => {
         let userInfo = (user: User) => { return user.user_id }
 
         it("creates the user and its respective links", async () => {
-            await processUserFromCSVRow(connection.manager, row, 1);
+            await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
             const dbUser = await User.findOneOrFail({
                 where: { email: row.user_email }
@@ -257,7 +258,7 @@ describe("processUserFromCSVRow", () => {
 
         context("and the role is not student neither teacher related", () => {
             it("does not assign the user to the class", async () => {
-                await processUserFromCSVRow(connection.manager, row, 1);
+                await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
                 const students = await cls.students || []
                 expect(students).to.be.empty
@@ -279,7 +280,7 @@ describe("processUserFromCSVRow", () => {
             })
 
             it("assigns the user to the class as student", async () => {
-                await processUserFromCSVRow(connection.manager, row, 1);
+                await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
                 const dbUser = await User.findOneOrFail({
                     where: { email: row.user_email }
@@ -305,7 +306,7 @@ describe("processUserFromCSVRow", () => {
             })
 
             it("assigns the user to the class as teacher", async () => {
-                await processUserFromCSVRow(connection.manager, row, 1);
+                await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
 
                 const dbUser = await User.findOneOrFail({
                     where: { email: row.user_email }

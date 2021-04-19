@@ -20,6 +20,7 @@ describe("processAgeRangeFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: AgeRangeRow;
     let organization: Organization;
+    let fileErrors: string[];
     const rowModel: AgeRangeRow = {
         organization_name: 'Company 1',
         age_range_low_value: '6',
@@ -51,7 +52,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -78,7 +79,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -105,7 +106,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -132,7 +133,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -159,7 +160,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -186,7 +187,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -213,7 +214,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -240,7 +241,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -267,7 +268,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -301,7 +302,7 @@ describe("processAgeRangeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1);
+            const fn = () => processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
 
@@ -324,7 +325,7 @@ describe("processAgeRangeFromCSVRow", () => {
 
     context("when all data provided is valid", () => {
         it("creates an age range with its relations", async () => {
-            await processAgeRangeFromCSVRow(connection.manager, row, 1);
+            await processAgeRangeFromCSVRow(connection.manager, row, 1, fileErrors);
 
             const ageRange = await AgeRange.findOneOrFail({
                 where: {

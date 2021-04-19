@@ -19,10 +19,10 @@ export async function createEntityFromCsvWithRollBack(
         )
         console.log('Generic Upload CSV File finished')
         await queryRunner.commitTransaction()
-    } catch (error) {
-        console.log('Error uploading from CSV file: ', error)
+    } catch (errorMessage) {
+        console.error('Error uploading from CSV file: ', errorMessage)
         await queryRunner.rollbackTransaction()
-        throw error
+        throw new Error(errorMessage)
     } finally {
         await queryRunner.release()
     }

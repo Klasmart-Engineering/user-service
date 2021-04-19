@@ -19,6 +19,7 @@ describe("processGradeFromCSVRow", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
     let row: GradeRow;
+    let fileErrors: string[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -45,7 +46,7 @@ describe("processGradeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => setGradeFromToFields(connection.manager, row, 1);
+            const fn = () => setGradeFromToFields(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -66,7 +67,7 @@ describe("processGradeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => setGradeFromToFields(connection.manager, row, 1);
+            const fn = () => setGradeFromToFields(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -87,7 +88,7 @@ describe("processGradeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => setGradeFromToFields(connection.manager, row, 1);
+            const fn = () => setGradeFromToFields(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -120,7 +121,7 @@ describe("processGradeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => setGradeFromToFields(connection.manager, row, 1);
+            const fn = () => setGradeFromToFields(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -160,7 +161,7 @@ describe("processGradeFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => setGradeFromToFields(connection.manager, row, 1);
+            const fn = () => setGradeFromToFields(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -213,7 +214,7 @@ describe("processGradeFromCSVRow", () => {
         });
 
         it("creates the grade", async () => {
-            await setGradeFromToFields(connection.manager, row, 1);
+            await setGradeFromToFields(connection.manager, row, 1, fileErrors);
 
             const grade = await Grade.findOneOrFail({
                 where: {

@@ -31,6 +31,7 @@ describe("processProgramFromCSVRow", () => {
     let noneSpecifiedAgeRange: AgeRange;
     let noneSpecifiedGrade: Grade;
     let noneSpecifiedSubject: Subject;
+    let fileErrors: string[];
     const rowModel: ProgramRow = {
         organization_name: 'Company 1',
         program_name: 'Program 1',
@@ -100,7 +101,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -122,7 +123,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -144,7 +145,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -166,7 +167,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -188,7 +189,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -210,7 +211,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -232,7 +233,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -254,7 +255,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -276,7 +277,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -298,7 +299,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -320,7 +321,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -349,7 +350,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -378,7 +379,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -407,7 +408,7 @@ describe("processProgramFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processProgramFromCSVRow(connection.manager, row, 1);
+            const fn = () => processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const program = await Program.findOne({
@@ -426,7 +427,7 @@ describe("processProgramFromCSVRow", () => {
     context("when all data provided is valid", () => {
         context("and all fields are provided", () => {
             it("creates a program with its relations", async () => {
-                await processProgramFromCSVRow(connection.manager, row, 1);
+                await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
     
                 const program = await Program.findOneOrFail({
                     where: {
@@ -467,7 +468,7 @@ describe("processProgramFromCSVRow", () => {
             });
     
             it("creates a program with 'None Specified' age range", async () => {
-                await processProgramFromCSVRow(connection.manager, row, 1);
+                await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
     
                 const program = await Program.findOneOrFail({
                     where: {
@@ -508,7 +509,7 @@ describe("processProgramFromCSVRow", () => {
             });
     
             it("creates a program with 'None Specified' grade", async () => {
-                await processProgramFromCSVRow(connection.manager, row, 1);
+                await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
     
                 const program = await Program.findOneOrFail({
                     where: {
@@ -549,7 +550,7 @@ describe("processProgramFromCSVRow", () => {
             });
 
             it("creates a program with 'None Specified' subject", async () => {
-                await processProgramFromCSVRow(connection.manager, row, 1);
+                await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
 
                 const program = await Program.findOneOrFail({
                     where: {

@@ -25,6 +25,7 @@ describe("processSchoolFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: SchoolRow;
     let organization: Organization;
+    let fileErrors: string[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -61,7 +62,7 @@ describe("processSchoolFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -82,7 +83,7 @@ describe("processSchoolFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -103,7 +104,7 @@ describe("processSchoolFromCSVRow", () => {
         })
 
         it("It works by adding the default program", async () => {
-            await processSchoolFromCSVRow(connection.manager, row, 1);
+            await processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
 
              const school = await School.findOneOrFail({
@@ -129,7 +130,7 @@ describe("processSchoolFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -150,7 +151,7 @@ describe("processSchoolFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -184,7 +185,7 @@ describe("processSchoolFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -201,7 +202,7 @@ describe("processSchoolFromCSVRow", () => {
 
     context("when all data provided is valid", () => {
         it("creates the schools with its relations", async () => {
-            await processSchoolFromCSVRow(connection.manager, row, 1);
+            await processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
 
             const school = await School.findOneOrFail({
                 where: {

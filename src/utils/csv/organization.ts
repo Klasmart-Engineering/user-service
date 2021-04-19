@@ -14,11 +14,16 @@ import {
 import { OrganizationOwnership } from '../../entities/organizationOwnership'
 import { Role } from '../../entities/role'
 import { Status } from '../../entities/status'
+import { saveError } from './readFile'
 
-async function getUserByEmailOrPhone(email?: string, phone?: string) {
+async function getUserByEmailOrPhone(
+    manager: EntityManager,
+    email?: string,
+    phone?: string
+) {
     const hashSource = email || phone
     const user_id = accountUUID(hashSource)
-    return User.findOne({ user_id })
+    return manager.findOne(User, { user_id })
 }
 
 async function createOrganizationOwner(
@@ -51,6 +56,8 @@ async function createOrganizationOwner(
 async function createOrganization(
     organization_name: string,
     owner_shortcode: string,
+    rowNumber: number,
+    fileErrors: string[],
     owner: User,
     manager: EntityManager
 ) {
@@ -59,7 +66,12 @@ async function createOrganization(
     })
 
     if (active_organizations.length) {
-        throw new Error('Only one active organization per user')
+        saveError(
+            fileErrors,
+            rowNumber,
+            'Only one active organization per user'
+        )
+        return
     }
 
     if (owner_shortcode?.length > 0) {
@@ -107,14 +119,9 @@ async function createOrganization(
 export async function processOrganizationFromCSVRow(
     manager: EntityManager,
     row: OrganizationRow,
-    rowNumber: number
+    rowNumber: number,
+    fileErrors: string[]
 ) {
-    let owner
-    let ownerExists
-    let ownerUploaded
-    let organizationExists
-    let organizationUploaded
-
     const {
         organization_name,
         owner_given_name,
@@ -124,78 +131,102 @@ export async function processOrganizationFromCSVRow(
         owner_phone,
     } = row
 
-    try {
-        if (!organization_name) {
-            throw new Error("Organization name doesn't exists")
-        }
+    const requiredFieldsAreProvided =
+        organization_name && (owner_email || owner_phone)
 
-        if (!owner_email && !owner_phone) {
-            throw new Error("There's no exist owner's email or phone")
-        }
-
-        if (
-            owner_shortcode &&
-            !validateShortCode(owner_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
-        ) {
-            throw new Error('Invalid shortcode provided')
-        }
-
-        organizationExists = await Organization.findOne({
-            organization_name,
-        })
-
-        if (organizationExists) {
-            throw new Error(
-                `Organization with name ${organization_name} already exists!`
-            )
-        }
-
-        organizationUploaded = await manager.findOne(Organization, {
-            where: { organization_name },
-        })
-
-        if (organizationUploaded) {
-            throw new Error(
-                `Organization with name ${organization_name} already uploaded`
-            )
-        }
-
-        ownerUploaded = await manager.findOne(User, {
-            where: [
-                { email: owner_email, phone: null },
-                { email: null, phone: owner_phone },
-                { email: owner_email, phone: owner_phone },
-            ],
-        })
-
-        if (ownerUploaded) {
-            throw new Error(
-                `Owner with email ${owner_email} already has an organization`
-            )
-        }
-
-        ownerExists = await getUserByEmailOrPhone(owner_email, owner_phone)
-
-        owner =
-            ownerExists ||
-            (await createOrganizationOwner(
-                owner_given_name,
-                owner_family_name,
-                owner_email,
-                owner_phone
-            ))
-
-        if (!ownerExists) {
-            await manager.save(owner)
-        }
-
-        await createOrganization(
-            organization_name,
-            owner_shortcode,
-            owner,
-            manager
-        )
-    } catch (error) {
-        throw new Error(`[row ${rowNumber}]. ${error.message}`)
+    if (!organization_name) {
+        saveError(fileErrors, rowNumber, "Organization name doesn't exists")
     }
+
+    if (!owner_email && !owner_phone) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            "There's no exist owner's email or phone"
+        )
+    }
+
+    if (
+        owner_shortcode &&
+        !validateShortCode(owner_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
+    ) {
+        saveError(fileErrors, rowNumber, 'Invalid shortcode provided')
+    }
+
+    if (!requiredFieldsAreProvided) {
+        return
+    }
+
+    const organizationExists = await Organization.findOne({
+        organization_name,
+    })
+
+    if (organizationExists) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            `Organization with name '${organization_name}' already exists!`
+        )
+
+        return
+    }
+
+    const organizationUploaded = await manager.findOne(Organization, {
+        where: { organization_name },
+    })
+
+    if (organizationUploaded) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            `Organization with name '${organization_name}' already uploaded`
+        )
+
+        return
+    }
+
+    const ownerUploaded = await manager.findOne(User, {
+        where: [
+            { email: owner_email, phone: null },
+            { email: null, phone: owner_phone },
+            { email: owner_email, phone: owner_phone },
+        ],
+    })
+
+    if (ownerUploaded) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            `Owner with email '${owner_email}' already has an organization`
+        )
+        return
+    }
+
+    const ownerExists = await getUserByEmailOrPhone(
+        manager,
+        owner_email,
+        owner_phone
+    )
+
+    const owner =
+        ownerExists ||
+        (await createOrganizationOwner(
+            owner_given_name,
+            owner_family_name,
+            owner_email,
+            owner_phone
+        ))
+
+    if (!ownerExists) {
+        await manager.save(owner)
+    }
+
+    await createOrganization(
+        organization_name,
+        owner_shortcode,
+        rowNumber,
+        fileErrors,
+        owner,
+        manager
+    )
 }

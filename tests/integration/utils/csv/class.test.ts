@@ -30,6 +30,7 @@ describe("processClassFromCSVRow", ()=> {
     let expectedSystemProg: Program
     let expectedSchool: School
     let expectedSchool2: School
+    let fileErrors: string[]
 
     const orgName: string = "my-org";
     const school1Name: string = "test-school";
@@ -78,7 +79,7 @@ describe("processClassFromCSVRow", ()=> {
     
     it('should create a class with school and program when present', async()=>{
         row = {organization_name: orgName, class_name: 'class1', school_name:school1Name, program_name: progName}
-        await processClassFromCSVRow(connection.manager, row, 1)
+        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
         const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
         const schools = await dbClass.schools || []
@@ -89,7 +90,7 @@ describe("processClassFromCSVRow", ()=> {
     })
     it('should create a class with specified shortcode and system program', async()=>{
         row = {organization_name: orgName, class_name: 'class2', class_shortcode:'3XABK3ZZS1', school_name:school1Name, program_name: systemProgName}
-        await processClassFromCSVRow(connection.manager, row, 1)
+        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
         const dbClass = await Class.findOneOrFail({where:{class_name:"class2", organization:expectedOrg}});
 
@@ -103,7 +104,7 @@ describe("processClassFromCSVRow", ()=> {
     })
     it('should create a class with no school and none specified program', async()=>{
         row = {organization_name: orgName, class_name: 'class3'}
-        await processClassFromCSVRow(connection.manager, row, 1)
+        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
         const dbClass = await Class.findOneOrFail({where:{class_name:"class3", organization:expectedOrg}});
         const schools = await dbClass.schools || []
@@ -115,10 +116,10 @@ describe("processClassFromCSVRow", ()=> {
     })
     it('should create a class with multiple schools and programs', async()=>{
         row = {organization_name: orgName, class_name: 'class4', class_shortcode:'3XABK3ZZS1', school_name:school1Name, program_name: progName}
-        await processClassFromCSVRow(connection.manager, row, 1)
+        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
         row = {organization_name: orgName, class_name: 'class4', class_shortcode:'3XABK3ZZS1', school_name:school2Name, program_name: systemProgName}
-        await processClassFromCSVRow(connection.manager, row, 2)
+        await processClassFromCSVRow(connection.manager, row, 2, fileErrors)
 
         const dbClass = await Class.findOneOrFail({where:{class_name:"class4", organization:expectedOrg}});
         const schools = await dbClass.schools || []
@@ -130,7 +131,7 @@ describe("processClassFromCSVRow", ()=> {
 
     it('should throw an error (missing org/classname) and rollback when all transactions', async()=>{
         row = {organization_name: '' , class_name: 'class4', class_shortcode:'3XABK3ZZS1', school_name:school1Name, program_name: progName}
-        const fn = () => processClassFromCSVRow(connection.manager, row, 1);
+        const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected
         const dbClass = await Class.find()
@@ -139,7 +140,7 @@ describe("processClassFromCSVRow", ()=> {
 
     it('should throw an error for invalid school', async()=>{
         row = {organization_name: orgName , class_name: 'class4', school_name:'some-school', program_name: progName}
-        const fn = () => processClassFromCSVRow(connection.manager, row, 1);
+        const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected
 
@@ -149,7 +150,7 @@ describe("processClassFromCSVRow", ()=> {
 
     it('should throw an error for invalid program', async()=>{
         row = {organization_name: orgName , class_name: 'class4', school_name:school1Name, program_name: 'some-prog'}
-        const fn = () => processClassFromCSVRow(connection.manager, row, 1);
+        const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected
         

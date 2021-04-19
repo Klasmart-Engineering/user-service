@@ -21,6 +21,7 @@ describe("processCategoryFromCSVRow", () => {
     let row: CategoryRow;
     let organization: Organization;
     let subcategory: Subcategory;
+    let fileErrors: string[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -54,7 +55,7 @@ describe("processCategoryFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1);
+            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const category = await Category.findOne({
@@ -76,7 +77,7 @@ describe("processCategoryFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1);
+            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const category = await Category.findOne({
@@ -98,7 +99,7 @@ describe("processCategoryFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1);
+            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const category = await Category.findOne({
@@ -120,7 +121,7 @@ describe("processCategoryFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1);
+            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const category = await Category.findOne({
@@ -149,7 +150,7 @@ describe("processCategoryFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1);
+            const fn = () => processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const category = await Category.findOne({
@@ -168,7 +169,7 @@ describe("processCategoryFromCSVRow", () => {
     context("when all data provided is valid", () => {
         context("and subcategory name is provided", () => {
             it("creates a category with its relations", async () => {
-                await processCategoryFromCSVRow(connection.manager, row, 1);
+                await processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
     
                 const category = await Category.findOneOrFail({
                     where: {
@@ -202,7 +203,7 @@ describe("processCategoryFromCSVRow", () => {
             });
     
             it("creates a category with None Specified subcategory", async () => {
-                await processCategoryFromCSVRow(connection.manager, row, 1);
+                await processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
     
                 const category = await Category.findOneOrFail({
                     where: {

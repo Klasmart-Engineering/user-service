@@ -27,6 +27,10 @@ function canFinish(
     return index === callbacks.length - 1 && !stream.readableLength
 }
 
+export function saveError(fileErrors: string[], row: number, message: string) {
+    fileErrors.push(`[row ${row}]. ${message}`)
+}
+
 export async function readCSVFile(
     manager: EntityManager,
     file: Upload,
@@ -35,6 +39,7 @@ export async function readCSVFile(
     const { filename, mimetype, encoding } = file
     let rowCounter: number
     let csvStream
+    let fileErrors: string[] = []
 
     return new Promise<File>(async (resolve, reject) => {
         try {
@@ -49,9 +54,18 @@ export async function readCSVFile(
                 for await (let chunk of csvStream) {
                     rowCounter += 1
                     chunk = formatCSVRow(chunk)
-                    await callbacks[i](manager, chunk, rowCounter)
+                    await callbacks[i](manager, chunk, rowCounter, fileErrors)
 
                     if (canFinish(i, callbacks, csvStream)) {
+                        if (fileErrors.length) {
+                            console.error(
+                                'These errors were found in the file: ',
+                                fileErrors
+                            )
+
+                            reject(fileErrors[0])
+                        }
+
                         resolve({
                             mimetype,
                             encoding,

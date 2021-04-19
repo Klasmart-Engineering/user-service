@@ -20,6 +20,7 @@ describe("processOrganizationFromCSVRow", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
     let row: OrganizationRow;
+    let fileErrors: string[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -48,7 +49,7 @@ describe("processOrganizationFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
@@ -65,7 +66,7 @@ describe("processOrganizationFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
@@ -82,7 +83,7 @@ describe("processOrganizationFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
@@ -102,7 +103,7 @@ describe("processOrganizationFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
@@ -125,7 +126,7 @@ describe("processOrganizationFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1);
+            const fn = () => processOrganizationFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
@@ -143,7 +144,7 @@ describe("processOrganizationFromCSVRow", () => {
             let organizationOwnership;
             let organizationMembership;
 
-            await processOrganizationFromCSVRow(connection.manager, row, 1);
+            await processOrganizationFromCSVRow(connection.manager, row, 1, fileErrors);
 
             organization = await Organization.findOneOrFail({ where: { organization_name: row.organization_name } });
             user = await User.findOneOrFail({ where: { my_organization: organization.organization_id } });

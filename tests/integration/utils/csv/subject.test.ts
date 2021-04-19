@@ -20,6 +20,7 @@ describe("processSubjectFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: SubjectRow;
     let organization: Organization;
+    let fileErrors: string[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -52,7 +53,7 @@ describe("processSubjectFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -74,7 +75,7 @@ describe("processSubjectFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -96,7 +97,7 @@ describe("processSubjectFromCSVRow", () => {
         })
 
         it("succeeds with the 'None Specified' category", async () => {
-            await processSubjectFromCSVRow(connection.manager, row, 1);
+            await processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             const subject = await Subject.findOne({
                 where: {
@@ -128,7 +129,7 @@ describe("processSubjectFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -150,7 +151,7 @@ describe("processSubjectFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -186,7 +187,7 @@ describe("processSubjectFromCSVRow", () => {
         })
 
         it("throws an error", async () => {
-            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1);
+            const fn = () => processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             expect(fn()).to.throw
         });
@@ -194,7 +195,7 @@ describe("processSubjectFromCSVRow", () => {
 
     context("when all data provided is valid", () => {
         it("creates the subjects with its relations", async () => {
-            await processSubjectFromCSVRow(connection.manager, row, 1);
+            await processSubjectFromCSVRow(connection.manager, row, 1, fileErrors);
 
             const subject = await Subject.findOneOrFail({
                 where: {

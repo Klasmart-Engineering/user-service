@@ -5,6 +5,7 @@ import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
 import { generateShortCode } from '../shortcode'
 import { ClassRow } from '../../types/csv/classRow'
+import { saveError } from './readFile'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -15,14 +16,28 @@ export const processClassFromCSVRow = async (
         school_name,
         program_name,
     }: ClassRow,
-    rowCount: number
+    rowCount: number,
+    fileErrors: string[]
 ) => {
-    if (!organization_name || !class_name) {
-        throw `missing organization_name or class_name at row ${rowCount}`
+    const requiredFieldsAreProvided = organization_name && class_name
+
+    if (!organization_name) {
+        saveError(fileErrors, rowCount, 'missing organization_name')
     }
+
+    if (!class_name) {
+        saveError(fileErrors, rowCount, 'missing class_name')
+    }
+
+    if (!requiredFieldsAreProvided) {
+        return
+    }
+
     const org = await Organization.findOne({ organization_name })
+
     if (!org) {
-        throw `Organisation at row ${rowCount} doesn't exist`
+        saveError(fileErrors, rowCount, "Organisation doesn't exist")
+        return
     }
 
     if (
@@ -35,7 +50,11 @@ export const processClassFromCSVRow = async (
             },
         }))
     ) {
-        throw `Duplicate class classShortCode ${class_name} at row ${rowCount}`
+        saveError(
+            fileErrors,
+            rowCount,
+            `Duplicate class classShortCode '${class_name}'`
+        )
     }
 
     // check if class exists in manager
@@ -54,15 +73,24 @@ export const processClassFromCSVRow = async (
     }
 
     const existingSchools = (await c.schools) || []
+
     if (school_name) {
         const school = await School.findOne({
             where: { school_name, organization: org },
         })
         if (!school) {
-            throw `School at row ${rowCount} doesn't exist for Organisation ${organization_name}`
+            saveError(
+                fileErrors,
+                rowCount,
+                `School doesn't exist for Organisation '${organization_name}'`
+            )
+
+            return
         }
+
         existingSchools.push(school)
     }
+
     c.schools = Promise.resolve(existingSchools)
 
     const existingPrograms = (await c.programs) || []
@@ -75,19 +103,28 @@ export const processClassFromCSVRow = async (
                 { name: program_name, organization: null, system: true },
             ],
         })
+
         if (!programToAdd) {
-            throw `Program at row ${rowCount} not associated for Organisation ${organization_name}`
+            saveError(
+                fileErrors,
+                rowCount,
+                `Program is not associated for Organisation '${organization_name}'`
+            )
+            return
         }
+
         existingPrograms.push(programToAdd)
     } else {
         // get program with none specified
         programToAdd = await Program.findOne({
             where: { name: 'None Specified' },
         })
+
         if (programToAdd) {
             existingPrograms.push(programToAdd)
         }
     }
+
     c.programs = Promise.resolve(existingPrograms)
     await manager.save(c)
 }

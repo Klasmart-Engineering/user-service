@@ -18,7 +18,8 @@ describe("processSubCategoriesFromCSVRow", ()=> {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
     let row: SubCategoryRow;
-    let expectedOrg: Organization
+    let expectedOrg: Organization;
+    let fileErrors: string[];
 
     const orgName: string = "my-org";
     before(async () => {
@@ -39,14 +40,14 @@ describe("processSubCategoriesFromCSVRow", ()=> {
 
     it('should create a class with school and program when present', async()=>{
         row = {organization_name: orgName, subcategory_name: 'sc1'}
-        await processSubCategoriesFromCSVRow(connection.manager, row, 1)
+        await processSubCategoriesFromCSVRow(connection.manager, row, 1, fileErrors)
 
         await Subcategory.findOneOrFail({where:{name:"sc1", organization:expectedOrg}});
     })
     
     it('should throw an error (missing org/sub category) and rollback when all transactions', async()=>{
         row = {organization_name: '' , subcategory_name: 'sc1'}
-        const fn = () => processSubCategoriesFromCSVRow(connection.manager, row, 1);
+        const fn = () => processSubCategoriesFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected
         const dbSubCategories = await Subcategory.find()
@@ -55,7 +56,7 @@ describe("processSubCategoriesFromCSVRow", ()=> {
 
     it('should throw an error missing sub category and rollback when all transactions', async()=>{
         row = {organization_name: 'test' , subcategory_name: ''}
-        const fn = () => processSubCategoriesFromCSVRow(connection.manager, row, 1);
+        const fn = () => processSubCategoriesFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected
         const dbSubCategories = await Subcategory.find()

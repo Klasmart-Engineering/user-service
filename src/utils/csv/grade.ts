@@ -2,8 +2,7 @@ import { EntityManager } from 'typeorm'
 import { GradeRow } from '../../types/csv/gradeRow'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
-
-let noneSpecifiedGrade: Grade | undefined = undefined
+import { saveError } from './readFile'
 
 function findGradeInDatabaseOrTransaction(
     manager: EntityManager,
@@ -24,6 +23,8 @@ async function findOrFailGradeInDatabaseOrTransaction(
     manager: EntityManager,
     organization: Organization,
     grade_name: string,
+    rowNumber: number,
+    fileErrors: string[],
     notFoundErrorMessage: string
 ) {
     const gradeFound = await manager.findOne(Grade, {
@@ -36,7 +37,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
     })
 
     if (!gradeFound) {
-        throw new Error(notFoundErrorMessage)
+        saveError(fileErrors, rowNumber, notFoundErrorMessage)
     }
 
     return gradeFound
@@ -45,11 +46,9 @@ async function findOrFailGradeInDatabaseOrTransaction(
 export async function processGradeFromCSVRow(
     manager: EntityManager,
     row: GradeRow,
-    rowNumber: number
+    rowNumber: number,
+    fileErrors: string[]
 ) {
-    let grade: Grade | undefined
-    let organization: Organization | undefined
-
     const {
         organization_name,
         grade_name,
@@ -57,81 +56,97 @@ export async function processGradeFromCSVRow(
         progress_to_grade_name,
     } = row
 
-    try {
-        if (!organization_name) {
-            throw new Error('Organization name is not provided')
-        }
+    const requiredFieldsAreProvided = organization_name && grade_name
 
-        if (!grade_name) {
-            throw new Error('Grade name is not provided')
-        }
+    if (!organization_name) {
+        saveError(fileErrors, rowNumber, 'Organization name is not provided')
+    }
 
-        // From grade should be different to grade
-        if (
-            progress_from_grade_name &&
-            progress_from_grade_name === grade_name
-        ) {
-            throw new Error("From grade name can't be the same as grade name")
-        }
+    if (!grade_name) {
+        saveError(fileErrors, rowNumber, 'Grade name is not provided')
+    }
 
-        // To grade should be different to grade
-        if (progress_to_grade_name && progress_to_grade_name === grade_name) {
-            throw new Error("To grade name can't be the same as grade name")
-        }
+    // From grade should be different to grade
+    if (progress_from_grade_name && progress_from_grade_name === grade_name) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            "From grade name can't be the same as grade name"
+        )
+    }
 
-        // From and to grade should be different
-        if (
-            progress_from_grade_name &&
-            progress_to_grade_name &&
-            progress_from_grade_name === progress_to_grade_name
-        ) {
-            throw new Error(
-                "From grade name and to grade name can't be the same"
-            )
-        }
+    // To grade should be different to grade
+    if (progress_to_grade_name && progress_to_grade_name === grade_name) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            "To grade name can't be the same as grade name"
+        )
+    }
 
-        organization = await Organization.findOne({
-            where: { organization_name },
-        })
+    // From and to grade should be different
+    if (
+        progress_from_grade_name &&
+        progress_to_grade_name &&
+        progress_from_grade_name === progress_to_grade_name
+    ) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            "From grade name and to grade name can't be the same"
+        )
+    }
 
-        if (!organization) {
-            throw new Error(
-                `Organization with name '${organization_name}' doesn't exists`
-            )
-        }
+    if (!requiredFieldsAreProvided) {
+        return
+    }
 
-        grade = await findGradeInDatabaseOrTransaction(
-            manager,
-            organization,
-            grade_name
+    const organization = await Organization.findOne({
+        where: { organization_name },
+    })
+
+    if (!organization) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            `Organization with name '${organization_name}' doesn't exists`
         )
 
-        if (grade) {
-            throw new Error(
-                `Grade with name ${grade_name} can't be created because already exists in the organization with name ${organization_name}`
-            )
-        }
-
-        grade = new Grade()
-        grade.name = grade_name
-        grade.organization = Promise.resolve(organization)
-        grade.system = false
-
-        await manager.save(grade)
-    } catch (error) {
-        throw new Error(`[row ${rowNumber}]. ${error.message}`)
+        return
     }
+
+    let grade = await findGradeInDatabaseOrTransaction(
+        manager,
+        organization,
+        grade_name
+    )
+
+    if (grade) {
+        saveError(
+            fileErrors,
+            rowNumber,
+            `Grade with name '${grade_name}' can't be created because already exists in the organization with name '${organization_name}'`
+        )
+
+        return
+    }
+
+    grade = new Grade()
+    grade.name = grade_name
+    grade.organization = Promise.resolve(organization)
+    grade.system = false
+
+    await manager.save(grade)
 }
 
 export async function setGradeFromToFields(
     manager: EntityManager,
     row: GradeRow,
-    rowNumber: number
+    rowNumber: number,
+    fileErrors: string[]
 ) {
-    let grade: Grade
-    let organization: Organization
-    let toGrade: Grade
-    let fromGrade: Grade
+    let toGrade: Grade | undefined
+    let fromGrade: Grade | undefined
 
     const {
         organization_name,
@@ -140,57 +155,67 @@ export async function setGradeFromToFields(
         progress_to_grade_name,
     } = row
 
-    try {
-        if (!noneSpecifiedGrade) {
-            noneSpecifiedGrade = await Grade.findOneOrFail({
-                where: {
-                    name: 'None Specified',
-                    system: true,
-                    organization: null,
-                },
-            })
-        }
+    const organization = await Organization.findOne({
+        where: { organization_name },
+    })
 
-        organization = await Organization.findOneOrFail({
-            where: { organization_name },
-        })
+    if (!organization) {
+        return
+    }
 
-        if (progress_from_grade_name) {
-            fromGrade = await findOrFailGradeInDatabaseOrTransaction(
-                manager,
-                organization,
-                progress_from_grade_name,
-                `Grade with name '${progress_from_grade_name}' can't be assigned as a from grade because this doesn't exists in organization with name '${organization_name}'`
-            )
-        } else {
-            fromGrade = noneSpecifiedGrade
-        }
-
-        if (progress_to_grade_name) {
-            toGrade = await findOrFailGradeInDatabaseOrTransaction(
-                manager,
-                organization,
-                progress_to_grade_name,
-                `Grade with name '${progress_to_grade_name}' can't be assigned as a to grade because this doesn't exists in organization with name '${organization_name}'`
-            )
-        } else {
-            toGrade = noneSpecifiedGrade
-        }
-
-        grade = await manager.findOneOrFail(Grade, {
+    if (progress_from_grade_name) {
+        fromGrade = await findOrFailGradeInDatabaseOrTransaction(
+            manager,
+            organization,
+            progress_from_grade_name,
+            rowNumber,
+            fileErrors,
+            `Grade with name '${progress_from_grade_name}' can't be assigned as a from grade because this doesn't exists in organization with name '${organization_name}'`
+        )
+    } else {
+        fromGrade = await Grade.findOneOrFail({
             where: {
-                name: grade_name,
-                system: false,
-                status: 'active',
-                organization: organization,
+                name: 'None Specified',
+                system: true,
+                organization: null,
             },
         })
-
-        grade.progress_from_grade = Promise.resolve(fromGrade)
-        grade.progress_to_grade = Promise.resolve(toGrade)
-
-        await manager.save(grade)
-    } catch (error) {
-        throw new Error(`[row ${rowNumber}]. ${error.message}`)
     }
+
+    if (progress_to_grade_name) {
+        toGrade = await findOrFailGradeInDatabaseOrTransaction(
+            manager,
+            organization,
+            progress_to_grade_name,
+            rowNumber,
+            fileErrors,
+            `Grade with name '${progress_to_grade_name}' can't be assigned as a to grade because this doesn't exists in organization with name '${organization_name}'`
+        )
+    } else {
+        toGrade = await Grade.findOneOrFail({
+            where: {
+                name: 'None Specified',
+                system: true,
+                organization: null,
+            },
+        })
+    }
+
+    if (!fromGrade || !toGrade) {
+        return
+    }
+
+    const grade = await manager.findOneOrFail(Grade, {
+        where: {
+            name: grade_name,
+            system: false,
+            status: 'active',
+            organization: organization,
+        },
+    })
+
+    grade.progress_from_grade = Promise.resolve(fromGrade)
+    grade.progress_to_grade = Promise.resolve(toGrade)
+
+    await manager.save(grade)
 }
