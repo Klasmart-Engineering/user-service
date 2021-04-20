@@ -39,7 +39,7 @@ export async function readCSVFile(
     const { filename, mimetype, encoding } = file
     let rowCounter: number
     let csvStream
-    let fileErrors: string[] = []
+    const fileErrors: string[] = []
 
     return new Promise<File>(async (resolve, reject) => {
         try {

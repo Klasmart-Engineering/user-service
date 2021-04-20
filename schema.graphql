@@ -5,6 +5,50 @@ directive @isAdmin(entity: String) on FIELD_DEFINITION
 directive @isAuthenticated on FIELD_DEFINITION
 directive @isMIMEType(mimetype: String) on FIELD_DEFINITION
 
+# Core pagination schema defintion starts here
+enum ConnectionDirection {
+  FORWARD
+  BACKWARD
+}
+
+input ConnectionsDirectionArgs {
+  count: Int
+  cursor: String
+}  
+
+type ConnectionPageInfo {
+  hasNextPage: Boolean
+  hasPreviousPage: Boolean
+  startCursor: String
+  endCursor: String
+}
+
+interface iConnectionResponse {
+  totalCount: Int
+  pageInfo: ConnectionPageInfo 
+}
+
+interface iConnectionEdge {
+    cursor: String
+}
+# Core pagination schema defintion ends here
+
+# pagination extension types start here
+type UsersConnectionResponse implements iConnectionResponse {
+    totalCount: Int
+    pageInfo: ConnectionPageInfo
+    edges: [UsersConnectionEdge]
+}
+type UsersConnectionEdge implements iConnectionEdge{
+  cursor: String 
+  node: UsersConnectionNode
+}
+type UsersConnectionNode {
+    user_id: ID!
+    email: String!
+}
+# pagination extension types end here
+
 type File {
     filename: String!
     mimetype: String!
@@ -110,6 +154,12 @@ type Query {
 
     subject(id: ID!): Subject @isAdmin(entity: "subject")
     program(id: ID!): Program @isAdmin(entity: "program")
+
+    # define pagination queries
+    usersConnection(
+        direction: ConnectionDirection!, 
+        directionArgs: ConnectionsDirectionArgs, 
+    ): UsersConnectionResponse @isAdmin(entity: "user")
 }
 
 scalar Upload

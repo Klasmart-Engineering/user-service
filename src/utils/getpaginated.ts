@@ -65,6 +65,7 @@ export async function getPaginated(
             after = startCursor
         }
     }
+
     if (!last) last = DEFAULT_PAGE_SIZE
     if (!first) first = DEFAULT_PAGE_SIZE
 

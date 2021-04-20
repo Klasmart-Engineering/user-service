@@ -30,6 +30,8 @@ export const createServer = (model: Model, context?: any) =>
                 role: (_parent, args, _context, _info) => model.getRole(args),
                 users_v1: (_parent, args, ctx, _info) =>
                     model.v1_getUsers(ctx, args),
+                usersConnection: (_parent, args, ctx, _info) =>
+                    model.usersConnection(ctx, args),
                 roles_v1: (_parent, args, ctx, _info) =>
                     model.v1_getRoles(ctx, args),
                 permissions: (_parent, args, ctx, _info) =>

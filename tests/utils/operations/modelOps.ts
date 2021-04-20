@@ -290,6 +290,26 @@ const SCHOOLS_CSV_UPLOAD_MUTATION = `
     }
 `;
 
+const USERS_CONNECTION = `
+    query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs) {
+        usersConnection(direction:$direction, directionArgs:$directionArgs){
+            totalCount
+            edges {
+                cursor
+                node {
+                    user_id
+                }
+            }
+            pageInfo{
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+        }
+    }
+`;
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -630,4 +650,17 @@ export async function uploadFile(
 
     const res = await gqlTry(operation);
     return res.data?.uploadOrganizationsFromCSV;
+}
+
+export async function userConnection(testClient: ApolloServerTestClient, direction: string, directionArgs: any, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: USERS_CONNECTION,
+        variables: { direction, directionArgs },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+    return res.data?.usersConnection
 }

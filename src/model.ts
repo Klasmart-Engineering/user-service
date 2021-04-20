@@ -41,6 +41,7 @@ import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
 import { processRoleFromCSVRow } from './utils/csv/role'
 import { processCategoryFromCSVRow } from './utils/csv/category'
 import { processSubjectFromCSVRow } from './utils/csv/subject'
+import { paginateData } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
 
@@ -382,6 +383,13 @@ export class Model {
             last,
             scope,
         })
+    }
+
+    public async usersConnection(
+            context: Context, 
+            { direction, directionArgs, scope}: any
+        ) {
+        return paginateData(direction, directionArgs, scope, 'user_id')
     }
 
     public async v1_getUsers(
