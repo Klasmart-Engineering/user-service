@@ -3,7 +3,7 @@ import { User } from "../../src/entities/user";
 
 const gender = ['Male', 'Female', 'Perfer not to say'];
 
-export function createUser() {
+export function createUser( ) {
     const user = new User();
 
     user.given_name = faker.name.firstName();

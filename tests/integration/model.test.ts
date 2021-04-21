@@ -11,7 +11,11 @@ import { createOrganization } from "../factories/organization.factory";
 import { createRole } from "../factories/role.factory";
 import { createSchool } from "../factories/school.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
-import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, getPermissions, getOrganizations, switchUser, me, myUsers, getProgram, uploadSchoolsFile } from "../utils/operations/modelOps";
+import { createUser } from "../factories/user.factory";
+import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, 
+    getPermissions, getOrganizations, switchUser, me, myUsers, 
+    getProgram, uploadSchoolsFile, userConnection 
+} from "../utils/operations/modelOps";
 import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
@@ -53,6 +57,7 @@ import { createSubject } from "../factories/subject.factory";
 import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
 import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
 import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
+import { convertDataToCursor } from "../utils/paginate";
 
 
 use(chaiAsPromised);
@@ -1399,5 +1404,37 @@ describe("model", () => {
             });
         });
     });
+
+    describe('usersConnection', ()=>{
+        let usersList: User [] = [];
+        
+        beforeEach(async () => {
+            usersList = [];
+            // create 10 users
+            for (let i=0; i<10; i++) {
+                usersList.push(createUser())
+            }
+            //sort users by userId
+            await connection.manager.save(usersList)
+            usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
+        })
+        context('seek forward',  ()=>{
+            const direction = 'FORWARD'
+            it('should get the next few records according to pagesize and startcursor', async()=>{
+                let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
+                const usersConnection = await userConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
+                
+                expect(usersConnection?.totalCount).to.eql(10);
+                expect(usersConnection?.edges.length).to.equal(3);
+                for(let i=0; i<3; i++) {
+                    expect(usersConnection?.edges[i].node.user_id).to.equal(usersList[4+i].user_id)
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
+                expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+            })
+        })
+    })
 });
 
