@@ -16,7 +16,7 @@ const getDataFromCursor = (cursor: string) => {
 
 const getEdges = (data:any, cursorColumn: string) => {
     return data.map((d:any) => ({
-        cursor: convertDataToCursor(d[cursorColumn]), 
+        cursor: convertDataToCursor(d[cursorColumn]),
         node: d
     }))
 }
@@ -27,8 +27,8 @@ export const paginateData = async (direction: string, directionArgs: directionAr
     let edges;
     let startCursor;
     let endCursor;
-    const pageSize = (directionArgs.count) ? directionArgs.count : DEFAULT_PAGE_SIZE;
-    const cursorData = (directionArgs.cursor) ? getDataFromCursor(directionArgs.cursor): null;
+    const pageSize = (directionArgs?.count) ? directionArgs.count : DEFAULT_PAGE_SIZE;
+    const cursorData = (directionArgs?.cursor) ? getDataFromCursor(directionArgs.cursor): null;
     const totalCount = await scope.getCount();
 
     //TODO: Travel backwards
@@ -42,7 +42,7 @@ export const paginateData = async (direction: string, directionArgs: directionAr
         scope
             .orderBy(cursorColumn, 'ASC')
             .limit(seekPageSize)
-        hasPreviousPage = (directionArgs.cursor)?true:false
+        hasPreviousPage = (directionArgs?.cursor)?true:false
 
         const data = await scope.getMany();
         hasNextPage = (data.length>pageSize)?true: false

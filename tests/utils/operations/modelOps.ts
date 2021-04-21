@@ -268,6 +268,26 @@ const USERS_CONNECTION = `
     }
 `;
 
+const PERMISSIONS_CONNECTION = `
+    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs) {
+        permissionsConnection(direction:$direction, directionArgs:$directionArgs){
+            totalCount
+            edges {
+                cursor
+                node {
+                    permission_id
+                }
+            }
+            pageInfo{
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+        }
+    }
+`;
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -576,4 +596,18 @@ export async function userConnection(testClient: ApolloServerTestClient, directi
 
     const res = await gqlTry(operation);
     return res.data?.usersConnection
+}
+
+export async function permissionsConnection(testClient: ApolloServerTestClient, direction: string, directionArgs?: any, headers?: Headers) {
+    const { query } = testClient;
+
+    const operation = () => query({
+        query: PERMISSIONS_CONNECTION,
+        variables: { direction, directionArgs },
+        headers: headers,
+    });
+
+    const res = await gqlTry(operation);
+
+    return res.data?.permissionsConnection
 }

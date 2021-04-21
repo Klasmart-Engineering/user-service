@@ -32,9 +32,40 @@ const typeDefs = gql`
         uploadUsersFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
     }
+
+    # pagination extension types start here
+    type UsersConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [UsersConnectionEdge]
+    }
+
+    type UsersConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: UsersConnectionNode
+    }
+
+    type UsersConnectionNode {
+        user_id: ID!
+        email: String!
+    }
+
+    type UserConnection {
+        total: Int
+        edges: [User!]!
+        pageInfo: PageInfo!
+    }
+
+    # pagination extension types end here
+
     extend type Query {
         me: User
         user(user_id: ID!): User
+        usersConnection(
+            direction: ConnectionDirection!
+
+            directionArgs: ConnectionsDirectionArgs
+        ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User]
         my_users: [User!]
     }
@@ -105,11 +136,6 @@ const typeDefs = gql`
         addSchool(school_id: ID!): OrganizationMembership
         setPrimary(_: Int): Boolean @isAdmin(entity: "user")
     }
-    type UserConnection {
-        total: Int
-        edges: [User!]!
-        pageInfo: PageInfo!
-    }
 `
 
 export default function getDefault(
@@ -132,6 +158,8 @@ export default function getDefault(
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
+                usersConnection: (_parent, args, ctx, _info) =>
+                    model.usersConnection(ctx, args),
                 users: (_parent, _args, ctx, _info) => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),

@@ -12,9 +12,9 @@ import { createRole } from "../factories/role.factory";
 import { createSchool } from "../factories/school.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
 import { createUser } from "../factories/user.factory";
-import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, 
-    getOrganizations, switchUser, me, myUsers, 
-    getProgram, uploadSchoolsFile, userConnection 
+import { getAgeRange, getGrade, getSubcategory, getAllOrganizations,
+    getOrganizations, switchUser, me, myUsers,
+    getProgram, permissionsConnection, uploadSchoolsFile, userConnection
 } from "../utils/operations/modelOps";
 import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
@@ -51,6 +51,7 @@ import SubcategoriesInitializer from "../../src/initializers/subcategories";
 import AgeRangesInitializer from "../../src/initializers/ageRanges";
 import SubjectsInitializer from "../../src/initializers/subjects";
 import GradesInitializer from "../../src/initializers/grades";
+import RolesInitializer from "../../src/initializers/roles";
 import { queryUploadSubjects, uploadSubjects } from "../utils/operations/csv/uploadSubjects";
 import { Subject } from "../../src/entities/subject";
 import { createSubject } from "../factories/subject.factory";
@@ -58,7 +59,6 @@ import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
 import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
 import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 import { convertDataToCursor } from "../utils/paginate";
-
 
 use(chaiAsPromised);
 
@@ -1321,7 +1321,7 @@ describe("model", () => {
 
     describe('usersConnection', ()=>{
         let usersList: User [] = [];
-        
+
         beforeEach(async () => {
             usersList = [];
             // create 10 users
@@ -1337,7 +1337,7 @@ describe("model", () => {
             it('should get the next few records according to pagesize and startcursor', async()=>{
                 let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
                 const usersConnection = await userConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
-                
+
                 expect(usersConnection?.totalCount).to.eql(10);
                 expect(usersConnection?.edges.length).to.equal(3);
                 for(let i=0; i<3; i++) {
@@ -1347,6 +1347,66 @@ describe("model", () => {
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+            })
+        })
+    })
+
+    describe('permissionsConnection', ()=>{
+        let firstPermission: any
+        let lastPermission: any
+
+        beforeEach(async () => {
+            await RolesInitializer.run()
+        })
+
+        context('when seeking forward',  ()=>{
+            const direction = 'FORWARD'
+
+            context('and no direction args are specified', () => {
+                beforeEach(async () => {
+                    await RolesInitializer.run()
+                    const permissions = await Permission.find({ take: 10, order: { permission_id: 'ASC' } })
+                    firstPermission = permissions[0]
+                    lastPermission = permissions.pop()
+                })
+
+                it('returns the expected permissions with the default page size', async()=>{
+                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() })
+
+                    expect(gqlPermissions?.totalCount).to.eql(425);
+                    expect(gqlPermissions?.edges.length).to.equal(10);
+
+                    expect(gqlPermissions?.pageInfo.startCursor).to.equal(convertDataToCursor(firstPermission.permission_id))
+                    expect(gqlPermissions?.pageInfo.endCursor).to.equal(convertDataToCursor(lastPermission.permission_id))
+                    expect(gqlPermissions?.pageInfo.hasNextPage).to.be.true
+                    expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.false
+                })
+            })
+
+            context('and direction args are specified', () => {
+                let directionArgs: any
+
+                beforeEach(async () => {
+                    await RolesInitializer.run()
+                    const permissions = await Permission.find({ take: 4, order: { permission_id: 'ASC' } })
+
+                    const cursor = convertDataToCursor(permissions[0]?.permission_id || '')
+                    directionArgs = { count: 3, cursor: cursor}
+                    firstPermission = permissions[1]
+                    lastPermission = permissions.pop()
+                })
+
+                it('returns the expected permissions with the specified page size', async()=>{
+                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
+
+                    expect(gqlPermissions?.totalCount).to.eql(425);
+                    expect(gqlPermissions?.edges.length).to.equal(3);
+
+                    expect(gqlPermissions?.pageInfo.startCursor).to.equal(convertDataToCursor(firstPermission.permission_id))
+                    expect(gqlPermissions?.pageInfo.endCursor).to.equal(convertDataToCursor(lastPermission.permission_id))
+                    expect(gqlPermissions?.pageInfo.hasNextPage).to.be.true
+                    expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.true
+                })
             })
         })
     })

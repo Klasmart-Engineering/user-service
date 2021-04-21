@@ -368,10 +368,21 @@ export class Model {
     }
 
     public async usersConnection(
-            context: Context, 
+            context: Context,
             { direction, directionArgs, scope}: any
         ) {
+
         return paginateData(direction, directionArgs, scope, 'user_id')
+    }
+
+    public async permissionsConnection(
+            context: Context,
+            { direction, directionArgs }: any
+        ) {
+
+        const scope = this.permissionRepository.createQueryBuilder()
+
+        return paginateData(direction, directionArgs, scope, 'permission_id')
     }
 
     public async getRole({ role_id }: Role) {
