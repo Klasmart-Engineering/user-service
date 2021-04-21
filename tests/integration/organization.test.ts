@@ -130,6 +130,32 @@ describe("organization", () => {
                 expect(dbOrg).to.not.include(mods);
             });
         });
+
+        context("when an organization with the given organization name already exists", () => {
+            let idOfUserMakingMod: string;
+            let authTokenOfUserMakingMod: string;
+            let existentOrganization: Organization
+
+            beforeEach(async () => {
+                idOfUserMakingMod = (await createUserBilly(testClient)).user_id;
+                authTokenOfUserMakingMod = getBillyAuthToken();
+                existentOrganization = new Organization();
+                existentOrganization.organization_name = "Organization 1";
+                await existentOrganization.save();
+                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: getJoeAuthToken() });
+                const editOrgRole = await createRole(testClient, organizationId);
+                await grantPermission(testClient, editOrgRole.role_id, PermissionName.edit_an_organization_details_5, { authorization: getJoeAuthToken() });
+                await addRoleToOrganizationMembership(testClient, idOfUserMakingMod, organization.organization_id, editOrgRole.role_id);
+            });
+
+            it("throws an error", async () => {
+                const fn = () => updateOrganization(testClient, organizationId, { ...mods, organization_name: "Organization 1" }, { authorization: authTokenOfUserMakingMod });
+                expect(fn()).to.be.rejected;
+
+                const dbOrg = await Organization.findOneOrFail(organizationId);
+                expect(dbOrg).to.not.include(mods);
+            });
+        });
     });
 
     describe("findOrCreateUser", async () => {
