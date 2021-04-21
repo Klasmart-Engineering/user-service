@@ -81,7 +81,7 @@ export class Organization
     @PrimaryGeneratedColumn('uuid')
     public organization_id!: string
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, unique: true })
     public organization_name?: string
 
     @Column({ nullable: true })
@@ -295,6 +295,21 @@ export class Organization
             this.status == Status.INACTIVE
         ) {
             return null
+        }
+
+        if (organization_name) {
+            const existentOrganization = await Organization.findOne({
+                where: { organization_name },
+            })
+
+            if (
+                existentOrganization &&
+                existentOrganization.organization_id !== this.organization_id
+            ) {
+                throw new Error(
+                    `Organization with name '${organization_name}' already exists`
+                )
+            }
         }
 
         const permisionContext = { organization_id: this.organization_id }

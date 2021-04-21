@@ -811,4 +811,51 @@ export class Model {
 
         return file
     }
+
+    public async renameDuplicateOrganizations(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+
+        try {
+            let current: Organization | null = null
+            let duplicateCount = 0
+            let nullCount = 0
+            const organizations = await Organization.find({
+                order: { organization_name: 'ASC' },
+            })
+
+            for (const organization of organizations) {
+                if (!organization.organization_name) {
+                    nullCount += 1
+                    organization.organization_name = `[Please assign a name][${nullCount}]`
+                    await organization.save()
+                }
+
+                if (!current) {
+                    current = organization
+                    continue
+                }
+
+                if (
+                    current.organization_name === organization.organization_name
+                ) {
+                    duplicateCount += 1
+                    organization.organization_name += ` [Please change name][${duplicateCount}]`
+                    await organization.save()
+                } else {
+                    current = organization
+                    duplicateCount = 0
+                }
+            }
+
+            return true
+        } catch (error) {
+            return false
+        }
+    }
 }

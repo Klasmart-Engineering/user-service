@@ -388,6 +388,21 @@ describe("user", () => {
             });
         });
 
+        context("when the given organization name already exist", () => {
+            it("should throw an error", async () => {
+                const organization_name = "A name";
+                const fn = () => createOrganization(testClient, user.user_id, organization_name);
+
+                expect(fn()).to.be.rejected;
+
+                const dbOrg = await Organization.findOne({
+                    where: { organization_name }
+                });
+
+                expect(dbOrg).to.be.undefined;
+            })
+        })
+
         it("creates the organization ownership", async () => {
             const organization = await createOrganizationAndValidate(testClient, user.user_id);
             const organizationOwnership = await OrganizationOwnership.find({

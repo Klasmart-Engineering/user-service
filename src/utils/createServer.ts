@@ -104,6 +104,8 @@ export const createServer = (model: Model, context?: any) =>
                     model.uploadProgramsFromCSV(args, ctx, info),
                 uploadAgeRangesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadAgeRangesFromCSV(args, ctx, info),
+                renameDuplicateOrganizations: (_parent, args, ctx, info) =>
+                    model.renameDuplicateOrganizations(args, ctx, info),
             },
         },
         schemaDirectives: {

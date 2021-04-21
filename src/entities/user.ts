@@ -409,6 +409,18 @@ export class User extends BaseEntity implements Paginatable<User, string> {
             `Unauthenticated endpoint call createOrganization by ${context.permissions?.getUserId()}`
         )
 
+        if (organization_name) {
+            const existentOrganization = await Organization.findOne({
+                where: { organization_name },
+            })
+
+            if (existentOrganization) {
+                throw new Error(
+                    `Organization with name '${organization_name}' already exists`
+                )
+            }
+        }
+
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE },
         })
