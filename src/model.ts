@@ -368,18 +368,16 @@ export class Model {
     }
 
     public async usersConnection(
-            context: Context,
-            { direction, directionArgs, scope}: any
-        ) {
-
+        context: Context,
+        { direction, directionArgs, scope }: any
+    ) {
         return paginateData(direction, directionArgs, scope, 'user_id')
     }
 
     public async permissionsConnection(
-            context: Context,
-            { direction, directionArgs }: any
-        ) {
-
+        context: Context,
+        { direction, directionArgs }: any
+    ) {
         const scope = this.permissionRepository.createQueryBuilder()
 
         return paginateData(direction, directionArgs, scope, 'permission_id')
@@ -700,5 +698,43 @@ export class Model {
         ])
 
         return file
+    }
+
+    public async renameDuplicateSchools(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+
+        try {
+            let current: School | null = null
+            let duplicateCount = 0
+            const schools = await School.find({
+                order: { school_name: 'ASC' },
+            })
+
+            for (const school of schools) {
+                if (!current) {
+                    current = school
+                    continue
+                }
+
+                if (current.school_name === school.school_name) {
+                    duplicateCount += 1
+                    school.school_name += ` [Please change name][${duplicateCount}]`
+                    await school.save()
+                } else {
+                    current = school
+                    duplicateCount = 0
+                }
+            }
+
+            return true
+        } catch (error) {
+            return false
+        }
     }
 }

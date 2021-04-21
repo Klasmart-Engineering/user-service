@@ -59,6 +59,7 @@ import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
 import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
 import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 import { convertDataToCursor } from "../utils/paginate";
+import { renameDuplicateSchoolsMutation, renameDuplicateSchoolsQuery } from "../utils/operations/renameDuplicateSchools";
 
 use(chaiAsPromised);
 
@@ -1410,5 +1411,47 @@ describe("model", () => {
             })
         })
     })
+
+    describe("renameDuplicateSchools", () => {
+        const schoolName = 'School 1';
+
+        beforeEach(async () => {
+            for (let i = 0; i < 3; i += 1) {
+                const school = new School();
+                school.school_name = schoolName;
+                await school.save();
+            }
+        });
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                const fn = async () => await renameDuplicateSchoolsQuery(testClient);
+                expect(fn()).to.be.rejected;
+
+                const duplicatedSchools = await School.count({ where: { school_name: schoolName }});
+                expect(duplicatedSchools).eq(3);
+            });
+        });
+
+        context("when user has not Admin permissions", () => {
+            it("should throw an error", async () => {
+                const fn = async () => await renameDuplicateSchoolsMutation(testClient);
+                expect(fn()).to.be.rejected;
+
+                const duplicatedSchools = await School.count({ where: { school_name: schoolName }});
+                expect(duplicatedSchools).eq(3);
+            });
+        });
+
+        context("when user has Admin permissions", () => {
+            it("should throw an error", async () => {
+                const result = await renameDuplicateSchoolsMutation(testClient, getJoeAuthToken());
+                expect(result).eq(true);
+
+                const duplicatedSchools = await School.count({ where: { school_name: schoolName }});
+                expect(duplicatedSchools).eq(1);
+            });
+        });
+    });
 });
 

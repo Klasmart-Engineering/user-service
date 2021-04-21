@@ -7,6 +7,7 @@ const typeDefs = gql`
         school(school_id: ID!): School
         uploadSchoolsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        renameDuplicateSchools(_: Int): Boolean @isAdmin
     }
     extend type Query {
         school(school_id: ID!): School
@@ -71,6 +72,8 @@ export default function getDefault(
                     model.getSchool(args),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
+                renameDuplicateSchools: (_parent, args, ctx, info) =>
+                    model.renameDuplicateSchools(args, ctx, info),
             },
             Query: {
                 school: (_parent, args, _context, _info) =>
