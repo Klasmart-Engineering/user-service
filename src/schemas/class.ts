@@ -11,13 +11,6 @@ const typeDefs = gql`
     }
     extend type Query {
         classes: [Class]
-        classes_v1(
-            after: String
-            before: String
-            first: Int
-            last: Int
-        ): ClassConnection! @isAdmin(entity: "class")
-
         class(class_id: ID!): Class
     }
     type Class {
@@ -84,8 +77,6 @@ export default function getDefault(
             Query: {
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 classes: () => model.getClasses(),
-                classes_v1: (_parent, args, ctx, _info) =>
-                    model.v1_getClasses(ctx, args),
             },
         },
     }

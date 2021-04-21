@@ -12,13 +12,6 @@ const typeDefs = gql`
     extend type Query {
         role(role_id: ID!): Role
         roles: [Role]
-
-        roles_v1(
-            after: String
-            before: String
-            first: Int
-            last: Int
-        ): RoleConnection! @isAdmin(entity: "role")
     }
     type Role {
         role_id: ID!
@@ -70,8 +63,6 @@ export default function getDefault(
             Query: {
                 roles: () => model.getRoles(),
                 role: (_parent, args, _context, _info) => model.getRole(args),
-                roles_v1: (_parent, args, ctx, _info) =>
-                    model.v1_getRoles(ctx, args),
             },
         },
     }

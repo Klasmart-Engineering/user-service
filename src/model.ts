@@ -30,7 +30,6 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
 
-import { getPaginated } from './utils/getpaginated'
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
@@ -368,83 +367,11 @@ export class Model {
         }
     }
 
-    public async v1_getOrganizations(
-        context: Context,
-        { organization_ids, after, before, first, last, scope }: any
-    ) {
-        if (organization_ids) {
-            scope.whereInIds(organization_ids)
-        }
-
-        return getPaginated(this, 'organization', {
-            before,
-            after,
-            first,
-            last,
-            scope,
-        })
-    }
-
     public async usersConnection(
             context: Context, 
             { direction, directionArgs, scope}: any
         ) {
         return paginateData(direction, directionArgs, scope, 'user_id')
-    }
-
-    public async v1_getUsers(
-        context: Context,
-        { after, before, first, last, scope }: any
-    ) {
-        return getPaginated(this, 'user', {
-            before,
-            after,
-            first,
-            last,
-            scope,
-        })
-    }
-
-    public async v1_getRoles(
-        context: Context,
-        { after, before, first, last, scope }: any
-    ) {
-        if (!context.permissions.isAdmin && scope) {
-            const user_id = context.permissions.getUserId() || ''
-            const orgScope = scope.clone()
-            const idsFromOrgs = await orgScope
-                .select('Role.role_id')
-                .innerJoin('Role.memberships', 'OrganizationMembership')
-                .innerJoin('OrganizationMembership.user', 'User')
-                .groupBy('Role.role_id, OrganizationMembership.user_id')
-                .where('OrganizationMembership.user_id = :user_id', {
-                    user_id: user_id,
-                })
-                .getRawMany()
-            const schoolScope = scope.clone()
-            const idsFromSchools = await schoolScope
-                .select('Role.role_id')
-                .innerJoin('Role.schoolMemberships', 'SchoolMembership')
-                .innerJoin('SchoolMembership.user', 'User')
-                .groupBy('Role.role_id, SchoolMembership.user_id')
-                .where('SchoolMembership.user_id = :user_id', {
-                    user_id: user_id,
-                })
-                .getMany()
-            const idcontainer = idsFromOrgs.concat(idsFromSchools)
-            const ids: string[] = idcontainer.map((x: any) => x.Role_role_id)
-            if (ids.length === 0) {
-                ids.push('ffffffff-ffff-ffff-ffff-ffffffffffff')
-            }
-            scope.whereInIds(ids)
-        }
-        return getPaginated(this, 'role', {
-            before,
-            after,
-            first,
-            last,
-            scope,
-        })
     }
 
     public async getRole({ role_id }: Role) {
@@ -467,25 +394,6 @@ export class Model {
         } catch (e) {
             console.error(e)
         }
-    }
-
-    public async getPermissions(
-        context: Context,
-        { after, before, first, last }: any
-    ) {
-        const scope = this.permissionRepository
-            .createQueryBuilder()
-            .where('Permission.allow = :allowed', {
-                allowed: true,
-            })
-
-        return getPaginated(this, 'permission', {
-            before,
-            after,
-            first,
-            last,
-            scope,
-        })
     }
 
     public async getClass({ class_id }: Class) {
@@ -522,43 +430,6 @@ export class Model {
         } catch (e) {
             console.error(e)
         }
-    }
-
-    public async v1_getClasses(
-        context: Context,
-        { after, before, first, last, scope }: any
-    ) {
-        if (!context.permissions.isAdmin && scope) {
-            const user_id = context.permissions.getUserId() || ''
-            const teachingScope = scope.clone()
-            const idsFromTeaching: Class[] =
-                (await teachingScope
-                    .createQueryBuilder()
-                    .relation(User, 'classesTeaching')
-                    .of(user_id)
-                    .loadMany()) ?? []
-            const schoolScope = scope.clone()
-            const idsFromStudying: Class[] =
-                (await schoolScope
-                    .createQueryBuilder()
-                    .relation(User, 'classesStudying')
-                    .of(user_id)
-                    .loadMany()) ?? []
-
-            const idcontainer = idsFromStudying.concat(idsFromTeaching)
-            const ids: string[] = idcontainer.map((x: any) => x.class_id)
-            if (ids.length === 0) {
-                ids.push('ffffffff-ffff-ffff-ffff-ffffffffffff')
-            }
-            scope.whereInIds(ids)
-        }
-        return getPaginated(this, 'class', {
-            before,
-            after,
-            first,
-            last,
-            scope,
-        })
     }
 
     public async getAgeRange({ id, scope }: any, context: Context) {

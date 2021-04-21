@@ -19,13 +19,6 @@ const typeDefs = gql`
         organization(organization_id: ID!): Organization
         organizations(organization_ids: [ID!]): [Organization]
             @isAdmin(entity: "organization")
-        organizations_v1(
-            organization_ids: [ID!]
-            after: String
-            before: String
-            first: Int
-            last: Int
-        ): OrganizationConnection! @isAdmin(entity: "organization")
     }
     type Organization {
         organization_id: ID!
@@ -178,8 +171,6 @@ export default function getDefault(
                     model.getOrganizations(args),
                 organization: (_parent, { organization_id }, _context, _info) =>
                     model.getOrganization(organization_id),
-                organizations_v1: (_parent, args, ctx, _info) =>
-                    model.v1_getOrganizations(ctx, args),
             },
         },
     }

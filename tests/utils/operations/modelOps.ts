@@ -11,7 +11,6 @@ import { ApolloServerTestClient } from "../createTestClient";
 import { getJoeAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
-import { UserConnection } from "../../../src/utils/pagingconnections";
 import { Program } from "../../../src/entities/program";
 import { Stream } from "stream";
 
@@ -96,27 +95,6 @@ const GET_USERS = `
     }
 `;
 
-const GET_V1_USERS = `
-    query myQuery($after:String,$before:String,$first:Int,$last:Int) {
-        users_v1(after:$after,before:$before,first:$first,last:$last) {
-            total
-            edges {
-                user_id
-                given_name
-                family_name
-                email
-                avatar
-            }
-            pageInfo{
-                hasPreviousPage
-                hasNextPage
-                endCursor
-                startCursor
-            }
-        }
-    }
-`;
-
 const MY_USERS = `
     query myQuery {
         my_users {
@@ -171,26 +149,6 @@ const GET_ORGANIZATIONS = `
             organization_id
             organization_name
         }
-    }
-`;
-
-const GET_PERMISSIONS = `
-    query getPermissions($after: String) {
-       permissions(after: $after) {
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-          edges {
-            permission_id
-            permission_name
-            permission_group
-            permission_level
-            permission_category
-            permission_description
-          }
-          total
-       }
     }
 `;
 
@@ -387,37 +345,6 @@ export async function getUsers(testClient: ApolloServerTestClient, headers?: Hea
     return gqlUsers;
 }
 
-export async function getv1Users(testClient: ApolloServerTestClient, after?: string, before?: string, first?: number, last?: number, headers?: Headers) {
-    const { query } = testClient;
-    const variables: any = {}
-    if (after){
-        variables.after = after
-    }
-    if (before){
-        variables.before = before
-    }
-    if (first){
-        variables.first = first
-    }
-    if (last){
-        variables.last = last
-    }
-
-    const params = {
-        query: GET_V1_USERS,
-        headers: headers,
-    } as any
-    if(after || first || before || last){
-        params.variables = variables
-    }
-
-    const operation = () => query(params);
-
-    const res = await gqlTry(operation);
-    const gqlUsers = res.data?.users_v1 as UserConnection;
-    return gqlUsers;
-}
-
 export async function myUsers(testClient: ApolloServerTestClient, headers?: Headers) {
     const { query } = testClient;
 
@@ -483,20 +410,6 @@ export async function getOrganizations(testClient: ApolloServerTestClient, organ
 
     const res = await gqlTry(operation);
     const gqlOrgs = res.data?.organizations as Organization[];
-    return gqlOrgs;
-}
-
-export async function getPermissions(testClient: ApolloServerTestClient, headers?: Headers, after?: string) {
-    const { query } = testClient;
-
-    const operation = () => query({
-        query: GET_PERMISSIONS,
-        variables: { after: after },
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    const gqlOrgs = res.data
     return gqlOrgs;
 }
 

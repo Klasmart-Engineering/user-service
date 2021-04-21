@@ -17,14 +17,9 @@ import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
-import {
-    CursorObject,
-    Paginatable,
-    toCursorHash,
-} from '../utils/paginated.interface'
 
 @Entity()
-export class Role extends BaseEntity implements Paginatable<Role, string> {
+export class Role extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public role_id!: string
 
@@ -324,20 +319,5 @@ export class Role extends BaseEntity implements Paginatable<Role, string> {
         this.deleted_at = new Date()
 
         await manager.save(this)
-    }
-
-    public compareKey(key: string): number {
-        return key > this.role_id ? 1 : key < this.role_id ? -1 : 0
-    }
-
-    public compare(other: Role): number {
-        return other.role_id > this.role_id
-            ? 1
-            : other.role_id < this.role_id
-            ? -1
-            : 0
-    }
-    public generateCursor(total?: number, timestamp?: number): string {
-        return toCursorHash(new CursorObject(this.role_id, total, timestamp))
     }
 }

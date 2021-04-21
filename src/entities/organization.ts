@@ -30,12 +30,6 @@ import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from './schoolMembership'
 import { Subject } from './subject'
-import {
-    CursorArgs,
-    CursorObject,
-    Paginatable,
-    toCursorHash,
-} from '../utils/paginated.interface'
 import { Model } from '../model'
 import { Status } from './status'
 import { Program } from './program'
@@ -75,9 +69,7 @@ export const normalizedLowercaseTrimmed = (x: string) =>
 export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)
 
 @Entity()
-export class Organization
-    extends BaseEntity
-    implements Paginatable<Organization, string> {
+export class Organization extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public organization_id!: string
 
@@ -1552,30 +1544,4 @@ export class Organization
         await this.inactivateOwnership(manager)
         await manager.save(this)
     }
-
-    public compareKey(key: string): number {
-        return key > this.organization_id
-            ? 1
-            : key < this.organization_id
-            ? -1
-            : 0
-    }
-
-    public compare(other: Organization): number {
-        return other.organization_id > this.organization_id
-            ? 1
-            : other.organization_id < this.organization_id
-            ? -1
-            : 0
-    }
-
-    public generateCursor(total?: number, timestamp?: number): string {
-        return toCursorHash(
-            new CursorObject(this.organization_id, total, timestamp)
-        )
-    }
-}
-
-export class OrganizationCursorArgs extends CursorArgs {
-    organization_ids?: string[]
 }

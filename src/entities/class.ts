@@ -23,17 +23,12 @@ import { Program } from './program'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { Subject } from './subject'
-import {
-    CursorObject,
-    Paginatable,
-    toCursorHash,
-} from '../utils/paginated.interface'
 import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 
 @Entity()
 @Check(`"class_name" <> ''`)
 @Unique(['class_name', 'organization'])
-export class Class extends BaseEntity implements Paginatable<Class, string> {
+export class Class extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public class_id!: string
 
@@ -793,21 +788,5 @@ export class Class extends BaseEntity implements Paginatable<Class, string> {
         this.deleted_at = new Date()
 
         await manager.save(this)
-    }
-
-    public compareKey(key: string): number {
-        return key > this.class_id ? 1 : key < this.class_id ? -1 : 0
-    }
-
-    public compare(other: Class): number {
-        return other.class_id > this.class_id
-            ? 1
-            : other.class_id < this.class_id
-            ? -1
-            : 0
-    }
-
-    public generateCursor(total?: number, timestamp?: number): string {
-        return toCursorHash(new CursorObject(this.class_id, total, timestamp))
     }
 }

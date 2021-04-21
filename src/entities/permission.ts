@@ -6,17 +6,10 @@ import {
     ManyToMany,
     PrimaryColumn,
 } from 'typeorm'
-import {
-    CursorObject,
-    Paginatable,
-    toCursorHash,
-} from '../utils/paginated.interface'
 import { Role } from './role'
 
 @Entity()
-export class Permission
-    extends BaseEntity
-    implements Paginatable<Permission, string> {
+export class Permission extends BaseEntity {
     @PrimaryColumn({ name: 'permission_id' })
     public permission_name!: string
 
@@ -43,26 +36,4 @@ export class Permission
 
     @Column({ nullable: true })
     public permission_description?: string
-
-    public compareKey(key: string): number {
-        return key > this.permission_name
-            ? 1
-            : key < this.permission_name
-            ? -1
-            : 0
-    }
-
-    public compare(other: Permission): number {
-        return other.permission_name > this.permission_name
-            ? 1
-            : other.permission_name < this.permission_name
-            ? -1
-            : 0
-    }
-
-    public generateCursor(total?: number, timestamp?: number): string {
-        return toCursorHash(
-            new CursorObject(this.permission_name, total, timestamp)
-        )
-    }
 }

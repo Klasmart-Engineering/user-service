@@ -13,7 +13,7 @@ import { createSchool } from "../factories/school.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
 import { createUser } from "../factories/user.factory";
 import { getAgeRange, getGrade, getSubcategory, getAllOrganizations, 
-    getPermissions, getOrganizations, switchUser, me, myUsers, 
+    getOrganizations, switchUser, me, myUsers, 
     getProgram, uploadSchoolsFile, userConnection 
 } from "../utils/operations/modelOps";
 import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
@@ -260,92 +260,6 @@ describe("model", () => {
                     );
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
-                });
-            });
-        });
-    });
-
-    describe("getPermissions", () => {
-        let user: User;
-
-        beforeEach(async () => {
-            user = await createUserJoe(testClient);
-        });
-
-        context("when user is not logged in", () => {
-            it("raises an error", async () => {
-                const fn = () => getPermissions(testClient, { authorization: undefined });
-
-                expect(fn()).to.be.rejected;
-            });
-        });
-
-        context("when user is logged in", () => {
-            const permissionInfo = (permission: Permission) => { return permission.permission_id }
-
-            beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
-            });
-
-            context("and the user is not an admin", () => {
-                it("returns paginated results", async () => {
-                    const gqlPermissions = await getPermissions(testClient, { authorization: getBillyAuthToken() });
-
-                    expect(gqlPermissions?.permissions?.edges).to.not.be.empty
-                    expect(gqlPermissions?.permissions?.pageInfo).to.not.be.empty
-                    expect(gqlPermissions?.permissions?.total).to.not.be.undefined
-                });
-
-                it("returns all the permissions available", async () => {
-                    let gqlPermissions = await getPermissions(testClient, { authorization: getBillyAuthToken() });
-                    const dbPermissions = await Permission.find() || []
-
-                    const permissions = gqlPermissions?.permissions?.edges || []
-                    let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
-
-                    while (hasNext) {
-                        const endCursor = gqlPermissions?.permissions?.pageInfo?.endCursor
-                        gqlPermissions = await getPermissions(testClient, { authorization: getBillyAuthToken() }, endCursor);
-                        const morePermissions = gqlPermissions?.permissions?.edges || []
-                        hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
-
-                        for (const permission of morePermissions) {
-                            permissions.push(permission)
-                        }
-                    }
-
-                    expect(permissions.map(permissionInfo)).to.deep.members(dbPermissions.map(permissionInfo))
-                });
-            });
-
-            context("and the user is an admin", () => {
-                it("returns paginated results", async () => {
-                    const gqlPermissions = await getPermissions(testClient, { authorization: getJoeAuthToken() });
-
-                    expect(gqlPermissions?.permissions?.edges).to.not.be.empty
-                    expect(gqlPermissions?.permissions?.pageInfo).to.not.be.empty
-                    expect(gqlPermissions?.permissions?.total).to.not.be.undefined
-                });
-
-                it("returns all the permissions available", async () => {
-                    let gqlPermissions = await getPermissions(testClient, { authorization: getJoeAuthToken() });
-                    const dbPermissions = await Permission.find() || []
-
-                    const permissions = gqlPermissions?.permissions?.edges || []
-                    let hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
-
-                    while (hasNext) {
-                        const endCursor = gqlPermissions?.permissions?.pageInfo?.endCursor
-                        gqlPermissions = await getPermissions(testClient, { authorization: getJoeAuthToken() }, endCursor);
-                        const morePermissions = gqlPermissions?.permissions?.edges || []
-                        hasNext = gqlPermissions?.permissions?.pageInfo?.hasNextPage as boolean
-
-                        for (const permission of morePermissions) {
-                            permissions.push(permission)
-                        }
-                    }
-
-                    expect(permissions.map(permissionInfo)).to.deep.members(dbPermissions.map(permissionInfo))
                 });
             });
         });

@@ -36,13 +36,6 @@ const typeDefs = gql`
         me: User
         user(user_id: ID!): User
         users: [User]
-        users_v1(
-            after: String
-            before: String
-            first: Int
-            last: Int
-        ): UserConnection! @isAdmin(entity: "user")
-
         my_users: [User!]
     }
 
@@ -144,9 +137,6 @@ export default function getDefault(
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
                     model.myUsers({}, ctx, info),
-
-                users_v1: (_parent, args, ctx, _info) =>
-                    model.v1_getUsers(ctx, args),
             },
         },
     }

@@ -3,14 +3,7 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 
 const typeDefs = gql`
-    extend type Query {
-        permissions(
-            after: String
-            before: String
-            first: Int
-            last: Int
-        ): PermissionConnection! @isAuthenticated
-    }
+    # extend type Query {}
     type Permission {
         permission_id: ID
         permission_name: ID!
@@ -33,10 +26,7 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
-            Query: {
-                permissions: (_parent, args, ctx, _info) =>
-                    model.getPermissions(ctx, args),
-            },
+            Query: {},
         },
     }
 }
