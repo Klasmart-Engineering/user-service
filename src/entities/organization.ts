@@ -952,6 +952,14 @@ export class Organization extends BaseEntity {
             return null
         }
 
+        const existentSchool = await School.findOne({
+            where: { school_name },
+        })
+
+        if (existentSchool) {
+            throw new Error(`School with name '${school_name}' already exists`)
+        }
+
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,

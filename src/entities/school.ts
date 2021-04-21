@@ -34,7 +34,7 @@ export class School extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public readonly school_id!: string
 
-    @Column({ nullable: false })
+    @Column({ nullable: false, unique: true })
     public school_name!: string
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
@@ -94,6 +94,18 @@ export class School extends BaseEntity {
             this.status == Status.INACTIVE
         ) {
             return null
+        }
+
+        if (school_name) {
+            const existentSchool = await School.findOne({
+                where: { school_name },
+            })
+
+            if (existentSchool && existentSchool.school_id !== this.school_id) {
+                throw new Error(
+                    `School with name '${school_name}' already exists`
+                )
+            }
         }
 
         const permisionContext = {

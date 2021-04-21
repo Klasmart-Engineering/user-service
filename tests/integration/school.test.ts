@@ -258,6 +258,25 @@ describe("school", () => {
                 expect(dbSchool.school_name).to.equal(originalSchoolName);
             });
         });
+
+        context("when a school with the given school name already exists", () => {
+            const dupSchoolName = 'School 1';
+
+            beforeEach(async () => {
+                const dupSchool = new School();
+                dupSchool.school_name = dupSchoolName;
+                await dupSchool.save();
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId);
+            });
+
+            it("should throw an error", async () => {
+                const fn = () => updateSchool(testClient, schoolId, dupSchoolName, undefined, { authorization: getJoeAuthToken() });
+                expect(fn()).to.be.rejected;
+
+                const dbSchool = await School.findOneOrFail({ where: { school_id: schoolId } });
+                expect(dbSchool.school_name).to.equal(originalSchoolName);
+            })
+        });
     });
 
     describe("addUser", () => {

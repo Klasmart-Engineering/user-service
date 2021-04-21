@@ -427,13 +427,12 @@ describe("organization", () => {
                 });
 
                 it("does not create the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                    const fn = () => createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
 
-                    expect(school).to.be.null
+                    expect(fn()).to.be.rejected;
                     const dbSchool = await Organization.findOneOrFail(organizationId);
                     const orgSchools = await dbSchool.schools || []
                     expect(orgSchools.map(schoolInfo)).to.deep.eq([oldSchool.school_id])
-
                 });
             });
 
@@ -448,16 +447,12 @@ describe("organization", () => {
                     otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", undefined, { authorization: getBillyAuthToken() });
                 });
 
-                it("creates the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                it("does not create the school", async () => {
+                    const fn = () => createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
 
-                    expect(school).not.to.be.null
-                    const dbSchool = await Organization.findOneOrFail(organizationId);
-                    const orgSchools = await dbSchool.schools || []
-                    expect(orgSchools.map(schoolInfo)).to.deep.eq([school.school_id])
-                    expect(school.school_id).to.not.eq(otherSchool.school_id)
-                    expect(school.school_name).to.eq(otherSchool.school_name)
-
+                    expect(fn()).to.be.rejected;
+                    const schools = await School.find({ where: { status: 'active' }});
+                    expect(schools.map(schoolInfo)).to.deep.eq([otherSchool.school_id])
                 });
 
                 context("and the organization is marked as inactive", () => {
