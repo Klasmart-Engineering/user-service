@@ -21,6 +21,7 @@ import { Role } from "../../../../src/entities/role";
 import { School } from "../../../../src/entities/school";
 import { SchoolMembership } from "../../../../src/entities/schoolMembership";
 import { processUserFromCSVRow } from "../../../../src/utils/csv/user";
+import { CSVError } from "../../../../src/types/csv/csvError";
 
 use(chaiAsPromised);
 
@@ -33,7 +34,7 @@ describe("processUserFromCSVRow", () => {
     let organization: Organization;
     let role: Role;
     let school: School;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();

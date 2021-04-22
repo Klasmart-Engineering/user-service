@@ -16,6 +16,7 @@ import { createSchool } from "../../../factories/school.factory";
 
 import { processClassFromCSVRow } from "../../../../src/utils/csv/class";
 import { ClassRow } from "../../../../src/types/csv/classRow";
+import { CSVError } from "../../../../src/types/csv/csvError";
 
 use(chaiAsPromised);
 
@@ -30,7 +31,7 @@ describe("processClassFromCSVRow", ()=> {
     let expectedSystemProg: Program
     let expectedSchool: School
     let expectedSchool2: School
-    let fileErrors: string[]
+    let fileErrors: CSVError[]
 
     const orgName: string = "my-org";
     const school1Name: string = "test-school";
@@ -76,7 +77,7 @@ describe("processClassFromCSVRow", ()=> {
         await connection?.close();
     });
 
-    
+
     it('should create a class with school and program when present', async()=>{
         row = {organization_name: orgName, class_name: 'class1', school_name:school1Name, program_name: progName}
         await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
@@ -84,7 +85,7 @@ describe("processClassFromCSVRow", ()=> {
         const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
         const schools = await dbClass.schools || []
         const programs = await dbClass.programs || []
-        
+
         expect(schools.length).to.equal(1)
         expect(programs.length).to.equal(1)
     })
@@ -96,7 +97,7 @@ describe("processClassFromCSVRow", ()=> {
 
         const schools = await dbClass.schools || []
         const programs = await dbClass.programs || []
-        
+
         expect(dbClass.shortcode).to.equal("3XABK3ZZS1")
         expect(schools.length).to.equal(1)
         expect(programs.length).to.equal(1)
@@ -124,7 +125,7 @@ describe("processClassFromCSVRow", ()=> {
         const dbClass = await Class.findOneOrFail({where:{class_name:"class4", organization:expectedOrg}});
         const schools = await dbClass.schools || []
         const programs = await dbClass.programs || []
-        
+
         expect(schools.length).to.equal(2)
         expect(programs.length).to.equal(2)
     })
@@ -153,7 +154,7 @@ describe("processClassFromCSVRow", ()=> {
         const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected
-        
+
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(0)
     })

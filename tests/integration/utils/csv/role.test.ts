@@ -5,6 +5,7 @@ import { Organization } from "../../../../src/entities/organization";
 import { Permission } from "../../../../src/entities/permission";
 import { Role } from "../../../../src/entities/role";
 import { Model } from "../../../../src/model";
+import { CSVError } from "../../../../src/types/csv/csvError";
 import { RoleRow } from "../../../../src/types/csv/roleRow";
 import { createServer } from "../../../../src/utils/createServer";
 import { processRoleFromCSVRow } from "../../../../src/utils/csv/role";
@@ -19,7 +20,7 @@ describe("processRoleFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: RoleRow;
     let organization: Organization;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();

@@ -11,6 +11,7 @@ import ProgramsInitializer from "../../../../src/initializers/programs";
 import SubcategoriesInitializer from "../../../../src/initializers/subcategories";
 import SubjectsInitializer from "../../../../src/initializers/subjects";
 import { Model } from "../../../../src/model";
+import { CSVError } from "../../../../src/types/csv/csvError";
 import { SchoolRow } from "../../../../src/types/csv/schoolRow";
 import { createServer } from "../../../../src/utils/createServer";
 import { processSchoolFromCSVRow } from "../../../../src/utils/csv/school";
@@ -25,7 +26,7 @@ describe("processSchoolFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: SchoolRow;
     let organization: Organization;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -46,7 +47,7 @@ describe("processSchoolFromCSVRow", () => {
         await SubjectsInitializer.run()
         await SubcategoriesInitializer.run()
         await CategoriesInitializer.run()
-        await ProgramsInitializer.run() 
+        await ProgramsInitializer.run()
 
         row = {
             organization_name: 'Company 1',

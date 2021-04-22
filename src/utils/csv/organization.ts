@@ -14,7 +14,9 @@ import {
 import { OrganizationOwnership } from '../../entities/organizationOwnership'
 import { Role } from '../../entities/role'
 import { Status } from '../../entities/status'
-import { saveError } from './readFile'
+import { addCsvError } from '../csv/csvUtils'
+import { CSVError } from '../../types/csv/csvError'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,
@@ -57,7 +59,7 @@ async function createOrganization(
     organization_name: string,
     owner_shortcode: string,
     rowNumber: number,
-    fileErrors: string[],
+    fileErrors: CSVError[],
     owner: User,
     manager: EntityManager
 ) {
@@ -66,10 +68,12 @@ async function createOrganization(
     })
 
     if (active_organizations.length) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            'Only one active organization per user'
+            "organization_name",
+            'only one active organization per user',
         )
         return
     }
@@ -120,7 +124,7 @@ export async function processOrganizationFromCSVRow(
     manager: EntityManager,
     row: OrganizationRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
     const {
         organization_name,
@@ -131,18 +135,33 @@ export async function processOrganizationFromCSVRow(
         owner_phone,
     } = row
 
-    const requiredFieldsAreProvided =
-        organization_name && (owner_email || owner_phone)
-
     if (!organization_name) {
-        saveError(fileErrors, rowNumber, "Organization name doesn't exists")
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "name": organization_name,
+                "entity": "organization",
+            }
+        )
     }
 
     if (!owner_email && !owner_phone) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
             rowNumber,
-            "There's no exist owner's email or phone"
+            !owner_email ? "owner_email" : "owner_phone",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
+            {
+                "entity": "user",
+                "attribute": "email",
+                "other_entity": "user",
+                "other_attribute": "phone",
+            }
         )
     }
 
@@ -150,10 +169,22 @@ export async function processOrganizationFromCSVRow(
         owner_shortcode &&
         !validateShortCode(owner_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
     ) {
-        saveError(fileErrors, rowNumber, 'Invalid shortcode provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'owner_shortcode',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+            {
+                "entity": "user",
+                "attribute": "short_code",
+                "max": MEMBERSHIP_SHORTCODE_MAXLEN,
+            }
+        )
     }
 
-    if (!requiredFieldsAreProvided) {
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
@@ -162,10 +193,16 @@ export async function processOrganizationFromCSVRow(
     })
 
     if (organizationExists) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            `Organization with name '${organization_name}' already exists!`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            {
+                "name": organization_name,
+                "entity": "organization",
+            }
         )
 
         return
@@ -176,10 +213,16 @@ export async function processOrganizationFromCSVRow(
     })
 
     if (organizationUploaded) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            `Organization with name '${organization_name}' already uploaded`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            {
+                "name": organization_name,
+                "entity": "organization",
+            }
         )
 
         return
@@ -194,11 +237,20 @@ export async function processOrganizationFromCSVRow(
     })
 
     if (ownerUploaded) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            `Owner with email '${owner_email}' already has an organization`
+            "owner_email",
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            {
+                "name": owner_email,
+                "entity": "user",
+                "parent_name": organization_name,
+                "parent_entity": "organization",
+            }
         )
+
         return
     }
 

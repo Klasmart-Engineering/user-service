@@ -6,6 +6,7 @@ import { AgeRangeUnit } from "../../../../src/entities/ageRangeUnit";
 import { Organization } from "../../../../src/entities/organization";
 import { Model } from "../../../../src/model";
 import { AgeRangeRow } from "../../../../src/types/csv/ageRangeRow";
+import { CSVError } from "../../../../src/types/csv/csvError";
 import { createServer } from "../../../../src/utils/createServer";
 import { processAgeRangeFromCSVRow } from "../../../../src/utils/csv/ageRange";
 import { createAgeRange } from "../../../factories/ageRange.factory";
@@ -20,7 +21,7 @@ describe("processAgeRangeFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: AgeRangeRow;
     let organization: Organization;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
     const rowModel: AgeRangeRow = {
         organization_name: 'Company 1',
         age_range_low_value: '6',

@@ -2,7 +2,9 @@ import { EntityManager } from 'typeorm'
 import { GradeRow } from '../../types/csv/gradeRow'
 import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
-import { saveError } from './readFile'
+import { CSVError } from '../../types/csv/csvError'
+import { addCsvError } from '../csv/csvUtils'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 function findGradeInDatabaseOrTransaction(
     manager: EntityManager,
@@ -24,8 +26,10 @@ async function findOrFailGradeInDatabaseOrTransaction(
     organization: Organization,
     grade_name: string,
     rowNumber: number,
-    fileErrors: string[],
-    notFoundErrorMessage: string
+    column: string,
+    fileErrors: CSVError[],
+    notFoundErrorMessage: string,
+    params: Record<string, any>
 ) {
     const gradeFound = await manager.findOne(Grade, {
         where: {
@@ -37,7 +41,14 @@ async function findOrFailGradeInDatabaseOrTransaction(
     })
 
     if (!gradeFound) {
-        saveError(fileErrors, rowNumber, notFoundErrorMessage)
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            rowNumber,
+            column,
+            notFoundErrorMessage,
+            params
+        )
     }
 
     return gradeFound
@@ -47,7 +58,7 @@ export async function processGradeFromCSVRow(
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
     const {
         organization_name,
@@ -56,31 +67,63 @@ export async function processGradeFromCSVRow(
         progress_to_grade_name,
     } = row
 
-    const requiredFieldsAreProvided = organization_name && grade_name
-
     if (!organization_name) {
-        saveError(fileErrors, rowNumber, 'Organization name is not provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!grade_name) {
-        saveError(fileErrors, rowNumber, 'Grade name is not provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "grade_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "grade",
+                "attribute": "name",
+            }
+        )
     }
 
     // From grade should be different to grade
     if (progress_from_grade_name && progress_from_grade_name === grade_name) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "From grade name can't be the same as grade name"
+            "progress_from_grade_name",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_DIFFERENT,
+            {
+                "entity": "grade",
+                "attribute": "progress_from_grade_name",
+                "other": "name",
+            }
         )
     }
 
     // To grade should be different to grade
     if (progress_to_grade_name && progress_to_grade_name === grade_name) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "To grade name can't be the same as grade name"
+            "progress_to_grade_name",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_DIFFERENT,
+            {
+                "entity": "grade",
+                "attribute": "progress_to_grade_name",
+                "other": "name",
+            }
         )
     }
 
@@ -90,14 +133,22 @@ export async function processGradeFromCSVRow(
         progress_to_grade_name &&
         progress_from_grade_name === progress_to_grade_name
     ) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "From grade name and to grade name can't be the same"
+            "progress_to_grade_name",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_DIFFERENT,
+            {
+                "entity": "grade",
+                "attribute": "progress_to_grade_name",
+                "other": "progress_from_grade_name",
+            }
         )
     }
 
-    if (!requiredFieldsAreProvided) {
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
@@ -106,10 +157,16 @@ export async function processGradeFromCSVRow(
     })
 
     if (!organization) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Organization with name '${organization_name}' doesn't exists`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "name": organization_name,
+                "entity": "organization",
+            }
         )
 
         return
@@ -122,10 +179,18 @@ export async function processGradeFromCSVRow(
     )
 
     if (grade) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            `Grade with name '${grade_name}' can't be created because already exists in the organization with name '${organization_name}'`
+            "grade_name",
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            {
+                "name": grade_name,
+                "entity": "grade",
+                "parent_name": organization_name,
+                "parent_entity": "organization",
+            }
         )
 
         return
@@ -143,7 +208,7 @@ export async function setGradeFromToFields(
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
     let toGrade: Grade | undefined
     let fromGrade: Grade | undefined
@@ -169,8 +234,15 @@ export async function setGradeFromToFields(
             organization,
             progress_from_grade_name,
             rowNumber,
+            "progress_from_grade_name",
             fileErrors,
-            `Grade with name '${progress_from_grade_name}' can't be assigned as a from grade because this doesn't exists in organization with name '${organization_name}'`
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            {
+                "name": progress_from_grade_name,
+                "entity": "grade",
+                "parent_name": organization_name,
+                "parent_entity": "organization",
+            }
         )
     } else {
         fromGrade = await Grade.findOneOrFail({
@@ -188,8 +260,15 @@ export async function setGradeFromToFields(
             organization,
             progress_to_grade_name,
             rowNumber,
+            "progress_to_grade_name",
             fileErrors,
-            `Grade with name '${progress_to_grade_name}' can't be assigned as a to grade because this doesn't exists in organization with name '${organization_name}'`
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            {
+                "name": progress_to_grade_name,
+                "entity": "grade",
+                "parent_name": organization_name,
+                "parent_entity": "organization",
+            }
         )
     } else {
         toGrade = await Grade.findOneOrFail({

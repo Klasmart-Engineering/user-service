@@ -3,30 +3,47 @@ import { Category } from '../../entities/category'
 import { Organization } from '../../entities/organization'
 import { Subcategory } from '../../entities/subcategory'
 import { CategoryRow } from '../../types/csv/categoryRow'
-import { saveError } from './readFile'
+import { CSVError } from '../../types/csv/csvError'
+import { addCsvError } from '../csv/csvUtils'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 export async function processCategoryFromCSVRow(
     manager: EntityManager,
     row: CategoryRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
     let category: Category | undefined
     let subcategory: Subcategory | undefined
     let subcategories: Subcategory[] = []
     const { organization_name, category_name, subcategory_name } = row
-    const requiredFieldsAreProvided = organization_name && category_name
 
     if (!organization_name) {
-        saveError(fileErrors, rowNumber, 'Organization name is not provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!category_name) {
-        saveError(fileErrors, rowNumber, 'Category name is not provided')
-    }
-
-    if (!requiredFieldsAreProvided) {
-        return
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "category_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "category",
+                "attribute": "name",
+            }
+        )
     }
 
     const organization = await manager.findOne(Organization, {
@@ -34,11 +51,22 @@ export async function processCategoryFromCSVRow(
     })
 
     if (!organization) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Provided organization with name '${organization_name}' doesn't exists`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "name": organization_name,
+                "entity": "organization",
+            }
         )
+    }
+
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
+        return
     }
 
     if (subcategory_name) {
@@ -56,14 +84,20 @@ export async function processCategoryFromCSVRow(
     }
 
     if (!subcategory) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Provided subcategory with name '${subcategory_name}' doesn't exists`
+            "subcategory_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "name": subcategory_name,
+                "entity": "subCategory",
+            }
         )
     }
 
-    if (!organization || !subcategory) {
+    if (fileErrors && fileErrors.length > 0 || !organization || !subcategory) {
         return
     }
 
@@ -81,10 +115,18 @@ export async function processCategoryFromCSVRow(
         const subcategoryNames = subcategories.map(({ name }) => name)
 
         if (subcategoryNames.includes(subcategory_name)) {
-            saveError(
+            addCsvError(
                 fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
                 rowNumber,
-                `Provided subcategory with name '${subcategory_name}' already exists for this category`
+                "subcategory_name",
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    "name": subcategory_name,
+                    "entity": "subCategory",
+                    "parent_name": category_name,
+                    "parent_entity": "category",
+                }
             )
 
             return
