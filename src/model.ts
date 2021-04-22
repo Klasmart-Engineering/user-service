@@ -43,6 +43,7 @@ import { processSubjectFromCSVRow } from './utils/csv/subject'
 import { paginateData } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
+import { renameDuplicatedSchools } from './utils/renameMigration/school'
 
 export class Model {
     public static async create() {
@@ -719,32 +720,19 @@ export class Model {
             return false
         }
 
+        const queryRunner = this.connection.createQueryRunner()
+        await queryRunner.connect()
+        await queryRunner.startTransaction()
+
         try {
-            let current: School | null = null
-            let duplicateCount = 0
-            const schools = await School.find({
-                order: { school_name: 'ASC' },
-            })
-
-            for (const school of schools) {
-                if (!current) {
-                    current = school
-                    continue
-                }
-
-                if (current.school_name === school.school_name) {
-                    duplicateCount += 1
-                    school.school_name += ` [Please change name][${duplicateCount}]`
-                    await school.save()
-                } else {
-                    current = school
-                    duplicateCount = 0
-                }
-            }
-
+            await renameDuplicatedSchools(queryRunner.manager)
+            await queryRunner.commitTransaction()
             return true
         } catch (error) {
+            await queryRunner.rollbackTransaction()
             return false
+        } finally {
+            await queryRunner.release()
         }
     }
 }
