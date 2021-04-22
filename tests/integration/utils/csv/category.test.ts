@@ -6,6 +6,7 @@ import { Organization } from "../../../../src/entities/organization";
 import { Subcategory } from "../../../../src/entities/subcategory";
 import { Model } from "../../../../src/model";
 import { CategoryRow } from "../../../../src/types/csv/categoryRow";
+import { CSVError } from "../../../../src/types/csv/csvError";
 import { createServer } from "../../../../src/utils/createServer";
 import { processCategoryFromCSVRow } from "../../../../src/utils/csv/category";
 import { createOrganization } from "../../../factories/organization.factory";
@@ -21,7 +22,7 @@ describe("processCategoryFromCSVRow", () => {
     let row: CategoryRow;
     let organization: Organization;
     let subcategory: Subcategory;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -170,7 +171,7 @@ describe("processCategoryFromCSVRow", () => {
         context("and subcategory name is provided", () => {
             it("creates a category with its relations", async () => {
                 await processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
-    
+
                 const category = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,
@@ -179,10 +180,10 @@ describe("processCategoryFromCSVRow", () => {
                         organization
                     }
                 });
-    
+
                 const organizationInCategory = await category.organization;
                 const subcategoriesInCategory = await category.subcategories || [];
-    
+
                 expect(category).to.exist;
                 expect(category.name).eq(row.category_name);
                 expect(category.system).eq(false);
@@ -201,10 +202,10 @@ describe("processCategoryFromCSVRow", () => {
 
                 row = { ...row, category_name: 'Category 2', subcategory_name: '' }
             });
-    
+
             it("creates a category with None Specified subcategory", async () => {
                 await processCategoryFromCSVRow(connection.manager, row, 1, fileErrors);
-    
+
                 const category = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,
@@ -213,10 +214,10 @@ describe("processCategoryFromCSVRow", () => {
                         organization
                     }
                 });
-    
+
                 const organizationInCategory = await category.organization;
                 const subcategoriesInCategory = await category.subcategories || [];
-    
+
                 expect(category).to.exist;
                 expect(category.name).eq(row.category_name);
                 expect(category.system).eq(false);

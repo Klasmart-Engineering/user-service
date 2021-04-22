@@ -36,15 +36,13 @@ Issues with using database with "npm start"
 
 The database is created without the default permissions. To do any thing useful you need create them.
 
-You need to create a user with Admin permissions and using that users token call the endpoint:
+You need to create a user with `Admin` permissions (by adding your email to this [list](https://bitbucket-ci/calmisland/kidsloop-user-service/src/master/src/permissions/userPermissions.ts#userPermissions.ts-23), please remember to restart your project) and using your JWT token (you can get the token by signing in [global hub](https://hub.kidsloop.net)) call the endpoint:
 
-mutation{
-create_default_roles {
-role_id
-role_name
-system_role
+```
+mutation {
+  createOrUpateSystemEntities
 }
-}
+```
 
 # Diagnosing
 

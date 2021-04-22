@@ -8,6 +8,7 @@ import { Organization } from "../../../../src/entities/organization";
 import { Program } from "../../../../src/entities/program";
 import { Subject } from "../../../../src/entities/subject";
 import { Model } from "../../../../src/model";
+import { CSVError } from "../../../../src/types/csv/csvError";
 import { ProgramRow } from "../../../../src/types/csv/programRow";
 import { createServer } from "../../../../src/utils/createServer";
 import { processProgramFromCSVRow } from "../../../../src/utils/csv/program";
@@ -31,7 +32,7 @@ describe("processProgramFromCSVRow", () => {
     let noneSpecifiedAgeRange: AgeRange;
     let noneSpecifiedGrade: Grade;
     let noneSpecifiedSubject: Subject;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
     const rowModel: ProgramRow = {
         organization_name: 'Company 1',
         program_name: 'Program 1',
@@ -428,7 +429,7 @@ describe("processProgramFromCSVRow", () => {
         context("and all fields are provided", () => {
             it("creates a program with its relations", async () => {
                 await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
-    
+
                 const program = await Program.findOneOrFail({
                     where: {
                         name: row.program_name,
@@ -466,10 +467,10 @@ describe("processProgramFromCSVRow", () => {
             beforeEach(async () => {
                 row = { ...row, program_name: 'Program 2', age_range_low_value: '', age_range_high_value: '', age_range_unit: '' }
             });
-    
+
             it("creates a program with 'None Specified' age range", async () => {
                 await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
-    
+
                 const program = await Program.findOneOrFail({
                     where: {
                         name: row.program_name,
@@ -507,10 +508,10 @@ describe("processProgramFromCSVRow", () => {
             beforeEach(async () => {
                 row = { ...row, program_name: 'Program 3', grade_name: '' }
             });
-    
+
             it("creates a program with 'None Specified' grade", async () => {
                 await processProgramFromCSVRow(connection.manager, row, 1, fileErrors);
-    
+
                 const program = await Program.findOneOrFail({
                     where: {
                         name: row.program_name,

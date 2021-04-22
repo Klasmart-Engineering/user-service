@@ -12,6 +12,7 @@ import { createOrganization } from "../../../factories/organization.factory";
 import { Grade } from "../../../../src/entities/grade";
 import { createGrade } from "../../../factories/grade.factory";
 import { setGradeFromToFields } from "../../../../src/utils/csv/grade";
+import { CSVError } from "../../../../src/types/csv/csvError";
 
 use(chaiAsPromised);
 
@@ -19,7 +20,7 @@ describe("processGradeFromCSVRow", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
     let row: GradeRow;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();

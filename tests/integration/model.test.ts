@@ -1366,7 +1366,7 @@ describe("model", () => {
             context('and no direction args are specified', () => {
                 beforeEach(async () => {
                     await RolesInitializer.run()
-                    const permissions = await Permission.find({ take: 10, order: { permission_id: 'ASC' } })
+                    const permissions = await Permission.find({ take: 50, order: { permission_id: 'ASC' } })
                     firstPermission = permissions[0]
                     lastPermission = permissions.pop()
                 })
@@ -1375,7 +1375,7 @@ describe("model", () => {
                     const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
-                    expect(gqlPermissions?.edges.length).to.equal(10);
+                    expect(gqlPermissions?.edges.length).to.equal(50);
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(convertDataToCursor(firstPermission.permission_id))
                     expect(gqlPermissions?.pageInfo.endCursor).to.equal(convertDataToCursor(lastPermission.permission_id))

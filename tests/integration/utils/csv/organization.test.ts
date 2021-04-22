@@ -13,6 +13,7 @@ import { OrganizationRow } from "../../../../src/types/csv/organizationRow";
 import { processOrganizationFromCSVRow } from "../../../../src/utils/csv/organization";
 import { createOrganization } from "../../../factories/organization.factory";
 import { createUser } from "../../../factories/user.factory";
+import { CSVError } from "../../../../src/types/csv/csvError";
 
 use(chaiAsPromised);
 
@@ -20,7 +21,7 @@ describe("processOrganizationFromCSVRow", () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
     let row: OrganizationRow;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();

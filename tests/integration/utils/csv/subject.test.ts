@@ -13,6 +13,7 @@ import { ApolloServerTestClient, createTestClient } from "../../../utils/createT
 import { createTestConnection } from "../../../utils/testConnection";
 import  CategoriesInitializer from "../../../../src/initializers/categories";
 import  SubcategoriesInitializer  from "../../../../src/initializers/subcategories";
+import { CSVError } from "../../../../src/types/csv/csvError";
 
 
 describe("processSubjectFromCSVRow", () => {
@@ -20,7 +21,7 @@ describe("processSubjectFromCSVRow", () => {
     let testClient: ApolloServerTestClient;
     let row: SubjectRow;
     let organization: Organization;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     before(async () => {
         connection = await createTestConnection();
@@ -43,8 +44,8 @@ describe("processSubjectFromCSVRow", () => {
             organization_name: 'Company 1',
             subject_name: 'Wacking',
             category_name: 'Gross Motor Skills'
-        }    
-        
+        }
+
     });
 
     context("when the organization name is not provided", () => {
@@ -111,7 +112,7 @@ describe("processSubjectFromCSVRow", () => {
 
             expect(subject).to.exist;
             const categories = await subject?.categories
-            
+
             expect(subject?.name).eq(row.subject_name);
             expect(subject?.system).eq(false);
             expect(subject?.status).eq('active');
