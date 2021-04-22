@@ -3,33 +3,64 @@ import { Organization } from '../../entities/organization'
 import { Permission } from '../../entities/permission'
 import { Role } from '../../entities/role'
 import { RoleRow } from '../../types/csv/roleRow'
-import { saveError } from './readFile'
+import { addCsvError } from '../csv/csvUtils'
+import { CSVError } from '../../types/csv/csvError'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 export async function processRoleFromCSVRow(
     manager: EntityManager,
     row: RoleRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
     let role
     let rolePermissions: Permission[] = []
     const { organization_name, role_name, permission_id } = row
-    const requiredFieldsAreProvided =
-        organization_name && role_name && permission_id
 
     if (!organization_name) {
-        saveError(fileErrors, rowNumber, 'Organization name is not provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!role_name) {
-        saveError(fileErrors, rowNumber, 'Role name is not provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "role_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "role",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!permission_id) {
-        saveError(fileErrors, rowNumber, 'Permission id is not provided')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "permission_id",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "permission",
+                "attribute": "id",
+            }
+        )
     }
 
-    if (!requiredFieldsAreProvided) {
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
@@ -38,10 +69,16 @@ export async function processRoleFromCSVRow(
     })
 
     if (!organization) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Provided organization with name '${organization_name}' doesn't exist`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "entity": "organization",
+                "name": organization_name,
+            }
         )
     }
 
@@ -50,14 +87,20 @@ export async function processRoleFromCSVRow(
     })
 
     if (!permission) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Provided permission with id '${permission_id}' doesn't exists in the system`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "entity": "permission",
+                "name": permission_id,
+            }
         )
     }
 
-    if (!organization || !permission) {
+    if (fileErrors && fileErrors.length > 0 || !organization || !permission) {
         return
     }
 
@@ -77,10 +120,18 @@ export async function processRoleFromCSVRow(
         )
 
         if (permissionNames.includes(permission_id)) {
-            saveError(
+            addCsvError(
                 fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
                 rowNumber,
-                `Provided permission with id '${permission_id}' already exists for this role`
+                "permission_id",
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    "entity": "permission",
+                    "name": permission_id,
+                    "parent_entity": "role",
+                    "parent_name": role_name,
+                }
             )
 
             return

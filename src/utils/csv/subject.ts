@@ -3,25 +3,46 @@ import { Category } from '../../entities/category'
 import { Organization } from '../../entities/organization'
 import { Subject } from '../../entities/subject'
 import { SubjectRow } from '../../types/csv/subjectRow'
-import { saveError } from './readFile'
+import { addCsvError } from '../csv/csvUtils'
+import { CSVError } from '../../types/csv/csvError'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 export async function processSubjectFromCSVRow(
     manager: EntityManager,
     row: SubjectRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
-    const requiredFieldsAreProvided = row.organization_name && row.subject_name
-
     if (!row.organization_name) {
-        saveError(fileErrors, rowNumber, 'Mandatory Organization name is empty')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!row.subject_name) {
-        saveError(fileErrors, rowNumber, 'Mandatory Subject name is empty')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "subject_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "subject",
+                "attribute": "name",
+            }
+        )
     }
 
-    if (!requiredFieldsAreProvided) {
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
@@ -31,11 +52,19 @@ export async function processSubjectFromCSVRow(
 
     if (!organizations || organizations.length != 1) {
         const organization_count = organizations ? organizations.length : 0
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            `Organizations name '${row.organization_name}' matches ${organization_count} Organizations, it should match one Organization`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_MULTIPLE_EXIST,
+            {
+                "entity": "organization",
+                "name": row.organization_name,
+                "count": organization_count,
+            }
         )
+
         return
     }
 
@@ -52,11 +81,20 @@ export async function processSubjectFromCSVRow(
 
     if (subjects) {
         if (subjects.length > 1) {
-            saveError(
+            addCsvError(
                 fileErrors,
+                csvErrorConstants.ERR_CSV_INVALID_FIELD,
                 rowNumber,
-                `subjects name '${row.subject_name}' already exists more than once in '${row.organization_name}'`
+                "subject_name",
+                csvErrorConstants.MSG_ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD,
+                {
+                    "entity": "subject",
+                    "name": row.subject_name,
+                    "parent_entity": "organization",
+                    "parent_name": row.organization_name,
+                }
             )
+
             return
         }
 
@@ -84,21 +122,39 @@ export async function processSubjectFromCSVRow(
     })
 
     if (!categoryToAdd) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Category '${row.category_name}' not associated for Organisation '${row.organization_name}'`
+            "category_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            {
+                "entity": "category",
+                "name": row.category_name,
+                "parent_entity": "organization",
+                "parent_name": row.organization_name,
+            }
         )
+
         return
     }
 
     for (const p of existingCategories) {
         if (p.id === categoryToAdd.id) {
-            saveError(
+            addCsvError(
                 fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
                 rowNumber,
-                `Category '${row.category_name}' is already related to '${row.subject_name}'`
+                "category_name",
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    "entity": "category",
+                    "name": row.category_name,
+                    "parent_entity": "subject",
+                    "parent_name": row.subject_name,
+                }
             )
+
             return
         }
     }

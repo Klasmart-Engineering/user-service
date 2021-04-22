@@ -5,6 +5,9 @@ import { ReReadable } from 'rereadable-stream'
 import { EntityManager } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { Transform } from 'stream'
+import { CSVError } from '../../types/csv/csvError'
+import stringInject from '../stringUtils'
+import constants from './errors/csvErrorConstants'
 
 function formatCSVRow(row: any) {
     const keys = Object.keys(row)
@@ -27,10 +30,6 @@ function canFinish(
     return index === callbacks.length - 1 && !stream.readableLength
 }
 
-export function saveError(fileErrors: string[], row: number, message: string) {
-    fileErrors.push(`[row ${row}]. ${message}`)
-}
-
 export async function readCSVFile(
     manager: EntityManager,
     file: Upload,
@@ -39,7 +38,7 @@ export async function readCSVFile(
     const { filename, mimetype, encoding } = file
     let rowCounter: number
     let csvStream
-    const fileErrors: string[] = []
+    const fileErrors: CSVError[] = []
 
     return new Promise<File>(async (resolve, reject) => {
         try {
@@ -63,7 +62,9 @@ export async function readCSVFile(
                                 fileErrors
                             )
 
-                            reject(fileErrors[0])
+                            const errorDetails = fileErrors[0]?.details
+                            const errorMessage = stringInject(errorDetails?.message, errorDetails)
+                            reject(errorMessage)
                         }
 
                         resolve({
@@ -75,7 +76,7 @@ export async function readCSVFile(
                 }
             }
             if (rowCounter === 0) {
-                const mess = 'Empty input file: ${filename}'
+                const mess = stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, { filename })
                 throw new Error(mess)
             }
         } catch (error) {
