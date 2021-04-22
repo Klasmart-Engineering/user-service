@@ -18,6 +18,7 @@ describe('paginate', ()=>{
     let testClient: ApolloServerTestClient;
     let usersList: User [] = [];
     let scope: any;
+    const cursorColumn = 'user_id'
 
     before(async () => {
         connection = await createTestConnection();
@@ -40,7 +41,7 @@ describe('paginate', ()=>{
         const direction = 'FORWARD'
         it('should get the first few records according to pagesize', async()=>{
             let directionArgs = { count: 3 }
-            const data = await paginateData(direction, directionArgs, scope, 'user_id')
+            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
             
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(3);
@@ -54,7 +55,7 @@ describe('paginate', ()=>{
         })
         it('should get the next few records according to pagesize and startcursor', async()=>{
             let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
-            const data = await paginateData(direction, directionArgs, scope, 'user_id')
+            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
             
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(3);
@@ -68,7 +69,7 @@ describe('paginate', ()=>{
         })
         it('should get the last few records less than pagesize and startcursor', async()=>{
             let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[7].user_id)}
-            const data = await paginateData(direction, directionArgs, scope, 'user_id')
+            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(2);
             for(let i=0; i<2; i++) {
@@ -78,6 +79,72 @@ describe('paginate', ()=>{
             expect(data.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[9].user_id))
             expect(data.pageInfo.hasNextPage).to.be.false
             expect(data.pageInfo.hasPreviousPage).to.be.true
+        })  
+    })
+
+    context('seek backward',  ()=>{
+        const direction = 'BACKWARD'
+        it('should get the last few records according to pagesize and null cursor', async()=>{
+            let directionArgs = { count: 3 }
+            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            
+            expect(data.totalCount).to.eql(10);
+            expect(data.edges.length).to.equal(1);
+            expect(data.edges[0].node.user_id).to.equal(usersList[9].user_id)
+            expect(data.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[9].user_id))
+            expect(data.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[9].user_id))
+            expect(data.pageInfo.hasNextPage).to.be.false
+            expect(data.pageInfo.hasPreviousPage).to.be.true
+        })
+        it('should get the next few records according to pagesize and cursor', async()=>{
+            let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[9].user_id)}
+            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            expect(data.totalCount).to.eql(10);
+            expect(data.edges.length).to.equal(3);
+            for(let i=0; i<3; i++) {
+                expect(data.edges[i].node.user_id).to.equal(usersList[6+i].user_id)
+            }
+            expect(data.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[6].user_id))
+            expect(data.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[8].user_id))
+            expect(data.pageInfo.hasNextPage).to.be.true
+            expect(data.pageInfo.hasPreviousPage).to.be.true
+        })
+        it('should get the first few records according to pagesize and cursor', async()=>{
+            let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
+            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+
+            expect(data.totalCount).to.eql(10);
+            expect(data.edges.length).to.equal(3);
+            for(let i=0; i<3; i++) {
+                expect(data.edges[i].node.user_id).to.equal(usersList[i].user_id)
+            }
+            expect(data.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[0].user_id))
+            expect(data.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[2].user_id))
+            expect(data.pageInfo.hasNextPage).to.be.true
+            expect(data.pageInfo.hasPreviousPage).to.be.false
+        })
+    })
+
+    context('default options', ()=>{
+        beforeEach(async () => {
+            usersList = [];
+            // create 10 users
+            for (let i=0; i<50; i++) {
+                usersList.push(createUser())
+                await connection.manager.save(usersList)
+            }
+            scope = getRepository(User).createQueryBuilder();
+            //sort users by userId
+            usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
+        })
+        it('should paginate in forward direction with default options ', async()=>{
+            const data = await paginateData({scope, cursorColumn})
+            
+            expect(data.totalCount).to.eql(60);
+            expect(data.edges.length).to.equal(50);
+            expect(data.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[0].user_id))
+            expect(data.pageInfo.hasNextPage).to.be.true
+            expect(data.pageInfo.hasPreviousPage).to.be.false
         })
     })
 })

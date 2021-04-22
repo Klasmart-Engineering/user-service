@@ -17,16 +17,82 @@ import { User } from '../../entities/user'
 import { UserRow } from '../../types/csv/userRow'
 import { generateShortCode, validateShortCode } from '../shortcode'
 import { v4 as uuid_v4 } from 'uuid'
-import { saveError } from './readFile'
+import { addCsvError } from '../csv/csvUtils'
+import { CSVError } from '../../types/csv/csvError'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 export const processUserFromCSVRow = async (
     manager: EntityManager,
     row: UserRow,
-    rowCount: number,
-    fileErrors: string[]
+    rowNumber: number,
+    fileErrors: CSVError[]
 ) => {
     if (!row.organization_name) {
-        saveError(fileErrors, rowCount, 'missing organization_name')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
+    }
+
+    if (!row.user_email && !row.user_phone) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "user_email, user_phone",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
+            {
+                "entity": "user",
+                "attribute": "name",
+                "other_entity": "user",
+                "other_attribute": "phone",
+            }
+        )
+    }
+
+    if (row.user_date_of_birth && !validateDOB(row.user_date_of_birth)) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            "date_of_birth",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_DATE_FORMAT,
+            {
+                "entity": "user",
+                "attribute": "date_of_birth",
+                "format": "MM-YYYY",
+            }
+        )
+    }
+
+    if (row.user_shortcode?.length > 0) {
+        if (
+            !validateShortCode(row.user_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
+        ) {
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_INVALID_FIELD,
+                rowNumber,
+                "user_shortcode",
+                csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+                {
+                    "entity": "user",
+                    "attribute": "shortcode",
+                    "max": MEMBERSHIP_SHORTCODE_MAXLEN,
+                }
+            )
+        }
+    }
+
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
@@ -35,37 +101,19 @@ export const processUserFromCSVRow = async (
     })
 
     if (!org) {
-        saveError(fileErrors, rowCount, "Organisation doesn't exist")
-        return
-    }
-
-    if (!row.user_email && !row.user_phone) {
-        saveError(fileErrors, rowCount, 'missing user_email or user_phone')
-        return
-    }
-
-    if (row.user_date_of_birth && !validateDOB(row.user_date_of_birth)) {
-        saveError(
+        addCsvError(
             fileErrors,
-            rowCount,
-            'date of birth is not valid. Please specify MM-YYYY'
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "entity": "organization",
+                "name": row.organization_name,
+            }
         )
 
         return
-    }
-
-    if (row.user_shortcode?.length > 0) {
-        if (
-            !validateShortCode(row.user_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
-        ) {
-            saveError(
-                fileErrors,
-                rowCount,
-                'invalid shortcode provided. Make sure is uppercased'
-            )
-
-            return
-        }
     }
 
     let organizationRole = undefined
@@ -85,10 +133,16 @@ export const processUserFromCSVRow = async (
         })
 
         if (!organizationRole) {
-            saveError(
+            addCsvError(
                 fileErrors,
-                rowCount,
-                'invalid organization role name provided'
+                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                rowNumber,
+                "organization_role_name",
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                {
+                    "entity": "organizationRole",
+                    "name": row.organization_role_name,
+                }
             )
         }
     }
@@ -103,7 +157,17 @@ export const processUserFromCSVRow = async (
         })
 
         if (!school) {
-            saveError(fileErrors, rowCount, 'invalid school name provided')
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                rowNumber,
+                "organization_name",
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                {
+                    "entity": "school",
+                    "name": row.school_name,
+                }
+            )
         }
     }
 
@@ -124,7 +188,17 @@ export const processUserFromCSVRow = async (
         })
 
         if (!schoolRole) {
-            saveError(fileErrors, rowCount, 'invalid school role name provided')
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                rowNumber,
+                "school_role_name",
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                {
+                    "entity": "organizationRole",
+                    "name": row.school_role_name,
+                }
+            )
         }
     }
 
@@ -138,8 +212,22 @@ export const processUserFromCSVRow = async (
         })
 
         if (!cls) {
-            saveError(fileErrors, rowCount, 'invalid class name provided')
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                rowNumber,
+                "school_role_name",
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                {
+                    "entity": "class",
+                    "name": row.class_name,
+                }
+            )
         }
+    }
+
+    if (fileErrors && fileErrors.length > 0) {
+        return
     }
 
     let email = row.user_email

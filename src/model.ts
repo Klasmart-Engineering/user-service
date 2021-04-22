@@ -371,8 +371,7 @@ export class Model {
             context: Context,
             { direction, directionArgs, scope}: any
         ) {
-
-        return paginateData(direction, directionArgs, scope, 'user_id')
+        return paginateData({direction, directionArgs, scope, cursorColumn:'user_id'})
     }
 
     public async permissionsConnection(
@@ -382,7 +381,7 @@ export class Model {
 
         const scope = this.permissionRepository.createQueryBuilder()
 
-        return paginateData(direction, directionArgs, scope, 'permission_id')
+        return paginateData({direction, directionArgs, scope, cursorColumn:'permission_id'})
     }
 
     public async getRole({ role_id }: Role) {

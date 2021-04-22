@@ -5,7 +5,9 @@ import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
 import { generateShortCode } from '../shortcode'
 import { ClassRow } from '../../types/csv/classRow'
-import { saveError } from './readFile'
+import { CSVError } from '../../types/csv/csvError'
+import { addCsvError } from '../csv/csvUtils'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -16,27 +18,57 @@ export const processClassFromCSVRow = async (
         school_name,
         program_name,
     }: ClassRow,
-    rowCount: number,
-    fileErrors: string[]
+    rowNumber: number,
+    fileErrors: CSVError[]
 ) => {
-    const requiredFieldsAreProvided = organization_name && class_name
-
     if (!organization_name) {
-        saveError(fileErrors, rowCount, 'missing organization_name')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!class_name) {
-        saveError(fileErrors, rowCount, 'missing class_name')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "class_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "class",
+                "attribute": "name",
+            }
+        )
     }
 
-    if (!requiredFieldsAreProvided) {
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
     const org = await Organization.findOne({ organization_name })
 
     if (!org) {
-        saveError(fileErrors, rowCount, "Organisation doesn't exist")
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                "name": organization_name,
+                "entity": "organization",
+            }
+        )
+
         return
     }
 
@@ -50,11 +82,21 @@ export const processClassFromCSVRow = async (
             },
         }))
     ) {
-        saveError(
+        addCsvError(
             fileErrors,
-            rowCount,
-            `Duplicate class classShortCode '${class_name}'`
+            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            rowNumber,
+            "class_shortcode",
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            {
+                "name": class_name,
+                "entity": "class",
+                "parent_name": organization_name,
+                "parent_entity": "organization",
+            }
         )
+
+        return
     }
 
     // check if class exists in manager
@@ -79,10 +121,18 @@ export const processClassFromCSVRow = async (
             where: { school_name, organization: org },
         })
         if (!school) {
-            saveError(
+            addCsvError(
                 fileErrors,
-                rowCount,
-                `School doesn't exist for Organisation '${organization_name}'`
+                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                rowNumber,
+                "school_name",
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                {
+                    "name": school_name,
+                    "entity": "school",
+                    "parent_name": organization_name,
+                    "parent_entity": "organization",
+                }
             )
 
             return
@@ -105,11 +155,20 @@ export const processClassFromCSVRow = async (
         })
 
         if (!programToAdd) {
-            saveError(
+            addCsvError(
                 fileErrors,
-                rowCount,
-                `Program is not associated for Organisation '${organization_name}'`
+                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                rowNumber,
+                "program_name",
+                csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+                {
+                    "name": program_name,
+                    "entity": "program",
+                    "parent_name": organization_name,
+                    "parent_entity": "organization",
+                }
             )
+
             return
         }
 

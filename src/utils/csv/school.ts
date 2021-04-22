@@ -8,32 +8,57 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../shortcode'
-import { saveError } from './readFile'
+import { addCsvError } from '../csv/csvUtils'
+import { CSVError } from '../../types/csv/csvError'
+import csvErrorConstants from './errors/csvErrorConstants'
 
 export async function processSchoolFromCSVRow(
     manager: EntityManager,
     row: SchoolRow,
     rowNumber: number,
-    fileErrors: string[]
+    fileErrors: CSVError[]
 ) {
-    const requiredFieldsAreProvided = row.organization_name && row.school_name
-
     if (!row.organization_name) {
-        saveError(fileErrors, rowNumber, 'Mandatory Organization name is empty')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "organization",
+                "attribute": "name",
+            }
+        )
     }
 
     if (!row.school_name) {
-        saveError(fileErrors, rowNumber, 'Mandatory School name is empty')
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            rowNumber,
+            "school_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "school",
+                "attribute": "name",
+            }
+        )
     }
 
     if (row.school_shortcode?.length > SHORTCODE_DEFAULT_MAXLEN) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            `School shortcode '${row.school_shortcode}' is ${row.school_shortcode.length} characters long, it must be no more than ${SHORTCODE_DEFAULT_MAXLEN} characters`
+            "school_shortcode",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+            {
+                "entity": "school",
+                "attribute": "shortcode",
+                "max": SHORTCODE_DEFAULT_MAXLEN,
+            }
         )
-
-        return
     }
 
     const shortcode = row.school_shortcode
@@ -41,14 +66,21 @@ export async function processSchoolFromCSVRow(
         : generateShortCode()
 
     if (!validateShortCode(shortcode)) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            `School shortcode '${shortcode}' fails validation, must be only uppercase letters (A-Z) and numbers no spaces or symbols`
+            "school_shortcode",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_ALPHA_NUM,
+            {
+                "entity": "school",
+                "attribute": "shortcode",
+            }
         )
     }
 
-    if (!requiredFieldsAreProvided) {
+    // Return if there are any validation errors so that we don't need to waste any DB queries
+    if (fileErrors && fileErrors.length > 0) {
         return
     }
 
@@ -58,10 +90,17 @@ export async function processSchoolFromCSVRow(
 
     if (!organizations || organizations.length != 1) {
         const organization_count = organizations ? organizations.length : 0
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            `Organizations name '${row.organization_name}' matches ${organization_count} Organizations, it should match one Organization`
+            "organization_name",
+            csvErrorConstants.MSG_ERR_CSV_INVALID_MULTIPLE_EXIST,
+            {
+                "entity": "organization",
+                "name": row.organization_name,
+                "count": organization_count,
+            }
         )
 
         return
@@ -79,10 +118,18 @@ export async function processSchoolFromCSVRow(
 
     if (schools) {
         if (schools.length > 1) {
-            saveError(
+            addCsvError(
                 fileErrors,
+                csvErrorConstants.ERR_CSV_INVALID_FIELD,
                 rowNumber,
-                `School name '${row.school_name}' already exists more than once in '${row.organization_name}'`
+                "school_name",
+                csvErrorConstants.MSG_ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD,
+                {
+                    "entity": "school",
+                    "name": row.school_name,
+                    "parent_entity": "organization",
+                    "parent_name": row.organization_name,
+                }
             )
 
             return
@@ -115,10 +162,18 @@ export async function processSchoolFromCSVRow(
     })
 
     if (!programToAdd) {
-        saveError(
+        addCsvError(
             fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            `Program '${row.program_name}' not associated for Organisation ${row.organization_name}`
+            "program_name",
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
+            {
+                "entity": "program",
+                "name": row.program_name,
+                "parent_entity": "organization",
+                "parent_name": row.organization_name,
+            }
         )
 
         return
@@ -126,10 +181,18 @@ export async function processSchoolFromCSVRow(
 
     for (const p of existingPrograms) {
         if (p.id === programToAdd.id) {
-            saveError(
+            addCsvError(
                 fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
                 rowNumber,
-                `Program '${row.program_name}' is already related to '${row.school_name}'`
+                "program_name",
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    "entity": "program",
+                    "name": row.program_name,
+                    "parent_entity": "school",
+                    "parent_name": row.school_name,
+                }
             )
 
             return

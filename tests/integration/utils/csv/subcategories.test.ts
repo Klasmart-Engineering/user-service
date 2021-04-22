@@ -11,6 +11,7 @@ import { Subcategory } from "../../../../src/entities/subcategory";
 import { createOrganization } from "../../../factories/organization.factory";
 import { processSubCategoriesFromCSVRow } from "../../../../src/utils/csv/subCategories";
 import { SubCategoryRow } from "../../../../src/types/csv/subCategoryRow";
+import { CSVError } from "../../../../src/types/csv/csvError";
 
 use(chaiAsPromised);
 
@@ -19,7 +20,7 @@ describe("processSubCategoriesFromCSVRow", ()=> {
     let testClient: ApolloServerTestClient;
     let row: SubCategoryRow;
     let expectedOrg: Organization;
-    let fileErrors: string[];
+    let fileErrors: CSVError[];
 
     const orgName: string = "my-org";
     before(async () => {
@@ -44,7 +45,7 @@ describe("processSubCategoriesFromCSVRow", ()=> {
 
         await Subcategory.findOneOrFail({where:{name:"sc1", organization:expectedOrg}});
     })
-    
+
     it('should throw an error (missing org/sub category) and rollback when all transactions', async()=>{
         row = {organization_name: '' , subcategory_name: 'sc1'}
         const fn = () => processSubCategoriesFromCSVRow(connection.manager, row, 1, fileErrors);
