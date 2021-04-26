@@ -14,6 +14,7 @@ const typeDefs = gql`
         ): Organization
         uploadOrganizationsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        renameDuplicateOrganizations(_: Int): Boolean @isAdmin
     }
     extend type Query {
         organization(organization_id: ID!): Organization
@@ -165,6 +166,8 @@ export default function getDefault(
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadOrganizationsFromCSV(args, ctx, info),
+                renameDuplicateOrganizations: (_parent, args, ctx, info) =>
+                    model.renameDuplicateOrganizations(args, ctx, info),
             },
             Query: {
                 organizations: (_parent, args, _context, _info) =>

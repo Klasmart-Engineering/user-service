@@ -59,6 +59,7 @@ import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
 import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
 import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 import { convertDataToCursor } from "../utils/paginate";
+import { renameDuplicateOrganizationsMutation, renameDuplicateOrganizationsQuery } from "../utils/operations/renameDuplicateOrganizations";
 
 use(chaiAsPromised);
 
@@ -1410,5 +1411,56 @@ describe("model", () => {
             })
         })
     })
+
+    describe("renameDuplicateOrganizations", () => {
+        const organizationName = 'Organization 1';
+
+        beforeEach(async () => {
+            for (let i = 0; i < 3; i += 1) {
+                const organization = new Organization();
+                organization.organization_name = organizationName;
+                await organization.save();
+
+                const nullOrganization = new Organization();
+                await nullOrganization.save();
+            }
+        });
+
+        context("when operation is not a mutation", () => {
+            it("should throw an error", async () => {
+                const fn = async () => await renameDuplicateOrganizationsQuery(testClient);
+                expect(fn()).to.be.rejected;
+
+                const nullOrgs = await Organization.count({ where: { organization_name: null }});
+                const duplicatedOrgs = await Organization.count({ where: { organization_name: organizationName }});
+                expect(nullOrgs).eq(3);
+                expect(duplicatedOrgs).eq(3);
+            });
+        });
+
+        context("when user has not Admin permissions", () => {
+            it("should throw an error", async () => {
+                const fn = async () => await renameDuplicateOrganizationsMutation(testClient);
+                expect(fn()).to.be.rejected;
+
+                const nullOrgs = await Organization.count({ where: { organization_name: null }});
+                const duplicatedOrgs = await Organization.count({ where: { organization_name: organizationName }});
+                expect(nullOrgs).eq(3);
+                expect(duplicatedOrgs).eq(3);
+            });
+        });
+
+        context("when user has Admin permissions", () => {
+            it("should throw an error", async () => {
+                const result = await renameDuplicateOrganizationsMutation(testClient, getJoeAuthToken());
+                expect(result).eq(true);
+
+                const nullOrgs = await Organization.count({ where: { organization_name: null }});
+                const duplicatedOrgs = await Organization.count({ where: { organization_name: organizationName }});
+                expect(nullOrgs).eq(0);
+                expect(duplicatedOrgs).eq(1);
+            });
+        });
+    });
 });
 
