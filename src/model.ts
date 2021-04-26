@@ -43,6 +43,10 @@ import { processSubjectFromCSVRow } from './utils/csv/subject'
 import { paginateData } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
+import {
+    renameNullOrganizations,
+    renameDuplicatedOrganizations,
+} from './utils/renameMigration/organization'
 
 export class Model {
     public static async create() {
@@ -368,20 +372,29 @@ export class Model {
     }
 
     public async usersConnection(
-            context: Context,
-            { direction, directionArgs, scope}: any
-        ) {
-        return paginateData({direction, directionArgs, scope, cursorColumn:'user_id'})
+        context: Context,
+        { direction, directionArgs, scope }: any
+    ) {
+        return paginateData({
+            direction,
+            directionArgs,
+            scope,
+            cursorColumn: 'user_id',
+        })
     }
 
     public async permissionsConnection(
-            context: Context,
-            { direction, directionArgs }: any
-        ) {
-
+        context: Context,
+        { direction, directionArgs }: any
+    ) {
         const scope = this.permissionRepository.createQueryBuilder()
 
-        return paginateData({direction, directionArgs, scope, cursorColumn:'permission_id'})
+        return paginateData({
+            direction,
+            directionArgs,
+            scope,
+            cursorColumn: 'permission_id',
+        })
     }
 
     public async getRole({ role_id }: Role) {
@@ -699,5 +712,31 @@ export class Model {
         ])
 
         return file
+    }
+
+    public async renameDuplicateOrganizations(
+        args: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+
+        const queryRunner = this.connection.createQueryRunner()
+        await queryRunner.connect()
+        await queryRunner.startTransaction()
+
+        try {
+            await renameDuplicatedOrganizations(queryRunner.manager)
+            await renameNullOrganizations(queryRunner.manager)
+            await queryRunner.commitTransaction()
+            return true
+        } catch (error) {
+            await queryRunner.rollbackTransaction()
+            return false
+        } finally {
+            await queryRunner.release()
+        }
     }
 }
