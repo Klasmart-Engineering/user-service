@@ -20,10 +20,11 @@ import {
     updateUser,
     setPrimaryUser,
     updateUserEmail,
-    getSubjectsTeaching
+    getSubjectsTeaching,
+    addSchoolToUser
 } from "../utils/operations/userOps";
 import { createUserBilly, createUserJoe } from "../utils/testEntities";
-import { createSchool, createClass, createRole } from "../utils/operations/organizationOps";
+import { createSchool, createClass, createRole, addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { addStudentToClass, addTeacherToClass, editSubjects } from "../utils/operations/classOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addOrganizationToUserAndValidate } from "../utils/operations/userOps";
@@ -37,8 +38,6 @@ import { addRoleToSchoolMembership, schoolMembershipCheckAllowed } from "../util
 import { createUserAndValidate } from "../utils/operations/modelOps";
 import { Organization } from "../../src/entities/organization";
 import { Role } from "../../src/entities/role";
-import { Status } from "../../src/entities/status";
-import { gql } from "apollo-server-express";
 import { Class } from "../../src/entities/class";
 
 import chaiAsPromised from "chai-as-promised";
@@ -836,6 +835,43 @@ describe("user", () => {
                         expect(gqlSubjects).to.have.lengthOf(1);
                         expect(gqlSubjects[0].id).to.equal(subject_id)
                     });
+                });
+            });
+        });
+    });
+
+    describe("addSchool", () => {
+        let idOfUserPerformingOperation: string;
+        let idOfUserJoiningSchool: string;
+        let organizationId: string;
+        let schoolId: string;
+
+        beforeEach(async () => {
+            const orgOwner = await createUserJoe(testClient);
+            organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id)).organization_id;
+            idOfUserPerformingOperation = (await createUserBilly(testClient)).user_id;
+            idOfUserJoiningSchool = idOfUserPerformingOperation;
+            schoolId = (await createSchool(testClient, organizationId, "My School", undefined, { authorization: getJoeAuthToken() })).school_id;
+        });
+
+        context("when not authorized within organization", () => {
+            context("and user being added is part of the organization", () => {
+                beforeEach(async () => {
+                    addUserToOrganizationAndValidate(testClient, idOfUserJoiningSchool, organizationId, { authorization: getJoeAuthToken() })
+                });
+
+                it("user should join the specified school", async () => {
+                    const membership = await addSchoolToUser(testClient, idOfUserPerformingOperation, schoolId, { authorization: undefined });
+                    expect(membership).to.exist;
+                    await SchoolMembership.findOneOrFail({ user_id: idOfUserJoiningSchool, school_id: schoolId });
+                });
+            });
+
+            context("and user being added is not part of the organization", () => {
+                it("user should join the specified school", async () => {
+                    const membership = await addSchoolToUser(testClient, idOfUserPerformingOperation, schoolId);
+                    expect(membership).to.exist;
+                    await SchoolMembership.findOneOrFail({ user_id: idOfUserJoiningSchool, school_id: schoolId });
                 });
             });
         });

@@ -133,7 +133,7 @@ const typeDefs = gql`
         ): Organization
         merge(other_id: String): User
         addOrganization(organization_id: ID!): OrganizationMembership
-        addSchool(school_id: ID!): OrganizationMembership
+        addSchool(school_id: ID!): SchoolMembership
         setPrimary(_: Int): Boolean @isAdmin(entity: "user")
     }
 `
