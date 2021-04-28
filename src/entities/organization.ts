@@ -38,6 +38,8 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../utils/shortcode'
+import csvErrorConstants from '../utils/csv/errors/csvErrorConstants'
+import stringInject from '../utils/stringUtils'
 
 export function validateEmail(email?: string): boolean {
     const email_re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -298,9 +300,15 @@ export class Organization extends BaseEntity {
                 existentOrganization &&
                 existentOrganization.organization_id !== this.organization_id
             ) {
-                throw new Error(
-                    `Organization with name '${organization_name}' already exists`
+                const errorMessage = stringInject(
+                    csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+                    {
+                        name: organization_name,
+                        entity: 'organization',
+                    }
                 )
+
+                throw new Error(errorMessage)
             }
         }
 

@@ -32,6 +32,8 @@ import { School } from './school'
 import { Status } from './status'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
+import csvErrorConstants from '../utils/csv/errors/csvErrorConstants'
+import stringInject from '../utils/stringUtils'
 
 @Entity()
 export class User extends BaseEntity {
@@ -410,9 +412,15 @@ export class User extends BaseEntity {
             })
 
             if (existentOrganization) {
-                throw new Error(
-                    `Organization with name '${organization_name}' already exists`
+                const errorMessage = stringInject(
+                    csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+                    {
+                        name: organization_name,
+                        entity: 'organization',
+                    }
                 )
+
+                throw new Error(errorMessage)
             }
         }
 
