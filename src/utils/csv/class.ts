@@ -26,11 +26,11 @@ export const processClassFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -40,11 +40,11 @@ export const processClassFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
             rowNumber,
-            "class_name",
+            'class_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "class",
-                "attribute": "name",
+                entity: 'class',
+                attribute: 'name',
             }
         )
     }
@@ -61,11 +61,31 @@ export const processClassFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
+            }
+        )
+
+        return
+    }
+
+    const classInDatabase = await Class.findOne({
+        where: { organization: org, class_name },
+    })
+
+    if (classInDatabase) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            rowNumber,
+            'class_name',
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            {
+                name: class_name,
+                entity: 'class',
             }
         )
 
@@ -86,13 +106,13 @@ export const processClassFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            "class_shortcode",
+            'class_shortcode',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                "name": class_name,
-                "entity": "class",
-                "parent_name": organization_name,
-                "parent_entity": "organization",
+                name: class_name,
+                entity: 'class',
+                parent_name: organization_name,
+                parent_entity: 'organization',
             }
         )
 
@@ -120,18 +140,41 @@ export const processClassFromCSVRow = async (
         const school = await School.findOne({
             where: { school_name, organization: org },
         })
+
         if (!school) {
             addCsvError(
                 fileErrors,
                 csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
                 rowNumber,
-                "school_name",
+                'school_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 {
-                    "name": school_name,
-                    "entity": "school",
-                    "parent_name": organization_name,
-                    "parent_entity": "organization",
+                    name: school_name,
+                    entity: 'school',
+                    parent_name: organization_name,
+                    parent_entity: 'organization',
+                }
+            )
+
+            return
+        }
+
+        const existingSchoolNames = existingSchools.map(
+            (school) => school.school_name
+        )
+
+        if (existingSchoolNames.includes(school_name)) {
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                rowNumber,
+                'school_name',
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    name: school_name,
+                    entity: 'school',
+                    parent_name: class_name,
+                    parent_entity: 'class',
                 }
             )
 
@@ -159,16 +202,37 @@ export const processClassFromCSVRow = async (
                 fileErrors,
                 csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
                 rowNumber,
-                "program_name",
+                'program_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 {
-                    "name": program_name,
-                    "entity": "program",
-                    "parent_name": organization_name,
-                    "parent_entity": "organization",
+                    name: program_name,
+                    entity: 'program',
+                    parent_name: organization_name,
+                    parent_entity: 'organization',
                 }
             )
 
+            return
+        }
+
+        const existingProgramNames = existingPrograms.map(
+            (program) => program.name
+        )
+
+        if (existingProgramNames.includes(program_name)) {
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                rowNumber,
+                'program_name',
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    name: program_name,
+                    entity: 'program',
+                    parent_name: class_name,
+                    parent_entity: 'class',
+                }
+            )
             return
         }
 

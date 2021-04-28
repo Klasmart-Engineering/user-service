@@ -63,7 +63,10 @@ export async function readCSVFile(
                             )
 
                             const errorDetails = fileErrors[0]?.details
-                            const errorMessage = stringInject(errorDetails?.message, errorDetails)
+                            const errorMessage = stringInject(
+                                errorDetails?.message,
+                                errorDetails
+                            )
                             reject(errorMessage)
                         }
 
@@ -76,7 +79,9 @@ export async function readCSVFile(
                 }
             }
             if (rowCounter === 0) {
-                const mess = stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, { filename })
+                const mess = stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, {
+                    filename,
+                })
                 throw new Error(mess)
             }
         } catch (error) {
