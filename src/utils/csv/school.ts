@@ -23,11 +23,11 @@ export async function processSchoolFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -37,11 +37,11 @@ export async function processSchoolFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
             rowNumber,
-            "school_name",
+            'school_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "school",
-                "attribute": "name",
+                entity: 'school',
+                attribute: 'name',
             }
         )
     }
@@ -51,12 +51,12 @@ export async function processSchoolFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "school_shortcode",
+            'school_shortcode',
             csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             {
-                "entity": "school",
-                "attribute": "shortcode",
-                "max": SHORTCODE_DEFAULT_MAXLEN,
+                entity: 'school',
+                attribute: 'shortcode',
+                max: SHORTCODE_DEFAULT_MAXLEN,
             }
         )
     }
@@ -70,11 +70,29 @@ export async function processSchoolFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "school_shortcode",
+            'school_shortcode',
             csvErrorConstants.MSG_ERR_CSV_INVALID_ALPHA_NUM,
             {
-                "entity": "school",
-                "attribute": "shortcode",
+                entity: 'school',
+                attribute: 'shortcode',
+            }
+        )
+    }
+
+    const schoolShortcode = await manager.findOne(School, {
+        where: { shortcode: row.school_shortcode },
+    })
+
+    if (schoolShortcode && row.school_name !== schoolShortcode.school_name) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'school_shortcode',
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+            {
+                entity: 'school',
+                name: row.school_name,
             }
         )
     }
@@ -94,12 +112,12 @@ export async function processSchoolFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_INVALID_MULTIPLE_EXIST,
             {
-                "entity": "organization",
-                "name": row.organization_name,
-                "count": organization_count,
+                entity: 'organization',
+                name: row.organization_name,
+                count: organization_count,
             }
         )
 
@@ -122,13 +140,13 @@ export async function processSchoolFromCSVRow(
                 fileErrors,
                 csvErrorConstants.ERR_CSV_INVALID_FIELD,
                 rowNumber,
-                "school_name",
+                'school_name',
                 csvErrorConstants.MSG_ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD,
                 {
-                    "entity": "school",
-                    "name": row.school_name,
-                    "parent_entity": "organization",
-                    "parent_name": row.organization_name,
+                    entity: 'school',
+                    name: row.school_name,
+                    parent_entity: 'organization',
+                    parent_name: row.organization_name,
                 }
             )
 
@@ -166,13 +184,13 @@ export async function processSchoolFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
             rowNumber,
-            "program_name",
+            'program_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
-                "entity": "program",
-                "name": row.program_name,
-                "parent_entity": "organization",
-                "parent_name": row.organization_name,
+                entity: 'program',
+                name: row.program_name,
+                parent_entity: 'organization',
+                parent_name: row.organization_name,
             }
         )
 
@@ -185,13 +203,13 @@ export async function processSchoolFromCSVRow(
                 fileErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
                 rowNumber,
-                "program_name",
+                'program_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    "entity": "program",
-                    "name": row.program_name,
-                    "parent_entity": "school",
-                    "parent_name": row.school_name,
+                    entity: 'program',
+                    name: row.program_name,
+                    parent_entity: 'school',
+                    parent_name: row.school_name,
                 }
             )
 
