@@ -36,4 +36,5 @@ export default {
     MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX: "{entity} {attribute} must only contain uppercase letters, numbers and must not greater than {max} characters.",
     MSG_ERR_CSV_INVALID_MULTIPLE_EXIST: "\"{name}\" {entity} matches {count}, it should match one {entity}.",
     MSG_ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD: "\"{name}\" {entity} already exists more than once in \"{parent_name}\" {parent_entity}.",
+    MSG_ERR_CSV_INVALID_LENGTH: "{entity} {attribute} must not be greater than {max} characters.",
 } as const;

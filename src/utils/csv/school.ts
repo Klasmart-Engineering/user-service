@@ -11,6 +11,7 @@ import {
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from './errors/csvErrorConstants'
+import validationConstants from './validationConstants'
 
 export async function processSchoolFromCSVRow(
     manager: EntityManager,
@@ -42,6 +43,21 @@ export async function processSchoolFromCSVRow(
             {
                 entity: 'school',
                 attribute: 'name',
+            }
+        )
+    }
+
+    if (row.school_name?.length > validationConstants.SCHOOL_NAME_MAX_LENGTH) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'school_name',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+            {
+                entity: 'school',
+                attribute: 'name',
+                max: validationConstants.SCHOOL_NAME_MAX_LENGTH,
             }
         )
     }

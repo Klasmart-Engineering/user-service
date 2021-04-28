@@ -12,7 +12,7 @@ import constants from './errors/csvErrorConstants'
 function formatCSVRow(row: any) {
     const keys = Object.keys(row)
     const formattedValues = Object.values(row).map((value) => {
-        return value || null
+        return String(value).trim() || null
     })
 
     keys.forEach((key, index) => {
