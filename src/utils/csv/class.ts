@@ -8,6 +8,7 @@ import { ClassRow } from '../../types/csv/classRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from './errors/csvErrorConstants'
+import validationConstants from './validationConstants'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -45,6 +46,21 @@ export const processClassFromCSVRow = async (
             {
                 entity: 'class',
                 attribute: 'name',
+            }
+        )
+    }
+
+    if (class_name?.length > validationConstants.CLASS_NAME_MAX_LENGTH) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'class_name',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+            {
+                entity: 'class',
+                attribute: 'name',
+                max: validationConstants.CLASS_NAME_MAX_LENGTH,
             }
         )
     }
