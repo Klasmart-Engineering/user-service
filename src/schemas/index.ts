@@ -9,6 +9,7 @@ import grade from './grade'
 import organization from './organization'
 import permission from './permission'
 import pagination from './pagination'
+import filtering from './filtering'
 import program from './program'
 import role from './roles'
 import school from './school'
@@ -26,6 +27,7 @@ export default function getDefault(model: Model, context: any) {
     const schemas = mergeRawSchemas(
         utils(model, context),
         pagination(model, context),
+        filtering(model, context),
         ageRange(model, context),
         category(model, context),
         _class(model, context),

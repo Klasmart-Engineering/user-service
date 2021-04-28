@@ -58,13 +58,34 @@ const typeDefs = gql`
 
     # pagination extension types end here
 
+    input UserFilter {
+        # table columns
+        user_id: StringFilter
+        given_name: StringFilter
+        family_name: StringFilter
+        username: StringFilter
+        email: StringFilter
+        phone: StringFilter
+        # date_of_birth: DateFilter # string dates are not yet supported
+        gender: StringFilter
+        avatar: StringFilter
+        status: StringFilter
+        deleted_at: DateFilter
+        primary: BooleanFilter
+        alternate_email: StringFilter
+        alternate_phone: StringFilter
+
+        AND: [UserFilter!]
+        OR: [UserFilter!]
+    }
+
     extend type Query {
         me: User
         user(user_id: ID!): User
         usersConnection(
             direction: ConnectionDirection!
-
             directionArgs: ConnectionsDirectionArgs
+            filter: UserFilter
         ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User]
         my_users: [User!]

@@ -373,13 +373,14 @@ export class Model {
 
     public async usersConnection(
         context: Context,
-        { direction, directionArgs, scope }: any
+        { direction, directionArgs, scope, filter }: any
     ) {
         return paginateData({
             direction,
             directionArgs,
             scope,
             cursorColumn: 'user_id',
+            filter,
         })
     }
 

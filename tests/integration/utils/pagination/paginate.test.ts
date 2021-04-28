@@ -25,6 +25,10 @@ describe('paginate', ()=>{
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
     });
+
+    after(async () => {
+        await connection?.close();
+    });
     
     beforeEach(async () => {
         usersList = [];

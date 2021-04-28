@@ -1,3 +1,5 @@
+import { getWhereClauseFromFilter } from "./filtering"
+
 const DEFAULT_PAGE_SIZE = 50
 const SEEK_BACKWARD = 'BACKWARD'
 
@@ -21,8 +23,11 @@ const getEdges = (data:any, cursorColumn: string) => {
     }))
 }
 
-const forwardPaginate = async ({scope, pageSize, cursorColumn, cursorData}:any) => {
+const forwardPaginate = async ({scope, pageSize, cursorColumn, cursorData, filter}:any) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
+    if (filter) {
+        scope.andWhere(getWhereClauseFromFilter(filter));
+    }
     if(cursorData) {
         scope.andWhere(`${cursorColumn} > :cursorData`, { cursorData })
     }
@@ -49,11 +54,14 @@ const forwardPaginate = async ({scope, pageSize, cursorColumn, cursorData}:any) 
     return { edges, pageInfo}
 }
 
-const backwardPaginate = async ({scope, pageSize, totalCount, cursorColumn, cursorData}:any)  => {
+const backwardPaginate = async ({scope, pageSize, totalCount, cursorColumn, cursorData, filter}:any)  => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
     let data
     let hasPreviousPage
+    if (filter) {
+        scope.andWhere(getWhereClauseFromFilter(filter));
+    }
     if(cursorData) {
         scope
             .andWhere(`${cursorColumn} < :cursorData`, { cursorData })
@@ -87,14 +95,14 @@ const backwardPaginate = async ({scope, pageSize, totalCount, cursorColumn, curs
     return { edges, pageInfo}
 }
 
-export const paginateData = async ({direction, directionArgs, scope, cursorColumn}:any) => {
+export const paginateData = async ({direction, directionArgs, scope, cursorColumn, filter}:any) => {
     const pageSize = (directionArgs?.count) ? directionArgs.count : DEFAULT_PAGE_SIZE;
     const cursorData = (directionArgs?.cursor) ? getDataFromCursor(directionArgs.cursor): null;
     const totalCount = await scope.getCount();
 
     const { edges, pageInfo } = (direction && direction === SEEK_BACKWARD) ? 
-        await backwardPaginate({scope, totalCount, pageSize, cursorColumn, cursorData}) : 
-        await forwardPaginate({scope, pageSize, cursorColumn, cursorData})
+        await backwardPaginate({scope, totalCount, pageSize, cursorColumn, cursorData, filter}) : 
+        await forwardPaginate({scope, pageSize, cursorColumn, cursorData, filter})
     return {
         totalCount,
         edges,
