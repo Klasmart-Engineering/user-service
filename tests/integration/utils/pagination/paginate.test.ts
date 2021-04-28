@@ -18,6 +18,7 @@ describe('paginate', ()=>{
     let testClient: ApolloServerTestClient;
     let usersList: User [] = [];
     let scope: any;
+    const cursorTable = 'User'
     const cursorColumn = 'user_id'
 
     before(async () => {
@@ -45,7 +46,7 @@ describe('paginate', ()=>{
         const direction = 'FORWARD'
         it('should get the first few records according to pagesize', async()=>{
             let directionArgs = { count: 3 }
-            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
             
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(3);
@@ -59,7 +60,7 @@ describe('paginate', ()=>{
         })
         it('should get the next few records according to pagesize and startcursor', async()=>{
             let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
-            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
             
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(3);
@@ -73,7 +74,7 @@ describe('paginate', ()=>{
         })
         it('should get the last few records less than pagesize and startcursor', async()=>{
             let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[7].user_id)}
-            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(2);
             for(let i=0; i<2; i++) {
@@ -90,7 +91,7 @@ describe('paginate', ()=>{
         const direction = 'BACKWARD'
         it('should get the last few records according to pagesize and null cursor', async()=>{
             let directionArgs = { count: 3 }
-            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
             
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(1);
@@ -102,7 +103,7 @@ describe('paginate', ()=>{
         })
         it('should get the next few records according to pagesize and cursor', async()=>{
             let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[9].user_id)}
-            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(3);
             for(let i=0; i<3; i++) {
@@ -115,7 +116,7 @@ describe('paginate', ()=>{
         })
         it('should get the first few records according to pagesize and cursor', async()=>{
             let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
-            const data = await paginateData({direction, directionArgs, scope, cursorColumn})
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
 
             expect(data.totalCount).to.eql(10);
             expect(data.edges.length).to.equal(3);
@@ -142,7 +143,7 @@ describe('paginate', ()=>{
             usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
         })
         it('should paginate in forward direction with default options ', async()=>{
-            const data = await paginateData({scope, cursorColumn})
+            const data = await paginateData({scope, cursorTable, cursorColumn})
             
             expect(data.totalCount).to.eql(60);
             expect(data.edges.length).to.equal(50);

@@ -1,5 +1,3 @@
-import { getWhereClauseFromFilter } from "./filtering"
-
 const DEFAULT_PAGE_SIZE = 50
 const SEEK_BACKWARD = 'BACKWARD'
 
@@ -23,26 +21,24 @@ const getEdges = (data:any, cursorColumn: string) => {
     }))
 }
 
-const forwardPaginate = async ({scope, pageSize, cursorColumn, cursorData, filter}:any) => {
+const forwardPaginate = async ({scope, pageSize, cursorTable, cursorColumn, cursorData}:any) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
-    if (filter) {
-        scope.andWhere(getWhereClauseFromFilter(filter));
-    }
+    const column = `"${cursorTable}"."${cursorColumn}"`;
+
     if(cursorData) {
-        scope.andWhere(`${cursorColumn} > :cursorData`, { cursorData })
+        scope.andWhere(`${column} > :cursorData`, { cursorData })
     }
     scope
-        .orderBy(cursorColumn, 'ASC')
+        .orderBy(column, 'ASC')
         .limit(seekPageSize)
-
     const data = await scope.getMany();
 
     const hasPreviousPage = (cursorData)?true:false
     const hasNextPage = (data.length>pageSize)?true: false
 
     let edges = getEdges(data, cursorColumn);
-    const startCursor = edges[0].cursor;
-    const endCursor = (edges.length < seekPageSize) ? edges[edges.length-1].cursor: edges[pageSize-1].cursor;
+    const startCursor = edges.length > 0 ? edges[0].cursor : "";
+    const endCursor = edges.length > 0 ? (edges.length < seekPageSize) ? edges[edges.length-1].cursor: edges[pageSize-1].cursor : "";
     edges = edges.slice(0, pageSize);
     
     const pageInfo = {
@@ -54,18 +50,17 @@ const forwardPaginate = async ({scope, pageSize, cursorColumn, cursorData, filte
     return { edges, pageInfo}
 }
 
-const backwardPaginate = async ({scope, pageSize, totalCount, cursorColumn, cursorData, filter}:any)  => {
+const backwardPaginate = async ({scope, pageSize, totalCount, cursorTable, cursorColumn, cursorData}:any)  => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
     let data
     let hasPreviousPage
-    if (filter) {
-        scope.andWhere(getWhereClauseFromFilter(filter));
-    }
+    const column = `"${cursorTable}"."${cursorColumn}"`;
+
     if(cursorData) {
         scope
-            .andWhere(`${cursorColumn} < :cursorData`, { cursorData })
-            .orderBy(cursorColumn, 'DESC')
+            .andWhere(`${column} < :cursorData`, { cursorData })
+            .orderBy(column, 'DESC')
             .limit(seekPageSize)
         data = await scope.getMany();
         data.reverse()
@@ -95,14 +90,14 @@ const backwardPaginate = async ({scope, pageSize, totalCount, cursorColumn, curs
     return { edges, pageInfo}
 }
 
-export const paginateData = async ({direction, directionArgs, scope, cursorColumn, filter}:any) => {
+export const paginateData = async ({direction, directionArgs, scope, cursorTable, cursorColumn}:any) => {
     const pageSize = (directionArgs?.count) ? directionArgs.count : DEFAULT_PAGE_SIZE;
     const cursorData = (directionArgs?.cursor) ? getDataFromCursor(directionArgs.cursor): null;
     const totalCount = await scope.getCount();
 
     const { edges, pageInfo } = (direction && direction === SEEK_BACKWARD) ? 
-        await backwardPaginate({scope, totalCount, pageSize, cursorColumn, cursorData, filter}) : 
-        await forwardPaginate({scope, pageSize, cursorColumn, cursorData, filter})
+        await backwardPaginate({scope, totalCount, pageSize, cursorTable, cursorColumn, cursorData}) : 
+        await forwardPaginate({scope, pageSize, cursorTable, cursorColumn, cursorData})
     return {
         totalCount,
         edges,

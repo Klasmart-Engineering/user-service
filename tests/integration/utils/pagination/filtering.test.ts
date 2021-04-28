@@ -3,7 +3,7 @@ import { Connection, getRepository, SelectQueryBuilder } from "typeorm";
 import { expect, use } from "chai";
 import { createTestConnection } from "../../../utils/testConnection";
 import { User } from "../../../../src/entities/user";
-import { IUserFilter, getWhereClauseFromFilter } from "../../../../src/utils/pagination/filtering";
+import { IEntityFilter, getWhereClauseFromFilter } from "../../../../src/utils/pagination/filtering";
 
 use(chaiAsPromised);
 
@@ -68,7 +68,7 @@ describe('filtering', ()=>{
 
     context("strings", () => {
         it("supports string.eq", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 email: {
                     operator: "eq",
                     value: "john@gmail.com"
@@ -82,7 +82,7 @@ describe('filtering', ()=>{
         });
         
         it("supports string.neq", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 email: {
                     operator: "neq",
                     value: "john@gmail.com"
@@ -96,7 +96,7 @@ describe('filtering', ()=>{
         });
         
         it("supports string.contains", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 email: {
                     operator: "contains",
                     value: "john"
@@ -112,7 +112,7 @@ describe('filtering', ()=>{
 
     context("booleans", () => {
         it("supports boolean.eq", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 primary: {
                     operator: "eq",
                     value: true,
@@ -128,7 +128,7 @@ describe('filtering', ()=>{
 
     context("dates", () => {
         it("supports date.eq", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 deleted_at: {
                     operator: "eq",
                     value: "2000-01-01",
@@ -141,7 +141,7 @@ describe('filtering', ()=>{
             expect(data.length).to.equal(1);
         });
         it("supports date.neq", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 deleted_at: {
                     operator: "neq",
                     value: "2000-01-01",
@@ -154,7 +154,7 @@ describe('filtering', ()=>{
             expect(data.length).to.equal(1);
         });
         it("supports date.gt", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 deleted_at: {
                     operator: "gt",
                     value: "2000-01-01",
@@ -167,7 +167,7 @@ describe('filtering', ()=>{
             expect(data.length).to.equal(1);
         });
         it("supports date.gte", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 deleted_at: {
                     operator: "gte",
                     value: "2000-01-01",
@@ -180,7 +180,7 @@ describe('filtering', ()=>{
             expect(data.length).to.equal(2);
         });
         it("supports date.lt", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 deleted_at: {
                     operator: "lt",
                     value: "2020-01-01",
@@ -193,7 +193,7 @@ describe('filtering', ()=>{
             expect(data.length).to.equal(1);
         });
         it("supports date.lte", async () => {
-            const filter: IUserFilter = {
+            const filter: IEntityFilter = {
                 deleted_at: {
                     operator: "lte",
                     value: "2020-01-01",

@@ -1,23 +1,11 @@
 import { Brackets } from "typeorm";
-import { v4 as uuid_v4 } from 'uuid'
+import { v4 as uuid_v4 } from 'uuid';
 
-export interface IUserFilter {
-    given_name?: IFilter;
-    family_name?: IFilter;
-    username?: IFilter;
-    email?: IFilter;
-    phone?: IFilter;
-    date_of_birth?: IFilter;
-    gender?: IFilter;
-    avatar?: IFilter;
-    status?: IFilter;
-    deleted_at?: IFilter;
-    primary?: IFilter;
-    alternate_email?: IFilter;
-    alternate_phone?: IFilter;
+export interface IEntityFilter {
+    [key: string]: IFilter | IEntityFilter[] | undefined;
 
-    OR?: IUserFilter[];
-    AND?: IUserFilter[];
+    OR?: IEntityFilter[];
+    AND?: IEntityFilter[];
 }
 
 type FilteringOperator = "eq" | "neq" | "lt" | "lte" | "gt" | "gte" | "contains";
@@ -27,15 +15,15 @@ interface IFilter {
     value: string | number | boolean;
 }
 
-export function getWhereClauseFromFilter(filter: IUserFilter): Brackets {
+// generates a WHERE clause for a given query filter 
+export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
     return new Brackets(qb => {
         for (const key of Object.keys(filter)) {
             if (key === "OR" || key === "AND") {
                 // process these recursively afterwards
                 continue;
             }
-            const keyTyped = key as keyof IUserFilter;
-            const data = filter[keyTyped] as IFilter;
+            const data = filter[key] as IFilter;
             
             const field = parseField(key);
             const sqlOperator = getSQLOperatorFromFilterOperator(data.operator);
@@ -56,7 +44,25 @@ export function getWhereClauseFromFilter(filter: IUserFilter): Brackets {
     });
 }
 
-function logicalOperationFilter(filters: IUserFilter[], operator: "AND" | "OR") {
+// returns true if the specified property is anywhere in the filter schema.
+// used to check for entity relations that require SQL joins.
+export function filterHasProperty(property: string, filter: IEntityFilter): boolean {
+    let hasProperty = false;
+
+    for (const key of Object.keys(filter)) {
+        if (key === "AND" || key === "OR") {
+            for (const op of filter[key]!) {
+                hasProperty = hasProperty || filterHasProperty(property, op);
+            }
+        } else if (key === property) {
+            hasProperty = true;
+        }
+    }
+
+    return hasProperty;
+}
+
+function logicalOperationFilter(filters: IEntityFilter[], operator: "AND" | "OR") {
     return new Brackets(qb => {
         if (filters.length > 0) {
             qb.where(getWhereClauseFromFilter(filters[0]));
@@ -71,6 +77,7 @@ function logicalOperationFilter(filters: IUserFilter[], operator: "AND" | "OR") 
     });
 }
 
+// transaltes a given filter operator to the SQL equivalent 
 function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
     const operators: Record<FilteringOperator, string> = {
         eq: "=",
@@ -85,6 +92,7 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
     return operators[op];
 }
 
+// parses the value given for use in SQL
 function parseValueForSQLOperator(operator: string, value: unknown) {
     switch (operator) {
         case "LIKE": 
@@ -94,6 +102,7 @@ function parseValueForSQLOperator(operator: string, value: unknown) {
     }
 }
 
+// parses the given property name for use in SQL
 function parseField(field: string) {
     switch (field) {
         case "primary": // "primary" is a reserved SQL keyword, so we need to wrap in quotes

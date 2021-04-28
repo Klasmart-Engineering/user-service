@@ -42,12 +42,7 @@ const typeDefs = gql`
 
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
-        node: UsersConnectionNode
-    }
-
-    type UsersConnectionNode {
-        user_id: ID!
-        email: String!
+        node: User
     }
 
     type UserConnection {
@@ -74,6 +69,10 @@ const typeDefs = gql`
         primary: BooleanFilter
         alternate_email: StringFilter
         alternate_phone: StringFilter
+
+        # joined columns
+        organization_id: StringFilter
+        school_id: StringFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]

@@ -1,4 +1,4 @@
-import { IUserFilter, getWhereClauseFromFilter } from "../../../../src/utils/pagination/filtering";
+import { getWhereClauseFromFilter, IEntityFilter, filterHasProperty } from "../../../../src/utils/pagination/filtering";
 import { Connection, createQueryBuilder } from "typeorm";
 import { createTestConnection } from "../../../utils/testConnection";
 import { expect } from "chai";
@@ -14,7 +14,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("doesn't filter if an empty filter config is provided", () => {
-        const filter: IUserFilter = {};
+        const filter: IEntityFilter = {};
 
         const scope = createQueryBuilder("user");
         scope.andWhere(getWhereClauseFromFilter(filter));
@@ -23,7 +23,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("works on a single field", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             email: {
                 operator: "eq",
                 value: "joe@gmail.com"
@@ -39,7 +39,7 @@ describe("getWhereClauseFromFilter", () => {
     });
  
     it("works on multiple fields", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             email: {
                 operator: "eq",
                 value: "joe@gmail.com"
@@ -59,7 +59,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("supports OR operations on different fields", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             OR: [
                 {
                     email: {
@@ -91,7 +91,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("supports OR operations on the same field", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             OR: [
                 {
                     email: {
@@ -123,7 +123,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("handles both fields + logical operators", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             email: {
                 operator: "eq",
                 value: "joe@gmail.com"
@@ -153,7 +153,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("supports AND + OR combinations", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             AND: [
                 {
                     OR: [
@@ -199,7 +199,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("handles empty arrays", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             OR: [],
         };
         const scope = createQueryBuilder("user");
@@ -208,7 +208,7 @@ describe("getWhereClauseFromFilter", () => {
         expect(scope.getSql().indexOf("WHERE")).to.equal(-1);
     });
     it("applies an AND operation if a single item is passed to the logical operators array", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             OR: [
                 {
                     email: {
@@ -227,7 +227,7 @@ describe("getWhereClauseFromFilter", () => {
     });
 
     it("produces the correct query when using the 'contains' operator", () => {
-        const filter: IUserFilter = {
+        const filter: IEntityFilter = {
             email: {
                 operator: "contains",
                 value: "gmail"
@@ -240,5 +240,29 @@ describe("getWhereClauseFromFilter", () => {
         expect(whereClause).to.equal("WHERE (email LIKE $1)")
         expect(Object.keys(scope.getParameters()).length).to.equal(1);
         expect(scope.getParameters()[Object.keys(scope.getParameters())[0]]).to.equal("%gmail%");
+    });
+});
+
+
+describe("filterRequiresJoin", () => {
+    it("works for properties at the root", () => {
+        expect(filterHasProperty("user_id", {user_id: {operator: "eq", value: "123"}})).be.equal(true);
+        expect(filterHasProperty("username", {user_id: {operator: "eq", value: "123"}})).be.equal(false);
+    });
+
+    it("works for nested properties", () => {
+        expect(filterHasProperty("user_id", {
+            OR: [
+                {user_id: {operator: "eq", value: "abc"}},
+                {username: {operator: "eq", value: "123"}}
+            ],
+        })).to.equal(true);
+
+        expect(filterHasProperty("age", {
+            OR: [
+                {user_id: {operator: "eq", value: "abc"}},
+                {username: {operator: "eq", value: "123"}}
+            ],
+        })).to.equal(false);
     });
 });
