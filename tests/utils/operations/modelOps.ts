@@ -13,6 +13,7 @@ import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { Program } from "../../../src/entities/program";
 import { Stream } from "stream";
+import { IEntityFilter } from "../../../src/utils/pagination/filtering";
 
 
 const NEW_USER = `
@@ -249,8 +250,8 @@ const SCHOOLS_CSV_UPLOAD_MUTATION = `
 `;
 
 const USERS_CONNECTION = `
-    query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs) {
-        usersConnection(direction:$direction, directionArgs:$directionArgs){
+    query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter) {
+        usersConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs){
             totalCount
             edges {
                 cursor
@@ -269,8 +270,8 @@ const USERS_CONNECTION = `
 `;
 
 const PERMISSIONS_CONNECTION = `
-    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs) {
-        permissionsConnection(direction:$direction, directionArgs:$directionArgs){
+    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: PermissionFilter) {
+        permissionsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs){
             totalCount
             edges {
                 cursor
@@ -585,12 +586,18 @@ export async function uploadFile(
     return res.data?.uploadOrganizationsFromCSV;
 }
 
-export async function userConnection(testClient: ApolloServerTestClient, direction: string, directionArgs: any, headers?: Headers) {
+export async function userConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+) {
     const { query } = testClient;
 
     const operation = () => query({
         query: USERS_CONNECTION,
-        variables: { direction, directionArgs },
+        variables: { direction, directionArgs, filter },
         headers: headers,
     });
 
@@ -598,12 +605,17 @@ export async function userConnection(testClient: ApolloServerTestClient, directi
     return res.data?.usersConnection
 }
 
-export async function permissionsConnection(testClient: ApolloServerTestClient, direction: string, directionArgs?: any, headers?: Headers) {
+export async function permissionsConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs?: any,
+    headers?: Headers, filter?:IEntityFilter
+) {
     const { query } = testClient;
 
     const operation = () => query({
         query: PERMISSIONS_CONNECTION,
-        variables: { direction, directionArgs },
+        variables: { direction, directionArgs, filter },
         headers: headers,
     });
 

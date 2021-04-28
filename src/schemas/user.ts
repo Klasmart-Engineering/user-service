@@ -42,12 +42,7 @@ const typeDefs = gql`
 
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
-        node: UsersConnectionNode
-    }
-
-    type UsersConnectionNode {
-        user_id: ID!
-        email: String!
+        node: User
     }
 
     type UserConnection {
@@ -58,13 +53,38 @@ const typeDefs = gql`
 
     # pagination extension types end here
 
+    input UserFilter {
+        # table columns
+        user_id: StringFilter
+        given_name: StringFilter
+        family_name: StringFilter
+        username: StringFilter
+        email: StringFilter
+        phone: StringFilter
+        # date_of_birth: DateFilter # string dates are not yet supported
+        gender: StringFilter
+        avatar: StringFilter
+        status: StringFilter
+        deleted_at: DateFilter
+        primary: BooleanFilter
+        alternate_email: StringFilter
+        alternate_phone: StringFilter
+
+        # joined columns
+        organization_id: StringFilter
+        school_id: StringFilter
+
+        AND: [UserFilter!]
+        OR: [UserFilter!]
+    }
+
     extend type Query {
         me: User
         user(user_id: ID!): User
         usersConnection(
             direction: ConnectionDirection!
-
             directionArgs: ConnectionsDirectionArgs
+            filter: UserFilter
         ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User]
         my_users: [User!]
@@ -133,7 +153,7 @@ const typeDefs = gql`
         ): Organization
         merge(other_id: String): User
         addOrganization(organization_id: ID!): OrganizationMembership
-        addSchool(school_id: ID!): OrganizationMembership
+        addSchool(school_id: ID!): SchoolMembership
         setPrimary(_: Int): Boolean @isAdmin(entity: "user")
     }
 `

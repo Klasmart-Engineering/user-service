@@ -16,6 +16,7 @@ import { SchoolRow } from "../../../../src/types/csv/schoolRow";
 import { createServer } from "../../../../src/utils/createServer";
 import { processSchoolFromCSVRow } from "../../../../src/utils/csv/school";
 import { createOrganization } from "../../../factories/organization.factory";
+import { createSchool } from "../../../factories/school.factory";
 import { ApolloServerTestClient, createTestClient } from "../../../utils/createTestClient";
 import { createTestConnection } from "../../../utils/testConnection";
 
@@ -81,6 +82,92 @@ describe("processSchoolFromCSVRow", () => {
     context("when the school name is not provided", () => {
         beforeEach(() => {
             row = { ...row, school_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when the school name length is greater than 120 characters", () => {
+        beforeEach(() => {
+            row = { ...row, school_name: 'this is a more than one hundred twenty characters school name and this should throw an error because is too looooooooooooooooooong' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when the school name length is just blank spaces", () => {
+        beforeEach(() => {
+            row = { ...row, school_name: '          ' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when provided shortcode is not valid", () => {
+        beforeEach(() => {
+            row = { ...row, school_shortcode: 'SC@123' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const school = await School.findOne({
+                where: {
+                    school_name: row.school_name,
+                    status: 'active',
+                    organization,
+                }
+            })
+
+            expect(school).to.be.undefined
+        });
+    });
+
+    context("when provided shortcode already exists in another school", () => {
+        beforeEach(async () => {
+            const school = await createSchool(organization, 'School One');
+            school.shortcode = row.school_shortcode;
+            await connection.manager.save(school);
         })
 
         it("throws an error", async () => {

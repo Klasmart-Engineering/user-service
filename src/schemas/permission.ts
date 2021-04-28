@@ -34,10 +34,24 @@ const typeDefs = gql`
         allow: Boolean
     }
 
+    input PermissionFilter {
+        permission_id: StringFilter
+        permission_name: StringFilter
+        permission_category: StringFilter
+        permission_group: StringFilter
+        permission_level: StringFilter
+        permission_description: StringFilter
+        allow: BooleanFilter
+        
+        AND: [PermissionFilter!]
+        OR: [PermissionFilter!]
+    }
+
     extend type Query {
         permissionsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
+            filter: PermissionFilter
         ): PermissionsConnectionResponse @isAuthenticated
     }
 `

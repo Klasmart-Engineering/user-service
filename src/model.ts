@@ -47,6 +47,7 @@ import {
     renameNullOrganizations,
     renameDuplicatedOrganizations,
 } from './utils/renameMigration/organization'
+import { getWhereClauseFromFilter, filterHasProperty } from './utils/pagination/filtering'
 
 export class Model {
     public static async create() {
@@ -373,27 +374,44 @@ export class Model {
 
     public async usersConnection(
         context: Context,
-        { direction, directionArgs, scope }: any
-    ) {
+        { direction, directionArgs, scope, filter }: any
+     ) {
+        if (filter) {
+            if (filterHasProperty("organization_id", filter)) {
+                scope.leftJoinAndSelect("User.memberships","OrganizationMembership");
+            }
+            if (filterHasProperty("school_id", filter)) {
+                scope.leftJoinAndSelect("User.school_memberships","SchoolMembership");
+            }
+
+            scope.andWhere(getWhereClauseFromFilter(filter));
+        }
+
         return paginateData({
             direction,
             directionArgs,
             scope,
-            cursorColumn: 'user_id',
+            cursorTable: "User",
+            cursorColumn: "user_id"
         })
     }
 
     public async permissionsConnection(
         context: Context,
-        { direction, directionArgs }: any
+        { direction, directionArgs, filter }: any
     ) {
         const scope = this.permissionRepository.createQueryBuilder()
+
+        if (filter) {
+            scope.andWhere(getWhereClauseFromFilter(filter));
+        }
 
         return paginateData({
             direction,
             directionArgs,
             scope,
-            cursorColumn: 'permission_id',
+            cursorTable: "Permission",
+            cursorColumn: 'permission_id'
         })
     }
 

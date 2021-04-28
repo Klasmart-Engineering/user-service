@@ -59,6 +59,7 @@ import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
 import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
 import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 import { convertDataToCursor } from "../utils/paginate";
+import { IEntityFilter } from "../../src/utils/pagination/filtering";
 
 use(chaiAsPromised);
 
@@ -1408,6 +1409,26 @@ describe("model", () => {
                     expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.true
                 })
             })
+            context('and filter args are specified', async () => {
+                let filter: IEntityFilter = {
+                    permission_id: {
+                        operator: "eq",
+                        value: "add_content_learning_outcomes_433"
+                    }
+                }
+                let gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getJoeAuthToken()}, filter);
+                expect(gqlPermissions?.totalCount).to.eql(1);
+
+                filter = {
+                    permission_id: {
+                        operator: "contains",
+                        value: "learning"
+                    }
+                }
+                gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getJoeAuthToken()}, filter);
+                expect(gqlPermissions?.totalCount).to.eql(27);
+                expect(gqlPermissions?.edges.length).to.equal(10);
+            });
         })
     })
 });
