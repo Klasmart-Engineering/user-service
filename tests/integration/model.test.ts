@@ -61,6 +61,8 @@ import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/u
 import { convertDataToCursor } from "../utils/paginate";
 import { renameDuplicateOrganizationsMutation, renameDuplicateOrganizationsQuery } from "../utils/operations/renameDuplicateOrganizations";
 import { IEntityFilter } from "../../src/utils/pagination/filtering";
+import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
+import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
 
 use(chaiAsPromised);
 
@@ -1323,10 +1325,13 @@ describe("model", () => {
 
     describe('usersConnection', ()=>{
         let usersList: User [] = [];
+        let roleList: Role [] = [];
         const direction = 'FORWARD'
+        let organizations: Organization [] = []
 
         beforeEach(async () => {
             usersList = []
+            roleList = []
             const organizations: Organization [] = []
             const schools: School [] = []
             // create two orgs and two schools
@@ -1334,7 +1339,9 @@ describe("model", () => {
                 const org = createOrganization()
                 await connection.manager.save(org);
                 organizations.push(org)
-
+                let role = createRole("role "+i,org)
+                await connection.manager.save(role)
+                roleList.push(role)
                 const school = createSchool(org)
                 await connection.manager.save(school);
                 schools.push(school)
@@ -1346,14 +1353,18 @@ describe("model", () => {
             //sort users by userId
             await connection.manager.save(usersList)
             // add organizations and schools to users
+             
             for (const user of usersList) {
                 for(let i=0; i<2; i++) {
                     await addOrganizationToUserAndValidate(
                         testClient, user.user_id, organizations[i].organization_id, getJoeAuthToken()
                     );
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, organizations[i].organization_id, roleList[i].role_id, { authorization: getJoeAuthToken() });
                     await addSchoolToUser(
                         testClient, user.user_id, schools[i].school_id, { authorization: getJoeAuthToken()}
                     );
+                     await addRoleToSchoolMembership(testClient, user.user_id, schools[i].school_id,roleList[i].role_id, { authorization: getJoeAuthToken() })
+
                 }
             }
             usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
@@ -1369,6 +1380,7 @@ describe("model", () => {
                     expect(usersConnection?.edges[i].node.id).to.equal(usersList[4+i].user_id)
                     expect(usersConnection?.edges[i].node.organizations.length).to.equal(2)
                     expect(usersConnection?.edges[i].node.schools.length).to.equal(2)
+                    expect(usersConnection?.edges[i].node.roles.length).to.equal(4)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
@@ -1380,15 +1392,21 @@ describe("model", () => {
         context('organization filter',  ()=>{
             let org: Organization;
             let school1: School;
+            let role1: Role;
             beforeEach(async () => {
                 //org used to filter
                 org = createOrganization()
                 await connection.manager.save(org);
+                role1 = createRole("role 1",org)
+                await connection.manager.save(role1)
                 school1 = createSchool(org);
+                
 
                 // org and school whose membership shouldnt be included
                 let org2 = createOrganization()
                 await connection.manager.save(org2);
+                let role2 = createRole("role 2",org2)
+                await connection.manager.save(role2)
                 const school2 = createSchool(org2);
 
                 await connection.manager.save(school1);
@@ -1403,11 +1421,16 @@ describe("model", () => {
                 await connection.manager.save(usersList)
 
                 for (const user of usersList) {
+                    console.log('***user', user)
                     await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
                     await addSchoolToUser(testClient, user.user_id, school1.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id,role1.role_id, { authorization: getJoeAuthToken() })
 
                     await addOrganizationToUserAndValidate(testClient, user.user_id, org2.organization_id, getJoeAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, org2.organization_id, role2.role_id, { authorization: getJoeAuthToken() });
                     await addSchoolToUser(testClient, user.user_id, school2.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, user.user_id, school2.school_id,role2.role_id, { authorization: getJoeAuthToken() })
                 }
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
             })
@@ -1432,7 +1455,9 @@ describe("model", () => {
                     expect(usersConnection?.edges[i].node.organizations.length).to.equal(1)
                     expect(usersConnection?.edges[i].node.organizations[0].id).to.equal(org.organization_id)
                     expect(usersConnection?.edges[i].node.schools.length).to.equal(1)
+                    expect(usersConnection?.edges[i].node.roles.length).to.equal(2)
                     expect(usersConnection?.edges[i].node.schools[0].id).to.equal(school1.school_id)
+                    expect(usersConnection?.edges[i].node.roles[0].id).to.equal(role1.role_id)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))

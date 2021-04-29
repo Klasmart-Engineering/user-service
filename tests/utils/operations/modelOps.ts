@@ -263,6 +263,9 @@ const USERS_CONNECTION = `
                     schools {
                         id
                     }
+                    roles{
+                        id
+                    }
                 }
             }
             pageInfo{
