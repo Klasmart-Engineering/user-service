@@ -1,6 +1,6 @@
-export interface RoleSummaryItem {
+export interface RoleSummaryNode {
     id: string
-    name: string
+    name?: string
     organizationId?: string
     schoolId?: string
 }

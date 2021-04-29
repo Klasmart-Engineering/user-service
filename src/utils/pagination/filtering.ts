@@ -33,7 +33,7 @@ export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
             const uniqueId = uuid_v4();
     
             qb.andWhere(`${field} ${sqlOperator} :${uniqueId}`, {[uniqueId]: value});
-        };
+        }
 
         if (filter.OR) {
             qb.andWhere(logicalOperationFilter(filter.OR, "OR"));
@@ -107,6 +107,16 @@ function parseField(field: string) {
     switch (field) {
         case "primary": // "primary" is a reserved SQL keyword, so we need to wrap in quotes
             return `"primary"`;
+        case "userId":
+            return "user_id";
+        case "schoolId":
+            return "school_id";
+        case "organizationId":
+            return "organization_id";
+        case "givenName":
+            return "given_name";
+        case "familyName":
+            return "family_name";
         default:
             return field;
     }

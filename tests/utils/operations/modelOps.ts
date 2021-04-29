@@ -256,7 +256,7 @@ const USERS_CONNECTION = `
             edges {
                 cursor
                 node {
-                    user_id
+                    id
                 }
             }
             pageInfo{

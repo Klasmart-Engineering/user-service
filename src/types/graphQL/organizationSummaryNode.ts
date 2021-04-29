@@ -1,8 +1,8 @@
 import { Status } from '../../entities/status'
 
-export interface OrganizationSummaryItem {
+export interface OrganizationSummaryNode {
     id: string
-    name: string
-    joinDate: Date
+    name?: string
+    joinDate?: Date
     status: Status
 }

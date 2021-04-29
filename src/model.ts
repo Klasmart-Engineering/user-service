@@ -4,7 +4,7 @@ import {
     getManager,
     getRepository,
     EntityManager,
-    Repository,
+    Repository
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -48,6 +48,10 @@ import {
     renameDuplicatedOrganizations,
 } from './utils/renameMigration/organization'
 import { getWhereClauseFromFilter, filterHasProperty } from './utils/pagination/filtering'
+import { UserConnectionNode } from './types/graphQL/userConnectionNode'
+import { OrganizationSummaryNode } from './types/graphQL/organizationSummaryNode'
+import { SchoolSummaryNode } from './types/graphQL/schoolSummaryNode'
+import { RoleSummaryNode } from './types/graphQL/roleSummaryNode'
 
 export class Model {
     public static async create() {
@@ -377,22 +381,90 @@ export class Model {
         { direction, directionArgs, scope, filter }: any
      ) {
         if (filter) {
-            if (filterHasProperty("organization_id", filter)) {
+            if (filterHasProperty("organizationId", filter)) {
                 scope.leftJoinAndSelect("User.memberships","OrganizationMembership");
             }
-            if (filterHasProperty("school_id", filter)) {
+            if (filterHasProperty("schoolId", filter)) {
                 scope.leftJoinAndSelect("User.school_memberships","SchoolMembership");
             }
             scope.andWhere(getWhereClauseFromFilter(filter));
         }
 
-        return paginateData({
+        const data = await paginateData({
             direction,
             directionArgs,
             scope,
             cursorTable: "User",
             cursorColumn: "user_id"
         })
+
+        for (const e of data.edges) {
+            const user = e.node as User;  
+
+            const memberships = await user.memberships;
+            const orgs: OrganizationSummaryNode[] = [];
+            const schools: SchoolSummaryNode[] = [];
+            const roles: RoleSummaryNode[] = [];
+
+            for (const m of memberships || []) {
+                const org: OrganizationSummaryNode = {
+                    id: m.organization_id,
+                    name: (await m.organization)?.organization_name,
+                    joinDate: m.join_timestamp,
+                    status: m.status,
+                };
+
+                orgs.push(org);
+                for (const r of (await m.roles) || []) {
+                    roles.push({
+                        id: r.role_id,
+                        name: r.role_name,
+                        organizationId: org.id,
+                    });
+                }
+            }
+  
+            for (const m of (await user.school_memberships) || []) {
+                const orgId = (await (await m.school)?.organization)?.organization_id || "";
+                
+                // only include schools from the (potentially filtered) list of orgs
+                if (orgs.find(o => o.id === orgId)) {
+                    const school: SchoolSummaryNode = {
+                        id: m.school_id,
+                        organizationId: orgId,
+                        name: (await m.school)?.school_name,
+                    }
+                    schools.push(school)
+
+                    for (const r of (await m.roles) || []) {
+                        roles.push({
+                            id: r.role_id,
+                            name: r.role_name,
+                            schoolId: m.school_id,
+                        });
+                    }
+                }   
+            }
+
+            const newNode: UserConnectionNode = {
+                id: user.user_id,
+                givenName: user.given_name,
+                familyName: user.family_name,
+                avatar: user.avatar,
+                contactInfo: {
+                    email: user.email,
+                    phone: user.phone,
+                },
+                status: user.status,
+                organizations: orgs,
+                schools,
+                roles,
+            };
+
+            e.node = newNode;
+        }
+
+        return data;
     }
 
     public async permissionsConnection(

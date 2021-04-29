@@ -42,7 +42,7 @@ const typeDefs = gql`
 
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
-        node: User
+        node: UserConnectionNode
     }
 
     type UserConnection {
@@ -55,27 +55,56 @@ const typeDefs = gql`
 
     input UserFilter {
         # table columns
-        user_id: StringFilter
-        given_name: StringFilter
-        family_name: StringFilter
-        username: StringFilter
+        userId: StringFilter
+        givenName: StringFilter
+        familyName: StringFilter
+        avatar: StringFilter
         email: StringFilter
         phone: StringFilter
-        # date_of_birth: DateFilter # string dates are not yet supported
-        gender: StringFilter
-        avatar: StringFilter
-        status: StringFilter
-        deleted_at: DateFilter
-        primary: BooleanFilter
-        alternate_email: StringFilter
-        alternate_phone: StringFilter
 
         # joined columns
-        organization_id: StringFilter
-        school_id: StringFilter
+        organizationId: StringFilter
+        schoolId: StringFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]
+    }
+
+    type UserConnectionNode {
+        id: ID!
+        givenName: String
+        familyName: String
+        avatar: String
+        contactInfo: ContactInfo!
+        organizations: [OrganizationSummaryNode!]!
+        roles: [RoleSummaryNode!]!
+        schools: [SchoolSummaryNode!]!
+        status: Status!
+    }
+
+    type ContactInfo {
+        email: String
+        phone: String
+    }
+
+    type OrganizationSummaryNode {
+        id: ID!
+        name: String
+        joinDate: String
+        status: Status
+    }
+
+    type RoleSummaryNode {
+        id: ID!
+        name: String
+        organizationId: String
+        schoolId: String
+    }
+
+    type SchoolSummaryNode {
+        id: ID!
+        name: String
+        organizationId: String
     }
 
     extend type Query {

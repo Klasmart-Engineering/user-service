@@ -1343,7 +1343,7 @@ describe("model", () => {
                 expect(usersConnection?.totalCount).to.eql(10);
                 expect(usersConnection?.edges.length).to.equal(3);
                 for(let i=0; i<3; i++) {
-                    expect(usersConnection?.edges[i].node.user_id).to.equal(usersList[4+i].user_id)
+                    expect(usersConnection?.edges[i].node.id).to.equal(usersList[4+i].user_id)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
@@ -1374,7 +1374,7 @@ describe("model", () => {
                     count: 3, cursor:convertDataToCursor(usersList[3].user_id),   
                 }
                 const filter: IEntityFilter = {
-                    organization_id: {
+                    organizationId: {
                         operator: "eq",
                         value: org.organization_id
                     }
@@ -1386,7 +1386,7 @@ describe("model", () => {
                 expect(usersConnection?.totalCount).to.eql(10);
                 expect(usersConnection?.edges.length).to.equal(3);
                 for(let i=0; i<3; i++) {
-                    expect(usersConnection?.edges[i].node.user_id).to.equal(usersList[4+i].user_id)
+                    expect(usersConnection?.edges[i].node.id).to.equal(usersList[4+i].user_id)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
