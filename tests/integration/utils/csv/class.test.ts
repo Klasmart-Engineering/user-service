@@ -147,6 +147,24 @@ describe("processClassFromCSVRow", ()=> {
         expect(dbClass.length).to.equal(1)
     })
 
+    it('should throw an error for long shortcode', async()=>{
+        row = {organization_name: orgName , class_name: 'class5', class_shortcode:'L0NG5H0R7C02D3', school_name:school1Name, program_name: progName}
+        const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
+
+        expect(fn()).to.be.rejected
+        const dbClass = await Class.find()
+        expect(dbClass.length).to.equal(1)
+    })
+
+    it('should throw an error for invalid shortcode', async()=>{
+        row = {organization_name: orgName , class_name: 'class5', class_shortcode:'¢Ø₫€', school_name:school1Name, program_name: progName}
+        const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
+
+        expect(fn()).to.be.rejected
+        const dbClass = await Class.find()
+        expect(dbClass.length).to.equal(1)
+    })
+
     it('should throw an error for class name length greater than 35 characters', async () => {
         row = {organization_name: orgName , class_name: 'This is a class name with more than thirty five characters length', school_name: school1Name, program_name: progName}
         const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);

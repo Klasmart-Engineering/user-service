@@ -3,7 +3,11 @@ import { Organization } from '../../entities/organization'
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
-import { generateShortCode } from '../shortcode'
+import {
+    generateShortCode,
+    SHORTCODE_DEFAULT_MAXLEN,
+    validateShortCode,
+} from '../shortcode'
 import { ClassRow } from '../../types/csv/classRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
@@ -61,6 +65,24 @@ export const processClassFromCSVRow = async (
                 entity: 'class',
                 attribute: 'name',
                 max: validationConstants.CLASS_NAME_MAX_LENGTH,
+            }
+        )
+    }
+
+    if (
+        class_shortcode &&
+        !validateShortCode(class_shortcode, SHORTCODE_DEFAULT_MAXLEN)
+    ) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'class_shortcode',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+            {
+                entity: 'class',
+                attribute: 'shortcode',
+                max: SHORTCODE_DEFAULT_MAXLEN,
             }
         )
     }
