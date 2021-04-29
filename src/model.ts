@@ -383,7 +383,6 @@ export class Model {
             if (filterHasProperty("school_id", filter)) {
                 scope.leftJoinAndSelect("User.school_memberships","SchoolMembership");
             }
-
             scope.andWhere(getWhereClauseFromFilter(filter));
         }
 

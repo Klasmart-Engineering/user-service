@@ -32,10 +32,8 @@ const forwardPaginate = async ({scope, pageSize, cursorTable, cursorColumn, curs
         .orderBy(column, 'ASC')
         .limit(seekPageSize)
     const data = await scope.getMany();
-
     const hasPreviousPage = (cursorData)?true:false
     const hasNextPage = (data.length>pageSize)?true: false
-
     let edges = getEdges(data, cursorColumn);
     const startCursor = edges.length > 0 ? edges[0].cursor : "";
     const endCursor = edges.length > 0 ? (edges.length < seekPageSize) ? edges[edges.length-1].cursor: edges[pageSize-1].cursor : "";
@@ -68,7 +66,7 @@ const backwardPaginate = async ({scope, pageSize, totalCount, cursorTable, curso
 
     } else {
         const skipValue = ((Math.ceil(totalCount/pageSize)*pageSize)-pageSize)
-        scope.orderBy(cursorColumn, 'ASC').skip(skipValue)
+        scope.orderBy(column, 'ASC').skip(skipValue)
         data = await scope.getMany();
         hasPreviousPage = (data.length < totalCount)?true: false
     }

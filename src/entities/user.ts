@@ -83,8 +83,8 @@ export class User extends BaseEntity {
 
     @OneToMany(() => OrganizationMembership, (membership) => membership.user)
     @JoinColumn({
-        name: 'organization_id',
-        referencedColumnName: 'organization_id',
+        name: 'user_id',
+        referencedColumnName: 'user_id',
     })
     public memberships?: Promise<OrganizationMembership[]>
 

@@ -597,7 +597,7 @@ export async function userConnection(
 
     const operation = () => query({
         query: USERS_CONNECTION,
-        variables: { direction, directionArgs, filter },
+        variables: { direction, directionArgs, filterArgs:filter },
         headers: headers,
     });
 
