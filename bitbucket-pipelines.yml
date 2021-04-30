@@ -48,3 +48,28 @@ pipelines:
             - npm install
             - npm test
             - ./deploy.sh
+  custom:
+    infra-ecr:
+      - step:
+          name: Deploy
+          services:
+            - docker
+          caches:
+            - pip
+          image: python:3.9-alpine
+          script:
+            - pip3 install -U awscli
+            - apk add git --no-cache
+            - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
+            - docker build -t kidsloop-user .
+            - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+            - export REPO=$DOCKER_REPO_URL/kidsloop-user
+            - export COMMIT_TAG=$(git rev-parse --short HEAD)
+            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG
+            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG-latest
+            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG-$BITBUCKET_BUILD_NUMBER
+            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG-$COMMIT_TAG
+            - docker push $REPO:$BRANCH_TAG
+            - docker push $REPO:$BRANCH_TAG-latest
+            - docker push $REPO:$BRANCH_TAG-$BITBUCKET_BUILD_NUMBER
+            - docker push $REPO:$BRANCH_TAG-$COMMIT_TAG
