@@ -42,7 +42,7 @@ const typeDefs = gql`
         permission_level: StringFilter
         permission_description: StringFilter
         allow: BooleanFilter
-        
+
         AND: [PermissionFilter!]
         OR: [PermissionFilter!]
     }

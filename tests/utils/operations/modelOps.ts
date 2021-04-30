@@ -257,6 +257,12 @@ const USERS_CONNECTION = `
                 cursor
                 node {
                     id
+                    organizations {
+                        id
+                    }
+                    schools {
+                        id
+                    }
                 }
             }
             pageInfo{
@@ -594,7 +600,6 @@ export async function userConnection(
     filter?: IEntityFilter,
 ) {
     const { query } = testClient;
-
     const operation = () => query({
         query: USERS_CONNECTION,
         variables: { direction, directionArgs, filterArgs:filter },

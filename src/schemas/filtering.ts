@@ -24,11 +24,18 @@ const typeDefs = gql`
     }
 
     enum StringOperator {
-        contains, eq, neq,
+        contains
+        eq
+        neq
     }
 
     enum NumberOrDateOperator {
-        eq, neq, gt, gte, lt, lte
+        eq
+        neq
+        gt
+        gte
+        lt
+        lte
     }
 
     enum BooleanOperator {

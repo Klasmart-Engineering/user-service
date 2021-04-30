@@ -17,7 +17,7 @@ import { getAgeRange, getGrade, getSubcategory, getAllOrganizations,
     getProgram, permissionsConnection, uploadSchoolsFile, userConnection
 } from "../utils/operations/modelOps";
 import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
-import { createOrganizationAndValidate, addOrganizationToUserAndValidate } from "../utils/operations/userOps";
+import { createOrganizationAndValidate, addOrganizationToUserAndValidate, addSchoolToUser } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
 import { AgeRange } from "../../src/entities/ageRange";
@@ -1326,13 +1326,36 @@ describe("model", () => {
         const direction = 'FORWARD'
 
         beforeEach(async () => {
-            usersList = [];
+            usersList = []
+            const organizations: Organization [] = []
+            const schools: School [] = []
+            // create two orgs and two schools
+            for(let i=0; i<2; i++) {
+                const org = createOrganization()
+                await connection.manager.save(org);
+                organizations.push(org)
+
+                const school = createSchool(org)
+                await connection.manager.save(school);
+                schools.push(school)
+            }
             // create 10 users
             for (let i=0; i<10; i++) {
                 usersList.push(createUser())
             }
             //sort users by userId
             await connection.manager.save(usersList)
+            // add organizations and schools to users
+            for (const user of usersList) {
+                for(let i=0; i<2; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient, user.user_id, organizations[i].organization_id, getJoeAuthToken()
+                    );
+                    await addSchoolToUser(
+                        testClient, user.user_id, schools[i].school_id, { authorization: getJoeAuthToken()}
+                    );
+                }
+            }
             usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
         })
         context('seek forward',  ()=>{
@@ -1344,6 +1367,8 @@ describe("model", () => {
                 expect(usersConnection?.edges.length).to.equal(3);
                 for(let i=0; i<3; i++) {
                     expect(usersConnection?.edges[i].node.id).to.equal(usersList[4+i].user_id)
+                    expect(usersConnection?.edges[i].node.organizations.length).to.equal(2)
+                    expect(usersConnection?.edges[i].node.schools.length).to.equal(2)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
@@ -1354,9 +1379,21 @@ describe("model", () => {
 
         context('organization filter',  ()=>{
             let org: Organization;
+            let school1: School;
             beforeEach(async () => {
+                //org used to filter
                 org = createOrganization()
                 await connection.manager.save(org);
+                school1 = createSchool(org);
+
+                // org and school whose membership shouldnt be included
+                let org2 = createOrganization()
+                await connection.manager.save(org2);
+                const school2 = createSchool(org2);
+
+                await connection.manager.save(school1);
+                await connection.manager.save(school2);
+
                 usersList = [];
                 // create 10 users
                 for (let i=0; i<10; i++) {
@@ -1364,8 +1401,13 @@ describe("model", () => {
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)
+
                 for (const user of usersList) {
                     await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
+                    await addSchoolToUser(testClient, user.user_id, school1.school_id, { authorization: getJoeAuthToken()})
+
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org2.organization_id, getJoeAuthToken());
+                    await addSchoolToUser(testClient, user.user_id, school2.school_id, { authorization: getJoeAuthToken()})
                 }
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
             })
@@ -1387,6 +1429,10 @@ describe("model", () => {
                 expect(usersConnection?.edges.length).to.equal(3);
                 for(let i=0; i<3; i++) {
                     expect(usersConnection?.edges[i].node.id).to.equal(usersList[4+i].user_id)
+                    expect(usersConnection?.edges[i].node.organizations.length).to.equal(1)
+                    expect(usersConnection?.edges[i].node.organizations[0].id).to.equal(org.organization_id)
+                    expect(usersConnection?.edges[i].node.schools.length).to.equal(1)
+                    expect(usersConnection?.edges[i].node.schools[0].id).to.equal(school1.school_id)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))

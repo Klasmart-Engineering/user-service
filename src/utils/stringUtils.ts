@@ -21,42 +21,45 @@
  * @param data any
  * @returns string|Error
  */
- export default function stringInject(str: string, data: any) {
+export default function stringInject(str: string, data: any) {
     if (data instanceof Array) {
         return str.replace(/({\d})/g, (i) => {
-            return data[Number(i.replace(/{/, '').replace(/}/, ''))];
-        });
+            return data[Number(i.replace(/{/, '').replace(/}/, ''))]
+        })
     } else if (data instanceof Object) {
         if (Object.keys(data).length === 0) {
-            return str;
+            return str
         }
 
         for (const _ in data) {
             return str.replace(/({([^}]+)})/g, (i) => {
-                const key = i.replace(/{/, '').replace(/}/, '');
+                const key = i.replace(/{/, '').replace(/}/, '')
 
                 const subKeys = key.split('.')
                 if (subKeys.length > 1) {
                     try {
                         return subKeys.reduce((acc, k) => {
                             acc = acc[k]
-                            return acc;
+                            return acc
                         }, data)
                     } catch (e) {
-                        return `All data for ${key} does not exist!`;
+                        return `All data for ${key} does not exist!`
                     }
                 }
 
-                if ( ! data[key]) {
-                    return i;
+                if (!data[key]) {
+                    return i
                 }
 
-                return data[key];
-            });
+                return data[key]
+            })
         }
-    } else if (data instanceof Array === false || data instanceof Object === false) {
-        return str;
+    } else if (
+        data instanceof Array === false ||
+        data instanceof Object === false
+    ) {
+        return str
     } else {
-        throw new Error('Failed to inject string');
+        throw new Error('Failed to inject string')
     }
 }
