@@ -402,12 +402,6 @@ export class Model {
                     'OrganizationMembership'
                 )
             }
-            if (filterHasProperty('schoolId', filter)) {
-                scope.leftJoinAndSelect(
-                    'User.school_memberships',
-                    'SchoolMembership'
-                )
-            }
             scope.andWhere(getWhereClauseFromFilter(filter))
         }
 
