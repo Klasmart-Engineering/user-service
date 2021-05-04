@@ -64,7 +64,6 @@ const typeDefs = gql`
 
         # joined columns
         organizationId: StringFilter
-        schoolId: StringFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]
