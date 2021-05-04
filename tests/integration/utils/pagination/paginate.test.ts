@@ -131,9 +131,8 @@ describe('paginate', ()=>{
     })
 
     context('default options', ()=>{
-        beforeEach(async () => {
-            usersList = [];
-            // create 10 users
+        beforeEach(async () => {           
+            // create 50 more users
             for (let i=0; i<50; i++) {
                 usersList.push(createUser())
                 await connection.manager.save(usersList)
@@ -147,6 +146,8 @@ describe('paginate', ()=>{
             
             expect(data.totalCount).to.eql(60);
             expect(data.edges.length).to.equal(50);
+
+           
             expect(data.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[0].user_id))
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.false
