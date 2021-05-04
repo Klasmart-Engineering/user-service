@@ -60,8 +60,9 @@ Then build a container that logs
 3. `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres postgres -c log_statement=all`
 4. `docker start postgres`
 5. `docker container exec -it postgres psql -U postgres -c "create database testdb;"`
-6. `docker logs -tf postgres 1>postgres.log 2>postgres.err` &
-7. `npm run coverage`
+6. Open a new terminal window perhaps in a different folder
+7. `docker logs -tf postgres 1>postgres.log 2>postgres.err &`
+8. `tail -f postgress.err`
 
 A vast amount of postgres sql commands will be in the postgres.err file.
 
