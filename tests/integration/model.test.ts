@@ -1421,7 +1421,6 @@ describe("model", () => {
                 await connection.manager.save(usersList)
 
                 for (const user of usersList) {
-                    console.log('***user', user)
                     await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
                     await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
                     await addSchoolToUser(testClient, user.user_id, school1.school_id, { authorization: getJoeAuthToken()})
