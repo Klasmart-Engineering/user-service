@@ -1,6 +1,8 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { User } from '../entities/user'
+import { orgsForUserLoader, schoolsForUserLoader } from '../dataloader'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -193,6 +195,14 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            User: {
+                memberships(user: User) {
+                    return orgsForUserLoader.load(user.user_id);
+                },
+                school_memberships(user: User) {
+                    return schoolsForUserLoader.load(user.user_id);
+                }
+            },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
