@@ -64,7 +64,7 @@ describe("model.class", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id, getJoeAuthToken());
-                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: getJoeAuthToken() });
+                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             });
 
             it("should return an array containing one class", async () => {
@@ -105,7 +105,7 @@ describe("model.class", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined, getJoeAuthToken());
-                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: getJoeAuthToken() });
+                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             });
 
             it("should return the class associated with the specified ID", async () => {

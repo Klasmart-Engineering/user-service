@@ -110,7 +110,7 @@ const DELETE_ROLE = `
     }
 `;
 
-export async function updateRole(testClient: ApolloServerTestClient, { roleId, roleName, roleDescription, systemRole }: any , headers?: Headers) {
+export async function updateRole(testClient: ApolloServerTestClient, { roleId, roleName, roleDescription, systemRole }: any , headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     const mutationQuery = systemRole ? UPDATE_SYSTEM_ROLE : UPDATE_ROLE;
 
@@ -118,6 +118,7 @@ export async function updateRole(testClient: ApolloServerTestClient, { roleId, r
         mutation: mutationQuery,
         variables: { role_id: roleId, role_name: roleName, role_description: roleDescription, system_role: systemRole },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -125,13 +126,14 @@ export async function updateRole(testClient: ApolloServerTestClient, { roleId, r
     return gqlRole;
 }
 
-export async function getPermissionViaRole(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers) {
+export async function getPermissionViaRole(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_PERMISSION,
         variables: { role_id: roleId, permission_name: permissionName },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -139,13 +141,14 @@ export async function getPermissionViaRole(testClient: ApolloServerTestClient, r
     return gqlPermission;
 }
 
-export async function grantPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers) {
+export async function grantPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: GRANT_PERMISSION,
         variables: { role_id: roleId, permission_name: permissionName },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -153,26 +156,28 @@ export async function grantPermission(testClient: ApolloServerTestClient, roleId
     return gqlPermission;
 }
 
-export async function revokePermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers) {
+export async function revokePermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: REVOKE_PERMISSION,
         variables: { role_id: roleId, permission_name: permissionName },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
     return res.data?.role.revoke as boolean;
 }
 
-export async function denyPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers) {
+export async function denyPermission(testClient: ApolloServerTestClient, roleId: string, permissionName: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DENY_PERMISSION,
         variables: { role_id: roleId, permission_name: permissionName },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -180,13 +185,14 @@ export async function denyPermission(testClient: ApolloServerTestClient, roleId:
     return gqlPermission;
 }
 
-export async function editPermissions(testClient: ApolloServerTestClient, roleId: string, permissionNames: string[], headers?: Headers) {
+export async function editPermissions(testClient: ApolloServerTestClient, roleId: string, permissionNames: string[], headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_PERMISSIONS,
         variables: { role_id: roleId, permission_names: permissionNames },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -194,13 +200,14 @@ export async function editPermissions(testClient: ApolloServerTestClient, roleId
     return gqlPermissions;
 }
 
-export async function deleteRole(testClient: ApolloServerTestClient, roleId: string, headers?: Headers) {
+export async function deleteRole(testClient: ApolloServerTestClient, roleId: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_ROLE,
         variables: { role_id: roleId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

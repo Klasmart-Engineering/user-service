@@ -24,13 +24,14 @@ const EDIT_SUBCATEGORIES = `
     }
 `;
 
-export async function editSubcategories( testClient: ApolloServerTestClient, id: string, subcategory_ids: string[], headers?: Headers) {
+export async function editSubcategories( testClient: ApolloServerTestClient, id: string, subcategory_ids: string[], headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_SUBCATEGORIES,
         variables: { id: id, subcategory_ids: subcategory_ids },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -38,13 +39,14 @@ export async function editSubcategories( testClient: ApolloServerTestClient, id:
     return gqlSubcategories;
 }
 
-export async function deleteCategory( testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function deleteCategory( testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_SUBCATEGORY,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

@@ -65,16 +65,17 @@ describe("ageRange", () => {
         context("when user is logged in", () => {
             let otherUserId: string;
             let roleId: string;
+            let otherUser: User;
 
             context("and the user is not an admin", () => {
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    otherUser = await createUserBilly(testClient);
                     otherUserId = otherUser.user_id
                 });
 
                 context("and does not belong to the organization from the age range", () => {
                     it("cannot find the age range", async () => {
-                        const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() })
+                        const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id })
 
                         expect(gqlBool).to.be.undefined
                     });
@@ -82,15 +83,15 @@ describe("ageRange", () => {
 
                 context("and belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: user.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     context("with a non system age range", () => {
                         context("and has delete age range permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_age_range_20442, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_age_range_20442, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                             });
 
                             it("deletes the expected age range", async () => {
@@ -99,7 +100,7 @@ describe("ageRange", () => {
                                 expect(dbAgeRange.status).to.eq(Status.ACTIVE)
                                 expect(dbAgeRange.deleted_at).to.be.null
 
-                                const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() })
+                                const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id })
 
                                 expect(gqlBool).to.be.true
                                 dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -109,11 +110,11 @@ describe("ageRange", () => {
 
                             context("with the age range already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                                    await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                                 });
 
                                 it("cannot delete the age range", async () => {
-                                    const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() })
+                                    const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id })
 
                                     expect(gqlBool).to.be.false
                                     const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -125,7 +126,7 @@ describe("ageRange", () => {
 
                         context("and does not have delete age range permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id })
 
                                 expect(fn()).to.be.rejected;
                                 const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -144,11 +145,11 @@ describe("ageRange", () => {
 
                         context("and has delete age range permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_age_range_20442, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_age_range_20442, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id })
 
                                 expect(fn()).to.be.rejected;
                                 const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -160,7 +161,7 @@ describe("ageRange", () => {
 
                         context("and does not have delete age range permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id })
 
                                 expect(fn()).to.be.rejected;
                                 const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -181,7 +182,7 @@ describe("ageRange", () => {
                         expect(dbAgeRange.status).to.eq(Status.ACTIVE)
                         expect(dbAgeRange.deleted_at).to.be.null
 
-                        const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                        const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                         expect(gqlBool).to.be.true
                         dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -192,7 +193,7 @@ describe("ageRange", () => {
 
                 context("and belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     context("with a non system age range", () => {
@@ -202,7 +203,7 @@ describe("ageRange", () => {
                             expect(dbAgeRange.status).to.eq(Status.ACTIVE)
                             expect(dbAgeRange.deleted_at).to.be.null
 
-                            const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                             expect(gqlBool).to.be.true
                             dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -212,11 +213,11 @@ describe("ageRange", () => {
 
                         context("with the age range already deleted", () => {
                             beforeEach(async () => {
-                                await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                                await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                             });
 
                             it("cannot delete the age range", async () => {
-                                const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                                 expect(gqlBool).to.be.false
                                 const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -238,7 +239,7 @@ describe("ageRange", () => {
                             expect(dbAgeRange.status).to.eq(Status.ACTIVE)
                             expect(dbAgeRange.deleted_at).to.be.null
 
-                            const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                             expect(gqlBool).to.be.true
                             dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)
@@ -248,11 +249,11 @@ describe("ageRange", () => {
 
                         context("with the age range already deleted", () => {
                             beforeEach(async () => {
-                                await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                                await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                             });
 
                             it("cannot delete the age range", async () => {
-                                const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                                 expect(gqlBool).to.be.false
                                 const dbAgeRange = await AgeRange.findOneOrFail(ageRange.id)

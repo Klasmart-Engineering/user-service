@@ -51,7 +51,7 @@ describe("model.user", () => {
         });
 
         it("should modify an existing user", async () => {
-            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: getJoeAuthToken() });
+            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             expect(gqlUser).to.exist;
             expect(gqlUser).to.include(modifiedUser);
             const dbUser = await User.findOneOrFail(user.user_id);
@@ -67,7 +67,7 @@ describe("model.user", () => {
         });
 
         it("should get users", async () => {
-            const gqlUsers = await getUsers(testClient, { authorization: getJoeAuthToken() });
+            const gqlUsers = await getUsers(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
             expect(gqlUsers).to.exist;
             expect(gqlUsers.length).to.equal(1);
@@ -88,7 +88,7 @@ describe("model.user", () => {
         });
 
         it("should get user by ID", async () => {
-            const gqlUser = await getUser(testClient, user.user_id, { authorization: getJoeAuthToken() });
+            const gqlUser = await getUser(testClient, user.user_id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             expect(gqlUser).to.exist;
             expect(user).to.include(gqlUser);
         });

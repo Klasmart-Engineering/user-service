@@ -28,13 +28,14 @@ const DELETE_SUBJECT = `
     }
 `;
 
-export async function deleteSubject( testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function deleteSubject( testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_SUBJECT,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -42,13 +43,14 @@ export async function deleteSubject( testClient: ApolloServerTestClient, id: str
     return gqlBool;
 }
 
-export async function describeSubject(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function describeSubject(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: DESCRIBE_SUBJECT,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

@@ -9,15 +9,19 @@ import { getJoeAuthToken } from "../../utils/testConfig";
 import { uploadFile } from "../../utils/operations/modelOps";
 import { Model } from "../../../src/model";
 import { resolve } from 'path';
+import { User } from "@sentry/types";
+import { createUserJoe } from "../../utils/testEntities";
 
 describe("isMIMEType", async () => {
     let connection: Connection;
     let testClient: ApolloServerTestClient;
+    let user: User;
 
     before(async () => {
         connection = await createTestConnection();
         const server = createServer(new Model(connection));
         testClient = createTestClient(server);
+        user = createUserJoe(testClient);
     });
 
     after(async () => {
@@ -30,7 +34,7 @@ describe("isMIMEType", async () => {
             const file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
             const mimetype = "text/plain";
             const encoding = "7bit";
-            const result = await uploadFile(testClient, { file, filename, mimetype, encoding }, { authorization: getJoeAuthToken() });
+            const result = await uploadFile(testClient, { file, filename, mimetype, encoding }, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
             expect(result).null;
         })
@@ -42,7 +46,7 @@ describe("isMIMEType", async () => {
            const file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
            const mimetype = "text/csv";
            const encoding = "7bit";
-           const result = await uploadFile(testClient, { file, filename, mimetype, encoding }, { authorization: getJoeAuthToken() });
+           const result = await uploadFile(testClient, { file, filename, mimetype, encoding }, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
            expect(result.filename).eq(filename);
            expect(result.mimetype).eq(mimetype);

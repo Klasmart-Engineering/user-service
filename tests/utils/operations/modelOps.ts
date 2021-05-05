@@ -335,26 +335,28 @@ export async function createUser(
     return gqlUser;
 }
 
-export async function switchUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+export async function switchUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: SWITCH_USER,
         variables: { user_id: userId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
     return res;
 }
 
-export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {
+export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: SET_USER,
         variables: modifiedUser,
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -362,12 +364,13 @@ export async function updateUser(testClient: ApolloServerTestClient, modifiedUse
     return gqlUser;
 }
 
-export async function getUsers(testClient: ApolloServerTestClient, headers?: Headers) {
+export async function getUsers(testClient: ApolloServerTestClient, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_USERS,
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -375,12 +378,13 @@ export async function getUsers(testClient: ApolloServerTestClient, headers?: Hea
     return gqlUsers;
 }
 
-export async function myUsers(testClient: ApolloServerTestClient, headers?: Headers) {
+export async function myUsers(testClient: ApolloServerTestClient, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: MY_USERS,
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -388,13 +392,14 @@ export async function myUsers(testClient: ApolloServerTestClient, headers?: Head
     return gqlUsers;
 }
 
-export async function getUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+export async function getUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_USER,
         variables: { user_id: userId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -416,12 +421,13 @@ export async function me(testClient: ApolloServerTestClient, headers?: Headers, 
     return gqlUser;
 }
 
-export async function getAllOrganizations(testClient: ApolloServerTestClient, headers?: Headers) {
+export async function getAllOrganizations(testClient: ApolloServerTestClient, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_ALL_ORGANIZATIONS,
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -429,13 +435,14 @@ export async function getAllOrganizations(testClient: ApolloServerTestClient, he
     return gqlOrgs;
 }
 
-export async function getOrganizations(testClient: ApolloServerTestClient, organizationIds: string[], headers?: Headers) {
+export async function getOrganizations(testClient: ApolloServerTestClient, organizationIds: string[], headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_ORGANIZATIONS,
         variables: { organization_ids: organizationIds },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -443,13 +450,14 @@ export async function getOrganizations(testClient: ApolloServerTestClient, organ
     return gqlOrgs;
 }
 
-export async function getAgeRange(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function getAgeRange(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_AGE_RANGE,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -457,13 +465,14 @@ export async function getAgeRange(testClient: ApolloServerTestClient, id: string
     return gqlAgeRange;
 }
 
-export async function getGrade(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function getGrade(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_GRADE,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -471,13 +480,14 @@ export async function getGrade(testClient: ApolloServerTestClient, id: string, h
     return gqlGrade;
 }
 
-export async function getSubcategory(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function getSubcategory(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_SUBCATEGORY,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -499,13 +509,14 @@ export async function getSubject(testClient: ApolloServerTestClient, id: string,
     return gqlSubject;
 }
 
-export async function getProgram(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function getProgram(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_PROGRAM,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -577,7 +588,8 @@ export async function uploadSchoolsFile(
 export async function uploadFile(
     testClient: ApolloServerTestClient,
     { file, filename, mimetype, encoding }: any,
-    headers?: Headers
+    headers?: Headers,
+    cookies?: any
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding)
@@ -589,6 +601,7 @@ export async function uploadFile(
         mutation: USER_CSV_UPLOAD_MUTATION,
         variables: variables,
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -617,7 +630,8 @@ export async function permissionsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
     directionArgs?: any,
-    headers?: Headers, filter?:IEntityFilter
+    headers?: Headers, filter?:IEntityFilter,
+    cookies?: any
 ) {
     const { query } = testClient;
 
@@ -625,6 +639,7 @@ export async function permissionsConnection(
         query: PERMISSIONS_CONNECTION,
         variables: { direction, directionArgs, filter },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

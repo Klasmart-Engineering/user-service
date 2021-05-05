@@ -11,13 +11,14 @@ const DELETE_ROLE = `
     }
 `;
 
-export async function deleteAgeRange( testClient: ApolloServerTestClient, id: string, headers?: Headers) {
+export async function deleteAgeRange( testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_ROLE,
         variables: { id: id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

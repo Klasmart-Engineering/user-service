@@ -154,11 +154,16 @@ export class Model {
         if (userEmail && !validateEmail(userEmail)) {
             userEmail = undefined
         }
+
         if (userPhone && !validatePhone(userPhone)) {
             userPhone = undefined
         }
 
-        if (userEmail || userPhone) {
+        const emailOrPhoneUser = await this.userRepository.findOne({
+            where: [{ email: userEmail }, { phone: userPhone }],
+        })
+
+        if ((userEmail || userPhone) && !emailOrPhoneUser) {
             user = new User()
             user.user_id = uuid_v4()
             user.email = userEmail

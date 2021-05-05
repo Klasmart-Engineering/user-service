@@ -98,7 +98,7 @@ describe("model", () => {
         context("when user is logged in", () => {
             context("and the user_id is on the account", () => {
                 it("returns the expected user", async () => {
-                    const gqlRes = await switchUser(testClient, user.user_id, { authorization: getJoeAuthToken() });
+                    const gqlRes = await switchUser(testClient, user.user_id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     const gqlUser = gqlRes.data?.switch_user as User
                     const gqlCookies = gqlRes.extensions?.cookies
 
@@ -115,7 +115,7 @@ describe("model", () => {
                 });
 
                 it("raises an error", async () => {
-                    const fn = () => switchUser(testClient, otherUser.user_id, { authorization: getJoeAuthToken() });
+                    const fn = () => switchUser(testClient, otherUser.user_id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -203,7 +203,7 @@ describe("model", () => {
             const userInfo = (user: User) => { return user.user_id }
 
             it("returns the expected users", async () => {
-                const gqlUsers = await myUsers(testClient, { authorization: getJoeAuthToken() });
+                const gqlUsers = await myUsers(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
             });
@@ -230,15 +230,16 @@ describe("model", () => {
         context("when user is logged in", () => {
             const orgInfo = (org: Organization) => { return org.organization_id }
             let otherOrganization: Organization
+            let otherUser: User;
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                otherUser = await createUserBilly(testClient);
                 otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
             });
 
             context("and the user is not an admin", () => {
                 it("raises an error", async () => {
-                    const fn = () => getAllOrganizations(testClient, { authorization: getBillyAuthToken() });
+                    const fn = () => getAllOrganizations(testClient, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -246,7 +247,7 @@ describe("model", () => {
 
             context("and there is no filter in the organization ids", () => {
                 it("returns the expected organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
+                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
@@ -260,7 +261,8 @@ describe("model", () => {
                     const gqlOrgs = await getOrganizations(
                         testClient,
                         [organization.organization_id],
-                        { authorization: getJoeAuthToken() }
+                        { authorization: getJoeAuthToken() },
+                        { user_id: user.user_id }
                     );
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
@@ -314,11 +316,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -327,7 +329,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the age range", () => {
                     it("returns no age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlAgeRange).to.be.null;
                     });
@@ -337,11 +339,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -350,7 +352,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the age range", () => {
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -407,11 +409,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
                     });
 
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -421,7 +423,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the grade", () => {
                     it("returns no grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlGrade).to.be.null;
                     });
@@ -431,11 +433,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
                     });
 
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -445,7 +447,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the grade", () => {
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -497,11 +499,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -510,7 +512,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the subcategory", () => {
                     it("returns no subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlSubcategory).to.be.null;
                     });
@@ -520,11 +522,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -533,7 +535,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the subcategory", () => {
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -583,11 +585,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -596,7 +598,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the program", () => {
                     it("returns no program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                         expect(gqlProgram).to.be.null;
                     });
@@ -606,11 +608,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -619,7 +621,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the program", () => {
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -1475,10 +1477,12 @@ describe("model", () => {
         })
 
         context('when seeking forward',  ()=>{
+            let user: User;
             const direction = 'FORWARD'
 
             context('and no direction args are specified', () => {
                 beforeEach(async () => {
+                    user = await createUserJoe(testClient)
                     await RolesInitializer.run()
                     const permissions = await Permission.find({ take: 50, order: { permission_id: 'ASC' } })
                     firstPermission = permissions[0]
@@ -1486,7 +1490,7 @@ describe("model", () => {
                 })
 
                 it('returns the expected permissions with the default page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() })
+                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() }, undefined, { user_id: user.user_id })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
                     expect(gqlPermissions?.edges.length).to.equal(50);
@@ -1512,7 +1516,7 @@ describe("model", () => {
                 })
 
                 it('returns the expected permissions with the specified page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
+                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() }, undefined, { user_id: user.user_id })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
                     expect(gqlPermissions?.edges.length).to.equal(3);

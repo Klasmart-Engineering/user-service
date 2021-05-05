@@ -97,7 +97,7 @@ const GET_CLASSES_TEACHING = `
     }
 `;
 
-export async function addRoleToOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, roleId: string, headers?: Headers) {
+export async function addRoleToOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, roleId: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     headers = headers ?? { authorization: getJoeAuthToken() };
 
@@ -105,6 +105,7 @@ export async function addRoleToOrganizationMembership(testClient: ApolloServerTe
         mutation: ADD_ROLE_TO_ORGANIZATION_MEMBERSHIP,
         variables: { user_id: userId, organization_id: organizationId, role_id: roleId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -139,7 +140,7 @@ export async function removeRoleToOrganizationMembership(testClient: ApolloServe
     return res.data?.user.membership.removeRole as OrganizationMembership;
 }
 
-export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string, headers?: Headers) {
+export async function getSchoolMembershipsForOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, permission_name?: string, headers?: Headers, cookies?: any) {
         const { mutate } = testClient;
         headers = headers ?? { authorization: getJoeAuthToken() };
      
@@ -148,6 +149,7 @@ export async function getSchoolMembershipsForOrganizationMembership(testClient: 
             mutation: GET_SCHOOL_MEMBERSHIPS,
             variables: { user_id: userId, organization_id: organizationId, permission_name: permission_name },
             headers: headers,
+            cookies: cookies
         });
         const res = await gqlTry(operation);
         return res.data?.user.membership.schoolMemberships as SchoolMembership[];
@@ -163,7 +165,7 @@ export async function getSchoolMembershipsForOrganizationMembership(testClient: 
     }
 }
 
-export async function leaveOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+export async function leaveOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     headers = headers ?? { authorization: getJoeAuthToken() };
 
@@ -171,13 +173,14 @@ export async function leaveOrganization(testClient: ApolloServerTestClient, user
         mutation: LEAVE_ORGANIZATION,
         variables: { user_id: userId, organization_id: organizationId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
     return res.data?.user.membership.leave as boolean;
 }
 
-export async function getClassesTeachingViaOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+export async function getClassesTeachingViaOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({

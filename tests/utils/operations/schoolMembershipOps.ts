@@ -73,7 +73,7 @@ query myQuery($user_id: ID!  $school_id: ID!, $permission_name: ID!){
 }
 `;
 
-export async function addRoleToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleId: string, headers?: Headers) {
+export async function addRoleToSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, roleId: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     headers = headers ?? { authorization: getJoeAuthToken() };
 
@@ -81,6 +81,7 @@ export async function addRoleToSchoolMembership(testClient: ApolloServerTestClie
         mutation: ADD_ROLE_TO_SCHOOL_MEMBERSHIP,
         variables: { user_id: userId, school_id: schoolId, role_id: roleId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -118,7 +119,7 @@ export async function removeRoleToSchoolMembership(testClient: ApolloServerTestC
     return gqlMembership;
 }
 
-export async function leaveSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
+export async function leaveSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     headers = headers ?? { authorization: getJoeAuthToken() };
 
@@ -126,6 +127,7 @@ export async function leaveSchool(testClient: ApolloServerTestClient, userId: st
         mutation: LEAVE_SCHOOL,
         variables: { user_id: userId, school_id: schoolId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

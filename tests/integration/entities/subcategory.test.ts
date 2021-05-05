@@ -82,15 +82,15 @@ describe("Subcategory", () => {
 
                 context("and belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: user.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     context("with a non system subcategory", () => {
                         context("and has delete subcategory permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                             });
 
                             it("deletes the expected subcategory", async () => {
@@ -99,7 +99,7 @@ describe("Subcategory", () => {
                                 expect(dbSubcategory.status).to.eq(Status.ACTIVE)
                                 expect(dbSubcategory.deleted_at).to.be.null
 
-                                const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() })
+                                const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                 expect(gqlBool).to.be.true
                                 dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
@@ -109,11 +109,11 @@ describe("Subcategory", () => {
 
                             context("with the subcategory already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                                    await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                                 });
 
                                 it("cannot delete the subcategory", async () => {
-                                    const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() })
+                                    const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                     expect(gqlBool).to.be.false
                                     const dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
@@ -125,7 +125,7 @@ describe("Subcategory", () => {
 
                         context("and does not have delete subcategory permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
                                 expect(fn()).to.be.rejected;
                                 const dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
                                 expect(dbSubcategory.status).to.eq(Status.ACTIVE)
@@ -142,11 +142,11 @@ describe("Subcategory", () => {
 
                         context("and has delete subcategory permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
                                 expect(fn()).to.be.rejected;
                                 const dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
                                 expect(dbSubcategory.status).to.eq(Status.ACTIVE)
@@ -156,7 +156,7 @@ describe("Subcategory", () => {
 
                         context("and does not have delete subcategory permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
                                 expect(fn()).to.be.rejected;
                                 const dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
                                 expect(dbSubcategory.status).to.eq(Status.ACTIVE)
@@ -175,7 +175,7 @@ describe("Subcategory", () => {
                         expect(dbSubcategory.status).to.eq(Status.ACTIVE)
                         expect(dbSubcategory.deleted_at).to.be.null
 
-                        const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                        const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                         expect(gqlBool).to.be.true
                         dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
@@ -186,7 +186,7 @@ describe("Subcategory", () => {
 
                 context("and belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     context("with a non system subcategory", () => {
@@ -196,7 +196,7 @@ describe("Subcategory", () => {
                             expect(dbSubcategory.status).to.eq(Status.ACTIVE)
                             expect(dbSubcategory.deleted_at).to.be.null
 
-                            const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                             expect(gqlBool).to.be.true
                             dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
@@ -206,11 +206,11 @@ describe("Subcategory", () => {
 
                         context("with the subcategory already deleted", () => {
                             beforeEach(async () => {
-                                await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                                await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                             });
 
                             it("cannot delete the subcategory", async () => {
-                                const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                                 expect(gqlBool).to.be.false
                                 const dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
@@ -232,7 +232,7 @@ describe("Subcategory", () => {
                             expect(dbSubcategory.status).to.eq(Status.ACTIVE)
                             expect(dbSubcategory.deleted_at).to.be.null
 
-                            const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                             expect(gqlBool).to.be.true
                             dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)
@@ -242,11 +242,11 @@ describe("Subcategory", () => {
 
                         context("with the subcategory already deleted", () => {
                             beforeEach(async () => {
-                                await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                                await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                             });
 
                             it("cannot delete the subcategory", async () => {
-                                const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                                 expect(gqlBool).to.be.false
                                 const dbSubcategory = await Subcategory.findOneOrFail(subcategory.id)

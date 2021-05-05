@@ -65,7 +65,7 @@ describe("model.role", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
-                await createRole(testClient, organization.organization_id);
+                await createRole(testClient, organization.organization_id, undefined, undefined, undefined, { user_id: user.user_id });
             });
 
             it("should return an array containing the default roles", async () => {
@@ -106,7 +106,7 @@ describe("model.role", () => {
             beforeEach(async () => {
                 const user = await createUserJoe(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
-                role = await createRole(testClient, organization.organization_id);
+                role = await createRole(testClient, organization.organization_id, undefined, undefined, undefined, { user_id: user.user_id });
             });
 
             it("should return an array containing the default roles", async () => {

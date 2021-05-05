@@ -234,10 +234,11 @@ export async function createOrganizationAndValidate(
     userId: string,
     organizationName?: string,
     shortCode?: string,
-    token?: string
+    token?: string,
+    cookies?: any
 ): Promise<Organization> {
     organizationName = organizationName ?? "My Organization";
-    const gqlOrganization = await createOrganization(testClient, userId, organizationName, shortCode, token)
+    const gqlOrganization = await createOrganization(testClient, userId, organizationName, shortCode, token, cookies)
 
     expect(gqlOrganization).to.exist;
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
@@ -251,7 +252,8 @@ export async function createOrganization(
     userId: string,
     organizationName: string,
     shortCode?: string,
-    token?: string
+    token?: string,
+    cookies?: any
 ): Promise<Organization> {
 
     token = token ?? getJoeAuthToken()
@@ -266,6 +268,7 @@ export async function createOrganization(
         mutation: CREATE_ORGANIZATION,
         variables: variables,
         headers: { authorization: token },
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -308,7 +311,7 @@ export async function addOrganizationToUser(testClient: ApolloServerTestClient, 
     return gqlMembership;
 }
 
-export async function updateUser(testClient: ApolloServerTestClient, user: User, headers?: Headers) {
+export async function updateUser(testClient: ApolloServerTestClient, user: User, headers?: Headers, cookies?: any) {
     const { mutate } = testClient;
     const userMods = {
         given_name: "Billy",
@@ -325,6 +328,7 @@ export async function updateUser(testClient: ApolloServerTestClient, user: User,
         mutation: SET,
         variables: { user_id: user.user_id, ...userMods },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -336,7 +340,8 @@ export async function updateUserEmail(
     testClient: ApolloServerTestClient,
     user: User,
     email: string,
-    headers?: Headers
+    headers?: Headers,
+    cookies?: any
 ) {
     const { mutate } = testClient;
     const userMod = { email };
@@ -345,6 +350,7 @@ export async function updateUserEmail(
         mutation: SET_EMAIL,
         variables: { user_id: user.user_id, ...userMod },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -355,7 +361,8 @@ export async function updateUserEmail(
 export async function setPrimaryUser(
     testClient: ApolloServerTestClient,
     user: User,
-    headers?: Headers
+    headers?: Headers,
+    cookies?: any
 ) {
     const { mutate, query } = testClient;
 
@@ -363,6 +370,7 @@ export async function setPrimaryUser(
         mutation: SET_PRIMARY,
         variables: { user_id: user.user_id },
         headers: headers,
+        cookies: cookies
     });
     await gqlTry(mutationOperation);
 
@@ -377,13 +385,14 @@ export async function setPrimaryUser(
     return gqlUser;
 }
 
-export async function getOrganizationMemberships(testClient: ApolloServerTestClient, user: User, headers?: Headers) {
+export async function getOrganizationMemberships(testClient: ApolloServerTestClient, user: User, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_ORGANIZATION_MEMBERSHIPS,
         variables: { user_id: user.user_id },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -391,13 +400,14 @@ export async function getOrganizationMemberships(testClient: ApolloServerTestCli
     return gqlMemberships;
 }
 
-export async function getOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+export async function getOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_ORGANIZATION_MEMBERSHIP,
         variables: { user_id: userId, organization_id: organizationId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -405,13 +415,14 @@ export async function getOrganizationMembership(testClient: ApolloServerTestClie
     return gqlMembership;
 }
 
-export async function getSchoolMemberships(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+export async function getSchoolMemberships(testClient: ApolloServerTestClient, userId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_SCHOOL_MEMBERSHIPS,
         variables: { user_id: userId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -419,13 +430,14 @@ export async function getSchoolMemberships(testClient: ApolloServerTestClient, u
     return gqlMemberships;
 }
 
-export async function getSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
+export async function getSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_SCHOOL_MEMBERSHIP,
         variables: { user_id: userId, school_id: schoolId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -433,13 +445,14 @@ export async function getSchoolMembership(testClient: ApolloServerTestClient, us
     return gqlMembership;
 }
 
-export async function getClassesTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+export async function getClassesTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_CLASSES_TEACHING,
         variables: { user_id: userId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -447,13 +460,14 @@ export async function getClassesTeaching(testClient: ApolloServerTestClient, use
     return gqlClasses;
 }
 
-export async function getClassesStudying(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+export async function getClassesStudying(testClient: ApolloServerTestClient, userId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_CLASSES_STUDYING,
         variables: { user_id: userId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -461,13 +475,14 @@ export async function getClassesStudying(testClient: ApolloServerTestClient, use
     return gqlClasses;
 }
 
-export async function getUserSchoolMembershipsWithPermission(testClient: ApolloServerTestClient, userId: string, permissionName: string, headers?: Headers) {
+export async function getUserSchoolMembershipsWithPermission(testClient: ApolloServerTestClient, userId: string, permissionName: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION,
         variables: { user_id: userId, permission_name: permissionName },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -475,15 +490,15 @@ export async function getUserSchoolMembershipsWithPermission(testClient: ApolloS
     return gqlMemberships;
 }
 
-export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers){
+export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers, cookies?: any){
     const { mutate } = testClient;
 
     headers = headers ?? { authorization: getJoeAuthToken() };
-    console.log("userId:",userId,"otherId:",otherId)
     const operation = () => mutate({
         mutation: MERGE_USER,
         variables: { user_id: userId, other_id: otherId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -519,13 +534,14 @@ export function userToPayload(user: User): any {
 }
 
 
-export async function getSubjectsTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
+export async function getSubjectsTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers, cookies?: any) {
     const { query } = testClient;
 
     const operation = () => query({
         query: GET_SUBJECTS_TEACHING,
         variables: { user_id: userId },
         headers: headers,
+        cookies: cookies
     });
 
     const res = await gqlTry(operation);

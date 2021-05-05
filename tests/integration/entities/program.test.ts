@@ -80,7 +80,7 @@ describe("program", () => {
 
                 context("and does not belong to the organization from the program", () => {
                     it("cannot find the program", async () => {
-                        const gqlBool = await deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() })
+                        const gqlBool = await deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                         expect(gqlBool).to.be.undefined
                     });
@@ -88,15 +88,15 @@ describe("program", () => {
 
                 context("and belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: user.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     context("with a non system program", () => {
                         context("and has delete program permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_program_20441, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_program_20441, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                             });
 
                             it("deletes the expected program", async () => {
@@ -105,7 +105,7 @@ describe("program", () => {
                                 expect(dbProgram.status).to.eq(Status.ACTIVE)
                                 expect(dbProgram.deleted_at).to.be.null
 
-                                const gqlBool = await deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() })
+                                const gqlBool = await deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                 expect(gqlBool).to.be.true
                                 dbProgram = await Program.findOneOrFail(program.id)
@@ -115,11 +115,11 @@ describe("program", () => {
 
                             context("with the program already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                                    await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                                 });
 
                                 it("cannot delete the program", async () => {
-                                    const gqlBool = await deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() })
+                                    const gqlBool = await deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                     expect(gqlBool).to.be.false
                                     const dbProgram = await Program.findOneOrFail(program.id)
@@ -131,7 +131,7 @@ describe("program", () => {
 
                         context("and does not have delete program permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                 expect(fn()).to.be.rejected;
                                 const dbProgram = await Program.findOneOrFail(program.id)
@@ -150,11 +150,11 @@ describe("program", () => {
 
                         context("and has delete program permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_age_range_20442, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_age_range_20442, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                 expect(fn()).to.be.rejected;
                                 const dbProgram = await Program.findOneOrFail(program.id)
@@ -166,7 +166,7 @@ describe("program", () => {
 
                         context("and does not have delete program permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId })
 
                                 expect(fn()).to.be.rejected;
                                 const dbProgram = await Program.findOneOrFail(program.id)
@@ -187,7 +187,7 @@ describe("program", () => {
                         expect(dbProgram.status).to.eq(Status.ACTIVE)
                         expect(dbProgram.deleted_at).to.be.null
 
-                        const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                        const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                         expect(gqlBool).to.be.true
                         dbProgram = await Program.findOneOrFail(program.id)
@@ -198,7 +198,7 @@ describe("program", () => {
 
                 context("and belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                     });
 
                     context("with a non system program", () => {
@@ -208,7 +208,7 @@ describe("program", () => {
                             expect(dbProgram.status).to.eq(Status.ACTIVE)
                             expect(dbProgram.deleted_at).to.be.null
 
-                            const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                             expect(gqlBool).to.be.true
                             dbProgram = await Program.findOneOrFail(program.id)
@@ -218,11 +218,11 @@ describe("program", () => {
 
                         context("with the program already deleted", () => {
                             beforeEach(async () => {
-                                await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                                await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                             });
 
                             it("cannot delete the program", async () => {
-                                const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                                 expect(gqlBool).to.be.false
                                 const dbProgram = await Program.findOneOrFail(program.id)
@@ -244,7 +244,7 @@ describe("program", () => {
                             expect(dbProgram.status).to.eq(Status.ACTIVE)
                             expect(dbProgram.deleted_at).to.be.null
 
-                            const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                             expect(gqlBool).to.be.true
                             dbProgram = await Program.findOneOrFail(program.id)
@@ -254,11 +254,11 @@ describe("program", () => {
 
                         context("with the program already deleted", () => {
                             beforeEach(async () => {
-                                await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                                await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                             });
 
                             it("cannot delete the program", async () => {
-                                const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
 
                                 expect(gqlBool).to.be.false
                                 const dbProgram = await Program.findOneOrFail(program.id)
@@ -281,7 +281,7 @@ describe("program", () => {
         beforeEach(async () => {
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             ageRange = createAgeRange(org)
             await ageRange.save()
         });
@@ -300,13 +300,13 @@ describe("program", () => {
             let role: any;
 
             beforeEach(async () => {
-                role = await createRole(testClient, org.organization_id);
+                role = await createRole(testClient, org.organization_id, undefined, undefined, undefined, { user_id: user.user_id });
                 await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, role.role_id);
             });
 
             context("and the user does not have edit program permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editAgeRanges(testClient, program.id, [ageRange.id], { authorization: getBillyAuthToken() });
+                    const fn = () => editAgeRanges(testClient, program.id, [ageRange.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                     expect(fn()).to.be.rejected;
 
                     const dbAgeRanges = await program.age_ranges || []
@@ -316,7 +316,7 @@ describe("program", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                 });
 
                 it("edits the program age ranges", async () => {
@@ -324,14 +324,14 @@ describe("program", () => {
                     let dbAgeRanges = await dbProgram.age_ranges || []
                     expect(dbAgeRanges).to.be.empty
 
-                    let gqlAgeRanges = await editAgeRanges(testClient, program.id, [ageRange.id], { authorization: getBillyAuthToken() });
+                    let gqlAgeRanges = await editAgeRanges(testClient, program.id, [ageRange.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbAgeRanges = await dbProgram.age_ranges || []
                     expect(dbAgeRanges).not.to.be.empty
                     expect(dbAgeRanges.map(ageRangeInfo)).to.deep.eq(gqlAgeRanges.map(ageRangeInfo))
 
-                    gqlAgeRanges = await editAgeRanges(testClient, program.id, [], { authorization: getBillyAuthToken() });
+                    gqlAgeRanges = await editAgeRanges(testClient, program.id, [], { authorization: getBillyAuthToken() }, { user_id: otherUserId});
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbAgeRanges = await dbProgram.age_ranges || []
                     expect(dbAgeRanges).to.be.empty
@@ -339,11 +339,11 @@ describe("program", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                        await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                     });
 
                     it("does not edit the program age ranges", async () => {
-                        const gqlAgeRanges = await  editAgeRanges(testClient, program.id, [ageRange.id], { authorization: getBillyAuthToken() });
+                        const gqlAgeRanges = await  editAgeRanges(testClient, program.id, [ageRange.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                         expect(gqlAgeRanges).to.be.null;
 
                         const dbAgeRanges = await program.age_ranges || []
@@ -363,7 +363,7 @@ describe("program", () => {
         beforeEach(async () => {
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             grade = createGrade(org)
             await grade.save()
         });
@@ -382,13 +382,13 @@ describe("program", () => {
             let role: any;
 
             beforeEach(async () => {
-                role = await createRole(testClient, org.organization_id);
+                role = await createRole(testClient, org.organization_id, undefined, undefined, undefined, { user_id: user.user_id });
                 await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, role.role_id);
             });
 
             context("and the user does not have edit program permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editGrades(testClient, program.id, [grade.id], { authorization: getBillyAuthToken() });
+                    const fn = () => editGrades(testClient, program.id, [grade.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                     expect(fn()).to.be.rejected;
 
                     const dbGrades = await program.grades || []
@@ -398,7 +398,7 @@ describe("program", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                 });
 
                 it("edits the program grades", async () => {
@@ -406,14 +406,14 @@ describe("program", () => {
                     let dbGrades = await dbProgram.grades || []
                     expect(dbGrades).to.be.empty
 
-                    let gqlGrades = await editGrades(testClient, program.id, [grade.id], { authorization: getBillyAuthToken() });
+                    let gqlGrades = await editGrades(testClient, program.id, [grade.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbGrades = await dbProgram.grades || []
                     expect(dbGrades).not.to.be.empty
                     expect(dbGrades.map(gradeInfo)).to.deep.eq(gqlGrades.map(gradeInfo))
 
-                    gqlGrades = await editGrades(testClient, program.id, [], { authorization: getBillyAuthToken() });
+                    gqlGrades = await editGrades(testClient, program.id, [], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbGrades = await dbProgram.grades || []
                     expect(dbGrades).to.be.empty
@@ -421,11 +421,11 @@ describe("program", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                        await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                     });
 
                     it("does not edit the program grades", async () => {
-                        const gqlGrades = await  editGrades(testClient, program.id, [grade.id], { authorization: getBillyAuthToken() });
+                        const gqlGrades = await  editGrades(testClient, program.id, [grade.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                         expect(gqlGrades).to.be.null;
 
                         const dbGrades = await program.grades || []
@@ -445,7 +445,7 @@ describe("program", () => {
         beforeEach(async () => {
             const otherUser = await createUserBilly(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
             subject = createSubject(org)
             await subject.save()
         });
@@ -464,13 +464,13 @@ describe("program", () => {
             let role: any;
 
             beforeEach(async () => {
-                role = await createRole(testClient, org.organization_id);
+                role = await createRole(testClient, org.organization_id, undefined, undefined, undefined, { user_id: user.user_id });
                 await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, role.role_id);
             });
 
             context("and the user does not have edit program permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editSubjects(testClient, program.id, [subject.id], { authorization: getBillyAuthToken() });
+                    const fn = () => editSubjects(testClient, program.id, [subject.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                     expect(fn()).to.be.rejected;
 
                     const dbSubjects = await program.subjects || []
@@ -480,7 +480,7 @@ describe("program", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
                 });
 
                 it("edits the program subjects", async () => {
@@ -488,14 +488,14 @@ describe("program", () => {
                     let dbSubjects = await dbProgram.subjects || []
                     expect(dbSubjects).to.be.empty
 
-                    let gqlSubjects = await editSubjects(testClient, program.id, [subject.id], { authorization: getBillyAuthToken() });
+                    let gqlSubjects = await editSubjects(testClient, program.id, [subject.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
 
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbSubjects = await dbProgram.subjects || []
                     expect(dbSubjects).not.to.be.empty
                     expect(dbSubjects.map(subjectInfo)).to.deep.eq(gqlSubjects.map(subjectInfo))
 
-                    gqlSubjects = await editSubjects(testClient, program.id, [], { authorization: getBillyAuthToken() });
+                    gqlSubjects = await editSubjects(testClient, program.id, [], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                     dbProgram = await Program.findOneOrFail(program.id)
                     dbSubjects = await dbProgram.subjects || []
                     expect(dbSubjects).to.be.empty
@@ -503,11 +503,11 @@ describe("program", () => {
 
                 context("and the class is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() })
+                        await deleteProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id })
                     });
 
                     it("does not edit the program subjects", async () => {
-                        const gqlSubjects = await  editSubjects(testClient, program.id, [subject.id], { authorization: getBillyAuthToken() });
+                        const gqlSubjects = await  editSubjects(testClient, program.id, [subject.id], { authorization: getBillyAuthToken() }, { user_id: otherUserId });
                         expect(gqlSubjects).to.be.null;
 
                         const dbSubjects = await program.subjects || []

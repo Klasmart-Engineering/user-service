@@ -16,6 +16,7 @@ import { Role } from "../../src/entities/role";
 import { Status } from "../../src/entities/status";
 import chaiAsPromised from "chai-as-promised";
 import chai from "chai"
+import { User } from "../../src/entities/user";
 chai.use(chaiAsPromised);
 
 describe("role", () => {
@@ -40,26 +41,27 @@ describe("role", () => {
         let organizationId: string;
         let userId: string;
         let roleId: string;
+        let orgOwner: User;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
         });
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                roleId = (await createRole(testClient, organizationId, originalRoleName)).role_id;
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() });
+                roleId = (await createRole(testClient, organizationId, originalRoleName, undefined, undefined, { user_id: orgOwner.user_id})).role_id;
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
 
-                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
-                await grantPermission(testClient, roleId, PermissionName.edit_groups_30330, { authorization: getJoeAuthToken() });
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+                await grantPermission(testClient, roleId, PermissionName.edit_groups_30330, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("and the user is an admin", () => {
                 it("updates the role", async () => {
-                    const gqlRole = await updateRole(testClient, { roleId, roleName: newRoleName, roleDescription }, { authorization: getJoeAuthToken() });
+                    const gqlRole = await updateRole(testClient, { roleId, roleName: newRoleName, roleDescription }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
 
                     const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
                     expect(gqlRole).to.exist;
@@ -70,7 +72,7 @@ describe("role", () => {
 
             context("and the user is not an admin", () => {
                 it("raises a permission exception", async () => {
-                    const fn = () => updateRole(testClient, { roleId, newRoleName, roleDescription }, { authorization: getBillyAuthToken() });
+                    const fn = () => updateRole(testClient, { roleId, newRoleName, roleDescription }, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
 
                     const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
@@ -82,17 +84,17 @@ describe("role", () => {
 
         context("when is not a system role", () => {
             beforeEach(async () => {
-                roleId = (await createRole(testClient, organizationId, originalRoleName)).role_id;
-                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                roleId = (await createRole(testClient, organizationId, originalRoleName, undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("and the user has the 'edit groups' permission within the organization", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, roleId, PermissionName.edit_groups_30330, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, roleId, PermissionName.edit_groups_30330, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                 });
 
                 it("should return the modified role and update the database entry", async () => {
-                    const gqlRole = await updateRole(testClient, { roleId, roleName: newRoleName, roleDescription }, { authorization: getBillyAuthToken() });
+                    const gqlRole = await updateRole(testClient, { roleId, roleName: newRoleName, roleDescription }, { authorization: getBillyAuthToken() }, { user_id: userId });
 
                     const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
                     expect(gqlRole).to.exist;
@@ -103,7 +105,7 @@ describe("role", () => {
 
             context("and the user does not have the 'edit groups' permission within the organization", () => {
                 it("should throw a permission exception, and not update the database entry", async () => {
-                    const fn = () => updateRole(testClient, { roleId, newRoleName, roleDescription }, { authorization: getBillyAuthToken() });
+                    const fn = () => updateRole(testClient, { roleId, newRoleName, roleDescription }, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
 
                     const dbRole = await Role.findOneOrFail({ where: { role_id: roleId } });
@@ -118,29 +120,30 @@ describe("role", () => {
         let organizationId: string;
         let userId: string;
         let roleId: string;
+        let orgOwner: User;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
-            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
-            await grantPermission(testClient, roleId, nameOfPermissionToGet, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            await grantPermission(testClient, roleId, nameOfPermissionToGet, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
         });
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("when user has the 'view role permissions' permission within the organization", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, roleId, PermissionName.view_role_permissions_30112, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, roleId, PermissionName.view_role_permissions_30112, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                 });
 
                 it("should return the permission", async () => {
-                    const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() });
+                    const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() }, { user_id: orgOwner.user_id });
 
                     expect(gqlPermission).to.exist;
                     expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGet });
@@ -149,7 +152,7 @@ describe("role", () => {
 
             context("when user does not have the 'view role permissions' permission within the organization", () => {
                 it("should throw a permission exception", async () => {
-                    const fn = () => getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() });
+                    const fn = () => getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
                 });
             });
@@ -158,11 +161,11 @@ describe("role", () => {
         context("when is not a system role", () => {
             context("when user has the 'view role permissions' permission within the organization", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, roleId, PermissionName.view_role_permissions_30112, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, roleId, PermissionName.view_role_permissions_30112, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                 });
 
                 it("should return the permission", async () => {
-                    const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() });
+                    const gqlPermission = await getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() }, { user_id: userId });
 
                     expect(gqlPermission).to.exist;
                     expect(gqlPermission).to.include({ permission_name: nameOfPermissionToGet });
@@ -171,7 +174,7 @@ describe("role", () => {
 
             context("when user does not have the 'view role permissions' permission within the organization", () => {
                 it("should throw a permission exception", async () => {
-                    const fn = () => getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() });
+                    const fn = () => getPermissionViaRole(testClient, roleId, nameOfPermissionToGet, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
                 });
             });
@@ -184,24 +187,25 @@ describe("role", () => {
         let organizationId: string;
         let userId: string;
         let roleId: string;
+        let orgOwner: User;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
-            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
         });
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("and the user is not an admin", () => {
                 it("raises a permission exception", async () => {
-                    const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() });
+                    const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
 
                     const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToGrant } });
@@ -213,16 +217,16 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("when user has the 'edit role permissions' permission within the organization", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     context("and permission entry exists with allow set to false", () => {
                         beforeEach(async () => {
-                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         });
 
                         it("should return the permission with 'allow' set to true and update the database entry", async () => {
-                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
 
                             const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                             expect(gqlPermission).to.exist;
@@ -236,7 +240,7 @@ describe("role", () => {
 
                     context("and permission entry does not exist", () => {
                         it("should return the permission with 'allow' set to true and create a database entry", async () => {
-                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                            const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
 
                             const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                             expect(gqlPermission).to.exist;
@@ -252,11 +256,11 @@ describe("role", () => {
                 context("when user does not have the 'edit role permissions' permission within the organization", () => {
                     context("and permission entry exists with allow set to false", () => {
                         beforeEach(async () => {
-                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                            await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         });
 
                         it("should throw a permission exception, and not create a database entry", async () => {
-                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                             expect(fn()).to.be.rejected;
 
                             const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
@@ -266,7 +270,7 @@ describe("role", () => {
 
                     context("and permission entry does not exist", () => {
                         it("should throw a permission exception, and not create a database entry", async () => {
-                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                            const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                             expect(fn()).to.be.rejected;
 
                             const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToGrant } });
@@ -281,16 +285,16 @@ describe("role", () => {
         context("when is not a system role", () => {
             context("when user has the 'edit role permissions' permission within the organization", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                 });
 
                 context("and permission entry exists with allow set to false", () => {
                     beforeEach(async () => {
-                        await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                        await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("should return the permission with 'allow' set to true and update the database entry", async () => {
-                        const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() });
+                        const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() }, { user_id: userId });
 
                         const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                         expect(gqlPermission).to.exist;
@@ -304,7 +308,7 @@ describe("role", () => {
 
                 context("and permission entry does not exist", () => {
                     it("should return the permission with 'allow' set to true and create a database entry", async () => {
-                        const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() });
+                        const gqlPermission = await grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() }, { user_id: userId });
 
                         const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
                         expect(gqlPermission).to.exist;
@@ -320,11 +324,11 @@ describe("role", () => {
             context("when user does not have the 'edit role permissions' permission within the organization", () => {
                 context("and permission entry exists with allow set to false", () => {
                     beforeEach(async () => {
-                        await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() });
+                        await denyPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("should throw a permission exception, and not create a database entry", async () => {
-                        const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() });
+                        const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() }, { user_id: userId });
                         expect(fn()).to.be.rejected;
 
                         const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToGrant } });
@@ -334,7 +338,7 @@ describe("role", () => {
 
                 context("and permission entry does not exist", () => {
                     it("should throw a permission exception, and not create a database entry", async () => {
-                        const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() });
+                        const fn = () => grantPermission(testClient, roleId, nameOfPermissionToGrant, { authorization: getBillyAuthToken() }, { user_id: userId });
                         expect(fn()).to.be.rejected;
 
                         const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToGrant } });
@@ -352,18 +356,19 @@ describe("role", () => {
         let organizationId: string;
         let userId: string;
         let roleId: string;
+        let orgOwner: User;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
-            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
         });
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("and the user is not an admin", () => {
@@ -380,12 +385,12 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("and the user does not have edit roles permission", () => {
                     beforeEach(async () => {
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("throws a permission exception and not mutate the database entries", async () => {
-                        const fn = () => editPermissions(testClient, roleId, [nameOfPermission], { authorization: getJoeAuthToken() });
+                        const fn = () => editPermissions(testClient, roleId, [nameOfPermission], { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
 
                         expect(fn()).to.be.rejected;
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -401,19 +406,19 @@ describe("role", () => {
                     const editRolePermission = PermissionName.edit_role_permissions_30332;
 
                     beforeEach(async () => {
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, roleId, editRolePermission, { authorization: getJoeAuthToken() });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+                        await grantPermission(testClient, roleId, editRolePermission, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("edits permissions in role", async () => {
-                        let gqlPermissions = await editPermissions(testClient, roleId, [editRolePermission, nameOfPermission], { authorization: getJoeAuthToken() });
+                        let gqlPermissions = await editPermissions(testClient, roleId, [editRolePermission, nameOfPermission], { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         expect(gqlPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
                         let dbRole = await Role.findOneOrFail(roleId);
                         let dbPermissions = await dbRole.permissions || [];
                         expect(dbPermissions.map(permissionInfo)).to.deep.members([editRolePermission, nameOfPermission]);
 
-                        gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: getJoeAuthToken() });
+                        gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         expect(gqlPermissions).to.be.empty;
                         dbRole = await Role.findOneOrFail(roleId);
                         dbPermissions = await dbRole.permissions || [];
@@ -426,7 +431,7 @@ describe("role", () => {
         context("when is not a system role", () => {
             context("when not authenticated", () => {
                 beforeEach(async () => {
-                    await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                    await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                 });
 
                 it("throws a permission exception and not mutate the database entries", async () => {
@@ -442,12 +447,12 @@ describe("role", () => {
             context("when authenticated", () => {
                 context("and the user does not have edit roles permission", () => {
                     beforeEach(async () => {
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("throws a permission exception and not mutate the database entries", async () => {
-                        const fn = () => editPermissions(testClient, roleId, [nameOfPermission], { authorization: getBillyAuthToken() });
+                        const fn = () => editPermissions(testClient, roleId, [nameOfPermission], { authorization: getBillyAuthToken() }, { user_id: userId });
 
                         expect(fn()).to.be.rejected;
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -463,19 +468,19 @@ describe("role", () => {
                     const editRolePermission = PermissionName.edit_role_permissions_30332;
 
                     beforeEach(async () => {
-                        roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, roleId, editRolePermission, { authorization: getJoeAuthToken() });
+                        roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+                        await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+                        await grantPermission(testClient, roleId, editRolePermission, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("edits permissions in role", async () => {
-                        let gqlPermissions = await editPermissions(testClient, roleId, [editRolePermission, nameOfPermission], { authorization: getBillyAuthToken() });
+                        let gqlPermissions = await editPermissions(testClient, roleId, [editRolePermission, nameOfPermission], { authorization: getBillyAuthToken() }, { user_id: userId });
                         expect(gqlPermissions.map(permissionInfo)).to.deep.eq([editRolePermission, nameOfPermission]);
                         let dbRole = await Role.findOneOrFail(roleId);
                         let dbPermissions = await dbRole.permissions || [];
                         expect(dbPermissions.map(permissionInfo)).to.deep.members([editRolePermission, nameOfPermission]);
 
-                        gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: getBillyAuthToken() });
+                        gqlPermissions = await editPermissions(testClient, roleId, [], { authorization: getBillyAuthToken() }, { user_id: userId });
                         expect(gqlPermissions).to.be.empty;
                         dbRole = await Role.findOneOrFail(roleId);
                         dbPermissions = await dbRole.permissions || [];
@@ -492,25 +497,26 @@ describe("role", () => {
         let organizationId: string;
         let userId: string;
         let roleId: string;
+        let orgOwner: User;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
-            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
-            await grantPermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            await grantPermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
         });
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("and the user is not an admin", () => {
                 it("raises a permission exception", async () => {
-                    const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getBillyAuthToken() });
+                    const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
 
                     const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToRevoke } });
@@ -521,11 +527,11 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("when user has the 'edit role permissions' permission within the organization", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("should return true and delete the database entry", async () => {
-                        const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getJoeAuthToken() });
+                        const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
 
                         const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToRevoke } });
                         expect(successful).to.be.true;
@@ -537,7 +543,7 @@ describe("role", () => {
 
                 context("when user does not have the 'edit role permissions' permission within the organization", () => {
                     it("should throw a permission exception and not delete/modify the database entry", async () => {
-                        const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getJoeAuthToken() });
+                        const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         expect(fn()).to.be.rejected;
 
                         const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToRevoke } });
@@ -550,11 +556,11 @@ describe("role", () => {
         context("when is not a system role", () => {
             context("when user has the 'edit role permissions' permission within the organization", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, roleId, PermissionName.edit_role_permissions_30332, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                 });
 
                 it("should return true and delete the database entry", async () => {
-                    const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getBillyAuthToken() });
+                    const successful = await revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getBillyAuthToken() }, { user_id: userId });
 
                     const dbPermission = await Permission.findOne({ where: { permission_name: nameOfPermissionToRevoke } });
                     expect(successful).to.be.true;
@@ -566,7 +572,7 @@ describe("role", () => {
 
             context("when user does not have the 'edit role permissions' permission within the organization", () => {
                 it("should throw a permission exception and not delete/modify the database entry", async () => {
-                    const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getBillyAuthToken() });
+                    const fn = () => revokePermission(testClient, roleId, nameOfPermissionToRevoke, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
 
                     const dbPermission = await Permission.findOneOrFail({ where: { permission_name: nameOfPermissionToRevoke } });
@@ -580,24 +586,25 @@ describe("role", () => {
         let organizationId: string;
         let userId: string;
         let roleId: string;
+        let orgOwner: User;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            orgOwner = await createUserJoe(testClient);
             userId = (await createUserBilly(testClient)).user_id;
             organizationId = (await createOrganizationAndValidate(testClient, orgOwner.user_id, "org 1")).organization_id;
-            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
-            roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
+            roleId = (await createRole(testClient, organizationId, "My Role", undefined, undefined, { user_id: orgOwner.user_id })).role_id;
+            await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
         });
 
         context("when is a system role", () => {
             beforeEach(async () => {
-                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() });
+                await updateRole(testClient, { roleId, systemRole: true }, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
             });
 
             context("and the user is not an admin", () => {
                 it("raises a permission exception", async () => {
-                    const fn = () => deleteRole(testClient, roleId, { authorization: getBillyAuthToken() });
+                    const fn = () => deleteRole(testClient, roleId, { authorization: getBillyAuthToken() }, { user_id: userId });
                     expect(fn()).to.be.rejected;
 
                     const dbRole = await Role.findOneOrFail(roleId);
@@ -609,7 +616,7 @@ describe("role", () => {
             context("and the user is an admin", () => {
                 context("and the user does not have delete role permissions", () => {
                     it("throws a permission exception, and not delete the database entry", async () => {
-                        const fn = () => deleteRole(testClient, roleId, { authorization: getJoeAuthToken() });
+                        const fn = () => deleteRole(testClient, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         expect(fn()).to.be.rejected;
 
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -620,11 +627,11 @@ describe("role", () => {
 
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("deletes the role", async () => {
-                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() });
+                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         expect(gqlDeleteRole).to.be.true;
 
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -634,11 +641,11 @@ describe("role", () => {
 
                     context("and the role is marked as inactive", () => {
                         beforeEach(async () => {
-                            await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() });
+                            await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         });
 
                         it("fails to delete the role", async () => {
-                            const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() });
+                            const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                             expect(gqlDeleteRole).to.be.null;
 
                             const dbRole = await Role.findOneOrFail(roleId);
@@ -665,7 +672,7 @@ describe("role", () => {
             context("when authenticated", () => {
                 context("and the user does not have delete role permissions", () => {
                     it("throws a permission exception, and not delete the database entry", async () => {
-                        const fn = () => deleteRole(testClient, roleId, { authorization: getBillyAuthToken() });
+                        const fn = () => deleteRole(testClient, roleId, { authorization: getBillyAuthToken() }, { user_id: userId });
                         expect(fn()).to.be.rejected;
 
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -676,11 +683,11 @@ describe("role", () => {
 
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
-                        await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, roleId, PermissionName.delete_groups_30440, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                     });
 
                     it("deletes the role", async () => {
-                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getBillyAuthToken() });
+                        const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getBillyAuthToken() }, { user_id: userId });
                         expect(gqlDeleteRole).to.be.true;
 
                         const dbRole = await Role.findOneOrFail(roleId);
@@ -690,11 +697,11 @@ describe("role", () => {
 
                     context("and the role is marked as inactive", () => {
                         beforeEach(async () => {
-                            await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() });
+                            await deleteRole(testClient, roleId, { authorization: getJoeAuthToken() }, { user_id: orgOwner.user_id });
                         });
 
                         it("fails to delete the role", async () => {
-                            const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getBillyAuthToken() });
+                            const gqlDeleteRole = await deleteRole(testClient, roleId, { authorization: getBillyAuthToken() }, { user_id: userId });
                             expect(gqlDeleteRole).to.be.null;
 
                             const dbRole = await Role.findOneOrFail(roleId);
