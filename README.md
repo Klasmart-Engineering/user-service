@@ -43,6 +43,9 @@ mutation {
   createOrUpateSystemEntities
 }
 ```
+# Connecting to a locally running frontend
+- Follow [instructions for running the front end](https://bitbucket.org/calmisland/kidsloop-hub-frontend/src/master/README.md)
+- Run `npm run start:local`
 
 # Diagnosing
 
