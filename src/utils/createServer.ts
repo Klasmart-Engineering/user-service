@@ -18,10 +18,7 @@ export const createServer = (model: Model, context?: any) => {
                 connectionData: any
             ): Promise<Context> => {
                 const token = await checkToken(authToken)
-                const permissions = new UserPermissions(
-                    token && token.id,
-                    req.cookies
-                )
+                const permissions = new UserPermissions(token)
                 return { sessionId, token, websocket, permissions }
             },
         },
@@ -34,7 +31,7 @@ export const createServer = (model: Model, context?: any) => {
                 const encodedToken =
                     req.headers.authorization || req.cookies.access
                 const token = (await checkToken(encodedToken)) as any
-                const permissions = new UserPermissions(token, req.cookies)
+                const permissions = new UserPermissions(token)
 
                 return { token, permissions, res, req }
             }),

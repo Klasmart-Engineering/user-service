@@ -50,16 +50,15 @@ describe("isAdmin", () => {
         context("when user is logged in", () => {
             const orgInfo = (org: Organization) => { return org.organization_id }
             let otherOrganization: Organization
-            let otherUser: User
 
             beforeEach(async () => {
-                otherUser = await createUserBilly(testClient);
+                const otherUser = await createUserBilly(testClient);
                 otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
             });
 
             context("and the user is an admin", () => {
                 it("returns all the organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
@@ -70,7 +69,7 @@ describe("isAdmin", () => {
 
             context("and the user is not an admin", () => {
                 it("returns only the organizations it belongs to", async () => {
-                    const gqlOrgs = await getAllOrganizations( testClient, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id });
+                    const gqlOrgs = await getAllOrganizations( testClient, { authorization: getBillyAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([otherOrganization.organization_id]);
                 });

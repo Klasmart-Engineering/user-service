@@ -30,8 +30,8 @@ export class UserPermissions {
     private readonly email: string
     public readonly isAdmin?: boolean
 
-    public constructor(token?: any, cookies?: any) {
-        this.user_id = cookies.user_id || null
+    public constructor(token?: any) {
+        this.user_id = token?.id
         this.email = token?.email || ''
         this.isAdmin = this.isAdminEmail(this.email)
     }
@@ -101,7 +101,6 @@ export class UserPermissions {
         permission_name: PermissionName
     ) {
         const isAdmin = await this.isUserAdmin(user_id)
-
         let output =
             isAdmin && superAdminRole.permissions.includes(permission_name)
 
