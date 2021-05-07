@@ -26,13 +26,13 @@ export async function processAgeRangeFromCSVRow(
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -40,13 +40,13 @@ export async function processAgeRangeFromCSVRow(
     if (!age_range_low_value) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "age_range_low_value",
+            'age_range_low_value',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_low_value",
+                entity: 'ageRange',
+                attribute: 'age_range_low_value',
             }
         )
     }
@@ -54,13 +54,13 @@ export async function processAgeRangeFromCSVRow(
     if (!age_range_high_value) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "age_range_high_value",
+            'age_range_high_value',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_high_value",
+                entity: 'ageRange',
+                attribute: 'age_range_high_value',
             }
         )
     }
@@ -68,13 +68,13 @@ export async function processAgeRangeFromCSVRow(
     if (!age_range_unit) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "age_range_unit",
+            'age_range_unit',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_unit",
+                entity: 'ageRange',
+                attribute: 'age_range_unit',
             }
         )
     }
@@ -91,15 +91,15 @@ export async function processAgeRangeFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
-            "age_range_low_value",
+            'age_range_low_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_BETWEEN,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_low_value",
-                "min": validationConstants.AGE_RANGE_LOW_VALUE_MIN,
-                "max": validationConstants.AGE_RANGE_LOW_VALUE_MAX,
+                entity: 'ageRange',
+                attribute: 'age_range_low_value',
+                min: validationConstants.AGE_RANGE_LOW_VALUE_MIN,
+                max: validationConstants.AGE_RANGE_LOW_VALUE_MAX,
             }
         )
     }
@@ -112,15 +112,15 @@ export async function processAgeRangeFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
-            "age_range_high_value",
+            'age_range_high_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_BETWEEN,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_high_value",
-                "min": validationConstants.AGE_RANGE_HIGH_VALUE_MIN,
-                "max": validationConstants.AGE_RANGE_HIGH_VALUE_MAX,
+                entity: 'ageRange',
+                attribute: 'age_range_high_value',
+                min: validationConstants.AGE_RANGE_HIGH_VALUE_MIN,
+                max: validationConstants.AGE_RANGE_HIGH_VALUE_MAX,
             }
         )
     }
@@ -128,14 +128,14 @@ export async function processAgeRangeFromCSVRow(
     if (lowValueNumber >= highValueNumber) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_GREATER_THAN_OTHER,
             rowNumber,
-            "age_range_high_value",
+            'age_range_high_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_GREATER_THAN_OTHER,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_high_value",
-                "other": "age_range_low_value",
+                entity: 'ageRange',
+                attribute: 'age_range_high_value',
+                other: 'age_range_low_value',
             }
         )
     }
@@ -146,14 +146,14 @@ export async function processAgeRangeFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_ENUM,
             rowNumber,
-            "age_range_unit",
+            'age_range_unit',
             csvErrorConstants.MSG_ERR_CSV_INVALID_ENUM,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_unit",
-                "values": "month, year",
+                entity: 'ageRange',
+                attribute: 'age_range_unit',
+                values: 'month, year',
             }
         )
         return
@@ -171,13 +171,13 @@ export async function processAgeRangeFromCSVRow(
     if (!organization) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
             }
         )
     }
@@ -199,21 +199,21 @@ export async function processAgeRangeFromCSVRow(
     if (ageRange) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                "name": age_range_name,
-                "entity": "ageRange",
-                "parent_name": organization_name,
-                "parent_entity": "organization",
+                name: age_range_name,
+                entity: 'ageRange',
+                parent_name: organization_name,
+                parent_entity: 'organization',
             }
         )
     }
 
     // Return if there are any errors
-    if (fileErrors && fileErrors.length > 0 || !organization) {
+    if ((fileErrors && fileErrors.length > 0) || !organization) {
         return
     }
 

@@ -72,8 +72,8 @@ async function createOrganization(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "organization_name",
-            'only one active organization per user',
+            'organization_name',
+            'only one active organization per user'
         )
         return
     }
@@ -138,13 +138,13 @@ export async function processOrganizationFromCSVRow(
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
             }
         )
     }
@@ -152,15 +152,15 @@ export async function processOrganizationFromCSVRow(
     if (!owner_email && !owner_phone) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
             rowNumber,
-            !owner_email ? "owner_email" : "owner_phone",
+            !owner_email ? 'owner_email' : 'owner_phone',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
             {
-                "entity": "user",
-                "attribute": "email",
-                "other_entity": "user",
-                "other_attribute": "phone",
+                entity: 'user',
+                attribute: 'email',
+                other_entity: 'user',
+                other_attribute: 'phone',
             }
         )
     }
@@ -171,14 +171,14 @@ export async function processOrganizationFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             rowNumber,
             'owner_shortcode',
             csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             {
-                "entity": "user",
-                "attribute": "short_code",
-                "max": MEMBERSHIP_SHORTCODE_MAXLEN,
+                entity: 'user',
+                attribute: 'short_code',
+                max: MEMBERSHIP_SHORTCODE_MAXLEN,
             }
         )
     }
@@ -197,11 +197,11 @@ export async function processOrganizationFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
             }
         )
 
@@ -217,11 +217,11 @@ export async function processOrganizationFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
             }
         )
 
@@ -239,15 +239,15 @@ export async function processOrganizationFromCSVRow(
     if (ownerUploaded) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
-            "owner_email",
+            'owner_email',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                "name": owner_email,
-                "entity": "user",
-                "parent_name": organization_name,
-                "parent_entity": "organization",
+                name: owner_email,
+                entity: 'user',
+                parent_name: organization_name,
+                parent_entity: 'organization',
             }
         )
 

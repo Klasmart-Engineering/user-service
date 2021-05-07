@@ -43,6 +43,7 @@ mutation {
   createOrUpateSystemEntities
 }
 ```
+
 # Connecting to a locally running frontend
 - Setup the the frontend on your machiine
   - Checkout the `test/release` branch
@@ -81,3 +82,19 @@ A vast amount of postgres sql commands will be in the postgres.err file.
 You could just run the test that is causing issues.
 
 Even so you may need to resort to tools like grep and less to find the commands of interest
+
+# How to
+
+## Test CSV upload with Postman
+
+Make a request with below body (`form-data`), please replace `file_path` with your real file path.
+
+```
+{
+  "operations": "{\"query\":\"mutation UploadAgeRangesFromCSV($file: Upload!) {\n uploadAgeRangesFromCSV(file: $file)\n{filename, mimetype, encoding}}\"}",
+  "map": "{\"0\": [\"variables.file\"]}",
+  0: "file_path",
+}
+```
+
+Remember include `Authorization` with JWT token in request's header.

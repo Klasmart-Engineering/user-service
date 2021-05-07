@@ -30,13 +30,13 @@ export const processUserFromCSVRow = async (
     if (!row.organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -44,15 +44,15 @@ export const processUserFromCSVRow = async (
     if (!row.user_email && !row.user_phone) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
             rowNumber,
-            "user_email, user_phone",
+            'user_email, user_phone',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
             {
-                "entity": "user",
-                "attribute": "name",
-                "other_entity": "user",
-                "other_attribute": "phone",
+                entity: 'user',
+                attribute: 'name',
+                other_entity: 'user',
+                other_attribute: 'phone',
             }
         )
     }
@@ -60,14 +60,14 @@ export const processUserFromCSVRow = async (
     if (row.user_date_of_birth && !validateDOB(row.user_date_of_birth)) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_DATE_FORMAT,
             rowNumber,
-            "date_of_birth",
+            'date_of_birth',
             csvErrorConstants.MSG_ERR_CSV_INVALID_DATE_FORMAT,
             {
-                "entity": "user",
-                "attribute": "date_of_birth",
-                "format": "MM-YYYY",
+                entity: 'user',
+                attribute: 'date_of_birth',
+                format: 'MM-YYYY',
             }
         )
     }
@@ -78,14 +78,14 @@ export const processUserFromCSVRow = async (
         ) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_INVALID_FIELD,
+                csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
                 rowNumber,
-                "user_shortcode",
+                'user_shortcode',
                 csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
                 {
-                    "entity": "user",
-                    "attribute": "shortcode",
-                    "max": MEMBERSHIP_SHORTCODE_MAXLEN,
+                    entity: 'user',
+                    attribute: 'shortcode',
+                    max: MEMBERSHIP_SHORTCODE_MAXLEN,
                 }
             )
         }
@@ -103,13 +103,13 @@ export const processUserFromCSVRow = async (
     if (!org) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "entity": "organization",
-                "name": row.organization_name,
+                entity: 'organization',
+                name: row.organization_name,
             }
         )
 
@@ -135,13 +135,13 @@ export const processUserFromCSVRow = async (
         if (!organizationRole) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
                 rowNumber,
-                "organization_role_name",
+                'organization_role_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
                 {
-                    "entity": "organizationRole",
-                    "name": row.organization_role_name,
+                    entity: 'organizationRole',
+                    name: row.organization_role_name,
                 }
             )
         }
@@ -159,13 +159,13 @@ export const processUserFromCSVRow = async (
         if (!school) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
                 rowNumber,
-                "organization_name",
+                'organization_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
                 {
-                    "entity": "school",
-                    "name": row.school_name,
+                    entity: 'school',
+                    name: row.school_name,
                 }
             )
         }
@@ -190,13 +190,13 @@ export const processUserFromCSVRow = async (
         if (!schoolRole) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
                 rowNumber,
-                "school_role_name",
+                'school_role_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
                 {
-                    "entity": "organizationRole",
-                    "name": row.school_role_name,
+                    entity: 'organizationRole',
+                    name: row.school_role_name,
                 }
             )
         }
@@ -214,13 +214,13 @@ export const processUserFromCSVRow = async (
         if (!cls) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
                 rowNumber,
-                "school_role_name",
+                'school_role_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
                 {
-                    "entity": "class",
-                    "name": row.class_name,
+                    entity: 'class',
+                    name: row.class_name,
                 }
             )
         }

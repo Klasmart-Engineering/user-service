@@ -15,13 +15,13 @@ export const processSubCategoriesFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -29,13 +29,13 @@ export const processSubCategoriesFromCSVRow = async (
     if (!subcategory_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "subcategory_name",
+            'subcategory_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "subCategory",
-                "attribute": "name",
+                entity: 'subCategory',
+                attribute: 'name',
             }
         )
     }
@@ -50,13 +50,13 @@ export const processSubCategoriesFromCSVRow = async (
     if (!org) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "entity": "organization",
-                "name": organization_name,
+                entity: 'organization',
+                name: organization_name,
             }
         )
 
@@ -70,15 +70,15 @@ export const processSubCategoriesFromCSVRow = async (
     if (subCategoryExists) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
-            "subcategory_name",
+            'subcategory_name',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                "entity": "subCategory",
-                "name": subcategory_name,
-                "parent_entity": "organization",
-                "parent_name": organization_name,
+                entity: 'subCategory',
+                name: subcategory_name,
+                parent_entity: 'organization',
+                parent_name: organization_name,
             }
         )
 

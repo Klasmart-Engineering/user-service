@@ -21,13 +21,13 @@ export async function processCategoryFromCSVRow(
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -35,13 +35,13 @@ export async function processCategoryFromCSVRow(
     if (!category_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "category_name",
+            'category_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "category",
-                "attribute": "name",
+                entity: 'category',
+                attribute: 'name',
             }
         )
     }
@@ -53,13 +53,13 @@ export async function processCategoryFromCSVRow(
     if (!organization) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
             }
         )
     }
@@ -86,18 +86,22 @@ export async function processCategoryFromCSVRow(
     if (!subcategory) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "subcategory_name",
+            'subcategory_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "name": subcategory_name,
-                "entity": "subCategory",
+                name: subcategory_name,
+                entity: 'subCategory',
             }
         )
     }
 
-    if (fileErrors && fileErrors.length > 0 || !organization || !subcategory) {
+    if (
+        (fileErrors && fileErrors.length > 0) ||
+        !organization ||
+        !subcategory
+    ) {
         return
     }
 
@@ -117,15 +121,15 @@ export async function processCategoryFromCSVRow(
         if (subcategoryNames.includes(subcategory_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
-                "subcategory_name",
+                'subcategory_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    "name": subcategory_name,
-                    "entity": "subCategory",
-                    "parent_name": category_name,
-                    "parent_entity": "category",
+                    name: subcategory_name,
+                    entity: 'subCategory',
+                    parent_name: category_name,
+                    parent_entity: 'category',
                 }
             )
 

@@ -4,6 +4,7 @@ import { Model } from '../model'
 import { checkToken } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
+import { CustomError } from '../types/csv/csvError'
 
 export const createServer = (model: Model, context?: any) => {
     const schema = makeExecutableSchema(getSchema(model, context))
@@ -43,5 +44,16 @@ export const createServer = (model: Model, context?: any) => {
             },
         },
         uploads: false,
+        formatError: (error) => {
+            if (error.originalError instanceof CustomError) {
+                return { ...error, detailErrors: error.originalError.errors }
+            }
+            return {
+                message: error.message,
+                locations: error.locations,
+                path: error.path,
+                extensions: error.extensions,
+            }
+        },
     })
 }
