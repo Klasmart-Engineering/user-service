@@ -254,14 +254,13 @@ const DELETE_CLASS = `
     }
 `;
 
-export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers, cookies?: any) {
+export async function updateClass(testClient: ApolloServerTestClient, classId: string, className: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: UPDATE_CLASS,
         variables: { class_id: classId, class_name: className },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -269,14 +268,13 @@ export async function updateClass(testClient: ApolloServerTestClient, classId: s
     return gqlClass;
 }
 
-export async function eligibleTeachers(testClient: ApolloServerTestClient, classId: string, headers?: Headers, cookies?: any) {
+export async function eligibleTeachers(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: ELIGIBLE_TEACHERS,
         variables: { class_id: classId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -298,14 +296,13 @@ export async function eligibleStudents(testClient: ApolloServerTestClient, class
     return gqlStudents;
 }
 
-export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers, cookies?: any) {
+export async function addSchoolToClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: ADD_SCHOOL_TO_CLASS,
         variables: { class_id: classId, school_id: schoolId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -313,14 +310,13 @@ export async function addSchoolToClass(testClient: ApolloServerTestClient, class
     return school;
 }
 
-export async function editTeachersInClass(testClient: ApolloServerTestClient, classId: string, teacherIds: string[], headers?: Headers, cookies?: any) {
+export async function editTeachersInClass(testClient: ApolloServerTestClient, classId: string, teacherIds: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_TEACHERS_IN_CLASS,
         variables: { class_id: classId, teacher_ids: teacherIds },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -328,14 +324,13 @@ export async function editTeachersInClass(testClient: ApolloServerTestClient, cl
     return teachers;
 }
 
-export async function addTeacherToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers, cookies?: any) {
+export async function addTeacherToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: ADD_TEACHER_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -343,14 +338,13 @@ export async function addTeacherToClass(testClient: ApolloServerTestClient, clas
     return teacher;
 }
 
-export async function removeTeacherInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers, cookies?: any) {
+export async function removeTeacherInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: REMOVE_TEACHER,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -358,14 +352,13 @@ export async function removeTeacherInClass(testClient: ApolloServerTestClient, c
     return successful;
 }
 
-export async function editStudentsInClass(testClient: ApolloServerTestClient, classId: string, studentIds: string[], headers?: Headers, cookies?: any) {
+export async function editStudentsInClass(testClient: ApolloServerTestClient, classId: string, studentIds: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_STUDENTS_IN_CLASS,
         variables: { class_id: classId, student_ids: studentIds },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -373,14 +366,13 @@ export async function editStudentsInClass(testClient: ApolloServerTestClient, cl
     return students;
 }
 
-export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers, cookies?: any) {
+export async function addStudentToClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: ADD_STUDENT_TO_CLASS,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -388,14 +380,13 @@ export async function addStudentToClass(testClient: ApolloServerTestClient, clas
     return student;
 }
 
-export async function removeStudentInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers, cookies?: any) {
+export async function removeStudentInClass(testClient: ApolloServerTestClient, classId: string, userId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: REMOVE_STUDENT,
         variables: { class_id: classId, user_id: userId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -403,14 +394,13 @@ export async function removeStudentInClass(testClient: ApolloServerTestClient, c
     return successful;
 }
 
-export async function editSchoolsInClass(testClient: ApolloServerTestClient, classId: string, schoolIds: string[], headers?: Headers, cookies?: any) {
+export async function editSchoolsInClass(testClient: ApolloServerTestClient, classId: string, schoolIds: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_SCHOOLS_IN_CLASS,
         variables: { class_id: classId, school_ids: schoolIds },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -418,14 +408,13 @@ export async function editSchoolsInClass(testClient: ApolloServerTestClient, cla
     return schools;
 }
 
-export async function removeSchoolFromClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers, cookies?: any) {
+export async function removeSchoolFromClass(testClient: ApolloServerTestClient, classId: string, schoolId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: REMOVE_SCHOOL,
         variables: { class_id: classId, school_id: schoolId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -433,14 +422,13 @@ export async function removeSchoolFromClass(testClient: ApolloServerTestClient, 
     return successful;
 }
 
-export async function listPrograms(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
+export async function listPrograms(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_PROGRAMS,
         variables: { id: id },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -449,14 +437,13 @@ export async function listPrograms(testClient: ApolloServerTestClient, id: strin
     return gqlPrograms;
 }
 
-export async function listAgeRanges(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
+export async function listAgeRanges(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_AGE_RANGES,
         variables: { id: id },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -465,14 +452,13 @@ export async function listAgeRanges(testClient: ApolloServerTestClient, id: stri
     return gqlAgeRanges;
 }
 
-export async function listGrades(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
+export async function listGrades(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_GRADES,
         variables: { id: id },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -481,14 +467,13 @@ export async function listGrades(testClient: ApolloServerTestClient, id: string,
     return gqlGrades;
 }
 
-export async function listSubjects(testClient: ApolloServerTestClient, id: string, headers?: Headers, cookies?: any) {
+export async function listSubjects(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_SUBJECTS,
         variables: { id: id },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -497,14 +482,13 @@ export async function listSubjects(testClient: ApolloServerTestClient, id: strin
     return gqlSubjects;
 }
 
-export async function editPrograms( testClient: ApolloServerTestClient, id: string, program_ids: string[], headers?: Headers, cookies?: any) {
+export async function editPrograms( testClient: ApolloServerTestClient, id: string, program_ids: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_PROGRAM_CLASS,
         variables: { id: id, program_ids: program_ids },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -512,14 +496,13 @@ export async function editPrograms( testClient: ApolloServerTestClient, id: stri
     return gqlPrograms;
 }
 
-export async function editAgeRanges( testClient: ApolloServerTestClient, id: string, age_range_ids: string[], headers?: Headers, cookies?: any) {
+export async function editAgeRanges( testClient: ApolloServerTestClient, id: string, age_range_ids: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_AGE_RANGE_CLASS,
         variables: { id: id, age_range_ids: age_range_ids },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -527,14 +510,13 @@ export async function editAgeRanges( testClient: ApolloServerTestClient, id: str
     return gqlAgeRanges;
 }
 
-export async function editGrades( testClient: ApolloServerTestClient, id: string, grade_ids: string[], headers?: Headers, cookies?: any) {
+export async function editGrades( testClient: ApolloServerTestClient, id: string, grade_ids: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_GRADES_CLASS,
         variables: { id: id, grade_ids: grade_ids },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -542,14 +524,13 @@ export async function editGrades( testClient: ApolloServerTestClient, id: string
     return gqlGrades;
 }
 
-export async function editSubjects( testClient: ApolloServerTestClient, id: string, subject_ids: string[], headers?: Headers, cookies?: any) {
+export async function editSubjects( testClient: ApolloServerTestClient, id: string, subject_ids: string[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: EDIT_SUBJECTS_CLASS,
         variables: { id: id, subject_ids: subject_ids },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -557,14 +538,13 @@ export async function editSubjects( testClient: ApolloServerTestClient, id: stri
     return gqlSubjects;
 }
 
-export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers, cookies?: any) {
+export async function deleteClass(testClient: ApolloServerTestClient, classId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_CLASS,
         variables: { class_id: classId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);

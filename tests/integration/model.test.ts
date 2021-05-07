@@ -2,7 +2,6 @@ import { expect, use } from "chai";
 import { Connection } from "typeorm";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
-import { createClass } from "../factories/class.factory";
 import { createServer } from "../../src/utils/createServer";
 import { createUserJoe, createUserBilly } from "../utils/testEntities";
 import { createAgeRange } from "../factories/ageRange.factory";
@@ -13,7 +12,7 @@ import { createSchool } from "../factories/school.factory";
 import { createSubcategory } from "../factories/subcategory.factory";
 import { createUser } from "../factories/user.factory";
 import { getAgeRange, getGrade, getSubcategory, getAllOrganizations,
-    getOrganizations, switchUser, me, myUsers,
+    getOrganizations, me, myUsers,
     getProgram, permissionsConnection, uploadSchoolsFile, userConnection
 } from "../utils/operations/modelOps";
 import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
@@ -21,7 +20,6 @@ import { createOrganizationAndValidate, addOrganizationToUserAndValidate, addSch
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
 import { AgeRange } from "../../src/entities/ageRange";
-import { Class } from "../../src/entities/class";
 import { Grade } from "../../src/entities/grade";
 import { User } from "../../src/entities/user";
 import { Permission } from "../../src/entities/permission";
@@ -30,34 +28,10 @@ import { Subcategory } from "../../src/entities/subcategory";
 import chaiAsPromised from "chai-as-promised";
 import { Program } from "../../src/entities/program";
 import { createProgram } from "../factories/program.factory";
-import fs from 'fs';
-import { resolve } from 'path';
-import { queryUploadGrades, uploadGrades } from "../utils/operations/csv/uploadGrades";
-import { ReadStream } from 'fs';
-import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
-import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploadClasses";
-import { queryUploadSubCategories, uploadSubCategories } from "../utils/operations/csv/uploadSubcategories";
-import { queryUploadUsers, uploadUsers } from "../utils/operations/csv/uploadUsers";
 import { Role } from "../../src/entities/role";
 import { before } from "mocha";
-import { queryUploadOrganizations, uploadOrganizations } from "../utils/operations/csv/uploadOrganizations";
-import { Category } from "../../src/entities/category";
-import { queryUploadCategories, uploadCategories } from "../utils/operations/csv/uploadCategories";
 import { School } from "../../src/entities/school";
-import { queryUploadSchools, uploadSchools } from "../utils/operations/csv/uploadSchools";
-import ProgramsInitializer from "../../src/initializers/programs";
-import CategoriesInitializer from "../../src/initializers/categories";
-import SubcategoriesInitializer from "../../src/initializers/subcategories";
-import AgeRangesInitializer from "../../src/initializers/ageRanges";
-import SubjectsInitializer from "../../src/initializers/subjects";
-import GradesInitializer from "../../src/initializers/grades";
 import RolesInitializer from "../../src/initializers/roles";
-import { queryUploadSubjects, uploadSubjects } from "../utils/operations/csv/uploadSubjects";
-import { Subject } from "../../src/entities/subject";
-import { createSubject } from "../factories/subject.factory";
-import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
-import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
-import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
 import { convertDataToCursor } from "../utils/paginate";
 import { renameDuplicateOrganizationsMutation, renameDuplicateOrganizationsQuery } from "../utils/operations/renameDuplicateOrganizations";
 import { IEntityFilter } from "../../src/utils/pagination/filtering";
@@ -80,107 +54,11 @@ describe("model", () => {
         await connection?.close();
     });
 
-    describe("switchUser", () => {
-        let user: User;
-
-        beforeEach(async () => {
-            user = await createUserJoe(testClient);
-        });
-
-        context("when user is not logged in", () => {
-            it("raises an error", async () => {
-                const fn = () => switchUser(testClient, user.user_id, { authorization: undefined });
-
-                expect(fn()).to.be.rejected;
-            });
-        });
-
-        context("when user is logged in", () => {
-            context("and the user_id is on the account", () => {
-                it("returns the expected user", async () => {
-                    const gqlRes = await switchUser(testClient, user.user_id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
-                    const gqlUser = gqlRes.data?.switch_user as User
-                    const gqlCookies = gqlRes.extensions?.cookies
-
-                    expect(gqlUser.user_id).to.eq(user.user_id)
-                    expect(gqlCookies.user_id?.value).to.eq(user.user_id)
-                });
-            });
-
-            context("and the user_id is on the account", () => {
-                let otherUser: User;
-
-                beforeEach(async () => {
-                    otherUser = await createUserBilly(testClient);
-                });
-
-                it("raises an error", async () => {
-                    const fn = () => switchUser(testClient, otherUser.user_id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
-
-                    expect(fn()).to.be.rejected;
-                });
-            });
-        });
-    });
-
     describe("getMyUser", () => {
         let user: User;
 
         beforeEach(async () => {
             user = await createUserJoe(testClient);
-        });
-
-        context("when user is not logged in", () => {
-            context("and the user_id cookie is not provided", () => {
-                it("returns null", async () => {
-                    const gqlUser = await me(testClient, { authorization: undefined });
-
-                    expect(gqlUser).to.be.null
-                });
-            });
-
-            context("and the user_id cookie is provided", () => {
-                it("returns null", async () => {
-                    const gqlUser = await me(testClient, { authorization: undefined }, { user_id: user.user_id });
-
-                    expect(gqlUser).to.be.null
-                });
-            });
-        });
-
-        context("when user is logged in", () => {
-            context("and no user_id cookie is provided", () => {
-                it("creates and returns the expected user", async () => {
-                    const gqlUserWithoutId = await me(testClient, { authorization: getJoeAuthWithoutIdToken() }, { user_id: user.user_id });
-                    const gqlUser = await me(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
-
-                    expect(gqlUserWithoutId.user_id).to.eq(gqlUser.user_id)
-                });
-            });
-
-            context("and the correct user_id cookie is provided", () => {
-                it("returns the expected user", async () => {
-                    const gqlUser = await me(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
-
-                    expect(gqlUser.user_id).to.eq(user.user_id)
-                });
-            });
-
-            context("and the incorrect user_id cookie is provided", () => {
-                let otherUser: User;
-
-                beforeEach(async () => {
-                    otherUser = await createUserBilly(testClient);
-                });
-
-                it("returns a user based from the token", async () => {
-                    const gqlUser = await me(testClient, { authorization: getJoeAuthToken() }, { user_id: otherUser.user_id });
-
-                    expect(gqlUser).to.not.be.null
-                    expect(gqlUser.user_id).to.eq(user.user_id)
-                    expect(gqlUser.email).to.eq(user.email)
-                });
-            });
         });
     });
 
@@ -203,7 +81,7 @@ describe("model", () => {
             const userInfo = (user: User) => { return user.user_id }
 
             it("returns the expected users", async () => {
-                const gqlUsers = await myUsers(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                const gqlUsers = await myUsers(testClient, { authorization: getJoeAuthToken() });
 
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
             });
@@ -230,16 +108,15 @@ describe("model", () => {
         context("when user is logged in", () => {
             const orgInfo = (org: Organization) => { return org.organization_id }
             let otherOrganization: Organization
-            let otherUser: User;
 
             beforeEach(async () => {
-                otherUser = await createUserBilly(testClient);
+                const otherUser = await createUserBilly(testClient);
                 otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
             });
 
             context("and the user is not an admin", () => {
                 it("raises an error", async () => {
-                    const fn = () => getAllOrganizations(testClient, { authorization: getBillyAuthToken() }, { user_id: otherUser.user_id });
+                    const fn = () => getAllOrganizations(testClient, { authorization: getBillyAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -247,7 +124,7 @@ describe("model", () => {
 
             context("and there is no filter in the organization ids", () => {
                 it("returns the expected organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
@@ -261,8 +138,7 @@ describe("model", () => {
                     const gqlOrgs = await getOrganizations(
                         testClient,
                         [organization.organization_id],
-                        { authorization: getJoeAuthToken() },
-                        { user_id: user.user_id }
+                        { authorization: getJoeAuthToken() }
                     );
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
@@ -316,11 +192,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -329,7 +205,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the age range", () => {
                     it("returns no age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlAgeRange).to.be.null;
                     });
@@ -339,11 +215,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -352,7 +228,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the age range", () => {
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -409,11 +285,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() }, { user_id: user.user_id });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -423,7 +299,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the grade", () => {
                     it("returns no grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() }, { user_id: user.user_id });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlGrade).to.be.null;
                     });
@@ -433,11 +309,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -447,7 +323,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the grade", () => {
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() }, { user_id: otherUserId });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -499,11 +375,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -512,7 +388,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the subcategory", () => {
                     it("returns no subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() }, { user_id: user.user_id });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlSubcategory).to.be.null;
                     });
@@ -522,11 +398,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -535,7 +411,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the subcategory", () => {
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -585,11 +461,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -598,7 +474,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the program", () => {
                     it("returns no program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() }, { user_id: otherUserId });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
 
                         expect(gqlProgram).to.be.null;
                     });
@@ -608,11 +484,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
                     });
 
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -621,706 +497,12 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the program", () => {
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
                     });
                 });
-            });
-        });
-    });
-
-    describe("uploadOrganizationsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const correctFileName = 'organizationsExample.csv';
-        const wrongFileName = 'organizationsWrong.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                const filename = correctFileName;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                const filename = wrongFileName;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            it("should create organizations", async () => {
-                const filename = correctFileName
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadRolesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'rolesExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadRoles(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const rolesCreated = await Role.count({ where: { system_role: false } });
-                expect(rolesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadRoles(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const rolesCreated = await Role.count({ where: { system_role: false } });
-                expect(rolesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create roles", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadRoles(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const rolesCreated = await Role.count({ where: { system_role: false } });
-                expect(rolesCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadSubjectsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'subjectsExample.csv';
-        beforeEach(async () => {
-            await SubcategoriesInitializer.run()
-            await CategoriesInitializer.run()
-        });
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadSubjects(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subjectsCreated = await Subject.count({ where: { system: false } });
-                expect(subjectsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadSubjects(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subjectsCreated = await Subject.count({ where: { system: false } });
-                expect(subjectsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create subjects", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadSubjects(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const subjectsCreated = await Subject.count({ where: { system: false } });
-                expect(subjectsCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadGradesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const correctFilename = 'gradesExample.csv';
-        const wrongFilename = 'gradesWrong.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                const filename = correctFilename;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadGrades(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const gradesCreated = await Grade.count();
-                expect(gradesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                const filename = wrongFilename;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadGrades(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const gradesCreated = await Grade.count();
-                expect(gradesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                const org = await createOrganization()
-                org.organization_name = 'Company 1';
-                await connection.manager.save(org);
-
-                const org2 = await createOrganization();
-                org2.organization_name = 'Company 2';
-                await connection.manager.save(org2);
-
-                const noneSpecifiedGrade = new Grade();
-                noneSpecifiedGrade.name = 'None Specified';
-                noneSpecifiedGrade.system = true;
-                await connection.manager.save(noneSpecifiedGrade);
-            });
-
-            it("should create grades", async () => {
-                const filename = correctFilename;
-
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadGrades(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const gradesCreated = await Grade.count();
-                expect(gradesCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadClassesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        let filename = 'classes-bad.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadClasses(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const classesCreated = await Class.count();
-                expect(classesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadClasses(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const classesreated = await Class.count();
-                expect(classesreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            let expectedOrg: Organization
-            let expectedProg: Program
-            let expectedSchool: School
-
-            beforeEach(async ()=>{
-                filename = "classes.csv";
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                expectedOrg = createOrganization()
-                expectedOrg.organization_name = "my-org"
-                await connection.manager.save(expectedOrg)
-
-                expectedProg = createProgram(expectedOrg)
-                expectedProg.name = "outdoor activities"
-                await connection.manager.save(expectedProg)
-
-                expectedSchool = createSchool(expectedOrg, 'test-school')
-                await connection.manager.save(expectedSchool)
-            });
-
-            it("should create classes", async () => {
-                const result = await uploadClasses(testClient, file, filename, mimetype, encoding);
-                const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
-                const schools = await dbClass.schools || []
-                const programs = await dbClass.programs || []
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-                expect(schools.length).to.equal(1)
-                expect(programs.length).to.equal(1)
-            });
-        });
-    });
-
-    describe("uploadSchoolsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'schoolsExample.csv';
-
-        beforeEach(async () => {
-            await AgeRangesInitializer.run()
-            await GradesInitializer.run()
-            await SubjectsInitializer.run()
-            await SubcategoriesInitializer.run()
-            await CategoriesInitializer.run()
-            await ProgramsInitializer.run()
-        });
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await queryUploadSchools(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const schoolsCreated = await School.count();
-                expect(schoolsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await uploadSchools(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const schoolsCreated = await School.count();
-                expect(schoolsCreated).eq(0);
-            });
-        });
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    let org = createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create schools", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadSchools(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const schoolsCreated = await School.count();
-                expect(schoolsCreated).eq(6);
-            });
-        })
-    })
-
-    describe("uploadSubCategoriesFromCSV", () => {
-        const filename = 'subcategories.csv';
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await queryUploadSubCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subCategoriesCreated = await Subcategory.count();
-                expect(subCategoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await uploadSubCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subCategoriesCreated = await Subcategory.count();
-                expect(subCategoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            it("should create subcategories", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                let expectedOrg: Organization
-                expectedOrg = createOrganization()
-                expectedOrg.organization_name = "my-org"
-                await connection.manager.save(expectedOrg)
-
-                const result = await uploadSubCategories(testClient, file, filename, mimetype, encoding);
-
-                const dbSubcategory = await Subcategory.findOneOrFail({where:{name:"sc1", organization:expectedOrg}});
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-                expect(dbSubcategory).to.be.not.null;
-            });
-        });
-    });
-
-    describe("uploadUsersFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'users_example.csv';
-
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadUsers(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const usersCount = await User.count();
-                expect(usersCount).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadUsers(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const usersCount = await User.count();
-                expect(usersCount).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            let organization: Organization;
-            let role: Role;
-            let school: School;
-            let cls: Class;
-
-            beforeEach(async () => {
-                organization = createOrganization()
-                organization.organization_name = 'Apollo 1 Org'
-                await connection.manager.save(organization)
-                school = createSchool(organization)
-                school.school_name = 'School I'
-                await connection.manager.save(school)
-                role = createRole('Teacher', organization)
-                await connection.manager.save(role)
-                const anotherRole = createRole('School Admin', organization)
-                await connection.manager.save(anotherRole)
-                cls = createClass([school], organization)
-                cls.class_name = 'Class I'
-                await connection.manager.save(cls)
-            });
-
-            it("should create the user", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadUsers(testClient, file, filename, mimetype, encoding);
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const usersCount = await User.count({ where: { email: 'test@test.com' } });
-                expect(usersCount).eq(2);
-
-            });
-        });
-    });
-
-    describe("uploadCategoriesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'categoriesExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const categoriesCreated = await Category.count({ where: { system: false } });
-                expect(categoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const categoriesCreated = await Category.count({ where: { system: false } });
-                expect(categoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 2; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-
-                    let subcategory = await createSubcategory(org);
-                    subcategory.name = `Subcategory ${i}`;
-                    await connection.manager.save(subcategory);
-                }
-
-                const noneSpecifiedSubcategory = new Subcategory();
-                noneSpecifiedSubcategory.name = 'None Specified';
-                noneSpecifiedSubcategory.system = true;
-                await connection.manager.save(noneSpecifiedSubcategory);
-            });
-
-            it("should create categories", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadCategories(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const categoriesCreated = await Category.count({ where: { system: false } });
-                expect(categoriesCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadProgramsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'programsExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await queryUploadPrograms(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const programsCreated = await Program.count({ where: { system: false } });
-                expect(programsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await uploadPrograms(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const programsCreated = await Program.count({ where: { system: false } });
-                expect(programsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 3; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-
-                    for (let i = 1; i <= 3; i += 1) {
-                        let subject = await createSubject(org);
-                        subject.name = `Subject ${i}`;
-                        await connection.manager.save(subject);
-                    }
-
-                    const ageRange1 = await createAgeRange(org);
-                    ageRange1.name = '6 - 7 year(s)';
-                    ageRange1.low_value = 6;
-                    ageRange1.high_value = 7;
-                    ageRange1.low_value_unit = AgeRangeUnit.YEAR;
-                    ageRange1.high_value_unit = AgeRangeUnit.YEAR;
-                    await connection.manager.save(ageRange1);
-
-                    const ageRange2 = await createAgeRange(org);
-                    ageRange2.name = '9 - 10 year(s)';
-                    ageRange2.low_value = 9;
-                    ageRange2.high_value = 10;
-                    ageRange2.low_value_unit = AgeRangeUnit.YEAR;
-                    ageRange2.high_value_unit = AgeRangeUnit.YEAR;
-                    await connection.manager.save(ageRange2);
-
-                    const ageRange3 = await createAgeRange(org);
-                    ageRange3.name = '24 - 30 month(s)';
-                    ageRange3.low_value = 24;
-                    ageRange3.high_value = 30;
-                    ageRange3.low_value_unit = AgeRangeUnit.MONTH;
-                    ageRange3.high_value_unit = AgeRangeUnit.MONTH;
-                    ageRange3.system = false;
-                    await connection.manager.save(ageRange3);
-
-                    const grade1 = await createGrade(org);
-                    grade1.name = 'First Grade';
-                    await connection.manager.save(grade1);
-
-                    const grade2 = await createGrade(org);
-                    grade2.name = 'Second Grade';
-                    await connection.manager.save(grade2);
-
-                    const grade3 = await createGrade(org);
-                    grade3.name = 'Third Grade';
-                    await connection.manager.save(grade3);
-                }
-
-                const noneSpecifiedAgeRange = new AgeRange();
-                noneSpecifiedAgeRange.name = 'None Specified';
-                noneSpecifiedAgeRange.low_value = 0;
-                noneSpecifiedAgeRange.high_value = 99;
-                noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR;
-                noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR;
-                noneSpecifiedAgeRange.system = true;
-                await connection.manager.save(noneSpecifiedAgeRange);
-
-                const noneSpecifiedGrade = new Grade();
-                noneSpecifiedGrade.name = 'None Specified';
-                noneSpecifiedGrade.system = true;
-                await connection.manager.save(noneSpecifiedGrade);
-
-                const noneSpecifiedSubject = new Subject();
-                noneSpecifiedSubject.name = 'None Specified';
-                noneSpecifiedSubject.system = true;
-                await connection.manager.save(noneSpecifiedSubject);
-            });
-
-            it("should create programs", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadPrograms(testClient, file, filename, mimetype, encoding);
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const programsCreated = await Program.count({ where: { system: false } });
-                expect(programsCreated).eq(12);
-            });
-        });
-    });
-
-    describe("uploadAgeRangesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'ageRangesExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
-                expect(ageRangesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
-                expect(ageRangesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 2; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create age ranges", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
-                expect(ageRangesCreated).eq(17);
             });
         });
     });
@@ -1355,7 +537,7 @@ describe("model", () => {
             //sort users by userId
             await connection.manager.save(usersList)
             // add organizations and schools to users
-             
+
             for (const user of usersList) {
                 for(let i=0; i<2; i++) {
                     await addOrganizationToUserAndValidate(
@@ -1402,7 +584,7 @@ describe("model", () => {
                 role1 = createRole("role 1",org)
                 await connection.manager.save(role1)
                 school1 = createSchool(org);
-                
+
 
                 // org and school whose membership shouldnt be included
                 let org2 = createOrganization()
@@ -1436,8 +618,8 @@ describe("model", () => {
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
             })
             it('should filter the pagination results on organization_id', async()=>{
-                let directionArgs = { 
-                    count: 3, cursor:convertDataToCursor(usersList[3].user_id),   
+                let directionArgs = {
+                    count: 3, cursor:convertDataToCursor(usersList[3].user_id),
                 }
                 const filter: IEntityFilter = {
                     organizationId: {
@@ -1477,12 +659,10 @@ describe("model", () => {
         })
 
         context('when seeking forward',  ()=>{
-            let user: User;
             const direction = 'FORWARD'
 
             context('and no direction args are specified', () => {
                 beforeEach(async () => {
-                    user = await createUserJoe(testClient)
                     await RolesInitializer.run()
                     const permissions = await Permission.find({ take: 50, order: { permission_id: 'ASC' } })
                     firstPermission = permissions[0]
@@ -1490,7 +670,7 @@ describe("model", () => {
                 })
 
                 it('returns the expected permissions with the default page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() }, undefined, { user_id: user.user_id })
+                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
                     expect(gqlPermissions?.edges.length).to.equal(50);
@@ -1516,7 +696,7 @@ describe("model", () => {
                 })
 
                 it('returns the expected permissions with the specified page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() }, undefined, { user_id: user.user_id })
+                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
                     expect(gqlPermissions?.edges.length).to.equal(3);
@@ -1601,4 +781,3 @@ describe("model", () => {
         });
     });
 });
-

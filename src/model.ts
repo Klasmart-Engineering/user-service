@@ -122,55 +122,18 @@ export class Model {
     }
 
     public async getMyUser({ token, permissions }: Context) {
-        let userID = permissions.getUserId()
-        let userEmail = token?.email
-        let userPhone = token?.phone
+        const user_id = permissions.getUserId()
+        if(!user_id) {return undefined}
 
-        let user = await this.userRepository.findOne({
+        const email = token?.email
+        const phone = token?.phone
+
+        const user = await this.userRepository.findOne({
             where: [
-                { email: userEmail, user_id: userID },
-                { phone: userPhone, user_id: userID },
+                { email, user_id },
+                { phone, user_id },
             ],
         })
-
-        if (user) {
-            return user
-        }
-
-        if (token?.id && userID != token?.id) {
-            userID = token?.id
-            user = await this.userRepository.findOne({
-                where: [
-                    { email: userEmail, user_id: userID },
-                    { phone: userPhone, user_id: userID },
-                ],
-            })
-        }
-
-        if (user) {
-            return user
-        }
-
-        if (userEmail && !validateEmail(userEmail)) {
-            userEmail = undefined
-        }
-
-        if (userPhone && !validatePhone(userPhone)) {
-            userPhone = undefined
-        }
-
-        const emailOrPhoneUser = await this.userRepository.findOne({
-            where: [{ email: userEmail }, { phone: userPhone }],
-        })
-
-        if ((userEmail || userPhone) && !emailOrPhoneUser) {
-            user = new User()
-            user.user_id = uuid_v4()
-            user.email = userEmail
-            user.phone = userPhone
-
-            await user.save()
-        }
 
         return user
     }
@@ -217,36 +180,6 @@ export class Model {
 
         await this.manager.save(newUser)
         return newUser
-    }
-
-    public async switchUser(
-        { user_id }: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const userEmail = context.token?.email
-        const userPhone = context.token?.phone
-        let user = undefined
-
-        if (userEmail) {
-            user = await User.findOne({
-                where: { email: userEmail, user_id: user_id },
-            })
-        } else if (userPhone) {
-            user = await User.findOne({
-                where: { phone: userPhone, user_id: user_id },
-            })
-        }
-
-        if (!user) {
-            throw new Error(
-                `Not able to switch to user ${user_id}. Please try authenticating again`
-            )
-        }
-
-        context.res.cookie('user_id', user.user_id)
-
-        return user
     }
 
     public async setUser({

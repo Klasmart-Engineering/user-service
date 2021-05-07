@@ -376,7 +376,7 @@ const LIST_PROGRAMS = `
     }
 `;
 
-export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, shortcode?:string, headers?: Headers, cookies?: any) {
+export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, shortcode?:string, headers?: Headers) {
     const { mutate } = testClient;
     className = className ?? "My Class";
     headers = headers ?? { authorization: getJoeAuthToken() };
@@ -392,7 +392,6 @@ export async function createClass(testClient: ApolloServerTestClient, organizati
         mutation: CREATE_CLASS,
         variables: variables,
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -400,8 +399,8 @@ export async function createClass(testClient: ApolloServerTestClient, organizati
     return gqlClass;
 }
 
-export async function createClassAndValidate(testClient: ApolloServerTestClient, organizationId: string, cookies?: any) {
-    const gqlClass = await createClass(testClient, organizationId, undefined, undefined, undefined, cookies);
+export async function createClassAndValidate(testClient: ApolloServerTestClient, organizationId: string) {
+    const gqlClass = await createClass(testClient, organizationId);
     const dbClass = await Class.findOneOrFail({ where: { class_id: gqlClass.class_id } });
     const organization = await dbClass.organization;
     expect(dbClass.class_name).equals(gqlClass.class_name);
@@ -409,7 +408,7 @@ export async function createClassAndValidate(testClient: ApolloServerTestClient,
     return gqlClass;
 }
 
-export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string, roleDescription?: string, token?: string, cookies?: any) {
+export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string, roleDescription?: string, token?: string) {
     const { mutate } = testClient;
     roleName = roleName ?? "My Role";
     roleDescription = roleDescription ?? "My Role Description";
@@ -420,7 +419,6 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
         mutation: CREATE_ROLE,
         variables: { organization_id: organizationId, role_name: roleName, role_description: roleDescription },
         headers: { authorization: token },
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -428,7 +426,7 @@ export async function createRole(testClient: ApolloServerTestClient, organizatio
     return gqlRole;
 }
 
-export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, shortcode?: string, headers?: Headers, cookies?: any) {
+export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, shortcode?: string, headers?: Headers) {
     const { mutate } = testClient;
     schoolName = schoolName ?? "My School";
 
@@ -442,7 +440,6 @@ export async function createSchool(testClient: ApolloServerTestClient, organizat
         mutation: CREATE_SCHOOL,
         variables: variables,
         headers: headers,
-        cookies: cookies
     });
 
 
@@ -452,8 +449,9 @@ export async function createSchool(testClient: ApolloServerTestClient, organizat
     return gqlSchool;
 }
 
-export async function addUserToOrganizationAndValidate(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers, cookies?: any) {
-    const gqlMembership = await addUserToOrganization(testClient, userId, organizationId, headers, cookies);
+export async function addUserToOrganizationAndValidate(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
+    const gqlMembership = await addUserToOrganization(testClient, userId, organizationId, headers);
+
     const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
     const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { organization_id: organizationId, user_id: userId } });
@@ -468,14 +466,13 @@ export async function addUserToOrganizationAndValidate(testClient: ApolloServerT
     expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
 }
 
-export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers, cookies?: any) {
+export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: ADD_USER_TO_ORGANIZATION,
         variables: { user_id: userId, organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -483,7 +480,7 @@ export async function addUserToOrganization(testClient: ApolloServerTestClient, 
     return gqlMembership;
 }
 
-export async function inviteUser(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any, alternate_email?: string, alternate_phone?: string) {
+export async function inviteUser(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, alternate_email?: string, alternate_phone?: string) {
     const { mutate } = testClient;
     let variables: any
     variables = { organization_id: organizationId }
@@ -530,7 +527,6 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
         mutation: INVITE_USER,
         variables: variables,
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -600,14 +596,13 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
     return result
 }
 
-export async function deleteOrganization(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function deleteOrganization(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: DELETE_ORGANIZATION,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -615,14 +610,13 @@ export async function deleteOrganization(testClient: ApolloServerTestClient, org
     return gqlOrganization;
 }
 
-export async function createOrUpdateAgeRanges(testClient: ApolloServerTestClient, organizationId: string, ageRanges: any[], headers?: Headers, cookies?: any) {
+export async function createOrUpdateAgeRanges(testClient: ApolloServerTestClient, organizationId: string, ageRanges: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_OR_UPDATE_AGE_RANGES,
         variables: { organization_id: organizationId, age_ranges: ageRanges },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -631,14 +625,13 @@ export async function createOrUpdateAgeRanges(testClient: ApolloServerTestClient
     return gqlAgeRanges;
 }
 
-export async function listAgeRanges(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function listAgeRanges(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_AGE_RANGES,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -647,14 +640,13 @@ export async function listAgeRanges(testClient: ApolloServerTestClient, organiza
     return gqlAgeRanges;
 }
 
-export async function createOrUpdateGrades(testClient: ApolloServerTestClient, organizationId: string, grades: any[], headers?: Headers, cookies?: any) {
+export async function createOrUpdateGrades(testClient: ApolloServerTestClient, organizationId: string, grades: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_OR_UPDATE_GRADES,
         variables: { organization_id: organizationId, grades: grades },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -663,14 +655,13 @@ export async function createOrUpdateGrades(testClient: ApolloServerTestClient, o
     return gqlGrades;
 }
 
-export async function listGrades(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function listGrades(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_GRADES,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -679,14 +670,13 @@ export async function listGrades(testClient: ApolloServerTestClient, organizatio
     return gqlGrades;
 }
 
-export async function createOrUpdateSubcategories(testClient: ApolloServerTestClient, organizationId: string, subcategories: any[], headers?: Headers, cookies?: any) {
+export async function createOrUpdateSubcategories(testClient: ApolloServerTestClient, organizationId: string, subcategories: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_OR_UPDATE_SUBCATEGORIES,
         variables: { organization_id: organizationId, subcategories: subcategories },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -695,14 +685,13 @@ export async function createOrUpdateSubcategories(testClient: ApolloServerTestCl
     return gqlSubcategories;
 }
 
-export async function listSubcategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function listSubcategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_SUBCATEGORIES,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -711,14 +700,13 @@ export async function listSubcategories(testClient: ApolloServerTestClient, orga
     return gqlSubcategories;
 }
 
-export async function createOrUpdateCategories(testClient: ApolloServerTestClient, organizationId: string, categories: any[], headers?: Headers, cookies?: any) {
+export async function createOrUpdateCategories(testClient: ApolloServerTestClient, organizationId: string, categories: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_OR_UPDATE_CATEGORIES,
         variables: { organization_id: organizationId, categories: categories },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -727,14 +715,13 @@ export async function createOrUpdateCategories(testClient: ApolloServerTestClien
     return gqlCategories;
 }
 
-export async function listCategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function listCategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_CATEGORIES,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -743,14 +730,13 @@ export async function listCategories(testClient: ApolloServerTestClient, organiz
     return gqlCategories;
 }
 
-export async function createOrUpdateSubjects(testClient: ApolloServerTestClient, organizationId: string, subjects: any[], headers?: Headers, cookies?: any) {
+export async function createOrUpdateSubjects(testClient: ApolloServerTestClient, organizationId: string, subjects: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_OR_UPDATE_SUBJECTS,
         variables: { organization_id: organizationId, subjects: subjects },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -759,14 +745,13 @@ export async function createOrUpdateSubjects(testClient: ApolloServerTestClient,
     return gqlSubjects;
 }
 
-export async function listSubjects(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function listSubjects(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_SUBJECTS,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
     const res = await gqlTry(operation);
     const gqlSubjects = res.data?.organization.subjects as Subject[];
@@ -775,14 +760,13 @@ export async function listSubjects(testClient: ApolloServerTestClient, organizat
 }
 
 
-export async function createOrUpdatePrograms(testClient: ApolloServerTestClient, organizationId: string, programs: any[], headers?: Headers, cookies?: any) {
+export async function createOrUpdatePrograms(testClient: ApolloServerTestClient, organizationId: string, programs: any[], headers?: Headers) {
     const { mutate } = testClient;
 
     const operation = () => mutate({
         mutation: CREATE_OR_UPDATE_PROGRAMS,
         variables: { organization_id: organizationId, programs: programs },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -791,14 +775,13 @@ export async function createOrUpdatePrograms(testClient: ApolloServerTestClient,
     return gqlPrograms;
 }
 
-export async function listPrograms(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers, cookies?: any) {
+export async function listPrograms(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
     const { query } = testClient;
 
     const operation = () => query({
         query: LIST_PROGRAMS,
         variables: { organization_id: organizationId },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
@@ -817,14 +800,12 @@ export async function updateOrganization(
         phone?: string,
         shortCode?: string
     },
-    headers?: Headers,
-    cookies?: any) {
+    headers?: Headers) {
     const { mutate } = testClient;
     const operation = () => mutate({
         mutation: UPDATE_ORGANIZATION,
         variables: { organization_id: organizationId, ...mods },
         headers: headers,
-        cookies: cookies
     });
 
     const res = await gqlTry(operation);
