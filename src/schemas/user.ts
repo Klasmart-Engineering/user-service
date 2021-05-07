@@ -148,10 +148,10 @@ const typeDefs = gql`
         my_organization: Organization
             @deprecated(reason: "Use 'organization_ownerships'.")
         organization_ownerships: [OrganizationOwnership]
-        memberships(filter: UserFilter): [OrganizationMembership]
+        memberships: [OrganizationMembership]
         membership(organization_id: ID!): OrganizationMembership
 
-        school_memberships(filter: UserFilter): [SchoolMembership]
+        school_memberships: [SchoolMembership]
         school_membership(school_id: ID!): SchoolMembership
 
         classesTeaching: [Class]
