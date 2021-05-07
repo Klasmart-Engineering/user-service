@@ -16,12 +16,13 @@ import { User } from "../../../../src/entities/user";
 import { UserRow } from "../../../../src/types/csv/userRow";
 import { Model } from "../../../../src/model";
 import { Organization } from "../../../../src/entities/organization";
-import { OrganizationMembership } from "../../../../src/entities/organizationMembership";
+import { MEMBERSHIP_SHORTCODE_MAXLEN, OrganizationMembership } from "../../../../src/entities/organizationMembership";
 import { Role } from "../../../../src/entities/role";
 import { School } from "../../../../src/entities/school";
 import { SchoolMembership } from "../../../../src/entities/schoolMembership";
 import { processUserFromCSVRow } from "../../../../src/utils/csv/user";
 import { CSVError } from "../../../../src/types/csv/csvError";
+import { createUserBilly } from "../../../utils/testEntities";
 
 use(chaiAsPromised);
 
@@ -153,6 +154,32 @@ describe("processUserFromCSVRow", () => {
 
                 expect(dbUser).to.be.undefined
             }
+        });
+    });
+
+    context("when provided shortcode already exists in another user", () => {
+        beforeEach(async () => {
+            const existentUser = await createUserBilly(testClient);
+            const orgMembership = new OrganizationMembership();
+            orgMembership.organization_id = organization.organization_id;
+            orgMembership.organization = Promise.resolve(organization);
+            orgMembership.user_id = existentUser.user_id;
+            orgMembership.user = Promise.resolve(existentUser);
+            orgMembership.shortcode = generateShortCode(existentUser.user_id, MEMBERSHIP_SHORTCODE_MAXLEN);
+            await orgMembership.save();
+
+            row = { ...row, user_shortcode: orgMembership.shortcode }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
         });
     });
 
