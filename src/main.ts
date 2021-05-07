@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/node';
 import WebSocket from 'ws'
 import * as dotenv from 'dotenv';
 import { UserPermissions } from "./permissions/userPermissions";
+import DataLoader from "dataloader";
 
 dotenv.config({ path: __dirname + '/../.env' });
 const port = process.env.PORT || 8080;
@@ -14,6 +15,7 @@ export interface Context {
     req?: any
     websocket?: WebSocket
     permissions: UserPermissions
+    loaders: Record<string, DataLoader<string, unknown>>;
 }
 
 Sentry.init({

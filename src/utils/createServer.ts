@@ -21,7 +21,7 @@ export const createServer = (model: Model, context?: any) => {
                     token && token.id,
                     req.cookies
                 )
-                return { sessionId, token, websocket, permissions }
+                return { sessionId, token, websocket, permissions, loaders: {} }
             },
         },
         context:

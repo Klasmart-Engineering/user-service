@@ -2,7 +2,10 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { User } from '../entities/user'
-import { orgsForUserLoader, schoolsForUserLoader } from '../dataloader'
+import { orgsForUsers, schoolsForUsers } from '../dataloader'
+import Dataloader from "dataloader";
+import { Context } from '../main'
+
 
 const typeDefs = gql`
     extend type Mutation {
@@ -44,7 +47,7 @@ const typeDefs = gql`
 
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
-        node: UserConnectionNode
+        node: User
     }
 
     type UserConnection {
@@ -137,6 +140,7 @@ const typeDefs = gql`
         alternate_email: String
         alternate_phone: String
         gender: String
+        status: Status
         #connections
         """
         'my_organization' is the Organization that this user has created
@@ -144,10 +148,10 @@ const typeDefs = gql`
         my_organization: Organization
             @deprecated(reason: "Use 'organization_ownerships'.")
         organization_ownerships: [OrganizationOwnership]
-        memberships: [OrganizationMembership]
+        memberships(filter: UserFilter): [OrganizationMembership]
         membership(organization_id: ID!): OrganizationMembership
 
-        school_memberships: [SchoolMembership]
+        school_memberships(filter: UserFilter): [SchoolMembership]
         school_membership(school_id: ID!): SchoolMembership
 
         classesTeaching: [Class]
@@ -196,11 +200,11 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             User: {
-                memberships(user: User) {
-                    return orgsForUserLoader.load(user.user_id);
+                memberships(user: User, args: any, ctx: Context) {
+                    return ctx.loaders.memberships.load(user.user_id);
                 },
-                school_memberships(user: User) {
-                    return schoolsForUserLoader.load(user.user_id);
+                school_memberships(user: User, args: any, ctx: Context) {
+                    return ctx.loaders.school_memberships.load(user.user_id);
                 }
             },
             Mutation: {
@@ -216,8 +220,13 @@ export default function getDefault(
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
-                usersConnection: (_parent, args, ctx, _info) =>
-                    model.usersConnection(ctx, args),
+                usersConnection: (_parent, args, ctx: Context, _info) => {
+                    ctx.loaders = {
+                        memberships: new Dataloader(keys => orgsForUsers(keys, args.filter)),
+                        school_memberships: new Dataloader(keys => schoolsForUsers(keys, args.filter)),
+                    }
+                    return model.usersConnection(ctx, args);
+                },
                 users: (_parent, _args, ctx, _info) => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
