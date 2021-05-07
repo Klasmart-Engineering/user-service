@@ -24,6 +24,10 @@ export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
                 continue;
             }
             const data = filter[key] as IFilter;
+
+            if (data.operator === 'contains' && data.value === "") {
+                continue;
+            }
             
             const field = parseField(key);
             const sqlOperator = getSQLOperatorFromFilterOperator(data.operator);
