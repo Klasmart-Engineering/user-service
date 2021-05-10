@@ -6,6 +6,7 @@ const typeDefs = gql`
     input StringFilter {
         operator: StringOperator
         value: String
+        caseInsensitive: Boolean
     }
 
     input NumberFilter {

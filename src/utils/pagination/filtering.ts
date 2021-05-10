@@ -13,6 +13,7 @@ type FilteringOperator = "eq" | "neq" | "lt" | "lte" | "gt" | "gte" | "contains"
 interface IFilter {
     operator: FilteringOperator;
     value: string | number | boolean;
+    caseInsensitive?: boolean;
 }
 
 // generates a WHERE clause for a given query filter 
@@ -35,8 +36,12 @@ export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
 
             // parameter keys must be unique when using typeorm querybuilder
             const uniqueId = uuid_v4();
-    
-            qb.andWhere(`${field} ${sqlOperator} :${uniqueId}`, {[uniqueId]: value});
+
+            if (data.caseInsensitive) {
+                qb.andWhere(`lower(${field}) ${sqlOperator} lower(:${uniqueId})`, {[uniqueId]: value});
+            } else {
+                qb.andWhere(`${field} ${sqlOperator} :${uniqueId}`, {[uniqueId]: value});
+            }
         }
 
         if (filter.OR) {

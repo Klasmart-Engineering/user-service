@@ -241,6 +241,22 @@ describe("getWhereClauseFromFilter", () => {
         expect(Object.keys(scope.getParameters()).length).to.equal(1);
         expect(scope.getParameters()[Object.keys(scope.getParameters())[0]]).to.equal("%gmail%");
     });
+
+    it("supports case insensitivity", () => {
+        const filter: IEntityFilter = {
+            email: {
+                operator: "contains",
+                value: "GMAIL",
+                caseInsensitive: true,
+            }
+        };
+        const scope = createQueryBuilder("user");
+        scope.andWhere(getWhereClauseFromFilter(filter));
+        const whereClause = scope.getSql().slice(scope.getSql().indexOf("WHERE"));
+        console.log(whereClause)
+
+        expect(whereClause).to.equal("WHERE (lower(email) LIKE lower($1))")
+    });
 });
 
 
