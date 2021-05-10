@@ -28,7 +28,8 @@ const typeDefs = gql`
             username: String
             gender: String
         ): User @deprecated(reason: "Use the inviteUser() method")
-        switch_user(user_id: ID!): User @deprecated(reason: "Moved to auth service")
+        switch_user(user_id: ID!): User
+            @deprecated(reason: "Moved to auth service")
         uploadUsersFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
     }
@@ -108,6 +109,7 @@ const typeDefs = gql`
         name: String
         organizationId: String
         status: Status
+        userStatus: Status
     }
 
     extend type Query {
@@ -200,7 +202,9 @@ export default function getDefault(
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
-                switch_user: (_parent, args, ctx, info) => { throw new Error("Deprecated") },
+                switch_user: (_parent, args, ctx, info) => {
+                    throw new Error('Deprecated')
+                },
                 newUser: (_parent, args, _context, _info) =>
                     model.newUser(args),
 

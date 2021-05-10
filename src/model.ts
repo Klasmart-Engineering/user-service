@@ -123,7 +123,9 @@ export class Model {
 
     public async getMyUser({ token, permissions }: Context) {
         const user_id = permissions.getUserId()
-        if(!user_id) {return undefined}
+        if (!user_id) {
+            return undefined
+        }
 
         const email = token?.email
         const phone = token?.phone
@@ -441,6 +443,7 @@ export class Model {
                                 (await school.organization)?.organization_id ||
                                 '',
                             status: school.status,
+                            userStatus: userMembership.status,
                         })
 
                         for (const r of (await userMembership.roles) || []) {
@@ -470,6 +473,7 @@ export class Model {
                                 (await school.organization)?.organization_id ||
                                 '',
                             status: school.status,
+                            userStatus: schoolMembership.status,
                         })
                     }
                     for (const r of (await schoolMembership.roles) || []) {
