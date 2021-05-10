@@ -374,5 +374,41 @@ describe("processUserFromCSVRow", () => {
                 expect(teachers.map(userInfo)).to.deep.eq([dbUser].map(userInfo))
             });
         });
+
+        context("and the shortcode is duplicated in another organization", () => {
+            beforeEach(async () => {
+                const secondOrg = createOrganization();
+                await connection.manager.save(secondOrg);
+
+                const secondUser = createUser();
+                await connection.manager.save(secondUser);
+
+                const secondMembership = new OrganizationMembership();
+                secondMembership.organization = Promise.resolve(secondOrg);
+                secondMembership.organization_id = secondOrg.organization_id;
+                secondMembership.shortcode = 'DUP1234';
+                secondMembership.user = Promise.resolve(secondUser);
+                secondMembership.user_id = secondUser.user_id;
+                await connection.manager.save(secondMembership);
+
+                row = {
+                    ...row,
+                    user_shortcode: secondMembership.shortcode
+                }
+            })
+
+            it("creates the user", async () => {
+                await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                const dbUser = await User.findOneOrFail({
+                    where: { email: row.user_email }
+                })
+
+                const students = await cls.students || []
+                expect(students).to.be.empty
+                const teachers = await cls.teachers || []
+                expect(teachers.map(userInfo)).to.deep.eq([dbUser].map(userInfo))
+            });
+        });
     });
 });

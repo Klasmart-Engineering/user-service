@@ -324,7 +324,7 @@ export const processUserFromCSVRow = async (
         if (userShortcode && user.user_id !== userShortcode.user_id) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_INVALID_FIELD,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'school_shortcode',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,

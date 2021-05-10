@@ -95,24 +95,6 @@ export async function processSchoolFromCSVRow(
         )
     }
 
-    const schoolShortcode = await manager.findOne(School, {
-        where: { shortcode: row.school_shortcode },
-    })
-
-    if (schoolShortcode && row.school_name !== schoolShortcode.school_name) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
-            rowNumber,
-            'school_shortcode',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
-            {
-                entity: 'school',
-                name: row.school_name,
-            }
-        )
-    }
-
     // Return if there are any validation errors so that we don't need to waste any DB queries
     if (fileErrors && fileErrors.length > 0) {
         return
@@ -141,6 +123,27 @@ export async function processSchoolFromCSVRow(
     }
 
     const organization = organizations[0]
+
+    const schoolShortcode = await manager.findOne(School, {
+        where: { shortcode: row.school_shortcode, organization: { organization_id: organization.organization_id } },
+    })
+
+    if (schoolShortcode && row.school_name !== schoolShortcode.school_name) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            rowNumber,
+            'school_shortcode',
+            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            {
+                entity: 'shortcode',
+                name: row.school_shortcode,
+                parent_entity: 'school',
+                parent_name: schoolShortcode.school_name
+            }
+        )
+    }
+
     const schools = await manager.find(School, {
         where: {
             school_name: row.school_name,
