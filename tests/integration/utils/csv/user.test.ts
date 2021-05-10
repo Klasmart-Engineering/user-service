@@ -157,7 +157,7 @@ describe("processUserFromCSVRow", () => {
         });
     });
 
-    context("when provided shortcode already exists in another user", () => {
+    context("when provided shortcode already exists in another user in the same organization", () => {
         beforeEach(async () => {
             const existentUser = await createUserBilly(testClient);
             const orgMembership = new OrganizationMembership();

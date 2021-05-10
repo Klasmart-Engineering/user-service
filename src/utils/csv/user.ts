@@ -318,7 +318,7 @@ export const processUserFromCSVRow = async (
 
     if (row.user_shortcode) {
         const userShortcode = await manager.findOne(OrganizationMembership, {
-            where: { shortcode: row.user_shortcode },
+            where: { shortcode: row.user_shortcode, organization: { organization_id: org.organization_id } },
         })
 
         if (userShortcode && user.user_id !== userShortcode.user_id) {
