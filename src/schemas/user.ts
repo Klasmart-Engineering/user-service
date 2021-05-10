@@ -75,6 +75,7 @@ const typeDefs = gql`
         familyName: String
         avatar: String
         contactInfo: ContactInfo!
+        alternateContactInfo: ContactInfo
         organizations: [OrganizationSummaryNode!]!
         roles: [RoleSummaryNode!]!
         schools: [SchoolSummaryNode!]!
@@ -90,6 +91,7 @@ const typeDefs = gql`
         id: ID!
         name: String
         joinDate: String
+        userStatus: Status
         status: Status
     }
 
@@ -98,12 +100,14 @@ const typeDefs = gql`
         name: String
         organizationId: String
         schoolId: String
+        status: Status
     }
 
     type SchoolSummaryNode {
         id: ID!
         name: String
         organizationId: String
+        status: Status
     }
 
     extend type Query {

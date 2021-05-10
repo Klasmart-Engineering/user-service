@@ -10,6 +10,7 @@ export interface UserConnectionNode {
     familyName?: string
     avatar?: string
     contactInfo: ContactInfo
+    alternateContactInfo?: ContactInfo
     organizations: OrganizationSummaryNode[]
     roles: RoleSummaryNode[]
     schools: SchoolSummaryNode[]
