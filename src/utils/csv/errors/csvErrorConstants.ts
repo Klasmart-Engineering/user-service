@@ -52,6 +52,7 @@ export default {
 
     ERR_CSV_INVALID_EMAIL: "ERR_CSV_INVALID_EMAIL",
     MSG_ERR_CSV_INVALID_EMAIL: "{entity} {attribute} must be a valid email address.",
+    MSG_ERR_CSV_INVALID_PHONE: "{entity} {attribute} must be a valid phone number.",
 
     ERR_CSV_INVALID_NUMBER: "ERR_CSV_INVALID_NUMBER",
     MSG_ERR_CSV_INVALID_NUMBER: "{entity} {attribute} must be a number.",

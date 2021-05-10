@@ -125,6 +125,57 @@ describe("processUserFromCSVRow", () => {
         });
     });
 
+    context("when missing organization role", () => {
+        beforeEach(async () => {
+            row = { ...row, organization_role_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
+    context("when missing user given name", () => {
+        beforeEach(async () => {
+            row = { ...row, user_given_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
+    context("when missing user family name", () => {
+        beforeEach(async () => {
+            row = { ...row, user_family_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
     context("when date of birth is not valid", () => {
         it("throws an error", async () => {
             for(const date_of_birth of ['01-01-2020', '01/2020', '2020-01', '01/01/2020']){
@@ -180,6 +231,38 @@ describe("processUserFromCSVRow", () => {
             })
 
             expect(dbUser).to.be.undefined
+        });
+    });
+
+    context("when user email is not valid", () => {
+        it("throws an error", async () => {
+            for(const email of ['no.at.symbol.com', 'with space@gmail.com', 'ih@vetwo@symbols.com']){
+                row = { ...row, user_email: email }
+                const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                expect(fn()).to.be.rejected
+                const dbUser = await User.findOne({
+                    where: { email: row.user_email }
+                })
+
+                expect(dbUser).to.be.undefined
+            }
+        });
+    });
+
+    context("when user phone is not valid", () => {
+        it("throws an error", async () => {
+            for(const phone of ['1', 'ph0n3numb3r', '+521234567891011121314151617181920']){
+                row = { ...row, user_phone: phone }
+                const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                expect(fn()).to.be.rejected
+                const dbUser = await User.findOne({
+                    where: { email: row.user_email }
+                })
+
+                expect(dbUser).to.be.undefined
+            }
         });
     });
 
