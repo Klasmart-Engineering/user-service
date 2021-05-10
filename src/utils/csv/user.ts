@@ -92,6 +92,20 @@ export const processUserFromCSVRow = async (
         }
     }
 
+    if (!row.organization_role_name) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+            rowNumber,
+            "organization_role_name",
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+            {
+                "entity": "user",
+                "attribute": "organization role",
+            }
+        )
+    }
+
     if (!row.user_given_name) {
         addCsvError(
             fileErrors,

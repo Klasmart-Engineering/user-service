@@ -124,6 +124,23 @@ describe("processUserFromCSVRow", () => {
         });
     });
 
+    context("when missing organization role", () => {
+        beforeEach(async () => {
+            row = { ...row, organization_role_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
     context("when missing user given name", () => {
         beforeEach(async () => {
             row = { ...row, user_given_name: '' }
