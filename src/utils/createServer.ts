@@ -43,7 +43,7 @@ export const createServer = (model: Model, context?: any) => {
         uploads: false,
         formatError: (error) => {
             if (error.originalError instanceof CustomError) {
-                return { ...error, detailErrors: error.originalError.errors }
+                return { ...error, details: error.originalError.errors }
             }
             return {
                 message: error.message,
