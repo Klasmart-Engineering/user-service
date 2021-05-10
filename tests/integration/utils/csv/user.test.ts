@@ -124,6 +124,40 @@ describe("processUserFromCSVRow", () => {
         });
     });
 
+    context("when missing user given name", () => {
+        beforeEach(async () => {
+            row = { ...row, user_given_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
+    context("when missing user family name", () => {
+        beforeEach(async () => {
+            row = { ...row, user_family_name: '' }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
     context("when date of birth is not valid", () => {
         it("throws an error", async () => {
             for(const date_of_birth of ['01-01-2020', '01/2020', '2020-01', '01/01/2020']){
