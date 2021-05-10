@@ -37,16 +37,16 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
-            iConnectionResponse :{
-                __resolveType(){
-                    return null;
-                  },
+            iConnectionResponse: {
+                __resolveType() {
+                    return null
+                },
             },
-            iConnectionEdge :{
-                __resolveType(){
-                    return null;
-                  },
-            }
-        }
+            iConnectionEdge: {
+                __resolveType() {
+                    return null
+                },
+            },
+        },
     }
 }

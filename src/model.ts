@@ -336,10 +336,25 @@ export class Model {
         { direction, directionArgs, scope, filter }: any
     ) {
         if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
+            if (
+                filterHasProperty('organizationId', filter) ||
+                filterHasProperty('roleId', filter)
+            ) {
                 scope.leftJoinAndSelect(
                     'User.memberships',
                     'OrganizationMembership'
+                )
+            }
+            if (filterHasProperty('roleId', filter)) {
+                scope.innerJoinAndSelect(
+                    'OrganizationMembership.roles',
+                    'RoleMembershipsOrganizationMembership'
+                )
+            }
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect(
+                    'User.school_memberships',
+                    'schoolMembership'
                 )
             }
             scope.andWhere(getWhereClauseFromFilter(filter))
