@@ -123,7 +123,9 @@ export class Model {
 
     public async getMyUser({ token, permissions }: Context) {
         const user_id = permissions.getUserId()
-        if(!user_id) {return undefined}
+        if (!user_id) {
+            return undefined
+        }
 
         const email = token?.email
         const phone = token?.phone
@@ -334,10 +336,25 @@ export class Model {
         { direction, directionArgs, scope, filter }: any
     ) {
         if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
+            if (
+                filterHasProperty('organizationId', filter) ||
+                filterHasProperty('roleId', filter)
+            ) {
                 scope.leftJoinAndSelect(
                     'User.memberships',
                     'OrganizationMembership'
+                )
+            }
+            if (filterHasProperty('roleId', filter)) {
+                scope.innerJoinAndSelect(
+                    'OrganizationMembership.roles',
+                    'RoleMembershipsOrganizationMembership'
+                )
+            }
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect(
+                    'User.school_memberships',
+                    'schoolMembership'
                 )
             }
             scope.andWhere(getWhereClauseFromFilter(filter))
@@ -361,7 +378,12 @@ export class Model {
                 email: edge.node.email,
                 phone: edge.node.phone,
             }
-
+            if (edge.node.alternate_email || edge.node.alternate_phone) {
+                node.alternateContactInfo = {
+                    email: edge.node.alternate_email,
+                    phone: edge.node.alternate_phone,
+                }
+            }
             const organizations: OrganizationSummaryNode[] = []
             const organizationsDb = []
             const roles: RoleSummaryNode[] = []
@@ -396,13 +418,15 @@ export class Model {
                     id: organization?.organization_id || '',
                     name: organization?.organization_name || '',
                     joinDate: membership.join_timestamp,
-                    status: membership.status,
+                    userStatus: membership.status,
+                    status: organization?.status,
                 })
                 for (const r of (await membership.roles) || []) {
                     roles.push({
                         id: r.role_id,
                         name: r.role_name,
                         organizationId: organization?.organization_id,
+                        status: r.status,
                     })
                 }
             }
@@ -433,6 +457,8 @@ export class Model {
                             organizationId:
                                 (await school.organization)?.organization_id ||
                                 '',
+                            status: school.status,
+                            userStatus: userMembership.status,
                         })
 
                         for (const r of (await userMembership.roles) || []) {
@@ -440,6 +466,7 @@ export class Model {
                                 id: r.role_id,
                                 name: r.role_name,
                                 schoolId: userMembership.school_id,
+                                status: r.status,
                             })
                         }
                     }
@@ -460,6 +487,8 @@ export class Model {
                             organizationId:
                                 (await school.organization)?.organization_id ||
                                 '',
+                            status: school.status,
+                            userStatus: schoolMembership.status,
                         })
                     }
                     for (const r of (await schoolMembership.roles) || []) {
@@ -467,6 +496,7 @@ export class Model {
                             id: r.role_id,
                             name: r.role_name,
                             schoolId: schoolMembership.school_id,
+                            status: r.status,
                         })
                     }
                 }

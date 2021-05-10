@@ -4,5 +4,6 @@ export interface OrganizationSummaryNode {
     id: string
     name?: string
     joinDate?: Date
-    status: Status
+    userStatus: Status
+    status?: Status
 }

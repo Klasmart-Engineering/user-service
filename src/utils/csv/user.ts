@@ -20,6 +20,7 @@ import { v4 as uuid_v4 } from 'uuid'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from './errors/csvErrorConstants'
+import validationConstants from './validationConstants'
 
 export const processUserFromCSVRow = async (
     manager: EntityManager,
@@ -89,6 +90,36 @@ export const processUserFromCSVRow = async (
                 }
             )
         }
+    }
+
+    if (row.user_given_name?.length > validationConstants.USER_GIVEN_NAME_MAX_LENGTH) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
+            rowNumber,
+            'user_given_name',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+            {
+                entity: 'user',
+                attribute: 'given name',
+                max: validationConstants.USER_GIVEN_NAME_MAX_LENGTH,
+            }
+        )
+    }
+
+    if (row.user_family_name?.length > validationConstants.USER_FAMILY_NAME_MAX_LENGTH) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
+            rowNumber,
+            'user_family_name',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+            {
+                entity: 'user',
+                attribute: 'family name',
+                max: validationConstants.USER_FAMILY_NAME_MAX_LENGTH,
+            }
+        )
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries

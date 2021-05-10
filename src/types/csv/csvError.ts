@@ -23,12 +23,9 @@ import csvErrorConstants from '../../utils/csv/errors/csvErrorConstants'
 export interface CSVError {
     code: string
     message: string
-    details: {
-        row: number
-        column: string
-        original_message: string
-        [params: string]: any
-    }
+    row: number
+    column: string
+    [params: string]: any
 }
 
 export class CustomError extends ApolloError {

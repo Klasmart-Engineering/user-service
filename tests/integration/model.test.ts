@@ -603,7 +603,6 @@ describe("model", () => {
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)
-
                 for (const user of usersList) {
                     await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
                     await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
@@ -617,7 +616,7 @@ describe("model", () => {
                 }
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
             })
-            it('should filter the pagination results on organization_id', async()=>{
+            it('should filter the pagination results on organizationId', async()=>{
                 let directionArgs = {
                     count: 3, cursor:convertDataToCursor(usersList[3].user_id),
                 }
@@ -646,6 +645,250 @@ describe("model", () => {
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+            })
+        })
+
+        context('school filter',  ()=>{
+            let org: Organization;
+            let school1: School;
+            let school2: School;
+            let role1: Role;
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org);
+                role1 = createRole("role 1",org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org);
+                school2 = createSchool(org);
+
+                await connection.manager.save(school1);
+                await connection.manager.save(school2);
+
+                usersList = [];
+                // create 10 users
+                for (let i=0; i<10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
+                
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
+                }
+                
+                // add half of users to one school and other half to different school
+                // also add 5th user to both school
+                for (let i = 0; i<= 5; i++) {
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
+                }
+                for (let i = 5; i< 10; i++) {
+                    await addSchoolToUser(testClient, usersList[i].user_id, school2.school_id, { authorization: getJoeAuthToken()})
+                }
+            })
+            it('should filter the pagination results on schoolId', async()=>{
+                let directionArgs = {
+                    count: 3,
+                }
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: "eq",
+                        value: school2.school_id
+                    }
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, directionArgs,
+                    { authorization: getJoeAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(5);
+                expect(usersConnection?.edges.length).to.equal(3);
+                
+                //user belonging to more than one returned
+                expect(usersConnection?.edges[0].node.schools.length).to.equal(2)
+                expect(usersConnection?.edges[0].node.id).to.equal(usersList[5].user_id)
+
+                for(let i=1; i<3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(usersList[5+i].user_id)
+                    expect(usersConnection?.edges[i].node.schools.length).to.equal(1)
+                    expect(usersConnection?.edges[i].node.schools[0].id).to.equal(school2.school_id)
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[5].user_id))
+                expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[7].user_id))
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('role filter',  ()=>{
+            let org: Organization;
+            let school1: School;
+            let role1: Role;
+            let role2: Role;
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org);
+                role1 = createRole("role 1",org)
+                await connection.manager.save(role1)
+                role2 = createRole("role 2",org)
+                await connection.manager.save(role2)
+                school1 = createSchool(org);                
+                await connection.manager.save(school1);
+
+                usersList = [];
+                // create 10 users
+                for (let i=0; i<10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
+                }
+
+                // add 5 users to role1 and 5 users to role2
+                // add 6th user to both roles
+                for(let i=0; i<=5 ;i++) {
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getJoeAuthToken() })
+                }
+
+                for(let i=5; i<usersList.length; i++) {
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role2.role_id, { authorization: getJoeAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id, role2.role_id, { authorization: getJoeAuthToken() })
+                }
+            })
+            it('should filter the pagination results on roleId', async()=>{
+                let directionArgs = {
+                    count: 3
+                }
+                const filter: IEntityFilter = {
+                    roleId: {
+                        operator: "eq",
+                        value: role2.role_id
+                    }
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, directionArgs,
+                    { authorization: getJoeAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(5);
+                expect(usersConnection?.edges.length).to.equal(3);
+                
+                for(let i=0; i<3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(usersList[5+i].user_id)
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[5].user_id))
+                expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[7].user_id))
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('filter combinations',  ()=>{
+            let org: Organization;
+            let org2: Organization;
+            let school1: School;
+            let school2: School;
+            let school3: School;
+            let role1: Role;
+            let role2: Role;
+            let role3: Role;
+            beforeEach(async () => {
+                //org role and school used to filter
+                org = createOrganization()
+                await connection.manager.save(org);
+                role1 = createRole("role 1",org)
+                await connection.manager.save(role1)
+                role2 = createRole("role 2",org)
+                await connection.manager.save(role2)
+                school1 = createSchool(org);                
+                await connection.manager.save(school1);
+                school2 = createSchool(org);                
+                await connection.manager.save(school2);
+                usersList = [];
+                // create 15 users
+                for (let i=0; i<15; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
+
+                for (let i=0; i<10 ;i++) {
+                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org.organization_id, getJoeAuthToken());
+                }
+                
+                // add 5 users to role1/school1 and 5 users to role2/school2
+                // add 6th user to both roles and schools
+                for(let i=0; i<=5 ;i++) {
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getJoeAuthToken() })
+                }
+                for(let i=5; i<10; i++) {
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role2.role_id, { authorization: getJoeAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school2.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school2.school_id, role2.role_id, { authorization: getJoeAuthToken() })
+                }
+                
+                // create second org and add other users to this org
+                org2 = createOrganization()
+                await connection.manager.save(org2);
+                role3 = createRole("role 3",org2)
+                await connection.manager.save(role3)
+                school3 = createSchool(org2);                
+                await connection.manager.save(school3);
+                
+                for (let i=10; i<15 ;i++) {
+                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org2.organization_id, getJoeAuthToken());
+                }
+
+                // add remaining users to school3 and role3
+                for(let i=10; i<15 ;i++) {
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org2.organization_id, role3.role_id, { authorization: getJoeAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school3.school_id, { authorization: getJoeAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school3.school_id, role3.role_id, { authorization: getJoeAuthToken() })
+                }
+            })
+            it('should filter the pagination results on all filters', async()=>{
+                let directionArgs = {
+                    count: 3
+                }
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: "eq",
+                        value: org.organization_id
+                    },
+                    roleId: {
+                        operator: "eq",
+                        value: role2.role_id
+                    },
+                    schoolId: {
+                        operator: "eq",
+                        value: school2.school_id
+                    }
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, directionArgs,
+                    { authorization: getJoeAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(5);
+                expect(usersConnection?.edges.length).to.equal(3);
+                
+                for(let i=0; i<3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(usersList[5+i].user_id)
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[5].user_id))
+                expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[7].user_id))
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
             })
         })
     })

@@ -183,6 +183,34 @@ describe("processUserFromCSVRow", () => {
         });
     });
 
+    context("when user given name is longer than allowed", () => {
+        it("throws an error", async () => {
+            row = { ...row, user_given_name: 'This is a Very Long Given Name to be Allowed as a Given Name' }
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
+    context("when user family name is longer than allowed", () => {
+        it("throws an error", async () => {
+            row = { ...row, user_family_name: 'This is a Very Long Family Name to be Allowed as a Family Name' }
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
+        });
+    });
+
     context("when organization role name provided does not exist", () => {
         beforeEach(async () => {
             row = { ...row, organization_role_name: 'Non existing role' }

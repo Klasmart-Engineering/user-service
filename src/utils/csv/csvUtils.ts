@@ -37,12 +37,9 @@ function buildCsvError(
             `${csvErrorConstants.MSG_ERR_CSV_AT_ROW}, ${message}`,
             { ...params, row }
         )!,
-        details: {
-            row: row,
-            column: column,
-            original_message: `${csvErrorConstants.MSG_ERR_CSV_AT_ROW}, ${message}`,
-            ...params,
-        },
+        row,
+        column,
+        ...params,
     }
 
     return csvError
