@@ -18,9 +18,6 @@ import { OrganizationMembership } from './organizationMembership'
 import {
     Organization,
     padShortDob,
-    validateDOB,
-    validateEmail,
-    validatePhone,
 } from './organization'
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
@@ -32,6 +29,7 @@ import { School } from './school'
 import { Status } from './status'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
+import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
 
 @Entity()
 export class User extends BaseEntity {

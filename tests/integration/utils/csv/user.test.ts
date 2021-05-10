@@ -207,6 +207,38 @@ describe("processUserFromCSVRow", () => {
         });
     });
 
+    context("when user email is not valid", () => {
+        it("throws an error", async () => {
+            for(const email of ['no.at.symbol.com', 'with space@gmail.com', 'ih@vetwo@symbols.com']){
+                row = { ...row, user_email: email }
+                const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                expect(fn()).to.be.rejected
+                const dbUser = await User.findOne({
+                    where: { email: row.user_email }
+                })
+
+                expect(dbUser).to.be.undefined
+            }
+        });
+    });
+
+    context("when user phone is not valid", () => {
+        it("throws an error", async () => {
+            for(const phone of ['1', 'ph0n3numb3r', '+521234567891011121314151617181920']){
+                row = { ...row, user_phone: phone }
+                const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                expect(fn()).to.be.rejected
+                const dbUser = await User.findOne({
+                    where: { email: row.user_email }
+                })
+
+                expect(dbUser).to.be.undefined
+            }
+        });
+    });
+
     context("when user given name is longer than allowed", () => {
         it("throws an error", async () => {
             row = { ...row, user_given_name: 'This is a Very Long Given Name to be Allowed as a Given Name' }

@@ -12,9 +12,6 @@ import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
 import {
     Organization,
-    validateDOB,
-    validateEmail,
-    validatePhone,
     padShortDob,
 } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
@@ -57,6 +54,7 @@ import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { OrganizationSummaryNode } from './types/graphQL/organizationSummaryNode'
 import { SchoolSummaryNode } from './types/graphQL/schoolSummaryNode'
 import { RoleSummaryNode } from './types/graphQL/roleSummaryNode'
+import { validateDOB, validateEmail, validatePhone } from './utils/validations'
 
 export class Model {
     public static async create() {

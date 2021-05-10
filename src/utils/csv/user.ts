@@ -3,7 +3,6 @@ import { EntityManager } from 'typeorm'
 import { Class } from '../../entities/class'
 import {
     Organization,
-    validateDOB,
     normalizedLowercaseTrimmed,
 } from '../../entities/organization'
 import {
@@ -20,6 +19,7 @@ import { v4 as uuid_v4 } from 'uuid'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from './errors/csvErrorConstants'
+import { validateDOB, validateEmail, validatePhone } from '../validations'
 import validationConstants from './validationConstants'
 
 export const processUserFromCSVRow = async (
@@ -92,6 +92,20 @@ export const processUserFromCSVRow = async (
         }
     }
 
+    if (row.user_email && !validateEmail(row.user_email)) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'user_email',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_EMAIL,
+            {
+                entity: 'user',
+                attribute: 'email',
+            }
+        )
+    }
+
     if (!row.organization_role_name) {
         addCsvError(
             fileErrors,
@@ -145,6 +159,20 @@ export const processUserFromCSVRow = async (
             {
                 "entity": "user",
                 "attribute": "family name",
+            }
+        )
+    }
+
+    if (row.user_phone && !validatePhone(row.user_phone)) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            rowNumber,
+            'user_phone',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_PHONE,
+            {
+                entity: 'user',
+                attribute: 'phone',
             }
         )
     }
