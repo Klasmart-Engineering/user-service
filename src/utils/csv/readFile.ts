@@ -61,13 +61,7 @@ export async function readCSVFile(
                                 'These errors were found in the file: ',
                                 fileErrors
                             )
-
-                            const errorDetails = fileErrors[0]?.details
-                            const errorMessage = stringInject(
-                                errorDetails?.message,
-                                errorDetails
-                            )
-                            reject(errorMessage)
+                            reject(fileErrors)
                         }
 
                         resolve({

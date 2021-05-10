@@ -64,7 +64,7 @@
     "@graphql-tools/load": "6.2.5",
     "@sentry/node": "5.20.1",
     "apollo-server-express": "2.19.0",
-    "axios": "0.21.0",
+    "axios": "^0.21.1",
     "cookie-parser": "1.4.5",
     "cors": "2.8.5",
     "csv-parser": "2.3.5",

@@ -29,7 +29,7 @@ export const processClassFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
@@ -43,7 +43,7 @@ export const processClassFromCSVRow = async (
     if (!class_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'class_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
@@ -57,7 +57,7 @@ export const processClassFromCSVRow = async (
     if (class_name?.length > validationConstants.CLASS_NAME_MAX_LENGTH) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
             rowNumber,
             'class_name',
             csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
@@ -75,7 +75,7 @@ export const processClassFromCSVRow = async (
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             rowNumber,
             'class_shortcode',
             csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
@@ -97,7 +97,7 @@ export const processClassFromCSVRow = async (
     if (!org) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
@@ -142,7 +142,7 @@ export const processClassFromCSVRow = async (
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'class_shortcode',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
@@ -182,7 +182,7 @@ export const processClassFromCSVRow = async (
         if (!school) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 rowNumber,
                 'school_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
@@ -204,7 +204,7 @@ export const processClassFromCSVRow = async (
         if (existingSchoolNames.includes(school_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'school_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
@@ -238,7 +238,7 @@ export const processClassFromCSVRow = async (
         if (!programToAdd) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
@@ -260,7 +260,7 @@ export const processClassFromCSVRow = async (
         if (existingProgramNames.includes(program_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,

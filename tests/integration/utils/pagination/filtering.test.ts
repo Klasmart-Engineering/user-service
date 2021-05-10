@@ -108,6 +108,34 @@ describe('filtering', ()=>{
             
             expect(data.length).to.equal(1);
         });
+
+        it("supports case-insensitive string.contains", async () => {
+            const filter: IEntityFilter = {
+                email: {
+                    operator: "contains",
+                    value: "JOHN",
+                    caseInsensitive: true,
+                }
+            };
+            
+            scope.andWhere(getWhereClauseFromFilter(filter));
+            const data = await scope.getMany();
+            
+            expect(data.length).to.equal(1);
+        });
+
+        it("ignores contains filters with empty values", async () => {
+            const filter: IEntityFilter = {
+                email: {
+                    operator: "contains",
+                    value: ""
+                }
+            };
+            scope.andWhere(getWhereClauseFromFilter(filter));
+            const data = await scope.getMany();
+            
+            expect(data.length).to.equal(2);
+        });
     });
 
     context("booleans", () => {

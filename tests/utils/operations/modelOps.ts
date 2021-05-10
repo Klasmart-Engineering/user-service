@@ -126,15 +126,6 @@ const GET_USER = `
     }
 `;
 
-const SWITCH_USER = `
-    mutation switchUser($user_id: ID!) {
-        switch_user(user_id: $user_id) {
-            user_id
-            email
-        }
-    }
-`;
-
 const GET_ALL_ORGANIZATIONS = `
     query getAllOrgs {
         organizations {
@@ -333,19 +324,6 @@ export async function createUser(
     const res = await gqlTry(operation);
     const gqlUser = res.data?.newUser as User;
     return gqlUser;
-}
-
-export async function switchUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { mutate } = testClient;
-
-    const operation = () => mutate({
-        mutation: SWITCH_USER,
-        variables: { user_id: userId },
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    return res;
 }
 
 export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {

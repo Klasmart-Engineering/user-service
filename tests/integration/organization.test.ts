@@ -1478,34 +1478,6 @@ describe("organization", () => {
 
             });
 
-            it("edits user when email etc with id-less token and cookie", async () => {
-                let email = "bob@nowhere.com"
-                let phone = undefined
-                let given = "Bob"
-                let family = "Smith"
-                let bob = {
-                    given_name: given,
-                    family_name: family,
-                    email: email
-                } as User
-                bob = await createUserAndValidate(testClient, bob)
-                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: idLessToken }, { user_id: otherUserId })
-                let newUser = gqlresult.user
-                let membership = gqlresult.membership
-                let schoolmemberships = gqlresult.schoolMemberships
-                expect(newUser).to.exist
-                expect(newUser.email).to.equal(email)
-
-                expect(schoolmemberships).to.exist
-                expect(schoolmemberships.length).to.equal(1)
-                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
-                expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                expect(membership).to.exist
-                expect(membership.organization_id).to.equal(organizationId)
-                expect(membership.user_id).to.equal(newUser.user_id)
-            });
-
             it("fails to edits user when no cookie provided", async () => {
                 let email = "bob@nowhere.com"
                 let phone: string | undefined = undefined

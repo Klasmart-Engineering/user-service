@@ -43,13 +43,13 @@ export async function processProgramFromCSVRow(
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -57,13 +57,13 @@ export async function processProgramFromCSVRow(
     if (!program_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "program_name",
+            'program_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "program",
-                "attribute": "name",
+                entity: 'program',
+                attribute: 'name',
             }
         )
     }
@@ -73,8 +73,8 @@ export async function processProgramFromCSVRow(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_FIELD,
             rowNumber,
-            "age_range_high_value, age_range_low_value, age_range_unit",
-            "program must exist age_range_high_value, age_range_low_value, age_range_unit or none of them",
+            'age_range_high_value, age_range_low_value, age_range_unit',
+            'program must exist age_range_high_value, age_range_low_value, age_range_unit or none of them'
         )
     }
 
@@ -90,15 +90,15 @@ export async function processProgramFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
-            "age_range_high_value",
+            'age_range_high_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_BETWEEN,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_high_value",
-                "min": validationConstants.AGE_RANGE_LOW_VALUE_MIN,
-                "max": validationConstants.AGE_RANGE_LOW_VALUE_MAX,
+                entity: 'ageRange',
+                attribute: 'age_range_high_value',
+                min: validationConstants.AGE_RANGE_LOW_VALUE_MIN,
+                max: validationConstants.AGE_RANGE_LOW_VALUE_MAX,
             }
         )
     }
@@ -112,15 +112,15 @@ export async function processProgramFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
-            "age_range_low_value",
+            'age_range_low_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_BETWEEN,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_low_value",
-                "min": validationConstants.AGE_RANGE_LOW_VALUE_MIN,
-                "max": validationConstants.AGE_RANGE_LOW_VALUE_MAX,
+                entity: 'ageRange',
+                attribute: 'age_range_low_value',
+                min: validationConstants.AGE_RANGE_LOW_VALUE_MIN,
+                max: validationConstants.AGE_RANGE_LOW_VALUE_MAX,
             }
         )
     }
@@ -132,14 +132,14 @@ export async function processProgramFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_GREATER_THAN_OTHER,
             rowNumber,
-            "age_range_low_value",
+            'age_range_low_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_GREATER_THAN_OTHER,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_high_value",
-                "other": "age_range_low_value",
+                entity: 'ageRange',
+                attribute: 'age_range_high_value',
+                other: 'age_range_low_value',
             }
         )
     }
@@ -151,14 +151,14 @@ export async function processProgramFromCSVRow(
     ) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_ENUM,
             rowNumber,
-            "age_range_low_value",
+            'age_range_low_value',
             csvErrorConstants.MSG_ERR_CSV_INVALID_ENUM,
             {
-                "entity": "ageRange",
-                "attribute": "age_range_unit",
-                "values": "month, year",
+                entity: 'ageRange',
+                attribute: 'age_range_unit',
+                values: 'month, year',
             }
         )
     }
@@ -175,13 +175,13 @@ export async function processProgramFromCSVRow(
     if (!organization) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "name": organization_name,
-                "entity": "organization",
+                name: organization_name,
+                entity: 'organization',
             }
         )
 
@@ -215,15 +215,15 @@ export async function processProgramFromCSVRow(
     if (!ageRange) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
-            "age_range_low_value, age_range_high_value, age_range_unit",
+            'age_range_low_value, age_range_high_value, age_range_unit',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
-                "entity": "ageRange",
-                "name": `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
-                "parent_entity": "organization",
-                "parent_name": organization_name,
+                entity: 'ageRange',
+                name: `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
+                parent_entity: 'organization',
+                parent_name: organization_name,
             }
         )
     }
@@ -251,15 +251,15 @@ export async function processProgramFromCSVRow(
     if (!grade) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
-            "grade_name",
+            'grade_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
-                "entity": "grade",
-                "name": grade_name,
-                "parent_entity": "organization",
-                "parent_name": organization_name,
+                entity: 'grade',
+                name: grade_name,
+                parent_entity: 'organization',
+                parent_name: organization_name,
             }
         )
     }
@@ -287,20 +287,25 @@ export async function processProgramFromCSVRow(
     if (!subject) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
-            "subject_name",
+            'subject_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
-                "entity": "subject",
-                "name": subject_name,
-                "parent_entity": "organization",
-                "parent_name": organization_name,
+                entity: 'subject',
+                name: subject_name,
+                parent_entity: 'organization',
+                parent_name: organization_name,
             }
         )
     }
 
-    if (fileErrors && fileErrors.length > 0 || !ageRange || !grade || !subject) {
+    if (
+        (fileErrors && fileErrors.length > 0) ||
+        !ageRange ||
+        !grade ||
+        !subject
+    ) {
         return
     }
 
@@ -324,15 +329,15 @@ export async function processProgramFromCSVRow(
         ) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
-                "age_range_low_value, age_range_high_value, age_range_unit",
+                'age_range_low_value, age_range_high_value, age_range_unit',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    "entity": "ageRange",
-                    "name": `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
-                    "parent_entity": "program",
-                    "parent_name": program.name,
+                    entity: 'ageRange',
+                    name: `${age_range_low_value} - ${age_range_high_value} ${age_range_unit}(s)`,
+                    parent_entity: 'program',
+                    parent_name: program.name,
                 }
             )
 
@@ -345,15 +350,15 @@ export async function processProgramFromCSVRow(
         if (gradeNames.includes(grade_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
-                "grade_name",
+                'grade_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    "entity": "grade",
-                    "name": grade_name,
-                    "parent_entity": "program",
-                    "parent_name": program.name,
+                    entity: 'grade',
+                    name: grade_name,
+                    parent_entity: 'program',
+                    parent_name: program.name,
                 }
             )
 
@@ -366,15 +371,15 @@ export async function processProgramFromCSVRow(
         if (subjectNames.includes(subject_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
-                "subject_name",
+                'subject_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    "entity": "grade",
-                    "name": subject_name,
-                    "parent_entity": "program",
-                    "parent_name": program.name,
+                    entity: 'grade',
+                    name: subject_name,
+                    parent_entity: 'program',
+                    parent_name: program.name,
                 }
             )
 

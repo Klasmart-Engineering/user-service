@@ -20,13 +20,13 @@ export async function processRoleFromCSVRow(
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "organization",
-                "attribute": "name",
+                entity: 'organization',
+                attribute: 'name',
             }
         )
     }
@@ -34,13 +34,13 @@ export async function processRoleFromCSVRow(
     if (!role_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "role_name",
+            'role_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "role",
-                "attribute": "name",
+                entity: 'role',
+                attribute: 'name',
             }
         )
     }
@@ -48,13 +48,13 @@ export async function processRoleFromCSVRow(
     if (!permission_id) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "permission_id",
+            'permission_id',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "permission",
-                "attribute": "id",
+                entity: 'permission',
+                attribute: 'id',
             }
         )
     }
@@ -71,13 +71,13 @@ export async function processRoleFromCSVRow(
     if (!organization) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "entity": "organization",
-                "name": organization_name,
+                entity: 'organization',
+                name: organization_name,
             }
         )
     }
@@ -89,18 +89,18 @@ export async function processRoleFromCSVRow(
     if (!permission) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
-            "organization_name",
+            'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
-                "entity": "permission",
-                "name": permission_id,
+                entity: 'permission',
+                name: permission_id,
             }
         )
     }
 
-    if (fileErrors && fileErrors.length > 0 || !organization || !permission) {
+    if ((fileErrors && fileErrors.length > 0) || !organization || !permission) {
         return
     }
 
@@ -122,15 +122,15 @@ export async function processRoleFromCSVRow(
         if (permissionNames.includes(permission_id)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
-                "permission_id",
+                'permission_id',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    "entity": "permission",
-                    "name": permission_id,
-                    "parent_entity": "role",
-                    "parent_name": role_name,
+                    entity: 'permission',
+                    name: permission_id,
+                    parent_entity: 'role',
+                    parent_name: role_name,
                 }
             )
 

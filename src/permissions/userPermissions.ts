@@ -30,12 +30,8 @@ export class UserPermissions {
     private readonly email: string
     public readonly isAdmin?: boolean
 
-    public constructor(token?: any, cookies?: any) {
-        if (cookies && cookies.user_id) {
-            this.user_id = cookies.user_id
-        } else {
-            this.user_id = token?.id
-        }
+    public constructor(token?: any) {
+        this.user_id = token?.id
         this.email = token?.email || ''
         this.isAdmin = this.isAdminEmail(this.email)
     }

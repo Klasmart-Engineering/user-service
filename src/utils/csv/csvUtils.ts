@@ -1,5 +1,6 @@
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../csv/errors/csvErrorConstants'
+import stringInject from '../stringUtils'
 
 export function addCsvError(
     fileErrors: CSVError[],
@@ -7,7 +8,7 @@ export function addCsvError(
     row: number,
     column: string,
     message: string,
-    params: Record<string, any> = {},
+    params: Record<string, any> = {}
 ): void {
     fileErrors.push(buildCsvError(code, row, column, message, params))
 }
@@ -28,16 +29,17 @@ function buildCsvError(
     row: number,
     column: string,
     message: string,
-    params: Record<string, any>,
+    params: Record<string, any>
 ): CSVError {
     const csvError: CSVError = {
         code: code,
-        details: {
-            row: row,
-            column: column,
-            message: `${csvErrorConstants.MSG_ERR_CSV_AT_ROW} ${message}`,
-            ...params
-        }
+        message: stringInject(
+            `${csvErrorConstants.MSG_ERR_CSV_AT_ROW}, ${message}`,
+            { ...params, row }
+        )!,
+        row,
+        column,
+        ...params,
     }
 
     return csvError
