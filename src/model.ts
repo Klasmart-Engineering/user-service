@@ -48,9 +48,6 @@ import {
     filterHasProperty,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
-import { OrganizationSummaryNode } from './types/graphQL/organizationSummaryNode'
-import { SchoolSummaryNode } from './types/graphQL/schoolSummaryNode'
-import { RoleSummaryNode } from './types/graphQL/roleSummaryNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
 
 export class Model {
@@ -351,7 +348,7 @@ export class Model {
             }
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: 'OrgMembership.organization_id',
+                    organizationId: ['OrgMembership.organization_id'],
                 })
             )
         }
@@ -363,143 +360,30 @@ export class Model {
             cursorTable: 'User',
             cursorColumn: 'user_id',
         })
+
         for (const edge of data.edges) {
-            const node: UserConnectionNode = edge.node
-            node.id = edge.node.user_id
-            node.givenName = edge.node.given_name
-            node.familyName = edge.node.family_name
-            node.avatar = edge.node.avatar
-            node.status = edge.node.status
-            node.contactInfo = {
-                email: edge.node.email,
-                phone: edge.node.phone,
-            }
-            if (edge.node.alternate_email || edge.node.alternate_phone) {
-                node.alternateContactInfo = {
-                    email: edge.node.alternate_email,
-                    phone: edge.node.alternate_phone,
-                }
-            }
-            const organizations: OrganizationSummaryNode[] = []
-            const organizationsDb = []
-            const roles: RoleSummaryNode[] = []
-            let organizationMemberships
-            // if organization_id is set get only the organization else get all organizations the user belongs to
-            if (
-                filter &&
-                filter.organizationId &&
-                filter.organizationId.operator === 'eq'
-            ) {
-                organizationMemberships = await this.organizationMembershipRepository.find(
-                    {
-                        where: {
-                            user_id: edge.node.user_id,
-                            organization_id: filter.organizationId.value,
-                        },
-                    }
-                )
-            } else {
-                organizationMemberships = await this.organizationMembershipRepository.find(
-                    {
-                        where: { user_id: edge.node.user_id },
-                    }
-                )
-            }
-            for (const membership of organizationMemberships) {
-                const organization = await this.organizationRepository.findOne({
-                    where: { organization_id: membership.organization_id },
-                })
-                organizationsDb.push(organization)
-                organizations.push({
-                    id: organization?.organization_id || '',
-                    name: organization?.organization_name || '',
-                    joinDate: membership.join_timestamp,
-                    userStatus: membership.status,
-                    status: organization?.status,
-                })
-                for (const r of (await membership.roles) || []) {
-                    roles.push({
-                        id: r.role_id,
-                        name: r.role_name,
-                        organizationId: organization?.organization_id,
-                        status: r.status,
-                    })
-                }
-            }
-            node.organizations = organizations
+            const user: User = edge.node
 
-            // if organization_id is set get only the schools that belong to organization and check if user is a member of that school
-            // els get all schools for a user
-            const schools: SchoolSummaryNode[] = []
-            let schoolsDb: School[] = []
-            if (
-                filter &&
-                filter.organizationId &&
-                filter.organizationId.operator === 'eq'
-            ) {
-                const org = organizationsDb[0]
-                schoolsDb = (await Promise.resolve(org?.schools)) || []
-                for (const school of schoolsDb) {
-                    const memberships = await Promise.resolve(
-                        school.memberships
-                    )
-                    const userMembership = memberships?.find(
-                        (membership) => membership.user_id === edge.node.user_id
-                    )
-                    if (userMembership) {
-                        schools.push({
-                            id: school.school_id,
-                            name: school.school_name,
-                            organizationId:
-                                (await school.organization)?.organization_id ||
-                                '',
-                            status: school.status,
-                            userStatus: userMembership.status,
-                        })
-
-                        for (const r of (await userMembership.roles) || []) {
-                            roles.push({
-                                id: r.role_id,
-                                name: r.role_name,
-                                schoolId: userMembership.school_id,
-                                status: r.status,
-                            })
-                        }
-                    }
-                }
-            } else {
-                const schoolMemberships =
-                    (await this.schoolMembershipRepository.find({
-                        where: { user_id: edge.node.user_id },
-                    })) || []
-                for (const schoolMembership of schoolMemberships) {
-                    const school = await Promise.resolve(
-                        schoolMembership.school
-                    )
-                    if (school) {
-                        schools.push({
-                            id: school.school_id,
-                            name: school.school_name,
-                            organizationId:
-                                (await school.organization)?.organization_id ||
-                                '',
-                            status: school.status,
-                            userStatus: schoolMembership.status,
-                        })
-                    }
-                    for (const r of (await schoolMembership.roles) || []) {
-                        roles.push({
-                            id: r.role_id,
-                            name: r.role_name,
-                            schoolId: schoolMembership.school_id,
-                            status: r.status,
-                        })
-                    }
-                }
+            const newNode: Partial<UserConnectionNode> = {
+                id: user.user_id,
+                givenName: user.given_name,
+                familyName: user.family_name,
+                avatar: user.avatar,
+                status: user.status,
+                contactInfo: {
+                    email: user.email,
+                    phone: user.phone,
+                },
+                alternateContactInfo: {
+                    email: user.alternate_email,
+                    phone: user.alternate_phone,
+                },
+                // other properties have dedicated resolvers that use Dataloader
             }
-            node.roles = roles
-            node.schools = schools
+
+            edge.node = newNode
         }
+
         return data
     }
 

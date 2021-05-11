@@ -720,7 +720,7 @@ describe("model", () => {
                 expect(usersConnection?.edges.length).to.equal(3);
                 
                 //user belonging to more than one returned
-                expect(usersConnection?.edges[0].node.schools.length).to.equal(2)
+                expect(usersConnection?.edges[0].node.schools.length).to.equal(1)
                 expect(usersConnection?.edges[0].node.id).to.equal(usersList[5].user_id)
 
                 for(let i=1; i<3; i++) {
@@ -794,6 +794,13 @@ describe("model", () => {
 
                 expect(usersConnection?.totalCount).to.eql(5);
                 expect(usersConnection?.edges.length).to.equal(3);
+
+                for (const e of usersConnection?.edges) {
+                    expect(e.node.roles.length).to.equal(2)
+                    for (const r of e.node.roles) {
+                        expect(r.id).to.eq(role2.role_id)
+                    }
+                }
                 
                 for(let i=0; i<3; i++) {
                     expect(usersConnection?.edges[i].node.id).to.equal(usersList[5+i].user_id)

@@ -19,7 +19,7 @@ export const createServer = (model: Model, context?: any) => {
             ): Promise<Context> => {
                 const token = await checkToken(authToken)
                 const permissions = new UserPermissions(token)
-                return { sessionId, token, websocket, permissions }
+                return { sessionId, token, websocket, permissions, loaders: {} }
             },
         },
         context:
@@ -33,7 +33,7 @@ export const createServer = (model: Model, context?: any) => {
                 const token = (await checkToken(encodedToken)) as any
                 const permissions = new UserPermissions(token)
 
-                return { token, permissions, res, req }
+                return { token, permissions, res, req, loaders: {} }
             }),
         playground: {
             settings: {

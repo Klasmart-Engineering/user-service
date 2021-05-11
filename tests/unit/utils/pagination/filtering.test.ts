@@ -257,6 +257,60 @@ describe("getWhereClauseFromFilter", () => {
 
         expect(whereClause).to.equal("WHERE (lower(email) LIKE lower($1))")
     });
+
+    context("column aliases", () => {
+        it("supports single value alias", () => {
+            const filter: IEntityFilter = {
+                asd: {
+                    operator: "eq",
+                    value: "joe@gmail.com"
+                }
+            };
+    
+            const scope = createQueryBuilder("user");
+            scope.andWhere(getWhereClauseFromFilter(filter, {
+                asd: ["email"],
+            }));
+            const whereClause = scope.getSql().slice(scope.getSql().indexOf("WHERE"));
+    
+            expect(whereClause).to.equal("WHERE (email = $1)")
+            expect(Object.keys(scope.getParameters()).length).to.equal(1);
+        });
+
+        it("supports multiple aliases", () => {
+            const filter: IEntityFilter = {
+                asd: {
+                    operator: "contains",
+                    value: "joe"
+                }
+            };
+    
+            const scope = createQueryBuilder("user");
+            scope.andWhere(getWhereClauseFromFilter(filter, {
+                asd: ["email", "username"],
+            }));
+            const whereClause = scope.getSql().slice(scope.getSql().indexOf("WHERE"));
+    
+            expect(whereClause).to.equal("WHERE (email LIKE $1 AND username LIKE $2)")
+        });
+
+        it("supports alias ignores", () => {
+            const filter: IEntityFilter = {
+                asd: {
+                    operator: "contains",
+                    value: "joe"
+                }
+            };
+    
+            const scope = createQueryBuilder("user");
+            scope.andWhere(getWhereClauseFromFilter(filter, {
+                asd: [],
+            }));
+            const whereClause = scope.getSql().slice(scope.getSql().indexOf("WHERE"));
+    
+            expect(whereClause).to.equal("WHERE (true)")
+        });
+    });
 });
 
 

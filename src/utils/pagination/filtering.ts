@@ -16,10 +16,12 @@ interface IFilter {
     caseInsensitive?: boolean
 }
 
+type ColumnAliases = Record<string, string[]> // use empty to ignore
+
 // generates a WHERE clause for a given query filter
 export function getWhereClauseFromFilter(
     filter: IEntityFilter,
-    columnAliases?: Record<string, string>
+    columnAliases?: ColumnAliases
 ): Brackets {
     return new Brackets((qb) => {
         for (const key of Object.keys(filter)) {
@@ -29,29 +31,42 @@ export function getWhereClauseFromFilter(
             }
             const data = filter[key] as IFilter
 
+            // rule: all string contains the empty string
             if (data.operator === 'contains' && data.value === '') {
+                qb.andWhere('true') // avoid returning empty brackets
                 continue
             }
 
-            const field =
-                columnAliases && columnAliases[key]
-                    ? columnAliases[key]
-                    : parseField(key)
-            const sqlOperator = getSQLOperatorFromFilterOperator(data.operator)
-            const value = parseValueForSQLOperator(sqlOperator, data.value)
+            // check if there are multiple aliases for a single field
+            // to be queried
+            let aliases: string[] = [parseField(key)]
+            if (columnAliases?.[key]) {
+                if (columnAliases?.[key].length === 0) {
+                    qb.andWhere('true')
+                    continue // avoid returning empty brackets
+                }
+                aliases = columnAliases?.[key]
+            }
 
-            // parameter keys must be unique when using typeorm querybuilder
-            const uniqueId = uuid_v4()
-
-            if (data.caseInsensitive) {
-                qb.andWhere(
-                    `lower(${field}) ${sqlOperator} lower(:${uniqueId})`,
-                    { [uniqueId]: value }
+            for (const alias of aliases) {
+                const sqlOperator = getSQLOperatorFromFilterOperator(
+                    data.operator
                 )
-            } else {
-                qb.andWhere(`${field} ${sqlOperator} :${uniqueId}`, {
-                    [uniqueId]: value,
-                })
+                const value = parseValueForSQLOperator(sqlOperator, data.value)
+
+                // parameter keys must be unique when using typeorm querybuilder
+                const uniqueId = uuid_v4()
+
+                if (data.caseInsensitive) {
+                    qb.andWhere(
+                        `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`,
+                        { [uniqueId]: value }
+                    )
+                } else {
+                    qb.andWhere(`${alias} ${sqlOperator} :${uniqueId}`, {
+                        [uniqueId]: value,
+                    })
+                }
             }
         }
 
@@ -90,7 +105,7 @@ export function filterHasProperty(
 function logicalOperationFilter(
     filters: IEntityFilter[],
     operator: 'AND' | 'OR',
-    columnAliases?: Record<string, string>
+    columnAliases?: ColumnAliases
 ) {
     return new Brackets((qb) => {
         if (filters.length > 0) {

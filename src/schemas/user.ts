@@ -1,6 +1,14 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import {
+    orgsForUsers,
+    schoolsForUsers,
+    rolesForUsers,
+} from '../loaders/usersConnection'
+import Dataloader from 'dataloader'
+import { Context } from '../main'
+import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -201,6 +209,31 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            UserConnectionNode: {
+                organizations: async (
+                    user: UserConnectionNode,
+                    args: any,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.usersConnection?.organizations?.load(
+                        user.id
+                    )
+                },
+                schools: async (
+                    user: UserConnectionNode,
+                    args: any,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.usersConnection?.schools?.load(user.id)
+                },
+                roles: async (
+                    user: UserConnectionNode,
+                    args: any,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.usersConnection?.roles?.load(user.id)
+                },
+            },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
@@ -215,8 +248,20 @@ export default function getDefault(
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
-                usersConnection: (_parent, args, ctx, _info) =>
-                    model.usersConnection(ctx, args),
+                usersConnection: (_parent, args, ctx: Context, _info) => {
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys, args.filter)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys, args.filter)
+                        ),
+                        roles: new Dataloader((keys) =>
+                            rolesForUsers(keys, args.filter)
+                        ),
+                    }
+                    return model.usersConnection(ctx, args)
+                },
                 users: (_parent, _args, ctx, _info) => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
