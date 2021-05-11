@@ -27,23 +27,17 @@ describe("processClassFromCSVRow", ()=> {
     let row: ClassRow;
 
     let expectedOrg: Organization
-    let secondOrg: Organization
     let expectedClass: Class
     let expectedProg: Program
     let expectedNoneProg: Program
     let expectedSystemProg: Program
     let expectedSchool: School
     let expectedSchool2: School
-    let expectedShortcodeDuplicatedSchool: School
-    let secondSchool: School
     let fileErrors: CSVError[] = []
 
     const orgName: string = "my-org";
-    const secondOrgName: string = "second-org";
     const school1Name: string = "test-school";
     const school2Name: string = "test-school2";
-    const shortcodeDuplicatedSchoolName: string = "duplicated-school"
-    const secondSchoolName: string = "second-school"
     const progName: string = "outdoor activities";
     const systemProgName: string = "Bada Read";
     const noneProgName: string = "None Specified";
@@ -59,10 +53,6 @@ describe("processClassFromCSVRow", ()=> {
         expectedOrg = createOrganization()
         expectedOrg.organization_name = orgName
         await connection.manager.save(expectedOrg)
-
-        secondOrg = createOrganization()
-        secondOrg.organization_name = secondOrgName
-        await connection.manager.save(secondOrg)
 
         expectedProg = createProgram(expectedOrg)
         expectedProg.name = progName
@@ -85,12 +75,6 @@ describe("processClassFromCSVRow", ()=> {
 
         expectedSchool2 = createSchool(expectedOrg, school2Name)
         await connection.manager.save(expectedSchool2)
-
-        expectedShortcodeDuplicatedSchool = createSchool(expectedOrg, shortcodeDuplicatedSchoolName)
-        await connection.manager.save(expectedShortcodeDuplicatedSchool)
-
-        secondSchool = createSchool(secondOrg, secondSchoolName)
-        await connection.manager.save(secondSchool)
 
         expectedClass = createClass([], expectedOrg)
         expectedClass.class_name = className
@@ -154,20 +138,6 @@ describe("processClassFromCSVRow", ()=> {
         expect(programs.length).to.equal(1)
     })
 
-    it('should create a class with a duplicated shortcode from other organization', async()=>{
-        row = {organization_name: orgName, class_name: 'class40', class_shortcode: secondSchool.shortcode }
-        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
-
-        const dbClass = await Class.findOneOrFail({where:{class_name:"class40", organization: expectedOrg}});
-        const organizationInClass = await dbClass.organization;
-
-        expect(dbClass).to.exist;
-        expect(dbClass.class_name).eq(row.class_name);
-        expect(dbClass.shortcode).eq(row.class_shortcode);
-        expect(dbClass.status).eq('active');
-        expect(organizationInClass?.organization_name).eq(row.organization_name);
-    })
-
     it('should throw an error (missing org/classname) and rollback when all transactions', async()=>{
         row = {organization_name: '' , class_name: 'class5', class_shortcode:'3XABK3ZZS1', school_name:school1Name, program_name: progName}
         const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
@@ -188,15 +158,6 @@ describe("processClassFromCSVRow", ()=> {
 
     it('should throw an error for invalid shortcode', async()=>{
         row = {organization_name: orgName , class_name: 'class5', class_shortcode:'¢Ø₫€', school_name:school1Name, program_name: progName}
-        const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
-
-        expect(fn()).to.be.rejected
-        const dbClass = await Class.find()
-        expect(dbClass.length).to.equal(1)
-    })
-
-    it('should throw an error for duplicated shortcode', async()=>{
-        row = {organization_name: orgName , class_name: 'class5', class_shortcode: expectedShortcodeDuplicatedSchool.shortcode, school_name:school1Name, program_name: progName}
         const fn = () => processClassFromCSVRow(connection.manager, row, 1, fileErrors);
 
         expect(fn()).to.be.rejected

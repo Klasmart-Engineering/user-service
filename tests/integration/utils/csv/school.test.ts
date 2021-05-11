@@ -163,7 +163,7 @@ describe("processSchoolFromCSVRow", () => {
         });
     });
 
-    context("when provided shortcode already exists in another school in the same organization", () => {
+    context("when provided shortcode already exists in another school", () => {
         beforeEach(async () => {
             const school = await createSchool(organization, 'School One');
             school.shortcode = row.school_shortcode;
@@ -319,51 +319,6 @@ describe("processSchoolFromCSVRow", () => {
             expect(school.status).eq('active');
             expect(organizationInSchool?.organization_name).eq(row.organization_name);
             expect(programsInSchool.map(EntityInfo)).to.deep.eq([EntityInfo(programDB)]);
-        });
-
-        context("and the shortcode is duplicated in another organization", () => {
-            beforeEach(async () => {
-                const secondOrg = createOrganization();
-                await connection.manager.save(secondOrg);
-
-                const secondSchool = createSchool(secondOrg, 'second-school');
-                secondSchool.shortcode = 'DUP456';
-                await connection.manager.save(secondSchool);
-
-                row = { ...row, school_shortcode: secondSchool.shortcode }
-            });
-
-            it("creates the school with its relations", async () => {
-                await processSchoolFromCSVRow(connection.manager, row, 1, fileErrors);
-    
-                const school = await School.findOneOrFail({
-                    where: {
-                        school_name: row.school_name,
-                        status: 'active',
-                        organization
-                    }
-                });
-    
-                const programDB = await connection.manager.findOneOrFail(Program, { where: {
-                    name: row.program_name,
-                    system: true,
-                    organization: null
-                }});
-    
-                const organizationInSchool = await school.organization;
-                const programsInSchool = await school.programs || [];
-    
-                const EntityInfo = (entityValue: any) => {
-                    return entityValue;
-                }
-    
-                expect(school).to.exist;
-                expect(school.school_name).eq(row.school_name);
-                expect(school.shortcode).eq(row.school_shortcode);
-                expect(school.status).eq('active');
-                expect(organizationInSchool?.organization_name).eq(row.organization_name);
-                expect(programsInSchool.map(EntityInfo)).to.deep.eq([EntityInfo(programDB)]);
-            });
         });
     });
 });

@@ -130,15 +130,16 @@ export const processClassFromCSVRow = async (
         return
     }
 
-    const classExist = await manager.findOne(Class ,{
-        where: {
-            shortcode: class_shortcode,
-            organization: org,
-            class_name: Not(class_name),
-        },
-    })
-
-    if (class_shortcode && classExist) {
+    if (
+        class_shortcode &&
+        (await Class.findOne({
+            where: {
+                shortcode: class_shortcode,
+                organization: org,
+                class_name: Not(class_name),
+            },
+        }))
+    ) {
         addCsvError(
             fileErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
@@ -146,10 +147,10 @@ export const processClassFromCSVRow = async (
             'class_shortcode',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                name: class_shortcode,
-                entity: 'shortcode',
-                parent_name: classExist.class_name,
-                parent_entity: 'class',
+                name: class_name,
+                entity: 'class',
+                parent_name: organization_name,
+                parent_entity: 'organization',
             }
         )
 
