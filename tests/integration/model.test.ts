@@ -646,6 +646,20 @@ describe("model", () => {
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
             })
+
+            it('returns nothing for non admins', async()=>{
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: "eq",
+                        value: org.organization_id
+                    }
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, undefined,
+                    { authorization: getBillyAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(0);
+            })
         })
 
         context('school filter',  ()=>{
