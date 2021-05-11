@@ -6,7 +6,7 @@ import { createServer } from "../../src/utils/createServer";
 import { Role } from "../../src/entities/role";
 import { createRole } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/testEntities";
+import { createAdminUser } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 
@@ -63,7 +63,7 @@ describe("model.role", () => {
 
         context("when one", () => {
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
+                const user = await createAdminUser(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 await createRole(testClient, organization.organization_id);
             });
@@ -104,7 +104,7 @@ describe("model.role", () => {
             let role: Role;
 
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
+                const user = await createAdminUser(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
                 role = await createRole(testClient, organization.organization_id);
             });

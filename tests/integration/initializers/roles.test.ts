@@ -5,7 +5,7 @@ import { ApolloServerTestClient, createTestClient } from "../../utils/createTest
 import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
-import { createUserJoe } from "../../utils/testEntities";
+import { createAdminUser } from "../../utils/testEntities";
 import { Model } from "../../../src/model";
 import { Organization } from "../../../src/entities/organization";
 import RoleInitializer from '../../../src/initializers/roles'
@@ -36,7 +36,7 @@ describe("RolesInitializer", () => {
             let organization: Organization;
 
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
+                const user = await createAdminUser(testClient);
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 

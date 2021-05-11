@@ -6,10 +6,10 @@ import { createServer } from "../../src/utils/createServer";
 import { Class} from "../../src/entities/class";
 import { createClass } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/testEntities";
+import { createAdminUser } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { getJoeAuthToken } from "../utils/testConfig";
+import { getAdminAuthToken } from "../utils/testConfig";
 
 const GET_CLASSES = `
     query getClasses {
@@ -62,9 +62,9 @@ describe("model.class", () => {
 
         context("when one", () => {
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, getJoeAuthToken());
-                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: getJoeAuthToken() });
+                const user = await createAdminUser(testClient);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, getAdminAuthToken());
+                await createClass(testClient, organization.organization_id,undefined, undefined, { authorization: getAdminAuthToken() });
             });
 
             it("should return an array containing one class", async () => {
@@ -103,9 +103,9 @@ describe("model.class", () => {
             let cls: Class;
 
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
-                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined, getJoeAuthToken());
-                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: getJoeAuthToken() });
+                const user = await createAdminUser(testClient);
+                const organization = await createOrganizationAndValidate(testClient, user.user_id, undefined, undefined, getAdminAuthToken());
+                cls = await createClass(testClient, organization.organization_id,undefined, undefined,  { authorization: getAdminAuthToken() });
             });
 
             it("should return the class associated with the specified ID", async () => {

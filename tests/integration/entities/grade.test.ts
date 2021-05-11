@@ -6,10 +6,10 @@ import { Grade } from "../../../src/entities/grade";
 import { ApolloServerTestClient, createTestClient } from "../../utils/createTestClient";
 import { addUserToOrganizationAndValidate, createRole } from "../../utils/operations/organizationOps";
 import { addRoleToOrganizationMembership } from "../../utils/operations/organizationMembershipOps";
-import { getBillyAuthToken, getJoeAuthToken } from "../../utils/testConfig";
+import { getNonAdminAuthToken, getAdminAuthToken } from "../../utils/testConfig";
 import { createGrade } from "../../factories/grade.factory";
 import { createServer } from "../../../src/utils/createServer";
-import { createUserJoe, createUserBilly } from "../../utils/testEntities";
+import { createAdminUser, createNonAdminUser } from "../../utils/testEntities";
 import { createOrganization } from "../../factories/organization.factory";
 import { createTestConnection } from "../../utils/testConnection";
 import { deleteGrade } from "../../utils/operations/gradeOps";
@@ -45,7 +45,7 @@ describe("Grade", () => {
         let userId: string;
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient)
+            user = await createAdminUser(testClient)
             userId = user.user_id
             org = createOrganization()
             await connection.manager.save(org);
@@ -68,13 +68,13 @@ describe("Grade", () => {
 
             context("and the user is not an admin", () => {
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    const otherUser = await createNonAdminUser(testClient);
                     otherUserId = otherUser.user_id
                 });
 
                 context("and does not belong to the organization from the grade", () => {
                     it("cannot find the grade", async () => {
-                        const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getBillyAuthToken() })
+                        const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() })
 
                         expect(gqlBool).to.be.undefined
                     });
@@ -82,15 +82,15 @@ describe("Grade", () => {
 
                 context("and belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                         roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getAdminAuthToken() });
                     });
 
                     context("with a non system grade", () => {
                         context("and has delete grade permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_grade_20443, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_grade_20443, { authorization: getAdminAuthToken() });
                             });
 
                             it("deletes the expected grade", async () => {
@@ -99,7 +99,7 @@ describe("Grade", () => {
                                 expect(dbGrade.status).to.eq(Status.ACTIVE)
                                 expect(dbGrade.deleted_at).to.be.null
 
-                                const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getBillyAuthToken() })
+                                const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() })
 
                                 expect(gqlBool).to.be.true
                                 dbGrade = await Grade.findOneOrFail(grade.id)
@@ -109,11 +109,11 @@ describe("Grade", () => {
 
                             context("with the grade already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                                    await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
                                 });
 
                                 it("cannot delete the grade", async () => {
-                                    const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getBillyAuthToken() })
+                                    const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() })
 
                                     expect(gqlBool).to.be.false
                                     const dbGrade = await Grade.findOneOrFail(grade.id)
@@ -125,7 +125,7 @@ describe("Grade", () => {
 
                         context("and does not have delete grade permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteGrade(testClient, grade.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbGrade = await Grade.findOneOrFail(grade.id)
 
@@ -143,11 +143,11 @@ describe("Grade", () => {
 
                         context("and has delete grade permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_grade_20443, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_grade_20443, { authorization: getAdminAuthToken() });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteGrade(testClient, grade.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbGrade = await Grade.findOneOrFail(grade.id)
 
@@ -158,7 +158,7 @@ describe("Grade", () => {
 
                         context("and does not have delete grade permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteGrade(testClient, grade.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbGrade = await Grade.findOneOrFail(grade.id)
 
@@ -178,7 +178,7 @@ describe("Grade", () => {
                         expect(dbGrade.status).to.eq(Status.ACTIVE)
                         expect(dbGrade.deleted_at).to.be.null
 
-                        const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                        const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
 
                         expect(gqlBool).to.be.true
                         dbGrade = await Grade.findOneOrFail(grade.id)
@@ -189,7 +189,7 @@ describe("Grade", () => {
 
                 context("and belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     context("with a non system grade", () => {
@@ -199,7 +199,7 @@ describe("Grade", () => {
                             expect(dbGrade.status).to.eq(Status.ACTIVE)
                             expect(dbGrade.deleted_at).to.be.null
 
-                            const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbGrade = await Grade.findOneOrFail(grade.id)
@@ -209,11 +209,11 @@ describe("Grade", () => {
 
                         context("with the grade already deleted", () => {
                             beforeEach(async () => {
-                                await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                                await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
                             });
 
                             it("cannot delete the grade", async () => {
-                                const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbGrade = await Grade.findOneOrFail(grade.id)
@@ -235,7 +235,7 @@ describe("Grade", () => {
                             expect(dbGrade.status).to.eq(Status.ACTIVE)
                             expect(dbGrade.deleted_at).to.be.null
 
-                            const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbGrade = await Grade.findOneOrFail(grade.id)
@@ -245,11 +245,11 @@ describe("Grade", () => {
 
                         context("with the grade already deleted", () => {
                             beforeEach(async () => {
-                                await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                                await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
                             });
 
                             it("cannot delete the grade", async () => {
-                                const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteGrade(testClient, grade.id, { authorization: getAdminAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbGrade = await Grade.findOneOrFail(grade.id)

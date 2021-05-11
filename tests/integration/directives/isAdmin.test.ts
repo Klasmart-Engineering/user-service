@@ -4,8 +4,8 @@ import { Connection } from "typeorm";
 import { ApolloServerTestClient, createTestClient } from "../../utils/createTestClient";
 import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
-import { createUserJoe, createUserBilly } from "../../utils/testEntities";
-import { getJoeAuthToken, getBillyAuthToken } from "../../utils/testConfig";
+import { createAdminUser, createNonAdminUser } from "../../utils/testEntities";
+import { getAdminAuthToken, getNonAdminAuthToken } from "../../utils/testConfig";
 import { getAllOrganizations } from "../../utils/operations/modelOps";
 import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { Model } from "../../../src/model";
@@ -35,7 +35,7 @@ describe("isAdmin", () => {
         let organization: Organization;
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, user.user_id);
         });
 
@@ -52,13 +52,13 @@ describe("isAdmin", () => {
             let otherOrganization: Organization
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient);
                 otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
             });
 
             context("and the user is an admin", () => {
                 it("returns all the organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
+                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getAdminAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
@@ -69,7 +69,7 @@ describe("isAdmin", () => {
 
             context("and the user is not an admin", () => {
                 it("returns only the organizations it belongs to", async () => {
-                    const gqlOrgs = await getAllOrganizations( testClient, { authorization: getBillyAuthToken() });
+                    const gqlOrgs = await getAllOrganizations( testClient, { authorization: getNonAdminAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([otherOrganization.organization_id]);
                 });

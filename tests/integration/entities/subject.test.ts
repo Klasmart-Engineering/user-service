@@ -5,11 +5,11 @@ import chaiAsPromised from "chai-as-promised";
 import { ApolloServerTestClient, createTestClient } from "../../utils/createTestClient";
 import { addUserToOrganizationAndValidate, createRole } from "../../utils/operations/organizationOps";
 import { addRoleToOrganizationMembership } from "../../utils/operations/organizationMembershipOps";
-import { getBillyAuthToken, getJoeAuthToken } from "../../utils/testConfig";
+import { getNonAdminAuthToken, getAdminAuthToken } from "../../utils/testConfig";
 import { Category } from "../../../src/entities/category";
 import { createCategory } from "../../factories/category.factory";
 import { createServer } from "../../../src/utils/createServer";
-import { createUserJoe, createUserBilly } from "../../utils/testEntities";
+import { createAdminUser, createNonAdminUser } from "../../utils/testEntities";
 import { createOrganization } from "../../factories/organization.factory";
 import { createSubcategory } from "../../factories/subcategory.factory";
 import { createSubject } from "../../factories/subject.factory";
@@ -63,8 +63,8 @@ describe("Subject", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = createOrganization()
             await organization.save()
             subcategory = createSubcategory(organization)
@@ -73,7 +73,7 @@ describe("Subject", () => {
             await category.save()
             subject = createSubject(organization, [category])
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
             await subject.save()
         });
 
@@ -93,7 +93,7 @@ describe("Subject", () => {
                 });
 
                 it("fails to list subjects in the organization", async () => {
-                    const fn = () => describeSubject(testClient, subject.id, { authorization: getBillyAuthToken() });
+                    const fn = () => describeSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -102,7 +102,7 @@ describe("Subject", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
@@ -113,7 +113,7 @@ describe("Subject", () => {
                         subcategories: [subcategory.id],
                         system: subject.system
                     }
-                    const gqlSubject = await describeSubject(testClient, subject.id, { authorization: getBillyAuthToken() });
+                    const gqlSubject = await describeSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() });
                     const gqlSubjectDetails = await subjectInfo(gqlSubject)
                     expect(subjectDetails).to.deep.eq(gqlSubjectDetails)
                 });
@@ -129,7 +129,7 @@ describe("Subject", () => {
         let userId: string;
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient)
+            user = await createAdminUser(testClient)
             userId = user.user_id
             org = createOrganization()
             await connection.manager.save(org);
@@ -152,7 +152,7 @@ describe("Subject", () => {
 
             context("and the user is not an admin", () => {
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    const otherUser = await createNonAdminUser(testClient);
                     otherUserId = otherUser.user_id
                 });
 
@@ -166,15 +166,15 @@ describe("Subject", () => {
 
                 context("and belongs to the organization from the subject", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                         roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getAdminAuthToken() });
                     });
 
                     context("with a non system subject", () => {
                         context("and has delete subject permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getAdminAuthToken() });
                             });
 
                             it("deletes the expected subject", async () => {
@@ -183,7 +183,7 @@ describe("Subject", () => {
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
                                 expect(dbSubject.deleted_at).to.be.null
 
-                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
+                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() })
 
                                 expect(gqlBool).to.be.true
                                 dbSubject = await Subject.findOneOrFail(subject.id)
@@ -193,11 +193,11 @@ describe("Subject", () => {
 
                             context("with the subject already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                                    await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
                                 });
 
                                 it("cannot delete the subject", async () => {
-                                    const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
+                                    const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() })
 
                                     expect(gqlBool).to.be.false
                                     const dbSubject = await Subject.findOneOrFail(subject.id)
@@ -209,7 +209,7 @@ describe("Subject", () => {
 
                         context("and does not have delete subject permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
@@ -226,11 +226,11 @@ describe("Subject", () => {
 
                         context("and has delete subject permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getAdminAuthToken() });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
@@ -240,7 +240,7 @@ describe("Subject", () => {
 
                         context("and does not have delete subject permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteSubject(testClient, subject.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
                                 expect(dbSubject.status).to.eq(Status.ACTIVE)
@@ -259,7 +259,7 @@ describe("Subject", () => {
                         expect(dbSubject.status).to.eq(Status.ACTIVE)
                         expect(dbSubject.deleted_at).to.be.null
 
-                        const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                        const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
 
                         expect(gqlBool).to.be.true
                         dbSubject = await Subject.findOneOrFail(subject.id)
@@ -270,7 +270,7 @@ describe("Subject", () => {
 
                 context("and belongs to the organization from the subject", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     context("with a non system subject", () => {
@@ -280,7 +280,7 @@ describe("Subject", () => {
                             expect(dbSubject.status).to.eq(Status.ACTIVE)
                             expect(dbSubject.deleted_at).to.be.null
 
-                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbSubject = await Subject.findOneOrFail(subject.id)
@@ -290,11 +290,11 @@ describe("Subject", () => {
 
                         context("with the subject already deleted", () => {
                             beforeEach(async () => {
-                                await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                                await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
                             });
 
                             it("cannot delete the subject", async () => {
-                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbSubject = await Subject.findOneOrFail(subject.id)
@@ -316,7 +316,7 @@ describe("Subject", () => {
                             expect(dbSubject.status).to.eq(Status.ACTIVE)
                             expect(dbSubject.deleted_at).to.be.null
 
-                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbSubject = await Subject.findOneOrFail(subject.id)
@@ -326,11 +326,11 @@ describe("Subject", () => {
 
                         context("with the subject already deleted", () => {
                             beforeEach(async () => {
-                                await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                                await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
                             });
 
                             it("cannot delete the subject", async () => {
-                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteSubject(testClient, subject.id, { authorization: getAdminAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbSubject = await Subject.findOneOrFail(subject.id)

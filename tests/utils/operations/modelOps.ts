@@ -8,7 +8,7 @@ import { Subcategory } from "../../../src/entities/subcategory";
 import { Subject } from "../../../src/entities/subject";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
-import { getJoeAuthToken } from "../testConfig";
+import { getAdminAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { Program } from "../../../src/entities/program";
@@ -296,7 +296,7 @@ export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user, { authorization: getJoeAuthToken() });
+    const gqlUser = await createUser(testClient, user, { authorization: getAdminAuthToken() });
     const dbUser = await User.findOneOrFail({ where: [{ email: user.email },{ phone: user.phone }]});
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);

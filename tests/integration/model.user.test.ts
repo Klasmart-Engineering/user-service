@@ -5,10 +5,10 @@ import { Model } from "../../src/model";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { getUser, getUsers, updateUser, createUserAndValidate } from "../utils/operations/modelOps";
-import { createUserJoe } from "../utils/testEntities";
+import { createAdminUser } from "../utils/testEntities";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import faker from "faker";
-import { getJoeAuthToken } from "../utils/testConfig";
+import { getAdminAuthToken } from "../utils/testConfig";
 
 describe("model.user", () => {
     let connection: Connection;
@@ -27,7 +27,7 @@ describe("model.user", () => {
 
     describe("newUser", () => {
         it("should create a new user", async () => {
-            const user = await createUserJoe(testClient);
+            const user = await createAdminUser(testClient);
             expect(user).to.exist;
         });
     });
@@ -37,7 +37,7 @@ describe("model.user", () => {
         let modifiedUser: any;
 
         before(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             modifiedUser = {
                 user_id: user.user_id,
                 given_name: faker.name.firstName(),
@@ -51,7 +51,7 @@ describe("model.user", () => {
         });
 
         it("should modify an existing user", async () => {
-            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: getJoeAuthToken() });
+            const gqlUser = await updateUser(testClient, modifiedUser, { authorization: getAdminAuthToken() });
             expect(gqlUser).to.exist;
             expect(gqlUser).to.include(modifiedUser);
             const dbUser = await User.findOneOrFail(user.user_id);
@@ -63,11 +63,11 @@ describe("model.user", () => {
         let user: User;
 
         before(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
         });
 
         it("should get users", async () => {
-            const gqlUsers = await getUsers(testClient, { authorization: getJoeAuthToken() });
+            const gqlUsers = await getUsers(testClient, { authorization: getAdminAuthToken() });
 
             expect(gqlUsers).to.exist;
             expect(gqlUsers.length).to.equal(1);
@@ -84,11 +84,11 @@ describe("model.user", () => {
         let user: User;
 
         before(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
         });
 
         it("should get user by ID", async () => {
-            const gqlUser = await getUser(testClient, user.user_id, { authorization: getJoeAuthToken() });
+            const gqlUser = await getUser(testClient, user.user_id, { authorization: getAdminAuthToken() });
             expect(gqlUser).to.exist;
             expect(user).to.include(gqlUser);
         });

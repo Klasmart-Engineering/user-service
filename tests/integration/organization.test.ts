@@ -13,14 +13,14 @@ import { Subject } from "../../src/entities/subject";
 import { Status } from "../../src/entities/status";
 import { createOrganizationAndValidate, userToPayload } from "../utils/operations/userOps";
 import { createUserAndValidate, myUsers } from "../utils/operations/modelOps";
-import { createUserJoe, createUserBilly } from "../utils/testEntities";
+import { createAdminUser, createNonAdminUser } from "../utils/testEntities";
 import { getSchoolMembershipsForOrganizationMembership, addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addUserToOrganizationAndValidate, createOrUpdateAgeRanges, createOrUpdateGrades, createOrUpdateSubcategories, createOrUpdateCategories, createOrUpdateSubjects, createSchool, createClass, createRole, inviteUser, editMembership, listAgeRanges, listGrades, listCategories, listSubcategories, listSubjects, deleteOrganization, listPrograms, createOrUpdatePrograms, updateOrganization } from "../utils/operations/organizationOps";
 import { grantPermission } from "../utils/operations/roleOps";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { addUserToSchool } from "../utils/operations/schoolOps";
 import { SchoolMembership } from "../../src/entities/schoolMembership";
-import { getJoeAuthToken, getBillyAuthToken, generateToken } from "../utils/testConfig";
+import { getAdminAuthToken, getNonAdminAuthToken, generateToken } from "../utils/testConfig";
 import { Organization } from "../../src/entities/organization";
 import { MEMBERSHIP_SHORTCODE_MAXLEN, OrganizationMembership } from "../../src/entities/organizationMembership";
 import { OrganizationOwnership } from "../../src/entities/organizationOwnership";
@@ -73,14 +73,14 @@ describe("organization", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id;
         });
 
         context("when organization is inactive", () => {
             beforeEach(async () => {
-                await deleteOrganization(testClient, organizationId, { authorization: getJoeAuthToken() });
+                await deleteOrganization(testClient, organizationId, { authorization: getAdminAuthToken() });
             });
 
             it("returns null and database entry is not modified", async () => {
@@ -97,11 +97,11 @@ describe("organization", () => {
             let authTokenOfUserMakingMod: string
 
             beforeEach(async () => {
-                idOfUserMakingMod = (await createUserBilly(testClient)).user_id;
-                authTokenOfUserMakingMod = getBillyAuthToken();
-                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: getJoeAuthToken() });
+                idOfUserMakingMod = (await createNonAdminUser(testClient)).user_id;
+                authTokenOfUserMakingMod = getNonAdminAuthToken();
+                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: getAdminAuthToken() });
                 const editOrgRole = await createRole(testClient, organizationId);
-                await grantPermission(testClient, editOrgRole.role_id, PermissionName.edit_an_organization_details_5, { authorization: getJoeAuthToken() });
+                await grantPermission(testClient, editOrgRole.role_id, PermissionName.edit_an_organization_details_5, { authorization: getAdminAuthToken() });
                 await addRoleToOrganizationMembership(testClient, idOfUserMakingMod, organization.organization_id, editOrgRole.role_id);
             });
 
@@ -116,11 +116,11 @@ describe("organization", () => {
 
         context("when not authorized within organization", () => {
             let idOfUserMakingMod: string;
-            const authTokenOfUserMakingMod = getBillyAuthToken();
+            const authTokenOfUserMakingMod = getNonAdminAuthToken();
 
             beforeEach(async () => {
-                idOfUserMakingMod = (await createUserBilly(testClient)).user_id;
-                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: getJoeAuthToken() });
+                idOfUserMakingMod = (await createNonAdminUser(testClient)).user_id;
+                await addUserToOrganizationAndValidate(testClient, idOfUserMakingMod, organizationId, { authorization: getAdminAuthToken() });
             });
 
             it("should throw a permission exception and not mutate the database entry", async () => {
@@ -134,7 +134,7 @@ describe("organization", () => {
 
     describe("findOrCreateUser", async () => {
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, user.user_id);
         });
 
@@ -172,7 +172,7 @@ describe("organization", () => {
             let organizationId: string;
             let schoolId: string;
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
+                user = await createAdminUser(testClient);
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
@@ -195,7 +195,7 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             userId = user.user_id
             organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id
@@ -203,7 +203,7 @@ describe("organization", () => {
 
         context("when class name is empty", () => {
             it("does not create the class", async () => {
-                const cls = await createClass(testClient, organizationId, "", undefined, { authorization: getJoeAuthToken() });
+                const cls = await createClass(testClient, organizationId, "", undefined, { authorization: getAdminAuthToken() });
 
                 expect(cls).to.be.null
                 const dbOrg = await Organization.findOneOrFail(organizationId);
@@ -215,7 +215,7 @@ describe("organization", () => {
 
         context("when class shortcode is undefined", () => {
             it("it creates the class", async () => {
-                const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getJoeAuthToken() });
+                const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getAdminAuthToken() });
 
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).not.to.be.undefined
@@ -228,7 +228,7 @@ describe("organization", () => {
 
         context("when class shortcode is empty", () => {
             it("it creates the class", async () => {
-                const cls = await createClass(testClient, organizationId, "Some Class 1", "", { authorization: getJoeAuthToken() });
+                const cls = await createClass(testClient, organizationId, "Some Class 1", "", { authorization: getAdminAuthToken() });
 
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).not.to.be.empty
@@ -242,7 +242,7 @@ describe("organization", () => {
         context("when class shortcode is not empty", () => {
             context("and the shortcode is valid", () => {
                 it("it creates the class", async () => {
-                    const cls = await createClass(testClient, organizationId, "Some Class 1", "BLOB2", { authorization: getJoeAuthToken() });
+                    const cls = await createClass(testClient, organizationId, "Some Class 1", "BLOB2", { authorization: getAdminAuthToken() });
 
                     expect(cls).not.to.be.null
                     expect(cls.shortcode).to.match(shortcode_re)
@@ -256,7 +256,7 @@ describe("organization", () => {
 
             context("and the shortcode is not valid", () => {
                 it("fails to create a class", async () => {
-                    const fn = () => createClass(testClient, organizationId, "Some Class 1", "very horrid", { authorization: getJoeAuthToken() });
+                    const fn = () => createClass(testClient, organizationId, "Some Class 1", "very horrid", { authorization: getAdminAuthToken() });
                     expect(fn()).to.be.rejected;
                 });
             });
@@ -264,7 +264,7 @@ describe("organization", () => {
 
         context("when class name is not empty", () => {
             it("creates the class", async () => {
-                const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getJoeAuthToken() });
+                const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getAdminAuthToken() });
 
                 expect(cls).not.to.be.null
                 expect(cls.shortcode).to.match(shortcode_re)
@@ -279,11 +279,11 @@ describe("organization", () => {
                 let oldClass: any;
 
                 beforeEach(async () => {
-                    oldClass = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getJoeAuthToken() });
+                    oldClass = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getAdminAuthToken() });
                 });
 
                 it("does not create the class", async () => {
-                    const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getJoeAuthToken() });
+                    const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getAdminAuthToken() });
 
                     expect(cls).to.be.null
                     const dbOrg = await Organization.findOneOrFail(organizationId);
@@ -296,15 +296,15 @@ describe("organization", () => {
                 let otherClass: any;
 
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    const otherUser = await createNonAdminUser(testClient);
                     const otherUserId = otherUser.user_id
                     const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
                     const otherOrganizationId = otherOrganization.organization_id
-                    otherClass = await createClass(testClient, otherOrganizationId, "Some Class 1", undefined, { authorization: getBillyAuthToken() });
+                    otherClass = await createClass(testClient, otherOrganizationId, "Some Class 1", undefined, { authorization: getNonAdminAuthToken() });
                 });
 
                 it("creates the class", async () => {
-                    const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getJoeAuthToken() });
+                    const cls = await createClass(testClient, organizationId, "Some Class 1", undefined, { authorization: getAdminAuthToken() });
 
                     expect(cls).not.to.be.null
                     const dbOrg = await Organization.findOneOrFail(organizationId);
@@ -317,11 +317,11 @@ describe("organization", () => {
 
                 context("and the organization is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteOrganization(testClient, organization.organization_id, { authorization: getJoeAuthToken() });
+                        await deleteOrganization(testClient, organization.organization_id, { authorization: getAdminAuthToken() });
                     });
 
                     it("fails to create class in the organization", async () => {
-                        const cls = await createClass(testClient, organizationId, "", undefined, { authorization: getJoeAuthToken() });
+                        const cls = await createClass(testClient, organizationId, "", undefined, { authorization: getAdminAuthToken() });
 
                         expect(cls).to.be.null
                         const dbOrg = await Organization.findOneOrFail(organizationId);
@@ -340,7 +340,7 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             userId = user.user_id
             organization = await createOrganizationAndValidate(testClient, user.user_id);
             organizationId = organization.organization_id
@@ -348,7 +348,7 @@ describe("organization", () => {
 
         context("when school name is empty", () => {
             it("does not create the school", async () => {
-                const school = await createSchool(testClient, organizationId, "", undefined, { authorization: getJoeAuthToken() });
+                const school = await createSchool(testClient, organizationId, "", undefined, { authorization: getAdminAuthToken() });
 
                 expect(school).to.be.null
                 const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -360,7 +360,7 @@ describe("organization", () => {
 
         context("when school shortcode is undefined", () => {
             it("creates the school", async () => {
-                const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getAdminAuthToken() });
 
                 expect(school).not.to.be.null
                 expect(school.shortcode).not.to.be.undefined
@@ -373,7 +373,7 @@ describe("organization", () => {
 
         context("when school shortcode is empty", () => {
             it("creates the school", async () => {
-                const school = await createSchool(testClient, organizationId, "some school 1", "", { authorization: getJoeAuthToken() });
+                const school = await createSchool(testClient, organizationId, "some school 1", "", { authorization: getAdminAuthToken() });
 
                 expect(school).not.to.be.null
                 expect(school.shortcode).not.to.be.empty
@@ -387,7 +387,7 @@ describe("organization", () => {
         context("when school shortcode is not empty", () => {
             context("and the shortcode is valid", () => {
                 it("creates the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", "myshort1", { authorization: getJoeAuthToken() });
+                    const school = await createSchool(testClient, organizationId, "some school 1", "myshort1", { authorization: getAdminAuthToken() });
 
                     expect(school).not.to.be.null
                     expect(school.shortcode).to.equal("MYSHORT1")
@@ -400,7 +400,7 @@ describe("organization", () => {
 
             context("and the shortcode is not valid", () => {
                 it("fails to create the school", async () => {
-                    const fn = () => createSchool(testClient, organizationId, "some school 1", "myverywrong1", { authorization: getJoeAuthToken() });
+                    const fn = () => createSchool(testClient, organizationId, "some school 1", "myverywrong1", { authorization: getAdminAuthToken() });
                     expect(fn()).to.be.rejected;
                 });
             });
@@ -408,7 +408,7 @@ describe("organization", () => {
 
         context("when school name is not empty", () => {
             it("creates the school", async () => {
-                const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getAdminAuthToken() });
 
                 expect(school).not.to.be.null
                 expect(school.shortcode?.length).to.equal(10)
@@ -423,11 +423,11 @@ describe("organization", () => {
                 let oldSchool: any;
 
                 beforeEach(async () => {
-                    oldSchool = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                    oldSchool = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getAdminAuthToken() });
                 });
 
                 it("does not create the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getAdminAuthToken() });
 
                     expect(school).to.be.null
                     const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -441,15 +441,15 @@ describe("organization", () => {
                 let otherSchool: any;
 
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    const otherUser = await createNonAdminUser(testClient);
                     const otherUserId = otherUser.user_id
                     const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
                     const otherOrganizationId = otherOrganization.organization_id
-                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", undefined, { authorization: getBillyAuthToken() });
+                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", undefined, { authorization: getNonAdminAuthToken() });
                 });
 
                 it("creates the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                    const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getAdminAuthToken() });
 
                     expect(school).not.to.be.null
                     const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -462,11 +462,11 @@ describe("organization", () => {
 
                 context("and the organization is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteOrganization(testClient, organization.organization_id, { authorization: getJoeAuthToken() });
+                        await deleteOrganization(testClient, organization.organization_id, { authorization: getAdminAuthToken() });
                     });
 
                     it("fails to create school in the organization", async () => {
-                        const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getJoeAuthToken() });
+                        const school = await createSchool(testClient, organizationId, "some school 1", undefined, { authorization: getAdminAuthToken() });
 
                         expect(school).to.be.null
                         const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -479,15 +479,15 @@ describe("organization", () => {
                 let otherSchool: any;
 
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    const otherUser = await createNonAdminUser(testClient);
                     const otherUserId = otherUser.user_id
                     const otherOrganization = await createOrganizationAndValidate(testClient, otherUserId, "Other Organization");
                     const otherOrganizationId = otherOrganization.organization_id
-                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", "ASHORT1", { authorization: getBillyAuthToken() });
+                    otherSchool = await createSchool(testClient, otherOrganizationId, "some school 1", "ASHORT1", { authorization: getNonAdminAuthToken() });
                 });
 
                 it("creates the school", async () => {
-                    const school = await createSchool(testClient, organizationId, "some school 2", "ASHORT1", { authorization: getJoeAuthToken() });
+                    const school = await createSchool(testClient, organizationId, "some school 2", "ASHORT1", { authorization: getAdminAuthToken() });
 
                     expect(school).not.to.be.null
                     const dbSchool = await Organization.findOneOrFail(organizationId);
@@ -508,13 +508,13 @@ describe("organization", () => {
             let organizationId: string;
             let schoolId: string;
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
+                user = await createAdminUser(testClient);
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
-                schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
-                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
+                await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getAdminAuthToken() });
             });
 
             it("should set the school in the schools membership for the user", async () => {
@@ -540,13 +540,13 @@ describe("organization", () => {
             let roleId: string
 
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
+                user = await createAdminUser(testClient);
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
-                schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
             });
 
             it("should create the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
@@ -627,15 +627,15 @@ describe("organization", () => {
             let oldSchoolId: string;
             let roleId: string
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
+                user = await createAdminUser(testClient);
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getJoeAuthToken() })).school_id;
-                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeAuthToken() });
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getAdminAuthToken() })).school_id;
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getAdminAuthToken() });
             });
             it("should find the user, make the user a member of the organization and set the school in the schools membership for the user", async () => {
                 let email = user.email
@@ -766,13 +766,13 @@ describe("organization", () => {
                 });
             });
             it("should attempt to assign a role for one organizion to another and not succeed", async () => {
-                let user2 = await createUserBilly(testClient);
+                let user2 = await createNonAdminUser(testClient);
                 let userId2 = user2.user_id
-                let organization2 = await createOrganizationAndValidate(testClient, userId2, "otherOrgName", undefined, getBillyAuthToken());
+                let organization2 = await createOrganizationAndValidate(testClient, userId2, "otherOrgName", undefined, getNonAdminAuthToken());
                 let organizationId2 = organization2.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id
-                let role2 = await createRole(testClient, organizationId2, "student", "student role", getBillyAuthToken());
+                let role2 = await createRole(testClient, organizationId2, "student", "student role", getNonAdminAuthToken());
                 let role2id = role2.role_id
                 let email = user.email
                 let given = user.given_name
@@ -797,20 +797,20 @@ describe("organization", () => {
             let oldSchoolId: string;
             let roleId: string
             let otherUserId: string
-            let joeToken: string
+            let adminToken: string
 
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
-                joeToken = generateToken(userToPayload(user))
-                otherUserId = (await createUserBilly(testClient)).user_id
+                user = await createAdminUser(testClient);
+                adminToken = generateToken(userToPayload(user))
+                otherUserId = (await createNonAdminUser(testClient)).user_id
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: joeToken })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: joeToken })).school_id;
-                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: joeToken });
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: adminToken })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: adminToken })).school_id;
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: adminToken });
             });
 
             it("creates the user when email provided", async () => {
@@ -832,7 +832,7 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(schoolId),
                     new Array(roleId),
-                    { authorization: joeToken },
+                    { authorization: adminToken },
                 )
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
@@ -878,7 +878,7 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(schoolId),
                     new Array(roleId),
-                    { authorization: joeToken }
+                    { authorization: adminToken }
                 )
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
@@ -921,7 +921,7 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(schoolId),
                     new Array(roleId),
-                    { authorization: joeToken }
+                    { authorization: adminToken }
                 )
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
@@ -951,7 +951,7 @@ describe("organization", () => {
                 let phone = "+44207344141"
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -978,7 +978,7 @@ describe("organization", () => {
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1005,7 +1005,7 @@ describe("organization", () => {
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: joeToken })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: adminToken })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1045,7 +1045,7 @@ describe("organization", () => {
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "RANGER13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: joeToken })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "RANGER13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: adminToken })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1062,7 +1062,7 @@ describe("organization", () => {
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: joeToken })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: adminToken })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1079,7 +1079,7 @@ describe("organization", () => {
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger 13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: joeToken })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", "ranger 13", new Array(roleId), Array(schoolId), new Array(roleId), { authorization: adminToken })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1107,7 +1107,7 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(schoolId),
                     new Array(roleId),
-                    { authorization: joeToken },
+                    { authorization: adminToken },
                     alternate_email, alternate_phone
                 )
                 let newUser = gqlresult?.user
@@ -1120,7 +1120,7 @@ describe("organization", () => {
 
             context("and the organization is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteOrganization(testClient, organization.organization_id, { authorization: getJoeAuthToken() });
+                    await deleteOrganization(testClient, organization.organization_id, { authorization: getAdminAuthToken() });
                 });
 
                 it("fails to invite user to the organization", async () => {
@@ -1128,7 +1128,7 @@ describe("organization", () => {
                     let phone = undefined
                     let given = "Bob"
                     let family = "Smith"
-                    let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: joeToken })
+                    let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: adminToken })
                     expect(gqlresult).to.be.null
 
                     const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
@@ -1147,25 +1147,25 @@ describe("organization", () => {
             let roleId: string
             let existingUser: User
             let newSchoolId: string
-            let joeToken: string
+            let adminToken: string
 
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
-                joeToken = generateToken(userToPayload(user))
+                user = await createAdminUser(testClient);
+                adminToken = generateToken(userToPayload(user))
                 userId = user.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getJoeAuthToken() })).school_id;
-                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeAuthToken() });
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getAdminAuthToken() })).school_id;
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getAdminAuthToken() });
                 let email = "bob@nowhere.com"
                 let phone = undefined
                 let given = "Bob"
                 let family = "Smith"
                 let dateOfBirth = "02-1978"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: joeToken })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Bunter", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: adminToken })
                 existingUser = gqlresult?.user
                 expect(existingUser).to.exist
                 expect(existingUser?.email).to.equal(email)
@@ -1179,7 +1179,7 @@ describe("organization", () => {
                 let given = "Joanne"
                 let family = existingUser.family_name
                 let dateOfBirth = "04-2018"
-                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Jo", "Female", undefined, new Array(roleId), Array(newSchoolId), new Array(roleId), { authorization: joeToken })
+                let gqlresult = await inviteUser(testClient, organizationId, email, phone, given, family, dateOfBirth, "Jo", "Female", undefined, new Array(roleId), Array(newSchoolId), new Array(roleId), { authorization: adminToken })
                 let newUser = gqlresult?.user
                 let membership = gqlresult?.membership
                 let schoolmemberships = gqlresult?.schoolMemberships
@@ -1221,17 +1221,17 @@ describe("organization", () => {
             let otherUser: User
 
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
+                user = await createAdminUser(testClient);
                 userId = user.user_id
-                otherUser = await createUserBilly(testClient)
+                otherUser = await createNonAdminUser(testClient)
                 otherUserId = otherUser.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
                 role = await createRole(testClient, organization.organization_id, "student");
                 roleId = role.role_id
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getJoeAuthToken() })).school_id;
-                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeAuthToken() });
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getAdminAuthToken() })).school_id;
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getAdminAuthToken() });
             });
 
             it("edits user when email provided", async () => {
@@ -1248,7 +1248,7 @@ describe("organization", () => {
 
                 bob = await createUserAndValidate(testClient, bob)
 
-                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -1280,7 +1280,7 @@ describe("organization", () => {
                 } as User
                 bob = await createUserAndValidate(testClient, bob)
 
-                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -1311,7 +1311,7 @@ describe("organization", () => {
                 } as User
                 bob = await createUserAndValidate(testClient, bob)
 
-                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -1340,7 +1340,7 @@ describe("organization", () => {
                     phone: phone,
                 } as User
                 bob = await createUserAndValidate(testClient, bob)
-                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -1369,7 +1369,7 @@ describe("organization", () => {
                     phone: email,
                 } as User
                 bob = await createUserAndValidate(testClient, bob)
-                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await editMembership(testClient, organizationId, bob.user_id, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult.user
                 let membership = gqlresult.membership
                 let schoolmemberships = gqlresult.schoolMemberships
@@ -1405,7 +1405,7 @@ describe("organization", () => {
                     organizationId, bob.user_id,
                     email, undefined, undefined, undefined,
                     undefined, undefined, undefined, undefined,
-                    new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() }, undefined,
+                    new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() }, undefined,
                     alternate_email, alternate_phone)
                 let newUser = gqlresult.user
                 expect(newUser).to.exist
@@ -1418,7 +1418,7 @@ describe("organization", () => {
 
             context("and the organization is marked as inactive", () => {
                 beforeEach(async () => {
-                    await deleteOrganization(testClient, organization.organization_id, { authorization: getJoeAuthToken() });
+                    await deleteOrganization(testClient, organization.organization_id, { authorization: getAdminAuthToken() });
                 });
 
                 it("fails to edit membership on the organization", async () => {
@@ -1432,7 +1432,7 @@ describe("organization", () => {
                         phone: phone,
                     } as User
                     bob = await createUserAndValidate(testClient, bob)
-                    let gqlresult = await editMembership(testClient, organizationId, undefined, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                    let gqlresult = await editMembership(testClient, organizationId, undefined, email, phone, given, family, undefined, "Buster", "Male", undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                     expect(gqlresult).to.be.null
                 });
             });
@@ -1451,9 +1451,9 @@ describe("organization", () => {
             let idLessToken: string
 
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
+                user = await createAdminUser(testClient);
                 userId = user.user_id
-                otherUser = await createUserBilly(testClient)
+                otherUser = await createNonAdminUser(testClient)
                 otherUserId = otherUser.user_id
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
                 organizationId = organization.organization_id
@@ -1461,13 +1461,13 @@ describe("organization", () => {
                 roleId = role.role_id
                 const editorRole = await createRole(testClient, organization.organization_id, "editor");
                 editorRoleId = editorRole.role_id
-                await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getJoeAuthToken() });
-                await grantPermission(testClient, editorRoleId, PermissionName.edit_users_40330, { authorization: getJoeAuthToken() });
-                await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, editorRoleId, { authorization: getJoeAuthToken() });
-                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
-                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getJoeAuthToken() })).school_id;
-                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getJoeAuthToken() });
+                await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
+                await addRoleToOrganizationMembership(testClient, userId, organizationId, roleId, { authorization: getAdminAuthToken() });
+                await grantPermission(testClient, editorRoleId, PermissionName.edit_users_40330, { authorization: getAdminAuthToken() });
+                await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, editorRoleId, { authorization: getAdminAuthToken() });
+                oldSchoolId = (await createSchool(testClient, organizationId, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getAdminAuthToken() })).school_id;
+                await addUserToSchool(testClient, userId, oldSchoolId, { authorization: getAdminAuthToken() });
                 const idLess = {
                     email: otherUser.email,
                     given_name: otherUser.given_name,
@@ -1508,17 +1508,17 @@ describe("organization", () => {
             let email: string
 
             beforeEach(async () => {
-                user = await createUserJoe(testClient);
-                otherUserId = (await createUserBilly(testClient)).user_id
+                user = await createAdminUser(testClient);
+                otherUserId = (await createNonAdminUser(testClient)).user_id
                 userId = user.user_id
                 let organization1 = await createOrganizationAndValidate(testClient, user.user_id);
                 let organization1Id = organization1.organization_id
                 role = await Role.findOneOrFail({ where: { role_name: 'Student' } })
                 roleId = role.role_id
-                let school1Id = (await createSchool(testClient, organization1Id, "school 1", undefined, { authorization: getJoeAuthToken() })).school_id;
-                organization = await createOrganizationAndValidate(testClient, otherUserId,"other Org", "OTHERORG", getBillyAuthToken());
+                let school1Id = (await createSchool(testClient, organization1Id, "school 1", undefined, { authorization: getAdminAuthToken() })).school_id;
+                organization = await createOrganizationAndValidate(testClient, otherUserId,"other Org", "OTHERORG", getNonAdminAuthToken());
                 organizationId = organization.organization_id
-                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getBillyAuthToken() })).school_id;
+                schoolId = (await createSchool(testClient, organizationId, "school 2", undefined, { authorization: getNonAdminAuthToken() })).school_id;
 
                 email = "bob@nowhere.com"
                 let phone = undefined
@@ -1538,7 +1538,7 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(school1Id),
                     new Array(roleId),
-                    { authorization: getJoeAuthToken() },
+                    { authorization: getAdminAuthToken() },
                 )
                 let createdUser = gqlresult?.user
                 createdUser1Id = createdUser.user_id
@@ -1555,13 +1555,13 @@ describe("organization", () => {
                     new Array(roleId),
                     Array(school1Id),
                     new Array(roleId),
-                    { authorization: getJoeAuthToken() },
+                    { authorization: getAdminAuthToken() },
                 )
                 createdUser = gqlresult?.user
                 createdUser2Id = createdUser.user_id
             });
             it("joins the correct user to another organization", async () => {
-                let gqlresult = await editMembership(testClient, organizationId, createdUser2Id, email, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getJoeAuthToken() })
+                let gqlresult = await editMembership(testClient, organizationId, createdUser2Id, email, undefined, undefined, undefined, undefined, undefined, undefined, undefined, new Array(roleId), Array(schoolId), new Array(roleId), { authorization: getAdminAuthToken() })
                 let newUser = gqlresult.user
                 expect(newUser.user_id).to.eq(createdUser2Id)
                 expect(newUser.username).to.eq("Bunty")
@@ -1575,12 +1575,12 @@ describe("organization", () => {
         let organization: Organization;
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
-            const school = await createSchool(testClient, organizationId, "school", undefined, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
+            const school = await createSchool(testClient, organizationId, "school", undefined, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -1601,7 +1601,7 @@ describe("organization", () => {
                 });
 
                 it("fails to delete the organization", async () => {
-                    const fn = () => deleteOrganization(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => deleteOrganization(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
                     expect(fn()).to.be.rejected;
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     expect(dbOrganization.status).to.eq(Status.ACTIVE);
@@ -1612,12 +1612,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.delete_organization_10440, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.delete_organization_10440, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("deletes the organization", async () => {
-                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
                     expect(gqlOrganization).to.be.true;
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     expect(dbOrganization.status).to.eq(Status.INACTIVE);
@@ -1625,7 +1625,7 @@ describe("organization", () => {
                 });
 
                 it("deletes the organization memberships", async () => {
-                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
                     expect(gqlOrganization).to.be.true;
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     const dbOrganizationMemberships = await OrganizationMembership.find({ where: { organization_id: organization.organization_id } });
@@ -1635,7 +1635,7 @@ describe("organization", () => {
                 });
 
                 it("deletes the organization schools", async () => {
-                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
                     expect(gqlOrganization).to.be.true;
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     const dbSchools = await dbOrganization.schools || []
@@ -1646,7 +1646,7 @@ describe("organization", () => {
                 });
 
                 it("deletes the organization ownership", async () => {
-                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
                     expect(gqlOrganization).to.be.true;
                     const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                     const dbOrganizationOwnership = await OrganizationOwnership.findOneOrFail({ where: { organization_id: organization.organization_id } });
@@ -1655,11 +1655,11 @@ describe("organization", () => {
 
                 context("and the organization is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteOrganization(testClient, organization.organization_id, { authorization: getJoeAuthToken() });
+                        await deleteOrganization(testClient, organization.organization_id, { authorization: getAdminAuthToken() });
                     });
 
                     it("fails to delete the organization", async () => {
-                        const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                        const gqlOrganization = await deleteOrganization(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
                         expect(gqlOrganization).to.be.null;
                         const dbOrganization = await Organization.findOneOrFail(organization.organization_id);
                         expect(dbOrganization.status).to.eq(Status.INACTIVE);
@@ -1688,12 +1688,12 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             ageRange = createAgeRange(organization)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -1715,7 +1715,7 @@ describe("organization", () => {
                 let newAgeRange: any;
 
                 beforeEach(async () => {
-                    const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                    const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                     newAgeRange = {
                         ...ageRangeInfo(ageRange),
@@ -1749,7 +1749,7 @@ describe("organization", () => {
 
                 context("and it tries to create new age ranges", () => {
                     it("fails to create age ranges in the organization", async () => {
-                        const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbAgeRanges = await AgeRange.find({
@@ -1772,7 +1772,7 @@ describe("organization", () => {
                     let newAgeRange: any;
 
                     beforeEach(async () => {
-                        const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                        const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                         newAgeRange = {
                             ...ageRangeInfo(ageRange),
@@ -1782,7 +1782,7 @@ describe("organization", () => {
 
 
                     it("fails to update age ranges in the organization", async () => {
-                        const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbAgeRanges = await AgeRange.find({
@@ -1801,14 +1801,14 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_age_range_20222, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_age_range_20332, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.create_age_range_20222, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_age_range_20332, { authorization: getAdminAuthToken() });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                     });
 
                     context("and it tries to create new age ranges", () => {
                         it("creates all the age ranges in the organization", async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getBillyAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getNonAdminAuthToken() });
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
@@ -1825,7 +1825,7 @@ describe("organization", () => {
                         let newAgeRange: any;
 
                         beforeEach(async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                             newAgeRange = {
                                 ...ageRangeInfo(ageRange),
@@ -1835,7 +1835,7 @@ describe("organization", () => {
 
 
                         it("updates the expected age ranges in the organization", async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getBillyAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getNonAdminAuthToken() });
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
@@ -1853,7 +1853,7 @@ describe("organization", () => {
 
                         beforeEach(async () => {
                             ageRange.system = true
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                             newAgeRange = {
                                 ...ageRangeInfo(ageRange),
@@ -1863,7 +1863,7 @@ describe("organization", () => {
 
 
                         it("fails to update age ranges in the organization", async () => {
-                            const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getBillyAuthToken() });
+                            const fn = () => createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getNonAdminAuthToken() });
 
                             expect(fn()).to.be.rejected;
                             const dbAgeRanges = await AgeRange.find({
@@ -1883,7 +1883,7 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     context("and it tries to create new age ranges", () => {
                         it("creates all the age ranges in the organization", async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
@@ -1900,7 +1900,7 @@ describe("organization", () => {
                         let newAgeRange: any;
 
                         beforeEach(async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                             newAgeRange = {
                                 ...ageRangeInfo(ageRange),
@@ -1910,7 +1910,7 @@ describe("organization", () => {
 
 
                         it("updates the expected age ranges in the organization", async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getAdminAuthToken() });
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
@@ -1928,7 +1928,7 @@ describe("organization", () => {
 
                         beforeEach(async () => {
                             ageRange.system = true
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [ageRangeInfo(ageRange)], { authorization: getAdminAuthToken() });
 
                             newAgeRange = {
                                 ...ageRangeInfo(ageRange),
@@ -1938,7 +1938,7 @@ describe("organization", () => {
 
 
                         it("updates the expected age ranges in the organization", async () => {
-                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getJoeAuthToken() });
+                            const gqlAgeRanges = await createOrUpdateAgeRanges(testClient, organization.organization_id, [newAgeRange], { authorization: getAdminAuthToken() });
 
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
@@ -1973,12 +1973,12 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             ageRange = createAgeRange(organization)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
             await ageRange.save()
         });
 
@@ -2004,7 +2004,7 @@ describe("organization", () => {
                 });
 
                 it("fails to list age ranges in the organization", async () => {
-                    const fn = () => listAgeRanges(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => listAgeRanges(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                     const dbAgeRanges = await AgeRange.find({
@@ -2019,12 +2019,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_age_range_20112, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_age_range_20112, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the age ranges in the organization", async () => {
-                    const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     const dbAgeRanges = await AgeRange.find({
                         where: [
@@ -2061,8 +2061,8 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             progressFromGrade = createGrade(organization)
             await progressFromGrade.save()
@@ -2072,7 +2072,7 @@ describe("organization", () => {
             progressToGradeDetails = await gradeInfo(progressToGrade)
             grade = createGrade(organization, progressFromGrade, progressToGrade)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -2099,7 +2099,7 @@ describe("organization", () => {
 
                 beforeEach(async () => {
                     gradeDetails = await gradeInfo(grade)
-                    const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                    const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                     newGrade = {
                         ...gradeDetails,
@@ -2134,7 +2134,7 @@ describe("organization", () => {
                     it("fails to create grades in the organization", async () => {
                         const gradeDetails = await gradeInfo(grade)
 
-                        const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbGrades = await Grade.find({
@@ -2160,7 +2160,7 @@ describe("organization", () => {
 
                     beforeEach(async () => {
                         gradeDetails = await gradeInfo(grade)
-                        const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                        const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                         newGrade = {
                             ...gradeDetails,
@@ -2170,7 +2170,7 @@ describe("organization", () => {
 
 
                     it("fails to update grades in the organization", async () => {
-                        const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbGrades = await Grade.find({
@@ -2190,15 +2190,15 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_grade_20223, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_grade_20333, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.create_grade_20223, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_grade_20333, { authorization: getAdminAuthToken() });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                         gradeDetails = await gradeInfo(grade)
                     });
 
                     context("and it tries to create new grades", () => {
                         it("creates all the grades in the organization", async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getBillyAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getNonAdminAuthToken() });
 
                             const dbGrades = await Grade.find({
                                 where: {
@@ -2216,7 +2216,7 @@ describe("organization", () => {
                         let newGradeDetails: any;
 
                         beforeEach(async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                             newGrade = {
                                 ...gradeDetails,
@@ -2231,7 +2231,7 @@ describe("organization", () => {
 
 
                         it("updates the expected grades in the organization", async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getBillyAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getNonAdminAuthToken() });
 
                             const dbGrades = await Grade.find({
                                 where: {
@@ -2248,7 +2248,7 @@ describe("organization", () => {
 
                         beforeEach(async () => {
                             gradeDetails.system = true
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                             newGrade = {
                                 ...gradeDetails,
@@ -2258,7 +2258,7 @@ describe("organization", () => {
 
 
                         it("fails to update age ranges in the organization", async () => {
-                            const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getBillyAuthToken() });
+                            const fn = () => createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getNonAdminAuthToken() });
 
                             expect(fn()).to.be.rejected;
                             const dbGrades = await Grade.find({
@@ -2283,7 +2283,7 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     context("and it tries to create grades", () => {
                         it("creates all the grades in the organization", async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                             const dbGrades = await Grade.find({
                                 where: {
@@ -2301,7 +2301,7 @@ describe("organization", () => {
                         let newGradeDetails: any;
 
                         beforeEach(async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                             newGrade = {
                                 ...gradeDetails,
@@ -2316,7 +2316,7 @@ describe("organization", () => {
 
 
                         it("updates the expected grades in the organization", async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getAdminAuthToken() });
 
                             const dbGrades = await Grade.find({
                                 where: {
@@ -2334,7 +2334,7 @@ describe("organization", () => {
 
                         beforeEach(async () => {
                             gradeDetails.system = true
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [gradeDetails], { authorization: getAdminAuthToken() });
 
                             newGrade = {
                                 ...gradeDetails,
@@ -2349,7 +2349,7 @@ describe("organization", () => {
 
 
                         it("updates the expected grades in the organization", async () => {
-                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getJoeAuthToken() });
+                            const gqlGrades = await createOrUpdateGrades(testClient, organization.organization_id, [newGrade], { authorization: getAdminAuthToken() });
 
                             const dbGrades = await Grade.find({
                                 where: {
@@ -2386,8 +2386,8 @@ describe("organization", () => {
         }
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             progressFromGrade = createGrade(organization)
             await progressFromGrade.save()
@@ -2399,7 +2399,7 @@ describe("organization", () => {
             await grade.save()
             gradeDetails = await gradeInfo(grade)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -2425,7 +2425,7 @@ describe("organization", () => {
                 });
 
                 it("fails to list grades in the organization", async () => {
-                    const fn = () => listGrades(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => listGrades(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                     const dbGrades = await Grade.find({
@@ -2441,12 +2441,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_grades_20113, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_grades_20113, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the grades in the organization", async () => {
-                    const gqlGrades = await listGrades(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlGrades = await listGrades(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     const gqlGradesDetails = await Promise.all(gqlGrades.map(gradeInfo))
                     expect(gqlGradesDetails).to.deep.eq([progressFromGradeDetails, progressToGradeDetails, gradeDetails])
@@ -2470,12 +2470,12 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             subcategory = createSubcategory(organization)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -2495,7 +2495,7 @@ describe("organization", () => {
 
             context("and it tries to upate existing non system subcategories", () => {
                 beforeEach(async () => {
-                    const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                    const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                     newSubcategory = {
                         ...subcategoryInfo(subcategory),
@@ -2529,7 +2529,7 @@ describe("organization", () => {
 
                 context("and it tries to create new subcategories", () => {
                     it("fails to create subcstegories in the organization", async () => {
-                        const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbSubcategories = await Subcategory.find({
@@ -2550,7 +2550,7 @@ describe("organization", () => {
 
                 context("and it tries to upate existing non system subcategories", () => {
                     beforeEach(async () => {
-                        const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                        const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                         newSubcategory = {
                             ...subcategoryInfo(subcategory),
@@ -2560,7 +2560,7 @@ describe("organization", () => {
 
 
                     it("fails to update subcategories in the organization", async () => {
-                        const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbSubcategories = await Subcategory.find({
@@ -2579,14 +2579,14 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getAdminAuthToken() });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                     });
 
                     context("and it tries to create new subcategories", () => {
                         it("creates all the subcategories in the organization", async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getBillyAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getNonAdminAuthToken() });
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
@@ -2601,7 +2601,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system subcategories", () => {
                         beforeEach(async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                             newSubcategory = {
                                 ...subcategoryInfo(subcategory),
@@ -2611,7 +2611,7 @@ describe("organization", () => {
 
 
                         it("updates the expected subcategories in the organization", async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getBillyAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getNonAdminAuthToken() });
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
@@ -2627,7 +2627,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system subcategories", () => {
                         beforeEach(async () => {
                             subcategory.system = true
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                             newSubcategory = {
                                 ...subcategoryInfo(subcategory),
@@ -2637,7 +2637,7 @@ describe("organization", () => {
 
 
                         it("fails to update subcategories in the organization", async () => {
-                            const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getBillyAuthToken() });
+                            const fn = () => createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getNonAdminAuthToken() });
 
                             expect(fn()).to.be.rejected;
                             const dbSubcategories = await Subcategory.find({
@@ -2657,7 +2657,7 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     context("and it tries to create new subcategories", () => {
                         it("creates all the subcategories in the organization", async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
@@ -2672,7 +2672,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system subcategories", () => {
                         beforeEach(async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                             newSubcategory = {
                                 ...subcategoryInfo(subcategory),
@@ -2682,7 +2682,7 @@ describe("organization", () => {
 
 
                         it("updates the expected subcategories in the organization", async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getAdminAuthToken() });
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
@@ -2698,7 +2698,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system subcategories", () => {
                         beforeEach(async () => {
                             subcategory.system = true
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [subcategoryInfo(subcategory)], { authorization: getAdminAuthToken() });
 
                             newSubcategory = {
                                 ...subcategoryInfo(subcategory),
@@ -2708,7 +2708,7 @@ describe("organization", () => {
 
 
                         it("updates the expected subcategories in the organization", async () => {
-                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getJoeAuthToken() });
+                            const gqlSubcategories = await createOrUpdateSubcategories(testClient, organization.organization_id, [newSubcategory], { authorization: getAdminAuthToken() });
 
                             const dbSubcategories = await Subcategory.find({
                                 where: {
@@ -2740,12 +2740,12 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             subcategory = createSubcategory(organization)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
             await subcategory.save()
         });
 
@@ -2771,7 +2771,7 @@ describe("organization", () => {
                 });
 
                 it("fails to list subcategories in the organization", async () => {
-                    const fn = () => listSubcategories(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => listSubcategories(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                     const dbSubcategories = await Subcategory.find({
@@ -2786,12 +2786,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the subcategories in the organization", async () => {
-                    const gqlSubcategories = await listSubcategories(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlSubcategories = await listSubcategories(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     const dbSubcategories = await Subcategory.find({
                         where: {
@@ -2829,15 +2829,15 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             subcategory = createSubcategory(organization)
             await subcategory.save()
             category = createCategory(organization, [subcategory])
             categoryDetails = await categoryInfo(category)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -2857,7 +2857,7 @@ describe("organization", () => {
 
             context("and it tries to upate existing non system categories", () => {
                 beforeEach(async () => {
-                    const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                    const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                     newCategory = {
                         ...categoryDetails,
@@ -2892,7 +2892,7 @@ describe("organization", () => {
 
                 context("and it tries to create new categories", () => {
                     it("fails to create subcstegories in the organization", async () => {
-                        const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbCategories = await Category.find({
@@ -2913,7 +2913,7 @@ describe("organization", () => {
 
                 context("and it tries to upate existing non system categories", () => {
                     beforeEach(async () => {
-                        const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                        const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                         newCategory = {
                             ...categoryDetails,
@@ -2923,7 +2923,7 @@ describe("organization", () => {
 
 
                     it("fails to update categories in the organization", async () => {
-                        const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbCategories = await Category.find({
@@ -2943,14 +2943,14 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getAdminAuthToken() });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                     });
 
                     context("and it tries to create new categories", () => {
                         it("creates all the categories in the organization", async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getBillyAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getNonAdminAuthToken() });
 
                             const dbCategories = await Category.find({
                                 where: {
@@ -2967,7 +2967,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system categories", () => {
                         beforeEach(async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                             newCategory = {
                                 ...categoryDetails,
@@ -2977,7 +2977,7 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            let gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getBillyAuthToken() });
+                            let gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getNonAdminAuthToken() });
 
                             let dbCategories = await Category.find({
                                 where: {
@@ -2991,7 +2991,7 @@ describe("organization", () => {
                             expect(dbCategoryDetails).to.deep.eq([newCategoryDetails])
 
                             newCategory.subcategories = []
-                            gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getBillyAuthToken() });
+                            gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getNonAdminAuthToken() });
 
                             dbCategories = await Category.find({
                                 where: {
@@ -3009,7 +3009,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system categories", () => {
                         beforeEach(async () => {
                             category.system = true
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                             newCategory = {
                                 ...categoryDetails,
@@ -3019,7 +3019,7 @@ describe("organization", () => {
 
 
                         it("fails to update categories in the organization", async () => {
-                            const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getBillyAuthToken() });
+                            const fn = () => createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getNonAdminAuthToken() });
 
                             expect(fn()).to.be.rejected;
                             const dbCategories = await Category.find({
@@ -3040,7 +3040,7 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     context("and it tries to create new categories", () => {
                         it("creates all the categories in the organization", async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                             const dbCategories = await Category.find({
                                 where: {
@@ -3057,7 +3057,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system categories", () => {
                         beforeEach(async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                             newCategory = {
                                 ...categoryDetails,
@@ -3067,7 +3067,7 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getAdminAuthToken() });
 
                             const dbCategories = await Category.find({
                                 where: {
@@ -3085,7 +3085,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system categories", () => {
                         beforeEach(async () => {
                             category.system = true
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [categoryDetails], { authorization: getAdminAuthToken() });
 
                             newCategory = {
                                 ...categoryDetails,
@@ -3095,7 +3095,7 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getJoeAuthToken() });
+                            const gqlCategories = await createOrUpdateCategories(testClient, organization.organization_id, [newCategory], { authorization: getAdminAuthToken() });
 
                             const dbCategories = await Category.find({
                                 where: {
@@ -3136,14 +3136,14 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             subcategory = createSubcategory(organization)
             await subcategory.save()
             category = createCategory(organization)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
             await category.save()
         });
 
@@ -3169,7 +3169,7 @@ describe("organization", () => {
                 });
 
                 it("fails to list categories in the organization", async () => {
-                    const fn = () => listCategories(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => listCategories(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                     const dbCategories = await Category.find({
@@ -3184,12 +3184,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the categories in the organization", async () => {
-                    const gqlCategories = await listCategories(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlCategories = await listCategories(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     const dbCategories = await Category.find({
                         where: {
@@ -3229,15 +3229,15 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             category = createCategory(organization)
             await category.save()
             subject = createSubject(organization, [category])
             subjectDetails = await subjectInfo(subject)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -3257,7 +3257,7 @@ describe("organization", () => {
 
             context("and it tries to upate existing non system categories", () => {
                 beforeEach(async () => {
-                    const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                    const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                     newSubject = {
                         ...subjectDetails,
@@ -3292,7 +3292,7 @@ describe("organization", () => {
 
                 context("and it tries to create new categories", () => {
                     it("fails to create subcstegories in the organization", async () => {
-                        const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbSubjects = await Subject.find({
@@ -3313,7 +3313,7 @@ describe("organization", () => {
 
                 context("and it tries to upate existing non system categories", () => {
                     beforeEach(async () => {
-                        const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                        const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                         newSubject = {
                             ...subjectDetails,
@@ -3323,7 +3323,7 @@ describe("organization", () => {
 
 
                     it("fails to update categories in the organization", async () => {
-                        const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbSubjects = await Subject.find({
@@ -3343,15 +3343,15 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.create_subjects_20227, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getAdminAuthToken() });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                     });
 
                     context("and it tries to create new categories", () => {
                         it("creates all the categories in the organization", async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getBillyAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getNonAdminAuthToken() });
 
                             const dbSubjects = await Subject.find({
                                 where: {
@@ -3368,7 +3368,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system categories", () => {
                         beforeEach(async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                             newSubject = {
                                 ...subjectDetails,
@@ -3378,7 +3378,7 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            let gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getBillyAuthToken() });
+                            let gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getNonAdminAuthToken() });
 
                             let dbSubjects = await Subject.find({
                                 where: {
@@ -3392,7 +3392,7 @@ describe("organization", () => {
                             expect(dbSubjectDetails).to.deep.eq([newSubjectDetails])
 
                             newSubject.categories = []
-                            gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getBillyAuthToken() });
+                            gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getNonAdminAuthToken() });
 
                             dbSubjects = await Subject.find({
                                 where: {
@@ -3410,7 +3410,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system categories", () => {
                         beforeEach(async () => {
                             subject.system = true
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                             newSubject = {
                                 ...subjectDetails,
@@ -3420,7 +3420,7 @@ describe("organization", () => {
 
 
                         it("fails to update categories in the organization", async () => {
-                            const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getBillyAuthToken() });
+                            const fn = () => createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getNonAdminAuthToken() });
 
                             expect(fn()).to.be.rejected;
                             const dbSubjects = await Subject.find({
@@ -3441,7 +3441,7 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     context("and it tries to create new categories", () => {
                         it("creates all the categories in the organization", async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                             const dbSubjects = await Subject.find({
                                 where: {
@@ -3458,7 +3458,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system categories", () => {
                         beforeEach(async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                             newSubject = {
                                 ...subjectDetails,
@@ -3468,7 +3468,7 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getAdminAuthToken() });
 
                             const dbSubjects = await Subject.find({
                                 where: {
@@ -3486,7 +3486,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system categories", () => {
                         beforeEach(async () => {
                             subject.system = true
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [subjectDetails], { authorization: getAdminAuthToken() });
 
                             newSubject = {
                                 ...subjectDetails,
@@ -3496,7 +3496,7 @@ describe("organization", () => {
 
 
                         it("updates the expected categories in the organization", async () => {
-                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getJoeAuthToken() });
+                            const gqlSubjects = await createOrUpdateSubjects(testClient, organization.organization_id, [newSubject], { authorization: getAdminAuthToken() });
 
                             const dbSubjects = await Subject.find({
                                 where: {
@@ -3537,14 +3537,14 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             category = createCategory(organization)
             await category.save()
             subject = createSubject(organization, [category])
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
             await subject.save()
         });
 
@@ -3570,7 +3570,7 @@ describe("organization", () => {
                 });
 
                 it("fails to list subjects in the organization", async () => {
-                    const fn = () => listSubjects(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => listSubjects(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                     const dbSubjects = await Subject.find({
@@ -3585,12 +3585,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_subjects_20115, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the subjects in the organization", async () => {
-                    const gqlSubjects = await listSubjects(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlSubjects = await listSubjects(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     const dbSubjects = await Subject.find({
                         where: {
@@ -3634,8 +3634,8 @@ describe("organization", () => {
 
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             ageRange = createAgeRange(organization)
             await ageRange.save()
@@ -3646,7 +3646,7 @@ describe("organization", () => {
             program = createProgram(organization, [ageRange], [grade], [subject])
             programDetails = await programInfo(program)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -3666,7 +3666,7 @@ describe("organization", () => {
 
             context("and it tries to upate existing non system programs", () => {
                 beforeEach(async () => {
-                    const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                    const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                     newProgram = {
                         ...programDetails,
@@ -3701,7 +3701,7 @@ describe("organization", () => {
 
                 context("and it tries to create new programs", () => {
                     it("fails to create programs in the organization", async () => {
-                        const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbPrograms = await Program.find({
@@ -3722,7 +3722,7 @@ describe("organization", () => {
 
                 context("and it tries to upate existing non system programs", () => {
                     beforeEach(async () => {
-                        const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                        const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                         newProgram = {
                             ...programDetails,
@@ -3732,7 +3732,7 @@ describe("organization", () => {
 
 
                     it("fails to update programs in the organization", async () => {
-                        const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getBillyAuthToken() });
+                        const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getNonAdminAuthToken() });
 
                         expect(fn()).to.be.rejected;
                         const dbPrograms = await Program.find({
@@ -3752,14 +3752,14 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     beforeEach(async () => {
                         const role = await createRole(testClient, organization.organization_id);
-                        await grantPermission(testClient, role.role_id, PermissionName.create_program_20221, { authorization: getJoeAuthToken() });
-                        await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getJoeAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.create_program_20221, { authorization: getAdminAuthToken() });
+                        await grantPermission(testClient, role.role_id, PermissionName.edit_program_20331, { authorization: getAdminAuthToken() });
                         await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                     });
 
                     context("and it tries to create new programs", () => {
                         it("creates all the programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getBillyAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getNonAdminAuthToken() });
 
                             const dbPrograms = await Program.find({
                                 where: {
@@ -3776,7 +3776,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system programs", () => {
                         beforeEach(async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                             newProgram = {
                                 ...programDetails,
@@ -3786,7 +3786,7 @@ describe("organization", () => {
 
 
                         it("updates the expected programs in the organization", async () => {
-                            let gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getBillyAuthToken() });
+                            let gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getNonAdminAuthToken() });
 
                             let dbPrograms = await Program.find({
                                 where: {
@@ -3802,7 +3802,7 @@ describe("organization", () => {
                             newProgram.age_ranges = []
                             newProgram.grades = []
                             newProgram.subjects = []
-                            gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getBillyAuthToken() });
+                            gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getNonAdminAuthToken() });
 
                             dbPrograms = await Program.find({
                                 where: {
@@ -3820,7 +3820,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system programs", () => {
                         beforeEach(async () => {
                             program.system = true
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                             newProgram = {
                                 ...programDetails,
@@ -3830,7 +3830,7 @@ describe("organization", () => {
 
 
                         it("fails to update programs in the organization", async () => {
-                            const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getBillyAuthToken() });
+                            const fn = () => createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getNonAdminAuthToken() });
 
                             expect(fn()).to.be.rejected;
                             const dbPrograms = await Program.find({
@@ -3851,7 +3851,7 @@ describe("organization", () => {
                 context("and the user has all the permissions", () => {
                     context("and it tries to create new programs", () => {
                         it("creates all the programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                             const dbPrograms = await Program.find({
                                 where: {
@@ -3868,7 +3868,7 @@ describe("organization", () => {
 
                     context("and it tries to upate existing non system programs", () => {
                         beforeEach(async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                             newProgram = {
                                 ...programDetails,
@@ -3878,7 +3878,7 @@ describe("organization", () => {
 
 
                         it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getAdminAuthToken() });
 
                             const dbPrograms = await Program.find({
                                 where: {
@@ -3896,7 +3896,7 @@ describe("organization", () => {
                     context("and it tries to upate existing system programs", () => {
                         beforeEach(async () => {
                             program.system = true
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [programDetails], { authorization: getAdminAuthToken() });
 
                             newProgram = {
                                 ...programDetails,
@@ -3906,7 +3906,7 @@ describe("organization", () => {
 
 
                         it("updates the expected programs in the organization", async () => {
-                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getJoeAuthToken() });
+                            const gqlPrograms = await createOrUpdatePrograms(testClient, organization.organization_id, [newProgram], { authorization: getAdminAuthToken() });
 
                             const dbPrograms = await Program.find({
                                 where: {
@@ -3942,14 +3942,14 @@ describe("organization", () => {
         }
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            user = await createNonAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             program = createProgram(organization)
             await program.save()
             programDetails = await programInfo(program)
             const organizationId = organization?.organization_id
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organization.organization_id, { authorization: getAdminAuthToken() });
         });
 
         context("when not authenticated", () => {
@@ -3975,7 +3975,7 @@ describe("organization", () => {
                 });
 
                 it("fails to list programs in the organization", async () => {
-                    const fn = () => listPrograms(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const fn = () => listPrograms(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                     const dbprograms = await Program.find({
@@ -3991,12 +3991,12 @@ describe("organization", () => {
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
                     const role = await createRole(testClient, organization.organization_id);
-                    await grantPermission(testClient, role.role_id, PermissionName.view_program_20111, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.view_program_20111, { authorization: getAdminAuthToken() });
                     await addRoleToOrganizationMembership(testClient, user.user_id, organization.organization_id, role.role_id);
                 });
 
                 it("lists all the programs in the organization", async () => {
-                    const gqlprograms = await listPrograms(testClient, organization.organization_id, { authorization: getBillyAuthToken() });
+                    const gqlprograms = await listPrograms(testClient, organization.organization_id, { authorization: getNonAdminAuthToken() });
 
                     const gqlprogramsDetails = await Promise.all(gqlprograms.map(programInfo))
                     expect(gqlprogramsDetails).to.deep.eq([programDetails])
