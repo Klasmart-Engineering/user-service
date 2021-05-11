@@ -386,6 +386,28 @@ export const processUserFromCSVRow = async (
         user.gender = row.user_gender
     }
 
+    if (row.user_shortcode) {
+        const userShortcode = await manager.findOne(OrganizationMembership, {
+            where: { shortcode: row.user_shortcode, organization: { organization_id: org.organization_id } },
+        })
+
+        if (userShortcode && user.user_id !== userShortcode.user_id) {
+            addCsvError(
+                fileErrors,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                rowNumber,
+                'school_shortcode',
+                csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                {
+                    entity: 'shortcode',
+                    name: row.user_shortcode,
+                    parent_name: (await userShortcode.user)?.full_name(),
+                    parent_entity: 'user'
+                }
+            )
+        }
+    }
+
     await manager.save(user)
 
     let organizationMembership = await manager.findOne(OrganizationMembership, {

@@ -16,12 +16,13 @@ import { User } from "../../../../src/entities/user";
 import { UserRow } from "../../../../src/types/csv/userRow";
 import { Model } from "../../../../src/model";
 import { Organization } from "../../../../src/entities/organization";
-import { OrganizationMembership } from "../../../../src/entities/organizationMembership";
+import { MEMBERSHIP_SHORTCODE_MAXLEN, OrganizationMembership } from "../../../../src/entities/organizationMembership";
 import { Role } from "../../../../src/entities/role";
 import { School } from "../../../../src/entities/school";
 import { SchoolMembership } from "../../../../src/entities/schoolMembership";
 import { processUserFromCSVRow } from "../../../../src/utils/csv/user";
 import { CSVError } from "../../../../src/types/csv/csvError";
+import { createUserBilly } from "../../../utils/testEntities";
 
 use(chaiAsPromised);
 
@@ -204,6 +205,32 @@ describe("processUserFromCSVRow", () => {
 
                 expect(dbUser).to.be.undefined
             }
+        });
+    });
+
+    context("when provided shortcode already exists in another user in the same organization", () => {
+        beforeEach(async () => {
+            const existentUser = await createUserBilly(testClient);
+            const orgMembership = new OrganizationMembership();
+            orgMembership.organization_id = organization.organization_id;
+            orgMembership.organization = Promise.resolve(organization);
+            orgMembership.user_id = existentUser.user_id;
+            orgMembership.user = Promise.resolve(existentUser);
+            orgMembership.shortcode = generateShortCode(existentUser.user_id, MEMBERSHIP_SHORTCODE_MAXLEN);
+            await orgMembership.save();
+
+            row = { ...row, user_shortcode: orgMembership.shortcode }
+        })
+
+        it("throws an error", async () => {
+            const fn = () => processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+            expect(fn()).to.be.rejected
+            const dbUser = await User.findOne({
+                where: { email: row.user_email }
+            })
+
+            expect(dbUser).to.be.undefined
         });
     });
 
@@ -428,6 +455,45 @@ describe("processUserFromCSVRow", () => {
                 expect(students).to.be.empty
                 const teachers = await cls.teachers || []
                 expect(teachers.map(userInfo)).to.deep.eq([dbUser].map(userInfo))
+            });
+        });
+
+        context("and the shortcode is duplicated in another organization", () => {
+            beforeEach(async () => {
+                const secondOrg = createOrganization();
+                await connection.manager.save(secondOrg);
+
+                const secondUser = createUser();
+                await connection.manager.save(secondUser);
+
+                const secondMembership = new OrganizationMembership();
+                secondMembership.organization = Promise.resolve(secondOrg);
+                secondMembership.organization_id = secondOrg.organization_id;
+                secondMembership.shortcode = 'DUP1234';
+                secondMembership.user = Promise.resolve(secondUser);
+                secondMembership.user_id = secondUser.user_id;
+                await connection.manager.save(secondMembership);
+
+                row = {
+                    ...row,
+                    user_shortcode: secondMembership.shortcode
+                }
+            })
+
+            it("creates the user", async () => {
+                await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                const dbUser = await User.findOneOrFail({
+                    where: { email: row.user_email }
+                })
+
+                expect(dbUser.user_id).to.not.be.empty
+                expect(dbUser.email).to.eq(row.user_email)
+                expect(dbUser.phone).to.be.null
+                expect(dbUser.given_name).to.eq(row.user_given_name)
+                expect(dbUser.family_name).to.eq(row.user_family_name)
+                expect(dbUser.date_of_birth).to.eq(row.user_date_of_birth)
+                expect(dbUser.gender).to.eq(row.user_gender)
             });
         });
     });
