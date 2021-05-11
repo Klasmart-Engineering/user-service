@@ -2,7 +2,7 @@ import { Connection } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { Upload } from '../../types/upload'
 import { readCSVFile } from './readFile'
-import { CustomError } from '../../types/csv/csvError'
+import { CustomError, instanceOfCSVError } from '../../types/csv/csvError'
 
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
@@ -23,7 +23,13 @@ export async function createEntityFromCsvWithRollBack(
     } catch (errors) {
         console.error('Error uploading from CSV file: ', errors)
         await queryRunner.rollbackTransaction()
-        throw new CustomError(errors)
+        if (
+            Array.isArray(errors) &&
+            errors.every((err) => instanceOfCSVError(err))
+        ) {
+            throw new CustomError(errors)
+        }
+        throw new Error(errors)
     } finally {
         await queryRunner.release()
     }
