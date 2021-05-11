@@ -1,7 +1,7 @@
 import { ReadStream } from "typeorm/platform/PlatformTools";
 import { ApolloServerTestClient } from "../createTestClient";
 import { gqlTry } from "../gqlTry";
-import { getJoeAuthToken } from "../testConfig";
+import { getAdminAuthToken } from "../testConfig";
 import { fileMockInput } from "./modelOps";
 
 const RENAME_DUPLICATE_ORGANIZATIONS_MUTATION = `

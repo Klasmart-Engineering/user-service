@@ -28,6 +28,16 @@ export interface CSVError {
     [params: string]: any
 }
 
+/**
+ * Check whether the object is an instance of CSVError or not
+ *
+ * @param object any
+ * @returns boolean
+ */
+export function instanceOfCSVError(object: any): object is CSVError {
+    return true
+}
+
 export class CustomError extends ApolloError {
     constructor(errors: CSVError[]) {
         super(csvErrorConstants.ERR_CSV_BAD_INPUT)

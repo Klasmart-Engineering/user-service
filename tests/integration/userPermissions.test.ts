@@ -8,10 +8,10 @@ import { superAdminRole } from "../../src/permissions/superAdmin";
 import { checkToken } from "../../src/token";
 import { createServer } from "../../src/utils/createServer";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { createUserBilly, createUserJoe } from "../utils/testEntities";
+import { createNonAdminUser, createAdminUser } from "../utils/testEntities";
 import { addUserToOrganizationAndValidate, createRole, createSchool } from "../utils/operations/organizationOps";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { getBillyAuthToken, getJoeAuthToken } from "../utils/testConfig";
+import { getNonAdminAuthToken, getAdminAuthToken } from "../utils/testConfig";
 import { createTestConnection } from "../utils/testConnection";
 import chaiAsPromised from "chai-as-promised"
 import chai from "chai"
@@ -41,7 +41,7 @@ describe("userPermissions", () => {
         let token
 
         beforeEach(async () => {
-            const encodedToken = getBillyAuthToken();
+            const encodedToken = getNonAdminAuthToken();
             token = await checkToken(encodedToken) as any;
             userPermissions = new UserPermissions(token);
         });
@@ -52,7 +52,7 @@ describe("userPermissions", () => {
 
         context("when user is a super admin", () => {
             beforeEach(async () => {
-                const encodedToken = getJoeAuthToken();
+                const encodedToken = getAdminAuthToken();
                 token = await checkToken(encodedToken) as any;
                 userPermissions = new UserPermissions(token);
             });
@@ -73,15 +73,15 @@ describe("userPermissions", () => {
         let token
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
-            const user = await createUserBilly(testClient);
+            const orgOwner = await createAdminUser(testClient);
+            const user = await createNonAdminUser(testClient);
             userId = user.user_id
             const organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             organizationId = organization.organization_id;
-            await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
-            const school = await createSchool(testClient, organizationId, "my school", undefined, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getAdminAuthToken() });
+            const school = await createSchool(testClient, organizationId, "my school", undefined, { authorization: getAdminAuthToken() });
             schoolId = school.school_id;
-            await addUserToSchool(testClient, userId, schoolId, { authorization: getJoeAuthToken() });
+            await addUserToSchool(testClient, userId, schoolId, { authorization: getAdminAuthToken() });
             const testOrgRole = await createRole(testClient, organizationId, "test_role");
             testOrgRoleId = testOrgRole.role_id;
             await addRoleToOrganizationMembership(testClient, userId, organizationId, testOrgRoleId);
@@ -92,7 +92,7 @@ describe("userPermissions", () => {
 
         context("when user role doesn't include specified permission", () => {
             beforeEach(async () => {
-                const encodedToken = getBillyAuthToken();
+                const encodedToken = getNonAdminAuthToken();
                 token = await checkToken(encodedToken) as any;
                 userPermissions = new UserPermissions(token);
             });
@@ -112,28 +112,28 @@ describe("userPermissions", () => {
 
         context("when user role does include specified permission", () => {
             beforeEach(async () => {
-                const encodedToken = getBillyAuthToken();
+                const encodedToken = getNonAdminAuthToken();
                 token = await checkToken(encodedToken) as any;
                 userPermissions = new UserPermissions(token);
             });
 
             context("and the role is active", () => {
                 it("should not throw error when school ID array is provided", async () => {
-                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: getAdminAuthToken() });
                     const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: undefined };
                     const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                     await expect(fn()).to.be.fulfilled;
                 });
 
                 it("should not throw error when organization ID is provided", async () => {
-                    await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: getAdminAuthToken() });
                     const permissionContext = { school_id: undefined, school_ids: undefined, organization_id: organizationId };
                     const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                     await expect(fn()).to.be.fulfilled;
                 });
 
                 it("should not throw error when user dosn't have organization permission, but does have permission for at least one school", async () => {
-                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: getAdminAuthToken() });
                     const permissionContext = { school_id: undefined, school_ids: [schoolId], organization_id: organizationId };
                     const fn = async () => await userPermissions.rejectIfNotAllowed(permissionContext, PermissionName.edit_class_20334);
                     await expect(fn()).to.be.fulfilled;
@@ -142,10 +142,10 @@ describe("userPermissions", () => {
 
             context("and the role is inactive", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
-                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: getJoeAuthToken() });
-                    await deleteRole(testClient, testOrgRoleId, { authorization: getJoeAuthToken() });
-                    await deleteRole(testClient, testSchoolRoleId, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, testOrgRoleId, PermissionName.edit_class_20334, { authorization: getAdminAuthToken() });
+                    await grantPermission(testClient, testSchoolRoleId, PermissionName.edit_class_20334, { authorization: getAdminAuthToken() });
+                    await deleteRole(testClient, testOrgRoleId, { authorization: getAdminAuthToken() });
+                    await deleteRole(testClient, testSchoolRoleId, { authorization: getAdminAuthToken() });
                 });
 
                 it("throws an error when school ID array is provided", async () => {
@@ -164,7 +164,7 @@ describe("userPermissions", () => {
 
         context("when the user is super admin", () => {
             beforeEach(async () => {
-                const encodedToken = getJoeAuthToken();
+                const encodedToken = getAdminAuthToken();
                 token = await checkToken(encodedToken) as any;
                 userPermissions = new UserPermissions(token);
             });

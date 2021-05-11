@@ -17,7 +17,10 @@ interface IFilter {
 }
 
 // generates a WHERE clause for a given query filter
-export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
+export function getWhereClauseFromFilter(
+    filter: IEntityFilter,
+    columnAliases?: Record<string, string>
+): Brackets {
     return new Brackets((qb) => {
         for (const key of Object.keys(filter)) {
             if (key === 'OR' || key === 'AND') {
@@ -30,7 +33,10 @@ export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
                 continue
             }
 
-            const field = parseField(key)
+            const field =
+                columnAliases && columnAliases[key]
+                    ? columnAliases[key]
+                    : parseField(key)
             const sqlOperator = getSQLOperatorFromFilterOperator(data.operator)
             const value = parseValueForSQLOperator(sqlOperator, data.value)
 
@@ -50,10 +56,12 @@ export function getWhereClauseFromFilter(filter: IEntityFilter): Brackets {
         }
 
         if (filter.OR) {
-            qb.andWhere(logicalOperationFilter(filter.OR, 'OR'))
+            qb.andWhere(logicalOperationFilter(filter.OR, 'OR', columnAliases))
         }
         if (filter.AND) {
-            qb.andWhere(logicalOperationFilter(filter.AND, 'AND'))
+            qb.andWhere(
+                logicalOperationFilter(filter.AND, 'AND', columnAliases)
+            )
         }
     })
 }
@@ -81,16 +89,21 @@ export function filterHasProperty(
 
 function logicalOperationFilter(
     filters: IEntityFilter[],
-    operator: 'AND' | 'OR'
+    operator: 'AND' | 'OR',
+    columnAliases?: Record<string, string>
 ) {
     return new Brackets((qb) => {
         if (filters.length > 0) {
-            qb.where(getWhereClauseFromFilter(filters[0]))
+            qb.where(getWhereClauseFromFilter(filters[0], columnAliases))
             for (let i = 1; i < filters.length; i++) {
                 if (operator === 'AND') {
-                    qb.andWhere(getWhereClauseFromFilter(filters[i]))
+                    qb.andWhere(
+                        getWhereClauseFromFilter(filters[i], columnAliases)
+                    )
                 } else {
-                    qb.orWhere(getWhereClauseFromFilter(filters[i]))
+                    qb.orWhere(
+                        getWhereClauseFromFilter(filters[i], columnAliases)
+                    )
                 }
             }
         }

@@ -10,10 +10,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
-import {
-    Organization,
-    padShortDob,
-} from './entities/organization'
+import { Organization, padShortDob } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
 import { AgeRange } from './entities/ageRange'
 import CategoriesInitializer from './initializers/categories'
@@ -338,14 +335,11 @@ export class Model {
                 filterHasProperty('organizationId', filter) ||
                 filterHasProperty('roleId', filter)
             ) {
-                scope.leftJoinAndSelect(
-                    'User.memberships',
-                    'OrganizationMembership'
-                )
+                scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
             }
             if (filterHasProperty('roleId', filter)) {
                 scope.innerJoinAndSelect(
-                    'OrganizationMembership.roles',
+                    'OrgMembership.roles',
                     'RoleMembershipsOrganizationMembership'
                 )
             }
@@ -355,7 +349,11 @@ export class Model {
                     'schoolMembership'
                 )
             }
-            scope.andWhere(getWhereClauseFromFilter(filter))
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: 'OrgMembership.organization_id',
+                })
+            )
         }
 
         const data = await paginateData({

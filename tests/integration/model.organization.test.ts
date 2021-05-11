@@ -5,10 +5,10 @@ import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
 import { Organization } from "../../src/entities/organization";
 import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { createUserJoe } from "../utils/testEntities";
+import { createAdminUser } from "../utils/testEntities";
 import { accountUUID } from "../../src/entities/user";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { getJoeAuthToken } from "../utils/testConfig";
+import { getAdminAuthToken } from "../utils/testConfig";
 
 const GET_ORGANIZATIONS = `
     query getOrganizations {
@@ -66,7 +66,7 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: { authorization: getJoeAuthToken() },
+                    headers: { authorization: getAdminAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -78,7 +78,7 @@ describe("model.organization", () => {
 
         context("when one", () => {
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
+                const user = await createAdminUser(testClient);
                 const organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
@@ -87,7 +87,7 @@ describe("model.organization", () => {
 
                 const res = await query({
                     query: GET_ORGANIZATIONS,
-                    headers: { authorization: getJoeAuthToken() },
+                    headers: { authorization: getAdminAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -106,7 +106,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: accountUUID() },
-                    headers: { authorization: getJoeAuthToken() },
+                    headers: { authorization: getAdminAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;
@@ -118,7 +118,7 @@ describe("model.organization", () => {
             let organization: Organization;
 
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
+                const user = await createAdminUser(testClient);
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
@@ -128,7 +128,7 @@ describe("model.organization", () => {
                 const res = await query({
                     query: GET_ORGANIZATION,
                     variables: { organization_id: organization.organization_id },
-                    headers: { authorization: getJoeAuthToken() },
+                    headers: { authorization: getAdminAuthToken() },
                 });
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined;

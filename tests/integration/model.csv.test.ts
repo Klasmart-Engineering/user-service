@@ -64,6 +64,23 @@ describe("model.csv", () => {
         await connection?.close();
     });
 
+    describe("uploadFileSizeExceededCSV", () => {
+        let file: ReadStream;
+        const mimetype = 'text/csv';
+        const encoding = '7bit';
+        const filename = 'fileSizeExceeded.csv';
+
+        it("should throw high level error", async () => {
+            file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
+
+            const fn = async () => await queryUploadOrganizations(testClient, file, filename, mimetype, encoding);
+                expect(fn()).to.be.rejectedWith(Error);
+
+                const organizationsCreated = await Organization.count();
+                expect(organizationsCreated).eq(0);
+        });
+    });
+
     describe("uploadOrganizationsFromCSV", () => {
         let file: ReadStream;
         const mimetype = 'text/csv';
@@ -741,7 +758,7 @@ describe("model.csv", () => {
                 file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
 
                 const fn = async () => await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejectedWith(Error);
+                expect(fn()).to.be.rejectedWith(CustomError);
 
                 const ageRangesCreated = await AgeRange.count({ where: { system: false } });
                 expect(ageRangesCreated).eq(0);

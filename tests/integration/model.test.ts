@@ -3,7 +3,7 @@ import { Connection } from "typeorm";
 import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
 import { createTestConnection } from "../utils/testConnection";
 import { createServer } from "../../src/utils/createServer";
-import { createUserJoe, createUserBilly } from "../utils/testEntities";
+import { createAdminUser, createNonAdminUser } from "../utils/testEntities";
 import { createAgeRange } from "../factories/ageRange.factory";
 import { createGrade } from "../factories/grade.factory";
 import { createOrganization } from "../factories/organization.factory";
@@ -15,7 +15,7 @@ import { getAgeRange, getGrade, getSubcategory, getAllOrganizations,
     getOrganizations, me, myUsers,
     getProgram, permissionsConnection, uploadSchoolsFile, userConnection
 } from "../utils/operations/modelOps";
-import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
+import { getAdminAuthToken, getAdminAuthWithoutIdToken, getNonAdminAuthToken } from "../utils/testConfig";
 import { createOrganizationAndValidate, addOrganizationToUserAndValidate, addSchoolToUser } from "../utils/operations/userOps";
 import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
 import { Model } from "../../src/model";
@@ -58,7 +58,7 @@ describe("model", () => {
         let user: User;
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
         });
     });
 
@@ -66,7 +66,7 @@ describe("model", () => {
         let user: User;
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
         });
 
         context("when user is not logged in", () => {
@@ -81,7 +81,7 @@ describe("model", () => {
             const userInfo = (user: User) => { return user.user_id }
 
             it("returns the expected users", async () => {
-                const gqlUsers = await myUsers(testClient, { authorization: getJoeAuthToken() });
+                const gqlUsers = await myUsers(testClient, { authorization: getAdminAuthToken() });
 
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
             });
@@ -93,7 +93,7 @@ describe("model", () => {
         let organization: Organization;
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             organization = await createOrganizationAndValidate(testClient, user.user_id);
         });
 
@@ -110,13 +110,13 @@ describe("model", () => {
             let otherOrganization: Organization
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient);
                 otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
             });
 
             context("and the user is not an admin", () => {
                 it("raises an error", async () => {
-                    const fn = () => getAllOrganizations(testClient, { authorization: getBillyAuthToken() });
+                    const fn = () => getAllOrganizations(testClient, { authorization: getNonAdminAuthToken() });
 
                     expect(fn()).to.be.rejected;
                 });
@@ -124,7 +124,7 @@ describe("model", () => {
 
             context("and there is no filter in the organization ids", () => {
                 it("returns the expected organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
+                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getAdminAuthToken() });
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
@@ -138,7 +138,7 @@ describe("model", () => {
                     const gqlOrgs = await getOrganizations(
                         testClient,
                         [organization.organization_id],
-                        { authorization: getJoeAuthToken() }
+                        { authorization: getAdminAuthToken() }
                     );
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
@@ -165,7 +165,7 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             const org = createOrganization(user)
             await connection.manager.save(org)
             organizationId = org.organization_id
@@ -185,18 +185,18 @@ describe("model", () => {
             let otherUserId: string;
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient);
                 otherUserId = otherUser.user_id
             });
 
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -205,7 +205,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the age range", () => {
                     it("returns no age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlAgeRange).to.be.null;
                     });
@@ -215,11 +215,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the age range", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -228,7 +228,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the age range", () => {
                     it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
+                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlAgeRange).not.to.be.null;
                         expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
@@ -258,9 +258,9 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            const orgOwner = await createAdminUser(testClient);
             otherUserId = orgOwner.user_id
-            user = await createUserBilly(testClient);
+            user = await createNonAdminUser(testClient);
             userId = user.user_id
             organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
             organizationId = organization.organization_id
@@ -285,11 +285,11 @@ describe("model", () => {
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -299,7 +299,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the grade", () => {
                     it("returns no grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlGrade).to.be.null;
                     });
@@ -309,11 +309,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the grade", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -323,7 +323,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the grade", () => {
                     it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
+                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlGrade).not.to.be.null;
                         const gqlGradeDetails = await gradeInfo(gqlGrade)
@@ -348,7 +348,7 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             const org = createOrganization(user)
             await connection.manager.save(org)
             organizationId = org.organization_id
@@ -368,18 +368,18 @@ describe("model", () => {
             let otherUserId: string;
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient);
                 otherUserId = otherUser.user_id
             });
 
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -388,7 +388,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the subcategory", () => {
                     it("returns no subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlSubcategory).to.be.null;
                     });
@@ -398,11 +398,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the subcategory", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -411,7 +411,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the subcategory", () => {
                     it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
+                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlSubcategory).not.to.be.null;
                         expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
@@ -434,7 +434,7 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient);
             const org = createOrganization(user)
             await connection.manager.save(org)
             organizationId = org.organization_id
@@ -454,18 +454,18 @@ describe("model", () => {
             let otherUserId: string;
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient);
                 otherUserId = otherUser.user_id
             });
 
             context("and the user is not an admin", () => {
                 context("and it belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -474,7 +474,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the program", () => {
                     it("returns no program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getNonAdminAuthToken() });
 
                         expect(gqlProgram).to.be.null;
                     });
@@ -484,11 +484,11 @@ describe("model", () => {
             context("and the user is an admin", () => {
                 context("and it belongs to the organization from the program", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -497,7 +497,7 @@ describe("model", () => {
 
                 context("and it does not belongs to the organization from the program", () => {
                     it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
+                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getAdminAuthToken() });
 
                         expect(gqlProgram).not.to.be.null;
                         expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
@@ -541,13 +541,13 @@ describe("model", () => {
             for (const user of usersList) {
                 for(let i=0; i<2; i++) {
                     await addOrganizationToUserAndValidate(
-                        testClient, user.user_id, organizations[i].organization_id, getJoeAuthToken()
+                        testClient, user.user_id, organizations[i].organization_id, getAdminAuthToken()
                     );
-                    await addRoleToOrganizationMembership(testClient,  user.user_id, organizations[i].organization_id, roleList[i].role_id, { authorization: getJoeAuthToken() });
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, organizations[i].organization_id, roleList[i].role_id, { authorization: getAdminAuthToken() });
                     await addSchoolToUser(
-                        testClient, user.user_id, schools[i].school_id, { authorization: getJoeAuthToken()}
+                        testClient, user.user_id, schools[i].school_id, { authorization: getAdminAuthToken()}
                     );
-                     await addRoleToSchoolMembership(testClient, user.user_id, schools[i].school_id,roleList[i].role_id, { authorization: getJoeAuthToken() })
+                     await addRoleToSchoolMembership(testClient, user.user_id, schools[i].school_id,roleList[i].role_id, { authorization: getAdminAuthToken() })
 
                 }
             }
@@ -556,7 +556,7 @@ describe("model", () => {
         context('seek forward',  ()=>{
             it('should get the next few records according to pagesize and startcursor', async()=>{
                 let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
-                const usersConnection = await userConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
+                const usersConnection = await userConnection(testClient, direction, directionArgs, { authorization: getAdminAuthToken() })
 
                 expect(usersConnection?.totalCount).to.eql(10);
                 expect(usersConnection?.edges.length).to.equal(3);
@@ -604,15 +604,15 @@ describe("model", () => {
                 //sort users by userId
                 await connection.manager.save(usersList)
                 for (const user of usersList) {
-                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
-                    await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, user.user_id, school1.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id,role1.role_id, { authorization: getJoeAuthToken() })
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getAdminAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, user.user_id, school1.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, user.user_id, school1.school_id,role1.role_id, { authorization: getAdminAuthToken() })
 
-                    await addOrganizationToUserAndValidate(testClient, user.user_id, org2.organization_id, getJoeAuthToken());
-                    await addRoleToOrganizationMembership(testClient,  user.user_id, org2.organization_id, role2.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, user.user_id, school2.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, user.user_id, school2.school_id,role2.role_id, { authorization: getJoeAuthToken() })
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org2.organization_id, getAdminAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, org2.organization_id, role2.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, user.user_id, school2.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, user.user_id, school2.school_id,role2.role_id, { authorization: getAdminAuthToken() })
                 }
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
             })
@@ -628,7 +628,7 @@ describe("model", () => {
                 };
                 const usersConnection = await userConnection(
                     testClient, direction, directionArgs,
-                    { authorization: getJoeAuthToken() }, filter)
+                    { authorization: getAdminAuthToken() }, filter)
 
                 expect(usersConnection?.totalCount).to.eql(10);
                 expect(usersConnection?.edges.length).to.equal(3);
@@ -645,6 +645,20 @@ describe("model", () => {
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+            })
+
+            it('returns nothing for non admins', async()=>{
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: "eq",
+                        value: org.organization_id
+                    }
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, undefined,
+                    { authorization: getNonAdminAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(0);
             })
         })
 
@@ -675,17 +689,17 @@ describe("model", () => {
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
                 
                 for (const user of usersList) {
-                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
-                    await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getAdminAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  user.user_id, org.organization_id, role1.role_id, { authorization: getAdminAuthToken() });
                 }
                 
                 // add half of users to one school and other half to different school
                 // also add 5th user to both school
                 for (let i = 0; i<= 5; i++) {
-                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getAdminAuthToken()})
                 }
                 for (let i = 5; i< 10; i++) {
-                    await addSchoolToUser(testClient, usersList[i].user_id, school2.school_id, { authorization: getJoeAuthToken()})
+                    await addSchoolToUser(testClient, usersList[i].user_id, school2.school_id, { authorization: getAdminAuthToken()})
                 }
             })
             it('should filter the pagination results on schoolId', async()=>{
@@ -700,7 +714,7 @@ describe("model", () => {
                 };
                 const usersConnection = await userConnection(
                     testClient, direction, directionArgs,
-                    { authorization: getJoeAuthToken() }, filter)
+                    { authorization: getAdminAuthToken() }, filter)
 
                 expect(usersConnection?.totalCount).to.eql(5);
                 expect(usersConnection?.edges.length).to.equal(3);
@@ -747,21 +761,21 @@ describe("model", () => {
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
 
                 for (const user of usersList) {
-                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getJoeAuthToken());
+                    await addOrganizationToUserAndValidate(testClient, user.user_id, org.organization_id, getAdminAuthToken());
                 }
 
                 // add 5 users to role1 and 5 users to role2
                 // add 6th user to both roles
                 for(let i=0; i<=5 ;i++) {
-                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getJoeAuthToken() })
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getAdminAuthToken() })
                 }
 
                 for(let i=5; i<usersList.length; i++) {
-                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role2.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id, role2.role_id, { authorization: getJoeAuthToken() })
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role2.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id, role2.role_id, { authorization: getAdminAuthToken() })
                 }
             })
             it('should filter the pagination results on roleId', async()=>{
@@ -776,7 +790,7 @@ describe("model", () => {
                 };
                 const usersConnection = await userConnection(
                     testClient, direction, directionArgs,
-                    { authorization: getJoeAuthToken() }, filter)
+                    { authorization: getAdminAuthToken() }, filter)
 
                 expect(usersConnection?.totalCount).to.eql(5);
                 expect(usersConnection?.edges.length).to.equal(3);
@@ -822,20 +836,20 @@ describe("model", () => {
                 usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
 
                 for (let i=0; i<10 ;i++) {
-                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org.organization_id, getJoeAuthToken());
+                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org.organization_id, getAdminAuthToken());
                 }
                 
                 // add 5 users to role1/school1 and 5 users to role2/school2
                 // add 6th user to both roles and schools
                 for(let i=0; i<=5 ;i++) {
-                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getJoeAuthToken() })
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getAdminAuthToken() })
                 }
                 for(let i=5; i<10; i++) {
-                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role2.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, usersList[i].user_id, school2.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school2.school_id, role2.role_id, { authorization: getJoeAuthToken() })
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role2.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school2.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school2.school_id, role2.role_id, { authorization: getAdminAuthToken() })
                 }
                 
                 // create second org and add other users to this org
@@ -847,14 +861,14 @@ describe("model", () => {
                 await connection.manager.save(school3);
                 
                 for (let i=10; i<15 ;i++) {
-                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org2.organization_id, getJoeAuthToken());
+                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org2.organization_id, getAdminAuthToken());
                 }
 
                 // add remaining users to school3 and role3
                 for(let i=10; i<15 ;i++) {
-                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org2.organization_id, role3.role_id, { authorization: getJoeAuthToken() });
-                    await addSchoolToUser(testClient, usersList[i].user_id, school3.school_id, { authorization: getJoeAuthToken()})
-                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school3.school_id, role3.role_id, { authorization: getJoeAuthToken() })
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org2.organization_id, role3.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school3.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school3.school_id, role3.role_id, { authorization: getAdminAuthToken() })
                 }
             })
             it('should filter the pagination results on all filters', async()=>{
@@ -877,7 +891,7 @@ describe("model", () => {
                 };
                 const usersConnection = await userConnection(
                     testClient, direction, directionArgs,
-                    { authorization: getJoeAuthToken() }, filter)
+                    { authorization: getAdminAuthToken() }, filter)
 
                 expect(usersConnection?.totalCount).to.eql(5);
                 expect(usersConnection?.edges.length).to.equal(3);
@@ -913,7 +927,7 @@ describe("model", () => {
                 })
 
                 it('returns the expected permissions with the default page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() })
+                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getAdminAuthToken() })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
                     expect(gqlPermissions?.edges.length).to.equal(50);
@@ -939,7 +953,7 @@ describe("model", () => {
                 })
 
                 it('returns the expected permissions with the specified page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
+                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getAdminAuthToken() })
 
                     expect(gqlPermissions?.totalCount).to.eql(425);
                     expect(gqlPermissions?.edges.length).to.equal(3);
@@ -957,7 +971,7 @@ describe("model", () => {
                         value: "add_content_learning_outcomes_433"
                     }
                 }
-                let gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getJoeAuthToken()}, filter);
+                let gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getAdminAuthToken()}, filter);
                 expect(gqlPermissions?.totalCount).to.eql(1);
 
                 filter = {
@@ -966,7 +980,7 @@ describe("model", () => {
                         value: "learning"
                     }
                 }
-                gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getJoeAuthToken()}, filter);
+                gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getAdminAuthToken()}, filter);
                 expect(gqlPermissions?.totalCount).to.eql(27);
                 expect(gqlPermissions?.edges.length).to.equal(10);
             });
@@ -1013,7 +1027,7 @@ describe("model", () => {
 
         context("when user has Admin permissions", () => {
             it("should throw an error", async () => {
-                const result = await renameDuplicateOrganizationsMutation(testClient, getJoeAuthToken());
+                const result = await renameDuplicateOrganizationsMutation(testClient, getAdminAuthToken());
                 expect(result).eq(true);
 
                 const nullOrgs = await Organization.count({ where: { organization_name: null }});
