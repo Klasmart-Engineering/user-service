@@ -22,7 +22,7 @@ import { School } from "../../../../src/entities/school";
 import { SchoolMembership } from "../../../../src/entities/schoolMembership";
 import { processUserFromCSVRow } from "../../../../src/utils/csv/user";
 import { CSVError } from "../../../../src/types/csv/csvError";
-import { createUserBilly } from "../../../utils/testEntities";
+import { createAdminUser } from "../../../utils/testEntities";
 
 use(chaiAsPromised);
 
@@ -210,7 +210,7 @@ describe("processUserFromCSVRow", () => {
 
     context("when provided shortcode already exists in another user in the same organization", () => {
         beforeEach(async () => {
-            const existentUser = await createUserBilly(testClient);
+            const existentUser = await createAdminUser(testClient);
             const orgMembership = new OrganizationMembership();
             orgMembership.organization_id = organization.organization_id;
             orgMembership.organization = Promise.resolve(organization);
