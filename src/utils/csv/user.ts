@@ -342,6 +342,8 @@ export const processUserFromCSVRow = async (
         phone = normalizedLowercaseTrimmed(phone)
     }
 
+    row.user_gender = row.user_gender?.toLowerCase()
+
     const personalInfo = {
         given_name: row.user_given_name,
         family_name: row.user_family_name,

@@ -496,5 +496,30 @@ describe("processUserFromCSVRow", () => {
                 expect(dbUser.gender).to.eq(row.user_gender)
             });
         });
+
+        context("and the gender is written in uppercase", () => {
+            beforeEach(async () => {
+                row = {
+                    ...row,
+                    user_gender: 'Female'
+                }
+            })
+
+            it("creates the user", async () => {
+                await processUserFromCSVRow(connection.manager, row, 1, fileErrors);
+
+                const dbUser = await User.findOneOrFail({
+                    where: { email: row.user_email }
+                })
+
+                expect(dbUser.user_id).to.not.be.empty
+                expect(dbUser.email).to.eq(row.user_email)
+                expect(dbUser.phone).to.be.null
+                expect(dbUser.given_name).to.eq(row.user_given_name)
+                expect(dbUser.family_name).to.eq(row.user_family_name)
+                expect(dbUser.date_of_birth).to.eq(row.user_date_of_birth)
+                expect(dbUser.gender).to.eq('female')
+            });
+        });
     });
 });
