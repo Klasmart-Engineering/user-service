@@ -330,7 +330,8 @@ export class Model {
         if (filter) {
             if (
                 filterHasProperty('organizationId', filter) ||
-                filterHasProperty('roleId', filter)
+                filterHasProperty('roleId', filter) ||
+                filterHasProperty('organizationUserStatus', filter)
             ) {
                 scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
             }
@@ -349,10 +350,10 @@ export class Model {
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     organizationId: ['OrgMembership.organization_id'],
+                    organizationUserStatus: ['OrgMembership.status'],
                 })
             )
         }
-
         const data = await paginateData({
             direction,
             directionArgs,
@@ -360,10 +361,8 @@ export class Model {
             cursorTable: 'User',
             cursorColumn: 'user_id',
         })
-
         for (const edge of data.edges) {
             const user: User = edge.node
-
             const newNode: Partial<UserConnectionNode> = {
                 id: user.user_id,
                 givenName: user.given_name,

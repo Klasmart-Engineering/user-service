@@ -34,6 +34,7 @@ export const orgsForUsers = async (
                 organizationId: ['memberships.organization_id'],
                 schoolId: [], // don't attempt to filter by schoolId
                 roleId: ['roles.role_id'],
+                organizationUserStatus: ['memberships.status'],
             })
         )
     }
@@ -62,7 +63,6 @@ export const orgsForUsers = async (
             userOrgs.push([])
         }
     }
-
     return userOrgs
 }
 
@@ -87,6 +87,7 @@ export const schoolsForUsers = async (
                 organizationId: ['organization.organization_id'],
                 schoolId: ['memberships.school_id'],
                 roleId: ['roles.role_id'],
+                organizationUserStatus: [],
             })
         )
     }
@@ -144,6 +145,7 @@ export const rolesForUsers = async (
                 ],
                 schoolId: ['schoolMemberships.school_id'],
                 roleId: ['orgRoles.role_id', 'schoolRoles.role_id'],
+                organizationUserStatus: [],
             })
         )
     }

@@ -37,6 +37,8 @@ import { renameDuplicateOrganizationsMutation, renameDuplicateOrganizationsQuery
 import { IEntityFilter } from "../../src/utils/pagination/filtering";
 import { addRoleToOrganizationMembership } from "../utils/operations/organizationMembershipOps";
 import { addRoleToSchoolMembership } from "../utils/operations/schoolMembershipOps";
+import { OrganizationMembership } from "../../src/entities/organizationMembership";
+import { Status } from "../../src/entities/status";
 
 use(chaiAsPromised);
 
@@ -646,20 +648,6 @@ describe("model", () => {
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
             })
-
-            it('returns nothing for non admins', async()=>{
-                const filter: IEntityFilter = {
-                    organizationId: {
-                        operator: "eq",
-                        value: org.organization_id
-                    }
-                };
-                const usersConnection = await userConnection(
-                    testClient, direction, undefined,
-                    { authorization: getNonAdminAuthToken() }, filter)
-
-                expect(usersConnection?.totalCount).to.eql(0);
-            })
         })
 
         context('school filter',  ()=>{
@@ -809,6 +797,87 @@ describe("model", () => {
                 expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[7].user_id))
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('organizationUserStatus filter',  ()=>{
+            let org: Organization;
+            let school1: School;
+            let role1: Role;
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org);
+                role1 = createRole("role 1",org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org);
+
+                await connection.manager.save(school1);
+
+                usersList = [];
+                // create 10 users
+                for (let i=0; i<10; i++) {
+                    usersList.push(createUser())
+                }                
+                await connection.manager.save(usersList)
+                //sort users by userId
+                usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
+
+                for (let i=0; i<usersList.length; i++) {
+                    await addOrganizationToUserAndValidate(testClient, usersList[i].user_id, org.organization_id, getAdminAuthToken());
+                    await addRoleToOrganizationMembership(testClient,  usersList[i].user_id, org.organization_id, role1.role_id, { authorization: getAdminAuthToken() });
+                    await addSchoolToUser(testClient, usersList[i].user_id, school1.school_id, { authorization: getAdminAuthToken()})
+                    await addRoleToSchoolMembership(testClient, usersList[i].user_id, school1.school_id,role1.role_id, { authorization: getAdminAuthToken() })
+                }
+
+                //set 4 users to inactive
+                for (let i=0; i<4; i++) {
+                    const membershipDb = await OrganizationMembership.findOneOrFail({
+                        where: { user_id: usersList[i].user_id, organization_id: org.organization_id }
+                    })
+                    membershipDb.status = Status.INACTIVE
+                    await connection.manager.save(membershipDb)
+                }
+            })
+
+            it('should filter the pagination results on organizationId', async()=>{
+                let directionArgs = {
+                    count: 3
+                }
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: "eq",
+                        value: org.organization_id
+                    },
+                    organizationUserStatus: {
+                        operator: "eq",
+                        value: Status.INACTIVE
+                    }
+
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, directionArgs,
+                    { authorization: getAdminAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(4);
+                expect(usersConnection?.edges.length).to.equal(3);
+                for(let i=0; i<3; i++) {
+                    expect(usersConnection?.edges[i].node.organizations[0].status).to.equal(Status.INACTIVE)
+                }
+            })
+
+            it('returns nothing for non admins', async()=>{
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: "eq",
+                        value: org.organization_id
+                    }
+                };
+                const usersConnection = await userConnection(
+                    testClient, direction, undefined,
+                    { authorization: getNonAdminAuthToken() }, filter)
+
+                expect(usersConnection?.totalCount).to.eql(0);
             })
         })
 

@@ -15,10 +15,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
 import { OrganizationMembership } from './organizationMembership'
-import {
-    Organization,
-    padShortDob,
-} from './organization'
+import { Organization, padShortDob } from './organization'
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
 import { OrganizationOwnership } from './organizationOwnership'
