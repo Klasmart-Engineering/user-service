@@ -67,29 +67,21 @@ const backwardPaginate = async ({
 }: any) => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
-    let data
-    let hasPreviousPage
     const column = `"${cursorTable}"."${cursorColumn}"`
 
     if (cursorData) {
-        scope
-            .andWhere(`${column} < :cursorData`, { cursorData })
-            .orderBy(column, 'DESC')
-            .limit(seekPageSize)
-        data = await scope.getMany()
-        data.reverse()
-        hasPreviousPage = data.length > pageSize ? true : false
-    } else {
-        const skipValue = Math.ceil(totalCount / pageSize) * pageSize - pageSize
-        scope.orderBy(column, 'ASC').skip(skipValue)
-        data = await scope.getMany()
-        hasPreviousPage = data.length < totalCount ? true : false
+        scope.andWhere(`${column} < :cursorData`, { cursorData })
     }
+    scope.orderBy(column, 'DESC').limit(seekPageSize)
+    const data = await scope.getMany()
+    data.reverse()
+
+    const hasPreviousPage = data.length > pageSize ? true : false
 
     const hasNextPage = cursorData ? true : false
 
     let edges = getEdges(data, cursorColumn)
-    edges = cursorData && edges.length === seekPageSize ? edges.slice(1) : edges
+    edges = edges.length === seekPageSize ? edges.slice(1) : edges
 
     const startCursor = edges[0].cursor
     const endCursor = edges[edges.length - 1].cursor
