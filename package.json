@@ -12,7 +12,7 @@
     "start:local": "ROUTE_PREFIX=/user ts-node src/main.dev.ts",
     "build": "webpack",
     "lint": "eslint . --ext .ts --fix",
-    "prettier-format": "prettier --config .prettierrc src/**/*.ts --write",
+    "prettier-format": "prettier --config .prettierrc src/**/*.ts tests/**/*.ts --write",
     "test:unit": "mocha --require ts-node/register \"tests/unit/**/*.test.ts\"",
     "test:integration": "mocha --require ts-node/register --file tests/testHelper.ts \"tests/integration/**/*.test.ts\" --timeout 8000",
     "test": "npm run test:unit && npm run test:integration",

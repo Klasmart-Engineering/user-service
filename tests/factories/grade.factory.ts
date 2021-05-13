@@ -1,13 +1,17 @@
-import faker from "faker";
+import faker from 'faker'
 
-import { createOrganization } from "./organization.factory";
-import { Grade } from "../../src/entities/grade";
-import { Organization } from "../../src/entities/organization";
+import { createOrganization } from './organization.factory'
+import { Grade } from '../../src/entities/grade'
+import { Organization } from '../../src/entities/organization'
 
-export function createGrade(org: Organization = createOrganization(), progressFromGrade?: Grade, progressToGrade?: Grade) {
-    const grade = new Grade();
+export function createGrade(
+    org: Organization = createOrganization(),
+    progressFromGrade?: Grade,
+    progressToGrade?: Grade
+) {
+    const grade = new Grade()
 
-    grade.name = faker.random.word();
+    grade.name = faker.random.word()
     grade.organization = Promise.resolve(org)
     grade.system = false
 
@@ -19,5 +23,5 @@ export function createGrade(org: Organization = createOrganization(), progressFr
         grade.progress_to_grade = Promise.resolve(progressToGrade)
     }
 
-    return grade;
+    return grade
 }
