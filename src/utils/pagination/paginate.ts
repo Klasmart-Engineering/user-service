@@ -83,8 +83,8 @@ const backwardPaginate = async ({
     let edges = getEdges(data, cursorColumn)
     edges = edges.length === seekPageSize ? edges.slice(1) : edges
 
-    const startCursor = edges[0].cursor
-    const endCursor = edges[edges.length - 1].cursor
+    const startCursor = edges.length > 0 ? edges[0].cursor : ''
+    const endCursor = edges.length > 0 ? edges[edges.length - 1].cursor : ''
 
     const pageInfo = {
         startCursor,

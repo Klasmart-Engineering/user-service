@@ -84,7 +84,14 @@ describe('paginate', ()=>{
             expect(data.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[9].user_id))
             expect(data.pageInfo.hasNextPage).to.be.false
             expect(data.pageInfo.hasPreviousPage).to.be.true
-        })  
+        })
+        it('handles no results appropriately', async () => {
+            await connection.synchronize(true)
+            let directionArgs = { count: 10}
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
+            expect(data.totalCount).to.equal(0);
+            expect(data.edges.length).to.equal(0);
+        });
     })
 
     context('seek backward',  ()=>{
@@ -139,6 +146,13 @@ describe('paginate', ()=>{
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.false
         })
+        it('handles no results appropriately', async () => {
+            await connection.synchronize(true)
+            let directionArgs = { count: 10}
+            const data = await paginateData({direction, directionArgs, scope, cursorTable, cursorColumn})
+            expect(data.totalCount).to.equal(0);
+            expect(data.edges.length).to.equal(0);
+        });
     })
 
     context('default options', ()=>{
