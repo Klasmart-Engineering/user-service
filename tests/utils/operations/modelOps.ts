@@ -251,6 +251,7 @@ const USERS_CONNECTION = `
                     organizations {
                         id
                         status
+                        userStatus
                     }
                     schools {
                         id

@@ -862,7 +862,7 @@ describe("model", () => {
                 expect(usersConnection?.totalCount).to.eql(4);
                 expect(usersConnection?.edges.length).to.equal(3);
                 for(let i=0; i<3; i++) {
-                    expect(usersConnection?.edges[i].node.organizations[0].status).to.equal(Status.INACTIVE)
+                    expect(usersConnection?.edges[i].node.organizations[0].userStatus).to.equal(Status.INACTIVE)
                 }
             })
 

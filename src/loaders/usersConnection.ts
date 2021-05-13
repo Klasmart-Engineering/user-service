@@ -54,8 +54,8 @@ export const orgsForUsers = async (
                     id: m.organization_id,
                     name: (await m.organization)?.organization_name,
                     joinDate: m.join_timestamp,
-                    userStatus: user.status,
-                    status: m.status,
+                    userStatus: m.status,
+                    status: (await m.organization)?.status,
                 })
             }
             userOrgs.push(orgs)
@@ -109,8 +109,8 @@ export const schoolsForUsers = async (
                     organizationId:
                         (await (await m.school)?.organization)
                             ?.organization_id || '',
-                    userStatus: user.status,
-                    status: m.status,
+                    userStatus: m.status,
+                    status: (await m.school)?.status,
                 })
             }
             userSchools.push(schools)
