@@ -20,18 +20,12 @@ import {
     getSubcategory,
     getAllOrganizations,
     getOrganizations,
-    me,
     myUsers,
     getProgram,
     permissionsConnection,
-    uploadSchoolsFile,
     userConnection,
 } from '../utils/operations/modelOps'
-import {
-    getAdminAuthToken,
-    getAdminAuthWithoutIdToken,
-    getNonAdminAuthToken,
-} from '../utils/testConfig'
+import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import {
     createOrganizationAndValidate,
     addOrganizationToUserAndValidate,
@@ -53,10 +47,6 @@ import { before } from 'mocha'
 import { School } from '../../src/entities/school'
 import RolesInitializer from '../../src/initializers/roles'
 import { convertDataToCursor } from '../utils/paginate'
-import {
-    renameDuplicateOrganizationsMutation,
-    renameDuplicateOrganizationsQuery,
-} from '../utils/operations/renameDuplicateOrganizations'
 import { IEntityFilter } from '../../src/utils/pagination/filtering'
 import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
@@ -1629,74 +1619,6 @@ describe('model', () => {
                 )
                 expect(gqlPermissions?.totalCount).to.eql(27)
                 expect(gqlPermissions?.edges.length).to.equal(10)
-            })
-        })
-    })
-
-    describe('renameDuplicateOrganizations', () => {
-        const organizationName = 'Organization 1'
-
-        beforeEach(async () => {
-            for (let i = 0; i < 3; i += 1) {
-                const organization = new Organization()
-                organization.organization_name = organizationName
-                await organization.save()
-
-                const nullOrganization = new Organization()
-                await nullOrganization.save()
-            }
-        })
-
-        context('when operation is not a mutation', () => {
-            it('should throw an error', async () => {
-                const fn = async () =>
-                    await renameDuplicateOrganizationsQuery(testClient)
-                expect(fn()).to.be.rejected
-
-                const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
-                })
-                const duplicatedOrgs = await Organization.count({
-                    where: { organization_name: organizationName },
-                })
-                expect(nullOrgs).eq(3)
-                expect(duplicatedOrgs).eq(3)
-            })
-        })
-
-        context('when user has not Admin permissions', () => {
-            it('should throw an error', async () => {
-                const fn = async () =>
-                    await renameDuplicateOrganizationsMutation(testClient)
-                expect(fn()).to.be.rejected
-
-                const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
-                })
-                const duplicatedOrgs = await Organization.count({
-                    where: { organization_name: organizationName },
-                })
-                expect(nullOrgs).eq(3)
-                expect(duplicatedOrgs).eq(3)
-            })
-        })
-
-        context('when user has Admin permissions', () => {
-            it('should throw an error', async () => {
-                const result = await renameDuplicateOrganizationsMutation(
-                    testClient,
-                    getAdminAuthToken()
-                )
-                expect(result).eq(true)
-
-                const nullOrgs = await Organization.count({
-                    where: { organization_name: null },
-                })
-                const duplicatedOrgs = await Organization.count({
-                    where: { organization_name: organizationName },
-                })
-                expect(nullOrgs).eq(0)
-                expect(duplicatedOrgs).eq(1)
             })
         })
     })
