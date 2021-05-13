@@ -1,39 +1,43 @@
-import { User } from "../../src/entities/user";
-import { ApolloServerTestClient } from "./createTestClient";
-import { createUserAndValidate } from "./operations/modelOps";
-import { userToPayload } from "./operations/userOps";
-import { generateToken, setBillyAuthToken, setJoeAuthToken, setJoeAuthWithoutIdToken } from "./testConfig";
+import { User } from '../../src/entities/user'
+import { ApolloServerTestClient } from './createTestClient'
+import { createUserAndValidate } from './operations/modelOps'
+import { userToPayload } from './operations/userOps'
+import {
+    generateToken,
+    setNonAdminAuthToken,
+    setAdminAuthToken,
+    setAdminAuthWithoutIdToken,
+} from './testConfig'
 
-export async function createUserJoe(testClient: ApolloServerTestClient) {
-    const joeUser = await createUserAndValidate(testClient, joe);
-    if(joeUser) {
-        setJoeAuthToken(generateToken(userToPayload(joeUser)))
-        setJoeAuthWithoutIdToken(generateToken(userToPayload(joe)))
-        
+export async function createAdminUser(testClient: ApolloServerTestClient) {
+    const adminUser = await createUserAndValidate(testClient, joe)
+    if (adminUser) {
+        setAdminAuthToken(generateToken(userToPayload(adminUser)))
+        setAdminAuthWithoutIdToken(generateToken(userToPayload(joe)))
     }
-    return joeUser
+    return adminUser
 }
 
-export async function createUserBilly(testClient: ApolloServerTestClient) {
-    const billyUser = await createUserAndValidate(testClient, billy);
-    if(billyUser) {
-        setBillyAuthToken(generateToken(userToPayload(billyUser)))
+export async function createNonAdminUser(testClient: ApolloServerTestClient) {
+    const nonAdminUser = await createUserAndValidate(testClient, billy)
+    if (nonAdminUser) {
+        setNonAdminAuthToken(generateToken(userToPayload(nonAdminUser)))
     }
-    return billyUser
+    return nonAdminUser
 }
 
 const joe = {
-    given_name: "Joe",
-    family_name: "Brown",
-    email: "joe@gmail.com",
-    avatar: "joe_avatar",
-    date_of_birth: "03-1984",
-    username: "Tigger",
-} as User;
+    given_name: 'Joe',
+    family_name: 'Brown',
+    email: 'joe@gmail.com',
+    avatar: 'joe_avatar',
+    date_of_birth: '03-1984',
+    username: 'Tigger',
+} as User
 
 const billy = {
-    given_name: "Billy",
-    family_name: "Bob",
-    email: "billy@gmail.com",
-    avatar: "billy_avatar",
-} as User;
+    given_name: 'Billy',
+    family_name: 'Bob',
+    email: 'billy@gmail.com',
+    avatar: 'billy_avatar',
+} as User

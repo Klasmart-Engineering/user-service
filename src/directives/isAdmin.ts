@@ -1,6 +1,6 @@
 import { SchemaDirectiveVisitor } from 'apollo-server-express'
 import { defaultFieldResolver } from 'graphql'
-import { getRepository } from 'typeorm'
+import { Brackets, getRepository } from 'typeorm'
 import { Class } from '../entities/class'
 
 import { AgeRange } from '../entities/ageRange'
@@ -94,9 +94,29 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
     }
 
     private nonAdminUserScope(scope: any, context?: any) {
-        scope.select('User').where('User.user_id = :d_userId', {
-            d_userId: context.permissions.getUserId(),
-        })
+        const subQuery = getRepository(Organization)
+            .createQueryBuilder()
+            .select('Organization.organization_id')
+            .distinct(true)
+            .innerJoin('Organization.memberships', 'OrganizationMembership')
+            .andWhere('OrganizationMembership.user_id = :d_userId', {
+                d_userId: context.permissions.getUserId(),
+            })
+            .getQuery()
+
+        scope
+            .leftJoinAndSelect('User.memberships', 'OrganizationMembership')
+            .where(
+                new Brackets((qb) => {
+                    qb.where(
+                        'OrganizationMembership.organization IN (' +
+                            subQuery +
+                            ') '
+                    ).orWhere('User.user_id = :d_userId', {
+                        d_userId: context.permissions.getUserId(),
+                    })
+                })
+            )
     }
 
     private nonAdminOrganizationScope(scope: any, context?: any) {

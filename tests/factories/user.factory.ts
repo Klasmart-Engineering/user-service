@@ -1,18 +1,18 @@
-import faker from "faker";
-import { User } from "../../src/entities/user";
+import faker from 'faker'
+import { User } from '../../src/entities/user'
 
-const gender = ['Male', 'Female', 'Perfer not to say'];
+const gender = ['Male', 'Female', 'Perfer not to say']
 
-export function createUser( ) {
-    const user = new User();
+export function createUser() {
+    const user = new User()
 
-    user.given_name = faker.name.firstName();
-    user.family_name = faker.name.lastName();
-    user.email = faker.internet.email();
-    user.phone = faker.internet.email();
-    user.username = faker.internet.userName();
+    user.given_name = faker.name.firstName()
+    user.family_name = faker.name.lastName()
+    user.email = faker.internet.email()
+    user.phone = faker.internet.email()
+    user.username = faker.internet.userName()
     user.date_of_birth = '01-2018'
     user.gender = faker.random.arrayElement(gender)
 
-    return user;
+    return user
 }

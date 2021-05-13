@@ -3,7 +3,11 @@ import { Organization } from '../../entities/organization'
 import { Class } from '../../entities/class'
 import { School } from '../../entities/school'
 import { Program } from '../../entities/program'
-import { generateShortCode } from '../shortcode'
+import {
+    generateShortCode,
+    SHORTCODE_DEFAULT_MAXLEN,
+    validateShortCode,
+} from '../shortcode'
 import { ClassRow } from '../../types/csv/classRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
@@ -25,7 +29,7 @@ export const processClassFromCSVRow = async (
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
@@ -39,7 +43,7 @@ export const processClassFromCSVRow = async (
     if (!class_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_FIELD,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'class_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
@@ -53,7 +57,7 @@ export const processClassFromCSVRow = async (
     if (class_name?.length > validationConstants.CLASS_NAME_MAX_LENGTH) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
             rowNumber,
             'class_name',
             csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
@@ -61,6 +65,24 @@ export const processClassFromCSVRow = async (
                 entity: 'class',
                 attribute: 'name',
                 max: validationConstants.CLASS_NAME_MAX_LENGTH,
+            }
+        )
+    }
+
+    if (
+        class_shortcode &&
+        !validateShortCode(class_shortcode, SHORTCODE_DEFAULT_MAXLEN)
+    ) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+            rowNumber,
+            'class_shortcode',
+            csvErrorConstants.MSG_ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+            {
+                entity: 'class',
+                attribute: 'shortcode',
+                max: SHORTCODE_DEFAULT_MAXLEN,
             }
         )
     }
@@ -75,7 +97,7 @@ export const processClassFromCSVRow = async (
     if (!org) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
@@ -108,27 +130,26 @@ export const processClassFromCSVRow = async (
         return
     }
 
-    if (
-        class_shortcode &&
-        (await Class.findOne({
-            where: {
-                shortcode: class_shortcode,
-                organization: org,
-                class_name: Not(class_name),
-            },
-        }))
-    ) {
+    const classExist = await manager.findOne(Class ,{
+        where: {
+            shortcode: class_shortcode,
+            organization: org,
+            class_name: Not(class_name),
+        },
+    })
+
+    if (class_shortcode && classExist) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'class_shortcode',
             csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
             {
-                name: class_name,
-                entity: 'class',
-                parent_name: organization_name,
-                parent_entity: 'organization',
+                name: class_shortcode,
+                entity: 'shortcode',
+                parent_name: classExist.class_name,
+                parent_entity: 'class',
             }
         )
 
@@ -160,7 +181,7 @@ export const processClassFromCSVRow = async (
         if (!school) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 rowNumber,
                 'school_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
@@ -182,7 +203,7 @@ export const processClassFromCSVRow = async (
         if (existingSchoolNames.includes(school_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'school_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
@@ -216,7 +237,7 @@ export const processClassFromCSVRow = async (
         if (!programToAdd) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_NONE_EXISTING_ENTITY,
+                csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
                 csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
@@ -238,7 +259,7 @@ export const processClassFromCSVRow = async (
         if (existingProgramNames.includes(program_name)) {
             addCsvError(
                 fileErrors,
-                csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,

@@ -8,13 +8,9 @@ import {
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
-import {
-    Organization,
-    validateDOB,
-    validateEmail,
-    validatePhone,
-    padShortDob,
-} from './entities/organization'
+import { OrganizationMembership } from './entities/organizationMembership'
+import { SchoolMembership } from './entities/schoolMembership'
+import { Organization, padShortDob } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
 import { AgeRange } from './entities/ageRange'
 import CategoriesInitializer from './initializers/categories'
@@ -47,7 +43,12 @@ import {
     renameNullOrganizations,
     renameDuplicatedOrganizations,
 } from './utils/renameMigration/organization'
-import { getWhereClauseFromFilter, filterHasProperty } from './utils/pagination/filtering'
+import {
+    getWhereClauseFromFilter,
+    filterHasProperty,
+} from './utils/pagination/filtering'
+import { UserConnectionNode } from './types/graphQL/userConnectionNode'
+import { validateDOB, validateEmail, validatePhone } from './utils/validations'
 
 export class Model {
     public static async create() {
@@ -86,6 +87,8 @@ export class Model {
     private schoolRepository: Repository<School>
     private permissionRepository: Repository<Permission>
     private ageRangeRepository: Repository<AgeRange>
+    private organizationMembershipRepository: Repository<OrganizationMembership>
+    private schoolMembershipRepository: Repository<SchoolMembership>
 
     constructor(connection: Connection) {
         this.connection = connection
@@ -100,53 +103,31 @@ export class Model {
         this.schoolRepository = getRepository(School, connection.name)
         this.permissionRepository = getRepository(Permission, connection.name)
         this.ageRangeRepository = getRepository(AgeRange, connection.name)
+        this.organizationMembershipRepository = getRepository(
+            OrganizationMembership,
+            connection.name
+        )
+        this.schoolMembershipRepository = getRepository(
+            SchoolMembership,
+            connection.name
+        )
     }
 
     public async getMyUser({ token, permissions }: Context) {
-        let userID = permissions.getUserId()
-        let userEmail = token?.email
-        let userPhone = token?.phone
+        const user_id = permissions.getUserId()
+        if (!user_id) {
+            return undefined
+        }
 
-        let user = await this.userRepository.findOne({
+        const email = token?.email
+        const phone = token?.phone
+
+        const user = await this.userRepository.findOne({
             where: [
-                { email: userEmail, user_id: userID },
-                { phone: userPhone, user_id: userID },
+                { email, user_id },
+                { phone, user_id },
             ],
         })
-
-        if (user) {
-            return user
-        }
-
-        if (token?.id && userID != token?.id) {
-            userID = token?.id
-            user = await this.userRepository.findOne({
-                where: [
-                    { email: userEmail, user_id: userID },
-                    { phone: userPhone, user_id: userID },
-                ],
-            })
-        }
-
-        if (user) {
-            return user
-        }
-
-        if (userEmail && !validateEmail(userEmail)) {
-            userEmail = undefined
-        }
-        if (userPhone && !validatePhone(userPhone)) {
-            userPhone = undefined
-        }
-
-        if (userEmail || userPhone) {
-            user = new User()
-            user.user_id = uuid_v4()
-            user.email = userEmail
-            user.phone = userPhone
-
-            await user.save()
-        }
 
         return user
     }
@@ -193,36 +174,6 @@ export class Model {
 
         await this.manager.save(newUser)
         return newUser
-    }
-
-    public async switchUser(
-        { user_id }: any,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const userEmail = context.token?.email
-        const userPhone = context.token?.phone
-        let user = undefined
-
-        if (userEmail) {
-            user = await User.findOne({
-                where: { email: userEmail, user_id: user_id },
-            })
-        } else if (userPhone) {
-            user = await User.findOne({
-                where: { phone: userPhone, user_id: user_id },
-            })
-        }
-
-        if (!user) {
-            throw new Error(
-                `Not able to switch to user ${user_id}. Please try authenticating again`
-            )
-        }
-
-        context.res.cookie('user_id', user.user_id)
-
-        return user
     }
 
     public async setUser({
@@ -375,25 +326,64 @@ export class Model {
     public async usersConnection(
         context: Context,
         { direction, directionArgs, scope, filter }: any
-     ) {
+    ) {
         if (filter) {
-            if (filterHasProperty("organization_id", filter)) {
-                scope.leftJoinAndSelect("User.memberships","OrganizationMembership");
+            if (
+                filterHasProperty('organizationId', filter) ||
+                filterHasProperty('roleId', filter) ||
+                filterHasProperty('organizationUserStatus', filter)
+            ) {
+                scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
             }
-            if (filterHasProperty("school_id", filter)) {
-                scope.leftJoinAndSelect("User.school_memberships","SchoolMembership");
+            if (filterHasProperty('roleId', filter)) {
+                scope.innerJoinAndSelect(
+                    'OrgMembership.roles',
+                    'RoleMembershipsOrganizationMembership'
+                )
             }
-
-            scope.andWhere(getWhereClauseFromFilter(filter));
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect(
+                    'User.school_memberships',
+                    'schoolMembership'
+                )
+            }
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['OrgMembership.organization_id'],
+                    organizationUserStatus: ['OrgMembership.status'],
+                })
+            )
         }
-
-        return paginateData({
+        const data = await paginateData({
             direction,
             directionArgs,
             scope,
-            cursorTable: "User",
-            cursorColumn: "user_id"
+            cursorTable: 'User',
+            cursorColumn: 'user_id',
         })
+        for (const edge of data.edges) {
+            const user: User = edge.node
+            const newNode: Partial<UserConnectionNode> = {
+                id: user.user_id,
+                givenName: user.given_name,
+                familyName: user.family_name,
+                avatar: user.avatar,
+                status: user.status,
+                contactInfo: {
+                    email: user.email,
+                    phone: user.phone,
+                },
+                alternateContactInfo: {
+                    email: user.alternate_email,
+                    phone: user.alternate_phone,
+                },
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
     }
 
     public async permissionsConnection(
@@ -403,15 +393,15 @@ export class Model {
         const scope = this.permissionRepository.createQueryBuilder()
 
         if (filter) {
-            scope.andWhere(getWhereClauseFromFilter(filter));
+            scope.andWhere(getWhereClauseFromFilter(filter))
         }
 
         return paginateData({
             direction,
             directionArgs,
             scope,
-            cursorTable: "Permission",
-            cursorColumn: 'permission_id'
+            cursorTable: 'Permission',
+            cursorColumn: 'permission_id',
         })
     }
 

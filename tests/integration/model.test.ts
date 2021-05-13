@@ -1,275 +1,204 @@
-import { expect, use } from "chai";
-import { Connection } from "typeorm";
-import { ApolloServerTestClient, createTestClient } from "../utils/createTestClient";
-import { createTestConnection } from "../utils/testConnection";
-import { createClass } from "../factories/class.factory";
-import { createServer } from "../../src/utils/createServer";
-import { createUserJoe, createUserBilly } from "../utils/testEntities";
-import { createAgeRange } from "../factories/ageRange.factory";
-import { createGrade } from "../factories/grade.factory";
-import { createOrganization } from "../factories/organization.factory";
-import { createRole } from "../factories/role.factory";
-import { createSchool } from "../factories/school.factory";
-import { createSubcategory } from "../factories/subcategory.factory";
-import { createUser } from "../factories/user.factory";
-import { getAgeRange, getGrade, getSubcategory, getAllOrganizations,
-    getOrganizations, switchUser, me, myUsers,
-    getProgram, permissionsConnection, uploadSchoolsFile, userConnection
-} from "../utils/operations/modelOps";
-import { getJoeAuthToken, getJoeAuthWithoutIdToken, getBillyAuthToken } from "../utils/testConfig";
-import { createOrganizationAndValidate } from "../utils/operations/userOps";
-import { addUserToOrganizationAndValidate } from "../utils/operations/organizationOps";
-import { Model } from "../../src/model";
-import { AgeRange } from "../../src/entities/ageRange";
-import { Class } from "../../src/entities/class";
-import { Grade } from "../../src/entities/grade";
-import { User } from "../../src/entities/user";
-import { Permission } from "../../src/entities/permission";
-import { Organization } from "../../src/entities/organization";
-import { Subcategory } from "../../src/entities/subcategory";
-import chaiAsPromised from "chai-as-promised";
-import { Program } from "../../src/entities/program";
-import { createProgram } from "../factories/program.factory";
-import fs from 'fs';
-import { resolve } from 'path';
-import { queryUploadGrades, uploadGrades } from "../utils/operations/csv/uploadGrades";
-import { ReadStream } from 'fs';
-import { queryUploadRoles, uploadRoles } from "../utils/operations/csv/uploadRoles";
-import { queryUploadClasses, uploadClasses } from "../utils/operations/csv/uploadClasses";
-import { queryUploadSubCategories, uploadSubCategories } from "../utils/operations/csv/uploadSubcategories";
-import { queryUploadUsers, uploadUsers } from "../utils/operations/csv/uploadUsers";
-import { Role } from "../../src/entities/role";
-import { before } from "mocha";
-import { queryUploadOrganizations, uploadOrganizations } from "../utils/operations/csv/uploadOrganizations";
-import { Category } from "../../src/entities/category";
-import { queryUploadCategories, uploadCategories } from "../utils/operations/csv/uploadCategories";
-import { School } from "../../src/entities/school";
-import { queryUploadSchools, uploadSchools } from "../utils/operations/csv/uploadSchools";
-import ProgramsInitializer from "../../src/initializers/programs";
-import CategoriesInitializer from "../../src/initializers/categories";
-import SubcategoriesInitializer from "../../src/initializers/subcategories";
-import AgeRangesInitializer from "../../src/initializers/ageRanges";
-import SubjectsInitializer from "../../src/initializers/subjects";
-import GradesInitializer from "../../src/initializers/grades";
-import RolesInitializer from "../../src/initializers/roles";
-import { queryUploadSubjects, uploadSubjects } from "../utils/operations/csv/uploadSubjects";
-import { Subject } from "../../src/entities/subject";
-import { createSubject } from "../factories/subject.factory";
-import { AgeRangeUnit } from "../../src/entities/ageRangeUnit";
-import { queryUploadPrograms, uploadPrograms } from "../utils/operations/csv/uploadPrograms";
-import { queryUploadAgeRanges, uploadAgeRanges } from "../utils/operations/csv/uploadAgeRanges";
-import { convertDataToCursor } from "../utils/paginate";
-import { IEntityFilter } from "../../src/utils/pagination/filtering";
+import { expect, use } from 'chai'
+import { Connection } from 'typeorm'
+import {
+    ApolloServerTestClient,
+    createTestClient,
+} from '../utils/createTestClient'
+import { createTestConnection } from '../utils/testConnection'
+import { createServer } from '../../src/utils/createServer'
+import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { createAgeRange } from '../factories/ageRange.factory'
+import { createGrade } from '../factories/grade.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createRole } from '../factories/role.factory'
+import { createSchool } from '../factories/school.factory'
+import { createSubcategory } from '../factories/subcategory.factory'
+import { createUser } from '../factories/user.factory'
+import {
+    getAgeRange,
+    getGrade,
+    getSubcategory,
+    getAllOrganizations,
+    getOrganizations,
+    me,
+    myUsers,
+    getProgram,
+    permissionsConnection,
+    uploadSchoolsFile,
+    userConnection,
+} from '../utils/operations/modelOps'
+import {
+    getAdminAuthToken,
+    getAdminAuthWithoutIdToken,
+    getNonAdminAuthToken,
+} from '../utils/testConfig'
+import {
+    createOrganizationAndValidate,
+    addOrganizationToUserAndValidate,
+    addSchoolToUser,
+} from '../utils/operations/userOps'
+import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
+import { Model } from '../../src/model'
+import { AgeRange } from '../../src/entities/ageRange'
+import { Grade } from '../../src/entities/grade'
+import { User } from '../../src/entities/user'
+import { Permission } from '../../src/entities/permission'
+import { Organization } from '../../src/entities/organization'
+import { Subcategory } from '../../src/entities/subcategory'
+import chaiAsPromised from 'chai-as-promised'
+import { Program } from '../../src/entities/program'
+import { createProgram } from '../factories/program.factory'
+import { Role } from '../../src/entities/role'
+import { before } from 'mocha'
+import { School } from '../../src/entities/school'
+import RolesInitializer from '../../src/initializers/roles'
+import { convertDataToCursor } from '../utils/paginate'
+import {
+    renameDuplicateOrganizationsMutation,
+    renameDuplicateOrganizationsQuery,
+} from '../utils/operations/renameDuplicateOrganizations'
+import { IEntityFilter } from '../../src/utils/pagination/filtering'
+import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
+import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { Status } from '../../src/entities/status'
 
-use(chaiAsPromised);
+use(chaiAsPromised)
 
-describe("model", () => {
-    let connection: Connection;
-    let testClient: ApolloServerTestClient;
+describe('model', () => {
+    let connection: Connection
+    let testClient: ApolloServerTestClient
 
     before(async () => {
-        connection = await createTestConnection();
-        const server = createServer(new Model(connection));
-        testClient = createTestClient(server);
-    });
+        connection = await createTestConnection()
+        const server = createServer(new Model(connection))
+        testClient = createTestClient(server)
+    })
 
     after(async () => {
-        await connection?.close();
-    });
+        await connection?.close()
+    })
 
-    describe("switchUser", () => {
-        let user: User;
-
-        beforeEach(async () => {
-            user = await createUserJoe(testClient);
-        });
-
-        context("when user is not logged in", () => {
-            it("raises an error", async () => {
-                const fn = () => switchUser(testClient, user.user_id, { authorization: undefined });
-
-                expect(fn()).to.be.rejected;
-            });
-        });
-
-        context("when user is logged in", () => {
-            context("and the user_id is on the account", () => {
-                it("returns the expected user", async () => {
-                    const gqlRes = await switchUser(testClient, user.user_id, { authorization: getJoeAuthToken() });
-                    const gqlUser = gqlRes.data?.switch_user as User
-                    const gqlCookies = gqlRes.extensions?.cookies
-
-                    expect(gqlUser.user_id).to.eq(user.user_id)
-                    expect(gqlCookies.user_id?.value).to.eq(user.user_id)
-                });
-            });
-
-            context("and the user_id is on the account", () => {
-                let otherUser: User;
-
-                beforeEach(async () => {
-                    otherUser = await createUserBilly(testClient);
-                });
-
-                it("raises an error", async () => {
-                    const fn = () => switchUser(testClient, otherUser.user_id, { authorization: getJoeAuthToken() });
-
-                    expect(fn()).to.be.rejected;
-                });
-            });
-        });
-    });
-
-    describe("getMyUser", () => {
-        let user: User;
+    describe('getMyUser', () => {
+        let user: User
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
-        });
+            user = await createAdminUser(testClient)
+        })
+    })
 
-        context("when user is not logged in", () => {
-            context("and the user_id cookie is not provided", () => {
-                it("returns null", async () => {
-                    const gqlUser = await me(testClient, { authorization: undefined });
-
-                    expect(gqlUser).to.be.null
-                });
-            });
-
-            context("and the user_id cookie is provided", () => {
-                it("returns null", async () => {
-                    const gqlUser = await me(testClient, { authorization: undefined }, { user_id: user.user_id });
-
-                    expect(gqlUser).to.be.null
-                });
-            });
-        });
-
-        context("when user is logged in", () => {
-            context("and no user_id cookie is provided", () => {
-                it("creates and returns the expected user", async () => {
-                    const gqlUserWithoutId = await me(testClient, { authorization: getJoeAuthWithoutIdToken() }, { user_id: user.user_id });
-                    const gqlUser = await me(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
-
-                    expect(gqlUserWithoutId.user_id).to.eq(gqlUser.user_id)
-                });
-            });
-
-            context("and the correct user_id cookie is provided", () => {
-                it("returns the expected user", async () => {
-                    const gqlUser = await me(testClient, { authorization: getJoeAuthToken() }, { user_id: user.user_id });
-
-                    expect(gqlUser.user_id).to.eq(user.user_id)
-                });
-            });
-
-            context("and the incorrect user_id cookie is provided", () => {
-                let otherUser: User;
-
-                beforeEach(async () => {
-                    otherUser = await createUserBilly(testClient);
-                });
-
-                it("returns a user based from the token", async () => {
-                    const gqlUser = await me(testClient, { authorization: getJoeAuthToken() }, { user_id: otherUser.user_id });
-
-                    expect(gqlUser).to.not.be.null
-                    expect(gqlUser.user_id).to.eq(user.user_id)
-                    expect(gqlUser.email).to.eq(user.email)
-                });
-            });
-        });
-    });
-
-    describe("myUsers", () => {
-        let user: User;
+    describe('myUsers', () => {
+        let user: User
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
-        });
+            user = await createAdminUser(testClient)
+        })
 
-        context("when user is not logged in", () => {
-            it("raises an error", async () => {
-                const fn = () => myUsers(testClient, { authorization: undefined });
+        context('when user is not logged in', () => {
+            it('raises an error', async () => {
+                const fn = () =>
+                    myUsers(testClient, { authorization: undefined })
 
-                expect(fn()).to.be.rejected;
-            });
-        });
+                expect(fn()).to.be.rejected
+            })
+        })
 
-        context("when user is logged in", () => {
-            const userInfo = (user: User) => { return user.user_id }
+        context('when user is logged in', () => {
+            const userInfo = (user: User) => {
+                return user.user_id
+            }
 
-            it("returns the expected users", async () => {
-                const gqlUsers = await myUsers(testClient, { authorization: getJoeAuthToken() });
+            it('returns the expected users', async () => {
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: getAdminAuthToken(),
+                })
 
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
-            });
-        });
-    });
+            })
+        })
+    })
 
-    describe("getOrganizations", () => {
-        let user: User;
-        let organization: Organization;
+    describe('getOrganizations', () => {
+        let user: User
+        let organization: Organization
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
-            organization = await createOrganizationAndValidate(testClient, user.user_id);
-        });
+            user = await createAdminUser(testClient)
+            organization = await createOrganizationAndValidate(
+                testClient,
+                user.user_id
+            )
+        })
 
-        context("when user is not logged in", () => {
-            it("returns an empty list of organizations", async () => {
-                const gqlOrgs = await getAllOrganizations(testClient, { authorization: undefined });
+        context('when user is not logged in', () => {
+            it('returns an empty list of organizations', async () => {
+                const gqlOrgs = await getAllOrganizations(testClient, {
+                    authorization: undefined,
+                })
 
-                expect(gqlOrgs).to.be.empty;
-            });
-        });
+                expect(gqlOrgs).to.be.empty
+            })
+        })
 
-        context("when user is logged in", () => {
-            const orgInfo = (org: Organization) => { return org.organization_id }
+        context('when user is logged in', () => {
+            const orgInfo = (org: Organization) => {
+                return org.organization_id
+            }
             let otherOrganization: Organization
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
-                otherOrganization = await createOrganizationAndValidate(testClient, otherUser.user_id, "Billy's Org");
-            });
+                const otherUser = await createNonAdminUser(testClient)
+                otherOrganization = await createOrganizationAndValidate(
+                    testClient,
+                    otherUser.user_id,
+                    "Billy's Org"
+                )
+            })
 
-            context("and the user is not an admin", () => {
-                it("raises an error", async () => {
-                    const fn = () => getAllOrganizations(testClient, { authorization: getBillyAuthToken() });
+            context('and the user is not an admin', () => {
+                it('raises an error', async () => {
+                    const fn = () =>
+                        getAllOrganizations(testClient, {
+                            authorization: getNonAdminAuthToken(),
+                        })
 
-                    expect(fn()).to.be.rejected;
-                });
-            });
+                    expect(fn()).to.be.rejected
+                })
+            })
 
-            context("and there is no filter in the organization ids", () => {
-                it("returns the expected organizations", async () => {
-                    const gqlOrgs = await getAllOrganizations(testClient, { authorization: getJoeAuthToken() });
+            context('and there is no filter in the organization ids', () => {
+                it('returns the expected organizations', async () => {
+                    const gqlOrgs = await getAllOrganizations(testClient, {
+                        authorization: getAdminAuthToken(),
+                    })
 
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         organization.organization_id,
-                        otherOrganization.organization_id
-                    ]);
-                });
-            });
+                        otherOrganization.organization_id,
+                    ])
+                })
+            })
 
-            context("and there is a filter in the organization ids", () => {
-                it("returns the expected organizations", async () => {
+            context('and there is a filter in the organization ids', () => {
+                it('returns the expected organizations', async () => {
                     const gqlOrgs = await getOrganizations(
                         testClient,
                         [organization.organization_id],
-                        { authorization: getJoeAuthToken() }
-                    );
+                        { authorization: getAdminAuthToken() }
+                    )
 
-                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([organization.organization_id]);
-                });
-            });
-        });
-    });
+                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([
+                        organization.organization_id,
+                    ])
+                })
+            })
+        })
+    })
 
-    describe("getAgeRange", () => {
-        let user: User;
-        let ageRange: AgeRange;
-        let organizationId: string;
+    describe('getAgeRange', () => {
+        let user: User
+        let ageRange: AgeRange
+        let organizationId: string
 
         const ageRangeInfo = (ageRange: AgeRange) => {
             return {
@@ -284,88 +213,134 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient)
             const org = createOrganization(user)
             await connection.manager.save(org)
             organizationId = org.organization_id
             ageRange = createAgeRange(org)
             await connection.manager.save(ageRange)
-        });
+        })
 
-        context("when user is not logged in", () => {
-            it("returns no age range", async () => {
-                const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: undefined });
+        context('when user is not logged in', () => {
+            it('returns no age range', async () => {
+                const gqlAgeRange = await getAgeRange(testClient, ageRange.id, {
+                    authorization: undefined,
+                })
 
-                expect(gqlAgeRange).to.be.null;
-            });
-        });
+                expect(gqlAgeRange).to.be.null
+            })
+        })
 
-        context("when user is logged in", () => {
-            let otherUserId: string;
+        context('when user is logged in', () => {
+            let otherUserId: string
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient)
                 otherUserId = otherUser.user_id
-            });
+            })
 
-            context("and the user is not an admin", () => {
-                context("and it belongs to the organization from the age range", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                    });
+            context('and the user is not an admin', () => {
+                context(
+                    'and it belongs to the organization from the age range',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                otherUserId,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
+                        it('returns the expected age range', async () => {
+                            const gqlAgeRange = await getAgeRange(
+                                testClient,
+                                ageRange.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                        expect(gqlAgeRange).not.to.be.null;
-                        expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
-                    });
-                });
+                            expect(gqlAgeRange).not.to.be.null
+                            expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(
+                                ageRangeInfo(ageRange)
+                            )
+                        })
+                    }
+                )
 
-                context("and it does not belongs to the organization from the age range", () => {
-                    it("returns no age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getBillyAuthToken() });
+                context(
+                    'and it does not belongs to the organization from the age range',
+                    () => {
+                        it('returns no age range', async () => {
+                            const gqlAgeRange = await getAgeRange(
+                                testClient,
+                                ageRange.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                        expect(gqlAgeRange).to.be.null;
-                    });
-                });
-            });
+                            expect(gqlAgeRange).to.be.null
+                        })
+                    }
+                )
+            })
 
-            context("and the user is an admin", () => {
-                context("and it belongs to the organization from the age range", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
-                    });
+            context('and the user is an admin', () => {
+                context(
+                    'and it belongs to the organization from the age range',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                user.user_id,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
+                        it('returns the expected age range', async () => {
+                            const gqlAgeRange = await getAgeRange(
+                                testClient,
+                                ageRange.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                        expect(gqlAgeRange).not.to.be.null;
-                        expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
-                    });
-                });
+                            expect(gqlAgeRange).not.to.be.null
+                            expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(
+                                ageRangeInfo(ageRange)
+                            )
+                        })
+                    }
+                )
 
-                context("and it does not belongs to the organization from the age range", () => {
-                    it("returns the expected age range", async () => {
-                        const gqlAgeRange = await getAgeRange(testClient, ageRange.id, { authorization: getJoeAuthToken() });
+                context(
+                    'and it does not belongs to the organization from the age range',
+                    () => {
+                        it('returns the expected age range', async () => {
+                            const gqlAgeRange = await getAgeRange(
+                                testClient,
+                                ageRange.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                        expect(gqlAgeRange).not.to.be.null;
-                        expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(ageRangeInfo(ageRange))
-                    });
-                });
-            });
-        });
-    });
+                            expect(gqlAgeRange).not.to.be.null
+                            expect(ageRangeInfo(gqlAgeRange)).to.deep.eq(
+                                ageRangeInfo(ageRange)
+                            )
+                        })
+                    }
+                )
+            })
+        })
+    })
 
-    describe("getGrade", () => {
-        let user: User;
-        let userId: string;
-        let otherUserId: string;
-        let organization: Organization;
-        let organizationId: string;
-        let grade: Grade;
+    describe('getGrade', () => {
+        let user: User
+        let userId: string
+        let otherUserId: string
+        let organization: Organization
+        let organizationId: string
+        let grade: Grade
 
-        let gradeDetails: any;
+        let gradeDetails: any
 
         const gradeInfo = async (grade: Grade) => {
             return {
@@ -377,86 +352,133 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            const orgOwner = await createUserJoe(testClient);
+            const orgOwner = await createAdminUser(testClient)
             otherUserId = orgOwner.user_id
-            user = await createUserBilly(testClient);
+            user = await createNonAdminUser(testClient)
             userId = user.user_id
-            organization = await createOrganizationAndValidate(testClient, orgOwner.user_id);
+            organization = await createOrganizationAndValidate(
+                testClient,
+                orgOwner.user_id
+            )
             organizationId = organization.organization_id
             const progressFromGrade = createGrade(organization)
             await progressFromGrade.save()
             const progressToGrade = createGrade(organization)
             await progressToGrade.save()
-            grade = createGrade(organization, progressFromGrade, progressToGrade)
+            grade = createGrade(
+                organization,
+                progressFromGrade,
+                progressToGrade
+            )
             await grade.save()
             gradeDetails = await gradeInfo(grade)
-        });
+        })
 
-        context("when user is not logged in", () => {
-            it("returns no age range", async () => {
-                const gqlGrade = await getGrade(testClient, grade.id, { authorization: undefined });
+        context('when user is not logged in', () => {
+            it('returns no age range', async () => {
+                const gqlGrade = await getGrade(testClient, grade.id, {
+                    authorization: undefined,
+                })
 
-                expect(gqlGrade).to.be.null;
-            });
-        });
+                expect(gqlGrade).to.be.null
+            })
+        })
 
-        context("when user is logged in", () => {
-            context("and the user is not an admin", () => {
-                context("and it belongs to the organization from the grade", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
-                    });
+        context('when user is logged in', () => {
+            context('and the user is not an admin', () => {
+                context(
+                    'and it belongs to the organization from the grade',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                userId,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
+                        it('returns the expected grade', async () => {
+                            const gqlGrade = await getGrade(
+                                testClient,
+                                grade.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                        expect(gqlGrade).not.to.be.null;
-                        const gqlGradeDetails = await gradeInfo(gqlGrade)
-                        expect(gqlGradeDetails).to.deep.eq(gradeDetails)
-                    });
-                });
+                            expect(gqlGrade).not.to.be.null
+                            const gqlGradeDetails = await gradeInfo(gqlGrade)
+                            expect(gqlGradeDetails).to.deep.eq(gradeDetails)
+                        })
+                    }
+                )
 
-                context("and it does not belongs to the organization from the grade", () => {
-                    it("returns no grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getBillyAuthToken() });
+                context(
+                    'and it does not belongs to the organization from the grade',
+                    () => {
+                        it('returns no grade', async () => {
+                            const gqlGrade = await getGrade(
+                                testClient,
+                                grade.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                        expect(gqlGrade).to.be.null;
-                    });
-                });
-            });
+                            expect(gqlGrade).to.be.null
+                        })
+                    }
+                )
+            })
 
-            context("and the user is an admin", () => {
-                context("and it belongs to the organization from the grade", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                    });
+            context('and the user is an admin', () => {
+                context(
+                    'and it belongs to the organization from the grade',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                otherUserId,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
+                        it('returns the expected grade', async () => {
+                            const gqlGrade = await getGrade(
+                                testClient,
+                                grade.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                        expect(gqlGrade).not.to.be.null;
-                        const gqlGradeDetails = await gradeInfo(gqlGrade)
-                        expect(gqlGradeDetails).to.deep.eq(gradeDetails)
-                    });
-                });
+                            expect(gqlGrade).not.to.be.null
+                            const gqlGradeDetails = await gradeInfo(gqlGrade)
+                            expect(gqlGradeDetails).to.deep.eq(gradeDetails)
+                        })
+                    }
+                )
 
-                context("and it does not belongs to the organization from the grade", () => {
-                    it("returns the expected grade", async () => {
-                        const gqlGrade = await getGrade(testClient, grade.id, { authorization: getJoeAuthToken() });
+                context(
+                    'and it does not belongs to the organization from the grade',
+                    () => {
+                        it('returns the expected grade', async () => {
+                            const gqlGrade = await getGrade(
+                                testClient,
+                                grade.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                        expect(gqlGrade).not.to.be.null;
-                        const gqlGradeDetails = await gradeInfo(gqlGrade)
-                        expect(gqlGradeDetails).to.deep.eq(gradeDetails)
-                    });
-                });
-            });
-        });
-    });
+                            expect(gqlGrade).not.to.be.null
+                            const gqlGradeDetails = await gradeInfo(gqlGrade)
+                            expect(gqlGradeDetails).to.deep.eq(gradeDetails)
+                        })
+                    }
+                )
+            })
+        })
+    })
 
-    describe("getSubcategory", () => {
-        let user: User;
-        let subcategory: Subcategory;
-        let organizationId: string;
+    describe('getSubcategory', () => {
+        let user: User
+        let subcategory: Subcategory
+        let organizationId: string
 
         const subcategoryInfo = (subcategory: Subcategory) => {
             return {
@@ -467,82 +489,130 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient)
             const org = createOrganization(user)
             await connection.manager.save(org)
             organizationId = org.organization_id
             subcategory = createSubcategory(org)
             await connection.manager.save(subcategory)
-        });
+        })
 
-        context("when user is not logged in", () => {
-            it("returns no subcategory", async () => {
-                const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: undefined });
+        context('when user is not logged in', () => {
+            it('returns no subcategory', async () => {
+                const gqlSubcategory = await getSubcategory(
+                    testClient,
+                    subcategory.id,
+                    { authorization: undefined }
+                )
 
-                expect(gqlSubcategory).to.be.null;
-            });
-        });
+                expect(gqlSubcategory).to.be.null
+            })
+        })
 
-        context("when user is logged in", () => {
-            let otherUserId: string;
+        context('when user is logged in', () => {
+            let otherUserId: string
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient)
                 otherUserId = otherUser.user_id
-            });
+            })
 
-            context("and the user is not an admin", () => {
-                context("and it belongs to the organization from the subcategory", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                    });
+            context('and the user is not an admin', () => {
+                context(
+                    'and it belongs to the organization from the subcategory',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                otherUserId,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
+                        it('returns the expected subcategory', async () => {
+                            const gqlSubcategory = await getSubcategory(
+                                testClient,
+                                subcategory.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                        expect(gqlSubcategory).not.to.be.null;
-                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
-                    });
-                });
+                            expect(gqlSubcategory).not.to.be.null
+                            expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(
+                                subcategoryInfo(subcategory)
+                            )
+                        })
+                    }
+                )
 
-                context("and it does not belongs to the organization from the subcategory", () => {
-                    it("returns no subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getBillyAuthToken() });
+                context(
+                    'and it does not belongs to the organization from the subcategory',
+                    () => {
+                        it('returns no subcategory', async () => {
+                            const gqlSubcategory = await getSubcategory(
+                                testClient,
+                                subcategory.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                        expect(gqlSubcategory).to.be.null;
-                    });
-                });
-            });
+                            expect(gqlSubcategory).to.be.null
+                        })
+                    }
+                )
+            })
 
-            context("and the user is an admin", () => {
-                context("and it belongs to the organization from the subcategory", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
-                    });
+            context('and the user is an admin', () => {
+                context(
+                    'and it belongs to the organization from the subcategory',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                user.user_id,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
+                        it('returns the expected subcategory', async () => {
+                            const gqlSubcategory = await getSubcategory(
+                                testClient,
+                                subcategory.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                        expect(gqlSubcategory).not.to.be.null;
-                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
-                    });
-                });
+                            expect(gqlSubcategory).not.to.be.null
+                            expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(
+                                subcategoryInfo(subcategory)
+                            )
+                        })
+                    }
+                )
 
-                context("and it does not belongs to the organization from the subcategory", () => {
-                    it("returns the expected subcategory", async () => {
-                        const gqlSubcategory = await getSubcategory(testClient, subcategory.id, { authorization: getJoeAuthToken() });
+                context(
+                    'and it does not belongs to the organization from the subcategory',
+                    () => {
+                        it('returns the expected subcategory', async () => {
+                            const gqlSubcategory = await getSubcategory(
+                                testClient,
+                                subcategory.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                        expect(gqlSubcategory).not.to.be.null;
-                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(subcategoryInfo(subcategory))
-                    });
-                });
-            });
-        });
-    });
-    describe("getProgram", () => {
-        let user: User;
-        let program: Program;
-        let organizationId: string;
+                            expect(gqlSubcategory).not.to.be.null
+                            expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(
+                                subcategoryInfo(subcategory)
+                            )
+                        })
+                    }
+                )
+            })
+        })
+    })
+    describe('getProgram', () => {
+        let user: User
+        let program: Program
+        let organizationId: string
 
         const programInfo = (program: Program) => {
             return {
@@ -553,806 +623,899 @@ describe("model", () => {
         }
 
         beforeEach(async () => {
-            user = await createUserJoe(testClient);
+            user = await createAdminUser(testClient)
             const org = createOrganization(user)
             await connection.manager.save(org)
             organizationId = org.organization_id
             program = createProgram(org)
             await connection.manager.save(program)
-        });
+        })
 
-        context("when user is not logged in", () => {
-            it("returns no program", async () => {
-                const gqlProgram = await getProgram(testClient, program.id, { authorization: undefined });
+        context('when user is not logged in', () => {
+            it('returns no program', async () => {
+                const gqlProgram = await getProgram(testClient, program.id, {
+                    authorization: undefined,
+                })
 
-                expect(gqlProgram).to.be.null;
-            });
-        });
+                expect(gqlProgram).to.be.null
+            })
+        })
 
-        context("when user is logged in", () => {
-            let otherUserId: string;
+        context('when user is logged in', () => {
+            let otherUserId: string
 
             beforeEach(async () => {
-                const otherUser = await createUserBilly(testClient);
+                const otherUser = await createNonAdminUser(testClient)
                 otherUserId = otherUser.user_id
-            });
-
-            context("and the user is not an admin", () => {
-                context("and it belongs to the organization from the program", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
-                    });
-
-                    it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
-
-                        expect(gqlProgram).not.to.be.null;
-                        expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
-                    });
-                });
-
-                context("and it does not belongs to the organization from the program", () => {
-                    it("returns no program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getBillyAuthToken() });
-
-                        expect(gqlProgram).to.be.null;
-                    });
-                });
-            });
-
-            context("and the user is an admin", () => {
-                context("and it belongs to the organization from the program", () => {
-                    beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, user.user_id, organizationId, { authorization: getJoeAuthToken() });
-                    });
-
-                    it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
-
-                        expect(gqlProgram).not.to.be.null;
-                        expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
-                    });
-                });
-
-                context("and it does not belongs to the organization from the program", () => {
-                    it("returns the expected program", async () => {
-                        const gqlProgram = await getProgram(testClient, program.id, { authorization: getJoeAuthToken() });
-
-                        expect(gqlProgram).not.to.be.null;
-                        expect(programInfo(gqlProgram)).to.deep.eq(programInfo(program))
-                    });
-                });
-            });
-        });
-    });
-
-    describe("uploadOrganizationsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const correctFileName = 'organizationsExample.csv';
-        const wrongFileName = 'organizationsWrong.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                const filename = correctFileName;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                const filename = wrongFileName;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            it("should create organizations", async () => {
-                const filename = correctFileName
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadOrganizations(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const organizationsCreated = await Organization.count();
-                expect(organizationsCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadRolesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'rolesExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadRoles(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const rolesCreated = await Role.count({ where: { system_role: false } });
-                expect(rolesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadRoles(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const rolesCreated = await Role.count({ where: { system_role: false } });
-                expect(rolesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create roles", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadRoles(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const rolesCreated = await Role.count({ where: { system_role: false } });
-                expect(rolesCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadSubjectsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'subjectsExample.csv';
-        beforeEach(async () => {
-            await SubcategoriesInitializer.run()
-            await CategoriesInitializer.run()
-        });
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadSubjects(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subjectsCreated = await Subject.count({ where: { system: false } });
-                expect(subjectsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadSubjects(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subjectsCreated = await Subject.count({ where: { system: false } });
-                expect(subjectsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create subjects", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadSubjects(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const subjectsCreated = await Subject.count({ where: { system: false } });
-                expect(subjectsCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadGradesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const correctFilename = 'gradesExample.csv';
-        const wrongFilename = 'gradesWrong.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                const filename = correctFilename;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadGrades(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const gradesCreated = await Grade.count();
-                expect(gradesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                const filename = wrongFilename;
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadGrades(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const gradesCreated = await Grade.count();
-                expect(gradesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                const org = await createOrganization()
-                org.organization_name = 'Company 1';
-                await connection.manager.save(org);
-
-                const org2 = await createOrganization();
-                org2.organization_name = 'Company 2';
-                await connection.manager.save(org2);
-
-                const noneSpecifiedGrade = new Grade();
-                noneSpecifiedGrade.name = 'None Specified';
-                noneSpecifiedGrade.system = true;
-                await connection.manager.save(noneSpecifiedGrade);
-            });
-
-            it("should create grades", async () => {
-                const filename = correctFilename;
-
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadGrades(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const gradesCreated = await Grade.count();
-                expect(gradesCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadClassesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        let filename = 'classes-bad.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadClasses(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const classesCreated = await Class.count();
-                expect(classesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadClasses(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const classesreated = await Class.count();
-                expect(classesreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            let expectedOrg: Organization
-            let expectedProg: Program
-            let expectedSchool: School
-
-            beforeEach(async ()=>{
-                filename = "classes.csv";
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                expectedOrg = createOrganization()
-                expectedOrg.organization_name = "my-org"
-                await connection.manager.save(expectedOrg)
-
-                expectedProg = createProgram(expectedOrg)
-                expectedProg.name = "outdoor activities"
-                await connection.manager.save(expectedProg)
-
-                expectedSchool = createSchool(expectedOrg, 'test-school')
-                await connection.manager.save(expectedSchool)
-            });
-
-            it("should create classes", async () => {
-                const result = await uploadClasses(testClient, file, filename, mimetype, encoding);
-                const dbClass = await Class.findOneOrFail({where:{class_name:"class1", organization:expectedOrg}});
-                const schools = await dbClass.schools || []
-                const programs = await dbClass.programs || []
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-                expect(schools.length).to.equal(1)
-                expect(programs.length).to.equal(1)
-            });
-        });
-    });
-
-    describe("uploadSchoolsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'schoolsExample.csv';
-
-        beforeEach(async () => {
-            await AgeRangesInitializer.run()
-            await GradesInitializer.run()
-            await SubjectsInitializer.run()
-            await SubcategoriesInitializer.run()
-            await CategoriesInitializer.run()
-            await ProgramsInitializer.run()
-        });
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await queryUploadSchools(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const schoolsCreated = await School.count();
-                expect(schoolsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await uploadSchools(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const schoolsCreated = await School.count();
-                expect(schoolsCreated).eq(0);
-            });
-        });
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 4; i += 1) {
-                    let org = createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create schools", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadSchools(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const schoolsCreated = await School.count();
-                expect(schoolsCreated).eq(6);
-            });
-        })
-    })
-
-    describe("uploadSubCategoriesFromCSV", () => {
-        const filename = 'subcategories.csv';
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await queryUploadSubCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subCategoriesCreated = await Subcategory.count();
-                expect(subCategoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await uploadSubCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const subCategoriesCreated = await Subcategory.count();
-                expect(subCategoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            it("should create subcategories", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                let expectedOrg: Organization
-                expectedOrg = createOrganization()
-                expectedOrg.organization_name = "my-org"
-                await connection.manager.save(expectedOrg)
-
-                const result = await uploadSubCategories(testClient, file, filename, mimetype, encoding);
-
-                const dbSubcategory = await Subcategory.findOneOrFail({where:{name:"sc1", organization:expectedOrg}});
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-                expect(dbSubcategory).to.be.not.null;
-            });
-        });
-    });
-
-    describe("uploadUsersFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'users_example.csv';
-
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadUsers(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const usersCount = await User.count();
-                expect(usersCount).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadUsers(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const usersCount = await User.count();
-                expect(usersCount).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            let organization: Organization;
-            let role: Role;
-            let school: School;
-            let cls: Class;
-
-            beforeEach(async () => {
-                organization = createOrganization()
-                organization.organization_name = 'Apollo 1 Org'
-                await connection.manager.save(organization)
-                school = createSchool(organization)
-                school.school_name = 'School I'
-                await connection.manager.save(school)
-                role = createRole('Teacher', organization)
-                await connection.manager.save(role)
-                const anotherRole = createRole('School Admin', organization)
-                await connection.manager.save(anotherRole)
-                cls = createClass([school], organization)
-                cls.class_name = 'Class I'
-                await connection.manager.save(cls)
-            });
-
-            it("should create the user", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadUsers(testClient, file, filename, mimetype, encoding);
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const usersCount = await User.count({ where: { email: 'test@test.com' } });
-                expect(usersCount).eq(2);
-
-            });
-        });
-    });
-
-    describe("uploadCategoriesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'categoriesExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const categoriesCreated = await Category.count({ where: { system: false } });
-                expect(categoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadCategories(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const categoriesCreated = await Category.count({ where: { system: false } });
-                expect(categoriesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 2; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-
-                    let subcategory = await createSubcategory(org);
-                    subcategory.name = `Subcategory ${i}`;
-                    await connection.manager.save(subcategory);
-                }
-
-                const noneSpecifiedSubcategory = new Subcategory();
-                noneSpecifiedSubcategory.name = 'None Specified';
-                noneSpecifiedSubcategory.system = true;
-                await connection.manager.save(noneSpecifiedSubcategory);
-            });
-
-            it("should create categories", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadCategories(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const categoriesCreated = await Category.count({ where: { system: false } });
-                expect(categoriesCreated).gt(0);
-            });
-        });
-    });
-
-    describe("uploadProgramsFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'programsExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await queryUploadPrograms(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const programsCreated = await Program.count({ where: { system: false } });
-                expect(programsCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-                const fn = async () => await uploadPrograms(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const programsCreated = await Program.count({ where: { system: false } });
-                expect(programsCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 3; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-
-                    for (let i = 1; i <= 3; i += 1) {
-                        let subject = await createSubject(org);
-                        subject.name = `Subject ${i}`;
-                        await connection.manager.save(subject);
+            })
+
+            context('and the user is not an admin', () => {
+                context(
+                    'and it belongs to the organization from the program',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                otherUserId,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
+
+                        it('returns the expected program', async () => {
+                            const gqlProgram = await getProgram(
+                                testClient,
+                                program.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                            expect(gqlProgram).not.to.be.null
+                            expect(programInfo(gqlProgram)).to.deep.eq(
+                                programInfo(program)
+                            )
+                        })
                     }
+                )
 
-                    const ageRange1 = await createAgeRange(org);
-                    ageRange1.name = '6 - 7 year(s)';
-                    ageRange1.low_value = 6;
-                    ageRange1.high_value = 7;
-                    ageRange1.low_value_unit = AgeRangeUnit.YEAR;
-                    ageRange1.high_value_unit = AgeRangeUnit.YEAR;
-                    await connection.manager.save(ageRange1);
+                context(
+                    'and it does not belongs to the organization from the program',
+                    () => {
+                        it('returns no program', async () => {
+                            const gqlProgram = await getProgram(
+                                testClient,
+                                program.id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
 
-                    const ageRange2 = await createAgeRange(org);
-                    ageRange2.name = '9 - 10 year(s)';
-                    ageRange2.low_value = 9;
-                    ageRange2.high_value = 10;
-                    ageRange2.low_value_unit = AgeRangeUnit.YEAR;
-                    ageRange2.high_value_unit = AgeRangeUnit.YEAR;
-                    await connection.manager.save(ageRange2);
+                            expect(gqlProgram).to.be.null
+                        })
+                    }
+                )
+            })
 
-                    const ageRange3 = await createAgeRange(org);
-                    ageRange3.name = '24 - 30 month(s)';
-                    ageRange3.low_value = 24;
-                    ageRange3.high_value = 30;
-                    ageRange3.low_value_unit = AgeRangeUnit.MONTH;
-                    ageRange3.high_value_unit = AgeRangeUnit.MONTH;
-                    ageRange3.system = false;
-                    await connection.manager.save(ageRange3);
+            context('and the user is an admin', () => {
+                context(
+                    'and it belongs to the organization from the program',
+                    () => {
+                        beforeEach(async () => {
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                user.user_id,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                        })
 
-                    const grade1 = await createGrade(org);
-                    grade1.name = 'First Grade';
-                    await connection.manager.save(grade1);
+                        it('returns the expected program', async () => {
+                            const gqlProgram = await getProgram(
+                                testClient,
+                                program.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                    const grade2 = await createGrade(org);
-                    grade2.name = 'Second Grade';
-                    await connection.manager.save(grade2);
+                            expect(gqlProgram).not.to.be.null
+                            expect(programInfo(gqlProgram)).to.deep.eq(
+                                programInfo(program)
+                            )
+                        })
+                    }
+                )
 
-                    const grade3 = await createGrade(org);
-                    grade3.name = 'Third Grade';
-                    await connection.manager.save(grade3);
-                }
+                context(
+                    'and it does not belongs to the organization from the program',
+                    () => {
+                        it('returns the expected program', async () => {
+                            const gqlProgram = await getProgram(
+                                testClient,
+                                program.id,
+                                { authorization: getAdminAuthToken() }
+                            )
 
-                const noneSpecifiedAgeRange = new AgeRange();
-                noneSpecifiedAgeRange.name = 'None Specified';
-                noneSpecifiedAgeRange.low_value = 0;
-                noneSpecifiedAgeRange.high_value = 99;
-                noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR;
-                noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR;
-                noneSpecifiedAgeRange.system = true;
-                await connection.manager.save(noneSpecifiedAgeRange);
-
-                const noneSpecifiedGrade = new Grade();
-                noneSpecifiedGrade.name = 'None Specified';
-                noneSpecifiedGrade.system = true;
-                await connection.manager.save(noneSpecifiedGrade);
-
-                const noneSpecifiedSubject = new Subject();
-                noneSpecifiedSubject.name = 'None Specified';
-                noneSpecifiedSubject.system = true;
-                await connection.manager.save(noneSpecifiedSubject);
-            });
-
-            it("should create programs", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadPrograms(testClient, file, filename, mimetype, encoding);
-
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const programsCreated = await Program.count({ where: { system: false } });
-                expect(programsCreated).eq(12);
-            });
-        });
-    });
-
-    describe("uploadAgeRangesFromCSV", () => {
-        let file: ReadStream;
-        const mimetype = 'text/csv';
-        const encoding = '7bit';
-        const filename = 'ageRangesExample.csv';
-
-        context("when operation is not a mutation", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await queryUploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
-                expect(ageRangesCreated).eq(0);
-            });
-        });
-
-        context("when file data is not correct", () => {
-            it("should throw an error", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const fn = async () => await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(fn()).to.be.rejected;
-
-                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
-                expect(ageRangesCreated).eq(0);
-            });
-        });
-
-        context("when file data is correct", () => {
-            beforeEach(async () => {
-                for (let i = 1; i <= 2; i += 1) {
-                    let org = await createOrganization();
-                    org.organization_name = `Company ${i}`;
-                    await connection.manager.save(org);
-                }
-            });
-
-            it("should create age ranges", async () => {
-                file = fs.createReadStream(resolve(`tests/fixtures/${filename}`));
-
-                const result = await uploadAgeRanges(testClient, file, filename, mimetype, encoding);
-                expect(result.filename).eq(filename);
-                expect(result.mimetype).eq(mimetype);
-                expect(result.encoding).eq(encoding);
-
-                const ageRangesCreated = await AgeRange.count({ where: { system: false } });
-                expect(ageRangesCreated).eq(17);
-            });
-        });
-    });
-
-    describe('usersConnection', ()=>{
-        let usersList: User [] = [];
-
-        beforeEach(async () => {
-            usersList = [];
-            // create 10 users
-            for (let i=0; i<10; i++) {
-                usersList.push(createUser())
-            }
-            //sort users by userId
-            await connection.manager.save(usersList)
-            usersList.sort((a, b) => (a.user_id > b.user_id) ? 1 : -1)
-        })
-        context('seek forward',  ()=>{
-            const direction = 'FORWARD'
-            it('should get the next few records according to pagesize and startcursor', async()=>{
-                let directionArgs = { count: 3, cursor:convertDataToCursor(usersList[3].user_id)}
-                const usersConnection = await userConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
-
-                expect(usersConnection?.totalCount).to.eql(10);
-                expect(usersConnection?.edges.length).to.equal(3);
-                for(let i=0; i<3; i++) {
-                    expect(usersConnection?.edges[i].node.user_id).to.equal(usersList[4+i].user_id)
-                }
-                expect(usersConnection?.pageInfo.startCursor).to.equal(convertDataToCursor(usersList[4].user_id))
-                expect(usersConnection?.pageInfo.endCursor).to.equal(convertDataToCursor(usersList[6].user_id))
-                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
-                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+                            expect(gqlProgram).not.to.be.null
+                            expect(programInfo(gqlProgram)).to.deep.eq(
+                                programInfo(program)
+                            )
+                        })
+                    }
+                )
             })
         })
     })
 
-    describe('permissionsConnection', ()=>{
+    describe('usersConnection', () => {
+        let usersList: User[] = []
+        let roleList: Role[] = []
+        const direction = 'FORWARD'
+        let organizations: Organization[] = []
+
+        beforeEach(async () => {
+            usersList = []
+            roleList = []
+            const organizations: Organization[] = []
+            const schools: School[] = []
+            // create two orgs and two schools
+            for (let i = 0; i < 2; i++) {
+                const org = createOrganization()
+                await connection.manager.save(org)
+                organizations.push(org)
+                let role = createRole('role ' + i, org)
+                await connection.manager.save(role)
+                roleList.push(role)
+                const school = createSchool(org)
+                await connection.manager.save(school)
+                schools.push(school)
+            }
+            // create 10 users
+            for (let i = 0; i < 10; i++) {
+                usersList.push(createUser())
+            }
+            //sort users by userId
+            await connection.manager.save(usersList)
+            // add organizations and schools to users
+
+            for (const user of usersList) {
+                for (let i = 0; i < 2; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        organizations[i].organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        organizations[i].organization_id,
+                        roleList[i].role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        user.user_id,
+                        schools[i].school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        user.user_id,
+                        schools[i].school_id,
+                        roleList[i].role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            }
+            usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+        })
+        context('seek forward', () => {
+            it('should get the next few records according to pagesize and startcursor', async () => {
+                let directionArgs = {
+                    count: 3,
+                    cursor: convertDataToCursor(usersList[3].user_id),
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                expect(usersConnection?.totalCount).to.eql(10)
+                expect(usersConnection?.edges.length).to.equal(3)
+                for (let i = 0; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[4 + i].user_id
+                    )
+                    expect(
+                        usersConnection?.edges[i].node.organizations.length
+                    ).to.equal(2)
+                    expect(
+                        usersConnection?.edges[i].node.schools.length
+                    ).to.equal(2)
+                    expect(
+                        usersConnection?.edges[i].node.roles.length
+                    ).to.equal(4)
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(
+                    convertDataToCursor(usersList[4].user_id)
+                )
+                expect(usersConnection?.pageInfo.endCursor).to.equal(
+                    convertDataToCursor(usersList[6].user_id)
+                )
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+            })
+        })
+
+        context('organization filter', () => {
+            let org: Organization
+            let school1: School
+            let role1: Role
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org)
+
+                // org and school whose membership shouldnt be included
+                let org2 = createOrganization()
+                await connection.manager.save(org2)
+                let role2 = createRole('role 2', org2)
+                await connection.manager.save(role2)
+                const school2 = createSchool(org2)
+
+                await connection.manager.save(school1)
+                await connection.manager.save(school2)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        user.user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        user.user_id,
+                        school1.school_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org2.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org2.organization_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        user.user_id,
+                        school2.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        user.user_id,
+                        school2.school_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+            })
+            it('should filter the pagination results on organizationId', async () => {
+                let directionArgs = {
+                    count: 3,
+                    cursor: convertDataToCursor(usersList[3].user_id),
+                }
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(10)
+                expect(usersConnection?.edges.length).to.equal(3)
+                for (let i = 0; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[4 + i].user_id
+                    )
+                    expect(
+                        usersConnection?.edges[i].node.organizations.length
+                    ).to.equal(1)
+                    expect(
+                        usersConnection?.edges[i].node.organizations[0].id
+                    ).to.equal(org.organization_id)
+                    expect(
+                        usersConnection?.edges[i].node.schools.length
+                    ).to.equal(1)
+                    expect(
+                        usersConnection?.edges[i].node.roles.length
+                    ).to.equal(2)
+                    expect(
+                        usersConnection?.edges[i].node.schools[0].id
+                    ).to.equal(school1.school_id)
+                    expect(usersConnection?.edges[i].node.roles[0].id).to.equal(
+                        role1.role_id
+                    )
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(
+                    convertDataToCursor(usersList[4].user_id)
+                )
+                expect(usersConnection?.pageInfo.endCursor).to.equal(
+                    convertDataToCursor(usersList[6].user_id)
+                )
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
+            })
+        })
+
+        context('school filter', () => {
+            let org: Organization
+            let school1: School
+            let school2: School
+            let role1: Role
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org)
+                school2 = createSchool(org)
+
+                await connection.manager.save(school1)
+                await connection.manager.save(school2)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                // add half of users to one school and other half to different school
+                // also add 5th user to both school
+                for (let i = 0; i <= 5; i++) {
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+                for (let i = 5; i < 10; i++) {
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school2.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            })
+            it('should filter the pagination results on schoolId', async () => {
+                let directionArgs = {
+                    count: 3,
+                }
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(5)
+                expect(usersConnection?.edges.length).to.equal(3)
+
+                //user belonging to more than one returned
+                expect(usersConnection?.edges[0].node.schools.length).to.equal(
+                    1
+                )
+                expect(usersConnection?.edges[0].node.id).to.equal(
+                    usersList[5].user_id
+                )
+
+                for (let i = 1; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[5 + i].user_id
+                    )
+                    expect(
+                        usersConnection?.edges[i].node.schools.length
+                    ).to.equal(1)
+                    expect(
+                        usersConnection?.edges[i].node.schools[0].id
+                    ).to.equal(school2.school_id)
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(
+                    convertDataToCursor(usersList[5].user_id)
+                )
+                expect(usersConnection?.pageInfo.endCursor).to.equal(
+                    convertDataToCursor(usersList[7].user_id)
+                )
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('role filter', () => {
+            let org: Organization
+            let school1: School
+            let role1: Role
+            let role2: Role
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                role2 = createRole('role 2', org)
+                await connection.manager.save(role2)
+                school1 = createSchool(org)
+                await connection.manager.save(school1)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                // add 5 users to role1 and 5 users to role2
+                // add 6th user to both roles
+                for (let i = 0; i <= 5; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                for (let i = 5; i < usersList.length; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            })
+            it('should filter the pagination results on roleId', async () => {
+                let directionArgs = {
+                    count: 3,
+                }
+                const filter: IEntityFilter = {
+                    roleId: {
+                        operator: 'eq',
+                        value: role2.role_id,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(5)
+                expect(usersConnection?.edges.length).to.equal(3)
+
+                for (const e of usersConnection?.edges) {
+                    expect(e.node.roles.length).to.equal(2)
+                    for (const r of e.node.roles) {
+                        expect(r.id).to.eq(role2.role_id)
+                    }
+                }
+
+                for (let i = 0; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[5 + i].user_id
+                    )
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(
+                    convertDataToCursor(usersList[5].user_id)
+                )
+                expect(usersConnection?.pageInfo.endCursor).to.equal(
+                    convertDataToCursor(usersList[7].user_id)
+                )
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('organizationUserStatus filter', () => {
+            let org: Organization
+            let school1: School
+            let role1: Role
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org)
+
+                await connection.manager.save(school1)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                await connection.manager.save(usersList)
+                //sort users by userId
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (let i = 0; i < usersList.length; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                //set 4 users to inactive
+                for (let i = 0; i < 4; i++) {
+                    const membershipDb = await OrganizationMembership.findOneOrFail(
+                        {
+                            where: {
+                                user_id: usersList[i].user_id,
+                                organization_id: org.organization_id,
+                            },
+                        }
+                    )
+                    membershipDb.status = Status.INACTIVE
+                    await connection.manager.save(membershipDb)
+                }
+            })
+
+            it('should filter the pagination results on organizationId', async () => {
+                let directionArgs = {
+                    count: 3,
+                }
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                    organizationUserStatus: {
+                        operator: 'eq',
+                        value: Status.INACTIVE,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(4)
+                expect(usersConnection?.edges.length).to.equal(3)
+                for (let i = 0; i < 3; i++) {
+                    expect(
+                        usersConnection?.edges[i].node.organizations[0]
+                            .userStatus
+                    ).to.equal(Status.INACTIVE)
+                }
+            })
+
+            it('returns nothing for non admins', async () => {
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    undefined,
+                    { authorization: getNonAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(0)
+            })
+        })
+
+        context('filter combinations', () => {
+            let org: Organization
+            let org2: Organization
+            let school1: School
+            let school2: School
+            let school3: School
+            let role1: Role
+            let role2: Role
+            let role3: Role
+            beforeEach(async () => {
+                //org role and school used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                role2 = createRole('role 2', org)
+                await connection.manager.save(role2)
+                school1 = createSchool(org)
+                await connection.manager.save(school1)
+                school2 = createSchool(org)
+                await connection.manager.save(school2)
+                usersList = []
+                // create 15 users
+                for (let i = 0; i < 15; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (let i = 0; i < 10; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                // add 5 users to role1/school1 and 5 users to role2/school2
+                // add 6th user to both roles and schools
+                for (let i = 0; i <= 5; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+                for (let i = 5; i < 10; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school2.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school2.school_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                // create second org and add other users to this org
+                org2 = createOrganization()
+                await connection.manager.save(org2)
+                role3 = createRole('role 3', org2)
+                await connection.manager.save(role3)
+                school3 = createSchool(org2)
+                await connection.manager.save(school3)
+
+                for (let i = 10; i < 15; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        usersList[i].user_id,
+                        org2.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                // add remaining users to school3 and role3
+                for (let i = 10; i < 15; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org2.organization_id,
+                        role3.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school3.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school3.school_id,
+                        role3.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            })
+            it('should filter the pagination results on all filters', async () => {
+                let directionArgs = {
+                    count: 3,
+                }
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                    roleId: {
+                        operator: 'eq',
+                        value: role2.role_id,
+                    },
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(5)
+                expect(usersConnection?.edges.length).to.equal(3)
+
+                for (let i = 0; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[5 + i].user_id
+                    )
+                }
+                expect(usersConnection?.pageInfo.startCursor).to.equal(
+                    convertDataToCursor(usersList[5].user_id)
+                )
+                expect(usersConnection?.pageInfo.endCursor).to.equal(
+                    convertDataToCursor(usersList[7].user_id)
+                )
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+    })
+
+    describe('permissionsConnection', () => {
         let firstPermission: any
         let lastPermission: any
 
@@ -1360,25 +1523,37 @@ describe("model", () => {
             await RolesInitializer.run()
         })
 
-        context('when seeking forward',  ()=>{
+        context('when seeking forward', () => {
             const direction = 'FORWARD'
 
             context('and no direction args are specified', () => {
                 beforeEach(async () => {
                     await RolesInitializer.run()
-                    const permissions = await Permission.find({ take: 50, order: { permission_id: 'ASC' } })
+                    const permissions = await Permission.find({
+                        take: 50,
+                        order: { permission_id: 'ASC' },
+                    })
                     firstPermission = permissions[0]
                     lastPermission = permissions.pop()
                 })
 
-                it('returns the expected permissions with the default page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, undefined, { authorization: getJoeAuthToken() })
+                it('returns the expected permissions with the default page size', async () => {
+                    const gqlPermissions = await permissionsConnection(
+                        testClient,
+                        direction,
+                        undefined,
+                        { authorization: getAdminAuthToken() }
+                    )
 
-                    expect(gqlPermissions?.totalCount).to.eql(425);
-                    expect(gqlPermissions?.edges.length).to.equal(50);
+                    expect(gqlPermissions?.totalCount).to.eql(425)
+                    expect(gqlPermissions?.edges.length).to.equal(50)
 
-                    expect(gqlPermissions?.pageInfo.startCursor).to.equal(convertDataToCursor(firstPermission.permission_id))
-                    expect(gqlPermissions?.pageInfo.endCursor).to.equal(convertDataToCursor(lastPermission.permission_id))
+                    expect(gqlPermissions?.pageInfo.startCursor).to.equal(
+                        convertDataToCursor(firstPermission.permission_id)
+                    )
+                    expect(gqlPermissions?.pageInfo.endCursor).to.equal(
+                        convertDataToCursor(lastPermission.permission_id)
+                    )
                     expect(gqlPermissions?.pageInfo.hasNextPage).to.be.true
                     expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.false
                 })
@@ -1389,22 +1564,36 @@ describe("model", () => {
 
                 beforeEach(async () => {
                     await RolesInitializer.run()
-                    const permissions = await Permission.find({ take: 4, order: { permission_id: 'ASC' } })
+                    const permissions = await Permission.find({
+                        take: 4,
+                        order: { permission_id: 'ASC' },
+                    })
 
-                    const cursor = convertDataToCursor(permissions[0]?.permission_id || '')
-                    directionArgs = { count: 3, cursor: cursor}
+                    const cursor = convertDataToCursor(
+                        permissions[0]?.permission_id || ''
+                    )
+                    directionArgs = { count: 3, cursor: cursor }
                     firstPermission = permissions[1]
                     lastPermission = permissions.pop()
                 })
 
-                it('returns the expected permissions with the specified page size', async()=>{
-                    const gqlPermissions = await permissionsConnection(testClient, direction, directionArgs, { authorization: getJoeAuthToken() })
+                it('returns the expected permissions with the specified page size', async () => {
+                    const gqlPermissions = await permissionsConnection(
+                        testClient,
+                        direction,
+                        directionArgs,
+                        { authorization: getAdminAuthToken() }
+                    )
 
-                    expect(gqlPermissions?.totalCount).to.eql(425);
-                    expect(gqlPermissions?.edges.length).to.equal(3);
+                    expect(gqlPermissions?.totalCount).to.eql(425)
+                    expect(gqlPermissions?.edges.length).to.equal(3)
 
-                    expect(gqlPermissions?.pageInfo.startCursor).to.equal(convertDataToCursor(firstPermission.permission_id))
-                    expect(gqlPermissions?.pageInfo.endCursor).to.equal(convertDataToCursor(lastPermission.permission_id))
+                    expect(gqlPermissions?.pageInfo.startCursor).to.equal(
+                        convertDataToCursor(firstPermission.permission_id)
+                    )
+                    expect(gqlPermissions?.pageInfo.endCursor).to.equal(
+                        convertDataToCursor(lastPermission.permission_id)
+                    )
                     expect(gqlPermissions?.pageInfo.hasNextPage).to.be.true
                     expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.true
                 })
@@ -1412,24 +1601,103 @@ describe("model", () => {
             context('and filter args are specified', async () => {
                 let filter: IEntityFilter = {
                     permission_id: {
-                        operator: "eq",
-                        value: "add_content_learning_outcomes_433"
-                    }
+                        operator: 'eq',
+                        value: 'add_content_learning_outcomes_433',
+                    },
                 }
-                let gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getJoeAuthToken()}, filter);
-                expect(gqlPermissions?.totalCount).to.eql(1);
+                let gqlPermissions = await permissionsConnection(
+                    testClient,
+                    direction,
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(gqlPermissions?.totalCount).to.eql(1)
 
                 filter = {
                     permission_id: {
-                        operator: "contains",
-                        value: "learning"
-                    }
+                        operator: 'contains',
+                        value: 'learning',
+                    },
                 }
-                gqlPermissions = await permissionsConnection(testClient, direction, {count: 10}, {authorization: getJoeAuthToken()}, filter);
-                expect(gqlPermissions?.totalCount).to.eql(27);
-                expect(gqlPermissions?.edges.length).to.equal(10);
-            });
+                gqlPermissions = await permissionsConnection(
+                    testClient,
+                    direction,
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(gqlPermissions?.totalCount).to.eql(27)
+                expect(gqlPermissions?.edges.length).to.equal(10)
+            })
         })
     })
-});
 
+    describe('renameDuplicateOrganizations', () => {
+        const organizationName = 'Organization 1'
+
+        beforeEach(async () => {
+            for (let i = 0; i < 3; i += 1) {
+                const organization = new Organization()
+                organization.organization_name = organizationName
+                await organization.save()
+
+                const nullOrganization = new Organization()
+                await nullOrganization.save()
+            }
+        })
+
+        context('when operation is not a mutation', () => {
+            it('should throw an error', async () => {
+                const fn = async () =>
+                    await renameDuplicateOrganizationsQuery(testClient)
+                expect(fn()).to.be.rejected
+
+                const nullOrgs = await Organization.count({
+                    where: { organization_name: null },
+                })
+                const duplicatedOrgs = await Organization.count({
+                    where: { organization_name: organizationName },
+                })
+                expect(nullOrgs).eq(3)
+                expect(duplicatedOrgs).eq(3)
+            })
+        })
+
+        context('when user has not Admin permissions', () => {
+            it('should throw an error', async () => {
+                const fn = async () =>
+                    await renameDuplicateOrganizationsMutation(testClient)
+                expect(fn()).to.be.rejected
+
+                const nullOrgs = await Organization.count({
+                    where: { organization_name: null },
+                })
+                const duplicatedOrgs = await Organization.count({
+                    where: { organization_name: organizationName },
+                })
+                expect(nullOrgs).eq(3)
+                expect(duplicatedOrgs).eq(3)
+            })
+        })
+
+        context('when user has Admin permissions', () => {
+            it('should throw an error', async () => {
+                const result = await renameDuplicateOrganizationsMutation(
+                    testClient,
+                    getAdminAuthToken()
+                )
+                expect(result).eq(true)
+
+                const nullOrgs = await Organization.count({
+                    where: { organization_name: null },
+                })
+                const duplicatedOrgs = await Organization.count({
+                    where: { organization_name: organizationName },
+                })
+                expect(nullOrgs).eq(0)
+                expect(duplicatedOrgs).eq(1)
+            })
+        })
+    })
+})

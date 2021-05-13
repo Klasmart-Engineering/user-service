@@ -5,9 +5,9 @@ import chaiAsPromised from "chai-as-promised";
 import { ApolloServerTestClient, createTestClient } from "../../utils/createTestClient";
 import { addUserToOrganizationAndValidate, createRole } from "../../utils/operations/organizationOps";
 import { addRoleToOrganizationMembership } from "../../utils/operations/organizationMembershipOps";
-import { getBillyAuthToken, getJoeAuthToken } from "../../utils/testConfig";
+import { getNonAdminAuthToken, getAdminAuthToken } from "../../utils/testConfig";
 import { createServer } from "../../../src/utils/createServer";
-import { createUserJoe, createUserBilly } from "../../utils/testEntities";
+import { createAdminUser, createNonAdminUser } from "../../utils/testEntities";
 import { createOrganization } from "../../factories/organization.factory";
 import { createCategory } from "../../factories/category.factory";
 import { createSubcategory } from "../../factories/subcategory.factory";
@@ -45,7 +45,7 @@ describe("Category", () => {
     });
 
     beforeEach(async () => {
-        user = await createUserJoe(testClient)
+        user = await createAdminUser(testClient)
         userId = user.user_id
         org = createOrganization()
         await org.save();
@@ -69,7 +69,7 @@ describe("Category", () => {
 
             context("and the user is not an admin", () => {
                 beforeEach(async () => {
-                    const otherUser = await createUserBilly(testClient);
+                    const otherUser = await createNonAdminUser(testClient);
                     otherUserId = otherUser.user_id
                 });
 
@@ -83,15 +83,15 @@ describe("Category", () => {
 
                 context("and belongs to the organization from the category", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
                         roleId = (await createRole(testClient, organizationId, "My Role")).role_id;
-                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getJoeAuthToken() });
+                        await addRoleToOrganizationMembership(testClient, otherUserId, organizationId, roleId, { authorization: getAdminAuthToken() });
                     });
 
                     context("with a non system category", () => {
                         context("and has delete category permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getAdminAuthToken() });
                             });
 
                             it("deletes the expected category", async () => {
@@ -100,7 +100,7 @@ describe("Category", () => {
                                 expect(dbCategory.status).to.eq(Status.ACTIVE)
                                 expect(dbCategory.deleted_at).to.be.null
 
-                                const gqlBool = await deleteCategory(testClient, category.id, { authorization: getBillyAuthToken() })
+                                const gqlBool = await deleteCategory(testClient, category.id, { authorization: getNonAdminAuthToken() })
 
                                 expect(gqlBool).to.be.true
                                 dbCategory = await Category.findOneOrFail(category.id)
@@ -110,11 +110,11 @@ describe("Category", () => {
 
                             context("with the category already deleted", () => {
                                 beforeEach(async () => {
-                                    await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                                    await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
                                 });
 
                                 it("cannot delete the category", async () => {
-                                    const gqlBool = await deleteCategory(testClient, category.id, { authorization: getBillyAuthToken() })
+                                    const gqlBool = await deleteCategory(testClient, category.id, { authorization: getNonAdminAuthToken() })
 
                                     expect(gqlBool).to.be.false
                                     const dbCategory = await Category.findOneOrFail(category.id)
@@ -126,7 +126,7 @@ describe("Category", () => {
 
                         context("and does not have delete category permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteCategory(testClient, category.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteCategory(testClient, category.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbCategory = await Category.findOneOrFail(category.id)
                                 expect(dbCategory.status).to.eq(Status.ACTIVE)
@@ -143,11 +143,11 @@ describe("Category", () => {
 
                         context("and has delete category permissions", () => {
                             beforeEach(async () => {
-                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getJoeAuthToken() });
+                                await grantPermission(testClient, roleId, PermissionName.delete_subjects_20447, { authorization: getAdminAuthToken() });
                             });
 
                             it("raises a permission error", async () => {
-                                const fn = () => deleteCategory(testClient, category.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteCategory(testClient, category.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbCategory = await Category.findOneOrFail(category.id)
                                 expect(dbCategory.status).to.eq(Status.ACTIVE)
@@ -157,7 +157,7 @@ describe("Category", () => {
 
                         context("and does not have delete category permissions", () => {
                             it("raises a permission error", async () => {
-                                const fn = () => deleteCategory(testClient, category.id, { authorization: getBillyAuthToken() })
+                                const fn = () => deleteCategory(testClient, category.id, { authorization: getNonAdminAuthToken() })
                                 expect(fn()).to.be.rejected;
                                 const dbCategory = await Category.findOneOrFail(category.id)
                                 expect(dbCategory.status).to.eq(Status.ACTIVE)
@@ -176,7 +176,7 @@ describe("Category", () => {
                         expect(dbCategory.status).to.eq(Status.ACTIVE)
                         expect(dbCategory.deleted_at).to.be.null
 
-                        const gqlBool = await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                        const gqlBool = await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
 
                         expect(gqlBool).to.be.true
                         dbCategory = await Category.findOneOrFail(category.id)
@@ -187,7 +187,7 @@ describe("Category", () => {
 
                 context("and belongs to the organization from the category", () => {
                     beforeEach(async () => {
-                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getJoeAuthToken() });
+                        await addUserToOrganizationAndValidate(testClient, userId, organizationId, { authorization: getAdminAuthToken() });
                     });
 
                     context("with a non system category", () => {
@@ -197,7 +197,7 @@ describe("Category", () => {
                             expect(dbCategory.status).to.eq(Status.ACTIVE)
                             expect(dbCategory.deleted_at).to.be.null
 
-                            const gqlBool = await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbCategory = await Category.findOneOrFail(category.id)
@@ -207,11 +207,11 @@ describe("Category", () => {
 
                         context("with the category already deleted", () => {
                             beforeEach(async () => {
-                                await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                                await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
                             });
 
                             it("cannot delete the category", async () => {
-                                const gqlBool = await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbCategory = await Category.findOneOrFail(category.id)
@@ -233,7 +233,7 @@ describe("Category", () => {
                             expect(dbCategory.status).to.eq(Status.ACTIVE)
                             expect(dbCategory.deleted_at).to.be.null
 
-                            const gqlBool = await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                            const gqlBool = await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
 
                             expect(gqlBool).to.be.true
                             dbCategory = await Category.findOneOrFail(category.id)
@@ -243,11 +243,11 @@ describe("Category", () => {
 
                         context("with the category already deleted", () => {
                             beforeEach(async () => {
-                                await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                                await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
                             });
 
                             it("cannot delete the category", async () => {
-                                const gqlBool = await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                                const gqlBool = await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
 
                                 expect(gqlBool).to.be.false
                                 const dbCategory = await Category.findOneOrFail(category.id)
@@ -268,9 +268,9 @@ describe("Category", () => {
         const subcategoryInfo = (subcategory: any) => { return subcategory.id }
 
         beforeEach(async () => {
-            const otherUser = await createUserBilly(testClient);
+            const otherUser = await createNonAdminUser(testClient);
             otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getJoeAuthToken() });
+            await addUserToOrganizationAndValidate(testClient, otherUserId, organizationId, { authorization: getAdminAuthToken() });
             subcategory = createSubcategory(org)
             await subcategory.save()
         });
@@ -295,7 +295,7 @@ describe("Category", () => {
 
             context("and the user does not have edit category permissions", () => {
                 it("throws a permission error", async () => {
-                    const fn = () => editSubcategories(testClient, category.id, [subcategory.id], { authorization: getBillyAuthToken() });
+                    const fn = () => editSubcategories(testClient, category.id, [subcategory.id], { authorization: getNonAdminAuthToken() });
                     expect(fn()).to.be.rejected;
 
                     const dbSubcategories = await category.subcategories || []
@@ -305,7 +305,7 @@ describe("Category", () => {
 
             context("and the user has all the permissions", () => {
                 beforeEach(async () => {
-                    await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getJoeAuthToken() });
+                    await grantPermission(testClient, role.role_id, PermissionName.edit_subjects_20337, { authorization: getAdminAuthToken() });
                 });
 
                 it("edits the category subcategories", async () => {
@@ -313,14 +313,14 @@ describe("Category", () => {
                     let dbSubcategories = await dbCategory.subcategories || []
                     expect(dbSubcategories).to.be.empty
 
-                    let gqlSubcategories = await editSubcategories(testClient, category.id, [subcategory.id], { authorization: getBillyAuthToken() });
+                    let gqlSubcategories = await editSubcategories(testClient, category.id, [subcategory.id], { authorization: getNonAdminAuthToken() });
 
                     dbCategory = await Category.findOneOrFail(category.id)
                     dbSubcategories = await dbCategory.subcategories || []
                     expect(dbSubcategories).not.to.be.empty
                     expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(gqlSubcategories.map(subcategoryInfo))
 
-                    gqlSubcategories = await editSubcategories(testClient, category.id, [], { authorization: getBillyAuthToken() });
+                    gqlSubcategories = await editSubcategories(testClient, category.id, [], { authorization: getNonAdminAuthToken() });
                     dbCategory = await Category.findOneOrFail(category.id)
                     dbSubcategories = await dbCategory.subcategories || []
                     expect(dbSubcategories).to.be.empty
@@ -328,11 +328,11 @@ describe("Category", () => {
 
                 context("and the category is marked as inactive", () => {
                     beforeEach(async () => {
-                        await deleteCategory(testClient, category.id, { authorization: getJoeAuthToken() })
+                        await deleteCategory(testClient, category.id, { authorization: getAdminAuthToken() })
                     });
 
                     it("does not edit the category subcategories", async () => {
-                        const gqlSubcategories = await  editSubcategories(testClient, category.id, [subcategory.id], { authorization: getBillyAuthToken() });
+                        const gqlSubcategories = await  editSubcategories(testClient, category.id, [subcategory.id], { authorization: getNonAdminAuthToken() });
                         expect(gqlSubcategories).to.be.null;
 
                         const dbSubcategories = await category.subcategories || []

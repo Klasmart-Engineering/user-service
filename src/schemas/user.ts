@@ -1,6 +1,14 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import {
+    orgsForUsers,
+    schoolsForUsers,
+    rolesForUsers,
+} from '../loaders/usersConnection'
+import Dataloader from 'dataloader'
+import { Context } from '../main'
+import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -29,6 +37,7 @@ const typeDefs = gql`
             gender: String
         ): User @deprecated(reason: "Use the inviteUser() method")
         switch_user(user_id: ID!): User
+            @deprecated(reason: "Moved to auth service")
         uploadUsersFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
     }
@@ -42,7 +51,7 @@ const typeDefs = gql`
 
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
-        node: User
+        node: UserConnectionNode
     }
 
     type UserConnection {
@@ -55,27 +64,63 @@ const typeDefs = gql`
 
     input UserFilter {
         # table columns
-        user_id: StringFilter
-        given_name: StringFilter
-        family_name: StringFilter
-        username: StringFilter
+        userId: StringFilter
+        givenName: StringFilter
+        familyName: StringFilter
+        avatar: StringFilter
         email: StringFilter
         phone: StringFilter
-        # date_of_birth: DateFilter # string dates are not yet supported
-        gender: StringFilter
-        avatar: StringFilter
-        status: StringFilter
-        deleted_at: DateFilter
-        primary: BooleanFilter
-        alternate_email: StringFilter
-        alternate_phone: StringFilter
 
         # joined columns
-        organization_id: StringFilter
-        school_id: StringFilter
+        organizationId: StringFilter
+        roleId: StringFilter
+        schoolId: StringFilter
+        organizationUserStatus: StringFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]
+    }
+
+    type UserConnectionNode {
+        id: ID!
+        givenName: String
+        familyName: String
+        avatar: String
+        contactInfo: ContactInfo!
+        alternateContactInfo: ContactInfo
+        organizations: [OrganizationSummaryNode!]!
+        roles: [RoleSummaryNode!]!
+        schools: [SchoolSummaryNode!]!
+        status: Status!
+    }
+
+    type ContactInfo {
+        email: String
+        phone: String
+    }
+
+    type OrganizationSummaryNode {
+        id: ID!
+        name: String
+        joinDate: String
+        userStatus: Status
+        status: Status
+    }
+
+    type RoleSummaryNode {
+        id: ID!
+        name: String
+        organizationId: String
+        schoolId: String
+        status: Status
+    }
+
+    type SchoolSummaryNode {
+        id: ID!
+        name: String
+        organizationId: String
+        status: Status
+        userStatus: Status
     }
 
     extend type Query {
@@ -165,11 +210,37 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            UserConnectionNode: {
+                organizations: async (
+                    user: UserConnectionNode,
+                    args: any,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.usersConnection?.organizations?.load(
+                        user.id
+                    )
+                },
+                schools: async (
+                    user: UserConnectionNode,
+                    args: any,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.usersConnection?.schools?.load(user.id)
+                },
+                roles: async (
+                    user: UserConnectionNode,
+                    args: any,
+                    ctx: Context
+                ) => {
+                    return ctx.loaders.usersConnection?.roles?.load(user.id)
+                },
+            },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
                 user: (_parent, args, _context, _info) => model.setUser(args),
-                switch_user: (_parent, args, ctx, info) =>
-                    model.switchUser(args, ctx, info),
+                switch_user: (_parent, args, ctx, info) => {
+                    throw new Error('Deprecated')
+                },
                 newUser: (_parent, args, _context, _info) =>
                     model.newUser(args),
 
@@ -178,8 +249,20 @@ export default function getDefault(
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
-                usersConnection: (_parent, args, ctx, _info) =>
-                    model.usersConnection(ctx, args),
+                usersConnection: (_parent, args, ctx: Context, _info) => {
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys, args.filter)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys, args.filter)
+                        ),
+                        roles: new Dataloader((keys) =>
+                            rolesForUsers(keys, args.filter)
+                        ),
+                    }
+                    return model.usersConnection(ctx, args)
+                },
                 users: (_parent, _args, ctx, _info) => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),

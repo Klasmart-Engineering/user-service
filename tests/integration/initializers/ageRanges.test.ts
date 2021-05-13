@@ -6,8 +6,8 @@ import { ApolloServerTestClient, createTestClient } from "../../utils/createTest
 import { createOrganizationAndValidate } from "../../utils/operations/userOps";
 import { createTestConnection } from "../../utils/testConnection";
 import { createServer } from "../../../src/utils/createServer";
-import { createUserJoe } from "../../utils/testEntities";
-import { getJoeAuthToken } from "../../utils/testConfig";
+import { createAdminUser } from "../../utils/testEntities";
+import { getAdminAuthToken } from "../../utils/testConfig";
 import { listAgeRanges } from "../../utils/operations/organizationOps";
 import { Model } from "../../../src/model";
 import { Organization } from "../../../src/entities/organization";
@@ -49,18 +49,18 @@ describe("AgeRangesInitializer", () => {
             let organization: Organization;
 
             beforeEach(async () => {
-                const user = await createUserJoe(testClient);
+                const user = await createAdminUser(testClient);
                 organization = await createOrganizationAndValidate(testClient, user.user_id);
             });
 
             it("does not modify the default system age ranges", async () => {
-                const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getJoeAuthToken() })
+                const gqlAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getAdminAuthToken() })
                 expect(gqlAgeRanges).not.to.be.empty;
 
                 await AgeRangesInitializer.run();
 
                 organization = await Organization.findOneOrFail(organization.organization_id);
-                const gqlNewAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getJoeAuthToken() })
+                const gqlNewAgeRanges = await listAgeRanges(testClient, organization.organization_id, { authorization: getAdminAuthToken() })
                 expect(gqlNewAgeRanges).not.to.be.empty;
 
                 expect(gqlAgeRanges.map(ageRangeInfoFunc)).to.deep.equal(gqlNewAgeRanges.map(ageRangeInfoFunc));

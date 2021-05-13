@@ -44,9 +44,22 @@ mutation {
 }
 ```
 
+# Connecting to a locally running frontend
+- Setup the the frontend on your machiine
+  - Checkout the `test/release` branch
+  - Follow installation instructions in the readme
+- Start the backend in local mode: `npm run start:local`
+- Start the frontend in local mode: `npm run start:local`
+
 # Diagnosing
 
-It is possible to look at the postgres logs from the docker container
+## Via TypeORM
+
+Enable the `DATABASE_LOGGING` environment variable to enable TypeORM logging, e.g. `DATABASE_LOGGING=true npm start`
+
+## Via Docker
+
+It is also possible to look at the postgres logs from the docker container
 
 (I don't recommend doing this but in extreme situations)
 
@@ -60,11 +73,28 @@ Then build a container that logs
 3. `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres postgres -c log_statement=all`
 4. `docker start postgres`
 5. `docker container exec -it postgres psql -U postgres -c "create database testdb;"`
-6. `docker logs -tf postgres 1>postgres.log 2>postgres.err` &
-7. `npm run coverage`
+6. Open a new terminal window perhaps in a different folder
+7. `docker logs -tf postgres 1>postgres.log 2>postgres.err &`
+8. `tail -f postgress.err`
 
 A vast amount of postgres sql commands will be in the postgres.err file.
 
 You could just run the test that is causing issues.
 
 Even so you may need to resort to tools like grep and less to find the commands of interest
+
+# How to
+
+## Test CSV upload with Postman
+
+Make a request with below body (`form-data`), please replace `file_path` with your real file path.
+
+```
+{
+  "operations": "{\"query\":\"mutation UploadAgeRangesFromCSV($file: Upload!) {\n uploadAgeRangesFromCSV(file: $file)\n{filename, mimetype, encoding}}\"}",
+  "map": "{\"0\": [\"variables.file\"]}",
+  0: "file_path",
+}
+```
+
+Remember include `Authorization` with JWT token in request's header.

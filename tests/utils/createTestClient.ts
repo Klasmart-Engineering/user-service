@@ -6,71 +6,76 @@
  * Credits to the original authors
  */
 
-import express from 'express';
-import { convertNodeHttpToRequest, runHttpQuery } from 'apollo-server-core';
-import { ApolloServer } from 'apollo-server-express';
-import { GraphQLResponse } from 'apollo-server-types';
-import { print, DocumentNode } from 'graphql';
-import { graphqlUploadExpress } from 'graphql-upload';
-import httpMocks, { RequestOptions, ResponseOptions, Headers } from 'node-mocks-http';
+import express from 'express'
+import { convertNodeHttpToRequest, runHttpQuery } from 'apollo-server-core'
+import { ApolloServer } from 'apollo-server-express'
+import { GraphQLResponse } from 'apollo-server-types'
+import { print, DocumentNode } from 'graphql'
+import { graphqlUploadExpress } from 'graphql-upload'
+import httpMocks, {
+    RequestOptions,
+    ResponseOptions,
+    Headers,
+} from 'node-mocks-http'
 
-type StringOrAst = string | DocumentNode;
+type StringOrAst = string | DocumentNode
 
 /**
  * Tweak the `Request` object being used to run the operation
  * @param options The `RequestOptions`
  */
 const mockRequest = (options: RequestOptions = {}) =>
-  httpMocks.createRequest({
-    method: 'POST',
-    ...options,
-  });
+    httpMocks.createRequest({
+        method: 'POST',
+        ...options,
+    })
 
 /**
  * Tweak the `Response` object being recieved from the operation
  * @param options The `ResponseOptions`
  */
-const mockResponse = (options: ResponseOptions = {}) => httpMocks.createResponse(options);
+const mockResponse = (options: ResponseOptions = {}) =>
+    httpMocks.createResponse(options)
 
 /** A query must not come with a mutation */
 type Query = {
-  query: StringOrAst;
-  mutation?: undefined;
-  variables?: {
-    [name: string]: unknown;
-  };
-  operationName?: string;
-  headers?: Headers;
-  cookies?: any;
-};
+    query: StringOrAst
+    mutation?: undefined
+    variables?: {
+        [name: string]: unknown
+    }
+    operationName?: string
+    headers?: Headers
+    cookies?: any
+}
 
 /** A mutation must not come with a query */
 type Mutation = {
-  mutation: StringOrAst;
-  query?: undefined;
-  variables?: {
-    [name: string]: unknown;
-  };
-  operationName?: string;
-  headers?: Headers;
-  cookies?: any;
-};
+    mutation: StringOrAst
+    query?: undefined
+    variables?: {
+        [name: string]: unknown
+    }
+    operationName?: string
+    headers?: Headers
+    cookies?: any
+}
 
 /**
  * The interface to represent how a TestClient
  * should look like
  */
 export interface ApolloServerTestClient {
-  /**
-   * Run a `GraphQL Query`
-   * @returns Promise<GraphQLResponse>;
-   */
-  query: (query: Query) => Promise<GraphQLResponse>;
-  /**
-   * Run a `GraphQL Mutation`
-   * @returns Promise<GraphQLResponse>;
-   */
-  mutate: (mutation: Mutation) => Promise<GraphQLResponse>;
+    /**
+     * Run a `GraphQL Query`
+     * @returns Promise<GraphQLResponse>;
+     */
+    query: (query: Query) => Promise<GraphQLResponse>
+    /**
+     * Run a `GraphQL Mutation`
+     * @returns Promise<GraphQLResponse>;
+     */
+    mutate: (mutation: Mutation) => Promise<GraphQLResponse>
 }
 
 /**
@@ -115,16 +120,24 @@ export interface ApolloServerTestClient {
  * @param server The `Apollo Server`
  * @returns `ApolloServerTestClient`
  */
-export const createTestClient = (server: ApolloServer): ApolloServerTestClient => {
-    const app = express();
-    app.use(graphqlUploadExpress({ maxFileSize: 10000, maxFiles: 10 }));
-    server.applyMiddleware({ app });
+export const createTestClient = (
+    server: ApolloServer
+): ApolloServerTestClient => {
+    const app = express()
+    app.use(graphqlUploadExpress({ maxFileSize: 10000, maxFiles: 10 }))
+    server.applyMiddleware({ app })
 
-    const test = async ({ query, mutation, ...args }: Query | Mutation): Promise<GraphQLResponse> => {
-        const operation = query || mutation;
+    const test = async ({
+        query,
+        mutation,
+        ...args
+    }: Query | Mutation): Promise<GraphQLResponse> => {
+        const operation = query || mutation
 
         if (!operation || (query && mutation)) {
-            throw new Error('Either `query` or `mutation` must be passed, but not both.');
+            throw new Error(
+                'Either `query` or `mutation` must be passed, but not both.'
+            )
         }
 
         /**
@@ -133,32 +146,35 @@ export const createTestClient = (server: ApolloServer): ApolloServerTestClient =
         const req = mockRequest({
             headers: args.headers,
             cookies: args.cookies || {},
-        });
-        const res = mockResponse();
+        })
+        const res = mockResponse()
 
-        let variables;
+        let variables
         if (args.variables) {
-            variables = args.variables;
+            variables = args.variables
         }
 
-        const graphQLOptions = await server.createGraphQLServerOptions(req, res);
+        const graphQLOptions = await server.createGraphQLServerOptions(req, res)
 
         const { graphqlResponse } = await runHttpQuery([req, res], {
             method: 'POST',
             options: graphQLOptions,
             query: {
                 // operation can be a string or an AST, but `runHttpQuery` only accepts a string
-                query: typeof operation === 'string' ? operation : print(operation),
+                query:
+                    typeof operation === 'string'
+                        ? operation
+                        : print(operation),
                 variables,
             },
             request: convertNodeHttpToRequest(req),
-        });
+        })
 
         let gqlResponse = JSON.parse(graphqlResponse)
         gqlResponse.extensions = { cookies: res.cookies }
 
-        return gqlResponse as GraphQLResponse;
-    };
+        return gqlResponse as GraphQLResponse
+    }
 
-    return { query: test, mutate: test };
-};
+    return { query: test, mutate: test }
+}

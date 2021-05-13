@@ -6,6 +6,7 @@ const typeDefs = gql`
     input StringFilter {
         operator: StringOperator
         value: String
+        caseInsensitive: Boolean
     }
 
     input NumberFilter {
@@ -24,11 +25,18 @@ const typeDefs = gql`
     }
 
     enum StringOperator {
-        contains, eq, neq,
+        contains
+        eq
+        neq
     }
 
     enum NumberOrDateOperator {
-        eq, neq, gt, gte, lt, lte
+        eq
+        neq
+        gt
+        gte
+        lt
+        lte
     }
 
     enum BooleanOperator {

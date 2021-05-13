@@ -1,6 +1,5 @@
 import { expect } from "chai";
-import { validateEmail, validatePhone} from "../../../src/entities/organization"
-import { MEMBERSHIP_SHORTCODE_MAXLEN } from "../../../src/entities/organizationMembership";
+import { validateDOB, validateEmail, validatePhone } from "../../../src/utils/validations";
 
 describe("validateEmail", () => {
     it("is a valid email", async () => {
@@ -48,9 +47,9 @@ describe("validateEmail", () => {
             
         })
     });
-  });
+});
 
-  describe("validatePhone", () => {
+describe("validatePhone", () => {
     it("is a valid phone", async () => {
         [
             "+61291920995",   //Australia Test line
@@ -81,5 +80,32 @@ describe("validateEmail", () => {
             return res
         })
     });
-  });
+});
 
+describe("validateDOB", () => {
+    it("is a valid DOB", async () => {
+        [
+            "01-2000",
+            "02-1996",
+            "10-1971"
+        ].every(function(dob){
+            const res = validateDOB(dob)
+            expect(res).to.equal(true)
+            return res
+        })
+
+    });
+
+    it("is an invalid DOB", async () => {
+        [
+            "1-2000",
+            "01-01-2000",
+            "01/2000",
+            "January, 2000"
+        ].every(function(dob){
+            const res = !validateDOB(dob)
+            expect(res).to.equal(true)
+            return res
+        })
+    });
+});

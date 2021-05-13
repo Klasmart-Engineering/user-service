@@ -8,7 +8,7 @@ import { Subcategory } from "../../../src/entities/subcategory";
 import { Subject } from "../../../src/entities/subject";
 import { expect } from "chai";
 import { ApolloServerTestClient } from "../createTestClient";
-import { getJoeAuthToken } from "../testConfig";
+import { getAdminAuthToken } from "../testConfig";
 import { Headers } from 'node-mocks-http';
 import { gqlTry } from "../gqlTry";
 import { Program } from "../../../src/entities/program";
@@ -122,15 +122,6 @@ const GET_USER = `
             email
             avatar
             date_of_birth
-        }
-    }
-`;
-
-const SWITCH_USER = `
-    mutation switchUser($user_id: ID!) {
-        switch_user(user_id: $user_id) {
-            user_id
-            email
         }
     }
 `;
@@ -256,7 +247,18 @@ const USERS_CONNECTION = `
             edges {
                 cursor
                 node {
-                    user_id
+                    id
+                    organizations {
+                        id
+                        status
+                        userStatus
+                    }
+                    schools {
+                        id
+                    }
+                    roles{
+                        id
+                    }
                 }
             }
             pageInfo{
@@ -296,7 +298,7 @@ export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user, { authorization: getJoeAuthToken() });
+    const gqlUser = await createUser(testClient, user, { authorization: getAdminAuthToken() });
     const dbUser = await User.findOneOrFail({ where: [{ email: user.email },{ phone: user.phone }]});
     expect(gqlUser).to.exist;
     expect(gqlUser).to.include(user);
@@ -324,19 +326,6 @@ export async function createUser(
     const res = await gqlTry(operation);
     const gqlUser = res.data?.newUser as User;
     return gqlUser;
-}
-
-export async function switchUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { mutate } = testClient;
-
-    const operation = () => mutate({
-        mutation: SWITCH_USER,
-        variables: { user_id: userId },
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    return res;
 }
 
 export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {
@@ -594,10 +583,9 @@ export async function userConnection(
     filter?: IEntityFilter,
 ) {
     const { query } = testClient;
-
     const operation = () => query({
         query: USERS_CONNECTION,
-        variables: { direction, directionArgs, filter },
+        variables: { direction, directionArgs, filterArgs:filter },
         headers: headers,
     });
 

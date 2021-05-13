@@ -15,13 +15,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
 import { OrganizationMembership } from './organizationMembership'
-import {
-    Organization,
-    padShortDob,
-    validateDOB,
-    validateEmail,
-    validatePhone,
-} from './organization'
+import { Organization, padShortDob } from './organization'
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
 import { OrganizationOwnership } from './organizationOwnership'
@@ -34,6 +28,7 @@ import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
 import csvErrorConstants from '../utils/csv/errors/csvErrorConstants'
 import stringInject from '../utils/stringUtils'
+import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
 
 @Entity()
 export class User extends BaseEntity {
@@ -85,8 +80,8 @@ export class User extends BaseEntity {
 
     @OneToMany(() => OrganizationMembership, (membership) => membership.user)
     @JoinColumn({
-        name: 'organization_id',
-        referencedColumnName: 'organization_id',
+        name: 'user_id',
+        referencedColumnName: 'user_id',
     })
     public memberships?: Promise<OrganizationMembership[]>
 

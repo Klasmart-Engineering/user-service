@@ -4,6 +4,7 @@ import { Model } from '../model'
 import { checkToken } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
+import { CustomError } from '../types/csv/csvError'
 
 export const createServer = (model: Model, context?: any) => {
     const schema = makeExecutableSchema(getSchema(model, context))
@@ -17,11 +18,8 @@ export const createServer = (model: Model, context?: any) => {
                 connectionData: any
             ): Promise<Context> => {
                 const token = await checkToken(authToken)
-                const permissions = new UserPermissions(
-                    token && token.id,
-                    req.cookies
-                )
-                return { sessionId, token, websocket, permissions }
+                const permissions = new UserPermissions(token)
+                return { sessionId, token, websocket, permissions, loaders: {} }
             },
         },
         context:
@@ -33,9 +31,9 @@ export const createServer = (model: Model, context?: any) => {
                 const encodedToken =
                     req.headers.authorization || req.cookies.access
                 const token = (await checkToken(encodedToken)) as any
-                const permissions = new UserPermissions(token, req.cookies)
+                const permissions = new UserPermissions(token)
 
-                return { token, permissions, res, req }
+                return { token, permissions, res, req, loaders: {} }
             }),
         playground: {
             settings: {
@@ -43,5 +41,16 @@ export const createServer = (model: Model, context?: any) => {
             },
         },
         uploads: false,
+        formatError: (error) => {
+            if (error.originalError instanceof CustomError) {
+                return { ...error, details: error.originalError.errors }
+            }
+            return {
+                message: error.message,
+                locations: error.locations,
+                path: error.path,
+                extensions: error.extensions,
+            }
+        },
     })
 }

@@ -1,5 +1,6 @@
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../csv/errors/csvErrorConstants'
+import stringInject from '../stringUtils'
 
 export function addCsvError(
     fileErrors: CSVError[],
@@ -32,12 +33,13 @@ function buildCsvError(
 ): CSVError {
     const csvError: CSVError = {
         code: code,
-        details: {
-            row: row,
-            column: column,
-            message: `${csvErrorConstants.MSG_ERR_CSV_AT_ROW} ${message}`,
-            ...params,
-        },
+        message: stringInject(
+            `${csvErrorConstants.MSG_ERR_CSV_AT_ROW}, ${message}`,
+            { ...params, row }
+        )!,
+        row,
+        column,
+        ...params,
     }
 
     return csvError

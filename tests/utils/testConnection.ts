@@ -1,16 +1,19 @@
-import { createConnection } from "typeorm";
+import { createConnection } from 'typeorm'
 
-export const createTestConnection = (drop: boolean = false, name: string = "default") => {
+export const createTestConnection = (
+    drop: boolean = false,
+    name: string = 'default'
+) => {
     return createConnection({
         name: name,
-        type: "postgres",
-        host: "localhost",
+        type: 'postgres',
+        host: 'localhost',
         port: 5432,
-        username: "postgres",
-        password: "kidsloop",
-        database: "testdb",
+        username: 'postgres',
+        password: 'kidsloop',
+        database: 'testdb',
         synchronize: drop,
         dropSchema: drop,
-        entities: ["src/entities/*.ts"]
-    });
-};
+        entities: ['src/entities/*.ts'],
+    })
+}

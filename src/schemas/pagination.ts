@@ -36,5 +36,17 @@ export default function getDefault(
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
+        resolvers: {
+            iConnectionResponse: {
+                __resolveType() {
+                    return null
+                },
+            },
+            iConnectionEdge: {
+                __resolveType() {
+                    return null
+                },
+            },
+        },
     }
 }
