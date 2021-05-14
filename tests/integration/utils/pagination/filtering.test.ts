@@ -11,6 +11,7 @@ use(chaiAsPromised);
 function getUsers() {
     const userData = [
         {
+            user_id: "07d15ab3-67e2-4933-b933-3d3a3d40887f",
             given_name: "John",
             family_name: "Smith",
             email: "john@gmail.com",
@@ -21,6 +22,7 @@ function getUsers() {
             deleted_at: new Date(2020, 0, 1),
         },
         {
+            user_id: "122e3d10-43ed-4bac-8d7a-f0d6fde115b9",
             given_name: "Sally",
             family_name: "Smith",
             email: "sally@gmail.com",
@@ -35,6 +37,7 @@ function getUsers() {
     const users: User[] = [];
     for (const u of userData) {
         const user = new User();
+        user.user_id = u.user_id;
         user.given_name = u.given_name;
         user.family_name = u.family_name;
         user.email = u.email;
@@ -232,6 +235,56 @@ describe('filtering', ()=>{
             const data = await scope.getMany();
     
             expect(data.length).to.equal(2);
+        });
+    });
+
+    context("uuids", () => {
+        it("supports uuid.eq", async () => {
+            const filter: IEntityFilter = {
+                userId: {
+                    operator: "eq",
+                    value: "07d15ab3-67e2-4933-b933-3d3a3d40887f",
+                }
+            };
+    
+            scope.andWhere(getWhereClauseFromFilter(filter, {
+                userId: ["concat(User.user_id, '')"],
+            }));
+            const data = await scope.getMany();
+    
+            expect(data.length).to.equal(1);
+        });
+
+        it("supports uuid.neq", async () => {
+            const filter: IEntityFilter = {
+                userId: {
+                    operator: "neq",
+                    value: "07d15ab3-67e2-4933-b933-3d3a3d40887f",
+                }
+            };
+    
+            scope.andWhere(getWhereClauseFromFilter(filter, {
+                userId: ["concat(User.user_id, '')"],
+            }));
+            const data = await scope.getMany();
+    
+            expect(data.length).to.equal(1);
+        });
+
+        it("supports uuid.contains", async () => {
+            const filter: IEntityFilter = {
+                userId: {
+                    operator: "contains",
+                    value: "07d15ab3",
+                }
+            };
+    
+            scope.andWhere(getWhereClauseFromFilter(filter, {
+                userId: ["concat(User.user_id, '')"],
+            }));
+            const data = await scope.getMany();
+    
+            expect(data.length).to.equal(1);
         });
     });
 });

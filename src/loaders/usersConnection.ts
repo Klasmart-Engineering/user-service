@@ -35,6 +35,7 @@ export const orgsForUsers = async (
                 schoolId: [], // don't attempt to filter by schoolId
                 roleId: ['roles.role_id'],
                 organizationUserStatus: ['memberships.status'],
+                userId: ["concat(user.user_id, '')"],
             })
         )
     }
@@ -88,6 +89,7 @@ export const schoolsForUsers = async (
                 schoolId: ['memberships.school_id'],
                 roleId: ['roles.role_id'],
                 organizationUserStatus: [],
+                userId: ["concat(user.user_id, '')"],
             })
         )
     }
@@ -146,6 +148,7 @@ export const rolesForUsers = async (
                 schoolId: ['schoolMemberships.school_id'],
                 roleId: ['orgRoles.role_id', 'schoolRoles.role_id'],
                 organizationUserStatus: [],
+                userId: ["concat(user.user_id, '')"],
             })
         )
     }

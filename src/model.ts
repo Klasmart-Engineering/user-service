@@ -351,6 +351,7 @@ export class Model {
                 getWhereClauseFromFilter(filter, {
                     organizationId: ['OrgMembership.organization_id'],
                     organizationUserStatus: ['OrgMembership.status'],
+                    userId: ["concat(User.user_id, '')"],
                 })
             )
         }
