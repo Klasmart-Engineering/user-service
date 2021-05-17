@@ -51,7 +51,7 @@ export const processUserFromCSVRow = async (
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
             {
                 entity: 'user',
-                attribute: 'name',
+                attribute: 'email',
                 other_entity: 'user',
                 other_attribute: 'phone',
             }
@@ -111,11 +111,11 @@ export const processUserFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "organization_role_name",
+            'organization_role_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "user",
-                "attribute": "organization role",
+                entity: 'user',
+                attribute: 'organization role',
             }
         )
     }
@@ -125,16 +125,19 @@ export const processUserFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "user_given_name",
+            'user_given_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "user",
-                "attribute": "given name",
+                entity: 'user',
+                attribute: 'given name',
             }
         )
     }
 
-    if (row.user_given_name?.length > validationConstants.USER_GIVEN_NAME_MAX_LENGTH) {
+    if (
+        row.user_given_name?.length >
+        validationConstants.USER_GIVEN_NAME_MAX_LENGTH
+    ) {
         addCsvError(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_LENGTH,
@@ -154,11 +157,11 @@ export const processUserFromCSVRow = async (
             fileErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
-            "user_family_name",
+            'user_family_name',
             csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                "entity": "user",
-                "attribute": "family name",
+                entity: 'user',
+                attribute: 'family name',
             }
         )
     }
@@ -177,7 +180,10 @@ export const processUserFromCSVRow = async (
         )
     }
 
-    if (row.user_family_name?.length > validationConstants.USER_FAMILY_NAME_MAX_LENGTH) {
+    if (
+        row.user_family_name?.length >
+        validationConstants.USER_FAMILY_NAME_MAX_LENGTH
+    ) {
         addCsvError(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_LENGTH,
@@ -390,7 +396,10 @@ export const processUserFromCSVRow = async (
 
     if (row.user_shortcode) {
         const userShortcode = await manager.findOne(OrganizationMembership, {
-            where: { shortcode: row.user_shortcode, organization: { organization_id: org.organization_id } },
+            where: {
+                shortcode: row.user_shortcode,
+                organization: { organization_id: org.organization_id },
+            },
         })
 
         if (userShortcode && user.user_id !== userShortcode.user_id) {
@@ -404,7 +413,7 @@ export const processUserFromCSVRow = async (
                     entity: 'shortcode',
                     name: row.user_shortcode,
                     parent_name: (await userShortcode.user)?.full_name(),
-                    parent_entity: 'user'
+                    parent_entity: 'user',
                 }
             )
         }

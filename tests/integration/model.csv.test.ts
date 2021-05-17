@@ -83,6 +83,7 @@ import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
 import { CustomError } from '../../src/types/csv/csvError'
+import stringInject from '../../src/utils/stringUtils'
 
 use(chaiAsPromised)
 
@@ -760,6 +761,56 @@ describe('model.csv', () => {
                         encoding
                     )
                 expect(fn()).to.be.rejected
+
+                const usersCount = await User.count()
+                expect(usersCount).eq(0)
+            })
+
+            it('should throw errors when missing both user email and phone', async () => {
+                const filename = 'usersWithErrors.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const fn = async () =>
+                    await uploadUsers(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding
+                    )
+                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.length(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('message')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('row')
+                    .equal(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('column')
+                    .equal('user_email, user_phone')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('entity')
+                    .equal('user')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('attribute')
+                    .equal('email')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('other_entity')
+                    .equal('user')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('other_attribute')
+                    .equal('phone')
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
