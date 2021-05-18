@@ -1,3 +1,4 @@
+import { NextFunction, Request, Response } from 'express'
 import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
 
 const issuers = new Map<
@@ -54,6 +55,16 @@ FwIDAQAB
     ],
 ])
 
+/*
+    The next issuers are just for instance,
+    these will be changed for real not allowed issuers
+*/
+const blackListIssuers = [
+    'invalid-issuer',
+    'black-list-issuer',
+    'not-allowed-issuer',
+]
+
 export async function checkToken(token?: string) {
     try {
         if (!token) {
@@ -86,5 +97,36 @@ export async function checkToken(token?: string) {
         return verifiedToken
     } catch (e) {
         console.error(e)
+    }
+}
+
+export function checkIssuerAuthorization(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    const token = req.headers?.authorization
+
+    try {
+        if (token) {
+            const payload = decode(token)
+
+            if (payload && typeof payload !== 'string') {
+                const issuer = payload['iss']
+
+                if (
+                    !issuer ||
+                    typeof issuer !== 'string' ||
+                    blackListIssuers.includes(issuer)
+                ) {
+                    res.status(401)
+                    return res.send({ message: 'User not authorized' })
+                }
+            }
+        }
+
+        next()
+    } catch (error) {
+        throw new Error(error)
     }
 }
