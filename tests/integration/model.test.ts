@@ -1513,6 +1513,73 @@ describe('model', () => {
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
             })
         })
+
+        context('phoneFilter', () => {
+            beforeEach(async () => {
+                usersList = []
+                roleList = []
+
+                // create an org
+                let org: Organization
+                org = createOrganization()
+                await connection.manager.save(org)
+
+                // create 5 users
+                for (let i = 0; i < 5; i++) {
+                    usersList.push(createUser())
+                }
+
+                //sort users by userId
+                await connection.manager.save(usersList)
+
+                // add organizations and schools to users
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+                // add phone number to 2 users
+                usersList[0].phone = '123456789'
+                usersList[1].phone = '456789123'
+                await connection.manager.save(usersList[0])
+                await connection.manager.save(usersList[1])
+            })
+            it('should filter on phone', async () => {
+                const filter: IEntityFilter = {
+                    phone: {
+                        operator: 'contains',
+                        caseInsensitive: true,
+                        value: '123',
+                    },
+                }
+                let directionArgs = {
+                    count: 3,
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(2)
+                expect(usersConnection?.edges.length).to.equal(2)
+                expect(usersConnection?.edges[0].node.id).to.equal(
+                    usersList[0].user_id
+                )
+                expect(usersConnection?.edges[1].node.id).to.equal(
+                    usersList[1].user_id
+                )
+
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.false
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
     })
 
     describe('permissionsConnection', () => {

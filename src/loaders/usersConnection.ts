@@ -36,6 +36,7 @@ export const orgsForUsers = async (
                 roleId: ['roles.role_id'],
                 organizationUserStatus: ['memberships.status'],
                 userId: ["concat(user.user_id, '')"],
+                phone: ['user.phone'],
             })
         )
     }
@@ -90,6 +91,7 @@ export const schoolsForUsers = async (
                 roleId: ['roles.role_id'],
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
+                phone: ['user.phone'],
             })
         )
     }
@@ -149,6 +151,7 @@ export const rolesForUsers = async (
                 roleId: ['orgRoles.role_id', 'schoolRoles.role_id'],
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
+                phone: ['user.phone'],
             })
         )
     }

@@ -102,7 +102,7 @@ const typeDefs = gql`
     type OrganizationSummaryNode {
         id: ID!
         name: String
-        joinDate: String
+        joinDate: Int
         userStatus: Status
         status: Status
     }
