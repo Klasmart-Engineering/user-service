@@ -137,6 +137,9 @@ export const rolesForUsers = async (
         .leftJoinAndSelect('schoolMemberships.school', 'school')
         .leftJoinAndSelect('school.organization', 'schoolOrg')
         .where('user.user_id IN (:...ids)', { ids: userIds })
+        .andWhere(
+            "concat(schoolOrg.organization_id, '') = concat(orgMemberships.organization_id, '')"
+        )
 
     if (filter) {
         scope.andWhere(
