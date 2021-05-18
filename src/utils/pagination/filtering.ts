@@ -48,26 +48,36 @@ export function getWhereClauseFromFilter(
                 aliases = columnAliases?.[key]
             }
 
-            for (const alias of aliases) {
-                const sqlOperator = getSQLOperatorFromFilterOperator(
-                    data.operator
-                )
-                const value = parseValueForSQLOperator(sqlOperator, data.value)
+            qb.andWhere(
+                new Brackets((innerQb) => {
+                    for (const alias of aliases) {
+                        const sqlOperator = getSQLOperatorFromFilterOperator(
+                            data.operator
+                        )
+                        const value = parseValueForSQLOperator(
+                            sqlOperator,
+                            data.value
+                        )
 
-                // parameter keys must be unique when using typeorm querybuilder
-                const uniqueId = uuid_v4()
+                        // parameter keys must be unique when using typeorm querybuilder
+                        const uniqueId = uuid_v4()
 
-                if (data.caseInsensitive) {
-                    qb.andWhere(
-                        `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`,
-                        { [uniqueId]: value }
-                    )
-                } else {
-                    qb.andWhere(`${alias} ${sqlOperator} :${uniqueId}`, {
-                        [uniqueId]: value,
-                    })
-                }
-            }
+                        if (data.caseInsensitive) {
+                            innerQb.orWhere(
+                                `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`,
+                                { [uniqueId]: value }
+                            )
+                        } else {
+                            innerQb.orWhere(
+                                `${alias} ${sqlOperator} :${uniqueId}`,
+                                {
+                                    [uniqueId]: value,
+                                }
+                            )
+                        }
+                    }
+                })
+            )
         }
 
         if (filter.OR) {
