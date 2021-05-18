@@ -984,6 +984,46 @@ describe('model', () => {
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
             })
+
+            it("returns roles if the user has no school memberships", async () => {
+                const newUser = createUser()
+                await connection.manager.save([newUser])
+
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    newUser.user_id,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    newUser.user_id,
+                    org.organization_id,
+                    role1.role_id,
+                    { authorization: getAdminAuthToken() })
+
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                    userId: {
+                        operator: 'eq',
+                        value: newUser.user_id,
+                    }
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    {count: 1},
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(
+                    usersConnection?.edges[0].node.roles.length
+                ).to.equal(1)
+            });
         })
 
         context('school filter', () => {

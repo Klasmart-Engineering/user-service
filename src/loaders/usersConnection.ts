@@ -129,9 +129,12 @@ export const rolesForUsers = async (
 ): Promise<RoleSummaryNode[][]> => {
     //
     // fetch school & organization membership roles for each user
-    const scope = await User.createQueryBuilder('user')
+    const orgScope = await User.createQueryBuilder('user')
         .leftJoinAndSelect('user.memberships', 'orgMemberships')
         .leftJoinAndSelect('orgMemberships.roles', 'orgRoles')
+        .where('user.user_id IN (:...ids)', { ids: userIds })
+
+    const schoolScope = await User.createQueryBuilder('user')
         .leftJoinAndSelect('user.school_memberships', 'schoolMemberships')
         .leftJoinAndSelect('schoolMemberships.roles', 'schoolRoles')
         .leftJoinAndSelect('schoolMemberships.school', 'school')
@@ -139,31 +142,39 @@ export const rolesForUsers = async (
         .where('user.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        scope.andWhere(
+        orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: [
-                    'orgMemberships.organization_id',
-                    'schoolOrg.organization_id',
-                ],
+                organizationId: ['orgMemberships.organization_id'],
+                schoolId: [],
+                roleId: ['orgRoles.role_id'],
+                organizationUserStatus: [],
+                userId: ["concat(user.user_id, '')"],
+            })
+        )
+        schoolScope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['schoolOrg.organization_id'],
                 schoolId: ['schoolMemberships.school_id'],
-                roleId: ['orgRoles.role_id', 'schoolRoles.role_id'],
+                roleId: ['schoolRoles.role_id'],
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
             })
         )
     }
-    const users = await scope.getMany()
+    const orgUsers = await orgScope.getMany()
+    const schoolUsers = await schoolScope.getMany()
 
     //
     // translate to graphQL schema
     //
     const userRoles: RoleSummaryNode[][] = []
     for (const userId of userIds) {
-        const user = users.find((u) => u.user_id === userId)
-        if (user) {
+        const orgUser = orgUsers.find((u) => u.user_id === userId)
+        const schoolUser = schoolUsers.find((u) => u.user_id === userId)
+        if (orgUser || schoolUser) {
             const roles: RoleSummaryNode[] = []
-            const orgs = (await user.memberships) || []
-            const schools = (await user.school_memberships) || []
+            const orgs = (await orgUser?.memberships) || []
+            const schools = (await schoolUser?.school_memberships) || []
 
             for (const m of orgs) {
                 const mRoles = (await m.roles) || []
