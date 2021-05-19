@@ -32,6 +32,7 @@ import {
     createClass,
     createRole,
     inviteUser,
+    inviteExternalUser,
     editMembership,
     listAgeRanges,
     listGrades,
@@ -2056,6 +2057,655 @@ describe('organization', () => {
             }
         )
     })
+
+    describe('inviteExternalUser', async () => {
+        context(
+            'We have an email or phone, profile_name, given_name, family_name, date_of_birth, organization_role_ids, school_ids, school_role_ids, alternate_email, alternate_phone',
+            () => {
+                let userId: string
+                let organizationId: string
+                let schoolId: string
+                let oldSchoolId: string
+                let roleId: string
+                let otherUserId: string
+                let adminToken: string
+
+                beforeEach(async () => {
+                    user = await createAdminUser(testClient)
+                    adminToken = generateToken(userToPayload(user))
+                    otherUserId = (await createNonAdminUser(testClient)).user_id
+                    userId = user.user_id
+                    organization = await createOrganizationAndValidate(
+                        testClient,
+                        user.user_id
+                    )
+                    organizationId = organization.organization_id
+                    role = await Role.findOneOrFail({
+                        where: { role_name: 'Student' },
+                    })
+                    roleId = role.role_id
+                    oldSchoolId = (
+                        await createSchool(
+                            testClient,
+                            organizationId,
+                            'school 1',
+                            undefined,
+                            { authorization: adminToken }
+                        )
+                    ).school_id
+                    schoolId = (
+                        await createSchool(
+                            testClient,
+                            organizationId,
+                            'school 2',
+                            undefined,
+                            { authorization: adminToken }
+                        )
+                    ).school_id
+                    await addUserToSchool(testClient, userId, oldSchoolId, {
+                        authorization: adminToken,
+                    })
+                })
+
+                it('creates the user when email provided', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Bunter',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+                    expect(newUser?.email).to.equal(email)
+                    expect(newUser?.date_of_birth).to.equal(dateOfBirth)
+                    expect(newUser?.username).to.equal('Bunter')
+                    expect(newUser?.gender).to.equal('Male')
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+                    expect(membership.shortcode).to.match(shortcode_re)
+                    expect(membership.shortcode.length).to.equal(
+                        MEMBERSHIP_SHORTCODE_MAXLEN
+                    )
+                })
+
+                it('creates the user when no lowercase email provided', async () => {
+                    const expectedEmail = 'bob.dylan@nowhere.com'
+                    let email = 'Bob.Dylan@NOWHERE.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '2-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+                    expect(newUser?.email).to.equal(expectedEmail)
+                    expect(newUser?.date_of_birth).to.equal('02-1978')
+                    expect(newUser?.username).to.equal('Buster')
+                    expect(newUser?.gender).to.equal('Male')
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+                })
+
+                it('creates the user when email provided as phone', async () => {
+                    let email = undefined
+                    let phone = 'bob.dylan@nowhere.com'
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '21-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+
+                    expect(newUser.email).to.eq(phone)
+                    expect(newUser.phone).to.be.null
+                    expect(newUser.date_of_birth).to.be.null
+                    expect(newUser.username).to.equal('Buster')
+                    expect(newUser?.gender).to.equal('Male')
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+                })
+
+                it('creates the user when phone provided', async () => {
+                    let email = undefined
+                    let phone = '+44207344141'
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        undefined,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: getAdminAuthToken() }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+                    expect(newUser.phone).to.equal(phone)
+                    expect(newUser?.username).to.equal('Buster')
+                    expect(newUser?.gender).to.equal('Male')
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+                })
+
+                it('creates the user when phone provided as email', async () => {
+                    let email = '+44207344141'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        undefined,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: getAdminAuthToken() }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+                    expect(newUser.email).to.be.null
+                    expect(newUser.phone).to.eq(email)
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+                })
+
+                it('creates the user makes them linked to organization, they invite someone else', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Bunter',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+                    expect(newUser?.email).to.equal(email)
+                    expect(newUser?.date_of_birth).to.equal(dateOfBirth)
+                    expect(newUser?.username).to.equal('Bunter')
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+
+                    const bobtoken = generateToken(userToPayload(newUser))
+                    gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        'bob2@nowhere.com',
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: bobtoken }
+                    )
+                    newUser = gqlresult?.user
+                    expect(newUser).to.exist
+                    expect(newUser?.email).to.equal('bob2@nowhere.com')
+                    expect(newUser?.date_of_birth).to.equal(dateOfBirth)
+                    expect(newUser?.username).to.equal('Buster')
+                    membership = gqlresult?.membership
+                    expect(membership).to.exist
+                    schoolmemberships = gqlresult?.schoolMemberships
+                    expect(schoolmemberships).to.not.exist
+                })
+
+                it('creates user with custom shortcode', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Bunter',
+                        'Male',
+                        'RANGER13',
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.shortcode).to.match(shortcode_re)
+                    expect(membership.shortcode).to.equal('RANGER13')
+                })
+
+                it('creates user with an uppercased custom shortcode', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Bunter',
+                        'Male',
+                        'ranger13',
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.shortcode).to.match(shortcode_re)
+                    expect(membership.shortcode).to.equal('RANGER13')
+                })
+
+                it('creates user with a shortcode ignoring non validating custom input', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Bunter',
+                        'Male',
+                        'ranger 13',
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.shortcode).to.match(shortcode_re)
+                    expect(membership.shortcode).to.not.equal('RANGER 13')
+                })
+
+                it('creates the user with alternate_email and altnernate_phone when provided', async () => {
+                    let email = 'bob@nowhere.com'
+                    let alternate_email = 'some@email.com'
+                    let alternate_phone = '+123456789'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'Bunter',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken },
+                        alternate_email,
+                        alternate_phone
+                    )
+                    let newUser = gqlresult?.user
+
+                    expect(newUser).to.exist
+                    expect(newUser?.email).to.equal(email)
+                    expect(newUser?.alternate_email).to.equal(alternate_email)
+                    expect(newUser?.alternate_phone).to.equal(alternate_phone)
+                })
+
+                context('and the organization is marked as inactive', () => {
+                    beforeEach(async () => {
+                        await deleteOrganization(
+                            testClient,
+                            organization.organization_id,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    })
+
+                    it('fails to invite user to the organization', async () => {
+                        let email = 'bob@nowhere.com'
+                        let phone = undefined
+                        let given = 'Bob'
+                        let family = 'Smith'
+                        let gqlresult = await inviteExternalUser(
+                            testClient,
+                            organizationId,
+                            email,
+                            phone,
+                            given,
+                            family,
+                            undefined,
+                            'Buster',
+                            'Male',
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: adminToken }
+                        )
+                        expect(gqlresult).to.be.null
+
+                        const dbOrganization = await Organization.findOneOrFail(
+                            { where: { organization_id: organizationId } }
+                        )
+                        const organizationMemberships = await dbOrganization.memberships
+                        const dbOrganizationMembership = await OrganizationMembership.findOneOrFail(
+                            {
+                                where: {
+                                    organization_id: organizationId,
+                                    user_id: userId,
+                                },
+                            }
+                        )
+
+                        expect(organizationMemberships).to.deep.include(
+                            dbOrganizationMembership
+                        )
+                    })
+                })
+            }
+        )
+        context(
+            'We have an existing user and we invite to the same email or phone, etc ',
+            () => {
+                let userId: string
+                let organizationId: string
+                let schoolId: string
+                let oldSchoolId: string
+                let roleId: string
+                let existingUser: User
+                let newSchoolId: string
+                let adminToken: string
+
+                beforeEach(async () => {
+                    user = await createAdminUser(testClient)
+                    adminToken = generateToken(userToPayload(user))
+                    userId = user.user_id
+                    organization = await createOrganizationAndValidate(
+                        testClient,
+                        user.user_id
+                    )
+                    organizationId = organization.organization_id
+                    role = await Role.findOneOrFail({
+                        where: { role_name: 'Student' },
+                    })
+                    roleId = role.role_id
+                    oldSchoolId = (
+                        await createSchool(
+                            testClient,
+                            organizationId,
+                            'school 1',
+                            undefined,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    ).school_id
+                    schoolId = (
+                        await createSchool(
+                            testClient,
+                            organizationId,
+                            'school 2',
+                            undefined,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    ).school_id
+                    await addUserToSchool(testClient, userId, oldSchoolId, {
+                        authorization: getAdminAuthToken(),
+                    })
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Bunter',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    existingUser = gqlresult?.user
+                    expect(existingUser).to.exist
+                    expect(existingUser?.email).to.equal(email)
+                    newSchoolId = oldSchoolId
+                })
+
+                it('creates the user when email provided', async () => {
+                    let email = existingUser.email
+                    let phone = existingUser.phone
+                    let given = 'Joanne'
+                    let family = existingUser.family_name
+                    let dateOfBirth = '04-2018'
+                    let gqlresult = await inviteExternalUser(
+                        testClient,
+                        organizationId,
+                        email,
+                        phone,
+                        given,
+                        family,
+                        dateOfBirth,
+                        'Jo',
+                        'Female',
+                        undefined,
+                        new Array(roleId),
+                        Array(newSchoolId),
+                        new Array(roleId),
+                        { authorization: adminToken }
+                    )
+                    let newUser = gqlresult?.user
+                    let membership = gqlresult?.membership
+                    let schoolmemberships = gqlresult?.schoolMemberships
+
+                    expect(newUser).to.exist
+                    expect(newUser?.email).to.equal(email)
+                    expect(newUser?.date_of_birth).to.equal(dateOfBirth)
+                    expect(newUser?.username).to.equal('Jo')
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser?.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(newSchoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser?.user_id)
+
+                    const existingUserToken = generateToken(
+                        userToPayload(existingUser)
+                    )
+                    const gqlMyUsers = await myUsers(testClient, {
+                        authorization: existingUserToken,
+                    })
+
+                    expect(gqlMyUsers).to.exist
+                    expect(gqlMyUsers.length).to.equal(2)
+                })
+            }
+        )
+    })
+
     describe('editMemberships', async () => {
         context(
             'We have an email or phone, given_name, family_name, organization_role_ids, school_ids and school_role_ids',

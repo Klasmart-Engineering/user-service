@@ -5,6 +5,10 @@ import { generateToken, getNonAdminAuthToken } from '../../utils/testConfig'
 import { createTestConnection } from '../../utils/testConnection'
 import { createResponse, createRequest } from 'node-mocks-http'
 import { checkIssuerAuthorization } from '../../../src/token'
+import {
+    INVITE_USER,
+    INVITE_EXTERNAL_USER,
+} from '../../utils/operations/organizationOps'
 
 use(chaiAsPromised)
 
@@ -80,8 +84,9 @@ describe('Issuer Authorization', () => {
             console.log(token)
         })
 
-        it('should throw an 401: Unauthorized error', async () => {
+        it('should throw an 401: Unauthorized error when the operation is not allowed', async () => {
             mockRequest.headers = { authorization: token }
+            mockRequest.body.query = INVITE_USER
 
             checkIssuerAuthorization(mockRequest, mockResponse, nextFunction)
 
@@ -89,6 +94,16 @@ describe('Issuer Authorization', () => {
             expect(mockResponse.statusCode).eq(401)
             expect(mockResponse._getData()).to.have.property('message')
             expect(mockResponse._getData().message).eq('User not authorized')
+        })
+
+        it("should execute 'next()' function when the operation is allowed", async () => {
+            mockRequest.headers = { authorization: token }
+            mockRequest.body.query = INVITE_EXTERNAL_USER
+
+            checkIssuerAuthorization(mockRequest, mockResponse, nextFunction)
+
+            expect(middlewarePass).eq(true)
+            expect(mockResponse.statusCode).eq(200)
         })
     })
 

@@ -533,6 +533,74 @@ export class Organization extends BaseEntity {
         }
     }
 
+    public async inviteExternalUser(
+        {
+            email,
+            phone,
+            given_name,
+            family_name,
+            date_of_birth,
+            username,
+            gender,
+            shortcode,
+            organization_role_ids,
+            school_ids,
+            school_role_ids,
+            alternate_email,
+            alternate_phone,
+        }: any,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const user_id = context.permissions.getUserId()
+        const restricted = !(await context.permissions.allowed(
+            { organization_id: this.organization_id, user_id },
+            PermissionName.send_invitation_40882
+        ))
+        if (restricted) {
+            await context.permissions.rejectIfNotAllowed(
+                { organization_id: this.organization_id, user_id },
+                PermissionName.join_organization_10881
+            )
+        }
+        try {
+            if (
+                info.operation.operation !== 'mutation' ||
+                this.status == Status.INACTIVE
+            ) {
+                return null
+            }
+            email = normalizedLowercaseTrimmed(email)
+            phone = normalizedLowercaseTrimmed(phone)
+            alternate_email = normalizedLowercaseTrimmed(alternate_email)
+            alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
+
+            date_of_birth = padShortDob(date_of_birth)
+
+            const result = await this._setMembership(
+                restricted,
+                false,
+                undefined,
+                email,
+                phone,
+                given_name,
+                family_name,
+                date_of_birth,
+                username,
+                gender,
+                shortcode,
+                organization_role_ids,
+                school_ids,
+                school_role_ids,
+                alternate_email,
+                alternate_phone
+            )
+            return result
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
     public async editMembership(
         {
             user_id,

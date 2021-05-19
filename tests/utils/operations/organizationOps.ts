@@ -109,10 +109,43 @@ const UPDATE_ORGANIZATION = `
     }
 `
 
-const INVITE_USER = `
+export const INVITE_USER = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email: String, $alternate_phone: String) {
         organization(organization_id: $organization_id) {
             inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email: $alternate_email, alternate_phone: $alternate_phone){
+                user{
+                    user_id
+                    email
+                    phone
+                    given_name
+                    family_name
+                    date_of_birth
+                    avatar
+                    username
+                    alternate_email
+                    alternate_phone
+                    gender
+                }
+                membership{
+                    user_id
+                    shortcode
+                    organization_id
+                    join_timestamp
+                }
+                schoolMemberships{
+                    user_id
+                    school_id
+                    join_timestamp
+                }
+            }
+        }
+    }
+`
+
+export const INVITE_EXTERNAL_USER = `
+    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email: String, $alternate_phone: String) {
+        organization(organization_id: $organization_id) {
+            inviteExternalUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email: $alternate_email, alternate_phone: $alternate_phone){
                 user{
                     user_id
                     email
@@ -603,6 +636,82 @@ export async function inviteUser(
 
     const res = await gqlTry(operation)
     const result = res.data?.organization.inviteUser as {
+        user: User
+        membership: OrganizationMembership
+        schoolMemberships: SchoolMembership[]
+    }
+    return result
+}
+
+export async function inviteExternalUser(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    email?: string,
+    phone?: string,
+    given_name?: string,
+    family_name?: string,
+    date_of_birth?: string,
+    username?: string,
+    gender?: string,
+    shortcode?: string,
+    organization_role_ids?: string[],
+    school_ids?: string[],
+    school_role_ids?: string[],
+    headers?: Headers,
+    alternate_email?: string,
+    alternate_phone?: string
+) {
+    const { mutate } = testClient
+    let variables: any
+    variables = { organization_id: organizationId }
+    if (email) {
+        variables.email = email
+    }
+    if (phone) {
+        variables.phone = phone
+    }
+    if (given_name) {
+        variables.given_name = given_name
+    }
+    if (family_name) {
+        variables.family_name = family_name
+    }
+    if (date_of_birth) {
+        variables.date_of_birth = date_of_birth
+    }
+    if (username) {
+        variables.username = username
+    }
+    if (gender) {
+        variables.gender = gender
+    }
+    if (shortcode) {
+        variables.shortcode = shortcode
+    }
+    if (organization_role_ids) {
+        variables.organization_role_ids = organization_role_ids
+    }
+    if (school_ids) {
+        variables.school_ids = school_ids
+    }
+    if (school_role_ids) {
+        variables.school_role_ids = school_role_ids
+    }
+    if (alternate_email) {
+        variables.alternate_email = alternate_email
+    }
+    if (alternate_phone) {
+        variables.alternate_phone = alternate_phone
+    }
+    const operation = () =>
+        mutate({
+            mutation: INVITE_EXTERNAL_USER,
+            variables: variables,
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    const result = res.data?.organization.inviteExternalUser as {
         user: User
         membership: OrganizationMembership
         schoolMemberships: SchoolMembership[]

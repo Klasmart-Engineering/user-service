@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
+import { DefinitionNode, parse } from 'graphql'
 
 const issuers = new Map<
     string,
@@ -65,6 +66,14 @@ const blackListIssuers = [
     'not-allowed-issuer',
 ]
 
+/**
+ * List of queries and mutations that external issuers can use
+ */
+const externalAllowOperations: Record<string, string[]> = {
+    query: [],
+    mutation: ['inviteExternalUser'],
+}
+
 export async function checkToken(token?: string) {
     try {
         if (!token) {
@@ -114,13 +123,29 @@ export function checkIssuerAuthorization(
             if (payload && typeof payload !== 'string') {
                 const issuer = payload['iss']
 
-                if (
-                    !issuer ||
-                    typeof issuer !== 'string' ||
-                    blackListIssuers.includes(issuer)
-                ) {
+                if (!issuer || typeof issuer !== 'string') {
                     res.status(401)
                     return res.send({ message: 'User not authorized' })
+                }
+
+                if (blackListIssuers.includes(issuer)) {
+                    const parsedQuery = parse(req.body.query)
+
+                    const operation = getOperation(parsedQuery.definitions[0])
+                    const operationName = getOperationName(
+                        parsedQuery.definitions[0]
+                    )
+                    console.log('operation: ' + operation)
+                    console.log('operationName: ' + operationName)
+                    if (
+                        (!operation && !operationName) ||
+                        !externalAllowOperations[operation].includes(
+                            operationName
+                        )
+                    ) {
+                        res.status(401)
+                        return res.send({ message: 'User not authorized' })
+                    }
                 }
             }
         }
@@ -129,4 +154,25 @@ export function checkIssuerAuthorization(
     } catch (error) {
         throw new Error(error)
     }
+}
+
+function getOperation(document: DefinitionNode) {
+    if (document.kind !== 'OperationDefinition') {
+        return ''
+    }
+
+    return document.operation
+}
+
+function getOperationName(document: DefinitionNode) {
+    if (document.kind !== 'OperationDefinition') {
+        return ''
+    }
+
+    const selectionNode = document.selectionSet.selections[0]
+    if (selectionNode.kind !== 'Field') {
+        return ''
+    }
+
+    return selectionNode.name.value
 }
