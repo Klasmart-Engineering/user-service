@@ -62,6 +62,8 @@ import { addRoleToOrganizationMembership } from '../utils/operations/organizatio
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Status } from '../../src/entities/status'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { grantPermission } from '../utils/operations/roleOps'
 
 use(chaiAsPromised)
 
@@ -1033,7 +1035,8 @@ describe('model', () => {
             let role1: Role
             beforeEach(async () => {
                 //org used to filter
-                org = createOrganization()
+                const superAdmin = await createAdminUser(testClient)
+                org = createOrganization(superAdmin)
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
@@ -1135,6 +1138,42 @@ describe('model', () => {
                 )
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+            it('works for non-admins', async () => {
+                const nonAdmin = await createNonAdminUser(testClient)
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    nonAdmin.user_id,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+                await grantPermission(
+                    testClient,
+                    role1.role_id,
+                    PermissionName.view_users_40110,
+                    { authorization: getAdminAuthToken() }
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    nonAdmin.user_id,
+                    org.organization_id,
+                    role1.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 3 },
+                    { authorization: getNonAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnection?.totalCount).to.eql(5)
             })
         })
 
