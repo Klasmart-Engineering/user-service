@@ -344,7 +344,7 @@ export class Model {
             if (filterHasProperty('schoolId', filter)) {
                 scope.leftJoinAndSelect(
                     'User.school_memberships',
-                    'schoolMembership'
+                    'SchoolMembership'
                 )
             }
             scope.andWhere(
@@ -353,6 +353,7 @@ export class Model {
                     organizationUserStatus: ['OrgMembership.status'],
                     userId: ["concat(User.user_id, '')"],
                     phone: ['User.phone'],
+                    schoolId: ['SchoolMembership.school_id'],
                 })
             )
         }
