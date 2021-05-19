@@ -1,23 +1,26 @@
-import { expect } from "chai";
-import { Class } from "../../../src/entities/class";
-import { Organization } from "../../../src/entities/organization";
-import { OrganizationMembership } from "../../../src/entities/organizationMembership";
-import { AgeRange } from "../../../src/entities/ageRange";
-import { Category } from "../../../src/entities/category"
-import { Grade } from "../../../src/entities/grade";
-import { Role } from "../../../src/entities/role";
-import { School } from "../../../src/entities/school";
-import { SchoolMembership } from "../../../src/entities/schoolMembership"
-import { Subcategory } from "../../../src/entities/subcategory"
-import { Subject } from "../../../src/entities/subject"
-import { User } from "../../../src/entities/user";
-import { ApolloServerTestClient } from "../createTestClient";
-import { getAdminAuthToken, generateToken } from "../testConfig";
-import { Headers } from 'node-mocks-http';
-import { gqlTry } from "../gqlTry";
-import { userToPayload, userToSuperPayload } from "../../utils/operations/userOps"
-import { utils } from "mocha";
-import { Program } from "../../../src/entities/program";
+import { expect } from 'chai'
+import { Class } from '../../../src/entities/class'
+import { Organization } from '../../../src/entities/organization'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { AgeRange } from '../../../src/entities/ageRange'
+import { Category } from '../../../src/entities/category'
+import { Grade } from '../../../src/entities/grade'
+import { Role } from '../../../src/entities/role'
+import { School } from '../../../src/entities/school'
+import { SchoolMembership } from '../../../src/entities/schoolMembership'
+import { Subcategory } from '../../../src/entities/subcategory'
+import { Subject } from '../../../src/entities/subject'
+import { User } from '../../../src/entities/user'
+import { ApolloServerTestClient } from '../createTestClient'
+import { getAdminAuthToken, generateToken } from '../testConfig'
+import { Headers } from 'node-mocks-http'
+import { gqlTry } from '../gqlTry'
+import {
+    userToPayload,
+    userToSuperPayload,
+} from '../../utils/operations/userOps'
+import { utils } from 'mocha'
+import { Program } from '../../../src/entities/program'
 
 const CREATE_CLASS = `
     mutation myMutation(
@@ -33,7 +36,7 @@ const CREATE_CLASS = `
             }
         }
     }
-`;
+`
 
 const CREATE_ROLE = `
     mutation myMutation(
@@ -48,7 +51,7 @@ const CREATE_ROLE = `
             }
         }
     }
-`;
+`
 
 const CREATE_SCHOOL = `
     mutation myMutation(
@@ -64,7 +67,7 @@ const CREATE_SCHOOL = `
             }
         }
     }
-`;
+`
 
 const ADD_USER_TO_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_id: ID!) {
@@ -75,7 +78,7 @@ const ADD_USER_TO_ORGANIZATION = `
             }
         }
     }
-`;
+`
 
 const DELETE_ORGANIZATION = `
     mutation myMutation($organization_id: ID!) {
@@ -83,7 +86,7 @@ const DELETE_ORGANIZATION = `
             delete
         }
     }
-`;
+`
 
 const UPDATE_ORGANIZATION = `
     mutation myMutation(
@@ -104,7 +107,7 @@ const UPDATE_ORGANIZATION = `
             }
         }
     }
-`;
+`
 
 const INVITE_USER = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email: String, $alternate_phone: String) {
@@ -137,7 +140,7 @@ const INVITE_USER = `
             }
         }
     }
-`;
+`
 
 const EDIT_MEMBERSHIP = `
     mutation myMutation($organization_id: ID!, $user_id: ID, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email:String, $alternate_phone:String) {
@@ -170,7 +173,7 @@ const EDIT_MEMBERSHIP = `
             }
         }
     }
-`;
+`
 
 const CREATE_OR_UPDATE_AGE_RANGES = `
     mutation myMutation(
@@ -188,7 +191,7 @@ const CREATE_OR_UPDATE_AGE_RANGES = `
             }
         }
     }
-`;
+`
 
 const LIST_AGE_RANGES = `
     query myQuery($organization_id: ID!) {
@@ -204,7 +207,7 @@ const LIST_AGE_RANGES = `
             }
         }
     }
-`;
+`
 
 const CREATE_OR_UPDATE_GRADES = `
     mutation myMutation(
@@ -224,7 +227,7 @@ const CREATE_OR_UPDATE_GRADES = `
             }
         }
     }
-`;
+`
 
 const LIST_GRADES = `
     query myQuery($organization_id: ID!) {
@@ -242,7 +245,7 @@ const LIST_GRADES = `
             }
         }
     }
-`;
+`
 
 const CREATE_OR_UPDATE_SUBCATEGORIES = `
     mutation myMutation(
@@ -256,7 +259,7 @@ const CREATE_OR_UPDATE_SUBCATEGORIES = `
             }
         }
     }
-`;
+`
 
 const LIST_SUBCATEGORIES = `
     query myQuery($organization_id: ID!) {
@@ -268,7 +271,7 @@ const LIST_SUBCATEGORIES = `
             }
         }
     }
-`;
+`
 
 const CREATE_OR_UPDATE_CATEGORIES = `
     mutation myMutation(
@@ -285,7 +288,7 @@ const CREATE_OR_UPDATE_CATEGORIES = `
             }
         }
     }
-`;
+`
 
 const LIST_CATEGORIES = `
     query myQuery($organization_id: ID!) {
@@ -300,8 +303,7 @@ const LIST_CATEGORIES = `
             }
         }
     }
-`;
-
+`
 
 const CREATE_OR_UPDATE_SUBJECTS = `
     mutation myMutation(
@@ -321,7 +323,7 @@ const CREATE_OR_UPDATE_SUBJECTS = `
             }
         }
     }
-`;
+`
 
 const LIST_SUBJECTS = `
     query myQuery($organization_id: ID!) {
@@ -339,7 +341,7 @@ const LIST_SUBJECTS = `
             }
         }
     }
-`;
+`
 
 const CREATE_OR_UPDATE_PROGRAMS = `
     mutation myMutation(
@@ -362,7 +364,7 @@ const CREATE_OR_UPDATE_PROGRAMS = `
             }
         }
     }
-`;
+`
 
 const LIST_PROGRAMS = `
     query myQuery($organization_id: ID!) {
@@ -374,114 +376,183 @@ const LIST_PROGRAMS = `
             }
         }
     }
-`;
+`
 
-export async function createClass(testClient: ApolloServerTestClient, organizationId: string, className?: string, shortcode?:string, headers?: Headers) {
-    const { mutate } = testClient;
-    className = className ?? "My Class";
-    headers = headers ?? { authorization: getAdminAuthToken() };
+export async function createClass(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    className?: string,
+    shortcode?: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
+    className = className ?? 'My Class'
+    headers = headers ?? { authorization: getAdminAuthToken() }
 
-    const variables =  {  organization_id: organizationId } as any
-    if (className){
+    const variables = { organization_id: organizationId } as any
+    if (className) {
         variables.class_name = className
     }
-    if (shortcode){
+    if (shortcode) {
         variables.shortcode = shortcode
     }
-    const operation = () => mutate({
-        mutation: CREATE_CLASS,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_CLASS,
+            variables: variables,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlClass = res.data?.organization.createClass as Class;
-    return gqlClass;
+    const res = await gqlTry(operation)
+    const gqlClass = res.data?.organization.createClass as Class
+    return gqlClass
 }
 
-export async function createClassAndValidate(testClient: ApolloServerTestClient, organizationId: string) {
-    const gqlClass = await createClass(testClient, organizationId);
-    const dbClass = await Class.findOneOrFail({ where: { class_id: gqlClass.class_id } });
-    const organization = await dbClass.organization;
-    expect(dbClass.class_name).equals(gqlClass.class_name);
-    expect(organization?.organization_id).equals(organizationId);
-    return gqlClass;
+export async function createClassAndValidate(
+    testClient: ApolloServerTestClient,
+    organizationId: string
+) {
+    const gqlClass = await createClass(testClient, organizationId)
+    const dbClass = await Class.findOneOrFail({
+        where: { class_id: gqlClass.class_id },
+    })
+    const organization = await dbClass.organization
+    expect(dbClass.class_name).equals(gqlClass.class_name)
+    expect(organization?.organization_id).equals(organizationId)
+    return gqlClass
 }
 
-export async function createRole(testClient: ApolloServerTestClient, organizationId: string, roleName?: string, roleDescription?: string, token?: string) {
-    const { mutate } = testClient;
-    roleName = roleName ?? "My Role";
-    roleDescription = roleDescription ?? "My Role Description";
+export async function createRole(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    roleName?: string,
+    roleDescription?: string,
+    token?: string
+) {
+    const { mutate } = testClient
+    roleName = roleName ?? 'My Role'
+    roleDescription = roleDescription ?? 'My Role Description'
     if (token === undefined) {
         token = getAdminAuthToken()
     }
-    const operation = () => mutate({
-        mutation: CREATE_ROLE,
-        variables: { organization_id: organizationId, role_name: roleName, role_description: roleDescription },
-        headers: { authorization: token },
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_ROLE,
+            variables: {
+                organization_id: organizationId,
+                role_name: roleName,
+                role_description: roleDescription,
+            },
+            headers: { authorization: token },
+        })
 
-    const res = await gqlTry(operation);
-    const gqlRole = res.data?.organization.createRole as Role;
-    return gqlRole;
+    const res = await gqlTry(operation)
+    const gqlRole = res.data?.organization.createRole as Role
+    return gqlRole
 }
 
-export async function createSchool(testClient: ApolloServerTestClient, organizationId: string, schoolName?: string, shortcode?: string, headers?: Headers) {
-    const { mutate } = testClient;
-    schoolName = schoolName ?? "My School";
+export async function createSchool(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    schoolName?: string,
+    shortcode?: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
+    schoolName = schoolName ?? 'My School'
 
-    const variables = { organization_id: organizationId, school_name: schoolName } as any
+    const variables = {
+        organization_id: organizationId,
+        school_name: schoolName,
+    } as any
 
     if (shortcode) {
         variables.shortcode = shortcode
     }
 
-    const operation = () => mutate({
-        mutation: CREATE_SCHOOL,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_SCHOOL,
+            variables: variables,
+            headers: headers,
+        })
 
-
-
-    const res = await gqlTry(operation);
-    const gqlSchool = res.data?.organization.createSchool as School;
-    return gqlSchool;
+    const res = await gqlTry(operation)
+    const gqlSchool = res.data?.organization.createSchool as School
+    return gqlSchool
 }
 
-export async function addUserToOrganizationAndValidate(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
-    const gqlMembership = await addUserToOrganization(testClient, userId, organizationId, headers);
+export async function addUserToOrganizationAndValidate(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    organizationId: string,
+    headers?: Headers
+) {
+    const gqlMembership = await addUserToOrganization(
+        testClient,
+        userId,
+        organizationId,
+        headers
+    )
 
-    const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
-    const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
-    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { organization_id: organizationId, user_id: userId } });
+    const dbUser = await User.findOneOrFail({ where: { user_id: userId } })
+    const dbOrganization = await Organization.findOneOrFail({
+        where: { organization_id: organizationId },
+    })
+    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail(
+        { where: { organization_id: organizationId, user_id: userId } }
+    )
 
-    const userMemberships = await dbUser.memberships;
-    const organizationMemberships = await dbOrganization.memberships;
+    const userMemberships = await dbUser.memberships
+    const organizationMemberships = await dbOrganization.memberships
 
-    expect(gqlMembership).to.exist;
-    expect(gqlMembership.user_id).equals(userId);
-    expect(gqlMembership.organization_id).equals(organizationId);
-    expect(userMemberships).to.deep.include(dbOrganizationMembership);
-    expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
+    expect(gqlMembership).to.exist
+    expect(gqlMembership.user_id).equals(userId)
+    expect(gqlMembership.organization_id).equals(organizationId)
+    expect(userMemberships).to.deep.include(dbOrganizationMembership)
+    expect(organizationMemberships).to.deep.include(dbOrganizationMembership)
 }
 
-export async function addUserToOrganization(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
-    const { mutate } = testClient;
+export async function addUserToOrganization(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: ADD_USER_TO_ORGANIZATION,
-        variables: { user_id: userId, organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: ADD_USER_TO_ORGANIZATION,
+            variables: { user_id: userId, organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.organization.addUser as OrganizationMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.organization
+        .addUser as OrganizationMembership
+    return gqlMembership
 }
 
-export async function inviteUser(testClient: ApolloServerTestClient, organizationId: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, alternate_email?: string, alternate_phone?: string) {
-    const { mutate } = testClient;
+export async function inviteUser(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    email?: string,
+    phone?: string,
+    given_name?: string,
+    family_name?: string,
+    date_of_birth?: string,
+    username?: string,
+    gender?: string,
+    shortcode?: string,
+    organization_role_ids?: string[],
+    school_ids?: string[],
+    school_role_ids?: string[],
+    headers?: Headers,
+    alternate_email?: string,
+    alternate_phone?: string
+) {
+    const { mutate } = testClient
     let variables: any
     variables = { organization_id: organizationId }
     if (email) {
@@ -505,10 +576,10 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     if (gender) {
         variables.gender = gender
     }
-    if (shortcode){
-       variables.shortcode = shortcode
+    if (shortcode) {
+        variables.shortcode = shortcode
     }
-    if (organization_role_ids){
+    if (organization_role_ids) {
         variables.organization_role_ids = organization_role_ids
     }
     if (school_ids) {
@@ -517,30 +588,52 @@ export async function inviteUser(testClient: ApolloServerTestClient, organizatio
     if (school_role_ids) {
         variables.school_role_ids = school_role_ids
     }
-    if(alternate_email){
+    if (alternate_email) {
         variables.alternate_email = alternate_email
     }
-    if(alternate_phone){
+    if (alternate_phone) {
         variables.alternate_phone = alternate_phone
     }
-    const operation = () => mutate({
-        mutation: INVITE_USER,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: INVITE_USER,
+            variables: variables,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const result = res.data?.organization.inviteUser as { user: User, membership: OrganizationMembership, schoolMemberships: SchoolMembership[] }
+    const res = await gqlTry(operation)
+    const result = res.data?.organization.inviteUser as {
+        user: User
+        membership: OrganizationMembership
+        schoolMemberships: SchoolMembership[]
+    }
     return result
 }
 
-
-
-export async function editMembership(testClient: ApolloServerTestClient, organizationId: string, user_id?: string, email?: string, phone?: string, given_name?: string, family_name?: string, date_of_birth?: string, username?: string, gender?: string, shortcode?: string, organization_role_ids?: string[], school_ids?: string[], school_role_ids?: string[], headers?: Headers, cookies?: any, alternate_email?: string, alternate_phone?: string) {
-    const { mutate } = testClient;
+export async function editMembership(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    user_id?: string,
+    email?: string,
+    phone?: string,
+    given_name?: string,
+    family_name?: string,
+    date_of_birth?: string,
+    username?: string,
+    gender?: string,
+    shortcode?: string,
+    organization_role_ids?: string[],
+    school_ids?: string[],
+    school_role_ids?: string[],
+    headers?: Headers,
+    cookies?: any,
+    alternate_email?: string,
+    alternate_phone?: string
+) {
+    const { mutate } = testClient
     let variables: any
     variables = { organization_id: organizationId }
-    
+
     if (user_id) {
         variables.user_id = user_id
     }
@@ -565,10 +658,10 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
     if (gender) {
         variables.gender = gender
     }
-    if (shortcode){
-       variables.shortcode = shortcode
+    if (shortcode) {
+        variables.shortcode = shortcode
     }
-    if (organization_role_ids){
+    if (organization_role_ids) {
         variables.organization_role_ids = organization_role_ids
     }
     if (school_ids) {
@@ -584,231 +677,323 @@ export async function editMembership(testClient: ApolloServerTestClient, organiz
         variables.alternate_phone = alternate_phone
     }
 
-    const operation = () => mutate({
-        mutation: EDIT_MEMBERSHIP,
-        variables: variables,
-        headers: headers,
-        cookies: cookies
-    });
+    const operation = () =>
+        mutate({
+            mutation: EDIT_MEMBERSHIP,
+            variables: variables,
+            headers: headers,
+            cookies: cookies,
+        })
 
-    const res = await gqlTry(operation);
-    const result = res.data?.organization.editMembership as { user: User, membership: OrganizationMembership, schoolMemberships: SchoolMembership[] }
+    const res = await gqlTry(operation)
+    const result = res.data?.organization.editMembership as {
+        user: User
+        membership: OrganizationMembership
+        schoolMemberships: SchoolMembership[]
+    }
     return result
 }
 
-export async function deleteOrganization(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { mutate } = testClient;
+export async function deleteOrganization(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: DELETE_ORGANIZATION,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: DELETE_ORGANIZATION,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlOrganization = res.data?.organization.delete as boolean;
-    return gqlOrganization;
+    const res = await gqlTry(operation)
+    const gqlOrganization = res.data?.organization.delete as boolean
+    return gqlOrganization
 }
 
-export async function createOrUpdateAgeRanges(testClient: ApolloServerTestClient, organizationId: string, ageRanges: any[], headers?: Headers) {
-    const { mutate } = testClient;
+export async function createOrUpdateAgeRanges(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    ageRanges: any[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CREATE_OR_UPDATE_AGE_RANGES,
-        variables: { organization_id: organizationId, age_ranges: ageRanges },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_OR_UPDATE_AGE_RANGES,
+            variables: {
+                organization_id: organizationId,
+                age_ranges: ageRanges,
+            },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlAgeRanges = res.data?.organization.createOrUpdateAgeRanges as AgeRange[];
+    const res = await gqlTry(operation)
+    const gqlAgeRanges = res.data?.organization
+        .createOrUpdateAgeRanges as AgeRange[]
 
-    return gqlAgeRanges;
+    return gqlAgeRanges
 }
 
-export async function listAgeRanges(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listAgeRanges(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_AGE_RANGES,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: LIST_AGE_RANGES,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlAgeRanges = res.data?.organization.ageRanges as AgeRange[];
+    const res = await gqlTry(operation)
+    const gqlAgeRanges = res.data?.organization.ageRanges as AgeRange[]
 
-    return gqlAgeRanges;
+    return gqlAgeRanges
 }
 
-export async function createOrUpdateGrades(testClient: ApolloServerTestClient, organizationId: string, grades: any[], headers?: Headers) {
-    const { mutate } = testClient;
+export async function createOrUpdateGrades(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    grades: any[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CREATE_OR_UPDATE_GRADES,
-        variables: { organization_id: organizationId, grades: grades },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_OR_UPDATE_GRADES,
+            variables: { organization_id: organizationId, grades: grades },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlGrades = res.data?.organization.createOrUpdateGrades as Grade[];
+    const res = await gqlTry(operation)
+    const gqlGrades = res.data?.organization.createOrUpdateGrades as Grade[]
 
-    return gqlGrades;
+    return gqlGrades
 }
 
-export async function listGrades(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listGrades(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_GRADES,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: LIST_GRADES,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlGrades = res.data?.organization.grades as Grade[];
+    const res = await gqlTry(operation)
+    const gqlGrades = res.data?.organization.grades as Grade[]
 
-    return gqlGrades;
+    return gqlGrades
 }
 
-export async function createOrUpdateSubcategories(testClient: ApolloServerTestClient, organizationId: string, subcategories: any[], headers?: Headers) {
-    const { mutate } = testClient;
+export async function createOrUpdateSubcategories(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    subcategories: any[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CREATE_OR_UPDATE_SUBCATEGORIES,
-        variables: { organization_id: organizationId, subcategories: subcategories },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_OR_UPDATE_SUBCATEGORIES,
+            variables: {
+                organization_id: organizationId,
+                subcategories: subcategories,
+            },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSubcategories = res.data?.organization.createOrUpdateSubcategories as Subcategory[];
+    const res = await gqlTry(operation)
+    const gqlSubcategories = res.data?.organization
+        .createOrUpdateSubcategories as Subcategory[]
 
-    return gqlSubcategories;
+    return gqlSubcategories
 }
 
-export async function listSubcategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listSubcategories(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_SUBCATEGORIES,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: LIST_SUBCATEGORIES,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSubcategories = res.data?.organization.subcategories as Subcategory[];
+    const res = await gqlTry(operation)
+    const gqlSubcategories = res.data?.organization
+        .subcategories as Subcategory[]
 
-    return gqlSubcategories;
+    return gqlSubcategories
 }
 
-export async function createOrUpdateCategories(testClient: ApolloServerTestClient, organizationId: string, categories: any[], headers?: Headers) {
-    const { mutate } = testClient;
+export async function createOrUpdateCategories(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    categories: any[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CREATE_OR_UPDATE_CATEGORIES,
-        variables: { organization_id: organizationId, categories: categories },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_OR_UPDATE_CATEGORIES,
+            variables: {
+                organization_id: organizationId,
+                categories: categories,
+            },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlCategories = res.data?.organization.createOrUpdateCategories as Subcategory[];
+    const res = await gqlTry(operation)
+    const gqlCategories = res.data?.organization
+        .createOrUpdateCategories as Subcategory[]
 
-    return gqlCategories;
+    return gqlCategories
 }
 
-export async function listCategories(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listCategories(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_CATEGORIES,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: LIST_CATEGORIES,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlCategories = res.data?.organization.categories as Category[];
+    const res = await gqlTry(operation)
+    const gqlCategories = res.data?.organization.categories as Category[]
 
-    return gqlCategories;
+    return gqlCategories
 }
 
-export async function createOrUpdateSubjects(testClient: ApolloServerTestClient, organizationId: string, subjects: any[], headers?: Headers) {
-    const { mutate } = testClient;
+export async function createOrUpdateSubjects(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    subjects: any[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CREATE_OR_UPDATE_SUBJECTS,
-        variables: { organization_id: organizationId, subjects: subjects },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_OR_UPDATE_SUBJECTS,
+            variables: { organization_id: organizationId, subjects: subjects },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSubjects = res.data?.organization.createOrUpdateSubjects as Subject[];
+    const res = await gqlTry(operation)
+    const gqlSubjects = res.data?.organization
+        .createOrUpdateSubjects as Subject[]
 
-    return gqlSubjects;
+    return gqlSubjects
 }
 
-export async function listSubjects(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listSubjects(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_SUBJECTS,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
-    const res = await gqlTry(operation);
-    const gqlSubjects = res.data?.organization.subjects as Subject[];
+    const operation = () =>
+        query({
+            query: LIST_SUBJECTS,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
+    const res = await gqlTry(operation)
+    const gqlSubjects = res.data?.organization.subjects as Subject[]
 
-    return gqlSubjects;
+    return gqlSubjects
 }
 
+export async function createOrUpdatePrograms(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    programs: any[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-export async function createOrUpdatePrograms(testClient: ApolloServerTestClient, organizationId: string, programs: any[], headers?: Headers) {
-    const { mutate } = testClient;
+    const operation = () =>
+        mutate({
+            mutation: CREATE_OR_UPDATE_PROGRAMS,
+            variables: { organization_id: organizationId, programs: programs },
+            headers: headers,
+        })
 
-    const operation = () => mutate({
-        mutation: CREATE_OR_UPDATE_PROGRAMS,
-        variables: { organization_id: organizationId, programs: programs },
-        headers: headers,
-    });
+    const res = await gqlTry(operation)
+    const gqlPrograms = res.data?.organization
+        .createOrUpdatePrograms as Program[]
 
-    const res = await gqlTry(operation);
-    const gqlPrograms = res.data?.organization.createOrUpdatePrograms as Program[];
-
-    return gqlPrograms;
+    return gqlPrograms
 }
 
-export async function listPrograms(testClient: ApolloServerTestClient, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listPrograms(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_PROGRAMS,
-        variables: { organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: LIST_PROGRAMS,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlPrograms = res.data?.organization.programs as Program[];
+    const res = await gqlTry(operation)
+    const gqlPrograms = res.data?.organization.programs as Program[]
 
-    return gqlPrograms;
+    return gqlPrograms
 }
 
 export async function updateOrganization(
     testClient: ApolloServerTestClient,
     organizationId: string,
     mods: {
-        organization_name?: string,
-        address1?: string,
-        address2?: string,
-        phone?: string,
+        organization_name?: string
+        address1?: string
+        address2?: string
+        phone?: string
         shortCode?: string
     },
-    headers?: Headers) {
-    const { mutate } = testClient;
-    const operation = () => mutate({
-        mutation: UPDATE_ORGANIZATION,
-        variables: { organization_id: organizationId, ...mods },
-        headers: headers,
-    });
+    headers?: Headers
+) {
+    const { mutate } = testClient
+    const operation = () =>
+        mutate({
+            mutation: UPDATE_ORGANIZATION,
+            variables: { organization_id: organizationId, ...mods },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlOrganization = res.data?.organization.set as Organization;
-    return gqlOrganization;
+    const res = await gqlTry(operation)
+    const gqlOrganization = res.data?.organization.set as Organization
+    return gqlOrganization
 }

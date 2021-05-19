@@ -316,7 +316,7 @@ export class Class extends BaseEntity {
             const user = await getRepository(User).findOneOrFail({ user_id })
             const classes = (await user.classesTeaching) || []
             user.classesTeaching = Promise.resolve(
-                classes.filter(({ class_id }) => class_id !== class_id)
+                classes.filter(({ class_id }) => class_id !== this.class_id)
             )
             await user.save()
 

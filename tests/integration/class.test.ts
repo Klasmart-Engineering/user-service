@@ -1385,17 +1385,19 @@ describe('class', () => {
         context('when authorized within a school', () => {
             let userId: string
             let classId: string
+            let organizationId: string
+            let schoolId: string
 
             beforeEach(async () => {
                 const orgOwner = await createAdminUser(testClient)
                 userId = (await createNonAdminUser(testClient))?.user_id
-                const organizationId = (
+                organizationId = (
                     await createOrganizationAndValidate(
                         testClient,
                         orgOwner.user_id
                     )
                 )?.organization_id
-                const schoolId = (
+                schoolId = (
                     await createSchool(
                         testClient,
                         organizationId,
@@ -1476,6 +1478,51 @@ describe('class', () => {
                         (await dbTeacher.classesTeaching) || []
                     expect(teachers.map(userInfo)).to.deep.eq([userId])
                     expect(classesTeaching.map(classInfo)).to.deep.eq([classId])
+                })
+            })
+
+            context('and the teacher has other assigned school', async () => {
+                let otherClassId: string
+
+                beforeEach(async () => {
+                    otherClassId = (
+                        await createClass(
+                            testClient,
+                            organizationId,
+                            'Other Class'
+                        )
+                    )?.class_id
+
+                    await addSchoolToClass(testClient, otherClassId, schoolId, {
+                        authorization: getAdminAuthToken(),
+                    })
+
+                    await addTeacherToClass(testClient, otherClassId, userId, {
+                        authorization: getAdminAuthToken(),
+                    })
+                })
+
+                it('should have the other class assigned', async () => {
+                    const gqlTeacher = await removeTeacherInClass(
+                        testClient,
+                        classId,
+                        userId,
+                        { authorization: getNonAdminAuthToken() }
+                    )
+
+                    expect(gqlTeacher).to.be.true
+                    const dbTeacher = await User.findOneOrFail(userId)
+                    const dbClass = await Class.findOneOrFail(classId)
+                    const teachers = (await dbClass.teachers) || []
+                    const classesTeaching =
+                        (await dbTeacher.classesTeaching) || []
+                    const classIds = classesTeaching.map(
+                        ({ class_id }) => class_id
+                    )
+
+                    expect(teachers).to.be.empty
+                    expect(classesTeaching.length).eq(1)
+                    expect(classIds).to.deep.eq([otherClassId])
                 })
             })
         })
