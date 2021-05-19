@@ -148,7 +148,7 @@ export const rolesForUsers = async (
             getWhereClauseFromFilter(filter, {
                 organizationId: ['"orgMemberships"."organization_id"::text'],
                 schoolId: [],
-                roleId: ['orgRoles.role_id'],
+                roleId: ['"orgRoles"."role_id"::text'],
                 organizationUserStatus: [],
                 userId: ['"user"."user_id"::text'],
             })
