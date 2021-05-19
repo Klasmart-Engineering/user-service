@@ -44,6 +44,10 @@ export class UserPermissions {
         return this.user_id
     }
 
+    public getEmail() {
+        return this.email
+    }
+
     private async isUserAdmin(user_id?: string) {
         const user = await User.findOne({ user_id })
 
@@ -260,5 +264,49 @@ export class UserPermissions {
             )
         }
         return this._schoolPermissions
+    }
+
+    public async orgMembershipsWithPermissions(
+        requiredPermissions: PermissionName[]
+    ): Promise<string[]> {
+        const orgIds: string[] = []
+
+        const orgPermissions = await this.organizationPermissions(this.user_id)
+
+        for (const [orgId, permissions] of orgPermissions) {
+            let hasRequiredPerms = true
+            for (const p of requiredPermissions) {
+                if (!permissions.has(p)) {
+                    hasRequiredPerms = false
+                }
+            }
+            if (hasRequiredPerms) {
+                orgIds.push(orgId)
+            }
+        }
+
+        return orgIds
+    }
+
+    public async schoolMembershipsWithPermissions(
+        requiredPermissions: PermissionName[]
+    ): Promise<string[]> {
+        const schoolIds: string[] = []
+
+        const schoolPermissions = await this.schoolPermissions(this.user_id)
+
+        for (const [schoolId, permissions] of schoolPermissions) {
+            let hasRequiredPerms = true
+            for (const p of requiredPermissions) {
+                if (!permissions.has(p)) {
+                    hasRequiredPerms = false
+                }
+            }
+            if (hasRequiredPerms) {
+                schoolIds.push(schoolId)
+            }
+        }
+
+        return schoolIds
     }
 }

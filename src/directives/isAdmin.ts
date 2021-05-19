@@ -1,6 +1,6 @@
 import { SchemaDirectiveVisitor } from 'apollo-server-express'
 import { defaultFieldResolver } from 'graphql'
-import { Brackets, getRepository } from 'typeorm'
+import { getRepository, SelectQueryBuilder, Brackets } from 'typeorm'
 import { Class } from '../entities/class'
 
 import { AgeRange } from '../entities/ageRange'
@@ -13,6 +13,12 @@ import { Subcategory } from '../entities/subcategory'
 import { Subject } from '../entities/subject'
 import { User } from '../entities/user'
 import { Program } from '../entities/program'
+import {
+    IEntityFilter,
+    getWhereClauseFromFilter,
+} from '../utils/pagination/filtering'
+import { Context } from '../main'
+import { PermissionName } from '../permissions/permissionNames'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
@@ -20,7 +26,12 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         const { entity } = this.args
         let scope: any
 
-        field.resolve = (prnt: any, args: any, context: any, info: any) => {
+        field.resolve = async (
+            prnt: any,
+            args: any,
+            context: any,
+            info: any
+        ) => {
             switch (entity) {
                 case 'organization':
                     scope = getRepository(Organization).createQueryBuilder()
@@ -62,7 +73,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         this.nonAdminOrganizationScope(scope, context)
                         break
                     case 'user':
-                        this.nonAdminUserScope(scope, context)
+                        await this.nonAdminUserScope(scope, context)
                         break
                     case 'ageRange':
                         this.nonAdminAgeRangeScope(scope, context)
@@ -93,30 +104,81 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         }
     }
 
-    private nonAdminUserScope(scope: any, context?: any) {
-        const subQuery = getRepository(Organization)
-            .createQueryBuilder()
-            .select('Organization.organization_id')
-            .distinct(true)
-            .innerJoin('Organization.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.user_id = :d_userId', {
-                d_userId: context.permissions.getUserId(),
-            })
-            .getQuery()
+    // non admins can only view org/school users if they have
+    // the appropriate permissions in their org/school memberships
+    // otherwise, they can view their user(s)
+    private async nonAdminUserScope(
+        scope: SelectQueryBuilder<User>,
+        context: Context
+    ) {
+        // find orgs and schools memberships with required permissions
+        const userOrgs: string[] = await context.permissions.orgMembershipsWithPermissions(
+            [PermissionName.view_users_40110]
+        )
+        const userSchools: string[] = await context.permissions.schoolMembershipsWithPermissions(
+            [PermissionName.view_my_school_users_40111]
+        )
 
-        scope
-            .leftJoinAndSelect('User.memberships', 'OrganizationMembership')
-            .where(
-                new Brackets((qb) => {
-                    qb.where(
-                        'OrganizationMembership.organization IN (' +
-                            subQuery +
-                            ') '
-                    ).orWhere('User.user_id = :d_userId', {
-                        d_userId: context.permissions.getUserId(),
-                    })
-                })
+        scope.leftJoinAndSelect('User.school_memberships', 'schoolMembership')
+        scope.leftJoinAndSelect('User.memberships', 'orgMembership')
+
+        if (userOrgs.length === 0 && userSchools.length === 0) {
+            // user is not part of any orgs or schools with permissions to view other users
+
+            // can they view their own users?
+            const myUsersOrgs = await context.permissions.orgMembershipsWithPermissions(
+                [PermissionName.view_my_users_40113]
             )
+            const myUsersSchools = await context.permissions.schoolMembershipsWithPermissions(
+                [PermissionName.view_my_users_40113]
+            )
+            if (myUsersOrgs.length === 0 && myUsersSchools.length === 0) {
+                // they can only view themselves
+                scope.andWhere('User.user_id = :user_id', {
+                    user_id: context.permissions.getUserId(),
+                })
+            } else {
+                // they can view users with same email
+                scope.andWhere(
+                    new Brackets((qb) => {
+                        qb.orWhere('User.user_id = :user_id', {
+                            user_id: context.permissions.getUserId(),
+                        })
+                        qb.orWhere('User.email = :email', {
+                            email: context.permissions.getEmail(),
+                        })
+                    })
+                )
+            }
+            return
+        }
+
+        // filter users by orgs/schools that the user has the required permissions in
+        const filter: IEntityFilter = {
+            OR: [],
+        }
+        for (const org of userOrgs) {
+            filter.OR?.push({
+                organizationId: {
+                    operator: 'eq',
+                    value: org,
+                },
+            })
+        }
+        for (const school of userSchools) {
+            filter.OR?.push({
+                schoolId: {
+                    operator: 'eq',
+                    value: school,
+                },
+            })
+        }
+
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['orgMembership.organization_id'],
+            })
+        )
     }
 
     private nonAdminOrganizationScope(scope: any, context?: any) {
