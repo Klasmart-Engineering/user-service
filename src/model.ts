@@ -349,9 +349,9 @@ export class Model {
             }
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['OrgMembership.organization_id'],
+                    organizationId: ['"OrgMembership"."organization_id"::text'],
                     organizationUserStatus: ['OrgMembership.status'],
-                    userId: ["concat(User.user_id, '')"],
+                    userId: ['"User"."user_id"::text'],
                     phone: ['User.phone'],
                 })
             )

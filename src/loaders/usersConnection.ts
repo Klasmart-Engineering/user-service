@@ -31,11 +31,11 @@ export const orgsForUsers = async (
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['memberships.organization_id'],
+                organizationId: ['"memberships"."organization_id"::text'],
                 schoolId: [], // don't attempt to filter by schoolId
-                roleId: ['roles.role_id'],
+                roleId: ['"roles"."role_id"::text'],
                 organizationUserStatus: ['memberships.status'],
-                userId: ["concat(user.user_id, '')"],
+                userId: ['"user"."user_id"::text'],
                 phone: ['user.phone'],
             })
         )
@@ -86,11 +86,11 @@ export const schoolsForUsers = async (
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['organization.organization_id'],
-                schoolId: ['memberships.school_id'],
-                roleId: ['roles.role_id'],
+                organizationId: ['"organization"."organization_id"::text'],
+                schoolId: ['"memberships"."school_id"::text'],
+                roleId: ['"roles"."role_id"::text'],
                 organizationUserStatus: [],
-                userId: ["concat(user.user_id, '')"],
+                userId: ['"user"."user_id"::text'],
                 phone: ['user.phone'],
             })
         )
@@ -146,20 +146,20 @@ export const rolesForUsers = async (
     if (filter) {
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['orgMemberships.organization_id'],
+                organizationId: ['"orgMemberships"."organization_id"::text'],
                 schoolId: [],
                 roleId: ['orgRoles.role_id'],
                 organizationUserStatus: [],
-                userId: ["concat(user.user_id, '')"],
+                userId: ['"user"."user_id"::text'],
             })
         )
         schoolScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['schoolOrg.organization_id'],
-                schoolId: ['schoolMemberships.school_id'],
-                roleId: ['schoolRoles.role_id'],
+                organizationId: ['"schoolOrg"."organization_id"::text'],
+                schoolId: ['"schoolMemberships"."school_id"::text'],
+                roleId: ['"schoolRoles"."role_id"::text'],
                 organizationUserStatus: [],
-                userId: ["concat(user.user_id, '')"],
+                userId: ['"user"."user_id"::text'],
                 phone: ['user.phone'],
             })
         )
