@@ -987,7 +987,7 @@ describe('model', () => {
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
             })
 
-            it("returns roles if the user has no school memberships", async () => {
+            it('returns roles if the user has no school memberships', async () => {
                 const newUser = createUser()
                 await connection.manager.save([newUser])
 
@@ -1002,7 +1002,8 @@ describe('model', () => {
                     newUser.user_id,
                     org.organization_id,
                     role1.role_id,
-                    { authorization: getAdminAuthToken() })
+                    { authorization: getAdminAuthToken() }
+                )
 
                 const filter: IEntityFilter = {
                     organizationId: {
@@ -1012,20 +1013,18 @@ describe('model', () => {
                     userId: {
                         operator: 'eq',
                         value: newUser.user_id,
-                    }
+                    },
                 }
                 const usersConnection = await userConnection(
                     testClient,
                     direction,
-                    {count: 1},
+                    { count: 1 },
                     { authorization: getAdminAuthToken() },
                     filter
                 )
 
-                expect(
-                    usersConnection?.edges[0].node.roles.length
-                ).to.equal(1)
-            });
+                expect(usersConnection?.edges[0].node.roles.length).to.equal(1)
+            })
         })
 
         context('school filter', () => {
@@ -1691,7 +1690,7 @@ describe('model', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    expect(gqlPermissions?.totalCount).to.eql(425)
+                    expect(gqlPermissions?.totalCount).to.eql(427)
                     expect(gqlPermissions?.edges.length).to.equal(50)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(
@@ -1731,7 +1730,7 @@ describe('model', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    expect(gqlPermissions?.totalCount).to.eql(425)
+                    expect(gqlPermissions?.totalCount).to.eql(427)
                     expect(gqlPermissions?.edges.length).to.equal(3)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(

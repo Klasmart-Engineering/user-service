@@ -52,6 +52,7 @@ export const teacherRole = {
         PermissionName.create_lesson_material_220,
         PermissionName.create_lesson_plan_221,
         PermissionName.copy_content_222,
+        PermissionName.create_my_schools_content_223,
         PermissionName.edit_my_unpublished_content_230,
         PermissionName.edit_my_published_content_234,
         PermissionName.delete_my_unpublished_content_240,

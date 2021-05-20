@@ -95,6 +95,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 251,delete_my_pending_251,Delete My Pending,Library,Teacher,Gives user access to delete their pending content,Pending
 252,delete_org_pending_content_252,Delete Org Pending Content,Library,Org Admin,Gives user access to delete organization's pending content,Pending
 253,delete_org_archived_content_253,Delete Org Archived Content,Library,Org Admin,Gives user access to delete organizations archived content,Archive
+254,remove_org_published_content_254,Remove Org Published Content,Library,Org Admin,Gives user access to remove organization published content,Archive
 240,delete_my_unpublished_content_240,Delete My Unpublished Content,Library,Teacher,Gives users access to delete my unpublished content,Unpublished
 241,delete_my_schools_pending_241,Delete My Schools Pending,Library,School Admin,Gives users access to delete my schools pending,Pending
 242,remove_my_schools_published_242,Remove My Schools Published,Library,School Admin,Gives users access to remove my schools published,Published
@@ -108,6 +109,7 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 273,archive_published_content_273,Archive Published Content,Library,School Admin,Gives users access to archive published content,Published
 274,republish_archived_content_274,Republish Archived Content,Library,School Admin,Gives users access to republish archived content,Archive
 275,delete_archived_content_275,Delete Archived Content,Library,School Admin,Gives users access to delete archived content,Archive
+294,full_content_management_294,Full Content Management,Library,Org Admin,Gives users acces to complete content management,Operational
 276,details_upload_thumbnail_276,Details Upload Thumbnail,Library,Teacher,Gives users access to upload thumbnail for content types,Operational
 277,details_manually_add_program_277,Details Manually Add Program,Library,Teacher,Gives users access to define program,Operational
 278,details_manually_add_developmental_skill_278,Details Manually Add Developmental Skill,Library,Teacher,Gives users access to define category,Operational
@@ -424,5 +426,5 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 88008,copy_free_content_into_library_88008,Copy Free Content into Library,,Org Admin,Gives user access to Copy Free Content feature,Free Programs
 88009,download_free_content__88009,Download Free Content,,Org Admin,Gives user access to Download Free Content feture,Free Programs
 89000,publish_free_content_for_all_hub_89000,Publish free content for all hub,Library,Super Admin,Gives users access to publish free content for all hub,Free Programs
-89001,publish_free_content_for_specific_orgs_79001,Publish free content for specific orgs,Library,Super Admin,Gives users access to publish free content for specific organizations,Free Programs
-89002,publish_free_content_for_all_orgs_79002,Publish free content for all orgs,Library,Super Admin,Gives users access to publish frree content for all organizations,Free Programs
+89001,publish_free_content_for_specific_orgs_89001,Publish free content for specific orgs,Library,Super Admin,Gives users access to publish free content for specific organizations,Free Programs
+89002,publish_free_content_for_all_orgs_89002,Publish free content for all orgs,Library,Super Admin,Gives users access to publish frree content for all organizations,Free Programs
