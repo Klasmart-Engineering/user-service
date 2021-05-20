@@ -64,7 +64,7 @@ const typeDefs = gql`
 
     input UserFilter {
         # table columns
-        userId: StringFilter
+        userId: UUIDFilter
         givenName: StringFilter
         familyName: StringFilter
         avatar: StringFilter
@@ -72,9 +72,9 @@ const typeDefs = gql`
         phone: StringFilter
 
         # joined columns
-        organizationId: StringFilter
-        roleId: StringFilter
-        schoolId: StringFilter
+        organizationId: UUIDFilter
+        roleId: UUIDFilter
+        schoolId: UUIDFilter
         organizationUserStatus: StringFilter
 
         AND: [UserFilter!]
@@ -82,7 +82,7 @@ const typeDefs = gql`
     }
 
     type UserConnectionNode {
-        id: ID!
+        id: UUID!
         givenName: String
         familyName: String
         avatar: String

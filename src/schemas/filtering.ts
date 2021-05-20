@@ -14,6 +14,11 @@ const typeDefs = gql`
         value: Float
     }
 
+    input UUIDFilter {
+        operator: UUIDOperator!
+        value: UUID!
+    }
+
     input BooleanFilter {
         operator: BooleanOperator
         value: Boolean
@@ -26,6 +31,11 @@ const typeDefs = gql`
 
     enum StringOperator {
         contains
+        eq
+        neq
+    }
+
+    enum UUIDOperator {
         eq
         neq
     }
