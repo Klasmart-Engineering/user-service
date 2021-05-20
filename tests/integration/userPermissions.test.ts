@@ -17,7 +17,11 @@ import {
     createRole,
     createSchool,
 } from '../utils/operations/organizationOps'
-import { createOrganizationAndValidate } from '../utils/operations/userOps'
+import {
+    createOrganizationAndValidate,
+    addOrganizationToUserAndValidate,
+    addSchoolToUser,
+} from '../utils/operations/userOps'
 import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
@@ -26,6 +30,11 @@ import { grantPermission, deleteRole } from '../utils/operations/roleOps'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { addUserToSchool } from '../utils/operations/schoolOps'
 import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
+import { createOrganization } from '../factories/organization.factory'
+import { User } from '../../src/entities/user'
+import { Role } from '../../src/entities/role'
+import { createRole as createRoleFactory } from '../factories/role.factory'
+import { createSchool as createSchoolFactory } from '../factories/school.factory'
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
@@ -307,6 +316,266 @@ describe('userPermissions', () => {
                     await expect(fn()).to.be.fulfilled
                 }
             })
+        })
+    })
+
+    context('memberships with permissions', () => {
+        let userPermissions: UserPermissions
+        let nonAdmin: User
+        let roles: Role[] = []
+
+        let orgs = []
+        beforeEach(async () => {
+            roles = []
+            orgs = []
+            nonAdmin = await createNonAdminUser(testClient)
+            const encodedToken = getNonAdminAuthToken()
+            const token = (await checkToken(encodedToken)) as any
+            token.id = nonAdmin.user_id
+            userPermissions = new UserPermissions(token)
+
+            const superAdmin = await createAdminUser(testClient)
+
+            for (let i = 0; i < 2; i++) {
+                const org = createOrganization(superAdmin)
+                await connection.manager.save(org)
+                orgs.push(org)
+
+                let role = await createRoleFactory('role', org)
+                await connection.manager.save(role)
+                roles.push(role)
+
+                const school = createSchoolFactory(org)
+                await connection.manager.save(school)
+
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    userPermissions.getUserId()!,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    userPermissions.getUserId()!,
+                    org.organization_id,
+                    role.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                await addSchoolToUser(
+                    testClient,
+                    userPermissions.getUserId()!,
+                    school.school_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                await addRoleToSchoolMembership(
+                    testClient,
+                    userPermissions.getUserId()!,
+                    school.school_id,
+                    role.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+            }
+        })
+
+        describe('orgMembershipsWithPermissions', () => {
+            context(
+                'returns orgs with memberships with ALL permissions',
+                () => {
+                    it('returns no orgs if no permissions are provided', async () => {
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            []
+                        )
+                        expect(orgIds.length).to.eq(0)
+                    })
+                    it("returns no orgs if the user doesn't have any the permissions", async () => {
+                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'AND'
+                        )
+                        expect(orgIds.length).to.eq(0)
+                    })
+                    it('returns no orgs if the user is missing one of the permissions', async () => {
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_users_40110,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'AND'
+                        )
+                        expect(orgIds.length).to.eq(0)
+                    })
+                    it('returns orgs if the user has ALL permissions', async () => {
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_users_40110,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_user_page_40101,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'AND'
+                        )
+                        expect(orgIds.length).to.eq(1)
+                    })
+                }
+            )
+
+            context(
+                'returns orgs with memberships with ANY permissions',
+                () => {
+                    it('returns no orgs if no permissions are provided', async () => {
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            []
+                        )
+                        expect(orgIds.length).to.eq(0)
+                    })
+                    it("returns no orgs if the user doesn't have any the permissions", async () => {
+                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'OR'
+                        )
+                        expect(orgIds.length).to.eq(0)
+                    })
+                    it('returns orgs if the user has ANY of the permissions', async () => {
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_users_40110,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'OR'
+                        )
+                        expect(orgIds.length).to.eq(1)
+                    })
+                }
+            )
+        })
+
+        describe('schoolMembershipsWithPermissions', () => {
+            context(
+                'returns school with memberships with ALL permissions',
+                () => {
+                    it('returns no school if no permissions are provided', async () => {
+                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                            []
+                        )
+                        expect(schoolIds.length).to.eq(0)
+                    })
+                    it("returns no schools if the user doesn't have any the permissions", async () => {
+                        let schoolIds = await userPermissions?.orgMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'AND'
+                        )
+                        expect(schoolIds.length).to.eq(0)
+                    })
+                    it('returns no schools if the user is missing one of the permissions', async () => {
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_users_40110,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'AND'
+                        )
+                        expect(schoolIds.length).to.eq(0)
+                    })
+                    it('returns schools if the user has ALL permissions', async () => {
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_users_40110,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_user_page_40101,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'AND'
+                        )
+                        expect(schoolIds.length).to.eq(1)
+                    })
+                }
+            )
+
+            context(
+                'returns schools with memberships with ANY permissions',
+                () => {
+                    it('returns no schools if no permissions are provided', async () => {
+                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                            []
+                        )
+                        expect(schoolIds.length).to.eq(0)
+                    })
+                    it("returns no schools if the user doesn't have any the permissions", async () => {
+                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'OR'
+                        )
+                        expect(schoolIds.length).to.eq(0)
+                    })
+                    it('returns schools if the user has ANY of the permissions', async () => {
+                        await grantPermission(
+                            testClient,
+                            roles[0].role_id,
+                            PermissionName.view_users_40110,
+                            { authorization: getAdminAuthToken() }
+                        )
+                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                            [
+                                PermissionName.view_users_40110,
+                                PermissionName.view_user_page_40101,
+                            ],
+                            'OR'
+                        )
+                        expect(schoolIds.length).to.eq(1)
+                    })
+                }
+            )
         })
     })
 })

@@ -13,7 +13,7 @@ import { User } from "../../../src/entities/user";
 import { Organization } from "../../../src/entities/organization";
 import chaiAsPromised from "chai-as-promised";
 import { addRoleToOrganizationMembership } from "../../utils/operations/organizationMembershipOps";
-import { grantPermission } from "../../utils/operations/roleOps";
+import { grantPermission, revokePermission } from "../../utils/operations/roleOps";
 import { PermissionName } from "../../../src/permissions/permissionNames";
 import { addRoleToSchoolMembership } from "../../utils/operations/schoolMembershipOps";
 import { Role } from "../../../src/entities/role";
@@ -267,7 +267,7 @@ describe("isAdmin", () => {
                 expect(usersConnection.totalCount).to.eq(11);
             });
 
-            it("requires view_my_school_users_40111 permission to view school users", async () => {
+            it("requires view_my_school_users_40111 or view_my_class_users_40112 permission to view school users", async () => {
                 const user = await createNonAdminUser(testClient);
                 const token = getNonAdminAuthToken();
                 await addSchoolToUser(
@@ -297,6 +297,29 @@ describe("isAdmin", () => {
 
                 await grantPermission(testClient, roleList[0].role_id, PermissionName.view_my_school_users_40111, { authorization: getAdminAuthToken() })
                 
+                usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    {count: 30},
+                    { authorization: token },
+                )
+
+                expect(usersConnection.totalCount).to.eq(11);
+
+                await revokePermission(testClient, roleList[0].role_id, PermissionName.view_my_school_users_40111, { authorization: getAdminAuthToken() })
+
+                usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    {count: 3},
+                    { authorization: token },
+                )
+                
+                // can view my user only
+                expect(usersConnection.totalCount).to.eq(1);
+
+                await grantPermission(testClient, roleList[0].role_id, PermissionName.view_my_class_users_40112, { authorization: getAdminAuthToken() })
+
                 usersConnection = await userConnection(
                     testClient,
                     direction,
@@ -366,14 +389,34 @@ describe("isAdmin", () => {
 
                 await grantPermission(testClient, roleList[0].role_id, PermissionName.view_my_school_users_40111, { authorization: getAdminAuthToken() })
 
-                // add a new user to a different school
+                // add a new user to a school in a different org
                 const newUser = createUser();
                 await connection.manager.save([newUser]);
                 await addSchoolToUser(
                     testClient,
                     newUser.user_id,
                     schools[1].school_id,
-                    { authorization: getAdminAuthToken() }
+                    { authorization: getAdminAuthToken() } 
+                )
+
+                // add the user to a different school in the same org
+                const school = createSchool(organizations[0])
+                await connection.manager.save(school)
+                await addSchoolToUser(
+                    testClient,
+                    newUser.user_id,
+                    school.school_id,
+                    { authorization: getAdminAuthToken() } 
+                )
+
+                // add another user to same org, without school
+                const anotherUser = createUser();
+                await connection.manager.save([anotherUser]);
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    anotherUser.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
                 )
 
                 let usersConnection = await userConnection(

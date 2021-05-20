@@ -116,7 +116,11 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             [PermissionName.view_users_40110]
         )
         const userSchools: string[] = await context.permissions.schoolMembershipsWithPermissions(
-            [PermissionName.view_my_school_users_40111]
+            [
+                PermissionName.view_my_school_users_40111,
+                PermissionName.view_my_class_users_40112,
+            ],
+            'OR'
         )
 
         scope.leftJoinAndSelect('User.school_memberships', 'schoolMembership')
@@ -177,6 +181,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: ['orgMembership.organization_id'],
+                schoolId: ['schoolMembership.school_id'],
             })
         )
     }

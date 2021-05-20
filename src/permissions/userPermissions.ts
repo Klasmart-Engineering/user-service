@@ -267,17 +267,22 @@ export class UserPermissions {
     }
 
     public async orgMembershipsWithPermissions(
-        requiredPermissions: PermissionName[]
+        requiredPermissions: PermissionName[],
+        operator: 'AND' | 'OR' = 'AND'
     ): Promise<string[]> {
+        if (requiredPermissions.length === 0) {
+            return []
+        }
         const orgIds: string[] = []
-
         const orgPermissions = await this.organizationPermissions(this.user_id)
 
         for (const [orgId, permissions] of orgPermissions) {
-            let hasRequiredPerms = true
+            let hasRequiredPerms = operator === 'AND' ? true : false
             for (const p of requiredPermissions) {
-                if (!permissions.has(p)) {
-                    hasRequiredPerms = false
+                if (operator === 'OR') {
+                    hasRequiredPerms = hasRequiredPerms || permissions.has(p)
+                } else {
+                    hasRequiredPerms = hasRequiredPerms && permissions.has(p)
                 }
             }
             if (hasRequiredPerms) {
@@ -289,17 +294,23 @@ export class UserPermissions {
     }
 
     public async schoolMembershipsWithPermissions(
-        requiredPermissions: PermissionName[]
+        requiredPermissions: PermissionName[],
+        operator: 'AND' | 'OR' = 'AND'
     ): Promise<string[]> {
-        const schoolIds: string[] = []
+        if (requiredPermissions.length === 0) {
+            return []
+        }
 
+        const schoolIds: string[] = []
         const schoolPermissions = await this.schoolPermissions(this.user_id)
 
         for (const [schoolId, permissions] of schoolPermissions) {
-            let hasRequiredPerms = true
+            let hasRequiredPerms = operator === 'AND' ? true : false
             for (const p of requiredPermissions) {
-                if (!permissions.has(p)) {
-                    hasRequiredPerms = false
+                if (operator === 'OR') {
+                    hasRequiredPerms = hasRequiredPerms || permissions.has(p)
+                } else {
+                    hasRequiredPerms = hasRequiredPerms && permissions.has(p)
                 }
             }
             if (hasRequiredPerms) {
