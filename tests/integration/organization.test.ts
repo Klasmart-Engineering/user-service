@@ -76,6 +76,7 @@ import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
 import RoleInitializer from '../../src/initializers/roles'
 import { studentRole } from '../../src/permissions/student'
 import { UserPermissions } from '../../src/permissions/userPermissions'
+import { createOrganization } from '../factories/organization.factory'
 
 use(chaiAsPromised)
 
@@ -3938,6 +3939,195 @@ describe('organization', () => {
                             })
                         }
                     )
+
+                    context(
+                        'and it tries to create a grade with a name that already exists in the organization',
+                        () => {
+                            let existentGrade: Grade
+
+                            beforeEach(async () => {
+                                existentGrade = createGrade(organization)
+                                await connection.manager.save(existentGrade)
+                                gradeDetails.name = existentGrade.name
+                            })
+
+                            it('fails in create the grade', async () => {
+                                const fn = () =>
+                                    createOrUpdateGrades(
+                                        testClient,
+                                        organization.organization_id,
+                                        [gradeDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbGrades = await Grade.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dGradesDetails = await Promise.all(
+                                    dbGrades.map(gradeInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dGradesDetails).to.not.deep.eq([
+                                    progressFromGradeDetails,
+                                    progressToGradeDetails,
+                                    gradeDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a grade with a name that already exists in the organization',
+                        () => {
+                            let gradeToEdit: Grade
+                            let gradeToCopy: Grade
+
+                            beforeEach(async () => {
+                                gradeToEdit = createGrade(organization)
+                                gradeToEdit.name = 'edit grade'
+                                gradeToCopy = createGrade(organization)
+                                gradeToCopy.name = 'copy grade'
+
+                                await connection.manager.save([
+                                    gradeToEdit,
+                                    gradeToCopy,
+                                ])
+
+                                gradeDetails.id = gradeToEdit.id
+                                gradeDetails.name = gradeToCopy.name
+                            })
+
+                            it('fails in update the grade', async () => {
+                                const fn = () =>
+                                    createOrUpdateGrades(
+                                        testClient,
+                                        organization.organization_id,
+                                        [gradeDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbGradeUpdateFail = await Grade.findOne({
+                                    where: {
+                                        id: gradeDetails.id,
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(fn()).to.be.rejected
+                                expect(dbGradeUpdateFail?.name).to.not.eq(
+                                    gradeDetails.name
+                                )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a grade with a name that already exists in another organization',
+                        () => {
+                            let otherOrgGrade: Grade
+                            let otherOrg: Organization
+                            beforeEach(async () => {
+                                otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+                                otherOrgGrade = createGrade(otherOrg)
+                                await connection.manager.save(otherOrgGrade)
+                                gradeDetails.name = otherOrgGrade.name
+                            })
+
+                            it('creates the grade', async () => {
+                                await createOrUpdateGrades(
+                                    testClient,
+                                    organization.organization_id,
+                                    [gradeDetails],
+                                    { authorization: getNonAdminAuthToken() }
+                                )
+
+                                const dbGrades = await Grade.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dGradesDetails = await Promise.all(
+                                    dbGrades.map(gradeInfo)
+                                )
+
+                                expect(dGradesDetails).to.deep.eq([
+                                    progressFromGradeDetails,
+                                    progressToGradeDetails,
+                                    gradeDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a grade with a name that already exists in another organization',
+                        () => {
+                            let gradeToEdit: Grade
+                            let gradeToCopy: Grade
+
+                            beforeEach(async () => {
+                                const otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+
+                                gradeToEdit = createGrade(organization)
+                                gradeToEdit.name = 'edit grade'
+                                gradeToCopy = createGrade(otherOrg)
+                                gradeToCopy.name = 'copy grade'
+
+                                await connection.manager.save([
+                                    gradeToEdit,
+                                    gradeToCopy,
+                                ])
+
+                                gradeDetails.id = gradeToEdit.id
+                                gradeDetails.name = gradeToCopy.name
+                            })
+
+                            it('updates the grade', async () => {
+                                await createOrUpdateGrades(
+                                    testClient,
+                                    organization.organization_id,
+                                    [gradeDetails],
+                                    {
+                                        authorization: getNonAdminAuthToken(),
+                                    }
+                                )
+
+                                const dbGradeUpdate = await Grade.findOne({
+                                    where: {
+                                        id: gradeDetails.id,
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(dbGradeUpdate?.name).eq(
+                                    gradeDetails.name
+                                )
+                            })
+                        }
+                    )
                 })
             })
 
@@ -4087,6 +4277,192 @@ describe('organization', () => {
                                     progressToGradeDetails,
                                     newGradeDetails,
                                 ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a grade with a name that already exists in the organization',
+                        () => {
+                            let existentGrade: Grade
+
+                            beforeEach(async () => {
+                                existentGrade = createGrade(organization)
+                                await connection.manager.save(existentGrade)
+                                gradeDetails.name = existentGrade.name
+                            })
+
+                            it('fails in create the grade', async () => {
+                                const fn = () =>
+                                    createOrUpdateGrades(
+                                        testClient,
+                                        organization.organization_id,
+                                        [gradeDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbGrades = await Grade.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dGradesDetails = await Promise.all(
+                                    dbGrades.map(gradeInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dGradesDetails).to.not.deep.eq([
+                                    progressFromGradeDetails,
+                                    progressToGradeDetails,
+                                    gradeDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a grade with a name that already exists in the organization',
+                        () => {
+                            let gradeToEdit: Grade
+                            let gradeToCopy: Grade
+
+                            beforeEach(async () => {
+                                gradeToEdit = createGrade(organization)
+                                gradeToEdit.name = 'edit grade'
+                                gradeToCopy = createGrade(organization)
+                                gradeToCopy.name = 'copy grade'
+
+                                await connection.manager.save([
+                                    gradeToEdit,
+                                    gradeToCopy,
+                                ])
+
+                                gradeDetails.id = gradeToEdit.id
+                                gradeDetails.name = gradeToCopy.name
+                            })
+
+                            it('fails in update the grade', async () => {
+                                const fn = () =>
+                                    createOrUpdateGrades(
+                                        testClient,
+                                        organization.organization_id,
+                                        [gradeDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbGradeUpdateFail = await Grade.findOne({
+                                    where: {
+                                        id: gradeDetails.id,
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(fn()).to.be.rejected
+                                expect(dbGradeUpdateFail?.name).to.not.eq(
+                                    gradeDetails.name
+                                )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a grade with a name that already exists in another organization',
+                        () => {
+                            let otherOrgGrade: Grade
+                            let otherOrg: Organization
+
+                            beforeEach(async () => {
+                                otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+                                otherOrgGrade = createGrade(otherOrg)
+                                await connection.manager.save(otherOrgGrade)
+                                gradeDetails.name = otherOrgGrade.name
+                            })
+
+                            it('creates the grade', async () => {
+                                await createOrUpdateGrades(
+                                    testClient,
+                                    organization.organization_id,
+                                    [gradeDetails],
+                                    { authorization: getAdminAuthToken() }
+                                )
+
+                                const dbGrades = await Grade.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dGradesDetails = await Promise.all(
+                                    dbGrades.map(gradeInfo)
+                                )
+                                expect(dGradesDetails).to.deep.eq([
+                                    progressFromGradeDetails,
+                                    progressToGradeDetails,
+                                    gradeDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a grade with a name that already exists in another organization',
+                        () => {
+                            let gradeToEdit: Grade
+                            let gradeToCopy: Grade
+
+                            beforeEach(async () => {
+                                const otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+                                gradeToEdit = createGrade(organization)
+                                gradeToCopy = createGrade(otherOrg)
+
+                                await connection.manager.save([
+                                    gradeToEdit,
+                                    gradeToCopy,
+                                ])
+
+                                gradeDetails.id = gradeToEdit.id
+                                gradeDetails.name = gradeToCopy.name
+                            })
+
+                            it('updates the grade', async () => {
+                                await createOrUpdateGrades(
+                                    testClient,
+                                    organization.organization_id,
+                                    [gradeDetails],
+                                    {
+                                        authorization: getAdminAuthToken(),
+                                    }
+                                )
+
+                                const dbGradeUpdate = await Grade.findOne({
+                                    where: {
+                                        id: gradeDetails.id,
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(dbGradeUpdate?.name).eq(
+                                    gradeDetails.name
+                                )
                             })
                         }
                     )

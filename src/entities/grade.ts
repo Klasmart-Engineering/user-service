@@ -6,6 +6,7 @@ import {
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
+    Unique,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -15,6 +16,7 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 
 @Entity()
+@Unique(['name', 'organization'])
 export class Grade extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
