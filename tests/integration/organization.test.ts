@@ -4128,6 +4128,107 @@ describe('organization', () => {
                             })
                         }
                     )
+
+                    context(
+                        'and it tries to create a grade with an invalid name',
+                        () => {
+                            it('fails in create the grade', async () => {
+                                const invalidNames = [
+                                    'G₹@D€',
+                                    'Second.',
+                                    'Third?',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    gradeDetails.name = name
+                                    const fn = () =>
+                                        createOrUpdateGrades(
+                                            testClient,
+                                            organization.organization_id,
+                                            [gradeDetails],
+                                            {
+                                                authorization: getNonAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbGrades = await Grade.find({
+                                        where: {
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    })
+
+                                    const dGradesDetails = await Promise.all(
+                                        dbGrades.map(gradeInfo)
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dGradesDetails).to.not.deep.eq([
+                                        progressFromGradeDetails,
+                                        progressToGradeDetails,
+                                        gradeDetails,
+                                    ])
+                                }
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a grade with an invalid name',
+                        () => {
+                            let gradeToEdit: Grade
+
+                            beforeEach(async () => {
+                                gradeToEdit = createGrade(organization)
+                                gradeToEdit.name = 'edit grade'
+
+                                await connection.manager.save(gradeToEdit)
+
+                                gradeDetails.id = gradeToEdit.id
+                            })
+
+                            it('fails in update the grade', async () => {
+                                const invalidNames = [
+                                    'G₹@D€',
+                                    'Second.',
+                                    'Third?',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    gradeDetails.name = name
+
+                                    const fn = () =>
+                                        createOrUpdateGrades(
+                                            testClient,
+                                            organization.organization_id,
+                                            [gradeDetails],
+                                            {
+                                                authorization: getNonAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbGradeUpdateFail = await Grade.findOne(
+                                        {
+                                            where: {
+                                                id: gradeDetails.id,
+                                                organization: {
+                                                    organization_id:
+                                                        organization.organization_id,
+                                                },
+                                            },
+                                        }
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dbGradeUpdateFail?.name).to.not.eq(
+                                        gradeDetails.name
+                                    )
+                                }
+                            })
+                        }
+                    )
                 })
             })
 
@@ -4463,6 +4564,107 @@ describe('organization', () => {
                                 expect(dbGradeUpdate?.name).eq(
                                     gradeDetails.name
                                 )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a grade with an invalid name',
+                        () => {
+                            it('fails in create the grade', async () => {
+                                const invalidNames = [
+                                    'G₹@D€',
+                                    'Second.',
+                                    'Third?',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    gradeDetails.name = name
+                                    const fn = () =>
+                                        createOrUpdateGrades(
+                                            testClient,
+                                            organization.organization_id,
+                                            [gradeDetails],
+                                            {
+                                                authorization: getAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbGrades = await Grade.find({
+                                        where: {
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    })
+
+                                    const dGradesDetails = await Promise.all(
+                                        dbGrades.map(gradeInfo)
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dGradesDetails).to.not.deep.eq([
+                                        progressFromGradeDetails,
+                                        progressToGradeDetails,
+                                        gradeDetails,
+                                    ])
+                                }
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a grade with an invalid name',
+                        () => {
+                            let gradeToEdit: Grade
+
+                            beforeEach(async () => {
+                                gradeToEdit = createGrade(organization)
+                                gradeToEdit.name = 'edit grade'
+
+                                await connection.manager.save(gradeToEdit)
+
+                                gradeDetails.id = gradeToEdit.id
+                            })
+
+                            it('fails in update the grade', async () => {
+                                const invalidNames = [
+                                    'G₹@D€',
+                                    'Second.',
+                                    'Third?',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    gradeDetails.name = name
+
+                                    const fn = () =>
+                                        createOrUpdateGrades(
+                                            testClient,
+                                            organization.organization_id,
+                                            [gradeDetails],
+                                            {
+                                                authorization: getAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbGradeUpdateFail = await Grade.findOne(
+                                        {
+                                            where: {
+                                                id: gradeDetails.id,
+                                                organization: {
+                                                    organization_id:
+                                                        organization.organization_id,
+                                                },
+                                            },
+                                        }
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dbGradeUpdateFail?.name).to.not.eq(
+                                        gradeDetails.name
+                                    )
+                                }
                             })
                         }
                     )

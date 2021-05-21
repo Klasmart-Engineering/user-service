@@ -11,7 +11,7 @@ export function createGrade(
 ) {
     const grade = new Grade()
 
-    grade.name = faker.random.word()
+    grade.name = faker.lorem.word()
     grade.organization = Promise.resolve(org)
     grade.system = false
 

@@ -38,7 +38,14 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../utils/shortcode'
-import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
+import {
+    validateClassName,
+    validateDOB,
+    validateEmail,
+    validatePhone,
+} from '../utils/validations'
+import stringInject from '../utils/stringUtils'
+import csvErrorConstants from '../utils/csv/errors/csvErrorConstants'
 
 export const normalizedLowercaseTrimmed = (x: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
@@ -1054,6 +1061,20 @@ export class Organization extends BaseEntity {
         for (const gradeDetail of grades) {
             checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
             checkCreatePermission = checkCreatePermission || !gradeDetail?.id
+
+            if (!validateClassName(gradeDetail.name)) {
+                const errorMessage = stringInject(
+                    csvErrorConstants.MSG_ERR_CSV_INVALID_FIELD,
+                    {
+                        entity: 'grade',
+                        attribute: 'name',
+                        allowed:
+                            'any language characters, numbers, space and &/,-',
+                    }
+                )
+
+                throw new Error(errorMessage)
+            }
 
             const grade =
                 (await Grade.findOne({ id: gradeDetail?.id })) || new Grade()
