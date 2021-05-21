@@ -67,6 +67,8 @@ export const organizationAdminRole = {
         PermissionName.create_lesson_plan_221,
         PermissionName.copy_content_222,
         PermissionName.create_all_schools_content_224,
+        PermissionName.republish_archived_content_274,
+        PermissionName.delete_archived_content_275,
         PermissionName.view_all_schools_published_227,
         PermissionName.view_all_schools_pending_228,
         PermissionName.view_all_schools_archived_229,
