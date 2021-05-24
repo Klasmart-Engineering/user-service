@@ -45,11 +45,9 @@ mutation {
 ```
 
 # Connecting to a locally running frontend
-- Setup the the frontend on your machiine
-  - Checkout the `test/release` branch
-  - Follow installation instructions in the readme
+- Follow [instructions to set up the the frontend on your machine](https://bitbucket.org/calmisland/kidsloop-hub-frontend/src/dev/README.md)
 - Start the backend in local mode: `npm run start:local`
-- Start the frontend in local mode: `npm run start:local`
+- Start the frontend: `npm run start`
 
 # Diagnosing
 
