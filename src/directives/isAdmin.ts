@@ -24,7 +24,6 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
         const { resolve = defaultFieldResolver } = field
         const { entity } = this.args
-        let scope: any
 
         field.resolve = async (
             prnt: any,
@@ -32,6 +31,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             context: any,
             info: any
         ) => {
+            let scope: SelectQueryBuilder<any> | undefined
             switch (entity) {
                 case 'organization':
                     scope = getRepository(Organization).createQueryBuilder()
