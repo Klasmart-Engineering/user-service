@@ -10,6 +10,9 @@ import { User } from "../../../../src/entities/user";
 import { createUser } from "../../../factories/user.factory";
 import { paginateData } from "../../../../src/utils/pagination/paginate";
 import { convertDataToCursor } from '../../../utils/paginate'
+import { createOrganization } from "../../../factories/organization.factory";
+import { addOrganizationToUserAndValidate } from "../../../utils/operations/userOps";
+import { getAdminAuthToken } from "../../../utils/testConfig";
 
 use(chaiAsPromised);
 
@@ -92,6 +95,37 @@ describe('paginate', ()=>{
             expect(data.totalCount).to.equal(0);
             expect(data.edges.length).to.equal(0);
         });
+
+        it('counts items with joins correctly', async () => {
+            const orgs = [createOrganization(), createOrganization()]
+            await connection.manager.save(orgs)
+            for (const user of usersList) {
+                for (const org of orgs) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+            }
+
+            scope.leftJoinAndSelect('User.memberships', 'orgMembership')
+
+            let directionArgs = { count: 10 }
+            const data = await paginateData({
+                direction,
+                directionArgs,
+                scope,
+                cursorTable,
+                cursorColumn,
+            })
+
+            expect(data.totalCount).to.eql(10)
+            expect(data.edges.length).to.equal(10)
+            expect(data.pageInfo.hasNextPage).to.eq(false)
+            expect(data.pageInfo.hasPreviousPage).to.eq(false)
+        })
     })
 
     context('seek backward',  ()=>{
@@ -153,6 +187,36 @@ describe('paginate', ()=>{
             expect(data.totalCount).to.equal(0);
             expect(data.edges.length).to.equal(0);
         });
+        it('counts items with joins correctly', async () => {
+            const orgs = [createOrganization(), createOrganization()]
+            await connection.manager.save(orgs)
+            for (const user of usersList) {
+                for (const org of orgs) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+            }
+
+            scope.leftJoinAndSelect('User.memberships', 'orgMembership')
+
+            let directionArgs = { count: 10 }
+            const data = await paginateData({
+                direction,
+                directionArgs,
+                scope,
+                cursorTable,
+                cursorColumn,
+            })
+
+            expect(data.totalCount).to.eql(10)
+            expect(data.edges.length).to.equal(10)
+            expect(data.pageInfo.hasNextPage).to.eq(false)
+            expect(data.pageInfo.hasPreviousPage).to.eq(false)
+        })
     })
 
     context('default options', ()=>{

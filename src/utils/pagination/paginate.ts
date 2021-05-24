@@ -34,7 +34,10 @@ const forwardPaginate = async ({
     if (cursorData) {
         scope.andWhere(`${column} > :cursorData`, { cursorData })
     }
-    scope.orderBy(column, 'ASC').limit(seekPageSize)
+    scope.orderBy({
+        [`"${cursorTable}_${cursorColumn}"`]: 'ASC',
+    })
+    scope.take(seekPageSize)
     const data = await scope.getMany()
     const hasPreviousPage = cursorData ? true : false
     const hasNextPage = data.length > pageSize ? true : false
@@ -72,7 +75,10 @@ const backwardPaginate = async ({
     if (cursorData) {
         scope.andWhere(`${column} < :cursorData`, { cursorData })
     }
-    scope.orderBy(column, 'DESC').limit(seekPageSize)
+    scope.orderBy({
+        [`"${cursorTable}_${cursorColumn}"`]: 'DESC',
+    })
+    scope.take(seekPageSize)
     const data = await scope.getMany()
     data.reverse()
 
