@@ -437,6 +437,10 @@ export const processUserFromCSVRow = async (
         organizationMembership.shortcode =
             row.user_shortcode ||
             generateShortCode(user.user_id, MEMBERSHIP_SHORTCODE_MAXLEN)
+    } else if (organizationMembership.shortcode !== row.user_shortcode) {
+        organizationMembership.shortcode =
+            row.user_shortcode ||
+            generateShortCode(user.user_id, MEMBERSHIP_SHORTCODE_MAXLEN)
     }
 
     if (organizationRole) {

@@ -632,5 +632,77 @@ describe('processUserFromCSVRow', () => {
                 expect(dbUser.gender).to.eq('female')
             })
         })
+
+        context('and the user already exists', () => {
+            context(
+                'and user_shortcode is different than already assigned shortcode',
+                () => {
+                    const updateShortcode = 'OTHER01'
+
+                    beforeEach(async () => {
+                        const existentUser = createUser()
+                        existentUser.given_name = 'existent'
+                        existentUser.family_name = 'user'
+                        existentUser.email = 'existent_user@gmail.com'
+                        existentUser.phone = undefined
+                        existentUser.date_of_birth = '01-2000'
+                        existentUser.gender = 'male'
+                        await connection.manager.save(existentUser)
+
+                        const existentMembership = new OrganizationMembership()
+                        existentMembership.organization = Promise.resolve(
+                            organization
+                        )
+                        existentMembership.organization_id =
+                            organization.organization_id
+                        existentMembership.shortcode = row.user_shortcode
+                        existentMembership.user = Promise.resolve(existentUser)
+                        existentMembership.user_id = existentUser.user_id
+                        await connection.manager.save(existentMembership)
+
+                        row = {
+                            ...row,
+                            user_given_name: existentUser.given_name,
+                            user_family_name: existentUser.family_name,
+                            user_email: existentUser.email,
+                            user_date_of_birth: existentUser.date_of_birth,
+                            user_gender: existentUser.gender,
+                            user_shortcode: updateShortcode,
+                        }
+                    })
+
+                    it('should update user shortcode', async () => {
+                        await processUserFromCSVRow(
+                            connection.manager,
+                            row,
+                            1,
+                            fileErrors
+                        )
+
+                        const dbUser = await User.findOneOrFail({
+                            where: { email: row.user_email },
+                        })
+
+                        const organizationMembership = await dbUser.memberships
+                        const membershipShortcodes = organizationMembership?.map(
+                            (membership) => membership.shortcode
+                        )
+
+                        expect(dbUser.user_id).to.not.be.empty
+                        expect(dbUser.email).to.eq(row.user_email)
+                        expect(dbUser.phone).to.be.null
+                        expect(dbUser.given_name).to.eq(row.user_given_name)
+                        expect(dbUser.family_name).to.eq(row.user_family_name)
+                        expect(dbUser.date_of_birth).to.eq(
+                            row.user_date_of_birth
+                        )
+                        expect(dbUser.gender).to.eq(row.user_gender)
+                        expect(membershipShortcodes).to.deep.eq([
+                            row.user_shortcode,
+                        ])
+                    })
+                }
+            )
+        })
     })
 })
