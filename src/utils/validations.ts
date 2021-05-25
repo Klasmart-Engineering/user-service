@@ -23,7 +23,7 @@ export function validateDOB(dob?: string): boolean {
 }
 
 export function validateSubjectName(name?: string): boolean {
-    const subject_name_re = /^[\p{L}0-9 &\/,-]+$/gu
+    const subject_name_re = /^[\p{L}0-9 &/,-]+$/gu
 
     if (name && name.match(subject_name_re)) {
         return true

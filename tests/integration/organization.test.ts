@@ -6283,6 +6283,133 @@ describe('organization', () => {
                             })
                         }
                     )
+
+                    context(
+                        'and it tries to create a subject without name',
+                        () => {
+                            it('fails in create the subject', async () => {
+                                const noName = null
+                                subjectDetails.name = noName
+
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectsDetails).to.not.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with a long name',
+                        () => {
+                            it('fails in create the subject', async () => {
+                                const longName =
+                                    'This is a very long name for a subject'
+
+                                subjectDetails.name = longName
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectsDetails).to.not.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with a long name',
+                        () => {
+                            let subjectToEdit: Grade
+
+                            beforeEach(async () => {
+                                subjectToEdit = createSubject(organization)
+                                subjectToEdit.name = 'edit subject'
+
+                                await connection.manager.save(subjectToEdit)
+
+                                subjectDetails.id = subjectToEdit.id
+                            })
+
+                            it('fails in update the subject', async () => {
+                                const longName =
+                                    'This is a very long name for a subject'
+
+                                subjectDetails.name = longName
+
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjectUpdateFail = await Subject.findOne(
+                                    {
+                                        where: {
+                                            id: subjectDetails.id,
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    }
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectUpdateFail?.name).to.not.eq(
+                                    subjectDetails.name
+                                )
+                            })
+                        }
+                    )
                 })
             })
 
@@ -6706,6 +6833,133 @@ describe('organization', () => {
                                         subjectDetails.name
                                     )
                                 }
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject without name',
+                        () => {
+                            it('fails in create the subject', async () => {
+                                const noName = null
+                                subjectDetails.name = noName
+
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectsDetails).to.not.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with a long name',
+                        () => {
+                            it('fails in create the subject', async () => {
+                                const longName =
+                                    'This is a very long name for a subject'
+
+                                subjectDetails.name = longName
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectsDetails).to.not.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with a long name',
+                        () => {
+                            let subjectToEdit: Grade
+
+                            beforeEach(async () => {
+                                subjectToEdit = createSubject(organization)
+                                subjectToEdit.name = 'edit subject'
+
+                                await connection.manager.save(subjectToEdit)
+
+                                subjectDetails.id = subjectToEdit.id
+                            })
+
+                            it('fails in update the subject', async () => {
+                                const longName =
+                                    'This is a very long name for a subject'
+
+                                subjectDetails.name = longName
+
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjectUpdateFail = await Subject.findOne(
+                                    {
+                                        where: {
+                                            id: subjectDetails.id,
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    }
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectUpdateFail?.name).to.not.eq(
+                                    subjectDetails.name
+                                )
                             })
                         }
                     )

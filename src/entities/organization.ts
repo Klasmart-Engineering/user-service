@@ -46,6 +46,7 @@ import {
 } from '../utils/validations'
 import stringInject from '../utils/stringUtils'
 import csvErrorConstants from '../utils/csv/errors/csvErrorConstants'
+import validationConstants from '../utils/csv/validationConstants'
 
 export const normalizedLowercaseTrimmed = (x: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
@@ -1281,18 +1282,71 @@ export class Organization extends BaseEntity {
             checkUpdatePermission = checkUpdatePermission || !!subjectDetail?.id
             checkCreatePermission = checkCreatePermission || !subjectDetail?.id
 
-            if (!validateSubjectName(subjectDetail.name)) {
+            // Subject Name doesn't exists
+            if (!subjectDetail.id && !subjectDetail.name) {
                 const errorMessage = stringInject(
-                    csvErrorConstants.MSG_ERR_CSV_INVALID_FIELD,
+                    csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
                     {
                         entity: 'subject',
                         attribute: 'name',
-                        allowed:
-                            'any language characters, numbers, space and &/,-',
                     }
                 )
 
                 throw new Error(errorMessage)
+            }
+
+            if (subjectDetail.name) {
+                // Subject Name length validation
+                if (
+                    subjectDetail.name.length >
+                    validationConstants.SUBJECT_NAME_MAX_LENGTH
+                ) {
+                    const errorMessage = stringInject(
+                        csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+                        {
+                            entity: 'subject',
+                            attribute: 'name',
+                            max: validationConstants.SUBJECT_NAME_MAX_LENGTH,
+                        }
+                    )
+
+                    throw new Error(errorMessage)
+                }
+
+                // Subject Name characters allowed validation
+                if (!validateSubjectName(subjectDetail.name)) {
+                    const errorMessage = stringInject(
+                        csvErrorConstants.MSG_ERR_CSV_INVALID_FIELD,
+                        {
+                            entity: 'subject',
+                            attribute: 'name',
+                            allowed:
+                                'any language characters, numbers, space and &/,-',
+                        }
+                    )
+
+                    throw new Error(errorMessage)
+                }
+
+                const subjectExists = await Subject.findOne({
+                    where: {
+                        name: subjectDetail.name,
+                        organization: { organization_id: this.organization_id },
+                    },
+                })
+
+                // Subject Name duplicate validation
+                if (subjectExists && subjectExists.id !== subjectDetail.id) {
+                    const errorMessage = stringInject(
+                        csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+                        {
+                            name: subjectDetail.name,
+                            entity: 'subject',
+                        }
+                    )
+
+                    throw new Error(errorMessage)
+                }
             }
 
             const subject =
