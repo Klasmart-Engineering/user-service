@@ -39,9 +39,9 @@ import {
     validateShortCode,
 } from '../utils/shortcode'
 import {
-    validateClassName,
     validateDOB,
     validateEmail,
+    validateGradeName,
     validatePhone,
 } from '../utils/validations'
 import stringInject from '../utils/stringUtils'
@@ -1062,18 +1062,41 @@ export class Organization extends BaseEntity {
             checkUpdatePermission = checkUpdatePermission || !!gradeDetail?.id
             checkCreatePermission = checkCreatePermission || !gradeDetail?.id
 
-            if (!validateClassName(gradeDetail.name)) {
-                const errorMessage = stringInject(
-                    csvErrorConstants.MSG_ERR_CSV_INVALID_FIELD,
-                    {
-                        entity: 'grade',
-                        attribute: 'name',
-                        allowed:
-                            'any language characters, numbers, space and &/,-',
-                    }
-                )
+            if (gradeDetail.name) {
+                // Grade Name characters allowed validation
+                if (!validateGradeName(gradeDetail.name)) {
+                    const errorMessage = stringInject(
+                        csvErrorConstants.MSG_ERR_CSV_INVALID_FIELD,
+                        {
+                            entity: 'grade',
+                            attribute: 'name',
+                            allowed:
+                                'any language characters, numbers, space and &/,-',
+                        }
+                    )
 
-                throw new Error(errorMessage)
+                    throw new Error(errorMessage)
+                }
+
+                const gradeExists = await Grade.findOne({
+                    where: {
+                        name: gradeDetail.name,
+                        organization: { organization_id: this.organization_id },
+                    },
+                })
+
+                // Grade Name duplicate validation
+                if (gradeExists && gradeExists.id !== gradeDetail.id) {
+                    const errorMessage = stringInject(
+                        csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
+                        {
+                            name: gradeDetail.name,
+                            entity: 'grade',
+                        }
+                    )
+
+                    throw new Error(errorMessage)
+                }
             }
 
             const grade =

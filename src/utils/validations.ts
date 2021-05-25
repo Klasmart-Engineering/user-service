@@ -22,9 +22,8 @@ export function validateDOB(dob?: string): boolean {
     return false
 }
 
-export function validateClassName(name?: string): boolean {
-    const class_name_re = /^[\p{L}0-9 &\/,-]+$/gu
-    console.log('EL NAME: ', name)
+export function validateGradeName(name?: string): boolean {
+    const class_name_re = /^[\p{L}0-9 &/,-]+$/gu
 
     if (name && name.match(class_name_re)) {
         return true
