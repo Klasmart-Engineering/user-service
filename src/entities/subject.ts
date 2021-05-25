@@ -8,6 +8,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    Unique,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -20,6 +21,7 @@ import { Status } from './status'
 import { Class } from './class'
 
 @Entity()
+@Unique(['name', 'organization'])
 export class Subject extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string

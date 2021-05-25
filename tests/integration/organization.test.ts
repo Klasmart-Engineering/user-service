@@ -76,6 +76,7 @@ import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
 import RoleInitializer from '../../src/initializers/roles'
 import { studentRole } from '../../src/permissions/student'
 import { UserPermissions } from '../../src/permissions/userPermissions'
+import { createOrganization } from '../factories/organization.factory'
 
 use(chaiAsPromised)
 
@@ -5996,6 +5997,292 @@ describe('organization', () => {
                             })
                         }
                     )
+
+                    context(
+                        'and it tries to create a subject with a name that already exists in the organization',
+                        () => {
+                            let existentSubject: Grade
+
+                            beforeEach(async () => {
+                                existentSubject = createSubject(organization)
+                                await connection.manager.save(existentSubject)
+                                subjectDetails.name = existentSubject.name
+                            })
+
+                            it('fails in create the subject', async () => {
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectsDetails).to.not.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with a name that already exists in the organization',
+                        () => {
+                            let subjectToEdit: Grade
+                            let subjectToCopy: Grade
+
+                            beforeEach(async () => {
+                                subjectToEdit = createGrade(organization)
+                                subjectToEdit.name = 'edit grade'
+                                subjectToCopy = createGrade(organization)
+                                subjectToCopy.name = 'copy grade'
+
+                                await connection.manager.save([
+                                    subjectToEdit,
+                                    subjectToCopy,
+                                ])
+
+                                subjectDetails.id = subjectToEdit.id
+                                subjectDetails.name = subjectToCopy.name
+                            })
+
+                            it('fails in update the subject', async () => {
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getNonAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjectUpdateFail = await Subject.findOne(
+                                    {
+                                        where: {
+                                            id: subjectDetails.id,
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    }
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectUpdateFail?.name).to.not.eq(
+                                    subjectDetails.name
+                                )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with a name that already exists in another organization',
+                        () => {
+                            let otherOrgSubject: Grade
+                            let otherOrg: Organization
+                            beforeEach(async () => {
+                                otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+                                otherOrgSubject = createSubject(otherOrg)
+                                await connection.manager.save(otherOrgSubject)
+                                subjectDetails.name = otherOrgSubject.name
+                            })
+
+                            it('creates the subject', async () => {
+                                await createOrUpdateSubjects(
+                                    testClient,
+                                    organization.organization_id,
+                                    [subjectDetails],
+                                    { authorization: getNonAdminAuthToken() }
+                                )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(dbSubjectsDetails).to.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with a name that already exists in another organization',
+                        () => {
+                            let subjectToEdit: Grade
+                            let subjectToCopy: Grade
+
+                            beforeEach(async () => {
+                                const otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+
+                                subjectToEdit = createSubject(organization)
+                                subjectToEdit.name = 'edit subject'
+                                subjectToCopy = createSubject(otherOrg)
+                                subjectToCopy.name = 'copy subject'
+
+                                await connection.manager.save([
+                                    subjectToEdit,
+                                    subjectToCopy,
+                                ])
+
+                                subjectDetails.id = subjectToEdit.id
+                                subjectDetails.name = subjectToCopy.name
+                            })
+
+                            it('updates the subject', async () => {
+                                await createOrUpdateSubjects(
+                                    testClient,
+                                    organization.organization_id,
+                                    [subjectDetails],
+                                    {
+                                        authorization: getNonAdminAuthToken(),
+                                    }
+                                )
+
+                                const dbSubjectUpdate = await Grade.findOne({
+                                    where: {
+                                        id: subjectDetails.id,
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(dbSubjectUpdate?.name).eq(
+                                    subjectDetails.name
+                                )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with an invalid name',
+                        () => {
+                            it('fails in create the subject', async () => {
+                                const invalidNames = [
+                                    'M@th',
+                                    '$₵ien₵€',
+                                    '£it€r@tur€',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    subjectDetails.name = name
+                                    const fn = () =>
+                                        createOrUpdateSubjects(
+                                            testClient,
+                                            organization.organization_id,
+                                            [subjectDetails],
+                                            {
+                                                authorization: getNonAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbSubjects = await Subject.find({
+                                        where: {
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    })
+
+                                    const dbSubjectsDetails = await Promise.all(
+                                        dbSubjects.map(subjectInfo)
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dbSubjectsDetails).to.not.deep.eq([
+                                        subjectDetails,
+                                    ])
+                                }
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with an invalid name',
+                        () => {
+                            let subjectToEdit: Grade
+
+                            beforeEach(async () => {
+                                subjectToEdit = createSubject(organization)
+                                subjectToEdit.name = 'edit subject'
+
+                                await connection.manager.save(subjectToEdit)
+
+                                subjectDetails.id = subjectToEdit.id
+                            })
+
+                            it('fails in update the subject', async () => {
+                                const invalidNames = [
+                                    'M@th',
+                                    '$₵ien₵€',
+                                    '£it€r@tur€',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    subjectDetails.name = name
+
+                                    const fn = () =>
+                                        createOrUpdateSubjects(
+                                            testClient,
+                                            organization.organization_id,
+                                            [subjectDetails],
+                                            {
+                                                authorization: getNonAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbSubjectUpdateFail = await Subject.findOne(
+                                        {
+                                            where: {
+                                                id: subjectDetails.id,
+                                                organization: {
+                                                    organization_id:
+                                                        organization.organization_id,
+                                                },
+                                            },
+                                        }
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dbSubjectUpdateFail?.name).to.not.eq(
+                                        subjectDetails.name
+                                    )
+                                }
+                            })
+                        }
+                    )
                 })
             })
 
@@ -6133,6 +6420,292 @@ describe('organization', () => {
                                 expect(dbSubjectDetails).to.deep.eq([
                                     newSubjectDetails,
                                 ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with a name that already exists in the organization',
+                        () => {
+                            let existentSubject: Grade
+
+                            beforeEach(async () => {
+                                existentSubject = createSubject(organization)
+                                await connection.manager.save(existentSubject)
+                                subjectDetails.name = existentSubject.name
+                            })
+
+                            it('fails in create the subject', async () => {
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectsDetails).to.not.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with a name that already exists in the organization',
+                        () => {
+                            let subjectToEdit: Grade
+                            let subjectToCopy: Grade
+
+                            beforeEach(async () => {
+                                subjectToEdit = createGrade(organization)
+                                subjectToEdit.name = 'edit grade'
+                                subjectToCopy = createGrade(organization)
+                                subjectToCopy.name = 'copy grade'
+
+                                await connection.manager.save([
+                                    subjectToEdit,
+                                    subjectToCopy,
+                                ])
+
+                                subjectDetails.id = subjectToEdit.id
+                                subjectDetails.name = subjectToCopy.name
+                            })
+
+                            it('fails in update the subject', async () => {
+                                const fn = () =>
+                                    createOrUpdateSubjects(
+                                        testClient,
+                                        organization.organization_id,
+                                        [subjectDetails],
+                                        {
+                                            authorization: getAdminAuthToken(),
+                                        }
+                                    )
+
+                                const dbSubjectUpdateFail = await Subject.findOne(
+                                    {
+                                        where: {
+                                            id: subjectDetails.id,
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    }
+                                )
+
+                                expect(fn()).to.be.rejected
+                                expect(dbSubjectUpdateFail?.name).to.not.eq(
+                                    subjectDetails.name
+                                )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with a name that already exists in another organization',
+                        () => {
+                            let otherOrgSubject: Grade
+                            let otherOrg: Organization
+                            beforeEach(async () => {
+                                otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+                                otherOrgSubject = createSubject(otherOrg)
+                                await connection.manager.save(otherOrgSubject)
+                                subjectDetails.name = otherOrgSubject.name
+                            })
+
+                            it('creates the subject', async () => {
+                                await createOrUpdateSubjects(
+                                    testClient,
+                                    organization.organization_id,
+                                    [subjectDetails],
+                                    { authorization: getAdminAuthToken() }
+                                )
+
+                                const dbSubjects = await Subject.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                const dbSubjectsDetails = await Promise.all(
+                                    dbSubjects.map(subjectInfo)
+                                )
+
+                                expect(dbSubjectsDetails).to.deep.eq([
+                                    subjectDetails,
+                                ])
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with a name that already exists in another organization',
+                        () => {
+                            let subjectToEdit: Grade
+                            let subjectToCopy: Grade
+
+                            beforeEach(async () => {
+                                const otherOrg = createOrganization()
+                                await connection.manager.save(otherOrg)
+
+                                subjectToEdit = createSubject(organization)
+                                subjectToEdit.name = 'edit subject'
+                                subjectToCopy = createSubject(otherOrg)
+                                subjectToCopy.name = 'copy subject'
+
+                                await connection.manager.save([
+                                    subjectToEdit,
+                                    subjectToCopy,
+                                ])
+
+                                subjectDetails.id = subjectToEdit.id
+                                subjectDetails.name = subjectToCopy.name
+                            })
+
+                            it('updates the subject', async () => {
+                                await createOrUpdateSubjects(
+                                    testClient,
+                                    organization.organization_id,
+                                    [subjectDetails],
+                                    {
+                                        authorization: getAdminAuthToken(),
+                                    }
+                                )
+
+                                const dbSubjectUpdate = await Grade.findOne({
+                                    where: {
+                                        id: subjectDetails.id,
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(dbSubjectUpdate?.name).eq(
+                                    subjectDetails.name
+                                )
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to create a subject with an invalid name',
+                        () => {
+                            it('fails in create the subject', async () => {
+                                const invalidNames = [
+                                    'M@th',
+                                    '$₵ien₵€',
+                                    '£it€r@tur€',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    subjectDetails.name = name
+                                    const fn = () =>
+                                        createOrUpdateSubjects(
+                                            testClient,
+                                            organization.organization_id,
+                                            [subjectDetails],
+                                            {
+                                                authorization: getAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbSubjects = await Subject.find({
+                                        where: {
+                                            organization: {
+                                                organization_id:
+                                                    organization.organization_id,
+                                            },
+                                        },
+                                    })
+
+                                    const dbSubjectsDetails = await Promise.all(
+                                        dbSubjects.map(subjectInfo)
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dbSubjectsDetails).to.not.deep.eq([
+                                        subjectDetails,
+                                    ])
+                                }
+                            })
+                        }
+                    )
+
+                    context(
+                        'and it tries to update a subject with an invalid name',
+                        () => {
+                            let subjectToEdit: Grade
+
+                            beforeEach(async () => {
+                                subjectToEdit = createSubject(organization)
+                                subjectToEdit.name = 'edit subject'
+
+                                await connection.manager.save(subjectToEdit)
+
+                                subjectDetails.id = subjectToEdit.id
+                            })
+
+                            it('fails in update the subject', async () => {
+                                const invalidNames = [
+                                    'M@th',
+                                    '$₵ien₵€',
+                                    '£it€r@tur€',
+                                ]
+
+                                for (const name of invalidNames) {
+                                    subjectDetails.name = name
+
+                                    const fn = () =>
+                                        createOrUpdateSubjects(
+                                            testClient,
+                                            organization.organization_id,
+                                            [subjectDetails],
+                                            {
+                                                authorization: getAdminAuthToken(),
+                                            }
+                                        )
+
+                                    const dbSubjectUpdateFail = await Subject.findOne(
+                                        {
+                                            where: {
+                                                id: subjectDetails.id,
+                                                organization: {
+                                                    organization_id:
+                                                        organization.organization_id,
+                                                },
+                                            },
+                                        }
+                                    )
+
+                                    expect(fn()).to.be.rejected
+                                    expect(dbSubjectUpdateFail?.name).to.not.eq(
+                                        subjectDetails.name
+                                    )
+                                }
                             })
                         }
                     )
