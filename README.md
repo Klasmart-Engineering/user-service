@@ -45,9 +45,42 @@ mutation {
 ```
 
 # Connecting to a locally running frontend
-- Follow [instructions to set up the the frontend on your machine](https://bitbucket.org/calmisland/kidsloop-hub-frontend/src/dev/README.md)
-- Start the backend in local mode: `npm run start:local`
-- Start the frontend: `npm run start`
+
+## Prerequisites
+
+### 1 - Your local DB contains a user record for your account on the auth service
+
+-   Launch hub.alpha.kidsloop.net
+-   Inspect requests to the user-service to find your auth token
+-   Find your user ID and email from the token using jwt.io
+-   Add a new user on your local DB with this user ID and email
+
+```shell
+docker exec -it postgres psql -U postgres
+INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>')
+```
+
+### 2 - Your user has been assigned to a organisation
+
+-   Create an organisation on your local DB for your user
+
+```
+mutation {
+  user(user_id: <my-user-id>) {
+    createOrganization(organization_name:"my-org") {
+      organization_id
+    }
+  }
+}
+```
+
+## Starting local development servers
+
+-   Follow [instructions to set up the frontend on your machine](https://bitbucket.org/calmisland/kidsloop-hub-frontend/src/dev/README.md)
+-   Start the backend in local mode: `npm run start:local`
+-   Start the frontend: `npm run start`
+-   Open the frontend in your browser and login using your credentials from the process above
+-   Note: you may need to allow the insecure hosts (frontend and backend) in your browser when launching for the first time
 
 # Diagnosing
 
@@ -96,3 +129,9 @@ Make a request with below body (`form-data`), please replace `file_path` with yo
 ```
 
 Remember include `Authorization` with JWT token in request's header.
+
+# Useful Tools
+
+-   [VSCode](https://code.visualstudio.com/), for a feature rich development environment
+-   [Postman](https://www.postman.com/), for testing API requests
+-   [Postico](https://eggerapps.at/postico/), for working with Postgres databases on macOS
