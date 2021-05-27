@@ -32,18 +32,6 @@ Running tests during development:
 
 Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-mocha-test-adapter) VSCode extension for a nice UI and more fine-grained control.
 
-Issues with using database with "npm start"
-
-The database is created without the default permissions. To do any thing useful you need create them.
-
-You need to create a user with `Admin` permissions (by adding your email to this [list](https://bitbucket-ci/calmisland/kidsloop-user-service/src/master/src/permissions/userPermissions.ts#userPermissions.ts-23), please remember to restart your project) and using your JWT token (you can get the token by signing in [global hub](https://hub.kidsloop.net)) call the endpoint:
-
-```
-mutation {
-  createOrUpateSystemEntities
-}
-```
-
 # Connecting to a locally running frontend
 
 ## Prerequisites

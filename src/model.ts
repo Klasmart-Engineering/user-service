@@ -67,6 +67,7 @@ export class Model {
             await getManager(connection.name).query(
                 'CREATE EXTENSION IF NOT EXISTS pg_trgm'
             )
+            await model.createOrUpdateSystemEntities()
             console.log('🐘 Connected to postgres')
             return model
         } catch (e) {
