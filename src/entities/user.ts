@@ -785,3 +785,7 @@ export function accountUUID(email?: string) {
     }
     return v5(hash.digest(), accountNamespace)
 }
+
+export function fullNameAlias(tableAlias = 'user') {
+    return `concat(${tableAlias}.given_name, ' ', ${tableAlias}.family_name)`
+}

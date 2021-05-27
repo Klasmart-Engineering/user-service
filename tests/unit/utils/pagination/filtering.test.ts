@@ -6,6 +6,7 @@ import {
 import { Connection, createQueryBuilder } from 'typeorm'
 import { createTestConnection } from '../../../utils/testConnection'
 import { expect } from 'chai'
+import { fullNameAlias } from '../../../../src/entities/user'
 
 describe('getWhereClauseFromFilter', () => {
     let connection: Connection
@@ -269,6 +270,32 @@ describe('getWhereClauseFromFilter', () => {
         expect(
             scope.getParameters()[Object.keys(scope.getParameters())[0]]
         ).to.equal('%gmail%')
+    })
+
+    it("produces the correct query when using the 'contains' operator on an aliased field", () => {
+        const filter: IEntityFilter = {
+            fullName: {
+                operator: 'contains',
+                value: 'joe bloggs',
+            },
+        }
+        const scope = createQueryBuilder('user')
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                fullName: [fullNameAlias()],
+            })
+        )
+        const whereClause = scope
+            .getSql()
+            .slice(scope.getSql().indexOf('WHERE'))
+
+        expect(whereClause).to.equal(
+            "WHERE (concat(user.given_name, ' ', user.family_name) LIKE $1)"
+        )
+        expect(Object.keys(scope.getParameters()).length).to.equal(1)
+        expect(
+            scope.getParameters()[Object.keys(scope.getParameters())[0]]
+        ).to.equal('%joe bloggs%')
     })
 
     it('supports case insensitivity', () => {

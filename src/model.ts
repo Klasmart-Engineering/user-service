@@ -7,7 +7,7 @@ import {
     Repository,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
-import { User } from './entities/user'
+import { fullNameAlias, User } from './entities/user'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
 import { Organization, padShortDob } from './entities/organization'
@@ -355,6 +355,7 @@ export class Model {
                     userId: ["concat(User.user_id, '')"],
                     phone: ['User.phone'],
                     schoolId: ['SchoolMembership.school_id'],
+                    fullName: [fullNameAlias("User")],
                 })
             )
         }

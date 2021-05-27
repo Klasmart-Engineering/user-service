@@ -2,7 +2,7 @@ import chaiAsPromised from 'chai-as-promised'
 import { Connection, getRepository, SelectQueryBuilder } from 'typeorm'
 import { expect, use } from 'chai'
 import { createTestConnection } from '../../../utils/testConnection'
-import { User } from '../../../../src/entities/user'
+import { fullNameAlias, User } from '../../../../src/entities/user'
 import {
     IEntityFilter,
     getWhereClauseFromFilter,
@@ -128,6 +128,63 @@ describe('filtering', () => {
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
+        })
+
+        it('supports string.contains on a calculated field with a full match', async () => {
+            const filter: IEntityFilter = {
+                fullName: {
+                    operator: 'contains',
+                    value: 'John Smith',
+                },
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    fullName: [fullNameAlias('User')],
+                })
+            )
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(1)
+            expect(data[0].username).to.equal('john')
+        })
+
+        it('supports string.contains on a calculated field with a partial match', async () => {
+            const filter: IEntityFilter = {
+                fullName: {
+                    operator: 'contains',
+                    value: 'Smi',
+                },
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    fullName: [fullNameAlias('User')],
+                })
+            )
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(2)
+        })
+
+        it('supports case-insensitive string.contains on a calculated field', async () => {
+            const filter: IEntityFilter = {
+                fullName: {
+                    operator: 'contains',
+                    caseInsensitive: true,
+                    value: 'JOHN S',
+                },
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    fullName: [fullNameAlias('User')],
+                })
+            )
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(1)
+            expect(data[0].username).to.equal('john')
         })
 
         it('ignores contains filters with empty values', async () => {

@@ -67,6 +67,7 @@ const typeDefs = gql`
         userId: UUIDFilter
         givenName: StringFilter
         familyName: StringFilter
+        fullName: StringFilter
         avatar: StringFilter
         email: StringFilter
         phone: StringFilter

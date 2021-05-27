@@ -167,6 +167,8 @@ function parseField(field: string) {
             return 'family_name'
         case 'roleId':
             return 'role_id'
+        case 'fullName':
+            return 'full_name'
         default:
             return field
     }

@@ -1,4 +1,4 @@
-import { User } from '../entities/user'
+import { fullNameAlias, User } from '../entities/user'
 import {
     IEntityFilter,
     getWhereClauseFromFilter,
@@ -37,6 +37,7 @@ export const orgsForUsers = async (
                 organizationUserStatus: ['memberships.status'],
                 userId: ["concat(user.user_id, '')"],
                 phone: ['user.phone'],
+                fullName: [fullNameAlias()],
             })
         )
     }
@@ -91,6 +92,7 @@ export const schoolsForUsers = async (
                 roleId: ['roles.role_id'],
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
+                fullName: [fullNameAlias()],
                 phone: ['user.phone'],
             })
         )
@@ -151,6 +153,7 @@ export const rolesForUsers = async (
                 roleId: ['orgRoles.role_id'],
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
+                fullName: [fullNameAlias()],
             })
         )
         schoolScope.andWhere(
@@ -161,6 +164,7 @@ export const rolesForUsers = async (
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
                 phone: ['user.phone'],
+                fullName: [fullNameAlias()],
             })
         )
     }
