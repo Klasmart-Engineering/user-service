@@ -82,7 +82,7 @@ const typeDefs = gql`
     }
 
     type UserConnectionNode {
-        id: UUID!
+        id: ID!
         givenName: String
         familyName: String
         avatar: String
