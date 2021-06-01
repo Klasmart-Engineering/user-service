@@ -107,7 +107,7 @@ describe('usersConnection loaders', async () => {
                             organization_id: org1.organization_id,
                         },
                     })
-                    expect(org.id).to.equal(org1.organization_id)
+                    expect(org.organizationId).to.equal(org1.organization_id)
                     expect(org.name).to.equal(org1.organization_name)
                     expect(org.joinDate?.valueOf()).to.equal(
                         membership?.join_timestamp?.valueOf()
@@ -195,7 +195,7 @@ describe('usersConnection loaders', async () => {
                             school_id: school1.school_id,
                         },
                     })
-                    expect(school.id).to.equal(school1.school_id)
+                    expect(school.schoolId).to.equal(school1.school_id)
                     expect(school.name).to.equal(school1.school_name)
                     expect(school.organizationId).to.equal(org1.organization_id)
                     expect(school.status).to.equal(school1.status)

@@ -249,12 +249,12 @@ const USERS_CONNECTION = `
                 node {
                     id
                     organizations {
-                        id
+                        organizationId
                         status
                         userStatus
                     }
                     schools {
-                        id
+                        schoolId
                     }
                     roles{
                         id

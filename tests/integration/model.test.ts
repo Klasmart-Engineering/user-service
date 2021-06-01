@@ -962,7 +962,7 @@ describe('model', () => {
                         usersConnection?.edges[i].node.organizations.length
                     ).to.equal(1)
                     expect(
-                        usersConnection?.edges[i].node.organizations[0].id
+                        usersConnection?.edges[i].node.organizations[0].organizationId
                     ).to.equal(org.organization_id)
                     expect(
                         usersConnection?.edges[i].node.schools.length
@@ -971,7 +971,7 @@ describe('model', () => {
                         usersConnection?.edges[i].node.roles.length
                     ).to.equal(2)
                     expect(
-                        usersConnection?.edges[i].node.schools[0].id
+                        usersConnection?.edges[i].node.schools[0].schoolId
                     ).to.equal(school1.school_id)
                     expect(usersConnection?.edges[i].node.roles[0].id).to.equal(
                         role1.role_id
@@ -1126,7 +1126,7 @@ describe('model', () => {
                         usersConnection?.edges[i].node.schools.length
                     ).to.equal(1)
                     expect(
-                        usersConnection?.edges[i].node.schools[0].id
+                        usersConnection?.edges[i].node.schools[0].schoolId
                     ).to.equal(school2.school_id)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(

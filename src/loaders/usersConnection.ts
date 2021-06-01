@@ -53,7 +53,7 @@ export const orgsForUsers = async (
             const memberships = (await user.memberships) || []
             for (const m of memberships) {
                 orgs.push({
-                    id: m.organization_id,
+                    organizationId: m.organization_id,
                     name: (await m.organization)?.organization_name,
                     joinDate: m.join_timestamp,
                     userStatus: m.status,
@@ -108,7 +108,7 @@ export const schoolsForUsers = async (
             const memberships = (await user.school_memberships) || []
             for (const m of memberships) {
                 schools.push({
-                    id: m.school_id,
+                    schoolId: m.school_id,
                     name: (await m.school)?.school_name,
                     organizationId:
                         (await (await m.school)?.organization)

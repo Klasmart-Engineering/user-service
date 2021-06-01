@@ -100,7 +100,7 @@ const typeDefs = gql`
     }
 
     type OrganizationSummaryNode {
-        id: ID!
+        organizationId: ID!
         name: String
         joinDate: Date
         userStatus: Status
@@ -116,7 +116,7 @@ const typeDefs = gql`
     }
 
     type SchoolSummaryNode {
-        id: ID!
+        schoolId: ID!
         name: String
         organizationId: String
         status: Status
