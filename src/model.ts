@@ -49,6 +49,8 @@ import {
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { Program } from './entities/program'
+import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 
 export class Model {
     public static async create() {
@@ -407,6 +409,33 @@ export class Model {
             cursorTable: 'Permission',
             cursorColumn: 'permission_id',
         })
+    }
+
+    public async programsConnection(
+        context: Context,
+        { direction, directionArgs, scope, filter }: any
+    ) {
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            cursorTable: 'Program',
+            cursorColumn: 'id',
+        })
+        for (const edge of data.edges) {
+            const program: Program = edge.node
+            const newNode: Partial<ProgramConnectionNode> = {
+                id: program.id,
+                name: program.name,
+                status: program.status,
+                organizationId: (await program.organization)?.organization_id,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
     }
 
     public async getRole({ role_id }: Role) {

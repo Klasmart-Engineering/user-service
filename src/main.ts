@@ -4,6 +4,7 @@ import WebSocket from 'ws'
 import * as dotenv from 'dotenv'
 import { UserPermissions } from './permissions/userPermissions'
 import { IUsersConnectionLoaders } from './loaders/usersConnection'
+import { IProgramsConnectionLoaders } from './loaders/programsConnection'
 
 dotenv.config({ path: __dirname + '/../.env' })
 const port = process.env.PORT || 8080
@@ -17,6 +18,7 @@ export interface Context {
     permissions: UserPermissions
     loaders: {
         usersConnection?: IUsersConnectionLoaders
+        programsConnection?: IProgramsConnectionLoaders
     }
 }
 
