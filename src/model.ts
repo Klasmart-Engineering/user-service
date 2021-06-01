@@ -415,6 +415,36 @@ export class Model {
         context: Context,
         { direction, directionArgs, scope, filter }: any
     ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Program.organization', 'Organization')
+            }
+
+            if (filterHasProperty('ageRangeId', filter)) {
+                scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            }
+
+            if (filterHasProperty('gradeId', filter)) {
+                scope.leftJoinAndSelect('Program.grades', 'Grade')
+            }
+
+            if (filterHasProperty('subjectId', filter)) {
+                scope.leftJoinAndSelect('Program.subjects', 'Subject')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    ageRangeId: ['AgeRange.id'],
+                    gradeId: ['Grade.id'],
+                    subjectId: ['Subject.id'],
+                    programId: ['id'],
+                    name: ['name'],
+                    status: ['Program.status'],
+                })
+            )
+        }
+
         const data = await paginateData({
             direction,
             directionArgs,
@@ -428,7 +458,6 @@ export class Model {
                 id: program.id,
                 name: program.name,
                 status: program.status,
-                organizationId: (await program.organization)?.organization_id,
                 // other properties have dedicated resolvers that use Dataloader
             }
 

@@ -42,6 +42,7 @@ const typeDefs = gql`
         # table columns
         programId: UUIDFilter
         name: StringFilter
+        status: StringFilter
 
         # joined columns
         organizationId: UUIDFilter
@@ -57,10 +58,9 @@ const typeDefs = gql`
         id: UUID!
         name: String
         status: Status!
-        organizationId: String
         ageRanges: [AgeRangeSummaryNode!]
         grades: [GradeSummaryNode!]
-        subjects: [SubjectSummaryNode]
+        subjects: [SubjectSummaryNode!]
     }
 
     type AgeRangeSummaryNode {

@@ -3,6 +3,10 @@ import { Program } from '../entities/program'
 import { AgeRangeSummaryNode } from '../types/graphQL/ageRangeSummaryNode'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
+import {
+    getWhereClauseFromFilter,
+    IEntityFilter,
+} from '../utils/pagination/filtering'
 
 export interface IProgramsConnectionLoaders {
     ageRanges?: DataLoader<string, AgeRangeSummaryNode[]>
@@ -11,7 +15,8 @@ export interface IProgramsConnectionLoaders {
 }
 
 export const ageRangesForPrograms = async (
-    programIds: readonly string[]
+    programIds: readonly string[],
+    filter?: IEntityFilter
 ): Promise<AgeRangeSummaryNode[][]> => {
     const programAgeRanges: AgeRangeSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('program')
@@ -19,6 +24,20 @@ export const ageRangesForPrograms = async (
         .leftJoinAndSelect('program.grades', 'grades')
         .leftJoinAndSelect('program.subjects', 'subjects')
         .where('program.id IN (:...ids)', { ids: programIds })
+
+    if (filter) {
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['Organization.organization_id'],
+                ageRangeId: ['AgeRange.id'],
+                gradeId: ['Grade.id'],
+                subjectId: ['Subject.id'],
+                programId: ['id'],
+                name: ['name'],
+                status: ['program.status'],
+            })
+        )
+    }
 
     const programs = await scope.getMany()
 
@@ -41,7 +60,8 @@ export const ageRangesForPrograms = async (
 }
 
 export const gradesForPrograms = async (
-    programIds: readonly string[]
+    programIds: readonly string[],
+    filter?: IEntityFilter
 ): Promise<GradeSummaryNode[][]> => {
     const programGrades: GradeSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('program')
@@ -49,6 +69,20 @@ export const gradesForPrograms = async (
         .leftJoinAndSelect('program.grades', 'grades')
         .leftJoinAndSelect('program.subjects', 'subjects')
         .where('program.id IN (:...ids)', { ids: programIds })
+
+    if (filter) {
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['Organization.organization_id'],
+                ageRangeId: ['AgeRange.id'],
+                gradeId: ['Grade.id'],
+                subjectId: ['Subject.id'],
+                programId: ['id'],
+                name: ['name'],
+                status: ['program.status'],
+            })
+        )
+    }
 
     const programs = await scope.getMany()
 
@@ -71,7 +105,8 @@ export const gradesForPrograms = async (
 }
 
 export const subjectsForPrograms = async (
-    programIds: readonly string[]
+    programIds: readonly string[],
+    filter?: IEntityFilter
 ): Promise<SubjectSummaryNode[][]> => {
     const programSubjects: SubjectSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('program')
@@ -79,6 +114,20 @@ export const subjectsForPrograms = async (
         .leftJoinAndSelect('program.grades', 'grades')
         .leftJoinAndSelect('program.subjects', 'subjects')
         .where('program.id IN (:...ids)', { ids: programIds })
+
+    if (filter) {
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['Organization.organization_id'],
+                ageRangeId: ['AgeRange.id'],
+                gradeId: ['Grade.id'],
+                subjectId: ['Subject.id'],
+                programId: ['id'],
+                name: ['name'],
+                status: ['program.status'],
+            })
+        )
+    }
 
     const programs = await scope.getMany()
 

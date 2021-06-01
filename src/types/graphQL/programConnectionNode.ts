@@ -7,7 +7,6 @@ export interface ProgramConnectionNode {
     id: string
     name?: string
     status: Status
-    organizationId?: string
     ageRanges?: AgeRangeSummaryNode[]
     grades?: GradeSummaryNode[]
     subjects?: SubjectSummaryNode[]
