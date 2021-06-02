@@ -123,6 +123,20 @@ const typeDefs = gql`
         userStatus: Status
     }
 
+    type userCountItem {
+        id: ID
+        name: String
+        count: Int
+    }
+
+    enum userCountType {
+        NONE
+        ROLES
+        SCHOOLS
+        STATUS
+        ORGANIZATIONS
+    }
+
     extend type Query {
         me: User
         user(user_id: ID!): User
@@ -131,6 +145,13 @@ const typeDefs = gql`
             directionArgs: ConnectionsDirectionArgs
             filter: UserFilter
         ): UsersConnectionResponse @isAdmin(entity: "user")
+        roleCount(organizationId: ID!): [userCountItem]
+        schoolCount(organizationId: ID!): [userCountItem]
+        activeCount(organizationId: ID!): [userCountItem]
+        #userConnectionCount(
+        #    type: userCountType!
+        #    filter: UserFilter
+        #    ): [userCountItem] @isAdmin(entity: "user")
         users: [User]
         my_users: [User!]
     }
@@ -263,6 +284,12 @@ export default function getDefault(
                     }
                     return model.usersConnection(ctx, args)
                 },
+                roleCount: (parent, args, ctx, _info) =>
+                    model.roleCount(ctx, args),
+                schoolCount: (parent, args, ctx, _info) =>
+                    model.schoolCount(ctx, args),
+                activeCount: (parent, args, ctx, _info) =>
+                    model.activeCount(ctx, args),
                 users: (_parent, _args, ctx, _info) => model.getUsers(),
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),

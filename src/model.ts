@@ -49,6 +49,7 @@ import {
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { userCountType } from './types/graphQL/userCountType'
 
 export class Model {
     public static async create() {
@@ -388,6 +389,247 @@ export class Model {
         }
 
         return data
+    }
+
+    public async userConnectionCount(
+        context: Context,
+        { type, scope, filter }: any
+    ) {
+        const result = []
+        if (filter) {
+            if (
+                filterHasProperty('organizationId', filter) ||
+                filterHasProperty('roleId', filter) ||
+                filterHasProperty('organizationUserStatus', filter)
+            ) {
+                scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
+            }
+            if (filterHasProperty('roleId', filter)) {
+                scope.innerJoinAndSelect(
+                    'OrgMembership.roles',
+                    'RoleMembershipsOrganizationMembership'
+                )
+            }
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect(
+                    'User.school_memberships',
+                    'SchoolMembership'
+                )
+            }
+            /*
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['OrgMembership.organization_id'],
+                    organizationUserStatus: ['OrgMembership.status'],
+                    userId: ["concat(User.user_id, '')"],
+                    phone: ['User.phone'],
+                    schoolId: ['SchoolMembership.school_id'],
+                })
+            )
+            */
+        }
+        const allScope = scope.clone().andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['OrgMembership.organization_id'],
+                organizationUserStatus: ['OrgMembership.status'],
+                userId: ["concat(User.user_id, '')"],
+                phone: ['User.phone'],
+                schoolId: ['SchoolMembership.school_id'],
+            })
+        )
+
+        const total = await allScope.getCount()
+        result.push({
+            name: 'All',
+            count: total,
+        })
+        let res: any
+        switch (type) {
+            case userCountType.NONE:
+                return result
+            case userCountType.ORGANIZATIONS:
+                return result
+            case userCountType.ROLES:
+                scope
+                    .select('COUNT(Role.role_id) as rolesCount')
+                    .addSelect('Role.role_id' as 'role_id')
+                    .addSelect('Role.role_name' as 'role_name')
+                    .innerJoin('User.memberships', 'OrganizationMembership')
+                    .innerJoin('OrganizationMembership.roles', 'Role')
+                    .andWhere(
+                        getWhereClauseFromFilter(filter, {
+                            organizationId: ['OrgMembership.organization_id'],
+                            organizationUserStatus: ['OrgMembership.status'],
+                            userId: ["concat(User.user_id, '')"],
+                            phone: ['User.phone'],
+                            schoolId: ['SchoolMembership.school_id'],
+                        })
+                    )
+                    .groupBy('Role.role_id')
+
+                res = await scope.getRawMany()
+                for (const role of res) {
+                    result.push({
+                        id: role.Role_role_id,
+                        name: role.Role_role_name,
+                        count: role.rolescount,
+                    })
+                }
+                return result
+
+            case userCountType.SCHOOLS:
+                scope
+                    .select('COUNT(School.school_id) as schoolsCount')
+                    .addSelect('School.school_id' as 'school_id')
+                    .addSelect('School.school_name' as 'school_name')
+                    .innerJoin('User.school_memberships', 'SchoolMembership')
+                    .innerJoin('SchoolMembership.school', 'School')
+                    .innerJoin('School.organization', 'Organization')
+                    .andWhere(
+                        getWhereClauseFromFilter(filter, {
+                            organizationId: ['OrgMembership.organization_id'],
+                            organizationUserStatus: ['OrgMembership.status'],
+                            userId: ["concat(User.user_id, '')"],
+                            phone: ['User.phone'],
+                            schoolId: ['SchoolMembership.school_id'],
+                        })
+                    )
+                    .groupBy('School.school_id')
+                res = await scope.getRawMany()
+                for (const school of res) {
+                    result.push({
+                        id: school.School_school_id,
+                        name: school.School_school_name,
+                        count: school.schoolscount,
+                    })
+                }
+                return result
+
+            case userCountType.STATUS:
+                scope
+                    .select(
+                        'COUNT(OrganizationMembership.status) as statusCount'
+                    )
+                    .addSelect('OrganizationMembership.status' as 'status_name')
+                    .innerJoin('User.memberships', 'OrganizationMembership')
+                    .andWhere(
+                        getWhereClauseFromFilter(filter, {
+                            organizationId: ['OrgMembership.organization_id'],
+                            organizationUserStatus: ['OrgMembership.status'],
+                            userId: ["concat(User.user_id, '')"],
+                            phone: ['User.phone'],
+                            schoolId: ['SchoolMembership.school_id'],
+                        })
+                    )
+                    .groupBy('OrganizationMembership.status')
+                res = await scope.getRawMany()
+                for (const status of res) {
+                    result.push({
+                        id: status.OrganizationMembership_status,
+                        name: status.OrganizationMembership_status,
+                        count: status.statuscount,
+                    })
+                }
+                return result
+        }
+    }
+
+    public async roleCount(context: Context, { organizationId }: any) {
+        const result = []
+        const allRes = await User.createQueryBuilder()
+            .innerJoin('User.memberships', 'OrganizationMembership')
+            .andWhere('OrganizationMembership.organization_id = :id', {
+                id: organizationId,
+            })
+            .getCount()
+        result.push({
+            name: 'All',
+            count: allRes,
+        })
+        const res = await User.createQueryBuilder()
+            .select('COUNT(Role.role_id) as rolesCount')
+            .addSelect('Role.role_id' as 'role_id')
+            .addSelect('Role.role_name' as 'role_name')
+            .innerJoin('User.memberships', 'OrganizationMembership')
+            .innerJoin('OrganizationMembership.roles', 'Role')
+            .andWhere('OrganizationMembership.organization_id = :id', {
+                id: organizationId,
+            })
+            .groupBy('Role.role_id')
+            .getRawMany()
+        for (const role of res) {
+            result.push({
+                id: role.Role_role_id,
+                name: role.Role_role_name,
+                count: role.rolescount,
+            })
+        }
+        return result
+    }
+
+    public async schoolCount(context: Context, { organizationId }: any) {
+        const result = []
+        const allRes = await User.createQueryBuilder()
+            .innerJoin('User.memberships', 'OrganizationMembership')
+            .andWhere('OrganizationMembership.organization_id = :id', {
+                id: organizationId,
+            })
+            .getCount()
+        result.push({
+            name: 'All',
+            count: allRes,
+        })
+        const res = await User.createQueryBuilder()
+            .select('COUNT(School.school_id) as schoolsCount')
+            .addSelect('School.school_id' as 'school_id')
+            .addSelect('School.school_name' as 'school_name')
+            .innerJoin('User.school_memberships', 'SchoolMembership')
+            .innerJoin('SchoolMembership.school', 'School')
+            .innerJoin('School.organization', 'Organization')
+            .andWhere('Organization.organization_id = :id', {
+                id: organizationId,
+            })
+            .groupBy('School.school_id')
+            .getRawMany()
+        for (const school of res) {
+            result.push({
+                id: school.School_school_id,
+                name: school.School_school_name,
+                count: school.schoolscount,
+            })
+        }
+        return result
+    }
+
+    public async activeCount(context: Context, { organizationId }: any) {
+        const result = []
+        const allRes = await User.createQueryBuilder()
+            .innerJoin('User.memberships', 'OrganizationMembership')
+            .andWhere('OrganizationMembership.organization_id = :id', {
+                id: organizationId,
+            })
+            .getCount()
+        result.push({
+            name: 'All',
+            count: allRes,
+        })
+        const res = await User.createQueryBuilder()
+            .select('COUNT(OrganizationMembership.status) as statusCount')
+            .addSelect('OrganizationMembership.status' as 'status_name')
+            .innerJoin('User.memberships', 'OrganizationMembership')
+            .andWhere('OrganizationMembership.organization_id = :id', {
+                id: organizationId,
+            })
+            .groupBy('OrganizationMembership.status')
+            .getRawMany()
+        for (const status of res) {
+            result.push({
+                id: status.OrganizationMembership_status,
+                name: status.OrganizationMembership_status,
+                count: status.statuscount,
+            })
+        }
+        return result
     }
 
     public async permissionsConnection(
