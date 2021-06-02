@@ -29,10 +29,16 @@ import { SchoolMembership } from '../../../../src/entities/schoolMembership'
 import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
 import { CSVError } from '../../../../src/types/csv/csvError'
 import { createNonAdminUser } from '../../../utils/testEntities'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { getNonAdminAuthToken } from '../../../utils/testConfig'
+import { checkToken } from '../../../../src/token'
+import { grantPermission } from '../../../utils/operations/roleOps'
+import { PermissionName } from '../../../../src/permissions/permissionNames'
+import { addRoleToOrganizationMembership } from '../../../utils/operations/organizationMembershipOps'
 
 use(chaiAsPromised)
 
-describe('processUserFromCSVRow', () => {
+describe.only('processUserFromCSVRow', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let cls: Class
@@ -42,6 +48,29 @@ describe('processUserFromCSVRow', () => {
     let role: Role
     let school: School
     let fileErrors: CSVError[]
+    let permissions: UserPermissions
+
+    async function createOrgAdmin() {
+        const orgAdmin = await createNonAdminUser(testClient)
+        const role = await connection.manager.save(
+            createRole('Custom Admin Role', organization)
+        )
+        const headers = { authorization: getNonAdminAuthToken() }
+        await addRoleToOrganizationMembership(
+            testClient,
+            orgAdmin.user_id,
+            organization.organization_id,
+            role.role_id,
+            headers
+        )
+        await grantPermission(
+            testClient,
+            role.role_id,
+            PermissionName.send_invitation_40882,
+            headers
+        )
+        return orgAdmin
+    }
 
     before(async () => {
         connection = await createTestConnection()
@@ -63,6 +92,12 @@ describe('processUserFromCSVRow', () => {
         await connection.manager.save(role)
         cls = createClass([school], organization)
         await connection.manager.save(cls)
+
+        // Setup permissions
+        const encodedToken = getNonAdminAuthToken()
+        const token = (await checkToken(encodedToken)) as any
+        permissions = new UserPermissions(token)
+        await createOrgAdmin()
 
         row = {
             organization_name: organization.organization_name || '',
@@ -87,7 +122,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const user = await User.findOne({
@@ -105,7 +146,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const user = await User.findOne({
@@ -123,7 +170,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -141,7 +194,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -159,7 +218,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -177,7 +242,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -202,7 +273,8 @@ describe('processUserFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        permissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -224,7 +296,8 @@ describe('processUserFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        permissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -262,7 +335,8 @@ describe('processUserFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        permissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -288,7 +362,8 @@ describe('processUserFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        permissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -314,7 +389,8 @@ describe('processUserFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        permissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -335,7 +411,13 @@ describe('processUserFromCSVRow', () => {
                     'This is a Very Long Given Name to be Allowed as a Given Name',
             }
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -354,7 +436,13 @@ describe('processUserFromCSVRow', () => {
                     'This is a Very Long Family Name to be Allowed as a Family Name',
             }
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -372,7 +460,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -390,7 +484,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -408,7 +508,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -426,7 +532,13 @@ describe('processUserFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+                processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    permissions
+                )
 
             expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
@@ -446,7 +558,13 @@ describe('processUserFromCSVRow', () => {
         }
 
         it('creates the user and its respective links', async () => {
-            await processUserFromCSVRow(connection.manager, row, 1, fileErrors)
+            await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                permissions
+            )
 
             const dbUser = await User.findOneOrFail({
                 where: { email: row.user_email },
@@ -480,7 +598,8 @@ describe('processUserFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    permissions
                 )
 
                 const students = (await cls.students) || []
@@ -507,7 +626,8 @@ describe('processUserFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    permissions
                 )
 
                 const dbUser = await User.findOneOrFail({
@@ -540,7 +660,8 @@ describe('processUserFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    permissions
                 )
 
                 const dbUser = await User.findOneOrFail({
@@ -585,7 +706,8 @@ describe('processUserFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        permissions
                     )
 
                     const dbUser = await User.findOneOrFail({
@@ -616,7 +738,8 @@ describe('processUserFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    permissions
                 )
 
                 const dbUser = await User.findOneOrFail({
@@ -676,7 +799,8 @@ describe('processUserFromCSVRow', () => {
                             connection.manager,
                             row,
                             1,
-                            fileErrors
+                            fileErrors,
+                            permissions
                         )
 
                         const dbUser = await User.findOneOrFail({

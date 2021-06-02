@@ -3,11 +3,13 @@ import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback
 import { Upload } from '../../types/upload'
 import { readCSVFile } from './readFile'
 import { CustomError, instanceOfCSVError } from '../../types/csv/csvError'
+import { UserPermissions } from '../../permissions/userPermissions'
 
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
     file: Upload,
-    functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[]
+    functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[],
+    permissions?: UserPermissions,
 ) {
     const queryRunner = connection.createQueryRunner()
     await queryRunner.connect()
@@ -16,7 +18,8 @@ export async function createEntityFromCsvWithRollBack(
         await readCSVFile(
             queryRunner.manager,
             file,
-            functionsToSaveEntityFromCsvRow
+            functionsToSaveEntityFromCsvRow,
+            permissions,
         )
         console.log('Generic Upload CSV File finished')
         await queryRunner.commitTransaction()

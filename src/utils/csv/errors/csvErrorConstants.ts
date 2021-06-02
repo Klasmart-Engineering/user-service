@@ -77,4 +77,7 @@ export default {
 
     ERR_CSV_INVALID_LENGTH: "ERR_CSV_INVALID_LENGTH",
     MSG_ERR_CSV_INVALID_LENGTH: "{entity} {attribute} must not be greater than {max} characters.",
+
+    ERR_CSV_MISSING_PERMISSION: "ERR_CSV_MISSING_PERMISSION",
+    MSG_ERR_CSV_MISSING_PERMISSION: "You must have {permission} permission for {name} {entity}."
 } as const;

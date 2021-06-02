@@ -8,6 +8,7 @@ import { Transform } from 'stream'
 import { CSVError } from '../../types/csv/csvError'
 import stringInject from '../stringUtils'
 import constants from './errors/csvErrorConstants'
+import { UserPermissions } from '../../permissions/userPermissions'
 
 function formatCSVRow(row: any) {
     const keys = Object.keys(row)
@@ -33,7 +34,8 @@ function canFinish(
 export async function readCSVFile(
     manager: EntityManager,
     file: Upload,
-    callbacks: CreateEntityRowCallback[]
+    callbacks: CreateEntityRowCallback[],
+    permissions?: UserPermissions
 ) {
     const { filename, mimetype, encoding } = file
     let rowCounter: number
@@ -53,7 +55,7 @@ export async function readCSVFile(
                 for await (let chunk of csvStream) {
                     rowCounter += 1
                     chunk = formatCSVRow(chunk)
-                    await callbacks[i](manager, chunk, rowCounter, fileErrors)
+                    await callbacks[i](manager, chunk, rowCounter, fileErrors, permissions)
 
                     if (canFinish(i, callbacks, csvStream)) {
                         if (fileErrors.length) {

@@ -21,12 +21,15 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from './errors/csvErrorConstants'
 import { validateDOB, validateEmail, validatePhone } from '../validations'
 import validationConstants from './validationConstants'
+import { UserPermissions } from '../../permissions/userPermissions'
+import { PermissionName } from '../../permissions/permissionNames'
 
 export const processUserFromCSVRow = async (
     manager: EntityManager,
     row: UserRow,
     rowNumber: number,
-    fileErrors: CSVError[]
+    fileErrors: CSVError[],
+    permissions?: UserPermissions
 ) => {
     if (!row.organization_name) {
         addCsvError(
@@ -215,6 +218,28 @@ export const processUserFromCSVRow = async (
             'organization_name',
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
             {
+                entity: 'organization',
+                name: row.organization_name,
+            }
+        )
+
+        return
+    }
+
+    const canCreateUserInOrg = await permissions!.allowed(
+        { organization_id: org.organization_id },
+        PermissionName.send_invitation_40882
+    )
+
+    if (!canCreateUserInOrg) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_PERMISSION,
+            rowNumber,
+            'organization_name',
+            csvErrorConstants.MSG_ERR_CSV_MISSING_PERMISSION,
+            {
+                permission: PermissionName.send_invitation_40882,
                 entity: 'organization',
                 name: row.organization_name,
             }

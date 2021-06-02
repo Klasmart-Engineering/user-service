@@ -566,9 +566,12 @@ export class Model {
         }
 
         const { file } = await args.file
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processUserFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processUserFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
