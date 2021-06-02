@@ -438,8 +438,8 @@ export class Model {
                     ageRangeId: ['AgeRange.id'],
                     gradeId: ['Grade.id'],
                     subjectId: ['Subject.id'],
-                    programId: ['id'],
-                    name: ['name'],
+                    programId: ['Program.id'],
+                    name: ['Program.name'],
                     status: ['Program.status'],
                 })
             )

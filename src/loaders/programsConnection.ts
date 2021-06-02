@@ -19,11 +19,12 @@ export const ageRangesForPrograms = async (
     filter?: IEntityFilter
 ): Promise<AgeRangeSummaryNode[][]> => {
     const programAgeRanges: AgeRangeSummaryNode[][] = []
-    const scope = await Program.createQueryBuilder('program')
-        .leftJoinAndSelect('program.age_ranges', 'age_ranges')
-        .leftJoinAndSelect('program.grades', 'grades')
-        .leftJoinAndSelect('program.subjects', 'subjects')
-        .where('program.id IN (:...ids)', { ids: programIds })
+    const scope = await Program.createQueryBuilder('Program')
+        .leftJoinAndSelect('Program.organization', 'Organization')
+        .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+        .leftJoinAndSelect('Program.grades', 'Grade')
+        .leftJoinAndSelect('Program.subjects', 'Subject')
+        .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
         scope.andWhere(
@@ -32,9 +33,9 @@ export const ageRangesForPrograms = async (
                 ageRangeId: ['AgeRange.id'],
                 gradeId: ['Grade.id'],
                 subjectId: ['Subject.id'],
-                programId: ['id'],
-                name: ['name'],
-                status: ['program.status'],
+                programId: ['Program.id'],
+                name: ['Program.name'],
+                status: ['Program.status'],
             })
         )
     }
@@ -64,11 +65,12 @@ export const gradesForPrograms = async (
     filter?: IEntityFilter
 ): Promise<GradeSummaryNode[][]> => {
     const programGrades: GradeSummaryNode[][] = []
-    const scope = await Program.createQueryBuilder('program')
-        .leftJoinAndSelect('program.age_ranges', 'age_ranges')
-        .leftJoinAndSelect('program.grades', 'grades')
-        .leftJoinAndSelect('program.subjects', 'subjects')
-        .where('program.id IN (:...ids)', { ids: programIds })
+    const scope = await Program.createQueryBuilder('Program')
+        .leftJoinAndSelect('Program.organization', 'Organization')
+        .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+        .leftJoinAndSelect('Program.grades', 'Grade')
+        .leftJoinAndSelect('Program.subjects', 'Subject')
+        .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
         scope.andWhere(
@@ -77,9 +79,9 @@ export const gradesForPrograms = async (
                 ageRangeId: ['AgeRange.id'],
                 gradeId: ['Grade.id'],
                 subjectId: ['Subject.id'],
-                programId: ['id'],
-                name: ['name'],
-                status: ['program.status'],
+                programId: ['Program.id'],
+                name: ['Program.name'],
+                status: ['Program.status'],
             })
         )
     }
@@ -109,11 +111,12 @@ export const subjectsForPrograms = async (
     filter?: IEntityFilter
 ): Promise<SubjectSummaryNode[][]> => {
     const programSubjects: SubjectSummaryNode[][] = []
-    const scope = await Program.createQueryBuilder('program')
-        .leftJoinAndSelect('program.age_ranges', 'age_ranges')
-        .leftJoinAndSelect('program.grades', 'grades')
-        .leftJoinAndSelect('program.subjects', 'subjects')
-        .where('program.id IN (:...ids)', { ids: programIds })
+    const scope = await Program.createQueryBuilder('Program')
+        .leftJoinAndSelect('Program.organization', 'Organization')
+        .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+        .leftJoinAndSelect('Program.grades', 'Grade')
+        .leftJoinAndSelect('Program.subjects', 'Subject')
+        .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
         scope.andWhere(
@@ -122,9 +125,9 @@ export const subjectsForPrograms = async (
                 ageRangeId: ['AgeRange.id'],
                 gradeId: ['Grade.id'],
                 subjectId: ['Subject.id'],
-                programId: ['id'],
-                name: ['name'],
-                status: ['program.status'],
+                programId: ['Program.id'],
+                name: ['Program.name'],
+                status: ['Program.status'],
             })
         )
     }

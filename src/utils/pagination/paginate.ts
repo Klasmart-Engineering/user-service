@@ -1,6 +1,20 @@
 const DEFAULT_PAGE_SIZE = 50
 const SEEK_BACKWARD = 'BACKWARD'
 
+export interface IPaginatedResponse<T = any> {
+    totalCount: number
+    pageInfo: {
+        startCursor: string
+        endCursor: string
+        hasNextPage: boolean
+        hasPreviousPage: boolean
+    }
+    edges: {
+        cursor: string
+        node: T
+    }[]
+}
+
 interface directionArgs {
     count: number
     cursor?: string

@@ -165,13 +165,13 @@ export default function getDefault(
                 programsConnection: (_parent, args, ctx: Context, _info) => {
                     ctx.loaders.programsConnection = {
                         ageRanges: new Dataloader((keys) =>
-                            ageRangesForPrograms(keys)
+                            ageRangesForPrograms(keys, args.filter)
                         ),
                         grades: new Dataloader((keys) =>
-                            gradesForPrograms(keys)
+                            gradesForPrograms(keys, args.filter)
                         ),
                         subjects: new Dataloader((keys) =>
-                            subjectsForPrograms(keys)
+                            subjectsForPrograms(keys, args.filter)
                         ),
                     }
                     return model.programsConnection(ctx, args)
