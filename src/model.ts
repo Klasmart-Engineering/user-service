@@ -391,7 +391,7 @@ export class Model {
         return data
     }
 
-    public async userConnectionCount(
+    public async usersConnectionCount(
         context: Context,
         { type, scope, filter }: any
     ) {
@@ -416,8 +416,21 @@ export class Model {
                     'SchoolMembership'
                 )
             }
-            /*
-            scope.andWhere(
+        }
+        const allScope = scope.clone()
+        if (
+            !filter ||
+            (filter &&
+                !(
+                    filterHasProperty('organizationId', filter) ||
+                    filterHasProperty('roleId', filter) ||
+                    filterHasProperty('organizationUserStatus', filter)
+                ))
+        ) {
+            allScope.leftJoinAndSelect('User.memberships', 'OrgMembership')
+        }
+        if (filter) {
+            allScope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     organizationId: ['OrgMembership.organization_id'],
                     organizationUserStatus: ['OrgMembership.status'],
@@ -426,17 +439,7 @@ export class Model {
                     schoolId: ['SchoolMembership.school_id'],
                 })
             )
-            */
         }
-        const allScope = scope.clone().andWhere(
-            getWhereClauseFromFilter(filter, {
-                organizationId: ['OrgMembership.organization_id'],
-                organizationUserStatus: ['OrgMembership.status'],
-                userId: ["concat(User.user_id, '')"],
-                phone: ['User.phone'],
-                schoolId: ['SchoolMembership.school_id'],
-            })
-        )
 
         const total = await allScope.getCount()
         result.push({
@@ -448,15 +451,28 @@ export class Model {
             case userCountType.NONE:
                 return result
             case userCountType.ORGANIZATIONS:
-                return result
-            case userCountType.ROLES:
+                if (
+                    !filter ||
+                    (filter &&
+                        !(
+                            filterHasProperty('organizationId', filter) ||
+                            filterHasProperty('roleId', filter) ||
+                            filterHasProperty('organizationUserStatus', filter)
+                        ))
+                ) {
+                    scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
+                }
                 scope
-                    .select('COUNT(Role.role_id) as rolesCount')
-                    .addSelect('Role.role_id' as 'role_id')
-                    .addSelect('Role.role_name' as 'role_name')
-                    .innerJoin('User.memberships', 'OrganizationMembership')
-                    .innerJoin('OrganizationMembership.roles', 'Role')
-                    .andWhere(
+                    .select('COUNT(OrgMembership.organization_id) as orgsCount')
+                    .addSelect(
+                        'OrgMembership.organization_id' as 'organization_id'
+                    )
+                    .addSelect(
+                        'Organization.organization_name' as 'organization_name'
+                    )
+                    .innerJoin('OrgMembership.organization', 'Organization')
+                if (filter) {
+                    scope.andWhere(
                         getWhereClauseFromFilter(filter, {
                             organizationId: ['OrgMembership.organization_id'],
                             organizationUserStatus: ['OrgMembership.status'],
@@ -465,7 +481,51 @@ export class Model {
                             schoolId: ['SchoolMembership.school_id'],
                         })
                     )
-                    .groupBy('Role.role_id')
+                }
+
+                scope
+                    .groupBy('OrgMembership.organization_id')
+                    .addGroupBy('Organization.organization_name')
+                res = await scope.getRawMany()
+                for (const org of res) {
+                    result.push({
+                        id: org.OrgMembership_organization_id,
+                        name: org.Organization_organization_name,
+                        count: org.orgscount,
+                    })
+                }
+                return result
+
+            case userCountType.ROLES:
+                if (
+                    !filter ||
+                    (filter &&
+                        !(
+                            filterHasProperty('organizationId', filter) ||
+                            filterHasProperty('roleId', filter) ||
+                            filterHasProperty('organizationUserStatus', filter)
+                        ))
+                ) {
+                    scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
+                }
+                scope
+                    .select('COUNT(Role.role_id) as rolesCount')
+                    .addSelect('Role.role_id' as 'role_id')
+                    .addSelect('Role.role_name' as 'role_name')
+                    .innerJoin('OrgMembership.roles', 'Role')
+                if (filter) {
+                    scope.andWhere(
+                        getWhereClauseFromFilter(filter, {
+                            organizationId: ['OrgMembership.organization_id'],
+                            organizationUserStatus: ['OrgMembership.status'],
+                            userId: ["concat(User.user_id, '')"],
+                            phone: ['User.phone'],
+                            schoolId: ['SchoolMembership.school_id'],
+                        })
+                    )
+                }
+
+                scope.groupBy('Role.role_id')
 
                 res = await scope.getRawMany()
                 for (const role of res) {
@@ -482,10 +542,17 @@ export class Model {
                     .select('COUNT(School.school_id) as schoolsCount')
                     .addSelect('School.school_id' as 'school_id')
                     .addSelect('School.school_name' as 'school_name')
-                    .innerJoin('User.school_memberships', 'SchoolMembership')
+                if (!filterHasProperty('schoolId', filter)) {
+                    scope.innerJoin(
+                        'User.school_memberships',
+                        'SchoolMembership'
+                    )
+                }
+                scope
                     .innerJoin('SchoolMembership.school', 'School')
                     .innerJoin('School.organization', 'Organization')
-                    .andWhere(
+                if (filter) {
+                    scope.andWhere(
                         getWhereClauseFromFilter(filter, {
                             organizationId: ['OrgMembership.organization_id'],
                             organizationUserStatus: ['OrgMembership.status'],
@@ -494,7 +561,8 @@ export class Model {
                             schoolId: ['SchoolMembership.school_id'],
                         })
                     )
-                    .groupBy('School.school_id')
+                }
+                scope.groupBy('School.school_id')
                 res = await scope.getRawMany()
                 for (const school of res) {
                     result.push({
@@ -506,13 +574,23 @@ export class Model {
                 return result
 
             case userCountType.STATUS:
+                if (
+                    !filter ||
+                    (filter &&
+                        !(
+                            filterHasProperty('organizationId', filter) ||
+                            filterHasProperty('roleId', filter) ||
+                            filterHasProperty('organizationUserStatus', filter)
+                        ))
+                ) {
+                    scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
+                }
+
                 scope
-                    .select(
-                        'COUNT(OrganizationMembership.status) as statusCount'
-                    )
-                    .addSelect('OrganizationMembership.status' as 'status_name')
-                    .innerJoin('User.memberships', 'OrganizationMembership')
-                    .andWhere(
+                    .select('COUNT(OrgMembership.status) as statusCount')
+                    .addSelect('OrgMembership.status' as 'status_name')
+                if (filter) {
+                    scope.andWhere(
                         getWhereClauseFromFilter(filter, {
                             organizationId: ['OrgMembership.organization_id'],
                             organizationUserStatus: ['OrgMembership.status'],
@@ -521,115 +599,18 @@ export class Model {
                             schoolId: ['SchoolMembership.school_id'],
                         })
                     )
-                    .groupBy('OrganizationMembership.status')
+                }
+                scope.groupBy('OrgMembership.status')
                 res = await scope.getRawMany()
                 for (const status of res) {
                     result.push({
-                        id: status.OrganizationMembership_status,
-                        name: status.OrganizationMembership_status,
+                        id: status.OrgMembership_status,
+                        name: status.OrgMembership_status,
                         count: status.statuscount,
                     })
                 }
                 return result
         }
-    }
-
-    public async roleCount(context: Context, { organizationId }: any) {
-        const result = []
-        const allRes = await User.createQueryBuilder()
-            .innerJoin('User.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.organization_id = :id', {
-                id: organizationId,
-            })
-            .getCount()
-        result.push({
-            name: 'All',
-            count: allRes,
-        })
-        const res = await User.createQueryBuilder()
-            .select('COUNT(Role.role_id) as rolesCount')
-            .addSelect('Role.role_id' as 'role_id')
-            .addSelect('Role.role_name' as 'role_name')
-            .innerJoin('User.memberships', 'OrganizationMembership')
-            .innerJoin('OrganizationMembership.roles', 'Role')
-            .andWhere('OrganizationMembership.organization_id = :id', {
-                id: organizationId,
-            })
-            .groupBy('Role.role_id')
-            .getRawMany()
-        for (const role of res) {
-            result.push({
-                id: role.Role_role_id,
-                name: role.Role_role_name,
-                count: role.rolescount,
-            })
-        }
-        return result
-    }
-
-    public async schoolCount(context: Context, { organizationId }: any) {
-        const result = []
-        const allRes = await User.createQueryBuilder()
-            .innerJoin('User.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.organization_id = :id', {
-                id: organizationId,
-            })
-            .getCount()
-        result.push({
-            name: 'All',
-            count: allRes,
-        })
-        const res = await User.createQueryBuilder()
-            .select('COUNT(School.school_id) as schoolsCount')
-            .addSelect('School.school_id' as 'school_id')
-            .addSelect('School.school_name' as 'school_name')
-            .innerJoin('User.school_memberships', 'SchoolMembership')
-            .innerJoin('SchoolMembership.school', 'School')
-            .innerJoin('School.organization', 'Organization')
-            .andWhere('Organization.organization_id = :id', {
-                id: organizationId,
-            })
-            .groupBy('School.school_id')
-            .getRawMany()
-        for (const school of res) {
-            result.push({
-                id: school.School_school_id,
-                name: school.School_school_name,
-                count: school.schoolscount,
-            })
-        }
-        return result
-    }
-
-    public async activeCount(context: Context, { organizationId }: any) {
-        const result = []
-        const allRes = await User.createQueryBuilder()
-            .innerJoin('User.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.organization_id = :id', {
-                id: organizationId,
-            })
-            .getCount()
-        result.push({
-            name: 'All',
-            count: allRes,
-        })
-        const res = await User.createQueryBuilder()
-            .select('COUNT(OrganizationMembership.status) as statusCount')
-            .addSelect('OrganizationMembership.status' as 'status_name')
-            .innerJoin('User.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.organization_id = :id', {
-                id: organizationId,
-            })
-            .groupBy('OrganizationMembership.status')
-            .getRawMany()
-        for (const status of res) {
-            result.push({
-                id: status.OrganizationMembership_status,
-                name: status.OrganizationMembership_status,
-                count: status.statuscount,
-            })
-        }
-        return result
     }
 
     public async permissionsConnection(

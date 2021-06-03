@@ -3,5 +3,5 @@ export enum userCountType {
     ROLES = 'ROLES',
     SCHOOLS = 'SCHOOLS',
     STATUS = 'STATUS',
-    ORGANIZATIONS = 'ORGANIZATION',
+    ORGANIZATIONS = 'ORGANIZATIONS',
 }
