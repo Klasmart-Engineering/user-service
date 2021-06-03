@@ -123,11 +123,29 @@ const typeDefs = gql`
         userStatus: Status
     }
 
+    enum UserSortBy {
+        user_id
+        name
+        contactInfo
+        joinDate
+    }
+
+    enum UserSortOrder {
+        ASC
+        DESC
+    }
+
+    input UserSortInput {
+        by: UserSortBy!
+        order: UserSortOrder!
+    }
+
     extend type Query {
         me: User
         user(user_id: ID!): User
         usersConnection(
             direction: ConnectionDirection!
+            sortBy: UserSortInput
             directionArgs: ConnectionsDirectionArgs
             filter: UserFilter
         ): UsersConnectionResponse @isAdmin(entity: "user")

@@ -325,8 +325,14 @@ export class Model {
 
     public async usersConnection(
         context: Context,
-        { direction, directionArgs, scope, filter }: any
+        { direction, directionArgs, scope, filter, sortBy }: any
     ) {
+        if (!sortBy) {
+            sortBy = {
+                by: 'user_id',
+                order: 'ASC',
+            }
+        }
         if (filter) {
             if (
                 filterHasProperty('organizationId', filter) ||
@@ -362,7 +368,7 @@ export class Model {
             directionArgs,
             scope,
             cursorTable: 'User',
-            cursorColumn: 'user_id',
+            sortBy,
         })
         for (const edge of data.edges) {
             const user: User = edge.node
