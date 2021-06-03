@@ -55,7 +55,7 @@ const typeDefs = gql`
     }
 
     type ProgramConnectionNode {
-        id: UUID!
+        id: ID!
         name: String
         status: Status!
         ageRanges: [AgeRangeSummaryNode!]
