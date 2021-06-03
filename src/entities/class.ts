@@ -125,18 +125,54 @@ export class Class extends BaseEntity {
         )
     }
 
+    // we should see users who are in the schools that the class belongs to, AND
+    // we should see users who do not belong to any schools
+    // https://calmisland.atlassian.net/browse/KL-4857
     public async eligibleStudents(
         args: any,
         context: Context,
         info: GraphQLResolveInfo
-    ) {
+    ): Promise<User[] | IterableIterator<User>> {
         console.info(
             `Unauthenticated endpoint call eligibleStudents by ${context.permissions?.getUserId()}`
         )
 
-        return this._membersWithPermission(
+        const users: User[] = []
+        const classSchools = (await this.schools) || []
+
+        const members = await this._membersWithPermission(
             PermissionName.attend_live_class_as_a_student_187
         )
+
+        if (classSchools.length === 0) {
+            // show all org users if the class has not been assigned to a school
+            return members
+        }
+
+        let user = members.next()
+        while (!user.done) {
+            const schoolMemberships =
+                (await user.value.school_memberships) || []
+            if (schoolMemberships.length === 0) {
+                users.push(user.value)
+            } else {
+                // find schools that have been assigned to both the class AND user
+                for (const classSchool of classSchools) {
+                    const userIsSchoolMember =
+                        schoolMemberships.findIndex(
+                            (s) => s.school_id === classSchool.school_id
+                        ) >= 0
+                    if (userIsSchoolMember) {
+                        users.push(user.value)
+                        break
+                    }
+                }
+            }
+
+            user = members.next()
+        }
+
+        return users
     }
 
     public async _membersWithPermission(permission_name: PermissionName) {
