@@ -271,7 +271,7 @@ const USERS_CONNECTION = `
 `
 
 const PERMISSIONS_CONNECTION = `
-    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter) {
+    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: PermissionFilter) {
         permissionsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs){
             totalCount
             edges {
