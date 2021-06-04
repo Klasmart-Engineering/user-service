@@ -69,7 +69,7 @@ export class Role extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.edit_groups_30330
+            PermissionName.edit_role_and_permissions_30332
         )
 
         try {
@@ -136,7 +136,7 @@ export class Role extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.edit_role_permissions_30332
+            PermissionName.edit_role_and_permissions_30332
         )
 
         try {
@@ -177,7 +177,7 @@ export class Role extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.edit_role_permissions_30332
+            PermissionName.edit_role_and_permissions_30332
         )
 
         try {
@@ -214,7 +214,7 @@ export class Role extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.edit_role_permissions_30332
+            PermissionName.edit_role_and_permissions_30332
         )
 
         try {
@@ -250,7 +250,7 @@ export class Role extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.edit_role_permissions_30332
+            PermissionName.edit_role_and_permissions_30332
         )
 
         const permissionEntities = [] as Permission[]
@@ -299,7 +299,7 @@ export class Role extends BaseEntity {
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
-            PermissionName.delete_groups_30440
+            PermissionName.delete_role_30440
         )
 
         try {

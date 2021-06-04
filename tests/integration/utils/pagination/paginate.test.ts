@@ -13,9 +13,9 @@ import { User } from '../../../../src/entities/user'
 import { createUser } from '../../../factories/user.factory'
 import { paginateData } from '../../../../src/utils/pagination/paginate'
 import { convertDataToCursor } from '../../../utils/paginate'
-import { createOrganization } from "../../../factories/organization.factory";
-import { addOrganizationToUserAndValidate } from "../../../utils/operations/userOps";
-import { getAdminAuthToken } from "../../../utils/testConfig";
+import { createOrganization } from '../../../factories/organization.factory'
+import { addOrganizationToUserAndValidate } from '../../../utils/operations/userOps'
+import { getAdminAuthToken } from '../../../utils/testConfig'
 
 use(chaiAsPromised)
 
