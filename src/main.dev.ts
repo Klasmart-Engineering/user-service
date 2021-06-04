@@ -6,9 +6,9 @@
 // be updated to point to localhost.
 //
 
+import './utils/dotenv'
+
 import { initApp } from './app'
-import * as dotenv from 'dotenv'
-dotenv.config({ path: __dirname + '/../.env' })
 import https from 'https'
 
 // don't bother with types as this is just a dev tool
