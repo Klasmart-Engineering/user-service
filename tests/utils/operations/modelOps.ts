@@ -1,20 +1,20 @@
-import { ReadStream } from "fs";
+import { ReadStream } from 'fs'
 
-import { AgeRange } from "../../../src/entities/ageRange";
-import { Grade } from "../../../src/entities/grade";
-import { User } from "../../../src/entities/user";
-import { Organization } from "../../../src/entities/organization";
-import { Subcategory } from "../../../src/entities/subcategory";
-import { Subject } from "../../../src/entities/subject";
-import { expect } from "chai";
-import { ApolloServerTestClient } from "../createTestClient";
-import { getAdminAuthToken } from "../testConfig";
-import { Headers } from 'node-mocks-http';
-import { gqlTry } from "../gqlTry";
-import { Program } from "../../../src/entities/program";
-import { Stream } from "stream";
-import { IEntityFilter } from "../../../src/utils/pagination/filtering";
-
+import { AgeRange } from '../../../src/entities/ageRange'
+import { Grade } from '../../../src/entities/grade'
+import { User } from '../../../src/entities/user'
+import { Organization } from '../../../src/entities/organization'
+import { Subcategory } from '../../../src/entities/subcategory'
+import { Subject } from '../../../src/entities/subject'
+import { expect } from 'chai'
+import { ApolloServerTestClient } from '../createTestClient'
+import { getAdminAuthToken } from '../testConfig'
+import { Headers } from 'node-mocks-http'
+import { gqlTry } from '../gqlTry'
+import { Program } from '../../../src/entities/program'
+import { Stream } from 'stream'
+import { IEntityFilter } from '../../../src/utils/pagination/filtering'
+import { userCountType } from '../../../src/types/graphQL/userCountType'
 
 const NEW_USER = `
     mutation myMutation(
@@ -47,7 +47,7 @@ const NEW_USER = `
             gender
         }
     }
-`;
+`
 
 const SET_USER = `
     mutation myMutation(
@@ -82,7 +82,7 @@ const SET_USER = `
             alternate_phone
         }
     }
-`;
+`
 
 const GET_USERS = `
     query myQuery {
@@ -94,7 +94,7 @@ const GET_USERS = `
             avatar
         }
     }
-`;
+`
 
 const MY_USERS = `
     query myQuery {
@@ -102,7 +102,7 @@ const MY_USERS = `
             user_id
         }
     }
-`;
+`
 
 const ME = `
     query myQuery {
@@ -111,7 +111,7 @@ const ME = `
             email
         }
     }
-`;
+`
 
 const GET_USER = `
     query myQuery($user_id: ID!) {
@@ -124,7 +124,7 @@ const GET_USER = `
             date_of_birth
         }
     }
-`;
+`
 
 const GET_ALL_ORGANIZATIONS = `
     query getAllOrgs {
@@ -133,7 +133,7 @@ const GET_ALL_ORGANIZATIONS = `
             organization_name
         }
     }
-`;
+`
 
 const GET_ORGANIZATIONS = `
     query getOrgs($organization_ids: [ID!]) {
@@ -142,7 +142,7 @@ const GET_ORGANIZATIONS = `
             organization_name
         }
     }
-`;
+`
 
 const GET_AGE_RANGE = `
 query getAgeRange($id: ID!){
@@ -157,7 +157,7 @@ query getAgeRange($id: ID!){
     system
   }
 }
-`;
+`
 
 const GET_GRADE = `
 query getAgeRange($id: ID!){
@@ -174,7 +174,7 @@ query getAgeRange($id: ID!){
     status
   }
 }
-`;
+`
 
 const GET_SUBCATEGORY = `
 query getSubcategory($id: ID!){
@@ -185,7 +185,7 @@ query getSubcategory($id: ID!){
     status
   }
 }
-`;
+`
 
 const GET_PROGRAM = `
 query getProgram($id: ID!){
@@ -196,8 +196,7 @@ query getProgram($id: ID!){
     status
   }
 }
-`;
-
+`
 
 const GET_SUBJECT = `
 query getSubject($id: ID!){
@@ -208,7 +207,7 @@ query getSubject($id: ID!){
     status
   }
 }
-`;
+`
 
 const USER_CSV_UPLOAD_MUTATION = `
     mutation UploadOrganizationsFromCSV($file: Upload!) {
@@ -218,7 +217,7 @@ const USER_CSV_UPLOAD_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const CLASS_CSV_UPLOAD_MUTATION = `
     mutation classCSVFileUpload($file: Upload!) {
@@ -228,7 +227,7 @@ const CLASS_CSV_UPLOAD_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const SCHOOLS_CSV_UPLOAD_MUTATION = `
     mutation UploadSchoolsFromCSV($file: Upload!) {
@@ -238,7 +237,7 @@ const SCHOOLS_CSV_UPLOAD_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const USERS_CONNECTION = `
     query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter) {
@@ -269,10 +268,10 @@ const USERS_CONNECTION = `
             }
         }
     }
-`;
+`
 
 const PERMISSIONS_CONNECTION = `
-    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: PermissionFilter) {
+    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter) {
         permissionsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs){
             totalCount
             edges {
@@ -289,8 +288,17 @@ const PERMISSIONS_CONNECTION = `
             }
         }
     }
-`;
+`
 
+const USERS_CONNECTION_COUNT = `
+query userConnectionCount($type:userCountType!,$filterArgs: UserFilter){
+  usersConnectionCount(type:$type,filter:$filterArgs){
+    id
+    name
+    count
+  }
+}
+`
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -298,13 +306,17 @@ export async function createUserAndValidate(
     testClient: ApolloServerTestClient,
     user: User
 ): Promise<User> {
-    const gqlUser = await createUser(testClient, user, { authorization: getAdminAuthToken() });
-    const dbUser = await User.findOneOrFail({ where: [{ email: user.email },{ phone: user.phone }]});
-    expect(gqlUser).to.exist;
-    expect(gqlUser).to.include(user);
-    expect(dbUser).to.include(user);
+    const gqlUser = await createUser(testClient, user, {
+        authorization: getAdminAuthToken(),
+    })
+    const dbUser = await User.findOneOrFail({
+        where: [{ email: user.email }, { phone: user.phone }],
+    })
+    expect(gqlUser).to.exist
+    expect(gqlUser).to.include(user)
+    expect(dbUser).to.include(user)
 
-    return gqlUser;
+    return gqlUser
 }
 
 /**
@@ -315,200 +327,265 @@ export async function createUser(
     user: User,
     headers: Headers
 ): Promise<User> {
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: NEW_USER,
-        variables: user as any,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: NEW_USER,
+            variables: user as any,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.newUser as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.newUser as User
+    return gqlUser
 }
 
-export async function updateUser(testClient: ApolloServerTestClient, modifiedUser: any, headers?: Headers) {
-    const { mutate } = testClient;
+export async function updateUser(
+    testClient: ApolloServerTestClient,
+    modifiedUser: any,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: SET_USER,
-        variables: modifiedUser,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: SET_USER,
+            variables: modifiedUser,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.user as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.user as User
+    return gqlUser
 }
 
-export async function getUsers(testClient: ApolloServerTestClient, headers?: Headers) {
-    const { query } = testClient;
+export async function getUsers(
+    testClient: ApolloServerTestClient,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_USERS,
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_USERS,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUsers = res.data?.users as User[];
-    return gqlUsers;
+    const res = await gqlTry(operation)
+    const gqlUsers = res.data?.users as User[]
+    return gqlUsers
 }
 
-export async function myUsers(testClient: ApolloServerTestClient, headers?: Headers) {
-    const { query } = testClient;
+export async function myUsers(
+    testClient: ApolloServerTestClient,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: MY_USERS,
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: MY_USERS,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUsers = res.data?.my_users as User[];
-    return gqlUsers;
+    const res = await gqlTry(operation)
+    const gqlUsers = res.data?.my_users as User[]
+    return gqlUsers
 }
 
-export async function getUser(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getUser(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_USER,
-        variables: { user_id: userId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_USER,
+            variables: { user_id: userId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.user as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.user as User
+    return gqlUser
 }
 
-export async function me(testClient: ApolloServerTestClient, headers?: Headers, cookies?: any) {
-    const { query } = testClient;
+export async function me(
+    testClient: ApolloServerTestClient,
+    headers?: Headers,
+    cookies?: any
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: ME,
-        headers: headers,
-        cookies: cookies,
-    });
+    const operation = () =>
+        query({
+            query: ME,
+            headers: headers,
+            cookies: cookies,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.me as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.me as User
+    return gqlUser
 }
 
-export async function getAllOrganizations(testClient: ApolloServerTestClient, headers?: Headers) {
-    const { query } = testClient;
+export async function getAllOrganizations(
+    testClient: ApolloServerTestClient,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_ALL_ORGANIZATIONS,
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_ALL_ORGANIZATIONS,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlOrgs = res.data?.organizations as Organization[];
-    return gqlOrgs;
+    const res = await gqlTry(operation)
+    const gqlOrgs = res.data?.organizations as Organization[]
+    return gqlOrgs
 }
 
-export async function getOrganizations(testClient: ApolloServerTestClient, organizationIds: string[], headers?: Headers) {
-    const { query } = testClient;
+export async function getOrganizations(
+    testClient: ApolloServerTestClient,
+    organizationIds: string[],
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_ORGANIZATIONS,
-        variables: { organization_ids: organizationIds },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_ORGANIZATIONS,
+            variables: { organization_ids: organizationIds },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlOrgs = res.data?.organizations as Organization[];
-    return gqlOrgs;
+    const res = await gqlTry(operation)
+    const gqlOrgs = res.data?.organizations as Organization[]
+    return gqlOrgs
 }
 
-export async function getAgeRange(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getAgeRange(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_AGE_RANGE,
-        variables: { id: id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_AGE_RANGE,
+            variables: { id: id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlAgeRange = res.data?.age_range as AgeRange;
-    return gqlAgeRange;
+    const res = await gqlTry(operation)
+    const gqlAgeRange = res.data?.age_range as AgeRange
+    return gqlAgeRange
 }
 
-export async function getGrade(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getGrade(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_GRADE,
-        variables: { id: id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_GRADE,
+            variables: { id: id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlGrade = res.data?.grade as Grade;
-    return gqlGrade;
+    const res = await gqlTry(operation)
+    const gqlGrade = res.data?.grade as Grade
+    return gqlGrade
 }
 
-export async function getSubcategory(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSubcategory(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_SUBCATEGORY,
-        variables: { id: id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_SUBCATEGORY,
+            variables: { id: id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSubcategory = res.data?.subcategory as Subcategory;
-    return gqlSubcategory;
+    const res = await gqlTry(operation)
+    const gqlSubcategory = res.data?.subcategory as Subcategory
+    return gqlSubcategory
 }
 
-export async function getSubject(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSubject(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_SUBJECT,
-        variables: { id: id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_SUBJECT,
+            variables: { id: id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSubject = res.data?.subject as Subject;
-    return gqlSubject;
+    const res = await gqlTry(operation)
+    const gqlSubject = res.data?.subject as Subject
+    return gqlSubject
 }
 
-export async function getProgram(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getProgram(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_PROGRAM,
-        variables: { id: id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_PROGRAM,
+            variables: { id: id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlProgram = res.data?.program as Program;
-    return gqlProgram;
+    const res = await gqlTry(operation)
+    const gqlProgram = res.data?.program as Program
+    return gqlProgram
 }
 
-export function fileMockInput(file: Stream, filename: string, mimetype: string, encoding: string) {
+export function fileMockInput(
+    file: Stream,
+    filename: string,
+    mimetype: string,
+    encoding: string
+) {
     return {
         resolve: () => {},
         reject: () => {},
-        promise: new Promise((resolve) => resolve({
-            filename,
-            mimetype,
-            encoding,
-            createReadStream: () => file
-        })),
+        promise: new Promise((resolve) =>
+            resolve({
+                filename,
+                mimetype,
+                encoding,
+                createReadStream: () => file,
+            })
+        ),
         file: {
             filename,
             mimetype,
             encoding,
-            createReadStream: () => file
-        }
+            createReadStream: () => file,
+        },
     }
 }
 
@@ -518,19 +595,20 @@ export async function uploadClassesFile(
     headers?: Headers
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CLASS_CSV_UPLOAD_MUTATION,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: CLASS_CSV_UPLOAD_MUTATION,
+            variables: variables,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadClassesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadClassesFromCSV
 }
 
 export async function uploadSchoolsFile(
@@ -538,20 +616,21 @@ export async function uploadSchoolsFile(
     { file, filename, mimetype, encoding }: any,
     headers?: Headers
 ) {
-    const variables =  {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+    const variables = {
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: SCHOOLS_CSV_UPLOAD_MUTATION,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: SCHOOLS_CSV_UPLOAD_MUTATION,
+            variables: variables,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadSchoolsFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadSchoolsFromCSV
 }
 
 export async function uploadFile(
@@ -560,19 +639,20 @@ export async function uploadFile(
     headers?: Headers
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: USER_CSV_UPLOAD_MUTATION,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: USER_CSV_UPLOAD_MUTATION,
+            variables: variables,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadOrganizationsFromCSV
 }
 
 export async function userConnection(
@@ -580,16 +660,17 @@ export async function userConnection(
     direction: string,
     directionArgs: any,
     headers?: Headers,
-    filter?: IEntityFilter,
+    filter?: IEntityFilter
 ) {
-    const { query } = testClient;
-    const operation = () => query({
-        query: USERS_CONNECTION,
-        variables: { direction, directionArgs, filterArgs:filter },
-        headers: headers,
-    });
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: USERS_CONNECTION,
+            variables: { direction, directionArgs, filterArgs: filter },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
+    const res = await gqlTry(operation)
     return res.data?.usersConnection
 }
 
@@ -597,17 +678,37 @@ export async function permissionsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
     directionArgs?: any,
-    headers?: Headers, filter?:IEntityFilter
+    headers?: Headers,
+    filter?: IEntityFilter
 ) {
-    const { query } = testClient;
+    const { query } = testClient
 
-    const operation = () => query({
-        query: PERMISSIONS_CONNECTION,
-        variables: { direction, directionArgs, filter },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: PERMISSIONS_CONNECTION,
+            variables: { direction, directionArgs, filter },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
+    const res = await gqlTry(operation)
 
     return res.data?.permissionsConnection
+}
+
+export async function userConnectionCount(
+    testClient: ApolloServerTestClient,
+    type: string,
+    headers?: Headers,
+    filter?: IEntityFilter
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: USERS_CONNECTION_COUNT,
+            variables: { type: type, filterArgs: filter },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.usersConnectionCount
 }

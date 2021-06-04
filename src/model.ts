@@ -519,6 +519,7 @@ export class Model {
                             organizationId: ['OrgMembership.organization_id'],
                             organizationUserStatus: ['OrgMembership.status'],
                             userId: ["concat(User.user_id, '')"],
+                            roleId: ['Role.role_id'],
                             phone: ['User.phone'],
                             schoolId: ['SchoolMembership.school_id'],
                         })
@@ -542,7 +543,7 @@ export class Model {
                     .select('COUNT(School.school_id) as schoolsCount')
                     .addSelect('School.school_id' as 'school_id')
                     .addSelect('School.school_name' as 'school_name')
-                if (!filterHasProperty('schoolId', filter)) {
+                if (!filter || !filterHasProperty('schoolId', filter)) {
                     scope.innerJoin(
                         'User.school_memberships',
                         'SchoolMembership'

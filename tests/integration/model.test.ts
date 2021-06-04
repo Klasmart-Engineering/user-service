@@ -26,6 +26,7 @@ import {
     permissionsConnection,
     uploadSchoolsFile,
     userConnection,
+    userConnectionCount,
 } from '../utils/operations/modelOps'
 import {
     getAdminAuthToken,
@@ -1842,6 +1843,655 @@ describe('model', () => {
                 })
                 expect(nullOrgs).eq(0)
                 expect(duplicatedOrgs).eq(1)
+            })
+        })
+    })
+    describe('usersConnectionCount', () => {
+        let usersList: User[] = []
+        let roleList: Role[] = []
+        let organizations: Organization[] = []
+
+        beforeEach(async () => {
+            usersList = []
+            roleList = []
+            const organizations: Organization[] = []
+            const schools: School[] = []
+            // create two orgs and two schools
+            for (let i = 0; i < 2; i++) {
+                const org = createOrganization()
+                await connection.manager.save(org)
+                organizations.push(org)
+                let role = createRole('role ' + i, org)
+                await connection.manager.save(role)
+                roleList.push(role)
+                const school = createSchool(org)
+                await connection.manager.save(school)
+                schools.push(school)
+            }
+            // create 10 users
+            for (let i = 0; i < 10; i++) {
+                usersList.push(createUser())
+            }
+            //sort users by userId
+            await connection.manager.save(usersList)
+            // add organizations and schools to users
+
+            for (const user of usersList) {
+                for (let i = 0; i < 2; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        organizations[i].organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        organizations[i].organization_id,
+                        roleList[i].role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        user.user_id,
+                        schools[i].school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        user.user_id,
+                        schools[i].school_id,
+                        roleList[i].role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            }
+            usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+        })
+        context('unfiltered', () => {
+            it('should return counts of the different roles', async () => {
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ROLES',
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(usersConnectionCount).to.exist
+                expect(usersConnectionCount.length).to.equal(3)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+                expect(usersConnectionCount[2].count).to.equal(10)
+            })
+            it('should return counts of the different Schools', async () => {
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'SCHOOLS',
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(usersConnectionCount).to.exist
+                expect(usersConnectionCount.length).to.equal(3)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+                expect(usersConnectionCount[2].count).to.equal(10)
+            })
+            it('should return counts of the different States', async () => {
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'STATUS',
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(usersConnectionCount).to.exist
+                expect(usersConnectionCount.length).to.equal(2)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(20)
+            })
+            it('should return counts of the different Organizations', async () => {
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ORGANIZATIONS',
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(usersConnectionCount).to.exist
+                expect(usersConnectionCount.length).to.equal(3)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+                expect(usersConnectionCount[2].count).to.equal(10)
+            })
+        })
+        context('organization filter', () => {
+            let org: Organization
+            let school1: School
+            let role1: Role
+            beforeEach(async () => {
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org)
+
+                // org and school whose membership shouldnt be included
+                let org2 = createOrganization()
+                await connection.manager.save(org2)
+                let role2 = createRole('role 2', org2)
+                await connection.manager.save(role2)
+                const school2 = createSchool(org2)
+
+                await connection.manager.save(school1)
+                await connection.manager.save(school2)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        user.user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        user.user_id,
+                        school1.school_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org2.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org2.organization_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        user.user_id,
+                        school2.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        user.user_id,
+                        school2.school_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+            })
+
+            it('should return counts of the different roles', async () => {
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ROLES',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+            })
+
+            it('should return counts of the different schools', async () => {
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'SCHOOLS',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(3)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+                expect(usersConnectionCount[2].count).to.equal(10)
+            })
+
+            it('should return counts of the different states', async () => {
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'STATUS',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+            })
+
+            it('should return counts of the different organizations', async () => {
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ORGANIZATIONS',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(10)
+                expect(usersConnectionCount[1].count).to.equal(10)
+            })
+        })
+        context('school filter', () => {
+            let org: Organization
+            let school1: School
+            let school2: School
+            let role1: Role
+            beforeEach(async () => {
+                //org used to filter
+                const superAdmin = await createAdminUser(testClient)
+                org = createOrganization(superAdmin)
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                school1 = createSchool(org)
+                school2 = createSchool(org)
+
+                await connection.manager.save(school1)
+                await connection.manager.save(school2)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                // add half of users to one school and other half to different school
+                // also add 5th user to both school
+                for (let i = 0; i <= 5; i++) {
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+                for (let i = 5; i < 10; i++) {
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school2.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            })
+            it('should return counts of the different roles', async () => {
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ROLES',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(5)
+                expect(usersConnectionCount[1].count).to.equal(5)
+            })
+
+            it('should return counts of the different schools', async () => {
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'SCHOOLS',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(5)
+                expect(usersConnectionCount[1].count).to.equal(5)
+            })
+
+            it('should return counts of the different states', async () => {
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'STATUS',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(5)
+                expect(usersConnectionCount[1].count).to.equal(5)
+            })
+
+            it('should return counts of the different organizations', async () => {
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ORGANIZATIONS',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(5)
+                expect(usersConnectionCount[1].count).to.equal(5)
+            })
+            it('works for non-admins', async () => {
+                const nonAdmin = await createNonAdminUser(testClient)
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    nonAdmin.user_id,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+                await grantPermission(
+                    testClient,
+                    role1.role_id,
+                    PermissionName.view_users_40110,
+                    { authorization: getAdminAuthToken() }
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    nonAdmin.user_id,
+                    org.organization_id,
+                    role1.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ROLES',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(5)
+                expect(usersConnectionCount[1].count).to.equal(5)
+            })
+        })
+        context('filter combinations', () => {
+            let org: Organization
+            let org2: Organization
+            let school1: School
+            let school2: School
+            let school3: School
+            let role1: Role
+            let role2: Role
+            let role3: Role
+            beforeEach(async () => {
+                //org role and school used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                role2 = createRole('role 2', org)
+                await connection.manager.save(role2)
+                school1 = createSchool(org)
+                await connection.manager.save(school1)
+                school2 = createSchool(org)
+                await connection.manager.save(school2)
+                usersList = []
+                // create 15 users
+                for (let i = 0; i < 15; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (let i = 0; i < 10; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                // add 5 users to role1/school1 and 5 users to role2/school2
+                // add 6th user to both roles and schools
+                for (let i = 0; i <= 5; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+                for (let i = 5; i < 10; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school2.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school2.school_id,
+                        role2.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                // create second org and add other users to this org
+                org2 = createOrganization()
+                await connection.manager.save(org2)
+                role3 = createRole('role 3', org2)
+                await connection.manager.save(role3)
+                school3 = createSchool(org2)
+                await connection.manager.save(school3)
+
+                for (let i = 10; i < 15; i++) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        usersList[i].user_id,
+                        org2.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                // add remaining users to school3 and role3
+                for (let i = 10; i < 15; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org2.organization_id,
+                        role3.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school3.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school3.school_id,
+                        role3.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            })
+            it('should filter the Counts results on all filters', async () => {
+                const filter: IEntityFilter = {
+                    organizationId: {
+                        operator: 'eq',
+                        value: org.organization_id,
+                    },
+                    roleId: {
+                        operator: 'eq',
+                        value: role2.role_id,
+                    },
+                    schoolId: {
+                        operator: 'eq',
+                        value: school2.school_id,
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ROLES',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(2)
+                expect(usersConnectionCount[0].count).to.equal(5)
+                expect(usersConnectionCount[1].count).to.equal(6)
+            })
+        })
+
+        context('phoneFilter', () => {
+            beforeEach(async () => {
+                usersList = []
+                roleList = []
+
+                // create an org
+                let org: Organization
+                org = createOrganization()
+                await connection.manager.save(org)
+
+                // create 5 users
+                for (let i = 0; i < 5; i++) {
+                    usersList.push(createUser())
+                }
+
+                //sort users by userId
+                await connection.manager.save(usersList)
+
+                // add organizations and schools to users
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+                // add phone number to 2 users
+                usersList[0].phone = '123456789'
+                usersList[1].phone = '456789123'
+                await connection.manager.save(usersList[0])
+                await connection.manager.save(usersList[1])
+            })
+            it('should filter on phone', async () => {
+                const filter: IEntityFilter = {
+                    phone: {
+                        operator: 'contains',
+                        caseInsensitive: true,
+                        value: '123',
+                    },
+                }
+                const usersConnectionCount = await userConnectionCount(
+                    testClient,
+                    'ROLES',
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+                expect(usersConnectionCount.length).to.eql(1)
+                expect(usersConnectionCount[0].count).to.equal(2)
             })
         })
     })
