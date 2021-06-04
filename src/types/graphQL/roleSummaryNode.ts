@@ -1,7 +1,7 @@
 import { Status } from '../../entities/status'
 
 export interface RoleSummaryNode {
-    id: string
+    roleId: string
     name?: string
     organizationId?: string
     schoolId?: string

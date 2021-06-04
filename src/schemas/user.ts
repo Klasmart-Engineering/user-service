@@ -108,7 +108,7 @@ const typeDefs = gql`
     }
 
     type RoleSummaryNode {
-        id: ID!
+        roleId: ID!
         name: String
         organizationId: String
         schoolId: String

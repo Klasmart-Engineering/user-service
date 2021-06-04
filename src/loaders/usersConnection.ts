@@ -183,7 +183,7 @@ export const rolesForUsers = async (
                 const mRoles = (await m.roles) || []
                 for (const r of mRoles) {
                     roles.push({
-                        id: r.role_id,
+                        roleId: r.role_id,
                         name: r.role_name,
                         organizationId: m.organization_id,
                         status: r.status,
@@ -194,7 +194,7 @@ export const rolesForUsers = async (
                 const mRoles = (await m.roles) || []
                 for (const r of mRoles) {
                     roles.push({
-                        id: r.role_id,
+                        roleId: r.role_id,
                         name: r.role_name,
                         schoolId: m.school_id,
                         status: r.status,

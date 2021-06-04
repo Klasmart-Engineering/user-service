@@ -285,7 +285,7 @@ describe('usersConnection loaders', async () => {
                 expect(roles.length).to.equal(2)
 
                 for (const role of roles) {
-                    expect(role.id).to.equal(role1.role_id)
+                    expect(role.roleId).to.equal(role1.role_id)
                     expect(role.name).to.equal(role1.role_name)
                     if (role.schoolId) {
                         expect(role.schoolId).to.equal(school1.school_id)
