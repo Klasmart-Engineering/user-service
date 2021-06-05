@@ -32,6 +32,7 @@ import { createRole } from '../factories/role.factory'
 import { createSchool } from '../factories/school.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
 import { createProgram } from '../factories/program.factory'
+import { createUser } from '../factories/user.factory'
 import {
     queryUploadGrades,
     uploadGrades,
@@ -83,7 +84,7 @@ import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
 import { CustomError } from '../../src/types/csv/csvError'
-import stringInject from '../../src/utils/stringUtils'
+import csvErrorConstants from '../../src/utils/csv/errors/csvErrorConstants'
 
 use(chaiAsPromised)
 
@@ -173,6 +174,50 @@ describe('model.csv', () => {
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
+            })
+
+            it('should throw errors when a user belongs to multiple organizations', async () => {
+                const filename = 'organizationsMultipleOrgPerUser.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const owner = await createUser()
+                owner.email = 'owner@company2.com'
+                await connection.manager.save(owner)
+
+                const org = await createOrganization(owner)
+                org.organization_name = 'Company 2'
+                await connection.manager.save(org)
+
+                const fn = async () =>
+                    await uploadOrganizations(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding
+                    )
+                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.length(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('message')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('row')
+                    .equal(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('code')
+                    .equal(
+                        csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER
+                    )
+
+                const allOrganizations = await Organization.count()
+                expect(allOrganizations).eq(1) // pre created "Company 2" org
             })
         })
 
@@ -815,6 +860,98 @@ describe('model.csv', () => {
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
             })
+
+            it('should throw errors when user email is invalid', async () => {
+                const filename = 'usersWithInvalidEmail.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const fn = async () =>
+                    await uploadUsers(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding
+                    )
+                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.length(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('message')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('row')
+                    .equal(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('column')
+                    .equal('user_email')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('entity')
+                    .equal('user')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('attribute')
+                    .equal('email')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('code')
+                    .equal(csvErrorConstants.ERR_CSV_INVALID_EMAIL)
+
+                const usersCount = await User.count()
+                expect(usersCount).eq(0)
+            })
+
+            it('should throw errors when user email is invalid', async () => {
+                const filename = 'usersWithInvalidPhone.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const fn = async () =>
+                    await uploadUsers(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding
+                    )
+                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.length(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('message')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('row')
+                    .equal(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('column')
+                    .equal('user_phone')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('entity')
+                    .equal('user')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('attribute')
+                    .equal('phone')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('code')
+                    .equal(csvErrorConstants.ERR_CSV_INVALID_PHONE)
+
+                const usersCount = await User.count()
+                expect(usersCount).eq(0)
+            })
         })
 
         context('when file data is correct', () => {
@@ -1005,6 +1142,48 @@ describe('model.csv', () => {
                     where: { system: false },
                 })
                 expect(programsCreated).eq(0)
+            })
+
+            it('should throw errors when age range fields are not all present or all omitted', async () => {
+                const filename = 'programsWithErrors.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const fn = async () =>
+                    await uploadPrograms(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding
+                    )
+                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.length(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('message')
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('row')
+                    .equal(1)
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('column')
+                    .equal(
+                        'age_range_high_value, age_range_low_value, age_range_unit'
+                    )
+                expect(fn())
+                    .to.eventually.have.property('errors')
+                    .to.have.property('code')
+                    .equal(
+                        csvErrorConstants.MSG_ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST
+                    )
+
+                const usersCount = await User.count()
+                expect(usersCount).eq(0)
             })
         })
 

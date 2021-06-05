@@ -71,10 +71,10 @@ export async function processProgramFromCSVRow(
     if (!allAgeRangeFieldsExists && !noneOfAgeRangeFieldsExists) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST,
             rowNumber,
             'age_range_high_value, age_range_low_value, age_range_unit',
-            'program must exist age_range_high_value, age_range_low_value, age_range_unit or none of them'
+            csvErrorConstants.MSG_ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST
         )
     }
 

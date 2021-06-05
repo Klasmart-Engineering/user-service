@@ -95,7 +95,7 @@ export const processUserFromCSVRow = async (
     if (row.user_email && !validateEmail(row.user_email)) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_EMAIL,
             rowNumber,
             'user_email',
             csvErrorConstants.MSG_ERR_CSV_INVALID_EMAIL,
@@ -169,7 +169,7 @@ export const processUserFromCSVRow = async (
     if (row.user_phone && !validatePhone(row.user_phone)) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_CSV_INVALID_PHONE,
             rowNumber,
             'user_phone',
             csvErrorConstants.MSG_ERR_CSV_INVALID_PHONE,
