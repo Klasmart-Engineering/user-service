@@ -1,12 +1,58 @@
+import { SelectQueryBuilder, BaseEntity } from 'typeorm'
+import { IEntityFilter } from './filtering'
+import { addOrderByClause, ISortingConfig, ISortField } from './sorting'
+
 const DEFAULT_PAGE_SIZE = 50
 const SEEK_BACKWARD = 'BACKWARD'
+
+export type Direction = 'FORWARD' | 'BACKWARD'
+
+export interface IPaginatable {
+    pagination_cursor?: string
+}
+
+export interface IPaginateData {
+    direction: Direction
+    directionArgs?: directionArgs
+    scope: SelectQueryBuilder<any>
+    sort: ISortingConfig
+}
+
+interface IPaginationOptions {
+    scope: SelectQueryBuilder<any>
+    pageSize: number
+    cursorData: any
+}
+
+export interface IPaginationArgs<Entity extends BaseEntity = any> {
+    direction: Direction
+    directionArgs: directionArgs
+    scope: SelectQueryBuilder<Entity>
+    filter?: IEntityFilter
+    sortBy?: ISortField
+}
+
+export interface IPaginatedResponse<T = any> {
+    totalCount: number
+    pageInfo: {
+        startCursor: string
+        endCursor: string
+        hasNextPage: boolean
+        hasPreviousPage: boolean
+    }
+
+    edges: {
+        cursor: string
+        node: T
+    }[]
+}
 
 interface directionArgs {
     count: number
     cursor?: string
 }
 
-const convertDataToCursor = (data: string) => {
+export const convertDataToCursor = (data: string) => {
     return Buffer.from(data).toString('base64')
 }
 
@@ -14,34 +60,31 @@ const getDataFromCursor = (cursor: string) => {
     return Buffer.from(cursor, 'base64').toString('ascii')
 }
 
-const getEdges = (data: any, cursorColumn: string) => {
-    return data.map((d: any) => ({
-        cursor: convertDataToCursor(d[cursorColumn]),
-        node: d,
-    }))
+const getEdges = (data: any) => {
+    return data.map((d: any) => {
+        const cursor = `pagination_cursor`
+        console.log('cursor: ', d[cursor])
+        return {
+            cursor: convertDataToCursor(d[cursor]),
+            node: d,
+        }
+    })
 }
 
 const forwardPaginate = async ({
     scope,
     pageSize,
-    cursorTable,
-    cursorColumn,
+    // cursorColumn,
+    // sortByColumn,
     cursorData,
-}: any) => {
+}: IPaginationOptions) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
-    const column = `"${cursorTable}"."${cursorColumn}"`
 
-    if (cursorData) {
-        scope.andWhere(`${column} > :cursorData`, { cursorData })
-    }
-    scope.orderBy({
-        [`"${cursorTable}_${cursorColumn}"`]: 'ASC',
-    })
     scope.take(seekPageSize)
     const data = await scope.getMany()
     const hasPreviousPage = cursorData ? true : false
     const hasNextPage = data.length > pageSize ? true : false
-    let edges = getEdges(data, cursorColumn)
+    let edges = getEdges(data)
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
     const endCursor =
         edges.length > 0
@@ -63,21 +106,11 @@ const forwardPaginate = async ({
 const backwardPaginate = async ({
     scope,
     pageSize,
-    totalCount,
-    cursorTable,
-    cursorColumn,
     cursorData,
-}: any) => {
+}: IPaginationOptions) => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
-    const column = `"${cursorTable}"."${cursorColumn}"`
 
-    if (cursorData) {
-        scope.andWhere(`${column} < :cursorData`, { cursorData })
-    }
-    scope.orderBy({
-        [`"${cursorTable}_${cursorColumn}"`]: 'DESC',
-    })
     scope.take(seekPageSize)
     const data = await scope.getMany()
     data.reverse()
@@ -86,7 +119,7 @@ const backwardPaginate = async ({
 
     const hasNextPage = cursorData ? true : false
 
-    let edges = getEdges(data, cursorColumn)
+    let edges = getEdges(data)
     edges = edges.length === seekPageSize ? edges.slice(1) : edges
 
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
@@ -101,35 +134,45 @@ const backwardPaginate = async ({
     return { edges, pageInfo }
 }
 
-export const paginateData = async ({
+export const paginateData = async <T = any>({
     direction,
     directionArgs,
     scope,
-    cursorTable,
-    cursorColumn,
-}: any) => {
+    sort,
+}: IPaginateData): Promise<IPaginatedResponse<T>> => {
     const pageSize = directionArgs?.count
         ? directionArgs.count
         : DEFAULT_PAGE_SIZE
+
     const cursorData = directionArgs?.cursor
         ? getDataFromCursor(directionArgs.cursor)
         : null
+
     const totalCount = await scope.getCount()
+
+    const { order, computedCursorColumn } = addOrderByClause(
+        scope,
+        sort,
+        direction
+    )
+
+    const directionOperator = order === 'ASC' ? '>' : '<'
+    if (cursorData) {
+        scope.andWhere(`${computedCursorColumn} ${directionOperator} :value`, {
+            value: cursorData,
+        })
+    }
+
     const { edges, pageInfo } =
         direction && direction === SEEK_BACKWARD
             ? await backwardPaginate({
                   scope,
-                  totalCount,
                   pageSize,
-                  cursorTable,
-                  cursorColumn,
                   cursorData,
               })
             : await forwardPaginate({
                   scope,
                   pageSize,
-                  cursorTable,
-                  cursorColumn,
                   cursorData,
               })
     return {

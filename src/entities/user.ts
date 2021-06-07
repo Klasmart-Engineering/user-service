@@ -27,9 +27,10 @@ import { Status } from './status'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
+import { IPaginatable } from '../utils/pagination/paginate'
 
 @Entity()
-export class User extends BaseEntity {
+export class User extends BaseEntity implements IPaginatable {
     @PrimaryGeneratedColumn('uuid')
     public user_id!: string
 
@@ -75,6 +76,10 @@ export class User extends BaseEntity {
 
     @Column({ nullable: true })
     public alternate_phone?: string
+
+    // https://stackoverflow.com/a/66696949
+    @Column({ nullable: true, select: false })
+    public pagination_cursor?: string
 
     @OneToMany(() => OrganizationMembership, (membership) => membership.user)
     @JoinColumn({

@@ -11,11 +11,13 @@ import {
 import { createTestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import { createUser } from '../../../factories/user.factory'
-import { paginateData } from '../../../../src/utils/pagination/paginate'
-import { convertDataToCursor } from '../../../utils/paginate'
-import { createOrganization } from "../../../factories/organization.factory";
-import { addOrganizationToUserAndValidate } from "../../../utils/operations/userOps";
-import { getAdminAuthToken } from "../../../utils/testConfig";
+import {
+    paginateData,
+    convertDataToCursor,
+} from '../../../../src/utils/pagination/paginate'
+import { createOrganization } from '../../../factories/organization.factory'
+import { addOrganizationToUserAndValidate } from '../../../utils/operations/userOps'
+import { getAdminAuthToken } from '../../../utils/testConfig'
 
 use(chaiAsPromised)
 
@@ -24,8 +26,7 @@ describe('paginate', () => {
     let testClient: ApolloServerTestClient
     let usersList: User[] = []
     let scope: any
-    const cursorTable = 'User'
-    const cursorColumn = 'user_id'
+    const sortColumn = 'User.user_id'
 
     before(async () => {
         connection = await createTestConnection()
@@ -56,8 +57,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(10)
@@ -85,8 +87,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(10)
@@ -114,8 +117,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(2)
@@ -140,8 +144,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
             expect(data.totalCount).to.equal(0)
             expect(data.edges.length).to.equal(0)
@@ -167,8 +172,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(10)
@@ -186,8 +192,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(3)
@@ -210,8 +217,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(3)
@@ -238,8 +246,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(10)
@@ -267,8 +276,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(10)
@@ -290,8 +300,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
             expect(data.totalCount).to.equal(0)
             expect(data.edges.length).to.equal(0)
@@ -317,8 +328,9 @@ describe('paginate', () => {
                 direction,
                 directionArgs,
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(10)
@@ -341,9 +353,11 @@ describe('paginate', () => {
         })
         it('should paginate in forward direction with default options ', async () => {
             const data = await paginateData({
+                direction: 'FORWARD',
                 scope,
-                cursorTable,
-                cursorColumn,
+                sort: {
+                    defaultField: sortColumn,
+                },
             })
 
             expect(data.totalCount).to.eql(60)

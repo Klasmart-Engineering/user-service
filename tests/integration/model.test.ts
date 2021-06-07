@@ -52,7 +52,6 @@ import { Role } from '../../src/entities/role'
 import { before } from 'mocha'
 import { School } from '../../src/entities/school'
 import RolesInitializer from '../../src/initializers/roles'
-import { convertDataToCursor } from '../utils/paginate'
 import {
     renameDuplicateOrganizationsMutation,
     renameDuplicateOrganizationsQuery,
@@ -64,6 +63,7 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { Status } from '../../src/entities/status'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { grantPermission } from '../utils/operations/roleOps'
+import { convertDataToCursor } from '../../src/utils/pagination/paginate'
 
 use(chaiAsPromised)
 
