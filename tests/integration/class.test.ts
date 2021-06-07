@@ -820,12 +820,15 @@ describe('class', () => {
             let org: Organization
             let schools: School[] = []
             let students: User[] = []
+            let teachers: User[] = []
             let class1: Class
             let studentRole: Role
+            let teacherRole: Role
 
             beforeEach(async () => {
                 schools = []
                 students = []
+                teachers = []
                 const orgOwner = await createAdminUser(testClient)
                 org = await createOrganizationAndValidate(
                     testClient,
@@ -848,6 +851,18 @@ describe('class', () => {
                     { authorization: getAdminAuthToken() }
                 )
 
+                teacherRole = await createRole(
+                    testClient,
+                    org.organization_id,
+                    'Student Role'
+                )
+                await grantPermission(
+                    testClient,
+                    teacherRole.role_id,
+                    PermissionName.attend_live_class_as_a_teacher_186,
+                    { authorization: getAdminAuthToken() }
+                )
+
                 for (let i = 0; i < 2; i++) {
                     schools.push(
                         await createSchool(
@@ -863,9 +878,20 @@ describe('class', () => {
                             email: `student${i}@school.com`,
                         } as User)
                     )
+                    teachers.push(
+                        await createUserAndValidate(testClient, {
+                            email: `teacher${i}@school.com`,
+                        } as User)
+                    )
                     await addUserToOrganizationAndValidate(
                         testClient,
                         students[i].user_id,
+                        org.organization_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addUserToOrganizationAndValidate(
+                        testClient,
+                        teachers[i].user_id,
                         org.organization_id,
                         { authorization: getAdminAuthToken() }
                     )
@@ -877,9 +903,25 @@ describe('class', () => {
                         studentRole.role_id
                     )
 
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        teachers[i].user_id,
+                        org.organization_id,
+                        teacherRole.role_id
+                    )
+
                     await addUserToSchool(
                         testClient,
                         students[i].user_id,
+                        schools[i].school_id,
+                        {
+                            authorization: getAdminAuthToken(),
+                        }
+                    )
+
+                    await addUserToSchool(
+                        testClient,
+                        teachers[i].user_id,
                         schools[i].school_id,
                         {
                             authorization: getAdminAuthToken(),
@@ -892,10 +934,17 @@ describe('class', () => {
                         schools[i].school_id,
                         studentRole.role_id
                     )
+
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        teachers[i].user_id,
+                        schools[i].school_id,
+                        teacherRole.role_id
+                    )
                 }
             })
 
-            it('returns all org users if the class has not been assigned to a school', async () => {
+            it('returns all org students if the class has not been assigned to a school', async () => {
                 let gqlStudents = await eligibleStudents(
                     testClient,
                     class1.class_id,
@@ -903,7 +952,17 @@ describe('class', () => {
                 )
                 expect(gqlStudents.length).to.eq(2)
             })
-            it('only return students from the schools that the class has been added to', async () => {
+
+            it('returns all org teachers if the class has not been assigned to a school', async () => {
+                let gqlStudents = await eligibleTeachers(
+                    testClient,
+                    class1.class_id,
+                    { authorization: undefined }
+                )
+                expect(gqlStudents.length).to.eq(3) // 2 teachers, 1 org admin
+            })
+
+            it('only returns students from the schools that the class has been added to', async () => {
                 await addSchoolToClass(
                     testClient,
                     class1.class_id,
@@ -937,6 +996,42 @@ describe('class', () => {
                     }
                 )
                 expect(gqlStudents.length).to.eq(2)
+            })
+
+            it('only returns teachers from the schools that the class has been added to', async () => {
+                await addSchoolToClass(
+                    testClient,
+                    class1.class_id,
+                    schools[0].school_id,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                let gqlTeachers = await eligibleTeachers(
+                    testClient,
+                    class1.class_id,
+                    {
+                        authorization: undefined,
+                    }
+                )
+                expect(gqlTeachers.length).to.eq(2) // 1 teacher, 1 org admin
+
+                await addSchoolToClass(
+                    testClient,
+                    class1.class_id,
+                    schools[1].school_id,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                gqlTeachers = await eligibleTeachers(
+                    testClient,
+                    class1.class_id,
+                    {
+                        authorization: undefined,
+                    }
+                )
+                expect(gqlTeachers.length).to.eq(3) // 2 teachers, 1 org admin
             })
         })
     })
