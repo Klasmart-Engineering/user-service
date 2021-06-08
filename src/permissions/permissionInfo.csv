@@ -55,13 +55,13 @@ ID,Permission Name (BE),Permission Name (FE),"Permission Category (BE)
 184,view_starred_content_184,View Starred Content,Accounts,Teacher,Gives users access to view starred content,Attend Live Class as a Teacher,,,,
 185,see_recommended_content_based_on_age_range_185,See Recommended Content based on Age Range,Accounts,Teacher,Gives users access to see recommended content based on age range,Attend Live Class as a Teacher,,,,
 186,attend_live_class_as_a_teacher_186,Attend Live Class as a Teacher,Accounts,Teacher,Gives users access to attend live class as a teacher,Attend Live Class as a Teacher,"This permission determines:
-- Class Roster: If a user can be enrolled in the class as a Teacher participant
+- Class Roster: If a user can be enrolled in the class as a Teacher Participant
 - Schedule: If a user can be added as a Teacher Participant
 - Live: User can enter Live as a Teacher with availalble Teacher controls","- User
 - Schedule
 - Live",,
 187,attend_live_class_as_a_student_187,Attend Live Class as a Student,Accounts,Student,Gives users access to attend live class as a student,Attend Live Class as a Student,"This permission determines:
-- Class Roster: If a user can be enrolled in the class as a Student participant
+- Class Roster: If a user can be enrolled in the class as a Student Participant
 - Schedule: If a user can be added as a Student Participant
 - Live: User can enter Live as a Student with availalble Student controls","- User
 - Schedule
@@ -273,8 +273,8 @@ Systems Affected,edit_attendance_for_in_progress_assessment_438,Edit Attendance 
 10333,edit_password_10333,Edit Password,Accounts,Org Admin,Gives users access to edit their password,Organizational Profile,deprecate,,,
 10440,delete_organization_10440,Delete Organization,Accounts,Org Admin,Gives users access to delete an organization,Organizational Profile,"As a user with this permission and 10220, I will be able to delete the organization",,,10100 & 10220 & 10880 | 1
 10880,change_owner_10880,Change Owner,Accounts,Org Admin,Gives users access to change owners,Organizational Profile,"As a user with this permission and 10220, I will be able to change the owner of the organization",,,10220
-10881,join_organization_10881,Join Organization,Accounts,Student,Gives users access to join an organization,Organizational Profile,deprecate,,,
-10882,leave_organization_10882,Leave Organization,Accounts,Student,Gives users access to leave an organization,Organizational Profile,deprecate,,,
+10881,join_organization_10881,Join Organization,Accounts,Student,Gives users access to join an organization,Organizational Profile,,,,
+10882,leave_organization_10882,Leave Organization,Accounts,Student,Gives users access to leave an organization,Organizational Profile,,,,
 20100,academic_profile_20100,Academic Profile,Academic Profile,School Admin,Gives users access to School Resources (i.e. via icons/buttons),Schools --> Deprecate,,,,
 20101,define_school_program_page_20101,School Page,Academic Profile,School Admin,Gives users access to define school program pages,Schools,,,,
 20102,define_age_ranges_page_20102,Age Range Page,Academic Profile,School Admin,Gives users access to define age ranges page,Age Range,,,,
@@ -339,7 +339,7 @@ Systems Affected,edit_attendance_for_in_progress_assessment_438,Edit Attendance 
 30222,create_role_with_permissions_30222,Create Role with Permissions,Accounts,Org Admin,Gives users access to create roles with permissions,Roles,,,,
 30330,edit_groups_30330,Edit Groups,Accounts,Org Admin,Gives users access to edit groups,Roles,deprecate,,,
 30331,edit_role_priority_levels_30331,Edit Role Priority Levels,Accounts,Org Admin,Gives users access to edit role priority levels,Roles,deprecate,,,
-30332,edit_role_permissions_30332,Edit Role Permissions,Accounts,Org Admin,Gives users access to edit role permissions,Roles,,,,
+30332,edit_role_and_permissions_30332,Edit Role Permissions,Accounts,Org Admin,Gives users access to edit role permissions,Roles,,,,
 30440,delete_role_30440,Delete Role ,Accounts,Org Admin,Gives users access to delete roles,Roles,,,,
 40100,users_40100,Users,Accounts,Org Admin,Gives users access to Users Page (i.e. via icons/buttons),Users,"As a user with this permission, I can view view the button or interface to view the User Table.  ",User,,
 40101,view_user_page_40101,View User Page,Accounts,Org Admin,Gives users access to view user pages,Users,"As a user with this permission, I can view view and click the button to the User table, or access the link successfully to view the User table.  If I don't have this permission (a) ideally, the button is visible, however, unclickable, or (c) worst case scenario, the button is clickable, however, the user table is hidden and the user cannot see any users.",User,,40100

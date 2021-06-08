@@ -113,7 +113,6 @@ export const teacherRole = {
         PermissionName.view_classes_20114,
         PermissionName.view_subjects_20115,
         PermissionName.view_my_class_users_40112,
-        PermissionName.delete_my_class_users_40442,
         PermissionName.view_any_featured_programs_70001,
         PermissionName.view_bada_rhyme_71000,
         PermissionName.view_bada_genius_71001,
