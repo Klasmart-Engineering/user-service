@@ -26,7 +26,7 @@ describe('paginate', () => {
     let testClient: ApolloServerTestClient
     let usersList: User[] = []
     let scope: any
-    const sortColumn = 'User.user_id'
+    const sortColumn = 'user_id'
 
     before(async () => {
         connection = await createTestConnection()
@@ -70,10 +70,10 @@ describe('paginate', () => {
                 )
             }
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[0].user_id)
+                convertDataToCursor({ user_id: usersList[0].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[2].user_id)
+                convertDataToCursor({ user_id: usersList[2].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.false
@@ -81,7 +81,7 @@ describe('paginate', () => {
         it('should get the next few records according to pagesize and startcursor', async () => {
             let directionArgs = {
                 count: 3,
-                cursor: convertDataToCursor(usersList[3].user_id),
+                cursor: convertDataToCursor({ user_id: usersList[3].user_id }),
             }
             const data = await paginateData({
                 direction,
@@ -100,10 +100,10 @@ describe('paginate', () => {
                 )
             }
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[4].user_id)
+                convertDataToCursor({ user_id: usersList[4].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[6].user_id)
+                convertDataToCursor({ user_id: usersList[6].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.true
@@ -111,7 +111,7 @@ describe('paginate', () => {
         it('should get the last few records less than pagesize and startcursor', async () => {
             let directionArgs = {
                 count: 3,
-                cursor: convertDataToCursor(usersList[7].user_id),
+                cursor: convertDataToCursor({ user_id: usersList[7].user_id }),
             }
             const data = await paginateData({
                 direction,
@@ -129,10 +129,10 @@ describe('paginate', () => {
                 )
             }
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[8].user_id)
+                convertDataToCursor({ user_id: usersList[8].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[9].user_id)
+                convertDataToCursor({ user_id: usersList[9].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.false
             expect(data.pageInfo.hasPreviousPage).to.be.true
@@ -200,10 +200,10 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(3)
             expect(data.edges[0].node.user_id).to.equal(usersList[7].user_id)
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[7].user_id)
+                convertDataToCursor({ user_id: usersList[7].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[9].user_id)
+                convertDataToCursor({ user_id: usersList[9].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.false
             expect(data.pageInfo.hasPreviousPage).to.be.true
@@ -211,7 +211,7 @@ describe('paginate', () => {
         it('should get the next few records according to pagesize and cursor', async () => {
             let directionArgs = {
                 count: 3,
-                cursor: convertDataToCursor(usersList[7].user_id),
+                cursor: convertDataToCursor({ user_id: usersList[7].user_id }),
             }
             const data = await paginateData({
                 direction,
@@ -229,10 +229,10 @@ describe('paginate', () => {
                 )
             }
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[4].user_id)
+                convertDataToCursor({ user_id: usersList[4].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[6].user_id)
+                convertDataToCursor({ user_id: usersList[6].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.true
@@ -240,7 +240,7 @@ describe('paginate', () => {
         it('should get more next few records according to pagesize and cursor', async () => {
             let directionArgs = {
                 count: 3,
-                cursor: convertDataToCursor(usersList[4].user_id),
+                cursor: convertDataToCursor({ user_id: usersList[4].user_id }),
             }
             const data = await paginateData({
                 direction,
@@ -259,10 +259,10 @@ describe('paginate', () => {
                 )
             }
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[1].user_id)
+                convertDataToCursor({ user_id: usersList[1].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[3].user_id)
+                convertDataToCursor({ user_id: usersList[3].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.true
@@ -270,7 +270,7 @@ describe('paginate', () => {
         it('should get the last record according to pagesize and cursor', async () => {
             let directionArgs = {
                 count: 3,
-                cursor: convertDataToCursor(usersList[1].user_id),
+                cursor: convertDataToCursor({ user_id: usersList[1].user_id }),
             }
             const data = await paginateData({
                 direction,
@@ -285,10 +285,10 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(1)
             expect(data.edges[0].node.user_id).to.equal(usersList[0].user_id)
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[0].user_id)
+                convertDataToCursor({ user_id: usersList[0].user_id })
             )
             expect(data.pageInfo.endCursor).to.equal(
-                convertDataToCursor(usersList[0].user_id)
+                convertDataToCursor({ user_id: usersList[0].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.false
@@ -364,7 +364,7 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(50)
 
             expect(data.pageInfo.startCursor).to.equal(
-                convertDataToCursor(usersList[0].user_id)
+                convertDataToCursor({ user_id: usersList[0].user_id })
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.false

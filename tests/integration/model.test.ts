@@ -811,7 +811,9 @@ describe('model', () => {
             it('should get the next few records according to pagesize and startcursor', async () => {
                 let directionArgs = {
                     count: 3,
-                    cursor: convertDataToCursor(usersList[3].user_id),
+                    cursor: convertDataToCursor({
+                        user_id: usersList[3].user_id,
+                    }),
                 }
                 const usersConnection = await userConnection(
                     testClient,
@@ -837,10 +839,10 @@ describe('model', () => {
                     ).to.equal(4)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(
-                    convertDataToCursor(usersList[4].user_id)
+                    convertDataToCursor({ user_id: usersList[4].user_id })
                 )
                 expect(usersConnection?.pageInfo.endCursor).to.equal(
-                    convertDataToCursor(usersList[6].user_id)
+                    convertDataToCursor({ user_id: usersList[6].user_id })
                 )
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
@@ -936,7 +938,9 @@ describe('model', () => {
             it('should filter the pagination results on organizationId', async () => {
                 let directionArgs = {
                     count: 3,
-                    cursor: convertDataToCursor(usersList[3].user_id),
+                    cursor: convertDataToCursor({
+                        user_id: usersList[3].user_id,
+                    }),
                 }
                 const filter: IEntityFilter = {
                     organizationId: {
@@ -978,10 +982,10 @@ describe('model', () => {
                     )
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(
-                    convertDataToCursor(usersList[4].user_id)
+                    convertDataToCursor({ user_id: usersList[4].user_id })
                 )
                 expect(usersConnection?.pageInfo.endCursor).to.equal(
-                    convertDataToCursor(usersList[6].user_id)
+                    convertDataToCursor({ user_id: usersList[6].user_id })
                 )
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.true
@@ -1130,10 +1134,10 @@ describe('model', () => {
                     ).to.equal(school2.school_id)
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(
-                    convertDataToCursor(usersList[5].user_id)
+                    convertDataToCursor({ user_id: usersList[5].user_id })
                 )
                 expect(usersConnection?.pageInfo.endCursor).to.equal(
-                    convertDataToCursor(usersList[7].user_id)
+                    convertDataToCursor({ user_id: usersList[7].user_id })
                 )
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
@@ -1292,10 +1296,10 @@ describe('model', () => {
                     )
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(
-                    convertDataToCursor(usersList[5].user_id)
+                    convertDataToCursor({ user_id: usersList[5].user_id })
                 )
                 expect(usersConnection?.pageInfo.endCursor).to.equal(
-                    convertDataToCursor(usersList[7].user_id)
+                    convertDataToCursor({ user_id: usersList[7].user_id })
                 )
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
@@ -1582,10 +1586,10 @@ describe('model', () => {
                     )
                 }
                 expect(usersConnection?.pageInfo.startCursor).to.equal(
-                    convertDataToCursor(usersList[5].user_id)
+                    convertDataToCursor({ user_id: usersList[5].user_id })
                 )
                 expect(usersConnection?.pageInfo.endCursor).to.equal(
-                    convertDataToCursor(usersList[7].user_id)
+                    convertDataToCursor({ user_id: usersList[7].user_id })
                 )
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
@@ -1694,10 +1698,14 @@ describe('model', () => {
                     expect(gqlPermissions?.edges.length).to.equal(50)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(
-                        convertDataToCursor(firstPermission.permission_id)
+                        convertDataToCursor({
+                            permission_id: firstPermission.permission_id,
+                        })
                     )
                     expect(gqlPermissions?.pageInfo.endCursor).to.equal(
-                        convertDataToCursor(lastPermission.permission_id)
+                        convertDataToCursor({
+                            permission_id: lastPermission.permission_id,
+                        })
                     )
                     expect(gqlPermissions?.pageInfo.hasNextPage).to.be.true
                     expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.false
@@ -1714,9 +1722,9 @@ describe('model', () => {
                         order: { permission_id: 'ASC' },
                     })
 
-                    const cursor = convertDataToCursor(
-                        permissions[0]?.permission_id || ''
-                    )
+                    const cursor = convertDataToCursor({
+                        permission_id: permissions[0]?.permission_id || '',
+                    })
                     directionArgs = { count: 3, cursor: cursor }
                     firstPermission = permissions[1]
                     lastPermission = permissions.pop()
@@ -1734,10 +1742,14 @@ describe('model', () => {
                     expect(gqlPermissions?.edges.length).to.equal(3)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(
-                        convertDataToCursor(firstPermission.permission_id)
+                        convertDataToCursor({
+                            permission_id: firstPermission.permission_id,
+                        })
                     )
                     expect(gqlPermissions?.pageInfo.endCursor).to.equal(
-                        convertDataToCursor(lastPermission.permission_id)
+                        convertDataToCursor({
+                            permission_id: lastPermission.permission_id,
+                        })
                     )
                     expect(gqlPermissions?.pageInfo.hasNextPage).to.be.true
                     expect(gqlPermissions?.pageInfo.hasPreviousPage).to.be.true

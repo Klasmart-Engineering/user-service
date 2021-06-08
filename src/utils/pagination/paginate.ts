@@ -22,6 +22,8 @@ interface IPaginationOptions {
     scope: SelectQueryBuilder<any>
     pageSize: number
     cursorData: any
+    defaultColumn: string
+    primaryColumn: string
 }
 
 export interface IPaginationArgs<Entity extends BaseEntity = any> {
@@ -52,20 +54,41 @@ interface directionArgs {
     cursor?: string
 }
 
-export const convertDataToCursor = (data: string) => {
-    return Buffer.from(data).toString('base64')
+export const convertDataToCursor = (data: Record<string, unknown>) => {
+    if (!data) {
+        return ''
+    }
+    return Buffer.from(JSON.stringify(data)).toString('base64')
 }
 
 const getDataFromCursor = (cursor: string) => {
-    return Buffer.from(cursor, 'base64').toString('ascii')
+    return JSON.parse(Buffer.from(cursor, 'base64').toString('ascii'))
 }
 
-const getEdges = (data: any) => {
+const getEdges = (data: any, defaultColumn: string, primaryColumn: string) => {
     return data.map((d: any) => {
-        const cursor = `pagination_cursor`
-        console.log('cursor: ', d[cursor])
+        let paginationData = d['pagination_cursor']
+
+        // remove timestamp & milliseconds
+        if (paginationData instanceof Date) {
+            paginationData = new Date(
+                Date.UTC(
+                    paginationData.getFullYear(),
+                    paginationData.getMonth(),
+                    paginationData.getDate(),
+                    paginationData.getHours(),
+                    paginationData.getMinutes(),
+                    paginationData.getSeconds()
+                )
+            )
+        }
+
+        const x = convertDataToCursor({
+            [defaultColumn]: d[defaultColumn],
+            [primaryColumn]: paginationData,
+        })
         return {
-            cursor: convertDataToCursor(d[cursor]),
+            cursor: x,
             node: d,
         }
     })
@@ -74,8 +97,8 @@ const getEdges = (data: any) => {
 const forwardPaginate = async ({
     scope,
     pageSize,
-    // cursorColumn,
-    // sortByColumn,
+    defaultColumn,
+    primaryColumn,
     cursorData,
 }: IPaginationOptions) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
@@ -84,7 +107,7 @@ const forwardPaginate = async ({
     const data = await scope.getMany()
     const hasPreviousPage = cursorData ? true : false
     const hasNextPage = data.length > pageSize ? true : false
-    let edges = getEdges(data)
+    let edges = getEdges(data, defaultColumn, primaryColumn)
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
     const endCursor =
         edges.length > 0
@@ -107,6 +130,8 @@ const backwardPaginate = async ({
     scope,
     pageSize,
     cursorData,
+    defaultColumn,
+    primaryColumn,
 }: IPaginationOptions) => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
@@ -119,7 +144,7 @@ const backwardPaginate = async ({
 
     const hasNextPage = cursorData ? true : false
 
-    let edges = getEdges(data)
+    let edges = getEdges(data, defaultColumn, primaryColumn)
     edges = edges.length === seekPageSize ? edges.slice(1) : edges
 
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
@@ -150,17 +175,33 @@ export const paginateData = async <T = any>({
 
     const totalCount = await scope.getCount()
 
-    const { order, computedCursorColumn } = addOrderByClause(
+    const { order, primaryColumn, defaultColumn } = addOrderByClause(
         scope,
         sort,
         direction
     )
 
-    const directionOperator = order === 'ASC' ? '>' : '<'
     if (cursorData) {
-        scope.andWhere(`${computedCursorColumn} ${directionOperator} :value`, {
-            value: cursorData,
-        })
+        const directionOperator = order === 'ASC' ? '>' : '<'
+        if (primaryColumn) {
+            // https://stackoverflow.com/questions/38017054/mysql-cursor-based-pagination-with-multiple-columns
+            // https://www.postgresql.org/docs/current/functions-comparisons.html#ROW-WISE-COMPARISON
+            scope.andWhere(
+                `(${primaryColumn}, ${scope.alias}.${defaultColumn}) ${directionOperator} (:primaryColumn, :defaultColumn)`,
+                {
+                    primaryColumn: cursorData[primaryColumn],
+                    defaultColumn: cursorData[defaultColumn],
+                }
+            )
+            scope.offset(0)
+        } else {
+            scope.andWhere(
+                `${scope.alias}.${defaultColumn} ${directionOperator} :defaultColumn`,
+                {
+                    defaultColumn: cursorData[defaultColumn],
+                }
+            )
+        }
     }
 
     const { edges, pageInfo } =
@@ -169,11 +210,15 @@ export const paginateData = async <T = any>({
                   scope,
                   pageSize,
                   cursorData,
+                  defaultColumn,
+                  primaryColumn,
               })
             : await forwardPaginate({
                   scope,
                   pageSize,
                   cursorData,
+                  defaultColumn,
+                  primaryColumn,
               })
     return {
         totalCount,

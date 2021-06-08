@@ -364,12 +364,21 @@ export class Model {
             directionArgs,
             scope,
             sort: {
-                defaultField: 'User.user_id',
+                defaultField: 'user_id',
                 aliases: {
-                    givenName: 'User.given_name',
-                    familyName: 'User.family_name',
-                    contactInfo: 'User.email',
-                    joinDate: 'OrgMembership.join_timestamp',
+                    givenName: {
+                        select: 'User.given_name',
+                    },
+                    familyName: {
+                        select: 'User.family_name',
+                    },
+                    contactInfo: {
+                        select: 'User.email',
+                    },
+                    joinDate: {
+                        select: 'OrgMembership.join_timestamp',
+                        type: 'date',
+                    },
                 },
                 primaryField: sortBy,
             },
@@ -414,7 +423,7 @@ export class Model {
             directionArgs,
             scope,
             sort: {
-                defaultField: 'Permission.permission_id',
+                defaultField: 'permission_id',
             },
         })
     }

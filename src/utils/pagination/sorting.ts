@@ -3,7 +3,12 @@ import { SelectQueryBuilder } from 'typeorm'
 export interface ISortingConfig {
     defaultField: string
     primaryField?: ISortField
-    aliases?: Record<string, string>
+    aliases?: {
+        [field: string]: {
+            select: string
+            type?: 'string' | 'date'
+        }
+    }
 }
 
 export interface ISortField {
@@ -26,24 +31,32 @@ export function addOrderByClause(
         }
     }
 
-    let computedCursorColumn = config.defaultField
+    let primaryColumn = ''
+    let defaultColumn = ''
 
     if (config.primaryField) {
         const columnName =
-            config.aliases?.[config.primaryField.field] ||
+            config.aliases?.[config.primaryField.field].select ||
             config.primaryField.field
 
         scope.addOrderBy(columnName, order, 'NULLS LAST')
-        computedCursorColumn = `${columnName} || ${config.defaultField}`
+        primaryColumn = columnName
+        if (config.aliases?.[config.primaryField.field].type === 'date') {
+            // TODO explanation for this....
+            primaryColumn = `date_trunc('second', ${columnName})`
+        }
+        scope.addSelect(`${columnName} as "${scope.alias}_pagination_cursor"`)
     }
-    scope.addOrderBy(config.defaultField, order, 'NULLS LAST')
-
-    scope.addSelect(
-        `${computedCursorColumn} as "${scope.alias}_pagination_cursor"`
+    defaultColumn = config.defaultField
+    scope.addOrderBy(
+        `${scope.alias}.${config.defaultField}`,
+        order,
+        'NULLS LAST'
     )
 
     return {
         order,
-        computedCursorColumn,
+        primaryColumn,
+        defaultColumn,
     }
 }
