@@ -65,7 +65,6 @@ const typeDefs = gql`
     enum UserSortBy {
         givenName
         familyName
-        contactInfo
         joinDate
     }
 

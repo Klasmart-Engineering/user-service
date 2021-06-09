@@ -78,7 +78,8 @@ const getEdges = (data: any, defaultColumn: string, primaryColumn: string) => {
                     paginationData.getDate(),
                     paginationData.getHours(),
                     paginationData.getMinutes(),
-                    paginationData.getSeconds()
+                    paginationData.getSeconds(),
+                    paginationData.getMilliseconds()
                 )
             )
         }
@@ -175,11 +176,7 @@ export const paginateData = async <T = any>({
 
     const totalCount = await scope.getCount()
 
-    const { order, primaryColumn, defaultColumn } = addOrderByClause(
-        scope,
-        sort,
-        direction
-    )
+    const { order, primaryColumn } = addOrderByClause(scope, sort, direction)
 
     if (cursorData) {
         const directionOperator = order === 'ASC' ? '>' : '<'
@@ -187,18 +184,18 @@ export const paginateData = async <T = any>({
             // https://stackoverflow.com/questions/38017054/mysql-cursor-based-pagination-with-multiple-columns
             // https://www.postgresql.org/docs/current/functions-comparisons.html#ROW-WISE-COMPARISON
             scope.andWhere(
-                `(${primaryColumn}, ${scope.alias}.${defaultColumn}) ${directionOperator} (:primaryColumn, :defaultColumn)`,
+                `(${primaryColumn}, ${scope.alias}.${sort.defaultField}) ${directionOperator} (:primaryColumn, :defaultColumn)`,
                 {
                     primaryColumn: cursorData[primaryColumn],
-                    defaultColumn: cursorData[defaultColumn],
+                    defaultColumn: cursorData[sort.defaultField],
                 }
             )
             scope.offset(0)
         } else {
             scope.andWhere(
-                `${scope.alias}.${defaultColumn} ${directionOperator} :defaultColumn`,
+                `${scope.alias}.${sort.defaultField} ${directionOperator} :defaultColumn`,
                 {
-                    defaultColumn: cursorData[defaultColumn],
+                    defaultColumn: cursorData[sort.defaultField],
                 }
             )
         }
@@ -210,14 +207,14 @@ export const paginateData = async <T = any>({
                   scope,
                   pageSize,
                   cursorData,
-                  defaultColumn,
+                  defaultColumn: sort.defaultField,
                   primaryColumn,
               })
             : await forwardPaginate({
                   scope,
                   pageSize,
                   cursorData,
-                  defaultColumn,
+                  defaultColumn: sort.defaultField,
                   primaryColumn,
               })
     return {

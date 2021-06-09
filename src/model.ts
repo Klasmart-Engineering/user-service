@@ -366,19 +366,9 @@ export class Model {
             sort: {
                 defaultField: 'user_id',
                 aliases: {
-                    givenName: {
-                        select: 'User.given_name',
-                    },
-                    familyName: {
-                        select: 'User.family_name',
-                    },
-                    contactInfo: {
-                        select: 'User.email',
-                    },
-                    joinDate: {
-                        select: 'OrgMembership.join_timestamp',
-                        type: 'date',
-                    },
+                    givenName: 'User.given_name',
+                    familyName: 'User.family_name',
+                    joinDate: 'OrgMembership.join_timestamp',
                 },
                 primaryField: sortBy,
             },

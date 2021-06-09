@@ -19,12 +19,13 @@ import { createOrganization } from '../../../factories/organization.factory'
 import { addOrganizationToUserAndValidate } from '../../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../../utils/testConfig'
 import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
+
+import faker from 'faker'
 use(chaiAsPromised)
 
 describe('sorting', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
-    let usersList: User[] = []
 
     before(async () => {
         connection = await createTestConnection()
@@ -36,6 +37,7 @@ describe('sorting', () => {
         await connection?.close()
     })
 
+    let usersList: User[] = []
     context('givenName', () => {
         const orderedStrings = 'abcdefghijklmnopqrstuvwxyz'.split('')
         const numUsers = orderedStrings.length
@@ -59,9 +61,7 @@ describe('sorting', () => {
                 sort: {
                     defaultField: 'user_id',
                     aliases: {
-                        givenName: {
-                            select: 'given_name',
-                        },
+                        givenName: 'given_name',
                     },
                     primaryField: {
                         field: 'givenName',
@@ -138,9 +138,7 @@ describe('sorting', () => {
             await connection.manager.save(org)
             for (let i = 0; i < 10; i++) {
                 const user = createUser()
-                // const date = new Date(2000 + i, 0, 1)
-                const date = new Date()
-                date.setFullYear(2000 + i)
+                const date = faker.date.past()
                 dates.push(date)
                 usersList.push(user)
 
@@ -170,10 +168,7 @@ describe('sorting', () => {
                 sort: {
                     defaultField: 'user_id',
                     aliases: {
-                        joinDate: {
-                            select: 'OrgMembership.join_timestamp',
-                            type: 'date',
-                        },
+                        joinDate: 'OrgMembership.join_timestamp',
                     },
                     primaryField: {
                         field: 'joinDate',
@@ -181,6 +176,8 @@ describe('sorting', () => {
                     },
                 },
             }
+
+            dates = dates.sort((a, b) => a.valueOf() - b.valueOf())
         })
 
         context('forwards pagination', () => {
@@ -189,16 +186,13 @@ describe('sorting', () => {
             })
 
             it('sorts ascending', async () => {
-                // args.sort!.primaryField!.order = 'ASC'
+                args.sort!.primaryField!.order = 'ASC'
                 const data = await paginateData<User>(args)
-                // console.log(data)
                 expect(data.edges.length).to.eq(usersList.length)
                 for (let i = 0; i < data.edges.length; i++) {
-                    expect(
-                        (
-                            await data.edges[i].node.memberships
-                        )?.[0].join_timestamp?.toString()
-                    ).to.eq(dates[i].toString())
+                    const joinDate = (await data.edges[i].node.memberships)?.[0]
+                        .join_timestamp
+                    expect(joinDate?.valueOf()).to.eq(dates[i].valueOf())
                 }
             })
 
@@ -212,8 +206,8 @@ describe('sorting', () => {
                     expect(
                         (
                             await data.edges[i].node.memberships
-                        )?.[0].join_timestamp?.toString()
-                    ).to.eq(dates[i].toString())
+                        )?.[0].join_timestamp?.valueOf()
+                    ).to.eq(dates[i].valueOf())
                 }
             })
 
@@ -242,5 +236,137 @@ describe('sorting', () => {
                 expect(data.edges.length).to.eq(usersList.length - 2)
             })
         })
+    })
+
+    context('secondary sorting', () => {
+        let args!: IPaginateData
+        let date: Date
+
+        let userIds: string[]
+
+        beforeEach(async () => {
+            date = new Date()
+            userIds = []
+            const org = createOrganization()
+            await connection.manager.save(org)
+            for (let i = 0; i < 10; i++) {
+                const user = createUser()
+                user.given_name = 'duplicate given name'
+                user.family_name = 'duplicate family name'
+
+                await connection.manager.save(user)
+
+                userIds.push(user.user_id)
+
+                const membership = await addOrganizationToUserAndValidate(
+                    testClient,
+                    user.user_id,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+                membership.join_timestamp = date
+                await connection.manager.save<OrganizationMembership, any>(
+                    OrganizationMembership.name,
+                    membership
+                )
+            }
+
+            userIds = userIds.sort((a, b) => a.localeCompare(b))
+
+            args = {
+                direction: 'FORWARD',
+                directionArgs: {
+                    count: 10,
+                },
+                scope: getRepository(User)
+                    .createQueryBuilder()
+                    .leftJoinAndSelect('User.memberships', 'OrgMembership'),
+                sort: {
+                    defaultField: 'user_id',
+                    aliases: {
+                        joinDate: 'OrgMembership.join_timestamp',
+                        givenName: 'User.given_name',
+                        familyName: 'User.family_name',
+                    },
+                    primaryField: {
+                        field: 'joinDate',
+                        order: 'ASC',
+                    },
+                },
+            }
+        })
+        it('uses the primary key as the secondary sort when sorting by join date', async () => {
+            args.sort!.primaryField!.field = 'joinDate'
+            const data = await paginateData<User>(args)
+
+            for (let i = 0; i < data.edges.length; i++) {
+                expect(data.edges[i].node.user_id).to.eq(userIds[i])
+            }
+
+            expect(data.totalCount).to.eq(userIds.length)
+            expect(data.edges.length).to.eq(userIds.length)
+
+            args.directionArgs!.cursor = data.edges[0].cursor
+            args.scope = getRepository(User)
+                .createQueryBuilder()
+                .leftJoinAndSelect('User.memberships', 'OrgMembership')
+            let data2 = await paginateData<User>(args)
+
+            for (let i = 0; i < data2.edges.length; i++) {
+                expect(data2.edges[i].node.user_id).to.eq(userIds[i + 1])
+            }
+
+            expect(data2.totalCount).to.eq(userIds.length)
+            expect(data2.edges.length).to.eq(userIds.length - 1)
+        })
+        it('uses the primary key as the secondary sort when sorting by given name', async () => {
+            args.sort!.primaryField!.field = 'givenName'
+            const data = await paginateData<User>(args)
+
+            for (let i = 0; i < data.edges.length; i++) {
+                expect(data.edges[i].node.user_id).to.eq(userIds[i])
+            }
+
+            expect(data.totalCount).to.eq(userIds.length)
+            expect(data.edges.length).to.eq(userIds.length)
+
+            args.directionArgs!.cursor = data.edges[0].cursor
+            args.scope = getRepository(User)
+                .createQueryBuilder()
+                .leftJoinAndSelect('User.memberships', 'OrgMembership')
+            let data2 = await paginateData<User>(args)
+
+            for (let i = 0; i < data2.edges.length; i++) {
+                expect(data2.edges[i].node.user_id).to.eq(userIds[i + 1])
+            }
+
+            expect(data2.totalCount).to.eq(userIds.length)
+            expect(data2.edges.length).to.eq(userIds.length - 1)
+        })
+        it('uses the primary key as the secondary sort when sorting by family name', async () => {
+            args.sort!.primaryField!.field = 'familyName'
+            const data = await paginateData<User>(args)
+
+            for (let i = 0; i < data.edges.length; i++) {
+                expect(data.edges[i].node.user_id).to.eq(userIds[i])
+            }
+
+            expect(data.totalCount).to.eq(userIds.length)
+            expect(data.edges.length).to.eq(userIds.length)
+
+            args.directionArgs!.cursor = data.edges[0].cursor
+            args.scope = getRepository(User)
+                .createQueryBuilder()
+                .leftJoinAndSelect('User.memberships', 'OrgMembership')
+            let data2 = await paginateData<User>(args)
+
+            for (let i = 0; i < data2.edges.length; i++) {
+                expect(data2.edges[i].node.user_id).to.eq(userIds[i + 1])
+            }
+
+            expect(data2.totalCount).to.eq(userIds.length)
+            expect(data2.edges.length).to.eq(userIds.length - 1)
+        })
+        // it('reverses order when backwards paginating')
     })
 })

@@ -30,7 +30,7 @@ export class OrganizationMembership extends BaseEntity {
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
 
-    @CreateDateColumn()
+    @CreateDateColumn({ precision: 3 })
     public join_timestamp?: Date
 
     @Column({ nullable: true, length: MEMBERSHIP_SHORTCODE_MAXLEN })

@@ -26,7 +26,7 @@ export class SchoolMembership extends BaseEntity {
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
 
-    @CreateDateColumn()
+    @CreateDateColumn({ precision: 3 })
     public join_timestamp?: Date
 
     @ManyToOne(() => User, (user) => user.school_memberships)
