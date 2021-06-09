@@ -171,7 +171,6 @@ export const schoolAdminRole = {
         PermissionName.delete_teacher_from_class_20446,
         PermissionName.users_40100,
         PermissionName.view_user_page_40101,
-        PermissionName.view_users_40110,
         PermissionName.view_my_school_users_40111,
         PermissionName.create_my_school_users_40221,
         PermissionName.edit_my_school_users_40331,
