@@ -27,7 +27,6 @@ import {
     revokePermission,
 } from '../../utils/operations/roleOps'
 import { PermissionName } from '../../../src/permissions/permissionNames'
-import { addRoleToSchoolMembership } from '../../utils/operations/schoolMembershipOps'
 import { Role } from '../../../src/entities/role'
 import { School } from '../../../src/entities/school'
 import { createRole } from '../../factories/role.factory'
@@ -172,13 +171,6 @@ describe('isAdmin', () => {
                         schools[i].school_id,
                         { authorization: getAdminAuthToken() }
                     )
-                    await addRoleToSchoolMembership(
-                        testClient,
-                        user.user_id,
-                        schools[i].school_id,
-                        roleList[i].role_id,
-                        { authorization: getAdminAuthToken() }
-                    )
                 }
             }
         })
@@ -309,16 +301,23 @@ describe('isAdmin', () => {
             it('requires view_my_school_users_40111 or view_my_class_users_40112 permission to view school users', async () => {
                 const user = await createNonAdminUser(testClient)
                 const token = getNonAdminAuthToken()
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
+                )
                 await addSchoolToUser(
                     testClient,
                     user.user_id,
                     schools[0].school_id,
                     { authorization: getAdminAuthToken() }
                 )
-                await addRoleToSchoolMembership(
+
+                await addRoleToOrganizationMembership(
                     testClient,
                     user.user_id,
-                    schools[0].school_id,
+                    organizations[0].organization_id,
                     roleList[0].role_id,
                     { authorization: getAdminAuthToken() }
                 )
@@ -432,16 +431,23 @@ describe('isAdmin', () => {
             it("doesn't show users from other schools", async () => {
                 const user = await createNonAdminUser(testClient)
                 const token = getNonAdminAuthToken()
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
+                )
                 await addSchoolToUser(
                     testClient,
                     user.user_id,
                     schools[0].school_id,
                     { authorization: getAdminAuthToken() }
                 )
-                await addRoleToSchoolMembership(
+
+                await addRoleToOrganizationMembership(
                     testClient,
                     user.user_id,
-                    schools[0].school_id,
+                    organizations[0].organization_id,
                     roleList[0].role_id,
                     { authorization: getAdminAuthToken() }
                 )
