@@ -1,11 +1,10 @@
+import './utils/dotenv'
 import { initApp } from './app'
 import * as Sentry from '@sentry/node'
 import WebSocket from 'ws'
-import * as dotenv from 'dotenv'
 import { UserPermissions } from './permissions/userPermissions'
 import { IUsersConnectionLoaders } from './loaders/usersConnection'
 
-dotenv.config({ path: __dirname + '/../.env' })
 const port = process.env.PORT || 8080
 
 export interface Context {

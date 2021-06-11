@@ -70,10 +70,10 @@ async function createOrganization(
     if (active_organizations.length) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_FIELD,
+            csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER,
             rowNumber,
             'organization_name',
-            'only one active organization per user'
+            csvErrorConstants.MSG_ERR_ONE_ACTIVE_ORGANIZATION_PER_USER
         )
         return
     }

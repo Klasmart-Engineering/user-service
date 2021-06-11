@@ -1,6 +1,6 @@
 import { SchemaDirectiveVisitor } from 'apollo-server-express'
 import { defaultFieldResolver } from 'graphql'
-import { Brackets, getRepository } from 'typeorm'
+import { getRepository, SelectQueryBuilder, Brackets } from 'typeorm'
 import { Class } from '../entities/class'
 
 import { AgeRange } from '../entities/ageRange'
@@ -13,14 +13,26 @@ import { Subcategory } from '../entities/subcategory'
 import { Subject } from '../entities/subject'
 import { User } from '../entities/user'
 import { Program } from '../entities/program'
+import {
+    IEntityFilter,
+    getWhereClauseFromFilter,
+} from '../utils/pagination/filtering'
+import { Context } from '../main'
+import { PermissionName } from '../permissions/permissionNames'
+import { SchoolMembership } from '../entities/schoolMembership'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     public visitFieldDefinition(field: any) {
         const { resolve = defaultFieldResolver } = field
         const { entity } = this.args
-        let scope: any
 
-        field.resolve = (prnt: any, args: any, context: any, info: any) => {
+        field.resolve = async (
+            prnt: any,
+            args: any,
+            context: any,
+            info: any
+        ) => {
+            let scope: SelectQueryBuilder<any> | undefined
             switch (entity) {
                 case 'organization':
                     scope = getRepository(Organization).createQueryBuilder()
@@ -62,7 +74,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         this.nonAdminOrganizationScope(scope, context)
                         break
                     case 'user':
-                        this.nonAdminUserScope(scope, context)
+                        await this.nonAdminUserScope(scope, context)
                         break
                     case 'ageRange':
                         this.nonAdminAgeRangeScope(scope, context)
@@ -93,30 +105,99 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         }
     }
 
-    private nonAdminUserScope(scope: any, context?: any) {
-        const subQuery = getRepository(Organization)
-            .createQueryBuilder()
-            .select('Organization.organization_id')
-            .distinct(true)
-            .innerJoin('Organization.memberships', 'OrganizationMembership')
-            .andWhere('OrganizationMembership.user_id = :d_userId', {
-                d_userId: context.permissions.getUserId(),
-            })
-            .getQuery()
+    // non admins can only view org/school users if they have
+    // the appropriate permissions in their org/school memberships
+    // otherwise, they can view their user(s)
+    private async nonAdminUserScope(
+        scope: SelectQueryBuilder<User>,
+        context: Context
+    ) {
+        // filter users by orgs/schools that the user has the required permissions in
+        const filter: IEntityFilter = {
+            OR: [],
+        }
 
-        scope
-            .leftJoinAndSelect('User.memberships', 'OrganizationMembership')
-            .where(
-                new Brackets((qb) => {
-                    qb.where(
-                        'OrganizationMembership.organization IN (' +
-                            subQuery +
-                            ') '
-                    ).orWhere('User.user_id = :d_userId', {
-                        d_userId: context.permissions.getUserId(),
-                    })
+        // 1 - can we view org users?
+        const userOrgs: string[] = await context.permissions.orgMembershipsWithPermissions(
+            [PermissionName.view_users_40110]
+        )
+        if (userOrgs.length > 0) {
+            // just filter by org, not school
+            for (const org of userOrgs) {
+                filter.OR?.push({
+                    organizationId: {
+                        operator: 'eq',
+                        value: org,
+                    },
                 })
+            }
+        } else {
+            // 2 - can we view school users?
+            const schoolMemberships = await getRepository(
+                SchoolMembership
+            ).find({
+                where: {
+                    user_id: context.permissions.getUserId(),
+                },
+            })
+            const userOrgSchools: string[] = await context.permissions.orgMembershipsWithPermissions(
+                [
+                    PermissionName.view_my_school_users_40111,
+                    PermissionName.view_my_class_users_40112,
+                ],
+                'OR'
             )
+            if (userOrgSchools.length > 0 && schoolMemberships) {
+                // you can view all users in the schools you belong to
+                for (const school of schoolMemberships) {
+                    filter.OR?.push({
+                        schoolId: {
+                            operator: 'eq',
+                            value: school.school_id,
+                        },
+                    })
+                }
+            } else {
+                // can't view org or school users
+
+                // 3 - can they view their own users?
+                const myUsersOrgs = await context.permissions.orgMembershipsWithPermissions(
+                    [PermissionName.view_my_users_40113]
+                )
+                const myUsersSchools = await context.permissions.schoolMembershipsWithPermissions(
+                    [PermissionName.view_my_users_40113]
+                )
+                if (myUsersOrgs.length === 0 && myUsersSchools.length === 0) {
+                    // they can only view themselves
+                    scope.andWhere('User.user_id = :user_id', {
+                        user_id: context.permissions.getUserId(),
+                    })
+                } else {
+                    // they can view users with same email
+                    scope.andWhere(
+                        new Brackets((qb) => {
+                            qb.orWhere('User.user_id = :user_id', {
+                                user_id: context.permissions.getUserId(),
+                            })
+                            qb.orWhere('User.email = :email', {
+                                email: context.permissions.getEmail(),
+                            })
+                        })
+                    )
+                }
+                return
+            }
+        }
+
+        scope.leftJoinAndSelect('User.school_memberships', 'schoolMembership')
+        scope.leftJoinAndSelect('User.memberships', 'orgMembership')
+
+        scope.andWhere(
+            getWhereClauseFromFilter(filter, {
+                organizationId: ['orgMembership.organization_id'],
+                schoolId: ['schoolMembership.school_id'],
+            })
+        )
     }
 
     private nonAdminOrganizationScope(scope: any, context?: any) {

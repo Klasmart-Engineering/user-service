@@ -1,44 +1,94 @@
+import { SelectQueryBuilder, BaseEntity } from 'typeorm'
+import { IEntityFilter } from './filtering'
+import { addOrderByClause, ISortingConfig, ISortField } from './sorting'
+
 const DEFAULT_PAGE_SIZE = 50
 const SEEK_BACKWARD = 'BACKWARD'
+
+export type Direction = 'FORWARD' | 'BACKWARD'
+
+export interface IPaginateData {
+    direction: Direction
+    directionArgs?: directionArgs
+    scope: SelectQueryBuilder<any>
+    sort: ISortingConfig
+}
+
+interface IPaginationOptions {
+    scope: SelectQueryBuilder<any>
+    pageSize: number
+    cursorData: any
+    defaultColumn: string
+    primaryColumn?: string
+}
+
+export interface IPaginationArgs<Entity extends BaseEntity = any> {
+    direction: Direction
+    directionArgs: directionArgs
+    scope: SelectQueryBuilder<Entity>
+    filter?: IEntityFilter
+    sort?: ISortField
+}
+
+export interface IPaginatedResponse<T = any> {
+    totalCount: number
+    pageInfo: {
+        startCursor: string
+        endCursor: string
+        hasNextPage: boolean
+        hasPreviousPage: boolean
+    }
+
+    edges: {
+        cursor: string
+        node: T
+    }[]
+}
 
 interface directionArgs {
     count: number
     cursor?: string
 }
 
-const convertDataToCursor = (data: string) => {
-    return Buffer.from(data).toString('base64')
+export const convertDataToCursor = (data: Record<string, unknown>) => {
+    return Buffer.from(JSON.stringify(data)).toString('base64')
 }
 
 const getDataFromCursor = (cursor: string) => {
-    return Buffer.from(cursor, 'base64').toString('ascii')
+    return JSON.parse(Buffer.from(cursor, 'base64').toString('ascii'))
 }
 
-const getEdges = (data: any, cursorColumn: string) => {
-    return data.map((d: any) => ({
-        cursor: convertDataToCursor(d[cursorColumn]),
-        node: d,
-    }))
+const getEdges = (data: any, defaultColumn: string, primaryColumn?: string) => {
+    return data.map((d: any) => {
+        const cursorData = {
+            [defaultColumn]: d[defaultColumn],
+        }
+
+        if (primaryColumn) {
+            cursorData[primaryColumn] = d[primaryColumn]
+        }
+
+        return {
+            cursor: convertDataToCursor(cursorData),
+            node: d,
+        }
+    })
 }
 
 const forwardPaginate = async ({
     scope,
     pageSize,
-    cursorTable,
-    cursorColumn,
+    defaultColumn,
+    primaryColumn,
     cursorData,
-}: any) => {
+}: IPaginationOptions) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
-    const column = `"${cursorTable}"."${cursorColumn}"`
 
-    if (cursorData) {
-        scope.andWhere(`${column} > :cursorData`, { cursorData })
-    }
-    scope.orderBy(column, 'ASC').limit(seekPageSize)
+    scope.take(seekPageSize)
     const data = await scope.getMany()
     const hasPreviousPage = cursorData ? true : false
     const hasNextPage = data.length > pageSize ? true : false
-    let edges = getEdges(data, cursorColumn)
+    let edges = getEdges(data, defaultColumn, primaryColumn)
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
     const endCursor =
         edges.length > 0
@@ -60,19 +110,14 @@ const forwardPaginate = async ({
 const backwardPaginate = async ({
     scope,
     pageSize,
-    totalCount,
-    cursorTable,
-    cursorColumn,
     cursorData,
-}: any) => {
+    defaultColumn,
+    primaryColumn,
+}: IPaginationOptions) => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
-    const column = `"${cursorTable}"."${cursorColumn}"`
 
-    if (cursorData) {
-        scope.andWhere(`${column} < :cursorData`, { cursorData })
-    }
-    scope.orderBy(column, 'DESC').limit(seekPageSize)
+    scope.take(seekPageSize)
     const data = await scope.getMany()
     data.reverse()
 
@@ -80,7 +125,7 @@ const backwardPaginate = async ({
 
     const hasNextPage = cursorData ? true : false
 
-    let edges = getEdges(data, cursorColumn)
+    let edges = getEdges(data, defaultColumn, primaryColumn)
     edges = edges.length === seekPageSize ? edges.slice(1) : edges
 
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
@@ -95,36 +140,60 @@ const backwardPaginate = async ({
     return { edges, pageInfo }
 }
 
-export const paginateData = async ({
+export const paginateData = async <T = any>({
     direction,
     directionArgs,
     scope,
-    cursorTable,
-    cursorColumn,
-}: any) => {
+    sort,
+}: IPaginateData): Promise<IPaginatedResponse<T>> => {
     const pageSize = directionArgs?.count
         ? directionArgs.count
         : DEFAULT_PAGE_SIZE
+
     const cursorData = directionArgs?.cursor
         ? getDataFromCursor(directionArgs.cursor)
         : null
+
     const totalCount = await scope.getCount()
+
+    const { order, primaryColumn } = addOrderByClause(scope, direction, sort)
+
+    if (cursorData) {
+        const directionOperator = order === 'ASC' ? '>' : '<'
+        if (primaryColumn) {
+            scope.andWhere(
+                `(${scope.alias}.${primaryColumn}, ${scope.alias}.${sort.primaryKey}) ${directionOperator} (:primaryColumn, :defaultColumn)`,
+                {
+                    primaryColumn: cursorData[primaryColumn],
+                    defaultColumn: cursorData[sort.primaryKey],
+                }
+            )
+            scope.offset(0)
+        } else {
+            scope.andWhere(
+                `${scope.alias}.${sort.primaryKey} ${directionOperator} :defaultColumn`,
+                {
+                    defaultColumn: cursorData[sort.primaryKey],
+                }
+            )
+        }
+    }
+
     const { edges, pageInfo } =
         direction && direction === SEEK_BACKWARD
             ? await backwardPaginate({
                   scope,
-                  totalCount,
                   pageSize,
-                  cursorTable,
-                  cursorColumn,
                   cursorData,
+                  defaultColumn: sort.primaryKey,
+                  primaryColumn,
               })
             : await forwardPaginate({
                   scope,
                   pageSize,
-                  cursorTable,
-                  cursorColumn,
                   cursorData,
+                  defaultColumn: sort.primaryKey,
+                  primaryColumn,
               })
     return {
         totalCount,

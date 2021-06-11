@@ -26,6 +26,12 @@ export default {
 
     ERR_CSV_INVALID_FIELD: "ERR_CSV_INVALID_FIELD",
 
+    ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST: "ERR_PROGRAM_AGE_RANGE_FIELD_EXIST",
+    MSG_ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST: "program must exist age_range_high_value, age_range_low_value, age_range_unit or none of them.",
+
+    ERR_ONE_ACTIVE_ORGANIZATION_PER_USER: "ERR_ONE_ACTIVE_ORGANIZATION_PER_USER",
+    MSG_ERR_ONE_ACTIVE_ORGANIZATION_PER_USER: "only one active organization per user.",
+
     ERR_CSV_INVALID_ENUM: "ERR_CSV_INVALID_ENUM",
     MSG_ERR_CSV_INVALID_ENUM: "{entity} {attribute} must be one of these: {values}.",
 
@@ -52,6 +58,8 @@ export default {
 
     ERR_CSV_INVALID_EMAIL: "ERR_CSV_INVALID_EMAIL",
     MSG_ERR_CSV_INVALID_EMAIL: "{entity} {attribute} must be a valid email address.",
+
+    ERR_CSV_INVALID_PHONE: "ERR_CSV_INVALID_PHONE",
     MSG_ERR_CSV_INVALID_PHONE: "{entity} {attribute} must be a valid phone number.",
 
     ERR_CSV_INVALID_NUMBER: "ERR_CSV_INVALID_NUMBER",

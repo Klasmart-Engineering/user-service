@@ -156,7 +156,7 @@ describe('organizationMembership', () => {
         let idOfUserToBeQueried: string
         let tokenOfOrg1Owner: string
         let tokenOfOrg2Owner: string
-        const permissionName = PermissionName.edit_groups_30330
+        const permissionName = PermissionName.edit_role_and_permissions_30332
         const userToBeQueried = {
             email: 'testuser@gmail.com',
         } as User

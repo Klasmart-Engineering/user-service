@@ -98,7 +98,7 @@ describe('role', () => {
                 await grantPermission(
                     testClient,
                     roleId,
-                    PermissionName.edit_groups_30330,
+                    PermissionName.edit_role_and_permissions_30332,
                     { authorization: getAdminAuthToken() }
                 )
             })
@@ -168,7 +168,7 @@ describe('role', () => {
                         await grantPermission(
                             testClient,
                             roleId,
-                            PermissionName.edit_groups_30330,
+                            PermissionName.edit_role_and_permissions_30332,
                             { authorization: getAdminAuthToken() }
                         )
                     })
@@ -357,7 +357,8 @@ describe('role', () => {
         const roleInfo = (role: Role) => {
             return role.role_id
         }
-        const nameOfPermissionToGrant = PermissionName.edit_groups_30330
+        const nameOfPermissionToGrant =
+            PermissionName.view_roles_and_permissions_30110
         let organizationId: string
         let userId: string
         let roleId: string
@@ -425,7 +426,7 @@ describe('role', () => {
                             await grantPermission(
                                 testClient,
                                 roleId,
-                                PermissionName.edit_role_permissions_30332,
+                                PermissionName.edit_role_and_permissions_30332,
                                 { authorization: getAdminAuthToken() }
                             )
                         })
@@ -583,7 +584,7 @@ describe('role', () => {
                         await grantPermission(
                             testClient,
                             roleId,
-                            PermissionName.edit_role_permissions_30332,
+                            PermissionName.edit_role_and_permissions_30332,
                             { authorization: getAdminAuthToken() }
                         )
                     })
@@ -730,7 +731,7 @@ describe('role', () => {
     })
 
     describe('editPermissions', () => {
-        const nameOfPermission = PermissionName.edit_groups_30330
+        const nameOfPermission = PermissionName.view_roles_and_permissions_30110
         let permission: Permission
         let organizationId: string
         let userId: string
@@ -826,7 +827,7 @@ describe('role', () => {
                         return permission.permission_name
                     }
                     const editRolePermission =
-                        PermissionName.edit_role_permissions_30332
+                        PermissionName.edit_role_and_permissions_30332
 
                     beforeEach(async () => {
                         roleId = (
@@ -958,7 +959,7 @@ describe('role', () => {
                         return permission.permission_name
                     }
                     const editRolePermission =
-                        PermissionName.edit_role_permissions_30332
+                        PermissionName.edit_role_and_permissions_30332
 
                     beforeEach(async () => {
                         roleId = (
@@ -1097,7 +1098,7 @@ describe('role', () => {
                             await grantPermission(
                                 testClient,
                                 roleId,
-                                PermissionName.edit_role_permissions_30332,
+                                PermissionName.edit_role_and_permissions_30332,
                                 { authorization: getAdminAuthToken() }
                             )
                         })
@@ -1160,7 +1161,7 @@ describe('role', () => {
                         await grantPermission(
                             testClient,
                             roleId,
-                            PermissionName.edit_role_permissions_30332,
+                            PermissionName.edit_role_and_permissions_30332,
                             { authorization: getAdminAuthToken() }
                         )
                     })
@@ -1291,7 +1292,7 @@ describe('role', () => {
                         await grantPermission(
                             testClient,
                             roleId,
-                            PermissionName.delete_groups_30440,
+                            PermissionName.delete_role_30440,
                             { authorization: getAdminAuthToken() }
                         )
                     })
@@ -1371,7 +1372,7 @@ describe('role', () => {
                         await grantPermission(
                             testClient,
                             roleId,
-                            PermissionName.delete_groups_30440,
+                            PermissionName.delete_role_30440,
                             { authorization: getAdminAuthToken() }
                         )
                     })

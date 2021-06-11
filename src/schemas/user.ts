@@ -62,9 +62,19 @@ const typeDefs = gql`
 
     # pagination extension types end here
 
+    enum UserSortBy {
+        givenName
+        familyName
+    }
+
+    input UserSortInput {
+        field: UserSortBy!
+        order: SortOrder!
+    }
+
     input UserFilter {
         # table columns
-        userId: StringFilter
+        userId: UUIDFilter
         givenName: StringFilter
         familyName: StringFilter
         avatar: StringFilter
@@ -72,9 +82,9 @@ const typeDefs = gql`
         phone: StringFilter
 
         # joined columns
-        organizationId: StringFilter
-        roleId: StringFilter
-        schoolId: StringFilter
+        organizationId: UUIDFilter
+        roleId: UUIDFilter
+        schoolId: UUIDFilter
         organizationUserStatus: StringFilter
 
         AND: [UserFilter!]
@@ -102,7 +112,7 @@ const typeDefs = gql`
     type OrganizationSummaryNode {
         id: ID!
         name: String
-        joinDate: String
+        joinDate: Date
         userStatus: Status
         status: Status
     }
@@ -130,6 +140,7 @@ const typeDefs = gql`
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
             filter: UserFilter
+            sort: UserSortInput
         ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User]
         my_users: [User!]

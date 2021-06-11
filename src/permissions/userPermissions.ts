@@ -44,6 +44,10 @@ export class UserPermissions {
         return this.user_id
     }
 
+    public getEmail() {
+        return this.email
+    }
+
     private async isUserAdmin(user_id?: string) {
         const user = await User.findOne({ user_id })
 
@@ -260,5 +264,60 @@ export class UserPermissions {
             )
         }
         return this._schoolPermissions
+    }
+
+    public async orgMembershipsWithPermissions(
+        requiredPermissions: PermissionName[],
+        operator: 'AND' | 'OR' = 'AND'
+    ): Promise<string[]> {
+        if (requiredPermissions.length === 0) {
+            return []
+        }
+        const orgIds: string[] = []
+        const orgPermissions = await this.organizationPermissions(this.user_id)
+
+        for (const [orgId, permissions] of orgPermissions) {
+            let hasRequiredPerms = operator === 'AND' ? true : false
+            for (const p of requiredPermissions) {
+                if (operator === 'OR') {
+                    hasRequiredPerms = hasRequiredPerms || permissions.has(p)
+                } else {
+                    hasRequiredPerms = hasRequiredPerms && permissions.has(p)
+                }
+            }
+            if (hasRequiredPerms) {
+                orgIds.push(orgId)
+            }
+        }
+
+        return orgIds
+    }
+
+    public async schoolMembershipsWithPermissions(
+        requiredPermissions: PermissionName[],
+        operator: 'AND' | 'OR' = 'AND'
+    ): Promise<string[]> {
+        if (requiredPermissions.length === 0) {
+            return []
+        }
+
+        const schoolIds: string[] = []
+        const schoolPermissions = await this.schoolPermissions(this.user_id)
+
+        for (const [schoolId, permissions] of schoolPermissions) {
+            let hasRequiredPerms = operator === 'AND' ? true : false
+            for (const p of requiredPermissions) {
+                if (operator === 'OR') {
+                    hasRequiredPerms = hasRequiredPerms || permissions.has(p)
+                } else {
+                    hasRequiredPerms = hasRequiredPerms && permissions.has(p)
+                }
+            }
+            if (hasRequiredPerms) {
+                schoolIds.push(schoolId)
+            }
+        }
+
+        return schoolIds
     }
 }

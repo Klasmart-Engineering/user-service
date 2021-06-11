@@ -12,7 +12,16 @@
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "src/main.ts"],
             "sourceMaps": true,
             "smartStep": true,
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "name": "main.dev.ts",
+            "type": "pwa-node",
+            "request": "launch",
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "src/main.dev.ts"],
+            "sourceMaps": true,
+            "smartStep": true,
+            "cwd": "${workspaceRoot}"
         },
         {
             "name": "Current Test File",

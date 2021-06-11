@@ -5,7 +5,10 @@
 # Setup
 
 -   `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres`
+
 -   `npm i`
+
+-   Create a `.env` file by copying the contents of `.env.example`
 
 # Restart
 
@@ -32,24 +35,43 @@ Running tests during development:
 
 Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-mocha-test-adapter) VSCode extension for a nice UI and more fine-grained control.
 
-Issues with using database with "npm start"
+# Connecting to a locally running frontend
 
-The database is created without the default permissions. To do any thing useful you need create them.
+## Prerequisites
 
-You need to create a user with `Admin` permissions (by adding your email to this [list](https://bitbucket-ci/calmisland/kidsloop-user-service/src/master/src/permissions/userPermissions.ts#userPermissions.ts-23), please remember to restart your project) and using your JWT token (you can get the token by signing in [global hub](https://hub.kidsloop.net)) call the endpoint:
+### 1 - Your local DB contains a user record for your account on the auth service
+
+-   Launch hub.alpha.kidsloop.net
+-   Inspect requests to the user-service to find your auth token
+-   Find your user ID and email from the token using jwt.io
+-   Add a new user on your local DB with this user ID and email
+
+```shell
+docker exec -it postgres psql -U postgres
+INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>')
+```
+
+### 2 - Your user has been assigned to a organisation
+
+-   Create an organisation on your local DB for your user
 
 ```
 mutation {
-  createOrUpateSystemEntities
+  user(user_id: <my-user-id>) {
+    createOrganization(organization_name:"my-org") {
+      organization_id
+    }
+  }
 }
 ```
 
-# Connecting to a locally running frontend
-- Setup the the frontend on your machiine
-  - Checkout the `test/release` branch
-  - Follow installation instructions in the readme
-- Start the backend in local mode: `npm run start:local`
-- Start the frontend in local mode: `npm run start:local`
+## Starting local development servers
+
+-   Follow [instructions to set up the frontend on your machine](https://bitbucket.org/calmisland/kidsloop-hub-frontend/src/dev/README.md)
+-   Start the backend in local mode: `npm run start:local`
+-   Start the frontend: `npm run start`
+-   Open the frontend in your browser and login using your credentials from the process above
+-   Note: you may need to allow the insecure hosts (frontend and backend) in your browser when launching for the first time
 
 # Diagnosing
 
@@ -98,3 +120,9 @@ Make a request with below body (`form-data`), please replace `file_path` with yo
 ```
 
 Remember include `Authorization` with JWT token in request's header.
+
+# Useful Tools
+
+-   [VSCode](https://code.visualstudio.com/), for a feature rich development environment
+-   [Postman](https://www.postman.com/), for testing API requests
+-   [Postico](https://eggerapps.at/postico/), for working with Postgres databases on macOS

@@ -66,6 +66,7 @@ import { createAgeRange } from '../factories/ageRange.factory'
 import { createGrade } from '../factories/grade.factory'
 import { createSubject } from '../factories/subject.factory'
 import { createProgram } from '../factories/program.factory'
+import { Role } from '../../src/entities/role'
 
 use(chaiAsPromised)
 
@@ -815,6 +816,224 @@ describe('class', () => {
                 })
             }
         )
+        context('when an org has multiple schools', () => {
+            let org: Organization
+            let schools: School[] = []
+            let students: User[] = []
+            let teachers: User[] = []
+            let class1: Class
+            let studentRole: Role
+            let teacherRole: Role
+
+            beforeEach(async () => {
+                schools = []
+                students = []
+                teachers = []
+                const orgOwner = await createAdminUser(testClient)
+                org = await createOrganizationAndValidate(
+                    testClient,
+                    orgOwner.user_id
+                )
+                class1 = (await createClass(
+                    testClient,
+                    org.organization_id
+                )) as Class
+
+                studentRole = await createRole(
+                    testClient,
+                    org.organization_id,
+                    'Student Role'
+                )
+                await grantPermission(
+                    testClient,
+                    studentRole.role_id,
+                    PermissionName.attend_live_class_as_a_student_187,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                teacherRole = await createRole(
+                    testClient,
+                    org.organization_id,
+                    'Student Role'
+                )
+                await grantPermission(
+                    testClient,
+                    teacherRole.role_id,
+                    PermissionName.attend_live_class_as_a_teacher_186,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                for (let i = 0; i < 2; i++) {
+                    schools.push(
+                        await createSchool(
+                            testClient,
+                            org.organization_id,
+                            `School ${i}`,
+                            undefined,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    )
+                    students.push(
+                        await createUserAndValidate(testClient, {
+                            email: `student${i}@school.com`,
+                        } as User)
+                    )
+                    teachers.push(
+                        await createUserAndValidate(testClient, {
+                            email: `teacher${i}@school.com`,
+                        } as User)
+                    )
+                    await addUserToOrganizationAndValidate(
+                        testClient,
+                        students[i].user_id,
+                        org.organization_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    await addUserToOrganizationAndValidate(
+                        testClient,
+                        teachers[i].user_id,
+                        org.organization_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        students[i].user_id,
+                        org.organization_id,
+                        studentRole.role_id
+                    )
+
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        teachers[i].user_id,
+                        org.organization_id,
+                        teacherRole.role_id
+                    )
+
+                    await addUserToSchool(
+                        testClient,
+                        students[i].user_id,
+                        schools[i].school_id,
+                        {
+                            authorization: getAdminAuthToken(),
+                        }
+                    )
+
+                    await addUserToSchool(
+                        testClient,
+                        teachers[i].user_id,
+                        schools[i].school_id,
+                        {
+                            authorization: getAdminAuthToken(),
+                        }
+                    )
+
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        students[i].user_id,
+                        schools[i].school_id,
+                        studentRole.role_id
+                    )
+
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        teachers[i].user_id,
+                        schools[i].school_id,
+                        teacherRole.role_id
+                    )
+                }
+            })
+
+            it('returns all org students if the class has not been assigned to a school', async () => {
+                let gqlStudents = await eligibleStudents(
+                    testClient,
+                    class1.class_id,
+                    { authorization: undefined }
+                )
+                expect(gqlStudents.length).to.eq(2)
+            })
+
+            it('returns all org teachers if the class has not been assigned to a school', async () => {
+                let gqlStudents = await eligibleTeachers(
+                    testClient,
+                    class1.class_id,
+                    { authorization: undefined }
+                )
+                expect(gqlStudents.length).to.eq(3) // 2 teachers, 1 org admin
+            })
+
+            it('only returns students from the schools that the class has been added to', async () => {
+                await addSchoolToClass(
+                    testClient,
+                    class1.class_id,
+                    schools[0].school_id,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                let gqlStudents = await eligibleStudents(
+                    testClient,
+                    class1.class_id,
+                    {
+                        authorization: undefined,
+                    }
+                )
+                expect(gqlStudents.length).to.eq(1)
+
+                await addSchoolToClass(
+                    testClient,
+                    class1.class_id,
+                    schools[1].school_id,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                gqlStudents = await eligibleStudents(
+                    testClient,
+                    class1.class_id,
+                    {
+                        authorization: undefined,
+                    }
+                )
+                expect(gqlStudents.length).to.eq(2)
+            })
+
+            it('only returns teachers from the schools that the class has been added to', async () => {
+                await addSchoolToClass(
+                    testClient,
+                    class1.class_id,
+                    schools[0].school_id,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                let gqlTeachers = await eligibleTeachers(
+                    testClient,
+                    class1.class_id,
+                    {
+                        authorization: undefined,
+                    }
+                )
+                expect(gqlTeachers.length).to.eq(2) // 1 teacher, 1 org admin
+
+                await addSchoolToClass(
+                    testClient,
+                    class1.class_id,
+                    schools[1].school_id,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                gqlTeachers = await eligibleTeachers(
+                    testClient,
+                    class1.class_id,
+                    {
+                        authorization: undefined,
+                    }
+                )
+                expect(gqlTeachers.length).to.eq(3) // 2 teachers, 1 org admin
+            })
+        })
     })
 
     describe('editTeachers', () => {
@@ -1385,17 +1604,19 @@ describe('class', () => {
         context('when authorized within a school', () => {
             let userId: string
             let classId: string
+            let organizationId: string
+            let schoolId: string
 
             beforeEach(async () => {
                 const orgOwner = await createAdminUser(testClient)
                 userId = (await createNonAdminUser(testClient))?.user_id
-                const organizationId = (
+                organizationId = (
                     await createOrganizationAndValidate(
                         testClient,
                         orgOwner.user_id
                     )
                 )?.organization_id
-                const schoolId = (
+                schoolId = (
                     await createSchool(
                         testClient,
                         organizationId,
@@ -1476,6 +1697,51 @@ describe('class', () => {
                         (await dbTeacher.classesTeaching) || []
                     expect(teachers.map(userInfo)).to.deep.eq([userId])
                     expect(classesTeaching.map(classInfo)).to.deep.eq([classId])
+                })
+            })
+
+            context('and the teacher has other assigned school', async () => {
+                let otherClassId: string
+
+                beforeEach(async () => {
+                    otherClassId = (
+                        await createClass(
+                            testClient,
+                            organizationId,
+                            'Other Class'
+                        )
+                    )?.class_id
+
+                    await addSchoolToClass(testClient, otherClassId, schoolId, {
+                        authorization: getAdminAuthToken(),
+                    })
+
+                    await addTeacherToClass(testClient, otherClassId, userId, {
+                        authorization: getAdminAuthToken(),
+                    })
+                })
+
+                it('should have the other class assigned', async () => {
+                    const gqlTeacher = await removeTeacherInClass(
+                        testClient,
+                        classId,
+                        userId,
+                        { authorization: getNonAdminAuthToken() }
+                    )
+
+                    expect(gqlTeacher).to.be.true
+                    const dbTeacher = await User.findOneOrFail(userId)
+                    const dbClass = await Class.findOneOrFail(classId)
+                    const teachers = (await dbClass.teachers) || []
+                    const classesTeaching =
+                        (await dbTeacher.classesTeaching) || []
+                    const classIds = classesTeaching.map(
+                        ({ class_id }) => class_id
+                    )
+
+                    expect(teachers).to.be.empty
+                    expect(classesTeaching.length).eq(1)
+                    expect(classIds).to.deep.eq([otherClassId])
                 })
             })
         })
