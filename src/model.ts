@@ -36,7 +36,7 @@ import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
 import { processRoleFromCSVRow } from './utils/csv/role'
 import { processCategoryFromCSVRow } from './utils/csv/category'
 import { processSubjectFromCSVRow } from './utils/csv/subject'
-import { paginateData } from './utils/pagination/paginate'
+import { paginateData, IPaginationArgs } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
 import {
@@ -326,16 +326,10 @@ export class Model {
 
     public async usersConnection(
         context: Context,
-        { direction, directionArgs, scope, filter }: any
+        { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
     ) {
+        scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
         if (filter) {
-            if (
-                filterHasProperty('organizationId', filter) ||
-                filterHasProperty('roleId', filter) ||
-                filterHasProperty('organizationUserStatus', filter)
-            ) {
-                scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
-            }
             if (filterHasProperty('roleId', filter)) {
                 scope.innerJoinAndSelect(
                     'OrgMembership.roles',
@@ -358,12 +352,19 @@ export class Model {
                 })
             )
         }
+
         const data = await paginateData({
             direction,
             directionArgs,
             scope,
-            cursorTable: 'User',
-            cursorColumn: 'user_id',
+            sort: {
+                primaryKey: 'user_id',
+                aliases: {
+                    givenName: 'given_name',
+                    familyName: 'family_name',
+                },
+                sort,
+            },
         })
         for (const edge of data.edges) {
             const user: User = edge.node
@@ -404,8 +405,9 @@ export class Model {
             direction,
             directionArgs,
             scope,
-            cursorTable: 'Permission',
-            cursorColumn: 'permission_id',
+            sort: {
+                primaryKey: 'permission_id',
+            },
         })
     }
 

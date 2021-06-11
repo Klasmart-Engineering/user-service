@@ -28,6 +28,11 @@ const typeDefs = gql`
     interface iConnectionEdge {
         cursor: String
     }
+
+    enum SortOrder {
+        ASC
+        DESC
+    }
     # Core pagination schema defintion ends here
 `
 export default function getDefault(
