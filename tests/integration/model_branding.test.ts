@@ -14,6 +14,8 @@ import { Model } from '../../src/model'
 import { setBranding } from '../utils/operations/brandingOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser } from '../utils/testEntities'
+import { Branding } from '../../src/entities/branding'
+import { BrandingImage } from '../../src/entities/brandingImage'
 
 describe('model.branding', () => {
     let connection: Connection
@@ -41,27 +43,34 @@ describe('model.branding', () => {
         let file: ReadStream
         const mimetype = 'image/png'
         const encoding = '7bit'
-        context('when things are correct', () => {
-            it('should succeed in setting the branding', async () => {
-                const primaryColor = 'cd657b'
-                const iconImage = fs.createReadStream(
-                    resolve(`tests/fixtures/${filename}`)
-                )
-                const branding = await setBranding(
-                    testClient,
-                    organizationId,
-                    iconImage,
-                    filename,
-                    mimetype,
-                    encoding,
-                    primaryColor
-                )
-                expect(branding).to.exist
-                expect(branding.primaryColor).to.equal(primaryColor)
-            })
-        })
+        context(
+            'when the parameters and input file are correctly specified.',
+            () => {
+                it('should succeed in setting the branding', async () => {
+                    const primaryColor = 'cd657b'
+                    const iconImage = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                    const branding = await setBranding(
+                        testClient,
+                        organizationId,
+                        iconImage,
+                        filename,
+                        mimetype,
+                        encoding,
+                        primaryColor
+                    )
+                    expect(branding).to.exist
+                    expect(branding.primaryColor).to.equal(primaryColor)
+                    const brandings = await Branding.find()
+                    expect(brandings.length).to.equal(1)
+                    const images = await BrandingImage.find()
+                    expect(images.length).to.equal(2)
+                })
+            }
+        )
         context('when the file is the wrong mime type', () => {
-            it('should fail in setting the branding', async () => {
+            it('should fail in setting the branding and not create new db records', async () => {
                 const primaryColor = 'cd657b'
                 const iconImage = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -79,35 +88,14 @@ describe('model.branding', () => {
                 } catch (e) {
                     expect(e).to.exist
                 }
+                const brandings = await Branding.find()
+                expect(brandings.length).to.equal(0)
+                const images = await BrandingImage.find()
+                expect(images.length).to.equal(0)
             })
         })
-        context(
-            'when the file is the wrong type but the correct mime type',
-            () => {
-                it('should fail in setting the branding', async () => {
-                    const wrongfile = 'rolesExample.csv'
-                    const primaryColor = 'cd657b'
-                    const iconImage = fs.createReadStream(
-                        resolve(`tests/fixtures/${wrongfile}`)
-                    )
-                    try {
-                        const branding = await setBranding(
-                            testClient,
-                            organizationId,
-                            iconImage,
-                            filename,
-                            mimetype,
-                            encoding,
-                            primaryColor
-                        )
-                    } catch (e) {
-                        expect(e).to.exist
-                    }
-                })
-            }
-        )
         context('when the primary colour is not a hex triplet', () => {
-            it('should fail in setting the branding', async () => {
+            it('should fail in setting the branding and not create new db records', async () => {
                 const wrongfile = 'rolesExample.csv'
                 const primaryColor = 'YYYYYY'
                 const iconImage = fs.createReadStream(
@@ -126,6 +114,10 @@ describe('model.branding', () => {
                 } catch (e) {
                     expect(e).to.exist
                 }
+                const brandings = await Branding.find()
+                expect(brandings.length).to.equal(0)
+                const images = await BrandingImage.find()
+                expect(images.length).to.equal(0)
             })
         })
     })

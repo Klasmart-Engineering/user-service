@@ -1,19 +1,32 @@
 import {
     BaseEntity,
     Column,
+    CreateDateColumn,
     Entity,
     ManyToOne,
     PrimaryGeneratedColumn,
-    Unique,
+    UpdateDateColumn,
 } from 'typeorm'
 import { brandingImageTag } from '../types/graphQL/brandingImageTag'
 import { Branding } from './branding'
 
 @Entity()
-@Unique(['tag', 'branding'])
 export class BrandingImage extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
+
+    @CreateDateColumn({
+        type: 'timestamp',
+        default: () => 'now()',
+    })
+    public created_at!: Date
+
+    @UpdateDateColumn({
+        type: 'timestamp',
+        default: () => 'now()',
+        onUpdate: 'now()',
+    })
+    public updated_at!: Date
 
     @Column({ nullable: false })
     public tag?: brandingImageTag

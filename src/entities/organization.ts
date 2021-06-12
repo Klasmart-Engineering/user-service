@@ -39,7 +39,6 @@ import {
     validateShortCode,
 } from '../utils/shortcode'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
-import { Branding } from './branding'
 
 export const normalizedLowercaseTrimmed = (x: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
@@ -99,10 +98,6 @@ export class Organization extends BaseEntity {
 
     @OneToOne(() => User, (user) => user.my_organization)
     public owner?: Promise<User>
-
-    @OneToOne(() => Branding, (branding) => branding.organization)
-    @JoinColumn({ name: 'brandingId' })
-    public branding?: Promise<Branding>
 
     @ManyToOne(() => User)
     @JoinColumn()

@@ -5,12 +5,8 @@ import {
     getRepository,
     EntityManager,
     Repository,
-    getConnection,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
-import { ReadStream } from 'typeorm/platform/PlatformTools'
-import tmp from 'tmp'
-import * as fs from 'fs'
 import { User } from './entities/user'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
@@ -63,14 +59,13 @@ import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
-import { Branding } from './entities/branding'
+import { Branding, brandingUUID } from './entities/branding'
 import { brandingImageTag } from './types/graphQL/brandingImageTag'
 import { BrandingImage } from './entities/brandingImage'
-import { uploadImage } from './utils/imageStore/dummyImageStore'
 import { IMAGE_MIMETYPES } from './utils/imageStore/imageMimeTypes'
-
-//import { fromPairs } from 'lodash'
-//import im from 'imagemagick'
+import { setBrandingInput } from './types/graphQL/setBrandingInput'
+import { brandingResult } from './types/graphQL/brandingresult'
+import { brandingInput } from './types/graphQL/brandingInput'
 export class Model {
     public static async create() {
         try {
@@ -932,22 +927,20 @@ export class Model {
     }
 
     public async setBranding(
-        args: any,
+        args: setBrandingInput,
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        let result: any
-        let dberr: any
-        const connection = getConnection()
-        const queryRunner = connection.createQueryRunner()
+        let result: brandingResult | undefined
+        let dberr: Error | undefined
+        const queryRunner = this.connection.createQueryRunner()
         await queryRunner.connect()
         await queryRunner.startTransaction()
         let success = true
-        let tmpIconfileObj: any | undefined
-        let tmpFavfileObj: any | undefined
         try {
-            const iconImage = await args.iconImage.promise
+            const { file } = await args.iconImage
 
+            /* Validations */
             const primaryColor = args.primaryColor
             if (primaryColor && !isHexColor(primaryColor)) {
                 throw new Error(
@@ -956,126 +949,83 @@ export class Model {
                         '" is not a valid hexadecimal triplet'
                 )
             }
-            const organizationId = args.organizationId
+            if (file) {
+                const mimeType = IMAGE_MIMETYPES.find(function (mime) {
+                    return mime === file.mimetype
+                })
+                if (!mimeType) {
+                    throw new Error(
+                        'IconImage mimetype "' +
+                            file.mimetype +
+                            '" not supported'
+                    )
+                }
+            }
 
+            /* database finding */
+            const organizationId = args.organizationId
             const organization = await queryRunner.manager.findOneOrFail(
                 Organization,
                 {
                     organization_id: organizationId,
                 }
             )
-            console.log(iconImage, '\n', primaryColor, '\n', organizationId)
-            let branding = await organization.branding
 
-            if (!branding) {
-                branding = new Branding()
-                branding.organization = Promise.resolve(organization)
-                await queryRunner.manager.save(branding)
-                organization.branding = Promise.resolve(branding)
-                await queryRunner.manager.save(organization)
-            }
+            /* database setting */
+
+            const branding = new Branding()
+            branding.id = brandingUUID(organizationId)
+            branding.organization = Promise.resolve(organization)
             if (primaryColor) {
                 branding.primaryColor = primaryColor
             }
             await queryRunner.manager.save(branding)
-            const images =
-                (await queryRunner.manager.find(BrandingImage, { branding })) ||
-                []
 
             let iconUrl: string | undefined
             let faviconUrl: string | undefined
 
-            if (iconImage) {
-                const mimeType = IMAGE_MIMETYPES.find(function (mime) {
-                    return mime === iconImage.mimetype
-                })
-                if (!mimeType) {
-                    throw new Error(
-                        'IconImage mimetype "' +
-                            iconImage.mimetype +
-                            '" not supported'
-                    )
-                }
+            const imageRecords = branding
+                ? (await queryRunner.manager.find(BrandingImage, {
+                      branding,
+                  })) || []
+                : []
 
-                const tail = iconImage.mimetype.match(/[^/]+$/)[0]
-                let found = true
-                let favFound = true
-                let image = images.find(function (im) {
-                    return im.tag === brandingImageTag.ICON
-                })
-                if (!image) {
-                    image = new BrandingImage()
-                    image.tag = brandingImageTag.ICON
-                    found = false
+            if (file) {
+                let tail = ''
+                const matchRes = file.mimetype.match(/[^/]+$/)
+                if (matchRes) {
+                    tail = matchRes[0]
                 }
-                let favImage = images.find(function (im) {
-                    return im.tag === brandingImageTag.FAVICON
-                })
-                if (!favImage) {
-                    favImage = new BrandingImage()
-                    favImage.tag = brandingImageTag.FAVICON
-                    favFound = false
-                }
+                const imageRecord = new BrandingImage()
+                imageRecord.tag = brandingImageTag.ICON
+                imageRecord.branding = branding
+                const favImageRecord = new BrandingImage()
+                favImageRecord.tag = brandingImageTag.FAVICON
+                favImageRecord.branding = branding
 
-                const initialIconStream = iconImage.createReadStream()
                 const iconFileName = branding.id + '.icon.' + tail
-
                 const faviconFileName = branding.id + '.favicon.ico'
 
-                tmpIconfileObj = tmp.fileSync({ postfix: '.' + tail })
-                tmpFavfileObj = tmp.fileSync({ postfix: '.ico' })
+                // This is not the real way of getting the url
+                iconUrl = 'http://localhost:8080/' + iconFileName
+                imageRecord.url = iconUrl
 
-                await streamToFile(initialIconStream, tmpIconfileObj.name)
-                //const dims = await identifyImage([
-                //    '-format',
-                //    '%wx%h',
-                //    tmpIconfileObj.name,
-                //])
-                //console.log('dimensions:', dims)
+                // This is not the real way of getting the url
+                faviconUrl = 'http://localhost:8080/' + faviconFileName
+                favImageRecord.url = faviconUrl
 
-                const iconStream = fs.createReadStream(tmpIconfileObj.name)
-                iconUrl = await uploadImage(
-                    'provider',
-                    iconStream,
-                    iconFileName
-                )
-                image.url = iconUrl
-                await queryRunner.manager.save(image)
-
-                console.log(tmpIconfileObj.name)
-                console.log(tmpFavfileObj.name)
-
-                //await convertImage([
-                //    tmpIconfileObj.name,
-                //    '-resize',
-                //    '16x16',
-                //    tmpFavfileObj.name,
-                //])
-
-                const faviconStream = fs.createReadStream(tmpFavfileObj.name)
-
-                faviconUrl = await uploadImage(
-                    'provider',
-                    faviconStream,
-                    faviconFileName
-                )
-                favImage.url = faviconUrl
-
-                await queryRunner.manager.save(favImage)
-                if (!found) {
-                    images.push(image)
-                }
-                if (!favFound) {
-                    images.push(favImage)
-                }
+                await queryRunner.manager.save(imageRecord)
+                await queryRunner.manager.save(favImageRecord)
+                imageRecords.push(imageRecord)
+                imageRecords.push(favImageRecord)
             }
-            branding.images = images
+            branding.images = imageRecords
             await queryRunner.manager.save(branding)
 
             result = {
                 organizationId: organizationId,
-                iconImageURL: iconUrl,
-                faviconImageURL: faviconUrl,
+                iconImageURL: iconUrl ? iconUrl : '',
+                faviconImageURL: faviconUrl ? faviconUrl : '',
                 primaryColor: primaryColor,
             }
             queryRunner.commitTransaction()
@@ -1086,51 +1036,54 @@ export class Model {
             await queryRunner.rollbackTransaction()
         } finally {
             await queryRunner.release()
-            if (tmpIconfileObj) {
-                fs.unlink(tmpIconfileObj.name, (err) => {
-                    if (err) {
-                        console.log(err)
-                    }
-                    console.log('tmpIconfile deleted')
-                })
-            }
-            if (tmpFavfileObj) {
-                fs.unlink(tmpFavfileObj.name, (err) => {
-                    if (err) {
-                        console.log(err)
-                    }
-                    console.log('tmpFavfile deleted')
-                })
-            }
         }
 
-        if (!success) {
+        if (!success && dberr) {
             throw dberr
         }
         return result
     }
 
     public async branding(args: any, context: Context) {
-        const input = args.input
+        const input: brandingInput = args.input
         const organizationId = input.organizationId
-        const organization = await this.organizationRepository.findOneOrFail({
-            organization_id: organizationId,
+
+        const branding = await Branding.findOne({
+            where: {
+                organization: {
+                    organization_id: organizationId,
+                },
+            },
         })
-        const branding = await organization.branding
+
         if (!branding) return { organizationId: organizationId }
-        const images = (await BrandingImage.find({ branding })) || []
-        let faviconUrl = ''
-        let iconUrl = ''
-        for (const i of images) {
-            switch (i.tag) {
-                case brandingImageTag.ICON:
-                    iconUrl = i.url || ''
-                    break
-                case brandingImageTag.FAVICON:
-                    faviconUrl = i.url || ''
-                    break
-            }
-        }
+
+        const iconImageRecord = await BrandingImage.createQueryBuilder(
+            'brandingImage'
+        )
+            .where('brandingImage.branding = :brandingId', {
+                brandingId: branding.id,
+            })
+            .andWhere('brandingImage.tag = :tag', {
+                tag: brandingImageTag.ICON,
+            })
+            .orderBy('brandingImage.created_at', 'DESC')
+            .getOne()
+        const iconUrl = iconImageRecord ? iconImageRecord.url : ''
+
+        const favImageRecord = await BrandingImage.createQueryBuilder(
+            'brandingImage'
+        )
+            .where('brandingImage.branding = :brandingId', {
+                brandingId: branding.id,
+            })
+            .andWhere('brandingImage.tag = :tag', {
+                tag: brandingImageTag.FAVICON,
+            })
+            .orderBy('brandingImage.created_at', 'DESC')
+            .getOne()
+        const faviconUrl = favImageRecord ? favImageRecord.url : ''
+
         return {
             organizationId: organizationId,
             iconImageURL: iconUrl,
@@ -1139,36 +1092,3 @@ export class Model {
         }
     }
 }
-
-const streamToFile = (inputStream: ReadStream, filePath: string) => {
-    return new Promise((resolve, reject) => {
-        const fileWriteStream = fs.createWriteStream(filePath)
-        inputStream
-            .pipe(fileWriteStream)
-            .on('finish', resolve)
-            .on('error', reject)
-    })
-}
-/*
-function convertImage(args: string[]) {
-    return new Promise((resolve, reject) => {
-        im.convert(args, function (err, stdout) {
-            if (err) {
-                reject(err)
-            }
-            resolve(stdout)
-        })
-    })
-}
-
-function identifyImage(args: string[]) {
-    return new Promise((resolve, reject) => {
-        im.identify(args, function (err, stdout) {
-            if (err) {
-                reject(err)
-            }
-            resolve(stdout)
-        })
-    })
-}
-*/

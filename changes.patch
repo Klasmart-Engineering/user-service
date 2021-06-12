@@ -1,0 +1,33 @@
+diff --git a/src/model.ts b/src/model.ts
+index 480b8ed..c83de45 100644
+--- a/src/model.ts
++++ b/src/model.ts
+@@ -65,6 +65,7 @@ import { BrandingImage } from './entities/brandingImage'
+ import { IMAGE_MIMETYPES } from './utils/imageStore/imageMimeTypes'
+ import { setBrandingInput } from './types/graphQL/setBrandingInput'
+ import { brandingResult } from './types/graphQL/brandingresult'
++import { brandingInput } from './types/graphQL/brandingInput'
+ export class Model {
+     public static async create() {
+         try {
+@@ -1044,11 +1045,17 @@ export class Model {
+     }
+ 
+     public async branding(args: any, context: Context) {
+-        const input = args.input
++        const input: brandingInput = args.input
+         const organizationId = input.organizationId
+-        const branding = await Branding.findOne({
+-            organization: organizationId,
++
++        const branding = await Branding.findOne(Branding, {
++            where: {
++                organization: {
++                    organization_id: organizationId,
++                },
++            },
+         })
++
+         if (!branding) return { organizationId: organizationId }
+ 
+         const iconImageRecord = await BrandingImage.createQueryBuilder(
