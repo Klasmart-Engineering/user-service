@@ -293,6 +293,47 @@ const PERMISSIONS_CONNECTION = `
     }
 `
 
+const PROGRAMS_CONNECTION = `
+    query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
+        programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+
+                    ageRanges {
+                        id
+                        name
+                        status
+                    }
+
+                    grades {
+                        id
+                        name
+                        status
+                    }
+
+                    subjects {
+                        id
+                        name
+                        status
+                    }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -691,6 +732,30 @@ export async function permissionsConnection(
         })
 
     const res = await gqlTry(operation)
-
     return res.data?.permissionsConnection
+}
+
+export async function programsConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: PROGRAMS_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.programsConnection
 }

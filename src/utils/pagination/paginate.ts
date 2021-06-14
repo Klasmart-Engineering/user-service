@@ -38,7 +38,6 @@ export interface IPaginatedResponse<T = any> {
         hasNextPage: boolean
         hasPreviousPage: boolean
     }
-
     edges: {
         cursor: string
         node: T
