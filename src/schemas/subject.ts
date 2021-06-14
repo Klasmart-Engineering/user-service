@@ -7,6 +7,7 @@ const typeDefs = gql`
         subject(id: ID!): Subject @isAdmin(entity: "subject")
         uploadSubjectsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        renameDuplicateSubjects: Boolean @isAdmin
     }
     extend type Query {
         subject(id: ID!): Subject @isAdmin(entity: "subject")
@@ -41,6 +42,8 @@ export default function getDefault(
                     model.getSubject(args, ctx),
                 uploadSubjectsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSubjectsFromCSV(args, ctx, info),
+                renameDuplicateSubjects: (_parent, args, ctx, info) =>
+                    model.renameDuplicateSubjects(args, ctx, info),
             },
             Query: {
                 subject: (_parent, args, ctx, _info) =>
