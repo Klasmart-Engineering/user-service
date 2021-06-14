@@ -63,6 +63,10 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { Status } from '../../src/entities/status'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { grantPermission } from '../utils/operations/roleOps'
+import {
+    renameDuplicateGradesMutation,
+    renameDuplicateGradesQuery,
+} from '../utils/operations/renameDuplicateGrades'
 import { convertDataToCursor } from '../../src/utils/pagination/paginate'
 
 use(chaiAsPromised)
@@ -1933,6 +1937,70 @@ describe('model', () => {
                 })
                 expect(nullOrgs).eq(0)
                 expect(duplicatedOrgs).eq(1)
+            })
+        })
+    })
+
+    describe('renameDuplicateGrades', () => {
+        const gradeName = 'Grade 1'
+        let organization: Organization
+
+        beforeEach(async () => {
+            organization = new Organization()
+            await organization.save()
+
+            for (let i = 0; i < 3; i += 1) {
+                const grade = new Grade()
+                grade.name = gradeName
+                grade.organization = Promise.resolve(organization)
+                await grade.save()
+            }
+        })
+
+        context('when operation is not a mutation', () => {
+            it('should throw an error', async () => {
+                const fn = async () =>
+                    await renameDuplicateGradesQuery(testClient)
+
+                expect(fn()).to.be.rejected
+
+                const duplicatedGrades = await Grade.count({
+                    where: { name: gradeName, organization },
+                })
+
+                expect(duplicatedGrades).eq(3)
+            })
+        })
+
+        context('when user has not Admin permissions', () => {
+            it('should throw an error', async () => {
+                const fn = async () =>
+                    await renameDuplicateGradesMutation(testClient)
+
+                expect(fn()).to.be.rejected
+
+                const duplicatedGrades = await Grade.count({
+                    where: { name: gradeName, organization },
+                })
+
+                expect(duplicatedGrades).eq(3)
+            })
+        })
+
+        context('when user has Admin permissions', () => {
+            it('should rename the duplicated grades', async () => {
+                const result = await renameDuplicateGradesMutation(
+                    testClient,
+                    getAdminAuthToken()
+                )
+
+                expect(result).eq(true)
+
+                const duplicatedGrades = await Grade.count({
+                    where: { name: gradeName, organization },
+                })
+
+                expect(duplicatedGrades).eq(1)
             })
         })
     })
