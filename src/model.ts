@@ -49,6 +49,7 @@ import {
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { renameDuplicatedGrades } from './utils/renameMigration/grade'
 
 export class Model {
     public static async create() {
@@ -729,8 +730,8 @@ export class Model {
     }
 
     public async renameDuplicateOrganizations(
-        args: any,
-        context: Context,
+        _args: any,
+        _context: Context,
         info: GraphQLResolveInfo
     ) {
         if (info.operation.operation !== 'mutation') {
@@ -745,6 +746,32 @@ export class Model {
             await renameDuplicatedOrganizations(queryRunner.manager)
             await renameNullOrganizations(queryRunner.manager)
             await queryRunner.commitTransaction()
+            return true
+        } catch (error) {
+            await queryRunner.rollbackTransaction()
+            return false
+        } finally {
+            await queryRunner.release()
+        }
+    }
+
+    public async renameDuplicateGrades(
+        _args: any,
+        _context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+
+        const queryRunner = this.connection.createQueryRunner()
+        await queryRunner.connect()
+        await queryRunner.startTransaction()
+
+        try {
+            await renameDuplicatedGrades(queryRunner.manager)
+            await queryRunner.commitTransaction()
+
             return true
         } catch (error) {
             await queryRunner.rollbackTransaction()

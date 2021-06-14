@@ -7,6 +7,7 @@ const typeDefs = gql`
         grade(id: ID!): Grade @isAdmin(entity: "grade")
         uploadGradesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        renameDuplicateGrades: Boolean @isAdmin
     }
     extend type Query {
         grade(id: ID!): Grade @isAdmin(entity: "grade")
@@ -42,6 +43,8 @@ export default function getDefault(
                 grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),
                 uploadGradesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadGradesFromCSV(args, ctx, info),
+                renameDuplicateGrades: (_parent, args, ctx, info) =>
+                    model.renameDuplicateGrades(args, ctx, info),
             },
             Query: {
                 grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),

@@ -53,6 +53,10 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { Status } from '../../src/entities/status'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { grantPermission } from '../utils/operations/roleOps'
+import {
+    renameDuplicateGradesMutation,
+    renameDuplicateGradesQuery,
+} from '../utils/operations/renameDuplicateGrades'
 import { convertDataToCursor } from '../../src/utils/pagination/paginate'
 
 use(chaiAsPromised)

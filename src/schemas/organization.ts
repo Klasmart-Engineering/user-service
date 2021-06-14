@@ -14,7 +14,7 @@ const typeDefs = gql`
         ): Organization
         uploadOrganizationsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
-        renameDuplicateOrganizations(_: Int): Boolean @isAdmin
+        renameDuplicateOrganizations: Boolean @isAdmin
     }
     extend type Query {
         organization(organization_id: ID!): Organization
