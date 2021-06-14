@@ -49,6 +49,8 @@ import {
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { Program } from './entities/program'
+import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
 
 export class Model {
@@ -410,6 +412,59 @@ export class Model {
                 primaryKey: 'permission_id',
             },
         })
+    }
+
+    public async programsConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Program>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Program.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    status: ['Program.status'],
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const program: Program = edge.node
+            const newNode: Partial<ProgramConnectionNode> = {
+                id: program.id,
+                name: program.name,
+                status: program.status,
+                system: program.system,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
     }
 
     public async getRole({ role_id }: Role) {

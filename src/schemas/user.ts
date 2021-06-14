@@ -54,12 +54,6 @@ const typeDefs = gql`
         node: UserConnectionNode
     }
 
-    type UserConnection {
-        total: Int
-        edges: [User!]!
-        pageInfo: PageInfo!
-    }
-
     # pagination extension types end here
 
     enum UserSortBy {
