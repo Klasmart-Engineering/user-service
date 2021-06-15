@@ -1,6 +1,6 @@
+import { addOrderByClause, ISortingConfig, ISortField } from './sorting'
 import { SelectQueryBuilder, BaseEntity } from 'typeorm'
 import { IEntityFilter } from './filtering'
-import { addOrderByClause, ISortingConfig, ISortField } from './sorting'
 
 const DEFAULT_PAGE_SIZE = 50
 const SEEK_BACKWARD = 'BACKWARD'

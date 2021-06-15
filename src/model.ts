@@ -49,6 +49,7 @@ import {
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { ISchoolsConnectionNode } from './types/graphQL/schoolsConnectionNode'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
@@ -413,6 +414,58 @@ export class Model {
                 primaryKey: 'permission_id',
             },
         })
+    }
+
+    public async schoolsConnection(
+        context: Context,
+        { direction, directionArgs, filter, sort }: IPaginationArgs<School>
+    ) {
+        const scope = this.schoolRepository.createQueryBuilder()
+
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('School.organization', 'Organization')
+            }
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    schoolId: ['school_id'],
+                    name: ['school_name'],
+                    shortCode: ['shortcode'],
+                })
+            )
+        }
+
+        const data = await paginateData<School>({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'school_id',
+                aliases: {
+                    id: 'school_id',
+                    name: 'school_name',
+                    shortCode: 'shortcode',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const school = edge.node
+            const newNode: ISchoolsConnectionNode = {
+                id: school.school_id,
+                name: school.school_name,
+                status: school.status,
+                shortCode: school.shortcode,
+                organizationId:
+                    (await school.organization)?.organization_id || '',
+            }
+
+            edge.node = newNode as any
+        }
+
+        return data
     }
 
     public async programsConnection(

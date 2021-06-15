@@ -10,6 +10,12 @@ const typeDefs = gql`
     }
     extend type Query {
         school(school_id: ID!): School
+        schoolsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: SchoolFilter
+            sort: SchoolSortInput
+        ): SchoolsConnectionResponse
     }
     type School {
         school_id: ID!
@@ -58,6 +64,51 @@ const typeDefs = gql`
         membership: OrganizationMembership
         schoolMemberships: [SchoolMembership]
     }
+
+    # pagination, filtering & sorting types
+    type SchoolsConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [SchoolsConnectionEdge]
+    }
+
+    type SchoolsConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: SchoolConnectionNode
+    }
+
+    type SchoolConnectionNode {
+        id: ID!
+        name: String!
+        status: Status!
+        shortCode: String
+        organizationId: ID!
+    }
+
+    input SchoolFilter {
+        # table columns
+        schoolId: UUIDFilter
+        name: StringFilter
+        shortCode: StringFilter
+        status: StringFilter
+
+        # joined columns
+        organizationId: UUIDFilter
+
+        AND: [SchoolFilter!]
+        OR: [SchoolFilter!]
+    }
+
+    enum SchoolSortBy {
+        id
+        name
+        shortCode
+    }
+
+    input SchoolSortInput {
+        field: SchoolSortBy!
+        order: SortOrder!
+    }
 `
 export default function getDefault(
     model: Model,
@@ -75,6 +126,9 @@ export default function getDefault(
             Query: {
                 school: (_parent, args, _context, _info) =>
                     model.getSchool(args),
+                schoolsConnection: (_parent, args, ctx, _info) => {
+                    return model.schoolsConnection(ctx, args)
+                },
             },
         },
     }

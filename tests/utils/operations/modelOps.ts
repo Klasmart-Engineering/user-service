@@ -293,6 +293,28 @@ const PERMISSIONS_CONNECTION = `
     }
 `
 
+const SCHOOLS_CONNECTION = `
+    query schoolsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SchoolFilter, $sortArgs: SchoolSortInput) {
+        schoolsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    shortCode
+                }
+            }
+            pageInfo{
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+        }
+    }
+`
+
 const PROGRAMS_CONNECTION = `
     query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
         programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
@@ -758,4 +780,29 @@ export async function programsConnection(
 
     const res = await gqlTry(operation)
     return res.data?.programsConnection
+}
+
+export async function schoolsConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: SCHOOLS_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.schoolsConnection
 }
