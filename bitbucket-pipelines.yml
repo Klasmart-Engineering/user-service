@@ -58,18 +58,27 @@ pipelines:
             - pip
           image: python:3.9-alpine
           script:
+            # auth to AWS ECR
             - pip3 install -U awscli
-            - apk add git --no-cache
             - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
-            - docker build -t kidsloop-user .
+
+            # define vars
             - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
             - export REPO=$DOCKER_REPO_URL/kidsloop-user
-            - export COMMIT_TAG=$(git rev-parse --short HEAD)
-            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG
-            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG-latest
-            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG-$BITBUCKET_BUILD_NUMBER
-            - docker tag kidsloop-user:latest $REPO:$BRANCH_TAG-$COMMIT_TAG
-            - docker push $REPO:$BRANCH_TAG
-            - docker push $REPO:$BRANCH_TAG-latest
-            - docker push $REPO:$BRANCH_TAG-$BITBUCKET_BUILD_NUMBER
-            - docker push $REPO:$BRANCH_TAG-$COMMIT_TAG
+            - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
+            - if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
+
+            # build image
+            - docker build -t kidsloop-user .
+
+            # tag image
+            - docker tag kidsloop-user:latest $REPO:$TAG
+            - docker tag kidsloop-user:latest $REPO:$TAG-latest
+            - docker tag kidsloop-user:latest $REPO:$TAG-$BITBUCKET_BUILD_NUMBER
+            - docker tag kidsloop-user:latest $REPO:$TAG-$COMMIT_TAG
+
+            # push images
+            - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG; fi
+            - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG-latest; fi
+            - docker push $REPO:$TAG-$BITBUCKET_BUILD_NUMBER
+            - docker push $REPO:$TAG-$COMMIT_TAG
