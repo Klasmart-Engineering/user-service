@@ -27,16 +27,6 @@ FwIDAQAB
         },
     ],
     [
-        'calmid-debug',
-        {
-            options: {
-                issuer: 'calmid-debug',
-                algorithms: ['HS512', 'HS384', 'HS256'],
-            },
-            secretOrPublicKey: 'iXtZx1D5AqEB0B9pfn+hRQ==',
-        },
-    ],
-    [
         'KidsLoopChinaUser-live',
         {
             options: {
@@ -54,6 +44,19 @@ FwIDAQAB
         },
     ],
 ])
+
+if(process.env.NODE_ENV !== "production") {
+    issuers.set(
+        'calmid-debug',
+        {
+            options: {
+                issuer: 'calmid-debug',
+                algorithms: ['HS512', 'HS384', 'HS256'],
+            },
+            secretOrPublicKey: 'iXtZx1D5AqEB0B9pfn+hRQ==',
+        },
+    )
+}
 
 /*
     The next issuers are just for instance,
