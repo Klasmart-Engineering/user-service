@@ -101,6 +101,7 @@ export async function checkToken(token?: string) {
         return verifiedToken
     } catch (e) {
         console.error(e)
+        throw e
     }
 }
 
