@@ -101,6 +101,7 @@ describe('model', () => {
             program.subjects = Promise.resolve([
                 subjects[Math.floor(i / (programsCount / subjectsCount))],
             ])
+            program.system = i % 2 === 0
             program.status = Status.ACTIVE
             programs.push(program)
         }
@@ -281,6 +282,25 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(programsCount)
+        })
+
+        it('supports filtering by program system', async () => {
+            const filter: IEntityFilter = {
+                system: {
+                    operator: 'eq',
+                    value: true,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(programsCount / 2)
         })
     })
 })

@@ -44,6 +44,7 @@ const typeDefs = gql`
 
     input ProgramFilter {
         status: StringFilter
+        system: BooleanFilter
 
         #joined columns
         organizationId: UUIDFilter
