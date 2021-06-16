@@ -3,6 +3,9 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 
 const typeDefs = gql`
+    scalar HexColor
+    scalar Url
+
     extend type Mutation {
         organization(
             organization_id: ID!
@@ -15,11 +18,17 @@ const typeDefs = gql`
         uploadOrganizationsFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         renameDuplicateOrganizations: Boolean @isAdmin
+        setBranding(
+            organizationId: ID!
+            iconImage: Upload
+            primaryColor: HexColor
+        ): Branding
     }
     extend type Query {
         organization(organization_id: ID!): Organization
         organizations(organization_ids: [ID!]): [Organization]
             @isAdmin(entity: "organization")
+        branding(input: BrandingInput): Branding
     }
     type Organization {
         organization_id: ID!
@@ -153,6 +162,18 @@ const typeDefs = gql`
         organization: Organization
         user: User
     }
+
+    type Branding {
+        organizationId: ID
+        # note that just the URL is returned to be downloaded by the client
+        iconImageURL: Url
+        faviconImageURL: Url
+        primaryColor: HexColor
+    }
+
+    input BrandingInput {
+        organizationId: ID!
+    }
 `
 export default function getDefault(
     model: Model,
@@ -168,12 +189,16 @@ export default function getDefault(
                     model.uploadOrganizationsFromCSV(args, ctx, info),
                 renameDuplicateOrganizations: (_parent, args, ctx, info) =>
                     model.renameDuplicateOrganizations(args, ctx, info),
+                setBranding: (_parent, args, ctx, info) =>
+                    model.setBranding(args, ctx, info),
             },
             Query: {
                 organizations: (_parent, args, _context, _info) =>
                     model.getOrganizations(args),
                 organization: (_parent, { organization_id }, _context, _info) =>
                     model.getOrganization(organization_id),
+                branding: (_parent, args, ctx, _info) =>
+                    model.branding(args, ctx),
             },
         },
     }
