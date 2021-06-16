@@ -8,7 +8,7 @@ import { brandingResult } from '../types/graphQL/brandingresult'
 import { IMAGE_MIMETYPES } from '../utils/imageStore/imageMimeTypes'
 
 export class ImageStorer {
-    public testMimeType(mimeType: string): boolean {
+    public static testMimeType(mimeType: string): boolean {
         const mimetype = IMAGE_MIMETYPES.find(function (mime) {
             return mime === mimeType
         })
@@ -18,7 +18,7 @@ export class ImageStorer {
         return false
     }
 
-    public isHexColor(hex: string): boolean {
+    public static isHexColor(hex: string): boolean {
         return (
             typeof hex === 'string' &&
             hex.length === 6 &&
@@ -26,7 +26,7 @@ export class ImageStorer {
         )
     }
 
-    public extensionFromMimeType(mimetype: string): string {
+    public static extensionFromMimeType(mimetype: string): string {
         let tail = ''
         const matchRes = mimetype.match(/[^/]+$/)
         if (matchRes) {
@@ -49,7 +49,7 @@ export class ImageStorer {
         await queryRunner.startTransaction()
         try {
             /* Validations */
-            if (primaryColor && !this.isHexColor(primaryColor)) {
+            if (primaryColor && !ImageStorer.isHexColor(primaryColor)) {
                 throw new Error(
                     'PrimaryColor: "' +
                         primaryColor +
@@ -57,7 +57,7 @@ export class ImageStorer {
                 )
             }
             if (file) {
-                if (!this.testMimeType(file.mimetype)) {
+                if (!ImageStorer.testMimeType(file.mimetype)) {
                     throw new Error(
                         'IconImage mimetype "' +
                             file.mimetype +
@@ -94,7 +94,7 @@ export class ImageStorer {
                 : []
 
             if (file) {
-                const tail = this.extensionFromMimeType(file.mimetype)
+                const tail = ImageStorer.extensionFromMimeType(file.mimetype)
                 const imageRecord = new BrandingImage()
                 imageRecord.tag = brandingImageTag.ICON
                 imageRecord.branding = branding
@@ -142,3 +142,7 @@ export class ImageStorer {
         return result
     }
 }
+
+export const isHexColor = ImageStorer.isHexColor
+export const testMimeType = ImageStorer.testMimeType
+export const extensionFromMimeType = ImageStorer.extensionFromMimeType
