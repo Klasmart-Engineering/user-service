@@ -11,7 +11,7 @@ import {
 import { createTestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Model } from '../../src/model'
-import { setBranding } from '../utils/operations/brandingOps'
+import { getBranding, setBranding } from '../utils/operations/brandingOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser } from '../utils/testEntities'
 import { Branding } from '../../src/entities/branding'
@@ -118,6 +118,59 @@ describe('model.branding', () => {
                 expect(brandings.length).to.equal(0)
                 const images = await BrandingImage.find()
                 expect(images.length).to.equal(0)
+            })
+        })
+    })
+    describe('branding', () => {
+        let file: ReadStream
+        const mimetype = 'image/png'
+        const encoding = '7bit'
+        beforeEach(async () => {
+            const primaryColor = 'cd657b'
+            const iconImage = fs.createReadStream(
+                resolve(`tests/fixtures/${filename}`)
+            )
+            const branding = await setBranding(
+                testClient,
+                organizationId,
+                iconImage,
+                filename,
+                mimetype,
+                encoding,
+                primaryColor
+            )
+        })
+        context('when the organization exists and has branding.', () => {
+            it('should return a branding record', async () => {
+                const branding = await getBranding(testClient, organizationId)
+                expect(branding).to.exist
+                expect(branding.primaryColor).to.equal('cd657b')
+                expect(branding.iconImageURL).to.match(/.*\.png$/)
+            })
+        })
+        context('when the organization has two branding images', () => {
+            beforeEach(async () => {
+                const primaryColor = 'cd657b'
+                const iconImage = fs.createReadStream(
+                    resolve(`tests/fixtures/icon.jpg`)
+                )
+                const branding = await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    'icon.jpg',
+                    'image/jpeg',
+                    encoding,
+                    primaryColor
+                )
+            })
+            it('should return a branding icon url with the latest image', async () => {
+                const images = await BrandingImage.find()
+                expect(images.length).to.equal(4)
+                const branding = await getBranding(testClient, organizationId)
+                expect(branding).to.exist
+                expect(branding.primaryColor).to.equal('cd657b')
+                expect(branding.iconImageURL).to.match(/.*\.jpeg$/)
             })
         })
     })

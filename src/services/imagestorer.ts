@@ -6,9 +6,35 @@ import { Organization } from '../entities/organization'
 import { brandingImageTag } from '../types/graphQL/brandingImageTag'
 import { brandingResult } from '../types/graphQL/brandingresult'
 import { IMAGE_MIMETYPES } from '../utils/imageStore/imageMimeTypes'
-import { isHexColor } from '../utils/validations'
 
 export class ImageStorer {
+    public testMimeType(mimeType: string): boolean {
+        const mimetype = IMAGE_MIMETYPES.find(function (mime) {
+            return mime === mimeType
+        })
+        if (mimetype) {
+            return true
+        }
+        return false
+    }
+
+    public isHexColor(hex: string): boolean {
+        return (
+            typeof hex === 'string' &&
+            hex.length === 6 &&
+            !isNaN(Number('0x' + hex))
+        )
+    }
+
+    public extensionFromMimeType(mimetype: string): string {
+        let tail = ''
+        const matchRes = mimetype.match(/[^/]+$/)
+        if (matchRes) {
+            tail = matchRes[0]
+        }
+        return tail
+    }
+
     public async storeBranding(
         organizationId: string,
         file: FileUpload,
@@ -24,7 +50,7 @@ export class ImageStorer {
         let success = true
         try {
             /* Validations */
-            if (primaryColor && !isHexColor(primaryColor)) {
+            if (primaryColor && !this.isHexColor(primaryColor)) {
                 throw new Error(
                     'PrimaryColor: "' +
                         primaryColor +
@@ -32,10 +58,7 @@ export class ImageStorer {
                 )
             }
             if (file) {
-                const mimeType = IMAGE_MIMETYPES.find(function (mime) {
-                    return mime === file.mimetype
-                })
-                if (!mimeType) {
+                if (!this.testMimeType(file.mimetype)) {
                     throw new Error(
                         'IconImage mimetype "' +
                             file.mimetype +
@@ -72,11 +95,7 @@ export class ImageStorer {
                 : []
 
             if (file) {
-                let tail = ''
-                const matchRes = file.mimetype.match(/[^/]+$/)
-                if (matchRes) {
-                    tail = matchRes[0]
-                }
+                const tail = this.extensionFromMimeType(file.mimetype)
                 const imageRecord = new BrandingImage()
                 imageRecord.tag = brandingImageTag.ICON
                 imageRecord.branding = branding
