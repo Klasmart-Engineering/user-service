@@ -47,7 +47,6 @@ export class ImageStorer {
         const queryRunner = connection.createQueryRunner()
         await queryRunner.connect()
         await queryRunner.startTransaction()
-        let success = true
         try {
             /* Validations */
             if (primaryColor && !this.isHexColor(primaryColor)) {
@@ -130,7 +129,6 @@ export class ImageStorer {
             }
             queryRunner.commitTransaction()
         } catch (err) {
-            success = false
             console.log(err)
             dberr = err
             await queryRunner.rollbackTransaction()
@@ -138,7 +136,7 @@ export class ImageStorer {
             await queryRunner.release()
         }
 
-        if (!success && dberr) {
+        if (dberr) {
             throw dberr
         }
         return result

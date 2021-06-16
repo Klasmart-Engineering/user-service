@@ -21,11 +21,3 @@ export function validateDOB(dob?: string): boolean {
     }
     return false
 }
-
-export function isHexColor(hex: string) {
-    return (
-        typeof hex === 'string' &&
-        hex.length === 6 &&
-        !isNaN(Number('0x' + hex))
-    )
-}
