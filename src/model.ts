@@ -48,23 +48,16 @@ import {
     filterHasProperty,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
-import {
-    isHexColor,
-    validateDOB,
-    validateEmail,
-    validatePhone,
-} from './utils/validations'
+import { validateDOB, validateEmail, validatePhone } from './utils/validations'
 import { ISchoolsConnectionNode } from './types/graphQL/schoolsConnectionNode'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
-import { Branding, brandingUUID } from './entities/branding'
+import { Branding } from './entities/branding'
 import { brandingImageTag } from './types/graphQL/brandingImageTag'
 import { BrandingImage } from './entities/brandingImage'
-import { IMAGE_MIMETYPES } from './utils/imageStore/imageMimeTypes'
 import { setBrandingInput } from './types/graphQL/setBrandingInput'
-import { brandingResult } from './types/graphQL/brandingresult'
 import { brandingInput } from './types/graphQL/brandingInput'
 import { ImageStorer } from './services/imagestorer'
 export class Model {
