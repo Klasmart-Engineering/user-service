@@ -18,6 +18,8 @@ interface IFilter {
 
 type ColumnAliases = Record<string, string[]> // use empty to ignore
 
+const FILTER_VALUE_MAX_LENGTH = 250
+
 // generates a WHERE clause for a given query filter
 export function getWhereClauseFromFilter(
     filter: IEntityFilter,
@@ -30,6 +32,15 @@ export function getWhereClauseFromFilter(
                 continue
             }
             const data = filter[key] as IFilter
+
+            if (
+                typeof data.value === 'string' &&
+                data.value.length > FILTER_VALUE_MAX_LENGTH
+            ) {
+                throw new Error(
+                    `Value for provided "${key}" filter is too long. Max length allowed is ${FILTER_VALUE_MAX_LENGTH} characters`
+                )
+            }
 
             // rule: all string contains the empty string
             if (data.operator === 'contains' && data.value === '') {
