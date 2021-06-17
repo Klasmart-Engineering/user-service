@@ -126,3 +126,55 @@ Remember include `Authorization` with JWT token in request's header.
 -   [VSCode](https://code.visualstudio.com/), for a feature rich development environment
 -   [Postman](https://www.postman.com/), for testing API requests
 -   [Postico](https://eggerapps.at/postico/), for working with Postgres databases on macOS
+
+# Build and run the User service in a local Docker Container
+
+In the the root folder of your kidsloop-user-service checkout run:
+
+`docker build .`
+
+At the end of a long stream of output there should be the line:
+
+Successfully built <13 hexdigits>
+
+Remember the digits
+
+Find out the ip address of the postgres container.
+
+`docker inspect postgres | grep IPAddress`
+
+Remember the ip address.
+
+Run this command replacing <ipaddress> with the postgres ip address and <hexdigits> with the 13 hexdigits above.
+
+`docker run -e DATABASE_URL="postgres://postgres:kidsloop@<ipaddress>" --name user_service --publish 8080:8080 <hexdigits>`
+
+# Build and run the service using Docker-compose
+
+You will need to stop your postgres container and also install docker-compose
+
+`docker stop postgres`
+
+In the root of your checkout type:
+
+`docker-compose build`
+
+Then
+
+`docker-compose up`
+
+This builds a new db container and runs the user service against that.
+
+You could run it in the background piping the output to a file.
+
+`docker compose up >docker-compose.out &`
+
+The following will stop your service and remove your containers:
+
+`docker-compose down`
+
+# Fill your db with dummy content
+
+In misc-utils:
+
+The python file dummy_content.py will fill your db with dummy content. It calls the service as client. And in the end generates a super user key for you to use.

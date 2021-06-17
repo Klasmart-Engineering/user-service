@@ -1,0 +1,25 @@
+version: '3.7'
+
+services:
+    kidsloop-user-serice:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: user-service
+        environment:
+            - DATABASE_URL=postgres://postgres:kidsloop@postgres1
+        expose:
+            - '8080'
+        ports:
+            - '8080:8080'
+        depends_on:
+            - postgres1
+        command: npm start
+    postgres1:
+        container_name: postgres1
+        image: postgres
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=kidsloop
+        ports:
+            - 5432:5432

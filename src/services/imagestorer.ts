@@ -19,14 +19,14 @@ interface brandingUrlMap {
 export class ImageStorer {
     private makeAndStoreTempFile(
         tmpFileObjs: FileResult[],
-        postfix: string
+        extension: string
     ): FileResult {
-        const tmpFileObj = tmp.fileSync({ postfix: '.' + postfix })
+        const tmpFileObj = tmp.fileSync({ postfix: '.' + extension })
         tmpFileObjs.push(tmpFileObj)
         return tmpFileObj
     }
 
-    public testMimeType(mimeType: string): boolean {
+    public static testMimeType(mimeType: string): boolean {
         const mimetype = IMAGE_MIMETYPES.find(function (mime) {
             return mime === mimeType
         })
@@ -36,7 +36,7 @@ export class ImageStorer {
         return false
     }
 
-    public isHexColor(hex: string): boolean {
+    public static isHexColor(hex: string): boolean {
         return (
             typeof hex === 'string' &&
             hex.length === 6 &&
@@ -44,13 +44,13 @@ export class ImageStorer {
         )
     }
 
-    public extensionFromMimeType(mimetype: string): string {
-        let tail = ''
+    public static extensionFromMimeType(mimetype: string): string {
+        let extension = ''
         const matchRes = mimetype.match(/[^/]+$/)
         if (matchRes) {
-            tail = matchRes[0]
+            extension = matchRes[0]
         }
-        return tail
+        return extension
     }
 
     private async checkImageFile(filename: string) {
@@ -60,9 +60,7 @@ export class ImageStorer {
             '%wx%h',
             filename,
         ])) as string
-        const dims = dimstr.split('x')
-        const width = parseInt(dims[0])
-        const height = parseInt(dims[1])
+        const [width, height] = dimstr.split('x').map((e) => parseInt(e))
         if (width > 1000) {
             throw new Error('Image is too large over 1000 pixels wide')
         }
@@ -85,19 +83,21 @@ export class ImageStorer {
     }
 
     private async checkScaleStoreBrandingImages(
+        organizationId: string,
         tmpFileObjs: FileResult[],
         file: FileUpload,
-        tail: string,
+        extension: string,
         brandingId: string
     ): Promise<brandingUrlMap> {
-        const iconFileName = brandingId + '.icon.' + tail
-        const faviconFileName = brandingId + '.favicon.ico'
+        const iconFileName = 'icon.' + extension
+        const faviconFileName = 'favicon.ico'
 
+        const provider = process.env.PROVIDER || 'amazon'
         const initialIconStream = file.createReadStream()
 
         const tmpIconFileObj = this.makeAndStoreTempFile(
             tmpFileObjs,
-            '.' + tail
+            '.' + extension
         )
         const tmpFavFileObj = this.makeAndStoreTempFile(tmpFileObjs, '.ico')
 
@@ -105,7 +105,14 @@ export class ImageStorer {
         await this.checkImageFile(tmpIconFileObj.name)
 
         const iconStream = fs.createReadStream(tmpIconFileObj.name)
-        const iconUrl = await upload('provider', iconStream, iconFileName)
+        const iconUrl = await upload(
+            provider,
+            organizationId,
+            iconStream,
+            iconFileName,
+            brandingId,
+            brandingImageTag.ICON
+        )
 
         await this.scaleImageFile(
             tmpIconFileObj.name,
@@ -114,7 +121,15 @@ export class ImageStorer {
         )
 
         const faviconStream = fs.createReadStream(tmpFavFileObj.name)
-        const favUrl = await upload('provider', faviconStream, faviconFileName)
+        const favUrl = await upload(
+            provider,
+            organizationId,
+            faviconStream,
+            faviconFileName,
+            brandingId,
+            brandingImageTag.FAVICON
+        )
+
         return { icon: iconUrl, favicon: favUrl }
     }
 
@@ -133,7 +148,7 @@ export class ImageStorer {
         const tmpFileObjs: FileResult[] = []
         try {
             /* Validations */
-            if (primaryColor && !this.isHexColor(primaryColor)) {
+            if (primaryColor && !isHexColor(primaryColor)) {
                 throw new Error(
                     'PrimaryColor: "' +
                         primaryColor +
@@ -141,7 +156,7 @@ export class ImageStorer {
                 )
             }
             if (file) {
-                if (!this.testMimeType(file.mimetype)) {
+                if (!testMimeType(file.mimetype)) {
                     throw new Error(
                         'IconImage mimetype "' +
                             file.mimetype +
@@ -178,7 +193,7 @@ export class ImageStorer {
                 : []
 
             if (file) {
-                const tail = this.extensionFromMimeType(file.mimetype)
+                const extension = extensionFromMimeType(file.mimetype)
                 const imageRecord = new BrandingImage()
                 imageRecord.tag = brandingImageTag.ICON
                 imageRecord.branding = branding
@@ -187,24 +202,14 @@ export class ImageStorer {
                 favImageRecord.branding = branding
 
                 const urls = await this.checkScaleStoreBrandingImages(
+                    organizationId,
                     tmpFileObjs,
                     file,
-                    tail,
+                    extension,
                     branding.id
                 )
                 imageRecord.url = iconUrl = urls.icon
                 favImageRecord.url = faviconUrl = urls.favicon
-
-                //const iconFileName = branding.id + '.icon.' + tail
-                //const faviconFileName = branding.id + '.favicon.ico'
-
-                // This is not the real way of getting the url
-                //iconUrl = 'http://localhost:8080/' + iconFileName
-                //imageRecord.url = iconUrl
-
-                // This is not the real way of getting the url
-                //faviconUrl = 'http://localhost:8080/' + faviconFileName
-                //favImageRecord.url = faviconUrl
 
                 await queryRunner.manager.save(imageRecord)
                 await queryRunner.manager.save(favImageRecord)
@@ -236,7 +241,7 @@ export class ImageStorer {
     }
 }
 
-function convertImage(args: string[]) {
+export function convertImage(args: string[]) {
     return new Promise((resolve, reject) => {
         im.convert(args, function (err, stdout) {
             if (err) {
@@ -247,7 +252,7 @@ function convertImage(args: string[]) {
     })
 }
 
-function identifyImage(args: string[]) {
+export function identifyImage(args: string[]) {
     return new Promise((resolve, reject) => {
         im.identify(args, function (err, stdout) {
             if (err) {
@@ -258,12 +263,19 @@ function identifyImage(args: string[]) {
     })
 }
 
-async function upload(provider: string, stream: ReadStream, fileName: string) {
-    await streamToFile(stream, '/work/tmp/' + fileName)
+async function upload(
+    provider: string,
+    organizationId: string,
+    stream: ReadStream,
+    fileName: string,
+    prefix: string,
+    imageType: string
+) {
+    //await streamToFile(stream, '/work/tmp/' + fileName)
     return 'http://localhost:8080/' + fileName
 }
 
-const streamToFile = (inputStream: ReadStream, filePath: string) => {
+export const streamToFile = (inputStream: ReadStream, filePath: string) => {
     return new Promise((resolve, reject) => {
         const fileWriteStream = fs.createWriteStream(filePath)
         inputStream
@@ -284,3 +296,7 @@ function unlinkFileObjs(fileObjs: FileResult[]) {
         }
     }
 }
+
+export const isHexColor = ImageStorer.isHexColor
+export const testMimeType = ImageStorer.testMimeType
+export const extensionFromMimeType = ImageStorer.extensionFromMimeType

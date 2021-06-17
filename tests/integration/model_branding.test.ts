@@ -95,6 +95,35 @@ describe('model.branding', () => {
                 expect(images.length).to.equal(0)
             })
         })
+        context(
+            'when the file is the wrong type but the correct mime type',
+            () => {
+                it('should fail in setting the branding and not create new db records', async () => {
+                    const wrongfile = 'rolesExample.csv'
+                    const primaryColor = 'cd657b'
+                    const iconImage = fs.createReadStream(
+                        resolve(`tests/fixtures/${wrongfile}`)
+                    )
+                    try {
+                        const branding = await setBranding(
+                            testClient,
+                            organizationId,
+                            iconImage,
+                            filename,
+                            mimetype,
+                            encoding,
+                            primaryColor
+                        )
+                    } catch (e) {
+                        expect(e).to.exist
+                    }
+                    const brandings = await Branding.find()
+                    expect(brandings.length).to.equal(0)
+                    const images = await BrandingImage.find()
+                    expect(images.length).to.equal(0)
+                })
+            }
+        )
         context('when the primary colour is not a hex triplet', () => {
             it('should fail in setting the branding and not create new db records', async () => {
                 const wrongfile = 'rolesExample.csv'
