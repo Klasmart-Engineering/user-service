@@ -24,7 +24,7 @@ initApp()
 
         https.createServer(certs, app.expressApp).listen(port, () => {
             console.log(
-                `🌎 Development server ready at https://fe.kidsloop.net:${port}${app.apolloServer.graphqlPath}`
+                `🌎 Development server ready at https://fe.alpha.kidsloop.net:${port}${app.apolloServer.graphqlPath}`
             )
         })
     })

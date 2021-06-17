@@ -4,11 +4,15 @@ import cookieParser from 'cookie-parser'
 import { graphqlUploadExpress } from 'graphql-upload'
 import { createServer } from './utils/createServer'
 import { checkIssuerAuthorization } from './token'
-import escapeStringRegexp from "escape-string-regexp"
+import escapeStringRegexp from 'escape-string-regexp'
 
-const domain = process.env.DOMAIN || ""
-if(!domain) { console.warn("Warning: The DOMAIN enviroment variable was not set") }
-const domainRegex = new RegExp(`^https://(.*\\.)?${escapeStringRegexp(domain)}$`)
+const domain = process.env.DOMAIN || 'alpha.kidsloop.net'
+if (!domain) {
+    console.warn('Warning: The DOMAIN enviroment variable was not set')
+}
+const domainRegex = new RegExp(
+    `^https://(.*\\.)?${escapeStringRegexp(domain)}(:\\d{1,5})$`
+)
 
 const routePrefix = process.env.ROUTE_PREFIX || ''
 
@@ -28,15 +32,18 @@ export const initApp = async () => {
             allowedHeaders: ['Authorization', 'Content-Type'],
             credentials: true,
             origin: (origin, callback) => {
-				try {
-                    if (!origin) { callback(null, false); return }
-					const match = origin.match(domainRegex)
-					callback(null, Boolean(match))
-				} catch (e) {
-					console.error(e)
-					callback(e)
-				}
-			},
+                try {
+                    if (!origin) {
+                        callback(null, false)
+                        return
+                    }
+                    const match = origin.match(domainRegex)
+                    callback(null, Boolean(match))
+                } catch (e) {
+                    console.error(e)
+                    callback(e)
+                }
+            },
         },
         path: routePrefix,
     })

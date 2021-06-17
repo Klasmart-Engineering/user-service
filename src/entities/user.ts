@@ -775,7 +775,7 @@ if (!process.env.DOMAIN) {
         'Warning DOMAIN env varible not set, defaulting to kidsloop.net'
     )
 }
-const domain = process.env.DOMAIN || 'kidsloop.net'
+const domain = process.env.DOMAIN || 'alpha.kidsloop.net'
 const accountNamespace = v5(domain, v5.DNS)
 
 export function accountUUID(email?: string) {
