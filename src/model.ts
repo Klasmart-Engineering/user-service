@@ -929,8 +929,10 @@ export class Model {
         const organizationId = args.organizationId
 
         const imageStorer = new ImageStorer()
-
-        return imageStorer.storeBranding(
+        if (!file) {
+            console.log('############# file is undefined')
+        }
+        return await imageStorer.storeBranding(
             organizationId,
             file,
             primaryColor,
