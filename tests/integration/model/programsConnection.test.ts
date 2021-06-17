@@ -265,6 +265,44 @@ describe('model', () => {
             expect(result.edges.length).eq(10)
         })
 
+        it('supports filtering by program ID', async () => {
+            const filter: IEntityFilter = {
+                id: {
+                    operator: 'eq',
+                    value: programs[0].id,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(1)
+        })
+
+        it('supports filtering by program name', async () => {
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: '1',
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(6)
+        })
+
         it('supports filtering by program status', async () => {
             const filter: IEntityFilter = {
                 status: {
@@ -301,6 +339,28 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(programsCount / 2)
+        })
+
+        it('fails if search value is longer than 250 characters', async () => {
+            const longValue =
+                'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: longValue,
+                },
+            }
+
+            const fn = () =>
+                programsConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+            expect(fn()).to.be.rejected
         })
     })
 })

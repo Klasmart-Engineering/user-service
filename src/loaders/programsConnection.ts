@@ -30,6 +30,8 @@ export const ageRangesForPrograms = async (
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: ['Organization.organization_id'],
+                id: ['Program.id'],
+                name: ['Program.name'],
                 system: ['Program.system'],
                 status: ['Program.status'],
             })
@@ -80,6 +82,8 @@ export const gradesForPrograms = async (
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: ['Organization.organization_id'],
+                id: ['Program.id'],
+                name: ['Program.name'],
                 system: ['Program.system'],
                 status: ['Program.status'],
             })
@@ -125,6 +129,8 @@ export const subjectsForPrograms = async (
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: ['Organization.organization_id'],
+                id: ['Program.id'],
+                name: ['Program.name'],
                 system: ['Program.system'],
                 status: ['Program.status'],
             })
