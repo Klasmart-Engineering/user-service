@@ -12,12 +12,19 @@ import {
     createTestClient,
 } from '../utils/createTestClient'
 import { getAdminAuthToken } from '../utils/testConfig'
-
+import { setBranding } from '../utils/operations/brandingOps'
+import fs from 'fs'
+import { resolve } from 'path'
 const GET_ORGANIZATIONS = `
     query getOrganizations {
         organizations {
             organization_id
             organization_name
+            branding {
+                iconImageURL
+                faviconImageURL
+                primaryColor
+              }
         }
     }
 `
@@ -27,6 +34,11 @@ const GET_ORGANIZATION = `
         organization(organization_id: $organization_id) {
             organization_id
             organization_name
+            branding {
+                iconImageURL
+                faviconImageURL
+                primaryColor
+              }
         }
     }
 `
@@ -144,7 +156,83 @@ describe('model.organization', () => {
                 expect(res.errors, res.errors?.toString()).to.be.undefined
                 const gqlOrganization = res.data?.organization as Organization
                 expect(gqlOrganization).to.exist
-                expect(organization).to.include(gqlOrganization)
+                expect(gqlOrganization.organization_id).to.eq(
+                    organization.organization_id
+                )
+            })
+
+            context('branding', () => {
+                const primaryColor = 'cd657b'
+                it('returns branding info if it has been set', async () => {
+                    const branding = await setBranding(
+                        testClient,
+                        organization.organization_id,
+                        fs.createReadStream(resolve(`tests/fixtures/icon.png`)),
+                        'icon.png',
+                        'image/png',
+                        '7bit',
+                        primaryColor
+                    )
+                    const { query } = testClient
+
+                    const res = await query({
+                        query: GET_ORGANIZATION,
+                        variables: {
+                            organization_id: organization.organization_id,
+                        },
+                        headers: { authorization: getAdminAuthToken() },
+                    })
+
+                    const data = res.data?.organization
+                    expect(data.branding.primaryColor).to.eq(primaryColor)
+                    expect(branding.iconImageURL).to.match(/.*\.png$/)
+                })
+                it('returns the latest branding info if it has been set multiple times', async () => {
+                    const { query } = testClient
+                    let branding = await setBranding(
+                        testClient,
+                        organization.organization_id,
+                        fs.createReadStream(resolve(`tests/fixtures/icon.png`)),
+                        'icon.png',
+                        'image/png',
+                        '7bit',
+                        primaryColor
+                    )
+
+                    let res = await query({
+                        query: GET_ORGANIZATION,
+                        variables: {
+                            organization_id: organization.organization_id,
+                        },
+                        headers: { authorization: getAdminAuthToken() },
+                    })
+
+                    let data = res.data?.organization
+                    expect(data.branding.primaryColor).to.eq(primaryColor)
+                    expect(branding.iconImageURL).to.match(/.*\.png$/)
+
+                    branding = await setBranding(
+                        testClient,
+                        organization.organization_id,
+                        fs.createReadStream(resolve(`tests/fixtures/icon.jpg`)),
+                        'icon.jpg',
+                        'image/jpeg',
+                        '7bit',
+                        primaryColor
+                    )
+
+                    res = await query({
+                        query: GET_ORGANIZATION,
+                        variables: {
+                            organization_id: organization.organization_id,
+                        },
+                        headers: { authorization: getAdminAuthToken() },
+                    })
+
+                    data = res.data?.organization
+                    expect(data.branding.primaryColor).to.eq(primaryColor)
+                    expect(branding.iconImageURL).to.match(/.*\.jpeg$/)
+                })
             })
         })
     })

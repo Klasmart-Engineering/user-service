@@ -3,8 +3,7 @@ import { initApp } from './app'
 import * as Sentry from '@sentry/node'
 import WebSocket from 'ws'
 import { UserPermissions } from './permissions/userPermissions'
-import { IUsersConnectionLoaders } from './loaders/usersConnection'
-import { IProgramsConnectionLoaders } from './loaders/programsConnection'
+import { IDataLoaders } from './loaders/setup'
 
 const port = process.env.PORT || 8080
 
@@ -15,10 +14,7 @@ export interface Context {
     req?: any
     websocket?: WebSocket
     permissions: UserPermissions
-    loaders: {
-        usersConnection?: IUsersConnectionLoaders
-        programsConnection?: IProgramsConnectionLoaders
-    }
+    loaders: IDataLoaders
 }
 
 Sentry.init({

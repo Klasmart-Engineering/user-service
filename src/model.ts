@@ -54,11 +54,7 @@ import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
-import { Branding } from './entities/branding'
-import { brandingImageTag } from './types/graphQL/brandingImageTag'
-import { BrandingImage } from './entities/brandingImage'
 import { setBrandingInput } from './types/graphQL/setBrandingInput'
-import { brandingInput } from './types/graphQL/brandingInput'
 import { ImageStorer } from './services/imagestorer'
 export class Model {
     public static async create() {
@@ -940,53 +936,5 @@ export class Model {
             primaryColor,
             this.connection
         )
-    }
-
-    public async branding(args: any, context: Context) {
-        const input: brandingInput = args.input
-        const organizationId = input.organizationId
-
-        const branding = await Branding.findOne({
-            where: {
-                organization: {
-                    organization_id: organizationId,
-                },
-            },
-        })
-
-        if (!branding) return { organizationId: organizationId }
-
-        const iconImageRecord = await BrandingImage.createQueryBuilder(
-            'brandingImage'
-        )
-            .where('brandingImage.branding = :brandingId', {
-                brandingId: branding.id,
-            })
-            .andWhere('brandingImage.tag = :tag', {
-                tag: brandingImageTag.ICON,
-            })
-            .orderBy('brandingImage.created_at', 'DESC')
-            .getOne()
-        const iconUrl = iconImageRecord ? iconImageRecord.url : ''
-
-        const favImageRecord = await BrandingImage.createQueryBuilder(
-            'brandingImage'
-        )
-            .where('brandingImage.branding = :brandingId', {
-                brandingId: branding.id,
-            })
-            .andWhere('brandingImage.tag = :tag', {
-                tag: brandingImageTag.FAVICON,
-            })
-            .orderBy('brandingImage.created_at', 'DESC')
-            .getOne()
-        const faviconUrl = favImageRecord ? favImageRecord.url : ''
-
-        return {
-            organizationId: organizationId,
-            iconImageURL: iconUrl,
-            faviconImageURL: faviconUrl,
-            primaryColor: branding.primaryColor || '',
-        }
     }
 }

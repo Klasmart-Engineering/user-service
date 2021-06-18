@@ -1,6 +1,9 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { Organization } from '../entities/organization'
+import { Context } from '../main'
+import { OrganizationMembership } from '../entities/organizationMembership'
 
 const typeDefs = gql`
     scalar HexColor
@@ -28,7 +31,6 @@ const typeDefs = gql`
         organization(organization_id: ID!): Organization
         organizations(organization_ids: [ID!]): [Organization]
             @isAdmin(entity: "organization")
-        branding(input: BrandingInput): Branding
     }
     type Organization {
         organization_id: ID!
@@ -40,6 +42,8 @@ const typeDefs = gql`
         phone: String
         shortCode: String
         status: Status
+
+        branding: Branding
 
         #connections
 
@@ -164,15 +168,9 @@ const typeDefs = gql`
     }
 
     type Branding {
-        organizationId: ID
-        # note that just the URL is returned to be downloaded by the client
         iconImageURL: Url
         faviconImageURL: Url
         primaryColor: HexColor
-    }
-
-    input BrandingInput {
-        organizationId: ID!
     }
 `
 export default function getDefault(
@@ -197,8 +195,25 @@ export default function getDefault(
                     model.getOrganizations(args),
                 organization: (_parent, { organization_id }, _context, _info) =>
                     model.getOrganization(organization_id),
-                branding: (_parent, args, ctx, _info) =>
-                    model.branding(args, ctx),
+            },
+            Organization: {
+                branding: (org: Organization, args, ctx: Context, _info) => {
+                    return ctx.loaders.organization.branding.load(
+                        org.organization_id
+                    )
+                },
+            },
+            OrganizationMembership: {
+                organization: (
+                    membership: OrganizationMembership,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    return ctx.loaders.organization.organization.load(
+                        membership.organization_id
+                    )
+                },
             },
         },
     }
