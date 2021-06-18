@@ -241,7 +241,7 @@ export class ImageStorer {
     }
 }
 
-export function convertImage(args: string[]) {
+function convertImage(args: string[]) {
     return new Promise((resolve, reject) => {
         im.convert(args, function (err, stdout) {
             if (err) {
