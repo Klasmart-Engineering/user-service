@@ -55,11 +55,7 @@ export class ImageStorer {
 
     private async checkImageFile(filename: string) {
         //The following will throw an exception if the binary image file is in the wrong format
-        const dimstr = (await identifyImage([
-            '-format',
-            '%wx%h',
-            filename,
-        ])) as string
+        const dimstr = await identifyImage(['-format', '%wx%h', filename])
         const [width, height] = dimstr.split('x').map((e) => parseInt(e))
         if (width > 1000) {
             throw new Error('Image is too large over 1000 pixels wide')
@@ -252,7 +248,7 @@ function convertImage(args: string[]) {
     })
 }
 
-export function identifyImage(args: string[]) {
+export function identifyImage(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
         im.identify(args, function (err, stdout) {
             if (err) {

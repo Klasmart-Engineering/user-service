@@ -7,7 +7,7 @@ export const createTestConnection = (
     return createConnection({
         name: name,
         type: 'postgres',
-        host: 'localhost',
+        host: process.env.DATABASE_HOST || 'localhost',
         port: 5432,
         username: 'postgres',
         password: 'kidsloop',
