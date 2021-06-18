@@ -9,6 +9,7 @@ import {
 import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
+import { User } from '../entities/user'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -273,6 +274,11 @@ export default function getDefault(
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
                     model.myUsers({}, ctx, info),
+            },
+            User: {
+                memberships: (user: User, _args, ctx: Context, info) => {
+                    return ctx.loaders.user?.orgMemberships?.load(user.user_id)
+                },
             },
         },
     }

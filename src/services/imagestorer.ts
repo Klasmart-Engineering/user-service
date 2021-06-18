@@ -122,9 +122,8 @@ export class ImageStorer {
             await queryRunner.manager.save(branding)
 
             result = {
-                organizationId: organizationId,
-                iconImageURL: iconUrl ? iconUrl : '',
-                faviconImageURL: faviconUrl ? faviconUrl : '',
+                iconImageURL: iconUrl,
+                faviconImageURL: faviconUrl,
                 primaryColor: primaryColor,
             }
             queryRunner.commitTransaction()

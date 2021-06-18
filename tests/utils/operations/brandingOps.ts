@@ -3,25 +3,14 @@ import { ReadStream } from 'typeorm/platform/PlatformTools'
 import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 import { Headers } from 'node-mocks-http'
-import { brandingResult } from '../../../src/types/graphQL/brandingresult'
+import { ImageMimeType } from '../../../src/utils/imageStore/imageMimeTypes'
 
 const SET_BRANDING_MUTATION = `
  mutation SetBranding($organizationId: ID!, $iconImage: Upload,$primaryColor:HexColor) {
   setBranding(organizationId: $organizationId, iconImage: $iconImage, primaryColor:$primaryColor) {
-    organizationId
     iconImageURL
     faviconImageURL
     primaryColor
-  }
-}
-`
-const BRANDING_QUERY = `
-query Branding($input:BrandingInput!){
-   branding(input:$input){
-      organizationId
-      iconImageURL 
-      faviconImageURL
-      primaryColor
   }
 }
 `
@@ -29,7 +18,7 @@ query Branding($input:BrandingInput!){
 function fileMockInput(
     file: Stream,
     filename: string,
-    mimetype: string,
+    mimetype: ImageMimeType,
     encoding: string
 ) {
     return {
@@ -57,7 +46,7 @@ export async function setBranding(
     organizationId: string,
     iconImage: ReadStream,
     filename: string,
-    mimetype: string,
+    mimetype: ImageMimeType,
     encoding: string,
     primaryColor: string,
     headers?: Headers
@@ -78,23 +67,4 @@ export async function setBranding(
 
     const res = await gqlTry(operation)
     return res.data?.setBranding
-}
-
-export async function getBranding(
-    testClient: ApolloServerTestClient,
-    organizationId: string,
-    headers?: Headers
-) {
-    const { query } = testClient
-
-    const operation = () =>
-        query({
-            query: BRANDING_QUERY,
-            variables: { input: { organizationId: organizationId } },
-            headers: headers,
-        })
-
-    const res = await gqlTry(operation)
-    const gqlUser = res.data?.branding as brandingResult
-    return gqlUser
 }
