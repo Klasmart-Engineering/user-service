@@ -172,9 +172,3 @@ You could run it in the background piping the output to a file.
 The following will stop your service and remove your containers:
 
 `docker-compose down`
-
-# Fill your db with dummy content
-
-In misc-utils:
-
-The python file dummy_content.py will fill your db with dummy content. It calls the service as client. And in the end generates a super user key for you to use.
