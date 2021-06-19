@@ -4,6 +4,7 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 import { Headers } from 'node-mocks-http'
 import { ImageMimeType } from '../../../src/utils/imageStore/imageMimeTypes'
+import im from 'imagemagick'
 
 const SET_BRANDING_MUTATION = `
  mutation SetBranding($organizationId: ID!, $iconImage: Upload,$primaryColor:HexColor) {
@@ -67,4 +68,15 @@ export async function setBranding(
 
     const res = await gqlTry(operation)
     return res.data?.setBranding
+}
+
+export function identifyImage(args: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+        im.identify(args, function (err, stdout) {
+            if (err) {
+                reject(err)
+            }
+            resolve(stdout)
+        })
+    })
 }

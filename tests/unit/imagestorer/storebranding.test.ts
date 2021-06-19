@@ -1,8 +1,9 @@
 import { expect } from 'chai'
 import { resolve } from 'path'
-import { identifyImage, ImageStorer } from '../../../src/services/imagestorer'
+import { ImageStorer } from '../../../src/services/imagestorer'
 import tmp, { FileResult, fileSync } from 'tmp'
 import * as fs from 'fs'
+import { identifyImage } from '../../utils/operations/brandingOps'
 
 describe('scaleImage', () => {
     let tmpFileObj: FileResult
