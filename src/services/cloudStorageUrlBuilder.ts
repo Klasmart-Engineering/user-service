@@ -1,40 +1,6 @@
-import { ReadStream } from 'fs'
-import { buildFilePath, createCloudClient } from '../utils/storage'
+import { createCloudClient } from '../utils/storage'
 
-export class CloudStorage {
-    public async upload(
-        provider: string,
-        organizationId: string,
-        imageStream: ReadStream,
-        fileName: string,
-        prefix?: string,
-        imageType?: string // icon, banner, favicon, avatar...
-    ) {
-        const client = createCloudClient(provider)
-
-        const remoteFilePath = buildFilePath(
-            organizationId,
-            fileName,
-            prefix,
-            imageType
-        )
-
-        const writeStream = client.upload({
-            container: process.env.STORAGE_BUCKET || 'kl-user-service',
-            remote: remoteFilePath,
-        })
-
-        imageStream
-            .pipe(writeStream)
-            .on('success', function (remoteFile) {
-                // console.log(remoteFile)
-                return remoteFilePath
-            })
-            .on('error', function (err) {
-                throw new Error(`failed to upload file with error ${err}`)
-            })
-    }
-
+export class CloudStorageUrlBuilder {
     /**
      * Get object URL, the `bucket` must be set as `PUBLIC`. If not, users will
      * not able to see the file.
@@ -42,12 +8,12 @@ export class CloudStorage {
      * @param provider string
      * @param filePath string
      */
-    public async getObjectUrl(provider: string, filePath: string) {
+    public static async call(filePath: string) {
         if (!filePath) {
             throw new Error('fileName is empty')
         }
 
-        const client = createCloudClient(provider)
+        const client = createCloudClient(process.env.STORAGE_PROVIDER)
 
         client.getFile(
             process.env.STORAGE_BUCKET || 'kl-user-service',

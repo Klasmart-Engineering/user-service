@@ -55,7 +55,11 @@ import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
 import { setBrandingInput } from './types/graphQL/setBrandingInput'
-import { ImageStorer } from './services/imagestorer'
+import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
+import { BrandingStorer } from './services/brandingStorer'
+import { BrandingImageTag } from './types/graphQL/brandingImageTag'
+import { buildFilePath } from './utils/storage'
+
 export class Model {
     public static async create() {
         try {
@@ -928,13 +932,47 @@ export class Model {
         const primaryColor = args.primaryColor
         const organizationId = args.organizationId
 
-        const imageStorer = new ImageStorer()
+        const result: BrandingResult = {
+            iconImageURL: undefined,
+            faviconImageURL: undefined,
+            primaryColor: primaryColor,
+        }
+        const brandingImagesInfo: BrandingImageInfo[] = []
 
-        return imageStorer.storeBranding(
+        // Here we should build an image per tag
+        for (const tag of [BrandingImageTag.ICON, BrandingImageTag.FAVICON]) {
+            // Build path for image
+            const remoteFilePath = buildFilePath(
+                organizationId,
+                file.filename,
+                'organizations',
+                tag.toLowerCase()
+            )
+
+            // Upload image to cloud
+            // const remoteUrl = await CloudStorageUploader.call(file.createReadStream, remoteFilePath)
+
+            //Safe info for saving later on DB
+            brandingImagesInfo.push({
+                imageUrl: remoteFilePath,
+                tag: tag,
+            })
+
+            // Build the resolver output
+            const brandingKey = (tag.toLowerCase() +
+                'ImageURL') as keyof BrandingResult
+            result[brandingKey] = remoteFilePath
+        }
+
+        // Safe branding in DB
+        await BrandingStorer.call(
             organizationId,
             file,
+            brandingImagesInfo,
             primaryColor,
             this.connection
         )
+
+        return result
     }
 }

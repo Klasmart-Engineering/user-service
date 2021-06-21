@@ -12,8 +12,6 @@ import {
 } from 'typeorm'
 import { Organization } from './organization'
 import { BrandingImage } from './brandingImage'
-import { createHash } from 'crypto'
-import { v5 } from 'uuid'
 
 @Unique(['organization'])
 @Entity()
@@ -38,18 +36,9 @@ export class Branding extends BaseEntity {
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, name: 'primary_color' })
     public primaryColor?: string
 
     @OneToMany(() => BrandingImage, (image) => image.branding)
     public images?: BrandingImage[]
-}
-
-const accountNamespace = v5('kidsloop.net', v5.DNS)
-export function brandingUUID(organization_id?: string) {
-    const hash = createHash('sha256')
-    if (organization_id) {
-        hash.update(organization_id)
-    }
-    return v5(hash.digest(), accountNamespace)
 }

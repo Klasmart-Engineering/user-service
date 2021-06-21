@@ -5,7 +5,7 @@ import { Role } from '../../entities/role'
 import { RoleRow } from '../../types/csv/roleRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 export async function processRoleFromCSVRow(
     manager: EntityManager,

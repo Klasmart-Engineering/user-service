@@ -248,6 +248,23 @@ class ProgramSubjectsSubject {
     subjectId : uuid
 }
 
+class Branding {
+    id : uuid
+    created_at : timestamp
+    updated_at : timestamp
+    primary_color : string
+    organization_id : uuid
+}
+
+class BrandingImage {
+    id : uuid
+    created_at : timestamp
+    updated_at : timestamp
+    tag : string
+    url : string
+    branding_id : uuid
+}
+
 Role -- "*" Organization
 User -- "0..1" Organization
 AgeRange "*" --* "0..1" Organization
@@ -295,5 +312,7 @@ UserClassesStudyingcClass "*" --* "1" Class
 UserClassesTeachingClass "*" --* "1" User
 UserClassesTeachingClass "*" --* "1" Class
 
+Branding "*" --* "1" Organization
+BrandingImage "*" --* "0..1" Branding
 @enduml
 

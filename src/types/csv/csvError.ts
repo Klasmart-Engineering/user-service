@@ -1,5 +1,5 @@
 import { ApolloError } from 'apollo-server-errors'
-import csvErrorConstants from '../../utils/csv/errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 /**
  * The CSV error structure

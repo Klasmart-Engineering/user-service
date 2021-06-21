@@ -10,7 +10,7 @@ import {
 } from '../shortcode'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from './validationConstants'
 
 export async function processSchoolFromCSVRow(

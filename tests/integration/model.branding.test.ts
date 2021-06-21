@@ -16,7 +16,7 @@ import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser } from '../utils/testEntities'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
-import { ImageMimeType } from '../../src/utils/imageStore/imageMimeTypes'
+import { ImageMimeType } from '../../src/types/imageMimeTypes'
 
 describe('model.branding', () => {
     let connection: Connection
@@ -31,6 +31,7 @@ describe('model.branding', () => {
     after(async () => {
         await connection?.close()
     })
+
     let organizationId: string
     beforeEach(async () => {
         const user = await createAdminUser(testClient)
@@ -40,6 +41,7 @@ describe('model.branding', () => {
         )
         organizationId = organization.organization_id
     })
+
     describe('setBranding', () => {
         let file: ReadStream
         const mimetype = 'image/png'
@@ -70,6 +72,7 @@ describe('model.branding', () => {
                 })
             }
         )
+
         context('when the file is the wrong mime type', () => {
             it('should fail in setting the branding and not create new db records', async () => {
                 const primaryColor = 'cd657b'
@@ -95,6 +98,7 @@ describe('model.branding', () => {
                 expect(images.length).to.equal(0)
             })
         })
+
         context('when the primary colour is not a hex triplet', () => {
             it('should fail in setting the branding and not create new db records', async () => {
                 const wrongfile = 'rolesExample.csv'

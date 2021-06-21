@@ -21,7 +21,7 @@
  * @param data any
  * @returns string|Error
  */
-export default function stringInject(str: string, data: any) {
+export function stringInject(str: string, data: any) {
     if (data instanceof Array) {
         return str.replace(/({\d})/g, (i) => {
             return data[Number(i.replace(/{/, '').replace(/}/, ''))]
@@ -63,3 +63,12 @@ export default function stringInject(str: string, data: any) {
         throw new Error('Failed to inject string')
     }
 }
+
+export function isHexadecimal(hex: string, strLen = 6): boolean {
+    return (
+        typeof hex === 'string' &&
+        hex.length === strLen &&
+        !isNaN(Number('0x' + hex))
+    )
+}
+

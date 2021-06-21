@@ -1,18 +1,18 @@
 import DataLoader from 'dataloader'
 import { Branding } from '../entities/branding'
-import { brandingResult } from '../types/graphQL/brandingresult'
+import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
-import { brandingImageTag } from '../types/graphQL/brandingImageTag'
+import { BrandingImageTag } from '../types/graphQL/brandingImageTag'
 
 export interface IOrganizationLoaders {
-    branding: DataLoader<string, brandingResult | undefined>
+    branding: DataLoader<string, BrandingResult | undefined>
     organization: DataLoader<string, Organization | undefined>
 }
 
 export const brandingForOrganizations = async (
     orgIds: readonly string[]
-): Promise<brandingResult[]> => {
-    const brandings: brandingResult[] = []
+): Promise<BrandingResult[]> => {
+    const brandings: BrandingResult[] = []
 
     const scope = Branding.createQueryBuilder('Branding')
         .leftJoinAndSelect('Branding.images', 'BrandImages')
@@ -32,10 +32,10 @@ export const brandingForOrganizations = async (
             )
 
             const icon = branding.images?.find(
-                (i) => i.tag === brandingImageTag.ICON
+                (i) => i.tag === BrandingImageTag.ICON
             )
             const favicon = branding.images?.find(
-                (i) => i.tag === brandingImageTag.FAVICON
+                (i) => i.tag === BrandingImageTag.FAVICON
             )
 
             brandings.push({

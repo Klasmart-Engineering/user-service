@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import stringInject from '../../../src/utils/stringUtils'
+import { stringInject, isHexadecimal } from '../../../src/utils/stringUtils'
 
 describe('stringInject', () => {
     context('replace brackets with array items', () => {
@@ -113,6 +113,54 @@ describe('stringInject', () => {
                 'string'
             )
             expect(str).to.equal('My username is {platform} on {username}')
+        })
+    })
+})
+
+describe('isHexadecimal', () => {
+    context('when the string is an hexadecimal', () => {
+        context('and it does not specify the str len', () => {
+            it('returns true for 6 characters', () => {
+                for (const num of ['ABCDEF']) {
+                    expect(isHexadecimal(num)).to.be.true
+                }
+            })
+
+            it('returns false for anything different to 6 characters', () => {
+                for (const num of [
+                    '0',
+                    '1',
+                    'A',
+                    'AB',
+                    'ABC',
+                    'ABCD',
+                    'ABCDE',
+                ]) {
+                    expect(isHexadecimal(num)).to.be.false
+                }
+            })
+        })
+
+        context('and it specifies the str len', () => {
+            it('returns true for specified len of characters', () => {
+                for (const num of ['AB', '0B', 'FF', 'EC']) {
+                    expect(isHexadecimal(num, 2)).to.be.true
+                }
+            })
+
+            it('returns false for anything different to specifed len of characters', () => {
+                for (const num of ['0', '1', 'A', 'ABC', 'ABCD', 'ABCDE']) {
+                    expect(isHexadecimal(num, 2)).to.be.false
+                }
+            })
+        })
+    })
+
+    context('when the string is not an hexadecimal', () => {
+        it('returns false', () => {
+            for (const num of ['NONHEX', '']) {
+                expect(isHexadecimal(num)).to.be.false
+            }
         })
     })
 })

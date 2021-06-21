@@ -187,6 +187,7 @@ describe('model.organization', () => {
                     expect(data.branding.primaryColor).to.eq(primaryColor)
                     expect(branding.iconImageURL).to.match(/.*\.png$/)
                 })
+
                 it('returns the latest branding info if it has been set multiple times', async () => {
                     const { query } = testClient
                     let branding = await setBranding(
@@ -231,7 +232,7 @@ describe('model.organization', () => {
 
                     data = res.data?.organization
                     expect(data.branding.primaryColor).to.eq(primaryColor)
-                    expect(branding.iconImageURL).to.match(/.*\.jpeg$/)
+                    expect(branding.iconImageURL).to.match(/.*\.jpg$/)
                 })
             })
         })
