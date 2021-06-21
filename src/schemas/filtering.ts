@@ -19,6 +19,11 @@ const typeDefs = gql`
         value: UUID!
     }
 
+    input UUIDFilterForSearching {
+        operator: UUIDOperator
+        value: UUID
+    }
+
     input BooleanFilter {
         operator: BooleanOperator
         value: Boolean

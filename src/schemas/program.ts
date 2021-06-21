@@ -44,7 +44,7 @@ const typeDefs = gql`
 
     input ProgramFilter {
         # table columns
-        id: UUIDFilter
+        id: UUIDFilterForSearching
         name: StringFilter
         status: StringFilter
         system: BooleanFilter
