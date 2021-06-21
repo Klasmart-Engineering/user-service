@@ -3,6 +3,7 @@ WORKDIR /usr/src/app
 COPY ./package*.json ./
 RUN npm ci
 RUN npm audit fix
+COPY ./customTypings ./customTypings
 COPY ./src ./src
 COPY ./tsconfig.json .
 ENV PORT=8080
