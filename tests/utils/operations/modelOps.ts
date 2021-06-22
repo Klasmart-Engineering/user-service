@@ -357,8 +357,8 @@ const PROGRAMS_CONNECTION = `
 `
 
 const GRADES_CONNECTION = `
-    query gradesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: GradeFilter) {
-        gradesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs) {
+    query gradesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: GradeFilter, $sortArgs: GradeSortInput) {
+        gradesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
             totalCount
             edges {
                 cursor

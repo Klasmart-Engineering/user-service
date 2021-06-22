@@ -16,6 +16,10 @@ import {
     createTestClient,
 } from '../../utils/createTestClient'
 import { gradesConnection } from '../../utils/operations/modelOps'
+import {
+    isStringArraySortedAscending,
+    isStringArraySortedDescending,
+} from '../../utils/sorting'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { createTestConnection } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
@@ -98,6 +102,116 @@ describe('model', () => {
             expect(result.totalCount).to.eq(
                 gradesCount * 2 + systemGrades.length
             )
+        })
+    })
+
+    context('sorting', () => {
+        it('returns grades sorted by id in an ascending order', async () => {
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                undefined,
+                { field: 'id', order: 'ASC' }
+            )
+
+            expect(result.totalCount).to.eq(
+                gradesCount * 2 + systemGrades.length
+            )
+
+            expect(result.pageInfo.hasNextPage).to.be.true
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+            expect(result.pageInfo.startCursor).to.be.string
+            expect(result.pageInfo.endCursor).to.be.string
+
+            expect(result.edges.length).eq(10)
+
+            const ids = result.edges.map((edge) => edge.node.id)
+            const isSorted = isStringArraySortedAscending(ids)
+
+            expect(isSorted).to.be.true
+        })
+
+        it('returns grades sorted by id in a descending order', async () => {
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                undefined,
+                { field: 'id', order: 'DESC' }
+            )
+
+            expect(result.totalCount).to.eq(
+                gradesCount * 2 + systemGrades.length
+            )
+
+            expect(result.pageInfo.hasNextPage).to.be.true
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+            expect(result.pageInfo.startCursor).to.be.string
+            expect(result.pageInfo.endCursor).to.be.string
+
+            expect(result.edges.length).eq(10)
+
+            const ids = result.edges.map((edge) => edge.node.id)
+            const isSorted = isStringArraySortedDescending(ids)
+
+            expect(isSorted).to.be.true
+        })
+
+        it('returns grades sorted by name in an ascending order', async () => {
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                undefined,
+                { field: 'name', order: 'ASC' }
+            )
+
+            expect(result.totalCount).to.eq(
+                gradesCount * 2 + systemGrades.length
+            )
+
+            expect(result.pageInfo.hasNextPage).to.be.true
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+            expect(result.pageInfo.startCursor).to.be.string
+            expect(result.pageInfo.endCursor).to.be.string
+
+            expect(result.edges.length).eq(10)
+
+            const names = result.edges.map((edge) => edge.node.name)
+            const isSorted = isStringArraySortedAscending(names)
+
+            expect(isSorted).to.be.true
+        })
+
+        it('returns grades sorted by name in an descending order', async () => {
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                undefined,
+                { field: 'name', order: 'DESC' }
+            )
+
+            expect(result.totalCount).to.eq(
+                gradesCount * 2 + systemGrades.length
+            )
+
+            expect(result.pageInfo.hasNextPage).to.be.true
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+            expect(result.pageInfo.startCursor).to.be.string
+            expect(result.pageInfo.endCursor).to.be.string
+
+            expect(result.edges.length).eq(10)
+
+            const names = result.edges.map((edge) => edge.node.name)
+            const isSorted = isStringArraySortedDescending(names)
+
+            expect(isSorted).to.be.true
         })
     })
 

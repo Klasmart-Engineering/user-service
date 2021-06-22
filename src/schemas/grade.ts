@@ -32,6 +32,16 @@ const typeDefs = gql`
 
     # pagination extension types end here
 
+    enum GradeSortBy {
+        id
+        name
+    }
+
+    input GradeSortInput {
+        field: GradeSortBy!
+        order: SortOrder!
+    }
+
     input GradeFilter {
         status: StringFilter
         system: BooleanFilter
@@ -58,8 +68,10 @@ const typeDefs = gql`
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
             filter: GradeFilter
+            sort: GradeSortInput
         ): GradesConnectionResponse @isAdmin(entity: "grade")
     }
+
     type Grade {
         id: ID!
         name: String!
