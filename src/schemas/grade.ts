@@ -43,6 +43,9 @@ const typeDefs = gql`
     }
 
     input GradeFilter {
+        # table columns
+        id: UUIDFilter
+        name: StringFilter
         status: StringFilter
         system: BooleanFilter
 

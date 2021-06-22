@@ -549,6 +549,8 @@ export class Model {
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     organizationId: ['Organization.organization_id'],
+                    id: ['Grade.id'],
+                    name: ['Grade.name'],
                     system: ['Grade.system'],
                     status: ['Grade.status'],
                 })

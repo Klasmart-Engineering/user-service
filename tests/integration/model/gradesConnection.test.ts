@@ -216,7 +216,7 @@ describe('model', () => {
     })
 
     context('filtering', () => {
-        it('supports filtering by organizationId', async () => {
+        it('supports filtering by organization ID', async () => {
             const filter: IEntityFilter = {
                 organizationId: {
                     operator: 'eq',
@@ -238,6 +238,44 @@ describe('model', () => {
             expect(result.pageInfo.startCursor).to.be.string
             expect(result.pageInfo.endCursor).to.be.string
             expect(result.edges.length).eq(10)
+        })
+
+        it('supports filtering by grade ID', async () => {
+            const filter: IEntityFilter = {
+                id: {
+                    operator: 'eq',
+                    value: grades[0].id,
+                },
+            }
+
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(1)
+        })
+
+        it('supports filtering by grade name', async () => {
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: '8',
+                },
+            }
+
+            const result = await gradesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(2)
         })
 
         it('supports filtering by grade status', async () => {
@@ -276,6 +314,28 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(systemGrades.length)
+        })
+
+        it('fails if search value is longer than 250 characters', async () => {
+            const longValue =
+                'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: longValue,
+                },
+            }
+
+            const fn = () =>
+                gradesConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+            expect(fn()).to.be.rejected
         })
     })
 })

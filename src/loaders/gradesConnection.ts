@@ -34,6 +34,8 @@ export const fromGradeForGrades = async (
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: ['Organization.organization_id'],
+                id: ['Grade.id'],
+                name: ['Grade.name'],
                 system: ['Grade.system'],
                 status: ['Grade.status'],
             })
@@ -86,6 +88,8 @@ export const toGradeForGrades = async (
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: ['Organization.organization_id'],
+                id: ['Grade.id'],
+                name: ['Grade.name'],
                 system: ['Grade.system'],
                 status: ['Grade.status'],
             })
