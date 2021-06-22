@@ -71,19 +71,19 @@ const blackListIssuers = [
 export async function checkToken(token?: string) {
     try {
         if (!token) {
-            return
+            throw new Error("No authentication")
         }
         const payload = decode(token)
         if (!payload || typeof payload === 'string') {
-            return
+            throw new Error("Malformed authentication token")
         }
         const issuer = payload['iss']
         if (!issuer || typeof issuer !== 'string') {
-            return
+            throw new Error("Malformed authentication token issuer")
         }
         const issuerOptions = issuers.get(issuer)
         if (!issuerOptions) {
-            return
+            throw new Error("Unknown authentication token issuer")
         }
         const { options, secretOrPublicKey } = issuerOptions
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,7 +95,7 @@ export async function checkToken(token?: string) {
                 if (decoded) {
                     resolve(decoded)
                 }
-                reject(new Error('Unexpected authorization error'))
+                reject(new Error('Unknown authorization error'))
             })
         })
         return verifiedToken
