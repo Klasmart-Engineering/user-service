@@ -29,6 +29,9 @@ export class QueryVariables {
     @Column({ nullable: false, type: "json" })
     public variables?: string
 
+    @Column({ nullable: true, type: "json" })
+    public token?: string
+
     @Column({ nullable: true })
     public origin?: string
 }
@@ -77,6 +80,7 @@ async function logVariables(context: GraphQLRequestContextDidResolveOperation<Re
         log.queryHash = context.queryHash || ""
         log.origin = context.request.http?.headers.get("origin") || ""
         log.variables = JSON.stringify(context.request.variables)
+        log.token = JSON.stringify(context.context?.token)
 
         await manager.insert(QueryVariables, log)
     } catch(e) {
