@@ -6,7 +6,7 @@ export class CloudStorageUploader {
         imageStream: ReadStream,
         filePath: string,
     ) {
-        const client = createCloudClient(process.env.STORAGE_PROVIDER)
+        const client = createCloudClient(process.env.STORAGE_PROVIDER || 'provider')
 
         const writeStream = client.upload({
             container: process.env.STORAGE_BUCKET || 'kl-user-service',
@@ -17,7 +17,7 @@ export class CloudStorageUploader {
             .pipe(writeStream)
             .on('success', function (remoteFile) {
                 // console.log(remoteFile)
-                return remoteFilePath
+                return filePath
             })
             .on('error', function (err) {
                 throw new Error(`failed to upload file with error ${err}`)

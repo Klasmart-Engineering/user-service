@@ -7,9 +7,13 @@ services:
         container_name: user-service
         environment:
             - DATABASE_URL=postgres://postgres:kidsloop@postgres1
-            - STORAGE_BUCKET=kidsloop-alpha-account-asset-objects
-            - STORAGE_PROVIDER=amazon
+            - STORAGE_BUCKET=my-bucket
+            - STORAGE_PROVIDER=vngcloud
             - STORAGE_ENDPOINT=http://localstack1:4566
+            - STORAGE_PROJECT_ID=123
+            - STORAGE_ACCESS_KEY_ID=test
+            - STORAGE_SECRET_ACCESS_KEY=test
+            - STORAGE_REGION=HCM01
         expose:
             - '8080'
         ports:
@@ -34,3 +38,5 @@ services:
             - SERVICES=s3
         ports:
             - 4566:4566
+        volumes:
+            - ./aws:/docker-entrypoint-initaws.d

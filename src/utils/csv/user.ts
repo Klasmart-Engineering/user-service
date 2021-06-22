@@ -21,6 +21,8 @@ import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { validateDOB, validateEmail, validatePhone } from '../validations'
 import validationConstants from './validationConstants'
+import { CloudStorageUploader } from '../../services/cloudStorageUploader'
+import fs = require('fs')
 
 export const processUserFromCSVRow = async (
     manager: EntityManager,
@@ -28,6 +30,12 @@ export const processUserFromCSVRow = async (
     rowNumber: number,
     fileErrors: CSVError[]
 ) => {
+    const readStream = fs.createReadStream(
+        '/usr/src/app/src/utils/csv/icon.png'
+    )
+    const filePath = await CloudStorageUploader.call(readStream, 'icon.png')
+    console.log('_____' + filePath) // right now the filePath is undefined, need to fix it here
+
     if (!row.organization_name) {
         addCsvError(
             fileErrors,

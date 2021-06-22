@@ -56,6 +56,7 @@ export function createCloudClient(provider: string) {
                 key: process.env.STORAGE_SECRET_ACCESS_KEY,
                 sessionToken: process.env.STORAGE_SESSION_TOKEN,
                 region: process.env.STORAGE_REGION,
+                forcePathBucket: true,
             })
 
         case 'google':
@@ -89,6 +90,7 @@ export function createCloudClient(provider: string) {
                 key: process.env.STORAGE_SECRET_ACCESS_KEY,
                 region: process.env.STORAGE_REGION,
                 endpoint: process.env.STORAGE_ENDPOINT,
+                forcePathBucket: true,
             })
 
         default:
