@@ -55,6 +55,8 @@ import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
 import { setBrandingInput } from './types/graphQL/setBrandingInput'
+import { Grade } from './entities/grade'
+import { GradeConnectionNode } from './types/graphQL/gradeConnectionNode'
 import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
 import { BrandingStorer } from './services/brandingStorer'
 import { BrandingImageTag } from './types/graphQL/brandingImageTag'
@@ -520,6 +522,60 @@ export class Model {
                 name: program.name,
                 status: program.status,
                 system: program.system,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async gradesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Grade>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Grade.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    system: ['Grade.system'],
+                    status: ['Grade.status'],
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const grade: Grade = edge.node
+            const newNode: Partial<GradeConnectionNode> = {
+                id: grade.id,
+                name: grade.name,
+                status: grade.status,
+                system: grade.system,
                 // other properties have dedicated resolvers that use Dataloader
             }
 

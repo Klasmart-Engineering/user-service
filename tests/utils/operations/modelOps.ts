@@ -356,6 +356,41 @@ const PROGRAMS_CONNECTION = `
     }
 `
 
+const GRADES_CONNECTION = `
+    query gradesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: GradeFilter) {
+        gradesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs) {
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+
+                    fromGrade {
+                        id
+                        name
+                        status
+                    }
+
+                    toGrade {
+                        id
+                        name
+                        status
+                    }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -805,4 +840,29 @@ export async function schoolsConnection(
 
     const res = await gqlTry(operation)
     return res.data?.schoolsConnection
+}
+
+export async function gradesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: GRADES_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.gradesConnection
 }
