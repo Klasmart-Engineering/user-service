@@ -1,4 +1,4 @@
-import { stub, restore } from 'sinon';
+import { stub, restore } from 'sinon'
 
 import { expect } from 'chai'
 import { Connection } from 'typeorm'
@@ -168,10 +168,12 @@ describe('model.organization', () => {
                     restore()
                 })
 
-                const primaryColor = 'cd657b'
+                const primaryColor = '#cd657b'
                 it('returns branding info if it has been set', async () => {
                     const remoteUrl = 'http://some.url/icon.png'
-                    stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+                    stub(CloudStorageUploader, 'call').returns(
+                        Promise.resolve(remoteUrl)
+                    )
 
                     const branding = await setBranding(
                         testClient,
@@ -199,7 +201,9 @@ describe('model.organization', () => {
 
                 it('returns the latest branding info if it has been set multiple times', async () => {
                     let remoteUrl = 'http://some.url/icon.png'
-                    stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+                    stub(CloudStorageUploader, 'call').returns(
+                        Promise.resolve(remoteUrl)
+                    )
 
                     const { query } = testClient
                     let branding = await setBranding(
@@ -226,7 +230,9 @@ describe('model.organization', () => {
 
                     restore()
                     remoteUrl = 'http://some.url/icon.jpg'
-                    stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+                    stub(CloudStorageUploader, 'call').returns(
+                        Promise.resolve(remoteUrl)
+                    )
 
                     branding = await setBranding(
                         testClient,

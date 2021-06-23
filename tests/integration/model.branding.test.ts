@@ -1,6 +1,6 @@
 import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
-import { stub, restore } from 'sinon';
+import { stub, restore } from 'sinon'
 
 import { resolve } from 'path'
 import { ReadStream } from 'fs'
@@ -27,12 +27,11 @@ describe('model.branding', () => {
     const filename = 'icon.png'
     const remoteUrl = 'http://some.url'
 
-
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
-        stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+        stub(CloudStorageUploader, 'call').returns(Promise.resolve(remoteUrl))
     })
 
     after(async () => {
@@ -58,7 +57,7 @@ describe('model.branding', () => {
             'when the parameters and input file are correctly specified.',
             () => {
                 it('should succeed in setting the branding', async () => {
-                    const primaryColor = 'cd657b'
+                    const primaryColor = '#cd657b'
                     const iconImage = fs.createReadStream(
                         resolve(`tests/fixtures/${filename}`)
                     )
@@ -83,7 +82,7 @@ describe('model.branding', () => {
 
         context('when the file is the wrong mime type', () => {
             it('should fail in setting the branding and not create new db records', async () => {
-                const primaryColor = 'cd657b'
+                const primaryColor = '#cd657b'
                 const iconImage = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
