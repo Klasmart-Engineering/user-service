@@ -1,6 +1,7 @@
 import Dataloader from 'dataloader'
 import { IUsersConnectionLoaders } from './usersConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
+import { IGradesConnectionLoaders } from './gradesConnection'
 import { IUsersLoaders, orgMembershipsForUsers } from './user'
 import {
     IOrganizationLoaders,
@@ -11,6 +12,7 @@ import {
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection?: IProgramsConnectionLoaders
+    gradesConnection?: IGradesConnectionLoaders
     user: IUsersLoaders
     organization: IOrganizationLoaders
 }

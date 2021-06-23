@@ -3,13 +3,12 @@ import { ReadStream } from 'typeorm/platform/PlatformTools'
 import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 import { Headers } from 'node-mocks-http'
-import { ImageMimeType } from '../../../src/utils/imageStore/imageMimeTypes'
+import { ImageMimeType } from '../../../src/types/imageMimeTypes'
 
 const SET_BRANDING_MUTATION = `
  mutation SetBranding($organizationId: ID!, $iconImage: Upload,$primaryColor:HexColor) {
   setBranding(organizationId: $organizationId, iconImage: $iconImage, primaryColor:$primaryColor) {
     iconImageURL
-    faviconImageURL
     primaryColor
   }
 }

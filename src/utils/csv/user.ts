@@ -18,7 +18,7 @@ import { generateShortCode, validateShortCode } from '../shortcode'
 import { v4 as uuid_v4 } from 'uuid'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import { validateDOB, validateEmail, validatePhone } from '../validations'
 import validationConstants from './validationConstants'
 

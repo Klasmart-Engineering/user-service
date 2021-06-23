@@ -1,0 +1,43 @@
+version: '3.9'
+services:
+    kidsloop-user-service:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: user-service
+        environment:
+            - DOMAIN=kidsloop-user-service:8080
+            - DATABASE_URL=postgres://postgres:kidsloop@postgres1
+            - STORAGE_BUCKET=kidsloop-alpha-account-asset-objects
+            - STORAGE_PROVIDER=amazon
+            - FORCE_LOCAL_STORAGE=true
+            - STORAGE_ENDPOINT=http://localstack1:4566
+            - STORAGE_ACCESS_KEY_ID=""
+            - STORAGE_SECRET_ACCESS_KEY=""
+            - STORAGE_REGION=eu-west-1
+        expose:
+            - '8080'
+        ports:
+            - '8080:8080'
+        depends_on:
+            - postgres1
+            - localstack1
+        command: npm run start
+    postgres1:
+        container_name: postgres1
+        image: postgres
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=kidsloop
+        ports:
+            - 5432:5432
+    localstack1:
+        container_name: localstack1
+        image: localstack/localstack:0.12.12
+        restart: always
+        environment:
+            - SERVICES=s3
+        ports:
+            - 4566:4566
+        volumes:
+            - ./scripts:/docker-entrypoint-initaws.d

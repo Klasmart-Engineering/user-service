@@ -5,7 +5,7 @@ import { Organization } from '../../entities/organization'
 import { AgeRangeRow } from '../../types/csv/ageRangeRow'
 import { addCsvError } from './csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from './validationConstants'
 
 export async function processAgeRangeFromCSVRow(

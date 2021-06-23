@@ -16,7 +16,7 @@ import { Role } from '../../entities/role'
 import { Status } from '../../entities/status'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,

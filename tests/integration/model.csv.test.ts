@@ -84,7 +84,7 @@ import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
 import { CustomError } from '../../src/types/csv/csvError'
-import csvErrorConstants from '../../src/utils/csv/errors/csvErrorConstants'
+import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 
 use(chaiAsPromised)
 

@@ -5,7 +5,7 @@ import { Subcategory } from '../../entities/subcategory'
 import { CategoryRow } from '../../types/csv/categoryRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 export async function processCategoryFromCSVRow(
     manager: EntityManager,

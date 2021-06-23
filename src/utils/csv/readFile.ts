@@ -6,8 +6,8 @@ import { EntityManager } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { Transform } from 'stream'
 import { CSVError } from '../../types/csv/csvError'
-import stringInject from '../stringUtils'
-import constants from './errors/csvErrorConstants'
+import { stringInject } from '../stringUtils'
+import constants from '../../types/errors/csv/csvErrorConstants'
 
 function formatCSVRow(row: any) {
     const keys = Object.keys(row)

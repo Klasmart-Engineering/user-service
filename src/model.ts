@@ -55,7 +55,14 @@ import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
 import { setBrandingInput } from './types/graphQL/setBrandingInput'
-import { ImageStorer } from './services/imagestorer'
+import { Grade } from './entities/grade'
+import { GradeConnectionNode } from './types/graphQL/gradeConnectionNode'
+import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
+import { BrandingStorer } from './services/brandingStorer'
+import { CloudStorageUploader } from './services/cloudStorageUploader'
+import { BrandingImageTag } from './types/graphQL/brandingImageTag'
+import { buildFilePath } from './utils/storage'
+
 export class Model {
     public static async create() {
         try {
@@ -525,6 +532,62 @@ export class Model {
         return data
     }
 
+    public async gradesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Grade>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Grade.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    id: ['Grade.id'],
+                    name: ['Grade.name'],
+                    system: ['Grade.system'],
+                    status: ['Grade.status'],
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const grade: Grade = edge.node
+            const newNode: Partial<GradeConnectionNode> = {
+                id: grade.id,
+                name: grade.name,
+                status: grade.status,
+                system: grade.system,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
     public async getRole({ role_id }: Role) {
         console.info('Unauthenticated endpoint call getRole')
 
@@ -928,13 +991,49 @@ export class Model {
         const primaryColor = args.primaryColor
         const organizationId = args.organizationId
 
-        const imageStorer = new ImageStorer()
+        const result: BrandingResult = {
+            iconImageURL: undefined,
+            primaryColor: primaryColor,
+        }
 
-        return imageStorer.storeBranding(
+        const brandingImagesInfo: BrandingImageInfo[] = []
+
+        // Here we should build an image per tag
+        for (const tag of [BrandingImageTag.ICON]) {
+            // Build path for image
+            const remoteFilePath = buildFilePath(
+                organizationId,
+                file.filename,
+                'organizations',
+                tag.toLowerCase()
+            )
+
+            // Upload image to cloud
+            const remoteUrl = await CloudStorageUploader.call(file.createReadStream(), remoteFilePath)
+
+            //Safe info for saving later on DB
+            if(remoteUrl){
+                brandingImagesInfo.push({
+                    imageUrl: remoteUrl,
+                    tag: tag,
+                })
+            }
+
+            // Build the resolver output
+            const brandingKey = (tag.toLowerCase() +
+                'ImageURL') as keyof BrandingResult
+            result[brandingKey] = remoteUrl
+        }
+
+        // Safe branding in DB
+        await BrandingStorer.call(
             organizationId,
             file,
+            brandingImagesInfo,
             primaryColor,
             this.connection
         )
+
+        return result
     }
 }

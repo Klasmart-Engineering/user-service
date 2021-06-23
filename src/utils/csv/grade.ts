@@ -4,7 +4,7 @@ import { Grade } from '../../entities/grade'
 import { Organization } from '../../entities/organization'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 function findGradeInDatabaseOrTransaction(
     manager: EntityManager,

@@ -8,10 +8,10 @@ import escapeStringRegexp from 'escape-string-regexp'
 
 const domain = process.env.DOMAIN || 'alpha.kidsloop.net'
 if (!domain) {
-    console.warn('Warning: The DOMAIN enviroment variable was not set')
+    throw Error(`The DOMAIN enviroment variable was not set`)
 }
 const domainRegex = new RegExp(
-    `^https://(.*\\.)?${escapeStringRegexp(domain)}(:\\d{1,5})$`
+    `^https://(.*\\.)?${escapeStringRegexp(domain)}(:\\d{1,5})?$`
 )
 
 const routePrefix = process.env.ROUTE_PREFIX || ''

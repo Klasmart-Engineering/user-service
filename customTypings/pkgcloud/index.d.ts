@@ -36,6 +36,7 @@ declare module 'pkgcloud' {
         keyId: string;
         key: string;
         sessionToken: string;
+        forcePathBucket: boolean;
         endpoint?: string;
         region?: string;
     }

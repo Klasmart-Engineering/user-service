@@ -8,7 +8,7 @@ import { Subject } from '../../entities/subject'
 import { ProgramRow } from '../../types/csv/programRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from './validationConstants'
 
 export async function processProgramFromCSVRow(

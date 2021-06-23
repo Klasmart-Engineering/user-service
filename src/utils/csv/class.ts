@@ -11,7 +11,7 @@ import {
 import { ClassRow } from '../../types/csv/classRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from './validationConstants'
 
 export const processClassFromCSVRow = async (

@@ -169,7 +169,6 @@ const typeDefs = gql`
 
     type Branding {
         iconImageURL: Url
-        faviconImageURL: Url
         primaryColor: HexColor
     }
 `

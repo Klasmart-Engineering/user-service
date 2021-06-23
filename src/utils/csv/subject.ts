@@ -5,7 +5,7 @@ import { Subject } from '../../entities/subject'
 import { SubjectRow } from '../../types/csv/subjectRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from './errors/csvErrorConstants'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 export async function processSubjectFromCSVRow(
     manager: EntityManager,

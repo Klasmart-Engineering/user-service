@@ -1,6 +1,6 @@
 import { CSVError } from '../../types/csv/csvError'
-import csvErrorConstants from '../csv/errors/csvErrorConstants'
-import stringInject from '../stringUtils'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
+import { stringInject } from '../stringUtils'
 
 export function addCsvError(
     fileErrors: CSVError[],

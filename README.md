@@ -73,6 +73,19 @@ mutation {
 -   Open the frontend in your browser and login using your credentials from the process above
 -   Note: you may need to allow the insecure hosts (frontend and backend) in your browser when launching for the first time
 
+### Docker
+
+You can also run the application with its dependencies through a docker-compose. For this just run:
+
+```bash
+docker-compose up
+```
+
+Finally, you can list the items in the bucket with the regular client:
+```bash
+aws s3 ls s3://kidsloop-alpha-account-asset-objects/ --endpoint http://localhost:456
+```
+
 # Diagnosing
 
 ## Via TypeORM
