@@ -101,7 +101,7 @@ export async function checkToken(token?: string) {
         return verifiedToken
     } catch (e) {
         console.error(e)
-        if(!process.env.INTERNAL) {
+        if(process.env.INTERNAL !== "true") {
             throw e
         }
     }
