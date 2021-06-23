@@ -1,5 +1,7 @@
-import fs from 'fs'
 import chaiAsPromised from 'chai-as-promised'
+import fs from 'fs'
+import { stub, restore } from 'sinon';
+
 import { resolve } from 'path'
 import { ReadStream } from 'fs'
 import { expect, use } from 'chai'
@@ -14,6 +16,7 @@ import { Model } from '../../src/model'
 import { setBranding } from '../utils/operations/brandingOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser } from '../utils/testEntities'
+import { CloudStorageUploader } from '../../src/services/cloudStorageUploader'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
 import { ImageMimeType } from '../../src/types/imageMimeTypes'
@@ -22,13 +25,18 @@ describe('model.branding', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     const filename = 'icon.png'
+    const remoteUrl = 'http://some.url'
+
+
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
+        stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
     })
 
     after(async () => {
+        restore()
         await connection?.close()
     })
 
@@ -68,7 +76,7 @@ describe('model.branding', () => {
                     const brandings = await Branding.find()
                     expect(brandings.length).to.equal(1)
                     const images = await BrandingImage.find()
-                    expect(images.length).to.equal(2)
+                    expect(images.length).to.equal(1)
                 })
             }
         )

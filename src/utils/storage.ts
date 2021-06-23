@@ -39,24 +39,37 @@ export function buildFilePath(
  * @returns pkgcloud.storage.Client
  */
 export function createCloudClient(provider: string) {
+    let clientParams: any = {}
+
+    if(process.env.FORCE_LOCAL_STORAGE) {
+        clientParams.endpoint = process.env.STORAGE_ENDPOINT
+        clientParams.forcePathBucket =  true
+    }
+
+
+    if(process.env.STORAGE_ACCESS_KEY_ID) {
+        clientParams.keyId = process.env.STORAGE_ACCESS_KEY_ID
+    }
+
+    if(process.env.STORAGE_SECRET_ACCESS_KEY) {
+        clientParams.key = process.env.STORAGE_SECRET_ACCESS_KEY
+    }
+
+    if(process.env.STORAGE_SESSION_TOKEN) {
+        clientParams.sessionToken = process.env.STORAGE_SESSION_TOKEN
+    }
+
     switch (provider) {
         case 'amazon':
             if (
                 !process.env.STORAGE_BUCKET ||
-                !process.env.STORAGE_ACCESS_KEY_ID ||
-                !process.env.STORAGE_SECRET_ACCESS_KEY ||
-                !process.env.STORAGE_SESSION_TOKEN ||
                 !process.env.STORAGE_REGION
             ) {
                 throw new Error('missing AWS env variable(s)')
             }
-            return pkgcloud.storage.createClient({
-                provider: 'amazon',
-                keyId: process.env.STORAGE_ACCESS_KEY_ID,
-                key: process.env.STORAGE_SECRET_ACCESS_KEY,
-                sessionToken: process.env.STORAGE_SESSION_TOKEN,
-                region: process.env.STORAGE_REGION,
-            })
+            clientParams.provider = 'amazon'
+            clientParams.region = process.env.STORAGE_REGION
+            break
 
         case 'google':
             if (
@@ -66,32 +79,28 @@ export function createCloudClient(provider: string) {
             ) {
                 throw new Error('missing Google Cloud env variable(s)')
             }
-            return pkgcloud.storage.createClient({
-                provider: 'google',
-                keyFilename: process.env.STORAGE_GOOGLE_KEY_FILE_NAME,
-                projectId: process.env.STORAGE_PROJECT_ID,
-            })
+
+            clientParams.provider = 'google'
+            clientParams.keyFilename = process.env.STORAGE_GOOGLE_KEY_FILE_NAME
+            clientParams.projectId = process.env.STORAGE_PROJECT_ID
+            break
 
         case 'vngcloud':
             if (
-                !process.env.STORAGE_BUCKET ||
-                !process.env.STORAGE_ENDPOINT ||
                 !process.env.STORAGE_PROJECT_ID ||
-                !process.env.STORAGE_ACCESS_KEY_ID ||
-                !process.env.STORAGE_SECRET_ACCESS_KEY ||
                 !process.env.STORAGE_REGION
             ) {
                 throw new Error('missing VNG Cloud env variable(s)')
             }
-            return pkgcloud.storage.createClient({
-                provider: 'amazon',
-                keyId: process.env.STORAGE_ACCESS_KEY_ID,
-                key: process.env.STORAGE_SECRET_ACCESS_KEY,
-                region: process.env.STORAGE_REGION,
-                endpoint: process.env.STORAGE_ENDPOINT,
-            })
+
+            clientParams.provider = 'amazon'
+            clientParams.region = process.env.STORAGE_REGION
+            clientParams.projectId = process.env.STORAGE_PROJECT_ID
+            break
 
         default:
             throw new Error('not supported provider')
     }
+
+    return pkgcloud.storage.createClient(clientParams)
 }

@@ -5,22 +5,27 @@ export class CloudStorageUploader {
     public static async call(
         imageStream: ReadStream,
         filePath: string,
-    ) {
-        const client = createCloudClient(process.env.STORAGE_PROVIDER)
+    ) : Promise<string | undefined> {
+        const client = createCloudClient(process.env.STORAGE_PROVIDER || 'amazon')
+        let remoteUrl = undefined
 
-        const writeStream = client.upload({
-            container: process.env.STORAGE_BUCKET || 'kl-user-service',
+        const writeStream = await client.upload({
+            container: process.env.STORAGE_BUCKET || 'kidsloop-alpha-account-asset-objects',
             remote: filePath,
         })
 
-        imageStream
+        await new Promise((resolve) =>
+            imageStream
             .pipe(writeStream)
             .on('success', function (remoteFile) {
-                // console.log(remoteFile)
-                return remoteFilePath
+                remoteUrl = remoteFile.location
+                resolve()
             })
             .on('error', function (err) {
                 throw new Error(`failed to upload file with error ${err}`)
             })
+        )
+
+        return Promise.resolve(remoteUrl)
     }
 }

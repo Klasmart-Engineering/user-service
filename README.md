@@ -81,6 +81,11 @@ You can also run the application with its dependencies through a docker-compose.
 docker-compose up
 ```
 
+Finally, you can list the items in the bucket with the regular client:
+```bash
+aws s3 ls s3://kidsloop-alpha-account-asset-objects/ --endpoint http://localhost:456
+```
+
 # Diagnosing
 
 ## Via TypeORM

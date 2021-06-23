@@ -59,6 +59,7 @@ import { Grade } from './entities/grade'
 import { GradeConnectionNode } from './types/graphQL/gradeConnectionNode'
 import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
 import { BrandingStorer } from './services/brandingStorer'
+import { CloudStorageUploader } from './services/cloudStorageUploader'
 import { BrandingImageTag } from './types/graphQL/brandingImageTag'
 import { buildFilePath } from './utils/storage'
 
@@ -995,10 +996,11 @@ export class Model {
             faviconImageURL: undefined,
             primaryColor: primaryColor,
         }
+
         const brandingImagesInfo: BrandingImageInfo[] = []
 
         // Here we should build an image per tag
-        for (const tag of [BrandingImageTag.ICON, BrandingImageTag.FAVICON]) {
+        for (const tag of [BrandingImageTag.ICON]) {
             // Build path for image
             const remoteFilePath = buildFilePath(
                 organizationId,
@@ -1008,18 +1010,20 @@ export class Model {
             )
 
             // Upload image to cloud
-            // const remoteUrl = await CloudStorageUploader.call(file.createReadStream, remoteFilePath)
+            const remoteUrl = await CloudStorageUploader.call(file.createReadStream(), remoteFilePath)
 
             //Safe info for saving later on DB
-            brandingImagesInfo.push({
-                imageUrl: remoteFilePath,
-                tag: tag,
-            })
+            if(remoteUrl){
+                brandingImagesInfo.push({
+                    imageUrl: remoteUrl,
+                    tag: tag,
+                })
+            }
 
             // Build the resolver output
             const brandingKey = (tag.toLowerCase() +
                 'ImageURL') as keyof BrandingResult
-            result[brandingKey] = remoteFilePath
+            result[brandingKey] = remoteUrl
         }
 
         // Safe branding in DB
