@@ -9,7 +9,6 @@ const SET_BRANDING_MUTATION = `
  mutation SetBranding($organizationId: ID!, $iconImage: Upload,$primaryColor:HexColor) {
   setBranding(organizationId: $organizationId, iconImage: $iconImage, primaryColor:$primaryColor) {
     iconImageURL
-    faviconImageURL
     primaryColor
   }
 }

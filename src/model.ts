@@ -993,7 +993,6 @@ export class Model {
 
         const result: BrandingResult = {
             iconImageURL: undefined,
-            faviconImageURL: undefined,
             primaryColor: primaryColor,
         }
 

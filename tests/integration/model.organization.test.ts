@@ -26,7 +26,6 @@ const GET_ORGANIZATIONS = `
             organization_name
             branding {
                 iconImageURL
-                faviconImageURL
                 primaryColor
               }
         }
@@ -40,7 +39,6 @@ const GET_ORGANIZATION = `
             organization_name
             branding {
                 iconImageURL
-                faviconImageURL
                 primaryColor
               }
         }

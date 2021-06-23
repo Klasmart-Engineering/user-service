@@ -34,13 +34,9 @@ export const brandingForOrganizations = async (
             const icon = branding.images?.find(
                 (i) => i.tag === BrandingImageTag.ICON
             )
-            const favicon = branding.images?.find(
-                (i) => i.tag === BrandingImageTag.FAVICON
-            )
 
             brandings.push({
                 iconImageURL: icon?.url,
-                faviconImageURL: favicon?.url,
                 primaryColor: branding.primaryColor,
             })
         } else {

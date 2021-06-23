@@ -2,7 +2,6 @@ import { BrandingImageTag } from './brandingImageTag'
 
 export interface BrandingResult {
     iconImageURL?: string
-    faviconImageURL?: string
     primaryColor?: string
 }
 
