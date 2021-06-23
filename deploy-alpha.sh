@@ -4,3 +4,4 @@ docker build -t kidsloop-alpha-user .
 docker tag kidsloop-alpha-user:latest 871601235178.dkr.ecr.ap-northeast-2.amazonaws.com/kidsloop-alpha-user:latest
 docker push 871601235178.dkr.ecr.ap-northeast-2.amazonaws.com/kidsloop-alpha-user:latest
 aws ecs update-service --service arn:aws:ecs:ap-northeast-2:871601235178:service/kidsloop-alpha/kidsloop-alpha-user --force-new-deployment --cluster kidsloop-alpha --region ap-northeast-2
+aws ecs update-service --service arn:aws:ecs:ap-northeast-2:871601235178:service/kidsloop-alpha/kidsloop-alpha-user-internal --force-new-deployment --cluster kidsloop-alpha --region ap-northeast-2
