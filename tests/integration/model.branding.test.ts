@@ -19,6 +19,7 @@ import {
     setBranding,
     setBrandingWithoutImage,
     setBrandingWithoutPrimaryColor,
+    deleteBrandingColorMutation,
 } from '../utils/operations/brandingOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
@@ -597,6 +598,55 @@ describe('model.branding', () => {
                 expect(branding).to.exist
                 expect(brandingImage).to.exist
                 expect(brandingImage?.status).eq(Status.INACTIVE)
+            })
+        })
+    })
+
+    describe('deleteBrandingColor', () => {
+        let branding: Branding | undefined
+        const primaryColor = '#cd657b'
+        it('removes any set colour while leaving other properties unchanged', async () => {
+            const iconImage = fs.createReadStream(
+                resolve(`tests/fixtures/${filename}`)
+            )
+            await setBranding(
+                testClient,
+                organizationId,
+                iconImage,
+                filename,
+                mimetype,
+                encoding,
+                primaryColor
+            )
+            branding = await Branding.findOne({
+                relations: ['images'],
+                where: {
+                    organization: { organization_id: organizationId },
+                },
+            })
+            expect(branding).to.exist
+            expect(branding?.primaryColor).to.eq(primaryColor)
+            expect(branding?.images?.length).to.eq(1)
+
+            await deleteBrandingColorMutation(testClient, organizationId)
+
+            branding = await Branding.findOne({
+                relations: ['images'],
+                where: {
+                    organization: { organization_id: organizationId },
+                },
+            })
+
+            expect(branding).to.exist
+            expect(branding?.primaryColor).to.eq(null)
+            expect(branding?.images?.length).to.eq(1)
+        })
+        context('when organization has not branding', () => {
+            it('should throw an error', async () => {
+                const func = () =>
+                    deleteBrandingColorMutation(testClient, organizationId)
+
+                expect(func()).to.be.rejected
             })
         })
     })

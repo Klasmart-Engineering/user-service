@@ -1102,4 +1102,33 @@ export class Model {
 
         return true
     }
+
+    public async deleteBrandingColor(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organizationId = args.organizationId
+        const organizationBranding = await Branding.findOne({
+            where: {
+                organization: { organization_id: organizationId },
+            },
+        })
+
+        // Organization has no branding
+        if (!organizationBranding) {
+            const errorDetails: CustomError = {
+                code: BrandingErrorConstants.ERR_BRANDING_NONE_EXIST,
+                message: BrandingErrorConstants.MSG_BRANDING_NONE_EXIST,
+                params: { organizationId },
+            }
+
+            throw new BrandingError(errorDetails)
+        }
+
+        organizationBranding.primaryColor = null
+        await Branding.save(organizationBranding)
+
+        return true
+    }
 }

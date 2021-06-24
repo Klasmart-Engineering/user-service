@@ -30,6 +30,7 @@ const typeDefs = gql`
             organizationId: ID!
             type: BrandingImageTag!
         ): Boolean
+        deleteBrandingColor(organizationId: ID!): Boolean
     }
     extend type Query {
         organization(organization_id: ID!): Organization
@@ -198,6 +199,8 @@ export default function getDefault(
                     model.setBranding(args, ctx, info),
                 deleteBrandingImage: (_parent, args, ctx, info) =>
                     model.deleteBrandingImage(args, ctx, info),
+                deleteBrandingColor: (_parent, args, ctx, info) =>
+                    model.deleteBrandingColor(args, ctx, info),
             },
             Query: {
                 organizations: (_parent, args, _context, _info) =>

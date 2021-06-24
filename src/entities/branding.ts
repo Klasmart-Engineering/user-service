@@ -37,8 +37,8 @@ export class Branding extends BaseEntity {
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 
-    @Column({ nullable: true, name: 'primary_color' })
-    public primaryColor?: string
+    @Column({ type: 'text', nullable: true, name: 'primary_color' })
+    public primaryColor?: string | null
 
     @OneToMany(() => BrandingImage, (image) => image.branding)
     public images?: BrandingImage[]

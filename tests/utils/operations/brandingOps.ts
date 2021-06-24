@@ -45,6 +45,12 @@ const DELETE_BRANDING_IMAGE_MUTATION = `
     }
 `
 
+const DELETE_BRANDING_COLOR_MUTATION = `
+    mutation DeleteBrandingColor($organizationId: ID!) {
+        deleteBrandingColor(organizationId: $organizationId)
+    }
+`
+
 function fileMockInput(
     file: Stream,
     filename: string,
@@ -185,6 +191,26 @@ export async function deleteBrandingImageMutation(
     const operation = () =>
         mutate({
             mutation: DELETE_BRANDING_IMAGE_MUTATION,
+            variables: variables,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.deleteBrandingImage
+}
+
+export async function deleteBrandingColorMutation(
+    testClient: ApolloServerTestClient,
+    organizationId: string
+) {
+    const variables = {
+        organizationId,
+    }
+
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: DELETE_BRANDING_COLOR_MUTATION,
             variables: variables,
         })
 
