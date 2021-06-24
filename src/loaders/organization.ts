@@ -3,6 +3,7 @@ import { Branding } from '../entities/branding'
 import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { BrandingImageTag } from '../types/graphQL/brandingImageTag'
+import { Status } from '../entities/status'
 
 export interface IOrganizationLoaders {
     branding: DataLoader<string, BrandingResult | undefined>
@@ -18,6 +19,7 @@ export const brandingForOrganizations = async (
         .leftJoinAndSelect('Branding.images', 'BrandImages')
         .leftJoinAndSelect('Branding.organization', 'BrandingOrg')
         .where('BrandingOrg.organization_id IN (:...ids)', { ids: orgIds })
+        .andWhere('Branding.status = :status', { status: Status.ACTIVE })
 
     const data = await scope.getMany()
 
@@ -32,7 +34,9 @@ export const brandingForOrganizations = async (
             )
 
             const icon = branding.images?.find(
-                (i) => i.tag === BrandingImageTag.ICON
+                (i) =>
+                    i.tag === BrandingImageTag.ICON &&
+                    i.status === Status.ACTIVE
             )
 
             brandings.push({

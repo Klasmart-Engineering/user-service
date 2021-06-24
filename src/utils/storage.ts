@@ -39,7 +39,7 @@ export function buildFilePath(
  * @returns pkgcloud.storage.Client
  */
 export function createCloudClient(provider: string) {
-    let clientParams: any = {}
+    const clientParams: any = {}
 
     if(process.env.FORCE_LOCAL_STORAGE) {
         clientParams.endpoint = process.env.STORAGE_ENDPOINT

@@ -13,19 +13,28 @@ import {
 import { createTestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Model } from '../../src/model'
-import { setBranding } from '../utils/operations/brandingOps'
+import {
+    setBranding,
+    setBrandingWithoutImage,
+    setBrandingWithoutPrimaryColor,
+} from '../utils/operations/brandingOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser } from '../utils/testEntities'
 import { CloudStorageUploader } from '../../src/services/cloudStorageUploader'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
 import { ImageMimeType } from '../../src/types/imageMimeTypes'
+import { Status } from '../../src/entities/status'
+
+use(chaiAsPromised)
 
 describe('model.branding', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     const filename = 'icon.png'
     const remoteUrl = 'http://some.url'
+
+    const filenameToUpdate = 'icon.jpg'
 
     before(async () => {
         connection = await createTestConnection()
@@ -40,17 +49,18 @@ describe('model.branding', () => {
     })
 
     let organizationId: string
+
     beforeEach(async () => {
         const user = await createAdminUser(testClient)
         const organization = await createOrganizationAndValidate(
             testClient,
-            user.user_id
+            user.user_id,
+            'Some fabulous organization'
         )
         organizationId = organization.organization_id
     })
 
     describe('setBranding', () => {
-        let file: ReadStream
         const mimetype = 'image/png'
         const encoding = '7bit'
         context(
@@ -131,6 +141,180 @@ describe('model.branding', () => {
                 const images = await BrandingImage.find()
                 expect(images.length).to.equal(0)
             })
+        })
+
+        context('when branding is created for first time', () => {
+            context('and iconImage is not provided', () => {
+                it('should throw an error', async () => {
+                    const primaryColor = '#cd657b'
+                    const func = () =>
+                        setBrandingWithoutImage(
+                            testClient,
+                            organizationId,
+                            primaryColor
+                        )
+
+                    const organizationBranding = await Branding.findOne({
+                        where: {
+                            organization: { organization_id: organizationId },
+                        },
+                    })
+
+                    expect(func()).to.be.rejected
+                    expect(organizationBranding).to.be.undefined
+                })
+            })
+        })
+
+        context('when branding is already created', () => {
+            context('and primaryColor and iconImage are provided', () => {
+                it('should update primaryColor and iconImage', async () => {
+                    const primaryColor = '#cd657b'
+                    const iconImage = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                    await setBranding(
+                        testClient,
+                        organizationId,
+                        iconImage,
+                        filename,
+                        mimetype,
+                        encoding,
+                        primaryColor
+                    )
+
+                    const newColor = '#b22222'
+                    const newImage = fs.createReadStream(
+                        resolve(`tests/fixtures/${filenameToUpdate}`)
+                    )
+                    const branding = await setBranding(
+                        testClient,
+                        organizationId,
+                        newImage,
+                        filenameToUpdate,
+                        mimetype,
+                        encoding,
+                        newColor
+                    )
+
+                    expect(branding.primaryColor).to.equal(newColor)
+
+                    const brandings = await Branding.find({
+                        where: {
+                            organization: { organization_id: organizationId },
+                        },
+                    })
+                    expect(brandings.length).to.equal(1)
+
+                    const images = await BrandingImage.find({
+                        where: {
+                            branding: brandings[0],
+                            status: Status.ACTIVE,
+                        },
+                    })
+                    expect(images.length).to.equal(1)
+                })
+            })
+
+            context(
+                'and primaryColor is not provided and iconImage is provided',
+                () => {
+                    it('should set primaryColor as null and update iconImage', async () => {
+                        const primaryColor = '#cd657b'
+                        const iconImage = fs.createReadStream(
+                            resolve(`tests/fixtures/${filename}`)
+                        )
+                        await setBranding(
+                            testClient,
+                            organizationId,
+                            iconImage,
+                            filename,
+                            mimetype,
+                            encoding,
+                            primaryColor
+                        )
+
+                        const newImage = fs.createReadStream(
+                            resolve(`tests/fixtures/${filenameToUpdate}`)
+                        )
+                        const branding = await setBrandingWithoutPrimaryColor(
+                            testClient,
+                            organizationId,
+                            newImage,
+                            filenameToUpdate,
+                            mimetype,
+                            encoding
+                        )
+                        expect(branding.iconImageURL).to.exist
+
+                        expect(branding.primaryColor).to.be.null
+
+                        const brandings = await Branding.find({
+                            where: {
+                                organization: {
+                                    organization_id: organizationId,
+                                },
+                            },
+                        })
+                        expect(brandings.length).to.equal(1)
+
+                        const images = await BrandingImage.find({
+                            where: {
+                                branding: brandings[0],
+                                status: Status.ACTIVE,
+                            },
+                        })
+                        expect(images.length).to.equal(1)
+                    })
+                }
+            )
+
+            context(
+                'and primaryColor is provided and iconImage is not provided',
+                () => {
+                    it('should update primaryColor', async () => {
+                        const primaryColor = '#cd657b'
+                        const iconImage = fs.createReadStream(
+                            resolve(`tests/fixtures/${filename}`)
+                        )
+                        await setBranding(
+                            testClient,
+                            organizationId,
+                            iconImage,
+                            filename,
+                            mimetype,
+                            encoding,
+                            primaryColor
+                        )
+
+                        const newColor = '#b22222'
+                        const branding = await setBrandingWithoutImage(
+                            testClient,
+                            organizationId,
+                            newColor
+                        )
+
+                        expect(branding.primaryColor).to.equal(newColor)
+
+                        const brandings = await Branding.find({
+                            where: {
+                                organization: {
+                                    organization_id: organizationId,
+                                },
+                            },
+                        })
+                        expect(brandings.length).to.equal(1)
+
+                        const images = await BrandingImage.find({
+                            where: {
+                                branding: brandings[0],
+                                status: Status.ACTIVE,
+                            },
+                        })
+                        expect(images.length).to.equal(1)
+                    })
+                }
+            )
         })
     })
 })

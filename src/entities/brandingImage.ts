@@ -10,6 +10,7 @@ import {
 } from 'typeorm'
 import { BrandingImageTag } from '../types/graphQL/brandingImageTag'
 import { Branding } from './branding'
+import { Status } from './status'
 
 @Entity()
 export class BrandingImage extends BaseEntity {
@@ -34,6 +35,9 @@ export class BrandingImage extends BaseEntity {
 
     @Column({ nullable: false })
     public url?: string
+
+    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
+    public status!: Status
 
     @ManyToOne(() => Branding, (branding) => branding.images, {
         onDelete: 'CASCADE',

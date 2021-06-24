@@ -25,7 +25,6 @@ import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
-
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
@@ -987,7 +986,7 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const { file } = await args.iconImage
+        const iconImage = await args.iconImage
         const primaryColor = args.primaryColor
         const organizationId = args.organizationId
 
@@ -999,36 +998,43 @@ export class Model {
         const brandingImagesInfo: BrandingImageInfo[] = []
 
         // Here we should build an image per tag
-        for (const tag of [BrandingImageTag.ICON]) {
-            // Build path for image
-            const remoteFilePath = buildFilePath(
-                organizationId,
-                file.filename,
-                'organizations',
-                tag.toLowerCase()
-            )
+        if (iconImage) {
+            const file = iconImage.file
 
-            // Upload image to cloud
-            const remoteUrl = await CloudStorageUploader.call(file.createReadStream(), remoteFilePath)
+            for (const tag of [BrandingImageTag.ICON]) {
+                // Build path for image
+                const remoteFilePath = buildFilePath(
+                    organizationId,
+                    file.filename,
+                    'organizations',
+                    tag.toLowerCase()
+                )
 
-            //Safe info for saving later on DB
-            if(remoteUrl){
-                brandingImagesInfo.push({
-                    imageUrl: remoteUrl,
-                    tag: tag,
-                })
+                // Upload image to cloud
+                const remoteUrl = await CloudStorageUploader.call(
+                    file.createReadStream(),
+                    remoteFilePath
+                )
+
+                //Safe info for saving later on DB
+                if (remoteUrl) {
+                    brandingImagesInfo.push({
+                        imageUrl: remoteUrl,
+                        tag: tag,
+                    })
+                }
+
+                // Build the resolver output
+                const brandingKey = (tag.toLowerCase() +
+                    'ImageURL') as keyof BrandingResult
+                result[brandingKey] = remoteUrl
             }
-
-            // Build the resolver output
-            const brandingKey = (tag.toLowerCase() +
-                'ImageURL') as keyof BrandingResult
-            result[brandingKey] = remoteUrl
         }
 
         // Safe branding in DB
         await BrandingStorer.call(
             organizationId,
-            file,
+            iconImage?.file,
             brandingImagesInfo,
             primaryColor,
             this.connection

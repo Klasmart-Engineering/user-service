@@ -12,6 +12,7 @@ import {
 } from 'typeorm'
 import { Organization } from './organization'
 import { BrandingImage } from './brandingImage'
+import { Status } from './status'
 
 @Unique(['organization'])
 @Entity()
@@ -41,4 +42,7 @@ export class Branding extends BaseEntity {
 
     @OneToMany(() => BrandingImage, (image) => image.branding)
     public images?: BrandingImage[]
+
+    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
+    public status!: Status
 }
