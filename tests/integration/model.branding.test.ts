@@ -14,23 +14,29 @@ import { createTestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Model } from '../../src/model'
 import {
+    deleteBrandingImageMutation,
+    deleteBrandingImageQuery,
     setBranding,
     setBrandingWithoutImage,
     setBrandingWithoutPrimaryColor,
 } from '../utils/operations/brandingOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import { createAdminUser } from '../utils/testEntities'
+import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 import { CloudStorageUploader } from '../../src/services/cloudStorageUploader'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
 import { ImageMimeType } from '../../src/types/imageMimeTypes'
 import { Status } from '../../src/entities/status'
+import { BrandingImageTag } from '../../src/types/graphQL/brandingImageTag'
+import { Organization } from '../../src/entities/organization'
 
 use(chaiAsPromised)
 
 describe('model.branding', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
+    const mimetype = 'image/png'
+    const encoding = '7bit'
     const filename = 'icon.png'
     const remoteUrl = 'http://some.url'
 
@@ -48,11 +54,12 @@ describe('model.branding', () => {
         await connection?.close()
     })
 
+    let organization: Organization
     let organizationId: string
 
     beforeEach(async () => {
         const user = await createAdminUser(testClient)
-        const organization = await createOrganizationAndValidate(
+        organization = await createOrganizationAndValidate(
             testClient,
             user.user_id,
             'Some fabulous organization'
@@ -315,6 +322,282 @@ describe('model.branding', () => {
                     })
                 }
             )
+        })
+    })
+
+    describe('deleteBrandingImage', () => {
+        context('when operation is not a mutation', () => {
+            beforeEach(async () => {
+                const primaryColor = '#cd657b'
+                const iconImage = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+                await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    filename,
+                    mimetype,
+                    encoding,
+                    primaryColor
+                )
+            })
+
+            it('should throw an error', async () => {
+                const type = BrandingImageTag.ICON
+                const func = () =>
+                    deleteBrandingImageQuery(testClient, organizationId, type)
+
+                const branding = await Branding.findOne({
+                    where: {
+                        organization: { organization_id: organizationId },
+                        status: Status.ACTIVE,
+                    },
+                })
+
+                const brandingImage = await BrandingImage.findOne({
+                    where: { branding, tag: type },
+                })
+
+                expect(func()).to.be.rejected
+                expect(branding).to.exist
+                expect(brandingImage).to.exist
+                expect(brandingImage?.status).eq(Status.ACTIVE)
+            })
+        })
+
+        context('when type is not a valid type', () => {
+            beforeEach(async () => {
+                const primaryColor = '#cd657b'
+                const iconImage = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+                await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    filename,
+                    mimetype,
+                    encoding,
+                    primaryColor
+                )
+            })
+
+            it('should throw an error', async () => {
+                const type = BrandingImageTag.ICON
+                const wrongType = 'NOTICON'
+                const func = () =>
+                    deleteBrandingImageQuery(
+                        testClient,
+                        organizationId,
+                        wrongType
+                    )
+
+                const branding = await Branding.findOne({
+                    where: {
+                        organization: { organization_id: organizationId },
+                        status: Status.ACTIVE,
+                    },
+                })
+
+                const brandingImage = await BrandingImage.findOne({
+                    where: { branding, tag: type },
+                })
+
+                expect(func()).to.be.rejected
+                expect(branding).to.exist
+                expect(brandingImage).to.exist
+                expect(brandingImage?.status).eq(Status.ACTIVE)
+            })
+        })
+
+        context('when organization is not a valid ID', () => {
+            beforeEach(async () => {
+                const primaryColor = '#cd657b'
+                const iconImage = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+                await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    filename,
+                    mimetype,
+                    encoding,
+                    primaryColor
+                )
+            })
+
+            it('should throw an error', async () => {
+                const type = BrandingImageTag.ICON
+                const wrongId = 'n0t-4n-1d'
+                const func = () =>
+                    deleteBrandingImageQuery(testClient, wrongId, type)
+
+                const branding = await Branding.findOne({
+                    where: {
+                        organization: { organization_id: organizationId },
+                        status: Status.ACTIVE,
+                    },
+                })
+
+                const brandingImage = await BrandingImage.findOne({
+                    where: { branding, tag: type },
+                })
+
+                expect(func()).to.be.rejected
+                expect(branding).to.exist
+                expect(brandingImage).to.exist
+                expect(brandingImage?.status).eq(Status.ACTIVE)
+            })
+        })
+
+        context(
+            'when organizationId does not belongs to any organization',
+            () => {
+                beforeEach(async () => {
+                    const primaryColor = '#cd657b'
+                    const iconImage = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                    await setBranding(
+                        testClient,
+                        organizationId,
+                        iconImage,
+                        filename,
+                        mimetype,
+                        encoding,
+                        primaryColor
+                    )
+                })
+
+                it('should throw an error', async () => {
+                    const type = BrandingImageTag.ICON
+                    const noneExistingId =
+                        '00000000-0000-0000-0000-000000000000'
+                    const func = () =>
+                        deleteBrandingImageQuery(
+                            testClient,
+                            noneExistingId,
+                            type
+                        )
+
+                    const branding = await Branding.findOne({
+                        where: {
+                            organization: { organization_id: organizationId },
+                            status: Status.ACTIVE,
+                        },
+                    })
+
+                    const brandingImage = await BrandingImage.findOne({
+                        where: { branding, tag: type },
+                    })
+
+                    expect(func()).to.be.rejected
+                    expect(branding).to.exist
+                    expect(brandingImage).to.exist
+                    expect(brandingImage?.status).eq(Status.ACTIVE)
+                })
+            }
+        )
+
+        context('when organization has not branding', () => {
+            it('should throw an error', async () => {
+                const type = BrandingImageTag.ICON
+                const func = () =>
+                    deleteBrandingImageMutation(
+                        testClient,
+                        organizationId,
+                        type
+                    )
+
+                const branding = await Branding.findOne({
+                    where: {
+                        organization: { organization_id: organizationId },
+                        status: Status.ACTIVE,
+                    },
+                })
+
+                expect(func()).to.be.rejected
+                expect(branding).to.not.exist
+            })
+        })
+
+        context('when organization branding has not branding image', () => {
+            beforeEach(async () => {
+                const branding = new Branding()
+                branding.organization = Promise.resolve(organization)
+                branding.primaryColor = '#008080'
+                await Branding.save(branding)
+            })
+
+            it('should throw an error', async () => {
+                const type = BrandingImageTag.ICON
+                const func = () =>
+                    deleteBrandingImageMutation(
+                        testClient,
+                        organizationId,
+                        type
+                    )
+
+                const branding = await Branding.findOne({
+                    where: {
+                        organization: { organization_id: organizationId },
+                        status: Status.ACTIVE,
+                    },
+                })
+
+                const brandingImage = await BrandingImage.findOne({
+                    where: { branding, tag: type },
+                })
+
+                expect(func()).to.be.rejected
+                expect(branding).to.exist
+                expect(brandingImage).to.not.exist
+            })
+        })
+
+        context('when organization branding has branding image', () => {
+            beforeEach(async () => {
+                const primaryColor = '#cd657b'
+                const iconImage = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+                await setBranding(
+                    testClient,
+                    organizationId,
+                    iconImage,
+                    filename,
+                    mimetype,
+                    encoding,
+                    primaryColor
+                )
+            })
+
+            it('should set image status as "inactive"', async () => {
+                const type = BrandingImageTag.ICON
+                const result = await deleteBrandingImageMutation(
+                    testClient,
+                    organizationId,
+                    type
+                )
+
+                const branding = await Branding.findOne({
+                    where: {
+                        organization: { organization_id: organizationId },
+                        status: Status.ACTIVE,
+                    },
+                })
+
+                const brandingImage = await BrandingImage.findOne({
+                    where: { branding, tag: type },
+                })
+
+                expect(result).eq(true)
+                expect(branding).to.exist
+                expect(brandingImage).to.exist
+                expect(brandingImage?.status).eq(Status.INACTIVE)
+            })
         })
     })
 })

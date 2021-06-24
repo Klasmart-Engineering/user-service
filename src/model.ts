@@ -61,6 +61,13 @@ import { BrandingStorer } from './services/brandingStorer'
 import { CloudStorageUploader } from './services/cloudStorageUploader'
 import { BrandingImageTag } from './types/graphQL/brandingImageTag'
 import { buildFilePath } from './utils/storage'
+import { Branding } from './entities/branding'
+import { CustomError } from './types/errors/customError'
+import BrandingErrorConstants from './types/errors/branding/brandingErrorConstants'
+import { BrandingError } from './types/errors/branding/brandingError'
+import { BrandingImage } from './entities/brandingImage'
+import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInput'
+import { Status } from './entities/status'
 
 export class Model {
     public static async create() {
@@ -1041,5 +1048,58 @@ export class Model {
         )
 
         return result
+    }
+
+    public async deleteBrandingImage(
+        args: deleteBrandingImageInput,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+
+        const { organizationId, type } = args
+        const organizationBranding = await Branding.findOne({
+            where: {
+                organization: { organization_id: organizationId },
+                status: Status.ACTIVE,
+            },
+        })
+
+        // Organization has not branding
+        if (!organizationBranding) {
+            const errorDetails: CustomError = {
+                code: BrandingErrorConstants.ERR_BRANDING_NONE_EXIST,
+                message: BrandingErrorConstants.MSG_BRANDING_NONE_EXIST,
+                params: { organizationId },
+            }
+
+            throw new BrandingError(errorDetails)
+        }
+
+        const imageToRemove = await BrandingImage.findOne({
+            where: {
+                branding: organizationBranding,
+                tag: type,
+                status: Status.ACTIVE,
+            },
+        })
+
+        // Branding has not images of the given type
+        if (!imageToRemove) {
+            const errorDetails: CustomError = {
+                code: BrandingErrorConstants.ERR_IMAGE_BRANDING_NONE_EXIST,
+                message: BrandingErrorConstants.MSG_IMAGE_BRANDING_NONE_EXIST,
+                params: { organizationId, type },
+            }
+
+            throw new BrandingError(errorDetails)
+        }
+
+        imageToRemove.status = Status.INACTIVE
+        await BrandingImage.save(imageToRemove)
+
+        return true
     }
 }

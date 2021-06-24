@@ -4,6 +4,7 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 import { Headers } from 'node-mocks-http'
 import { ImageMimeType } from '../../../src/types/imageMimeTypes'
+import { BrandingImageTag } from '../../../src/types/graphQL/brandingImageTag'
 
 const SET_BRANDING_MUTATION = `
 mutation SetBranding($organizationId: ID!, $iconImage: Upload,$primaryColor:HexColor) {
@@ -30,6 +31,18 @@ mutation SetBranding($organizationId: ID!, $iconImage: Upload) {
     primaryColor
   }
 }
+`
+
+const DELETE_BRANDING_IMAGE_QUERY = `
+    query DeleteBrandingImage($organizationId: ID!, $type: BrandingImageTag!) {
+        deleteBrandingImage(organizationId: $organizationId, type: $type)
+    }
+`
+
+const DELETE_BRANDING_IMAGE_MUTATION = `
+    mutation DeleteBrandingImage($organizationId: ID!, $type: BrandingImageTag!) {
+        deleteBrandingImage(organizationId: $organizationId, type: $type)
+    }
 `
 
 function fileMockInput(
@@ -133,4 +146,48 @@ export async function setBrandingWithoutPrimaryColor(
 
     const res = await gqlTry(operation)
     return res.data?.setBranding
+}
+
+export async function deleteBrandingImageQuery(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    type: string
+) {
+    const variables = {
+        organizationId,
+        type,
+    }
+
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: DELETE_BRANDING_IMAGE_QUERY,
+            variables: variables,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.deleteBrandingImage
+}
+
+export async function deleteBrandingImageMutation(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    type: BrandingImageTag
+) {
+    const variables = {
+        organizationId,
+        type,
+    }
+
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: DELETE_BRANDING_IMAGE_MUTATION,
+            variables: variables,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.deleteBrandingImage
 }

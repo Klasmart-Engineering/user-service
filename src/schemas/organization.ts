@@ -26,6 +26,10 @@ const typeDefs = gql`
             iconImage: Upload
             primaryColor: HexColor
         ): Branding
+        deleteBrandingImage(
+            organizationId: ID!
+            type: BrandingImageTag!
+        ): Boolean
     }
     extend type Query {
         organization(organization_id: ID!): Organization
@@ -171,6 +175,10 @@ const typeDefs = gql`
         iconImageURL: Url
         primaryColor: HexColor
     }
+
+    enum BrandingImageTag {
+        ICON
+    }
 `
 export default function getDefault(
     model: Model,
@@ -188,6 +196,8 @@ export default function getDefault(
                     model.renameDuplicateOrganizations(args, ctx, info),
                 setBranding: (_parent, args, ctx, info) =>
                     model.setBranding(args, ctx, info),
+                deleteBrandingImage: (_parent, args, ctx, info) =>
+                    model.deleteBrandingImage(args, ctx, info),
             },
             Query: {
                 organizations: (_parent, args, _context, _info) =>
