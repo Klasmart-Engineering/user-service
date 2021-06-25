@@ -8,6 +8,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    EntityManager,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -42,9 +43,9 @@ export class Subject extends BaseEntity {
     public classes?: Promise<Class[]>
 
     public async subcategories(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
-        info: any
+        info: Record<string, unknown>
     ): Promise<Subcategory[]> {
         const organization_id = (await this.organization)?.organization_id
         const permisionContext = { organization_id: organization_id }
@@ -73,7 +74,11 @@ export class Subject extends BaseEntity {
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
 
-    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
@@ -99,7 +104,7 @@ export class Subject extends BaseEntity {
         return true
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

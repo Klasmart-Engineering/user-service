@@ -10,6 +10,7 @@ import {
     OneToOne,
     ManyToOne,
     BaseEntity,
+    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import {
@@ -76,7 +77,7 @@ export class Organization extends BaseEntity {
     public memberships?: Promise<OrganizationMembership[]>
 
     public async membership(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -103,7 +104,11 @@ export class Organization extends BaseEntity {
     @JoinColumn()
     public primary_contact?: Promise<User>
 
-    public async roles(args: any, context: any, info: any): Promise<Role[]> {
+    public async roles(
+        args: Record<string, unknown>,
+        context?: Context,
+        info?: Record<string, unknown>
+    ): Promise<Role[]> {
         return Role.find({
             where: [
                 { system_role: true, organization: { organization_id: null } },
@@ -124,9 +129,9 @@ export class Organization extends BaseEntity {
     public classes?: Promise<Class[]>
 
     public async ageRanges(
-        args: any,
-        context: any,
-        info: any
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
     ): Promise<AgeRange[]> {
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -145,7 +150,11 @@ export class Organization extends BaseEntity {
         })
     }
 
-    public async grades(args: any, context: any, info: any): Promise<Grade[]> {
+    public async grades(
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
+    ): Promise<Grade[]> {
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
@@ -164,9 +173,9 @@ export class Organization extends BaseEntity {
     }
 
     public async categories(
-        args: any,
-        context: any,
-        info: any
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
     ): Promise<Category[]> {
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -186,9 +195,9 @@ export class Organization extends BaseEntity {
     }
 
     public async subcategories(
-        args: any,
-        context: any,
-        info: any
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
     ): Promise<Subcategory[]> {
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -208,9 +217,9 @@ export class Organization extends BaseEntity {
     }
 
     public async subjects(
-        args: any,
-        context: any,
-        info: any
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
     ): Promise<Subject[]> {
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -230,9 +239,9 @@ export class Organization extends BaseEntity {
     }
 
     public async programs(
-        args: any,
-        context: any,
-        info: any
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
     ): Promise<Program[]> {
         const permisionContext = { organization_id: this.organization_id }
         await context.permissions.rejectIfNotAllowed(
@@ -255,7 +264,13 @@ export class Organization extends BaseEntity {
     public deleted_at?: Date
 
     public async set(
-        { organization_name, address1, address2, phone, shortCode }: any,
+        {
+            organization_name,
+            address1,
+            address2,
+            phone,
+            shortCode,
+        }: Partial<Organization>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -301,7 +316,10 @@ export class Organization extends BaseEntity {
     }
 
     public async membersWithPermission(
-        { permission_name, search_query }: any,
+        {
+            permission_name,
+            search_query,
+        }: { permission_name: PermissionName; search_query: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -354,7 +372,7 @@ export class Organization extends BaseEntity {
     }
 
     public async findMembers(
-        { search_query }: any,
+        { search_query }: { search_query: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -392,7 +410,7 @@ export class Organization extends BaseEntity {
     }
 
     public async setPrimaryContact(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -421,7 +439,7 @@ export class Organization extends BaseEntity {
     }
 
     public async addUser(
-        { user_id, shortcode }: any,
+        { user_id, shortcode }: { user_id: string; shortcode?: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -480,7 +498,8 @@ export class Organization extends BaseEntity {
             school_role_ids,
             alternate_email,
             alternate_phone,
-        }: any,
+        }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Record<string, any>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -549,7 +568,8 @@ export class Organization extends BaseEntity {
             school_role_ids,
             alternate_email,
             alternate_phone,
-        }: any,
+        }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Record<string, any>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -839,7 +859,10 @@ export class Organization extends BaseEntity {
     }
 
     public async createRole(
-        { role_name, role_description }: any,
+        {
+            role_name,
+            role_description,
+        }: { role_name: string; role_description: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -878,7 +901,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createClass(
-        { class_name, shortcode }: any,
+        { class_name, shortcode }: { class_name: string; shortcode: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -918,7 +941,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createSchool(
-        { school_name, shortcode }: any,
+        { school_name, shortcode }: { school_name: string; shortcode: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -956,7 +979,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createOrUpdateAgeRanges(
-        { age_ranges }: any,
+        { age_ranges }: { age_ranges: AgeRange[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -1033,7 +1056,8 @@ export class Organization extends BaseEntity {
     }
 
     public async createOrUpdateGrades(
-        { grades }: any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { grades }: { grades: any[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -1110,7 +1134,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createOrUpdateSubcategories(
-        { subcategories }: any,
+        { subcategories }: { subcategories: Subcategory[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -1178,6 +1202,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createOrUpdateCategories(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { categories }: any,
         context: Context,
         info: GraphQLResolveInfo
@@ -1252,6 +1277,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createOrUpdateSubjects(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { subjects }: any,
         context: Context,
         info: GraphQLResolveInfo
@@ -1375,6 +1401,7 @@ export class Organization extends BaseEntity {
     }
 
     public async createOrUpdatePrograms(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { programs }: any,
         context: Context,
         info: GraphQLResolveInfo
@@ -1454,7 +1481,11 @@ export class Organization extends BaseEntity {
         return dbPrograms
     }
 
-    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         if (
             info.operation.operation !== 'mutation' ||
             this.status == Status.INACTIVE
@@ -1480,7 +1511,7 @@ export class Organization extends BaseEntity {
         return false
     }
 
-    private async inactivateOrganizationMemberships(manager: any) {
+    private async inactivateOrganizationMemberships(manager: EntityManager) {
         const organizationMemberships = (await this.memberships) || []
 
         for (const organizationMembership of organizationMemberships) {
@@ -1490,7 +1521,7 @@ export class Organization extends BaseEntity {
         return organizationMemberships
     }
 
-    private async inactivateSchools(manager: any) {
+    private async inactivateSchools(manager: EntityManager) {
         const schools = (await this.schools) || []
 
         for (const school of schools) {
@@ -1500,7 +1531,7 @@ export class Organization extends BaseEntity {
         return schools
     }
 
-    private async inactivateOwnership(manager: any) {
+    private async inactivateOwnership(manager: EntityManager) {
         const ownership = await OrganizationOwnership.findOne({
             organization_id: this.organization_id,
         })
@@ -1512,7 +1543,7 @@ export class Organization extends BaseEntity {
         return ownership
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

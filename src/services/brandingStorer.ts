@@ -18,11 +18,11 @@ export class BrandingStorer {
         primaryColor: string | undefined,
         connection: Connection
     ): Promise<void> {
-        if(primaryColor) {
+        if (primaryColor) {
             this.validatePrimaryColor(primaryColor)
         }
 
-        if(file) {
+        if (file) {
             this.validateFile(file)
         }
 
@@ -33,6 +33,7 @@ export class BrandingStorer {
                 .into(Branding)
                 .values({
                     primaryColor: primaryColor,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     organization: <any>organizationId,
                     status: Status.ACTIVE,
                 })
@@ -42,15 +43,16 @@ export class BrandingStorer {
                 })
                 .execute()
 
-            if(file) {
+            if (file) {
                 const brandingInfo = upsertResult.generatedMaps[0]
 
                 await manager
                     .createQueryBuilder()
                     .update(BrandingImage)
                     .set({ status: Status.INACTIVE })
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .where({ branding: <any>brandingInfo.id })
-                    .execute();
+                    .execute()
 
                 for (const brandingImageinfo of brandingImagesInfo) {
                     const image = await this.generateBradingImage(
@@ -95,6 +97,7 @@ export class BrandingStorer {
 
         brandingImage.url = brandingImageInfo.imageUrl
         brandingImage.tag = brandingImageInfo.tag
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         brandingImage.branding = <any>brandingInfo.id
 
         return Promise.resolve(brandingImage)

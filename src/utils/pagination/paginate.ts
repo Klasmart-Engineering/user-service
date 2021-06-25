@@ -10,19 +10,19 @@ export type Direction = 'FORWARD' | 'BACKWARD'
 export interface IPaginateData {
     direction: Direction
     directionArgs?: directionArgs
-    scope: SelectQueryBuilder<any>
+    scope: SelectQueryBuilder<unknown>
     sort: ISortingConfig
 }
 
 interface IPaginationOptions {
-    scope: SelectQueryBuilder<any>
+    scope: SelectQueryBuilder<unknown>
     pageSize: number
-    cursorData: any
+    cursorData: unknown
     defaultColumn: string
     primaryColumn?: string
 }
 
-export interface IPaginationArgs<Entity extends BaseEntity = any> {
+export interface IPaginationArgs<Entity extends BaseEntity> {
     direction: Direction
     directionArgs: directionArgs
     scope: SelectQueryBuilder<Entity>
@@ -30,7 +30,7 @@ export interface IPaginationArgs<Entity extends BaseEntity = any> {
     sort?: ISortField
 }
 
-export interface IPaginatedResponse<T = any> {
+export interface IPaginatedResponse<T = unknown> {
     totalCount: number
     pageInfo: {
         startCursor: string
@@ -57,8 +57,13 @@ const getDataFromCursor = (cursor: string) => {
     return JSON.parse(Buffer.from(cursor, 'base64').toString('ascii'))
 }
 
-const getEdges = (data: any, defaultColumn: string, primaryColumn?: string) => {
-    return data.map((d: any) => {
+const getEdges = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: any[],
+    defaultColumn: string,
+    primaryColumn?: string
+) => {
+    return data.map((d) => {
         const cursorData = {
             [defaultColumn]: d[defaultColumn],
         }
@@ -139,7 +144,7 @@ const backwardPaginate = async ({
     return { edges, pageInfo }
 }
 
-export const paginateData = async <T = any>({
+export const paginateData = async <T = unknown>({
     direction,
     directionArgs,
     scope,

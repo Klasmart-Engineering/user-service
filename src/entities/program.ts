@@ -9,6 +9,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
+    EntityManager,
 } from 'typeorm'
 import { Status } from './status'
 import { Organization } from './organization'
@@ -56,7 +57,7 @@ export class Program extends BaseEntity {
     public deleted_at?: Date
 
     public async editAgeRanges(
-        { age_range_ids }: any,
+        { age_range_ids }: { age_range_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -86,7 +87,7 @@ export class Program extends BaseEntity {
     }
 
     public async editGrades(
-        { grade_ids }: any,
+        { grade_ids }: { grade_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -114,7 +115,7 @@ export class Program extends BaseEntity {
     }
 
     public async editSubjects(
-        { subject_ids }: any,
+        { subject_ids }: { subject_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -171,7 +172,11 @@ export class Program extends BaseEntity {
         })
     }
 
-    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
@@ -197,7 +202,7 @@ export class Program extends BaseEntity {
         return true
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

@@ -11,6 +11,8 @@ import {
     JoinColumn,
     JoinTable,
     OneToOne,
+    SelectQueryBuilder,
+    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
@@ -84,8 +86,8 @@ export class User extends BaseEntity {
     public memberships?: Promise<OrganizationMembership[]>
 
     public async membership(
-        { organization_id }: any,
-        context: any,
+        { organization_id }: { organization_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -112,8 +114,8 @@ export class User extends BaseEntity {
     public school_memberships?: Promise<SchoolMembership[]>
 
     public async school_membership(
-        { school_id }: any,
-        context: any,
+        { school_id }: { school_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -147,8 +149,8 @@ export class User extends BaseEntity {
     public organization_ownerships?: Promise<OrganizationOwnership[]>
 
     public async organizationsWithPermission(
-        { permission_name }: any,
-        context: any,
+        { permission_name }: { permission_name: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -179,8 +181,8 @@ export class User extends BaseEntity {
     }
 
     public async schoolsWithPermission(
-        { permission_name }: any,
-        context: any,
+        { permission_name }: { permission_name: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -262,8 +264,8 @@ export class User extends BaseEntity {
             avatar,
             alternate_email,
             alternate_phone,
-        }: any,
-        context: any,
+        }: Partial<User>,
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -332,8 +334,8 @@ export class User extends BaseEntity {
     }
 
     public async setPrimary(
-        { scope }: any,
-        context: any,
+        { scope }: { scope: SelectQueryBuilder<User> },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         try {
@@ -345,6 +347,10 @@ export class User extends BaseEntity {
             const user = await scope
                 .andWhere('User.user_id = :user_id', { user_id: this.user_id })
                 .getOne()
+
+            if (!user) {
+                throw new Error(`User with ID ${this.user_id} not found`)
+            }
 
             // Finding the primary user in this account
             const primaryUser = await getRepository(User).findOne({
@@ -376,7 +382,7 @@ export class User extends BaseEntity {
         }
     }
     public async subjectsTeaching(
-        { scope }: any,
+        { scope }: { scope: SelectQueryBuilder<User> },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -391,8 +397,14 @@ export class User extends BaseEntity {
     }
 
     public async createOrganization(
-        { organization_name, address1, address2, phone, shortCode }: any,
-        context: any,
+        {
+            organization_name,
+            address1,
+            address2,
+            phone,
+            shortCode,
+        }: Partial<Organization>,
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -415,7 +427,7 @@ export class User extends BaseEntity {
             throw new Error('Only one organization per user')
         }
 
-        if (shortCode?.length > 0) {
+        if (shortCode && shortCode.length > 0) {
             shortCode = shortCode.toUpperCase()
             if (!validateShortCode(shortCode)) {
                 throw 'Invalid shortcode provided'
@@ -466,8 +478,8 @@ export class User extends BaseEntity {
     }
 
     public async addOrganization(
-        { organization_id }: any,
-        context: any,
+        { organization_id }: { organization_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -495,8 +507,8 @@ export class User extends BaseEntity {
     }
 
     public async addSchool(
-        { school_id }: any,
-        context: any,
+        { school_id }: { school_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -527,8 +539,8 @@ export class User extends BaseEntity {
         backOff: 50,
         exponentialOption: { maxInterval: 2000, multiplier: 2 },
     })
-    private async retryMerge(otherUser: User): Promise<any> {
-        let dberr: any
+    private async retryMerge(otherUser: User): Promise<User | null> {
+        let dberr: unknown
         const connection = getConnection()
         const queryRunner = connection.createQueryRunner()
         await queryRunner.connect()
@@ -620,8 +632,8 @@ export class User extends BaseEntity {
     }
 
     public async merge(
-        { other_id }: any,
-        context: any,
+        { other_id }: { other_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         if (info.operation.operation !== 'mutation' || other_id === undefined) {
@@ -636,28 +648,28 @@ export class User extends BaseEntity {
         return null
     }
 
-    private async removeOrganizationMemberships(manager: any) {
+    private async removeOrganizationMemberships(manager: EntityManager) {
         const organizationMemberships = (await this.memberships) || []
         for (const organizationMembership of organizationMemberships) {
-            await organizationMembership.remove(manager)
+            await manager.remove(organizationMembership)
         }
     }
 
-    private async removeSchoolMemberships(manager: any) {
+    private async removeSchoolMemberships(manager: EntityManager) {
         const schoolMemberships = (await this.school_memberships) || []
         for (const schoolMembership of schoolMemberships) {
-            await schoolMembership.remove(manager)
+            await manager.remove(schoolMembership)
         }
     }
 
     // Hard deletes a user
-    private async removeUser(manager: any) {
+    private async removeUser(manager: EntityManager) {
         await this.removeOrganizationMemberships(manager)
         await this.removeSchoolMemberships(manager)
         await manager.remove(this)
     }
 
-    private async inactivateOrganizationMemberships(manager: any) {
+    private async inactivateOrganizationMemberships(manager: EntityManager) {
         const organizationMemberships = (await this.memberships) || []
 
         for (const organizationMembership of organizationMemberships) {
@@ -670,7 +682,7 @@ export class User extends BaseEntity {
         return organizationMemberships
     }
 
-    private async inactivateSchoolMemberships(manager: any) {
+    private async inactivateSchoolMemberships(manager: EntityManager) {
         const schoolMemberships = (await this.school_memberships) || []
 
         for (const schoolMembership of schoolMemberships) {
@@ -683,7 +695,7 @@ export class User extends BaseEntity {
         return schoolMemberships
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

@@ -1,14 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 declare module 'pkgcloud' {
-    export const version: string;
+    export const version: string
 
     export interface ClientError extends Error {
-        provider?: Providers;
-        method?: string;
-        failCode?: string;
-        statusCode?: number;
-        href?: string;
-        headers?: { [headerName: string]: string };
-        result?: any;
+        provider?: Providers
+        method?: string
+        failCode?: string
+        statusCode?: number
+        href?: string
+        headers?: { [headerName: string]: string }
+        result?: any
     }
 
     export type Providers =
@@ -25,46 +27,46 @@ declare module 'pkgcloud' {
         | 'openstack'
         | 'rackspace'
         | 'redistogo'
-        | 'telefonic';
+        | 'telefonic'
 
     export interface BaseProviderOptions {
-        provider: Providers;
+        provider: Providers
     }
 
     export interface AmazonProviderOptions {
-        provider: 'amazon';
-        keyId: string;
-        key: string;
-        sessionToken: string;
-        forcePathBucket: boolean;
-        endpoint?: string;
-        region?: string;
+        provider: 'amazon'
+        keyId: string
+        key: string
+        sessionToken: string
+        forcePathBucket: boolean
+        endpoint?: string
+        region?: string
     }
 
     export interface AzureProviderOptions {
-        provider: 'azure';
-        storageAccount: string;
-        storageAccessKey: string;
-        location?: string;
+        provider: 'azure'
+        storageAccount: string
+        storageAccessKey: string
+        location?: string
     }
 
     export interface GoogleProviderOptions {
-        provider: 'google';
-        keyFilename: string;
-        projectId: string;
+        provider: 'google'
+        keyFilename: string
+        projectId: string
     }
 
     export interface OpenstackProviderOptions {
-        provider: 'openstack';
-        username: string;
-        password: string;
-        authUrl: string;
-        region?: string;
-        tenantId?: string;
-        version?: string;
-        keystoneAuthVersion?: string;
-        domainId?: string;
-        domainName?: string;
+        provider: 'openstack'
+        username: string
+        password: string
+        authUrl: string
+        region?: string
+        tenantId?: string
+        version?: string
+        keystoneAuthVersion?: string
+        domainId?: string
+        domainName?: string
     }
 
     export type RackspaceRegions =
@@ -73,23 +75,24 @@ declare module 'pkgcloud' {
         | 'IAD' // Northern Virginia, United States
         | 'LON' // London, United Kingdom
         | 'HKG' // Hong Kong, China
-        | 'SYD'; // Sydney, Australia
+        | 'SYD' // Sydney, Australia
 
     export interface RackspaceProviderOptions {
-        provider: 'rackspace';
-        username: string;
-        apiKey: string;
-        region: RackspaceRegions;
-        useInternal?: boolean;
+        provider: 'rackspace'
+        username: string
+        apiKey: string
+        region: RackspaceRegions
+        useInternal?: boolean
     }
 
-    export type ProviderOptions = BaseProviderOptions & Partial<
-        | AmazonProviderOptions
-        | AzureProviderOptions
-        | GoogleProviderOptions
-        | OpenstackProviderOptions
-        | RackspaceProviderOptions
-    >;
+    export type ProviderOptions = BaseProviderOptions &
+        Partial<
+            | AmazonProviderOptions
+            | AzureProviderOptions
+            | GoogleProviderOptions
+            | OpenstackProviderOptions
+            | RackspaceProviderOptions
+        >
 
     /**
      * Storage
@@ -97,70 +100,70 @@ declare module 'pkgcloud' {
 
     export namespace storage {
         interface StorageUploadOptions {
-            container: string;
-            remote: string;
+            container: string
+            remote: string
         }
 
         interface StorageDownloadOptions {
-            container: string;
-            remote: string;
+            container: string
+            remote: string
         }
 
         interface Client {
-            provider: string;
-            config: ProviderOptions;
-            protocol: string;
+            provider: string
+            config: ProviderOptions
+            protocol: string
 
             getContainers(
-                callback: (err: ClientError, containers: Container[]) => any,
-            ): void;
+                callback: (err: ClientError, containers: Container[]) => any
+            ): void
             createContainer(
                 options: any,
-                callback: (err: ClientError, container: Container) => any,
-            ): void;
+                callback: (err: ClientError, container: Container) => any
+            ): void
             destroyContainer(
                 containerName: string,
-                callback: (err: ClientError) => any,
-            ): void;
+                callback: (err: ClientError) => any
+            ): void
             getContainer(
                 containerName: string,
-                callback: (err: ClientError, container: Container) => any,
-            ): void;
-            upload(options: StorageUploadOptions): NodeJS.WriteStream;
-            download(options: StorageDownloadOptions): NodeJS.ReadStream;
+                callback: (err: ClientError, container: Container) => any
+            ): void
+            upload(options: StorageUploadOptions): NodeJS.WriteStream
+            download(options: StorageDownloadOptions): NodeJS.ReadStream
             getFiles(
                 containerName: string,
-                callback: (err: ClientError, files: File[]) => any,
-            ): void;
+                callback: (err: ClientError, files: File[]) => any
+            ): void
             getFile(
                 containerName: string,
                 file: string,
-                callback: (err: ClientError, file: File) => any,
-            ): void;
+                callback: (err: ClientError, file: File) => any
+            ): void
             removeFile(
                 containerName: string,
                 file: string,
-                callback: (err: ClientError) => any,
-            ): void;
+                callback: (err: ClientError) => any
+            ): void
             // Logs
             on(
                 eventName: string,
-                callback: (message: string, object?: any) => any,
-            ): void;
+                callback: (message: string, object?: any) => any
+            ): void
         }
 
         interface Container {
             // files: ?
-            client: Client;
+            client: Client
         }
 
         interface File {
-            container: string;
-            name: string;
-            size: number;
-            client: Client;
+            container: string
+            name: string
+            size: number
+            client: Client
         }
 
-        function createClient(options: ProviderOptions): Client;
+        function createClient(options: ProviderOptions): Client
     }
 }

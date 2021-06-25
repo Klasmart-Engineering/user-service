@@ -6,6 +6,7 @@ import {
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
+    EntityManager,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -38,7 +39,11 @@ export class Subcategory extends BaseEntity {
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
 
-    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
@@ -64,7 +69,7 @@ export class Subcategory extends BaseEntity {
         return true
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

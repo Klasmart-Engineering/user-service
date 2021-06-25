@@ -12,6 +12,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     In,
+    EntityManager,
 } from 'typeorm'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
@@ -73,7 +74,7 @@ export class Class extends BaseEntity {
     public deleted_at?: Date
 
     public async set(
-        { class_name, shortcode }: any,
+        { class_name, shortcode }: { class_name: string; shortcode: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -112,7 +113,7 @@ export class Class extends BaseEntity {
     }
 
     public async eligibleTeachers(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ): Promise<User[] | IterableIterator<User>> {
@@ -128,7 +129,7 @@ export class Class extends BaseEntity {
     }
 
     public async eligibleStudents(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ): Promise<User[] | IterableIterator<User>> {
@@ -196,7 +197,7 @@ export class Class extends BaseEntity {
     }
 
     public async editTeachers(
-        { teacher_ids }: any,
+        { teacher_ids }: { teacher_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -261,7 +262,7 @@ export class Class extends BaseEntity {
     }
 
     public async addTeacher(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -294,7 +295,7 @@ export class Class extends BaseEntity {
     }
 
     public async removeTeacher(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -332,7 +333,7 @@ export class Class extends BaseEntity {
     }
 
     public async editStudents(
-        { student_ids }: any,
+        { student_ids }: { student_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -397,7 +398,7 @@ export class Class extends BaseEntity {
     }
 
     public async addStudent(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -430,7 +431,7 @@ export class Class extends BaseEntity {
     }
 
     public async removeStudent(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -468,7 +469,7 @@ export class Class extends BaseEntity {
     }
 
     public async editSchools(
-        { school_ids }: any,
+        { school_ids }: { school_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -533,7 +534,7 @@ export class Class extends BaseEntity {
     }
 
     public async addSchool(
-        { school_id }: any,
+        { school_id }: { school_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -568,7 +569,7 @@ export class Class extends BaseEntity {
     }
 
     public async removeSchool(
-        { school_id }: any,
+        { school_id }: { school_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -608,7 +609,7 @@ export class Class extends BaseEntity {
     }
 
     public async editPrograms(
-        { program_ids }: any,
+        { program_ids }: { program_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -636,7 +637,7 @@ export class Class extends BaseEntity {
     }
 
     public async editAgeRanges(
-        { age_range_ids }: any,
+        { age_range_ids }: { age_range_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -666,7 +667,7 @@ export class Class extends BaseEntity {
     }
 
     public async editGrades(
-        { grade_ids }: any,
+        { grade_ids }: { grade_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -694,7 +695,7 @@ export class Class extends BaseEntity {
     }
 
     public async editSubjects(
-        { subject_ids }: any,
+        { subject_ids }: { subject_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -761,7 +762,11 @@ export class Class extends BaseEntity {
         })
     }
 
-    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         const organization_id = (await this.organization)?.organization_id
         if (
             info.operation.operation !== 'mutation' ||
@@ -787,7 +792,7 @@ export class Class extends BaseEntity {
         return false
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

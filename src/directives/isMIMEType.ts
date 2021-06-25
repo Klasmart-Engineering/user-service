@@ -1,16 +1,19 @@
-import { defaultFieldResolver } from 'graphql'
+import { defaultFieldResolver, GraphQLField, GraphQLResolveInfo } from 'graphql'
 import { SchemaDirectiveVisitor } from 'graphql-tools'
+import { Context } from '../main'
 
 export class IsMIMETypeDirective extends SchemaDirectiveVisitor {
-    public visitFieldDefinition(field: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public visitFieldDefinition(field: GraphQLField<any, any>) {
         const { resolve = defaultFieldResolver } = field
         const { mimetype } = this.args
 
         field.resolve = async (
-            prnt: any,
-            args: any,
-            context: any,
-            info: any
+            prnt: unknown,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            args: Record<string, any>,
+            context: Context,
+            info: GraphQLResolveInfo
         ) => {
             const file = await args.file.promise
 

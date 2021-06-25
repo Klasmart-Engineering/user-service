@@ -181,7 +181,7 @@ describe('model', () => {
 
             expect(result.edges.length).eq(10)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedAscending(names)
 
             expect(isSorted).to.be.true
@@ -208,7 +208,7 @@ describe('model', () => {
 
             expect(result.edges.length).eq(10)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedDescending(names)
 
             expect(isSorted).to.be.true

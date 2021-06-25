@@ -1,6 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { Context } from '../main'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -36,7 +37,7 @@ const typeDefs = gql`
 `
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],

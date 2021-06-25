@@ -16,6 +16,11 @@ import { Stream } from 'stream'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { ISortField } from '../../../src/utils/pagination/sorting'
 import { IPaginatedResponse } from '../../../src/utils/pagination/paginate'
+import { UserConnectionNode } from '../../../src/types/graphQL/userConnectionNode'
+import { SchoolSummaryNode } from '../../../src/types/graphQL/schoolSummaryNode'
+import { ISchoolsConnectionNode } from '../../../src/types/graphQL/schoolsConnectionNode'
+import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionNode'
+import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -755,7 +760,7 @@ export async function userConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<UserConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -800,7 +805,7 @@ export async function programsConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<ProgramConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -825,7 +830,7 @@ export async function schoolsConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -850,7 +855,7 @@ export async function gradesConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<GradeConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({

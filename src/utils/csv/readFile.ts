@@ -9,7 +9,7 @@ import { CSVError } from '../../types/csv/csvError'
 import { stringInject } from '../stringUtils'
 import constants from '../../types/errors/csv/csvErrorConstants'
 
-function formatCSVRow(row: any) {
+function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
     const formattedValues = Object.values(row).map((value) => {
         return String(value).trim() || null

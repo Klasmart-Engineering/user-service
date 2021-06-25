@@ -53,7 +53,7 @@ describe('paginate', () => {
         const direction = 'FORWARD'
         it('should get the first few records according to pagesize', async () => {
             let directionArgs = { count: 3 }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,
@@ -83,7 +83,7 @@ describe('paginate', () => {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[3].user_id }),
             }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,
@@ -113,7 +113,7 @@ describe('paginate', () => {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[7].user_id }),
             }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,
@@ -188,7 +188,7 @@ describe('paginate', () => {
         const direction = 'BACKWARD'
         it('should get the last records according to pagesize and null cursor', async () => {
             let directionArgs = { count: 3 }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,
@@ -213,7 +213,7 @@ describe('paginate', () => {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[7].user_id }),
             }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,
@@ -242,7 +242,7 @@ describe('paginate', () => {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[4].user_id }),
             }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,
@@ -272,7 +272,7 @@ describe('paginate', () => {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[1].user_id }),
             }
-            const data = await paginateData({
+            const data = await paginateData<User>({
                 direction,
                 directionArgs,
                 scope,

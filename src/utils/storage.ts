@@ -39,32 +39,30 @@ export function buildFilePath(
  * @returns pkgcloud.storage.Client
  */
 export function createCloudClient(provider: string) {
+    // TODO proper typing....
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const clientParams: any = {}
 
-    if(process.env.FORCE_LOCAL_STORAGE) {
+    if (process.env.FORCE_LOCAL_STORAGE) {
         clientParams.endpoint = process.env.STORAGE_ENDPOINT
-        clientParams.forcePathBucket =  true
+        clientParams.forcePathBucket = true
     }
 
-
-    if(process.env.STORAGE_ACCESS_KEY_ID) {
+    if (process.env.STORAGE_ACCESS_KEY_ID) {
         clientParams.keyId = process.env.STORAGE_ACCESS_KEY_ID
     }
 
-    if(process.env.STORAGE_SECRET_ACCESS_KEY) {
+    if (process.env.STORAGE_SECRET_ACCESS_KEY) {
         clientParams.key = process.env.STORAGE_SECRET_ACCESS_KEY
     }
 
-    if(process.env.STORAGE_SESSION_TOKEN) {
+    if (process.env.STORAGE_SESSION_TOKEN) {
         clientParams.sessionToken = process.env.STORAGE_SESSION_TOKEN
     }
 
     switch (provider) {
         case 'amazon':
-            if (
-                !process.env.STORAGE_BUCKET ||
-                !process.env.STORAGE_REGION
-            ) {
+            if (!process.env.STORAGE_BUCKET || !process.env.STORAGE_REGION) {
                 throw new Error('missing AWS env variable(s)')
             }
             clientParams.provider = 'amazon'

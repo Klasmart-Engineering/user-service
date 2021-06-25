@@ -1,8 +1,8 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { Organization } from '../entities/organization'
 import { Context } from '../main'
+import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 
 const typeDefs = gql`
@@ -183,7 +183,7 @@ const typeDefs = gql`
 `
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],

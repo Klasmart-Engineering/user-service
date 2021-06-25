@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, EntityManager } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
 import { createRole } from '../../factories/role.factory'
@@ -7,7 +7,7 @@ import { Role } from '../../../src/entities/role'
 
 describe('Role', () => {
     let connection: Connection
-    let manager: any
+    let manager: EntityManager
     let role: Role
 
     before(async () => {

@@ -215,7 +215,7 @@ describe('model', () => {
 
             expect(result.edges.length).eq(10)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name!)
             const isSorted = isStringArraySortedAscending(names)
 
             expect(isSorted).to.be.true
@@ -240,7 +240,7 @@ describe('model', () => {
 
             expect(result.edges.length).eq(10)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name!)
             const isSorted = isStringArraySortedDescending(names)
 
             expect(isSorted).to.be.true
@@ -321,7 +321,7 @@ describe('model', () => {
 
             expect(result.totalCount).to.eq(6)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name) as string[]
             names.every((name) => name.includes(filterValue))
         })
 
@@ -391,12 +391,12 @@ describe('model', () => {
             expect(result.totalCount).to.eq(3)
 
             const gradesIds = result.edges.map((edge) => {
-                return edge.node.grades.map(
+                return edge.node.grades?.map(
                     (grade: GradeSummaryNode) => grade.id
                 )
             })
 
-            gradesIds.every((ids) => ids.includes(gradeId))
+            gradesIds.every((ids) => ids?.includes(gradeId))
         })
 
         it('supports filtering by age range ID', async () => {
@@ -419,12 +419,12 @@ describe('model', () => {
             expect(result.totalCount).to.eq(2)
 
             const ageRangesIds = result.edges.map((edge) => {
-                return edge.node.ageRanges.map(
+                return edge.node.ageRanges?.map(
                     (ageRange: AgeRangeSummaryNode) => ageRange.id
                 )
             })
 
-            ageRangesIds.every((ids) => ids.includes(ageRangeId))
+            ageRangesIds.every((ids) => ids?.includes(ageRangeId))
         })
 
         it('supports filtering by subject ID', async () => {
@@ -447,12 +447,12 @@ describe('model', () => {
             expect(result.totalCount).to.eq(4)
 
             const subjectsIds = result.edges.map((edge) => {
-                return edge.node.subjects.map(
+                return edge.node.subjects?.map(
                     (subject: SubjectSummaryNode) => subject.id
                 )
             })
 
-            subjectsIds.every((ids) => ids.includes(subjectId))
+            subjectsIds.every((ids) => ids?.includes(subjectId))
         })
 
         it('fails if search value is longer than 250 characters', async () => {

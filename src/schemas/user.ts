@@ -211,7 +211,7 @@ const typeDefs = gql`
 
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
@@ -219,7 +219,7 @@ export default function getDefault(
             UserConnectionNode: {
                 organizations: async (
                     user: UserConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.usersConnection?.organizations?.load(
@@ -228,14 +228,14 @@ export default function getDefault(
                 },
                 schools: async (
                     user: UserConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.usersConnection?.schools?.load(user.id)
                 },
                 roles: async (
                     user: UserConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.usersConnection?.roles?.load(user.id)

@@ -5,6 +5,7 @@ import {
     getRepository,
     EntityManager,
     Repository,
+    SelectQueryBuilder,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -53,8 +54,12 @@ import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
-import { setBrandingInput } from './types/graphQL/setBrandingInput'
 import { Grade } from './entities/grade'
+import { Category } from './entities/category'
+import { Subcategory } from './entities/subcategory'
+import { Subject } from './entities/subject'
+import { Upload } from './types/upload'
+import { setBrandingInput } from './types/graphQL/setBrandingInput'
 import { GradeConnectionNode } from './types/graphQL/gradeConnectionNode'
 import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
 import { BrandingStorer } from './services/brandingStorer'
@@ -160,7 +165,7 @@ export class Model {
         avatar,
         date_of_birth,
         username,
-    }: any) {
+    }: Partial<User>) {
         console.info('Unauthenticated endpoint call newUser')
 
         const newUser = new User()
@@ -207,7 +212,7 @@ export class Model {
         username,
         alternate_email,
         alternate_phone,
-    }: any) {
+    }: Partial<User>) {
         console.info('Unauthenticated endpoint call setUser')
         if (email) {
             if (!validateEmail(email)) {
@@ -267,7 +272,7 @@ export class Model {
     }
 
     public async myUsers(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -335,7 +340,13 @@ export class Model {
         return organization
     }
 
-    public async getOrganizations({ organization_ids, scope }: any) {
+    public async getOrganizations({
+        organization_ids,
+        scope,
+    }: {
+        organization_ids: string[]
+        scope: SelectQueryBuilder<Organization>
+    }) {
         if (organization_ids) {
             return await scope.whereInIds(organization_ids).getMany()
         } else {
@@ -386,7 +397,7 @@ export class Model {
             },
         })
         for (const edge of data.edges) {
-            const user: User = edge.node
+            const user = edge.node as User
             const newNode: Partial<UserConnectionNode> = {
                 id: user.user_id,
                 givenName: user.given_name,
@@ -412,7 +423,7 @@ export class Model {
 
     public async permissionsConnection(
         context: Context,
-        { direction, directionArgs, filter }: any
+        { direction, directionArgs, filter }: IPaginationArgs<Permission>
     ) {
         const scope = this.permissionRepository.createQueryBuilder()
 
@@ -475,7 +486,7 @@ export class Model {
                 organizationId:
                     (await school.organization)?.organization_id || '',
             }
-
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             edge.node = newNode as any
         }
 
@@ -538,7 +549,7 @@ export class Model {
         })
 
         for (const edge of data.edges) {
-            const program: Program = edge.node
+            const program = edge.node as Program
             const newNode: Partial<ProgramConnectionNode> = {
                 id: program.id,
                 name: program.name,
@@ -594,7 +605,7 @@ export class Model {
         })
 
         for (const edge of data.edges) {
-            const grade: Grade = edge.node
+            const grade = edge.node as Grade
             const newNode: Partial<GradeConnectionNode> = {
                 id: grade.id,
                 name: grade.name,
@@ -667,7 +678,10 @@ export class Model {
         }
     }
 
-    public async getAgeRange({ id, scope }: any, context: Context) {
+    public async getAgeRange(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<AgeRange> },
+        context: Context
+    ) {
         const ageRange = await scope
             .andWhere('AgeRange.id = :id', {
                 id: id,
@@ -677,7 +691,10 @@ export class Model {
         return ageRange
     }
 
-    public async getGrade({ id, scope }: any, context: Context) {
+    public async getGrade(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Grade> },
+        context: Context
+    ) {
         const grade = await scope
             .andWhere('Grade.id = :id', {
                 id: id,
@@ -687,7 +704,10 @@ export class Model {
         return grade
     }
 
-    public async getCategory({ id, scope }: any, context: Context) {
+    public async getCategory(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Category> },
+        context: Context
+    ) {
         const category = await scope
             .andWhere('Category.id = :id', {
                 id: id,
@@ -697,7 +717,10 @@ export class Model {
         return category
     }
 
-    public async getProgram({ id, scope }: any, context: Context) {
+    public async getProgram(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Program> },
+        context: Context
+    ) {
         const program = await scope
             .andWhere('Program.id = :id', {
                 id: id,
@@ -707,7 +730,10 @@ export class Model {
         return program
     }
 
-    public async getSubcategory({ id, scope }: any, context: Context) {
+    public async getSubcategory(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Subcategory> },
+        context: Context
+    ) {
         const subcategory = await scope
             .andWhere('Subcategory.id = :id', {
                 id: id,
@@ -717,7 +743,10 @@ export class Model {
         return subcategory
     }
 
-    public async getSubject({ id, scope }: any, context: Context) {
+    public async getSubject(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Subject> },
+        context: Context
+    ) {
         const subject = await scope
             .andWhere('Subject.id = :id', {
                 id: id,
@@ -740,7 +769,7 @@ export class Model {
     }
 
     public async uploadOrganizationsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -748,7 +777,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processOrganizationFromCSVRow,
         ])
@@ -757,7 +786,7 @@ export class Model {
     }
 
     public async uploadUsersFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -765,7 +794,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processUserFromCSVRow,
         ])
@@ -774,7 +803,7 @@ export class Model {
     }
 
     public async uploadClassesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -782,7 +811,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processClassFromCSVRow,
         ])
@@ -791,14 +820,14 @@ export class Model {
     }
 
     public async uploadSchoolsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
         if (info.operation.operation !== 'mutation') {
             return null
         }
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSchoolFromCSVRow,
         ])
@@ -807,7 +836,7 @@ export class Model {
     }
 
     public async uploadGradesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -815,7 +844,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processGradeFromCSVRow,
             setGradeFromToFields,
@@ -825,7 +854,7 @@ export class Model {
     }
 
     public async uploadSubCategoriesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -833,7 +862,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSubCategoriesFromCSVRow,
         ])
@@ -842,7 +871,7 @@ export class Model {
     }
 
     public async uploadRolesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -850,7 +879,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processRoleFromCSVRow,
         ])
@@ -859,7 +888,7 @@ export class Model {
     }
 
     public async uploadCategoriesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -867,7 +896,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processCategoryFromCSVRow,
         ])
@@ -876,7 +905,7 @@ export class Model {
     }
 
     public async uploadSubjectsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -884,7 +913,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSubjectFromCSVRow,
         ])
@@ -893,7 +922,7 @@ export class Model {
     }
 
     public async uploadProgramsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -901,7 +930,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processProgramFromCSVRow,
         ])
@@ -910,7 +939,7 @@ export class Model {
     }
 
     public async uploadAgeRangesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -918,7 +947,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processAgeRangeFromCSVRow,
         ])
@@ -927,7 +956,7 @@ export class Model {
     }
 
     public async renameDuplicateOrganizations(
-        _args: any,
+        _args: Record<string, unknown>,
         _context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -953,7 +982,7 @@ export class Model {
     }
 
     public async renameDuplicateSubjects(
-        _args: any,
+        _args: Record<string, unknown>,
         _context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -978,7 +1007,7 @@ export class Model {
     }
 
     public async renameDuplicateGrades(
-        _args: any,
+        _args: Record<string, unknown>,
         _context: Context,
         info: GraphQLResolveInfo
     ) {

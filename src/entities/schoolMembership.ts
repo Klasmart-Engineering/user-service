@@ -8,12 +8,14 @@ import {
     BaseEntity,
     getRepository,
     getManager,
+    EntityManager,
 } from 'typeorm'
 import { User } from './user'
 import { Role } from './role'
 import { GraphQLResolveInfo } from 'graphql'
 import { School } from './school'
 import { Status } from './status'
+import { Context } from 'mocha'
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
@@ -42,8 +44,8 @@ export class SchoolMembership extends BaseEntity {
     public deleted_at?: Date
 
     public async checkAllowed(
-        { permission_name }: any,
-        context: any,
+        { permission_name }: { permission_name: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         const school = await this.school
@@ -62,8 +64,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async addRole(
-        { role_id }: any,
-        context: any,
+        { role_id }: { role_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -89,8 +91,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async addRoles(
-        { role_ids }: any,
-        context: any,
+        { role_ids }: { role_ids: string[] },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -126,8 +128,8 @@ export class SchoolMembership extends BaseEntity {
     }
 
     public async removeRole(
-        { role_id }: any,
-        context: any,
+        { role_id }: { role_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -156,7 +158,11 @@ export class SchoolMembership extends BaseEntity {
         }
     }
 
-    public async leave(args: any, context: any, info: GraphQLResolveInfo) {
+    public async leave(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         console.info(
             `Unauthenticated endpoint call school leave by ${context.permissions?.getUserId()}`
         )
@@ -178,7 +184,7 @@ export class SchoolMembership extends BaseEntity {
         return false
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

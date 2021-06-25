@@ -21,6 +21,8 @@
  * @param data any
  * @returns string|Error
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function stringInject(str: string, data: any) {
     if (data instanceof Array) {
         return str.replace(/({\d})/g, (i) => {

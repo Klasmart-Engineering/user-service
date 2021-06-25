@@ -1,5 +1,5 @@
 import { SchemaDirectiveVisitor } from 'apollo-server-express'
-import { defaultFieldResolver } from 'graphql'
+import { defaultFieldResolver, GraphQLField, GraphQLResolveInfo } from 'graphql'
 import { getRepository, SelectQueryBuilder, Brackets } from 'typeorm'
 import { Class } from '../entities/class'
 
@@ -22,17 +22,18 @@ import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from '../entities/schoolMembership'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
-    public visitFieldDefinition(field: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public visitFieldDefinition(field: GraphQLField<any, any>) {
         const { resolve = defaultFieldResolver } = field
         const { entity } = this.args
 
         field.resolve = async (
-            prnt: any,
-            args: any,
-            context: any,
-            info: any
+            prnt: unknown,
+            args: Record<string, unknown>,
+            context: Context,
+            info: GraphQLResolveInfo
         ) => {
-            let scope: SelectQueryBuilder<any> | undefined
+            let scope: SelectQueryBuilder<unknown> | undefined
             switch (entity) {
                 case 'organization':
                     scope = getRepository(Organization).createQueryBuilder()
@@ -74,7 +75,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         this.nonAdminOrganizationScope(scope, context)
                         break
                     case 'user':
-                        await this.nonAdminUserScope(scope, context)
+                        await this.nonAdminUserScope(
+                            scope as SelectQueryBuilder<User>,
+                            context
+                        )
                         break
                     case 'ageRange':
                         this.nonAdminAgeRangeScope(scope, context)
@@ -200,7 +204,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         )
     }
 
-    private nonAdminOrganizationScope(scope: any, context?: any) {
+    private nonAdminOrganizationScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .select('Organization')
             .distinct(true)
@@ -210,7 +217,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             })
     }
 
-    private nonAdminAgeRangeScope(scope: any, context: any) {
+    private nonAdminAgeRangeScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .leftJoinAndSelect(
                 OrganizationMembership,
@@ -226,7 +236,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
     }
 
-    private nonAdminGradeScope(scope: any, context: any) {
+    private nonAdminGradeScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .leftJoinAndSelect(
                 OrganizationMembership,
@@ -242,7 +255,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
     }
 
-    private nonAdminCategoryScope(scope: any, context: any) {
+    private nonAdminCategoryScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .leftJoinAndSelect(
                 OrganizationMembership,
@@ -258,7 +274,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
     }
 
-    private nonAdminSubcategoryScope(scope: any, context: any) {
+    private nonAdminSubcategoryScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .leftJoinAndSelect(
                 OrganizationMembership,
@@ -274,7 +293,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
     }
 
-    private nonAdminSubjectScope(scope: any, context: any) {
+    private nonAdminSubjectScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .leftJoinAndSelect(
                 OrganizationMembership,
@@ -290,7 +312,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             )
     }
 
-    private nonAdminProgamScope(scope: any, context: any) {
+    private nonAdminProgamScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
         scope
             .leftJoinAndSelect(
                 OrganizationMembership,

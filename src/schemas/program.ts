@@ -133,7 +133,7 @@ const typeDefs = gql`
 
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
@@ -141,7 +141,7 @@ export default function getDefault(
             ProgramConnectionNode: {
                 ageRanges: async (
                     program: ProgramConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.programsConnection?.ageRanges?.load(
@@ -150,7 +150,7 @@ export default function getDefault(
                 },
                 grades: async (
                     program: ProgramConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.programsConnection?.grades?.load(
@@ -159,7 +159,7 @@ export default function getDefault(
                 },
                 subjects: async (
                     program: ProgramConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.programsConnection?.subjects?.load(

@@ -83,6 +83,7 @@ export async function checkToken(token?: string) {
             return
         }
         const { options, secretOrPublicKey } = issuerOptions
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const verifiedToken = await new Promise<any>((resolve, reject) => {
             verify(token, secretOrPublicKey, options, (err, decoded) => {
                 if (err) {

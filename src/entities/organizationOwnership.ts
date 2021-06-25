@@ -5,6 +5,7 @@ import {
     JoinColumn,
     OneToOne,
     PrimaryColumn,
+    EntityManager,
 } from 'typeorm'
 
 import { Organization } from './organization'
@@ -36,7 +37,7 @@ export class OrganizationOwnership extends BaseEntity {
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         if (this.status != Status.ACTIVE) {
             return
         }

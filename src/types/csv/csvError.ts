@@ -25,7 +25,7 @@ export interface CSVError {
     message: string
     row: number
     column: string
-    [params: string]: any
+    [params: string]: unknown
 }
 
 /**
@@ -34,7 +34,7 @@ export interface CSVError {
  * @param object any
  * @returns boolean
  */
-export function instanceOfCSVError(object: any): object is CSVError {
+export function instanceOfCSVError(object: unknown): object is CSVError {
     return true
 }
 
