@@ -325,6 +325,7 @@ const PROGRAMS_CONNECTION = `
                     id
                     name
                     status
+                    system
 
                     ageRanges {
                         id

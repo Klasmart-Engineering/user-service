@@ -497,13 +497,28 @@ export class Model {
                 scope.leftJoinAndSelect('Program.organization', 'Organization')
             }
 
+            if (filterHasProperty('gradeId', filter)) {
+                scope.leftJoinAndSelect('Program.grades', 'Grade')
+            }
+
+            if (filterHasProperty('ageRangeId', filter)) {
+                scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            }
+
+            if (filterHasProperty('subjectId', filter)) {
+                scope.leftJoinAndSelect('Program.subjects', 'Subject')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['Organization.organization_id'],
                     id: ['Program.id'],
                     name: ['Program.name'],
                     system: ['Program.system'],
                     status: ['Program.status'],
+                    organizationId: ['Organization.organization_id'],
+                    gradeId: ['Grade.id'],
+                    ageRangeId: ['AgeRange.id'],
+                    subjectId: ['Subject.id'],
                 })
             )
         }
