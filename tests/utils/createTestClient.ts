@@ -124,7 +124,7 @@ export const createTestClient = (
     server: ApolloServer
 ): ApolloServerTestClient => {
     const app = express()
-    app.use(graphqlUploadExpress({ maxFileSize: 10000, maxFiles: 10 }))
+    app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
     server.applyMiddleware({ app })
 
     const test = async ({
