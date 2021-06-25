@@ -48,7 +48,10 @@ Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.c
 
 ```shell
 docker exec -it postgres psql -U postgres
-INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>')
+```
+
+```shell
+INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>');
 ```
 
 ### 2 - Your user has been assigned to a organisation
@@ -82,6 +85,7 @@ docker-compose up
 ```
 
 Finally, you can list the items in the bucket with the regular client:
+
 ```bash
 aws s3 ls s3://kidsloop-alpha-account-asset-objects/ --endpoint http://localhost:456
 ```
