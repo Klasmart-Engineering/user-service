@@ -24,9 +24,14 @@ export const brandingForOrganizations = async (
     const data = await scope.getMany()
 
     for (const orgId of orgIds) {
-        const branding = data.find(
-            async (b) => (await b.organization)?.organization_id === orgId
-        )
+        let branding: Branding | undefined
+        for (const brand of data) {
+            const brandOrgId = (await brand.organization)?.organization_id
+            if (orgId === brandOrgId) {
+                branding = brand
+                break
+            }
+        }
         if (branding) {
             // always use the latest images
             branding.images?.sort(
