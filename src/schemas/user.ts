@@ -60,6 +60,7 @@ const typeDefs = gql`
     enum UserSortBy {
         givenName
         familyName
+        fullName
     }
 
     input UserSortInput {

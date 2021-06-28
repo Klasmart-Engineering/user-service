@@ -20,6 +20,10 @@ export interface ISortField {
     order: 'ASC' | 'DESC'
 }
 
+export function splitColumns(columns: string) {
+    return columns.split(',').map((column) => column.trim())
+}
+
 export function addOrderByClause(
     scope: SelectQueryBuilder<unknown>,
     direction: Direction,
@@ -36,11 +40,17 @@ export function addOrderByClause(
     }
 
     // aliases column to sort by first
-    let primaryColumn
+    let primaryColumns
 
     if (config.sort) {
-        primaryColumn = config.aliases?.[config.sort.field] || config.sort.field
-        scope.addOrderBy(`${scope.alias}.${primaryColumn}`, order, 'NULLS LAST')
+        primaryColumns =
+            config.aliases?.[config.sort.field] || config.sort.field
+
+        const columns = splitColumns(primaryColumns)
+
+        columns.forEach((column) => {
+            scope.addOrderBy(`${scope.alias}.${column}`, order, 'NULLS LAST')
+        })
     }
 
     // always sort by the primary key, and always to do it last
@@ -48,6 +58,6 @@ export function addOrderByClause(
 
     return {
         order,
-        primaryColumn,
+        primaryColumns,
     }
 }
