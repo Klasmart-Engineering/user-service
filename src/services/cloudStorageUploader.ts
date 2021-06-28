@@ -18,7 +18,8 @@ export class CloudStorageUploader {
             imageStream
             .pipe(writeStream)
             .on('success', function (remoteFile) {
-                remoteUrl = remoteFile.location
+                // AWS || GCP || VNGClound needs to be verified
+                remoteUrl = remoteFile?.location || remoteFile?.selfLink
                 resolve()
             })
             .on('error', function (err) {
