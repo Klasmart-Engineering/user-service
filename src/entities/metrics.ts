@@ -72,7 +72,7 @@ export const gqlMetricLogging: ApolloServerPlugin = {
     }
 }
 
-async function logVariables(context: GraphQLRequestContextDidResolveOperation<Record<string, any>>) {
+async function logVariables(context: GraphQLRequestContextDidResolveOperation<Record<string, unknown>>) {
     try {
         if(context.operationName === "IntrospectionQuery") {return}
         console.log(`'${context.operationName}'`)
@@ -88,7 +88,7 @@ async function logVariables(context: GraphQLRequestContextDidResolveOperation<Re
     }
 }
 
-async function incrementQueryCount(context: GraphQLRequestContextDidResolveOperation<Record<string, any>>) {
+async function incrementQueryCount(context: GraphQLRequestContextDidResolveOperation<Record<string, unknown>>) {
     try {
         const counter = new QueryCount()
         counter.queryHash = context.queryHash || ""
