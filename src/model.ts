@@ -293,12 +293,6 @@ export class Model {
         return users
     }
 
-    public async getUsers() {
-        console.log('Unauthenticated endpoint call getUsers')
-
-        return await this.userRepository.find()
-    }
-
     public async setOrganization({
         organization_id,
         organization_name,

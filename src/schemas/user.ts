@@ -137,7 +137,7 @@ const typeDefs = gql`
             filter: UserFilter
             sort: UserSortInput
         ): UsersConnectionResponse @isAdmin(entity: "user")
-        users: [User]
+        users: [User] @deprecated(reason: "Unused")
         my_users: [User!]
     }
 
@@ -269,7 +269,7 @@ export default function getDefault(
                     }
                     return model.usersConnection(ctx, args)
                 },
-                users: (_parent, _args, ctx, _info) => model.getUsers(),
+                users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
