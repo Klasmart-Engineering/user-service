@@ -392,7 +392,6 @@ export class Model {
                 aliases: {
                     givenName: 'given_name',
                     familyName: 'family_name',
-                    fullName: 'family_name, given_name',
                 },
                 sort,
             },
