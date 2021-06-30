@@ -281,9 +281,13 @@ export class Model {
         let users: User[] = []
 
         if (userEmail) {
-            users = await User.find({ where: { email: userEmail } })
+            users = await User.find({
+                where: { email: userEmail, status: Status.ACTIVE },
+            })
         } else if (userPhone) {
-            users = await User.find({ where: { phone: userPhone } })
+            users = await User.find({
+                where: { phone: userPhone, status: Status.ACTIVE },
+            })
         }
 
         if (users.length === 0) {
