@@ -2393,6 +2393,102 @@ describe('organization', () => {
                     expect(newUser.alternate_phone).to.equal(alternate_phone)
                 })
 
+                it('edits user and lets them change email', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let bob = {
+                        given_name: given,
+                        family_name: family,
+                        email: email,
+                    } as User
+                    bob = await createUserAndValidate(testClient, bob)
+                    const newEmail = 'bob@somewhere.com'
+                    let gqlresult = await editMembership(
+                        testClient,
+                        organizationId,
+                        bob.user_id,
+                        newEmail,
+                        phone,
+                        given,
+                        family,
+                        undefined,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: getAdminAuthToken() }
+                    )
+                    let newUser = gqlresult.user
+                    let membership = gqlresult.membership
+                    let schoolmemberships = gqlresult.schoolMemberships
+                    expect(newUser).to.exist
+                    expect(newUser.email).to.equal(newEmail)
+                    expect(newUser.user_id).to.eq(bob.user_id)
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser.user_id)
+                })
+
+                it('edits user and lets them change the phone', async () => {
+                    let email = undefined
+                    let phone = '+44207344141'
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let bob = {
+                        given_name: given,
+                        family_name: family,
+                        phone: phone,
+                    } as User
+                    bob = await createUserAndValidate(testClient, bob)
+                    const newPhone = '+44207344142'
+                    let gqlresult = await editMembership(
+                        testClient,
+                        organizationId,
+                        bob.user_id,
+                        email,
+                        newPhone,
+                        given,
+                        family,
+                        undefined,
+                        'Buster',
+                        'Male',
+                        undefined,
+                        new Array(roleId),
+                        Array(schoolId),
+                        new Array(roleId),
+                        { authorization: getAdminAuthToken() }
+                    )
+                    let newUser = gqlresult.user
+                    let membership = gqlresult.membership
+                    let schoolmemberships = gqlresult.schoolMemberships
+                    expect(newUser).to.exist
+                    expect(newUser.phone).to.equal(newPhone)
+                    expect(newUser.user_id).to.eq(bob.user_id)
+
+                    expect(schoolmemberships).to.exist
+                    expect(schoolmemberships.length).to.equal(1)
+                    expect(schoolmemberships[0].user_id).to.equal(
+                        newUser.user_id
+                    )
+                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.user_id).to.equal(newUser.user_id)
+                })
+
                 context('and the organization is marked as inactive', () => {
                     beforeEach(async () => {
                         await deleteOrganization(

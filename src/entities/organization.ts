@@ -647,23 +647,15 @@ export class Organization extends BaseEntity {
         alternate_phone?: string,
         gender?: string
     ): Promise<User> {
-        let user: User
-        if (edit) {
+        let user: User | undefined
+        if (edit && user_id) {
             const scope = getRepository(User).createQueryBuilder('user')
-            if (email) {
-                scope.where('email = :email', { email })
-            } else {
-                scope.where('phone = :phone', { phone })
-            }
-            if (user_id) {
-                scope.andWhere('user_id = :user_id', { user_id })
-            }
-            const users = await scope.getMany()
-            if (users && users.length > 0) {
-                user = users[0]
-            } else {
+            scope.where('user_id = :user_id', { user_id })
+
+            user = await scope.getOne()
+            if (!user) {
                 user_id = uuid_v4()
-                user = new User()
+                user = new User() as User
                 user.user_id = user_id
             }
         } else {
