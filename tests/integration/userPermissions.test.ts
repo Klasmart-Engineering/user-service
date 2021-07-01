@@ -35,6 +35,7 @@ import { User } from '../../src/entities/user'
 import { Role } from '../../src/entities/role'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createSchool as createSchoolFactory } from '../factories/school.factory'
+import { Status } from '../../src/entities/status'
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
@@ -242,6 +243,43 @@ describe('userPermissions', () => {
                             PermissionName.edit_class_20334
                         )
                     await expect(fn()).to.be.fulfilled
+                })
+            })
+
+            context('and the user is inactive', () => {
+                beforeEach(async () => {
+                    const dbUser = await User.findOneOrFail(userId)
+                    if (dbUser) {
+                        dbUser.status = Status.INACTIVE
+                        await connection.manager.save(dbUser)
+                    }
+                })
+                it('should throw error when school ID array is provided', async () => {
+                    const permissionContext = {
+                        school_id: undefined,
+                        school_ids: [schoolId],
+                        organization_id: undefined,
+                    }
+                    const fn = async () =>
+                        await userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            PermissionName.edit_class_20334
+                        )
+                    await expect(fn()).to.be.rejected
+                })
+
+                it('should throw error when organization ID is provided', async () => {
+                    const permissionContext = {
+                        school_id: undefined,
+                        school_ids: undefined,
+                        organization_id: organizationId,
+                    }
+                    const fn = async () =>
+                        await userPermissions.rejectIfNotAllowed(
+                            permissionContext,
+                            PermissionName.edit_class_20334
+                        )
+                    await expect(fn()).to.be.rejected
                 })
             })
 

@@ -4342,6 +4342,43 @@ describe('organization', () => {
                         gradeDetails,
                     ])
                 })
+                context('and the user is inactive', () => {
+                    beforeEach(async () => {
+                        const dbUser = await User.findOneOrFail(user.user_id)
+                        if (dbUser) {
+                            dbUser.status = Status.INACTIVE
+                            await connection.manager.save(dbUser)
+                        }
+                    })
+                    it('fails to list grades in the organization', async () => {
+                        const fn = () =>
+                            listGrades(
+                                testClient,
+                                organization.organization_id,
+                                {
+                                    authorization: getNonAdminAuthToken(),
+                                }
+                            )
+
+                        expect(fn()).to.be.rejected
+                        const dbGrades = await Grade.find({
+                            where: {
+                                organization: {
+                                    organization_id:
+                                        organization.organization_id,
+                                },
+                            },
+                        })
+                        const dGradesDetails = await Promise.all(
+                            dbGrades.map(gradeInfo)
+                        )
+                        expect(dGradesDetails).to.deep.eq([
+                            progressFromGradeDetails,
+                            progressToGradeDetails,
+                            gradeDetails,
+                        ])
+                    })
+                })
             })
         })
     })
@@ -4960,6 +4997,34 @@ describe('organization', () => {
                     expect(dbSubcategories.map(subcategoryInfo)).to.deep.eq(
                         gqlSubcategories.map(subcategoryInfo)
                     )
+                })
+                context('and the user is inactive', () => {
+                    beforeEach(async () => {
+                        const dbUser = await User.findOneOrFail(user.user_id)
+                        if (dbUser) {
+                            dbUser.status = Status.INACTIVE
+                            await connection.manager.save(dbUser)
+                        }
+                    })
+                    it('fails to list subcategories in the organization', async () => {
+                        const fn = () =>
+                            listSubcategories(
+                                testClient,
+                                organization.organization_id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                        expect(fn()).to.be.rejected
+                        const dbSubcategories = await Subcategory.find({
+                            where: {
+                                organization: {
+                                    organization_id:
+                                        organization.organization_id,
+                                },
+                            },
+                        })
+                        expect(dbSubcategories).not.to.be.empty
+                    })
                 })
             })
         })
@@ -7086,6 +7151,37 @@ describe('organization', () => {
                         gqlprograms.map(programInfo)
                     )
                     expect(gqlprogramsDetails).to.deep.eq([programDetails])
+                })
+                context('and the user is inactive', () => {
+                    beforeEach(async () => {
+                        const dbUser = await User.findOneOrFail(user.user_id)
+                        if (dbUser) {
+                            dbUser.status = Status.INACTIVE
+                            await connection.manager.save(dbUser)
+                        }
+                    })
+                    it('fails to list programs in the organization', async () => {
+                        const fn = () =>
+                            listPrograms(
+                                testClient,
+                                organization.organization_id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                        expect(fn()).to.be.rejected
+                        const dbprograms = await Program.find({
+                            where: {
+                                organization: {
+                                    organization_id:
+                                        organization.organization_id,
+                                },
+                            },
+                        })
+                        const dprogramsDetails = await Promise.all(
+                            dbprograms.map(programInfo)
+                        )
+                        expect(dprogramsDetails).to.deep.eq([programDetails])
+                    })
                 })
             })
         })
