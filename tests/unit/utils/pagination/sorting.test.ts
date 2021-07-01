@@ -76,6 +76,19 @@ describe('paginated sorting', () => {
                 'ORDER BY "User"."given_name" DESC NULLS LAST, "User"."user_id" DESC NULLS LAST'
             )
         })
+        it('sorts by two columns first and primaryKey last', () => {
+            addOrderByClause(scope, 'FORWARD', {
+                primaryKey: 'user_id',
+                sort: {
+                    field: ['family_name', 'given_name'],
+                    order: 'ASC',
+                },
+            })
+            const sql = scope.getSql()
+            expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
+                'ORDER BY "User"."family_name" ASC NULLS LAST, "User"."given_name" ASC NULLS LAST, "User"."user_id" ASC NULLS LAST'
+            )
+        })
     })
     context('aliasing', () => {
         it('maps fields to aliases', () => {

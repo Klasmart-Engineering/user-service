@@ -38,7 +38,7 @@ const typeDefs = gql`
     }
 
     input ProgramSortInput {
-        field: ProgramSortBy!
+        field: [ProgramSortBy!]!
         order: SortOrder!
     }
 

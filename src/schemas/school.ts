@@ -107,7 +107,7 @@ const typeDefs = gql`
     }
 
     input SchoolSortInput {
-        field: SchoolSortBy!
+        field: [SchoolSortBy!]!
         order: SortOrder!
     }
 `

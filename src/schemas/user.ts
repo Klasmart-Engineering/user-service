@@ -63,7 +63,7 @@ const typeDefs = gql`
     }
 
     input UserSortInput {
-        field: UserSortBy!
+        field: [UserSortBy!]!
         order: SortOrder!
     }
 

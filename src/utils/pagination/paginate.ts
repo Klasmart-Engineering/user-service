@@ -19,7 +19,7 @@ interface IPaginationOptions {
     pageSize: number
     cursorData: unknown
     defaultColumn: string
-    primaryColumn?: string
+    primaryColumns?: string[]
 }
 
 export interface IPaginationArgs<Entity extends BaseEntity> {
@@ -28,6 +28,10 @@ export interface IPaginationArgs<Entity extends BaseEntity> {
     scope: SelectQueryBuilder<Entity>
     filter?: IEntityFilter
     sort?: ISortField
+}
+
+interface IQueryParams {
+    [key: string]: string | number | boolean
 }
 
 export interface IPaginatedResponse<T = unknown> {
@@ -61,15 +65,17 @@ const getEdges = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any[],
     defaultColumn: string,
-    primaryColumn?: string
+    primaryColumns?: string[]
 ) => {
     return data.map((d) => {
         const cursorData = {
             [defaultColumn]: d[defaultColumn],
         }
 
-        if (primaryColumn) {
-            cursorData[primaryColumn] = d[primaryColumn]
+        if (primaryColumns?.length) {
+            primaryColumns.forEach((primaryColumn) => {
+                cursorData[primaryColumn] = d[primaryColumn]
+            })
         }
 
         return {
@@ -83,7 +89,7 @@ const forwardPaginate = async ({
     scope,
     pageSize,
     defaultColumn,
-    primaryColumn,
+    primaryColumns,
     cursorData,
 }: IPaginationOptions) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
@@ -92,7 +98,7 @@ const forwardPaginate = async ({
     const data = await scope.getMany()
     const hasPreviousPage = cursorData ? true : false
     const hasNextPage = data.length > pageSize ? true : false
-    let edges = getEdges(data, defaultColumn, primaryColumn)
+    let edges = getEdges(data, defaultColumn, primaryColumns)
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
     const endCursor =
         edges.length > 0
@@ -116,7 +122,7 @@ const backwardPaginate = async ({
     pageSize,
     cursorData,
     defaultColumn,
-    primaryColumn,
+    primaryColumns,
 }: IPaginationOptions) => {
     // we try to get items one more than the page size
     const seekPageSize = pageSize + 1 //start cursor will point to this record
@@ -129,7 +135,7 @@ const backwardPaginate = async ({
 
     const hasNextPage = cursorData ? true : false
 
-    let edges = getEdges(data, defaultColumn, primaryColumn)
+    let edges = getEdges(data, defaultColumn, primaryColumns)
     edges = edges.length === seekPageSize ? edges.slice(1) : edges
 
     const startCursor = edges.length > 0 ? edges[0].cursor : ''
@@ -160,15 +166,29 @@ export const paginateData = async <T = unknown>({
 
     const totalCount = await scope.getCount()
 
-    const { order, primaryColumn } = addOrderByClause(scope, direction, sort)
+    const { order, primaryColumns } = addOrderByClause(scope, direction, sort)
 
     if (cursorData) {
         const directionOperator = order === 'ASC' ? '>' : '<'
-        if (primaryColumn) {
+        if (primaryColumns.length) {
+            const queryColumns: string[] = []
+            const queryValues: string[] = []
+            const queryParams: IQueryParams = {}
+
+            primaryColumns.forEach((primaryColumn, index) => {
+                const paramName = `primaryColumn${index + 1}`
+                queryColumns.push(`${scope.alias}.${primaryColumn}`)
+                queryValues.push(`:${paramName}`)
+                queryParams[paramName] = cursorData[primaryColumn]
+            })
+
+            const queryColumnsString = queryColumns.join(', ')
+            const queryValuesString = queryValues.join(', ')
+
             scope.andWhere(
-                `(${scope.alias}.${primaryColumn}, ${scope.alias}.${sort.primaryKey}) ${directionOperator} (:primaryColumn, :defaultColumn)`,
+                `(${queryColumnsString}, ${scope.alias}.${sort.primaryKey}) ${directionOperator} (${queryValuesString}, :defaultColumn)`,
                 {
-                    primaryColumn: cursorData[primaryColumn],
+                    ...queryParams,
                     defaultColumn: cursorData[sort.primaryKey],
                 }
             )
@@ -190,15 +210,16 @@ export const paginateData = async <T = unknown>({
                   pageSize,
                   cursorData,
                   defaultColumn: sort.primaryKey,
-                  primaryColumn,
+                  primaryColumns,
               })
             : await forwardPaginate({
                   scope,
                   pageSize,
                   cursorData,
                   defaultColumn: sort.primaryKey,
-                  primaryColumn,
+                  primaryColumns,
               })
+
     return {
         totalCount,
         edges,

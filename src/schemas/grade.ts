@@ -38,7 +38,7 @@ const typeDefs = gql`
     }
 
     input GradeSortInput {
-        field: GradeSortBy!
+        field: [GradeSortBy!]!
         order: SortOrder!
     }
 
