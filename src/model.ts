@@ -73,6 +73,7 @@ import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
 import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInput'
 import { Status } from './entities/status'
+import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 
 export class Model {
     public static async create() {
@@ -610,6 +611,64 @@ export class Model {
                 status: grade.status,
                 system: grade.system,
                 // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async ageRangesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<AgeRange>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    system: ['AgeRange.system'],
+                    status: ['AgeRange.status'],
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    lowValue: 'low_value',
+                    lowValueUnit: 'low_value_unit',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const ageRange = edge.node as AgeRange
+            const newNode: Partial<AgeRangeConnectionNode> = {
+                id: ageRange.id,
+                name: ageRange.name,
+                status: ageRange.status,
+                system: ageRange.system,
+                lowValue: ageRange.low_value,
+                lowValueUnit: ageRange.low_value_unit,
+                highValue: ageRange.high_value,
+                highValueUnit: ageRange.high_value_unit,
             }
 
             edge.node = newNode
