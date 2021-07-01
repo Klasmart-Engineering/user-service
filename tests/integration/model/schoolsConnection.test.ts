@@ -314,7 +314,11 @@ describe('schoolsConnection', () => {
                     const unseenUsers = 10 - index
                     expect(result.totalCount).to.eq(10)
                     expect(result.edges.length).to.eq(
-                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
                     )
 
                     result.edges.reverse()
