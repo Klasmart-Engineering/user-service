@@ -20,6 +20,7 @@ interface IPaginationOptions {
     cursorData: unknown
     defaultColumn: string
     primaryColumns?: string[]
+    totalCount: number
 }
 
 export interface IPaginationArgs<Entity extends BaseEntity> {
@@ -91,6 +92,7 @@ const forwardPaginate = async ({
     defaultColumn,
     primaryColumns,
     cursorData,
+    totalCount,
 }: IPaginationOptions) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
 
@@ -123,15 +125,24 @@ const backwardPaginate = async ({
     cursorData,
     defaultColumn,
     primaryColumns,
+    totalCount,
 }: IPaginationOptions) => {
     // we try to get items one more than the page size
-    const seekPageSize = pageSize + 1 //start cursor will point to this record
+    let newPageSize = pageSize
+    // this is to make the first page going backwards look like offset pagination
+    if (!cursorData) {
+        newPageSize = totalCount % pageSize
+        if (newPageSize === 0) {
+            newPageSize = pageSize
+        }
+    }
+    const seekPageSize = newPageSize + 1 //start cursor will point to this record
 
     scope.take(seekPageSize)
     const data = await scope.getMany()
     data.reverse()
 
-    const hasPreviousPage = data.length > pageSize ? true : false
+    const hasPreviousPage = data.length > newPageSize ? true : false
 
     const hasNextPage = cursorData ? true : false
 
@@ -211,6 +222,7 @@ export const paginateData = async <T = unknown>({
                   cursorData,
                   defaultColumn: sort.primaryKey,
                   primaryColumns,
+                  totalCount,
               })
             : await forwardPaginate({
                   scope,
@@ -218,6 +230,7 @@ export const paginateData = async <T = unknown>({
                   cursorData,
                   defaultColumn: sort.primaryKey,
                   primaryColumns,
+                  totalCount,
               })
 
     return {

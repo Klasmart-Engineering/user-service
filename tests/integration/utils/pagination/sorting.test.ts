@@ -140,7 +140,11 @@ describe('sorting', () => {
                     expect(data.totalCount).to.eq(totalUsers)
                     const unseenUsers = totalUsers - index
                     expect(data.edges.length).to.eq(
-                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
                     )
 
                     data.edges.reverse()
@@ -166,7 +170,11 @@ describe('sorting', () => {
                     expect(data.totalCount).to.eq(totalUsers)
                     const unseenUsers = totalUsers - index
                     expect(data.edges.length).to.eq(
-                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
                     )
 
                     data.edges.reverse()
@@ -404,7 +412,11 @@ describe('sorting', () => {
 
                     const unseenUsers = totalUsers - index
                     expect(data.edges.length).to.eq(
-                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
                     )
 
                     data.edges.reverse()
@@ -444,7 +456,11 @@ describe('sorting', () => {
 
                     const unseenUsers = totalUsers - index
                     expect(data.edges.length).to.eq(
-                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
                     )
 
                     data.edges.reverse()
