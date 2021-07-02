@@ -1,0 +1,13 @@
+{
+  "name": "default",
+  "host": "localhost",
+  "type": "postgres",
+  "user": "postgres",
+  "password": "kidsloop",
+  "url": "postgres://postgres:kidsloop@localhost",
+  "entities": ["src/entities/*.ts"],
+  "migrations": ["migrations/*.js"],
+  "cli": {
+      "migrationsDir": "migrations"
+  }
+}

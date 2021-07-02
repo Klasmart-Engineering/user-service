@@ -29,6 +29,7 @@ import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 @Entity()
 @Check(`"class_name" <> ''`)
 @Unique(['class_name', 'organization'])
+@Unique(['shortcode', 'organization'])
 export class Class extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public class_id!: string

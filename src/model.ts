@@ -85,9 +85,11 @@ export class Model {
                 url:
                     process.env.DATABASE_URL ||
                     'postgres://postgres:kidsloop@localhost',
-                synchronize: true,
+                synchronize: false,
                 logging: Boolean(process.env.DATABASE_LOGGING),
                 entities: ['src/entities/*.ts'],
+                migrations: ['migrations/*.ts'],
+                migrationsRun: true,
             })
             const model = new Model(connection)
             await getManager(connection.name).query(
