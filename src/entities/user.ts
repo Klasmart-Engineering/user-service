@@ -72,11 +72,11 @@ export class User extends BaseEntity {
     @Column({ type: 'boolean', default: false })
     public primary!: boolean
 
-    @Column({ nullable: true })
-    public alternate_email?: string
+    @Column({ type: 'varchar', nullable: true })
+    public alternate_email?: string | null
 
-    @Column({ nullable: true })
-    public alternate_phone?: string
+    @Column({ type: 'varchar', nullable: true })
+    public alternate_phone?: string | null
 
     @OneToMany(() => OrganizationMembership, (membership) => membership.user)
     @JoinColumn({

@@ -627,8 +627,8 @@ export async function editMembership(
     school_role_ids?: string[],
     headers?: Headers,
     cookies?: any,
-    alternate_email?: string,
-    alternate_phone?: string
+    alternate_email?: string | null,
+    alternate_phone?: string | null
 ) {
     const { mutate } = testClient
     let variables: any
@@ -670,10 +670,10 @@ export async function editMembership(
     if (school_role_ids) {
         variables.school_role_ids = school_role_ids
     }
-    if (alternate_email) {
+    if (typeof alternate_email !== 'undefined') {
         variables.alternate_email = alternate_email
     }
-    if (alternate_phone) {
+    if (typeof alternate_phone !== 'undefined') {
         variables.alternate_phone = alternate_phone
     }
 

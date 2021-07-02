@@ -26,6 +26,7 @@ import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
+import clean from './utils/clean'
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
@@ -254,13 +255,9 @@ export class Model {
         if (username !== undefined) {
             user.username = username
         }
-        if (alternate_email && validateEmail(alternate_email)) {
-            user.alternate_email = alternate_email
-        }
 
-        if (alternate_phone) {
-            user.alternate_phone = alternate_phone
-        }
+        user.alternate_email = clean.email(alternate_email)
+        user.alternate_phone = clean.phone(alternate_phone)
 
         await this.manager.save(user)
         return user

@@ -39,6 +39,7 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../utils/shortcode'
+import clean from '../utils/clean'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
 
 export const normalizedLowercaseTrimmed = (x: string) =>
@@ -523,8 +524,12 @@ export class Organization extends BaseEntity {
             }
             email = normalizedLowercaseTrimmed(email)
             phone = normalizedLowercaseTrimmed(phone)
-            alternate_email = normalizedLowercaseTrimmed(alternate_email)
-            alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
+            if (typeof alternate_email === 'string') {
+                alternate_email = normalizedLowercaseTrimmed(alternate_email)
+            }
+            if (typeof alternate_phone === 'string') {
+                alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
+            }
 
             date_of_birth = padShortDob(date_of_birth)
 
@@ -586,8 +591,12 @@ export class Organization extends BaseEntity {
             }
             email = normalizedLowercaseTrimmed(email)
             phone = normalizedLowercaseTrimmed(phone)
-            alternate_email = normalizedLowercaseTrimmed(alternate_email)
-            alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
+            if (typeof alternate_email === 'string') {
+                alternate_email = normalizedLowercaseTrimmed(alternate_email)
+            }
+            if (typeof alternate_phone === 'string') {
+                alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
+            }
 
             date_of_birth = padShortDob(date_of_birth)
 
@@ -643,8 +652,8 @@ export class Organization extends BaseEntity {
         family_name?: string,
         date_of_birth?: string,
         username?: string,
-        alternate_email?: string,
-        alternate_phone?: string,
+        alternate_email?: string | null,
+        alternate_phone?: string | null,
         gender?: string
     ): Promise<User> {
         let user: User | undefined
@@ -678,13 +687,10 @@ export class Organization extends BaseEntity {
         if (username !== undefined) {
             user.username = username
         }
-        if (alternate_email && validateEmail(alternate_email)) {
-            user.alternate_email = alternate_email
-        }
 
-        if (alternate_phone && validatePhone(alternate_phone)) {
-            user.alternate_phone = alternate_phone
-        }
+        user.alternate_email = clean.email(alternate_email)
+        user.alternate_phone = clean.phone(alternate_phone)
+
         if (gender !== undefined) {
             user.gender = gender
         }
@@ -770,8 +776,8 @@ export class Organization extends BaseEntity {
         organization_role_ids: string[] = [],
         school_ids: string[] = [],
         school_role_ids: string[] = [],
-        alternate_email?: string,
-        alternate_phone?: string
+        alternate_email?: string | null,
+        alternate_phone?: string | null
     ) {
         if (!validateEmail(email) && validatePhone(email)) {
             phone = email

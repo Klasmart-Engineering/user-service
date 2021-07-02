@@ -1,4 +1,5 @@
 import { expect, use } from 'chai'
+import faker from 'faker'
 import { Connection } from 'typeorm'
 import { Model } from '../../src/model'
 import { createTestConnection } from '../utils/testConnection'
@@ -2353,44 +2354,207 @@ describe('organization', () => {
                     expect(membership.user_id).to.equal(newUser.user_id)
                 })
 
-                it('edits user when alternate_email and alternate_password are provided', async () => {
-                    let email = 'bob@nowhere.com'
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let alternate_email = 'a@a.com'
-                    let alternate_phone = '+123456789'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        email: email,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() },
-                        undefined,
-                        alternate_email,
-                        alternate_phone
-                    )
-                    let newUser = gqlresult.user
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.equal(email)
-                    expect(newUser.user_id).to.eq(bob.user_id)
-                    expect(newUser.alternate_email).to.equal(alternate_email)
-                    expect(newUser.alternate_phone).to.equal(alternate_phone)
+                context('alternate_email and alternate_password', () => {
+                    const email = 'bob@nowhere.com'
+                    let bob: User
+
+                    beforeEach(async () => {
+                        bob = {
+                            given_name: 'Bob',
+                            family_name: 'Smith',
+                            email: email,
+                        } as User
+                        bob = await createUserAndValidate(testClient, bob)
+                    })
+
+                    it('saves alternates if valid', async () => {
+                        let alternate_email = 'a@a.com'
+                        let alternate_phone = '+123456789'
+
+                        let gqlresult = await editMembership(
+                            testClient,
+                            organizationId,
+                            bob.user_id,
+                            email,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: getAdminAuthToken() },
+                            undefined,
+                            alternate_email,
+                            alternate_phone
+                        )
+                        let newUser = gqlresult.user
+                        expect(newUser).to.exist
+                        expect(newUser.email).to.equal(email)
+                        expect(newUser.user_id).to.eq(bob.user_id)
+                        expect(newUser.alternate_email).to.equal(
+                            alternate_email
+                        )
+                        expect(newUser.alternate_phone).to.equal(
+                            alternate_phone
+                        )
+                    })
+
+                    it("doesn't save alternates if invalid", async () => {
+                        let alternate_email = 'not-an-email'
+                        let alternate_phone = 'not-a-phone-number'
+
+                        let gqlresult = await editMembership(
+                            testClient,
+                            organizationId,
+                            bob.user_id,
+                            email,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: getAdminAuthToken() },
+                            undefined,
+                            alternate_email,
+                            alternate_phone
+                        )
+                        let newUser = gqlresult.user
+                        expect(newUser).to.exist
+                        expect(newUser.email).to.equal(email)
+                        expect(newUser.user_id).to.eq(bob.user_id)
+                        expect(newUser.alternate_email).to.be.null
+                        expect(newUser.alternate_phone).to.be.null
+                    })
+
+                    it('overwrites existing alternates if new ones are valid', async () => {
+                        let alternate_email = 'a@a.com'
+                        let alternate_phone = '+123456789'
+
+                        await connection
+                            .getRepository(User)
+                            .update(bob.user_id, {
+                                alternate_email: faker.internet.email(),
+                                alternate_phone: faker.phone.phoneNumber(),
+                            })
+
+                        let gqlresult = await editMembership(
+                            testClient,
+                            organizationId,
+                            bob.user_id,
+                            email,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: getAdminAuthToken() },
+                            undefined,
+                            alternate_email,
+                            alternate_phone
+                        )
+                        let newUser = gqlresult.user
+                        expect(newUser).to.exist
+                        expect(newUser.email).to.equal(email)
+                        expect(newUser.user_id).to.eq(bob.user_id)
+                        expect(newUser.alternate_email).to.equal(
+                            alternate_email
+                        )
+                        expect(newUser.alternate_phone).to.equal(
+                            alternate_phone
+                        )
+                    })
+
+                    it('overwrites alternates with NULL if specified', async () => {
+                        let alternate_email = 'a@a.com'
+                        let alternate_phone = '+123456789'
+
+                        await connection
+                            .getRepository(User)
+                            .update(bob.user_id, {
+                                alternate_email,
+                                alternate_phone,
+                            })
+
+                        let gqlresult = await editMembership(
+                            testClient,
+                            organizationId,
+                            bob.user_id,
+                            email,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: getAdminAuthToken() },
+                            undefined,
+                            null,
+                            null
+                        )
+                        let newUser = gqlresult.user
+                        expect(newUser).to.exist
+                        expect(newUser.email).to.equal(email)
+                        expect(newUser.user_id).to.eq(bob.user_id)
+                        expect(newUser.alternate_email).to.be.null
+                        expect(newUser.alternate_phone).to.be.null
+                    })
+
+                    it('normalises empty string alternates to NULL', async () => {
+                        let alternate_email = 'a@a.com'
+                        let alternate_phone = '+123456789'
+
+                        await connection
+                            .getRepository(User)
+                            .update(bob.user_id, {
+                                alternate_email,
+                                alternate_phone,
+                            })
+
+                        let gqlresult = await editMembership(
+                            testClient,
+                            organizationId,
+                            bob.user_id,
+                            email,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: getAdminAuthToken() },
+                            undefined,
+                            '',
+                            ''
+                        )
+                        let newUser = gqlresult.user
+                        expect(newUser).to.exist
+                        expect(newUser.email).to.equal(email)
+                        expect(newUser.user_id).to.eq(bob.user_id)
+                        expect(newUser.alternate_email).to.be.null
+                        expect(newUser.alternate_phone).to.be.null
+                    })
                 })
 
                 it('edits user and lets them change email', async () => {
