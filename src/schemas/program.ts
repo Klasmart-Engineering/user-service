@@ -54,6 +54,7 @@ const typeDefs = gql`
         gradeId: UUIDFilter
         ageRangeId: UUIDFilter
         subjectId: UUIDFilter
+        schoolId: UUIDFilter
 
         AND: [ProgramFilter!]
         OR: [ProgramFilter!]

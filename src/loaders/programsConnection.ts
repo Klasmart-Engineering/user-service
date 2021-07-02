@@ -24,6 +24,7 @@ export const ageRangesForPrograms = async (
         .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         .leftJoinAndSelect('Program.grades', 'Grade')
         .leftJoinAndSelect('Program.subjects', 'Subject')
+        .leftJoinAndSelect('Program.schools', 'School')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
@@ -37,6 +38,7 @@ export const ageRangesForPrograms = async (
                 gradeId: ['Grade.id'],
                 ageRangeId: [],
                 subjectId: ['Subject.id'],
+                schoolId: ['School.school_id'],
             })
         )
     }
@@ -79,6 +81,7 @@ export const gradesForPrograms = async (
         .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         .leftJoinAndSelect('Program.grades', 'Grade')
         .leftJoinAndSelect('Program.subjects', 'Subject')
+        .leftJoinAndSelect('Program.schools', 'School')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
@@ -92,6 +95,7 @@ export const gradesForPrograms = async (
                 gradeId: [],
                 ageRangeId: ['AgeRange.id'],
                 subjectId: ['Subject.id'],
+                schoolId: ['School.school_id'],
             })
         )
     }
@@ -129,6 +133,7 @@ export const subjectsForPrograms = async (
         .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         .leftJoinAndSelect('Program.grades', 'Grade')
         .leftJoinAndSelect('Program.subjects', 'Subject')
+        .leftJoinAndSelect('Program.schools', 'School')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
@@ -142,6 +147,7 @@ export const subjectsForPrograms = async (
                 gradeId: ['Grade.id'],
                 ageRangeId: ['AgeRange.id'],
                 subjectId: [],
+                schoolId: ['School.school_id'],
             })
         )
     }

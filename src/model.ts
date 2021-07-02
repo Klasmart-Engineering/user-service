@@ -516,6 +516,10 @@ export class Model {
                 scope.leftJoinAndSelect('Program.subjects', 'Subject')
             }
 
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect('Program.schools', 'School')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     id: ['Program.id'],
@@ -526,6 +530,7 @@ export class Model {
                     gradeId: ['Grade.id'],
                     ageRangeId: ['AgeRange.id'],
                     subjectId: ['Subject.id'],
+                    schoolId: ['School.school_id'],
                 })
             )
         }

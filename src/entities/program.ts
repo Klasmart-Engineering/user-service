@@ -19,6 +19,7 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Subject } from './subject'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
+import { School } from './school'
 
 @Entity()
 export class Program extends BaseEntity {
@@ -55,6 +56,9 @@ export class Program extends BaseEntity {
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
+
+    @ManyToMany(() => School, (school) => school.programs)
+    public schools?: Promise<School>
 
     public async editAgeRanges(
         { age_range_ids }: { age_range_ids: string[] },

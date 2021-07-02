@@ -31,6 +31,8 @@ import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { GradeSummaryNode } from '../../../src/types/graphQL/gradeSummaryNode'
 import { AgeRangeSummaryNode } from '../../../src/types/graphQL/ageRangeSummaryNode'
 import { SubjectSummaryNode } from '../../../src/types/graphQL/subjectSummaryNode'
+import { School } from '../../../src/entities/school'
+import { createSchool } from '../../factories/school.factory'
 
 use(chaiAsPromised)
 
@@ -46,6 +48,7 @@ describe('model', () => {
     let ageRanges: AgeRange[] = []
     let grades: Grade[] = []
     let subjects: Subject[] = []
+    let school: School
 
     const programsCount = 12
     const ageRangesCount = 6
@@ -67,6 +70,8 @@ describe('model', () => {
         org1 = await createOrganization(admin)
         org2 = await createOrganization(admin)
         await connection.manager.save([org1, org2])
+
+        school = await createSchool(org1)
 
         org1Programs = []
         org2Programs = []
@@ -123,6 +128,9 @@ describe('model', () => {
         programs.push(...org1Programs, ...org2Programs)
 
         await connection.manager.save(programs)
+
+        school.programs = Promise.resolve([org1Programs[0]])
+        await connection.manager.save(school)
     })
 
     context('pagination', () => {
@@ -453,6 +461,24 @@ describe('model', () => {
             })
 
             subjectsIds.every((ids) => ids?.includes(subjectId))
+        })
+
+        it('supports filtering by school ID', async () => {
+            const schoolId = school.school_id
+            const filter: IEntityFilter = {
+                schoolId: {
+                    operator: 'eq',
+                    value: schoolId,
+                },
+            }
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(result.totalCount).to.eq(1)
         })
 
         it('fails if search value is longer than 250 characters', async () => {
