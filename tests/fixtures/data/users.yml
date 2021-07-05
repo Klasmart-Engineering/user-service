@@ -1,7 +1,7 @@
 fixtures:
-  - User:
-      id: c6d4feed-9133-5529-8d72-1003526d1b13
-      email: joe@gmail.com
-  - User:
-      id: 16046442-75b8-4da5-b3df-aa53a70a13a1
-      email: john@example.com
+    - User:
+          user_id: c6d4feed-9133-5529-8d72-1003526d1b13
+          email: joe@gmail.com
+    - User:
+          user_id: 16046442-75b8-4da5-b3df-aa53a70a13a1
+          email: john@example.com
