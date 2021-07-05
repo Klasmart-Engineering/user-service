@@ -25,7 +25,7 @@ export async function loadFixtures(
         return
     }
 
-    items.forEach(async (item: any) => {
+    for (const item of items) {
         const entityName = Object.keys(item)[0]
         const data = item[entityName]
         await dbConnection
@@ -34,5 +34,5 @@ export async function loadFixtures(
             .into(entityName)
             .values(data)
             .execute()
-    })
+    }
 }
