@@ -15,7 +15,7 @@
     "prettier-format": "prettier --config .prettierrc ./**/*.{ts,test.ts} --write",
     "test:unit": "mocha --require ts-node/register \"tests/unit/**/*.test.ts\"",
     "test:integration": "mocha --require ts-node/register --file tests/testHelper.ts \"tests/integration/**/*.test.ts\" --timeout 8000",
-    "test:acceptance": "mocha --require ts-node/register --file tests/testHelper.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000",
+    "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 mocha --require ts-node/register --file tests/testHelper.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000",
     "test": "npm run test:unit && npm run test:integration",
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
     "make-badges": "istanbul-badges-readme",
