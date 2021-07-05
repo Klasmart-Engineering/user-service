@@ -119,6 +119,7 @@ export const teacherRole = {
         PermissionName.view_classes_20114,
         PermissionName.view_subjects_20115,
         PermissionName.view_my_classes_20118,
+        PermissionName.view_user_page_40101,
         PermissionName.view_my_class_users_40112,
         PermissionName.view_any_featured_programs_70001,
         PermissionName.view_bada_rhyme_71000,
