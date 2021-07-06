@@ -7,11 +7,9 @@ export const createTestConnection = (
     return createConnection({
         name: name,
         type: 'postgres',
-        host: 'localhost',
-        port: 5432,
-        username: 'postgres',
-        password: 'kidsloop',
-        database: 'testdb',
+        url:
+            process.env.DATABASE_URL ||
+            'postgres://postgres:kidsloop@localhost/testdb',
         synchronize: drop,
         dropSchema: drop,
         entities: ['src/entities/*.ts'],
