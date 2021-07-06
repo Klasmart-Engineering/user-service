@@ -13,6 +13,7 @@ import {
     JoinTable,
     ManyToOne,
     BaseEntity,
+    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './user'
@@ -51,7 +52,7 @@ export class School extends BaseEntity {
     public roles?: Promise<Role[]>
 
     public async membership(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -77,7 +78,7 @@ export class School extends BaseEntity {
     @JoinTable()
     public classes?: Promise<Class[]>
 
-    @ManyToMany(() => Program)
+    @ManyToMany(() => Program, (program) => program.schools)
     @JoinTable()
     public programs?: Promise<Program[]>
 
@@ -85,7 +86,7 @@ export class School extends BaseEntity {
     public deleted_at?: Date
 
     public async set(
-        { school_name, shortcode }: any,
+        { school_name, shortcode }: { school_name: string; shortcode: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -125,7 +126,7 @@ export class School extends BaseEntity {
     }
 
     public async addUser(
-        { user_id }: any,
+        { user_id }: { user_id: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -167,7 +168,7 @@ export class School extends BaseEntity {
     }
 
     public async editPrograms(
-        { program_ids }: any,
+        { program_ids }: { program_ids: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -204,7 +205,11 @@ export class School extends BaseEntity {
         })
     }
 
-    public async delete(args: any, context: Context, info: GraphQLResolveInfo) {
+    public async delete(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         if (
             info.operation.operation !== 'mutation' ||
             this.status == Status.INACTIVE
@@ -233,7 +238,7 @@ export class School extends BaseEntity {
         return false
     }
 
-    private async inactivateSchoolMemberships(manager: any) {
+    private async inactivateSchoolMemberships(manager: EntityManager) {
         const schoolMemberships = (await this.memberships) || []
 
         for (const schoolMembership of schoolMemberships) {
@@ -243,7 +248,7 @@ export class School extends BaseEntity {
         return schoolMemberships
     }
 
-    private async inactivateClasses(manager: any) {
+    private async inactivateClasses(manager: EntityManager) {
         const classes = (await this.classes) || []
 
         for (const cls of classes) {
@@ -253,7 +258,7 @@ export class School extends BaseEntity {
         return classes
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

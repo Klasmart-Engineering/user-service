@@ -1,6 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { Context } from '../main'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -106,13 +107,13 @@ const typeDefs = gql`
     }
 
     input SchoolSortInput {
-        field: SchoolSortBy!
+        field: [SchoolSortBy!]!
         order: SortOrder!
     }
 `
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],

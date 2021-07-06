@@ -44,7 +44,7 @@ describe('model.user', () => {
         let user: User
         let modifiedUser: any
 
-        before(async () => {
+        beforeEach(async () => {
             user = await createAdminUser(testClient)
             modifiedUser = {
                 user_id: user.user_id,
@@ -67,6 +67,62 @@ describe('model.user', () => {
             const dbUser = await User.findOneOrFail(user.user_id)
             expect(dbUser).to.include(gqlUser)
         })
+
+        context('alternate_email/phone', () => {
+            beforeEach(async () => {
+                await connection.getRepository(User).update(user.user_id, {
+                    alternate_email: faker.internet.email(),
+                    alternate_phone: faker.phone.phoneNumber(),
+                })
+            })
+
+            it('overwrites alternate_email/phone if NULL specified', async () => {
+                const gqlUser = await updateUser(
+                    testClient,
+                    {
+                        ...modifiedUser,
+                        alternate_email: '',
+                        alternate_phone: '',
+                    },
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                expect(gqlUser).to.exist
+                expect(gqlUser.alternate_email).to.be.null
+                expect(gqlUser.alternate_phone).to.be.null
+            })
+
+            it('normalizes empty string alternate_email/phone to NULL', async () => {
+                const gqlUser = await updateUser(
+                    testClient,
+                    {
+                        ...modifiedUser,
+                        alternate_email: null,
+                        alternate_phone: null,
+                    },
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
+                expect(gqlUser).to.exist
+                expect(gqlUser.alternate_email).to.be.null
+                expect(gqlUser.alternate_phone).to.be.null
+            })
+
+            it('overwrites existing alternate_email/phone', async () => {
+                const gqlUser = await updateUser(testClient, modifiedUser, {
+                    authorization: getAdminAuthToken(),
+                })
+                expect(gqlUser).to.exist
+                expect(gqlUser.alternate_email).to.equal(
+                    modifiedUser.alternate_email
+                )
+                expect(gqlUser.alternate_phone).to.equal(
+                    modifiedUser.alternate_phone
+                )
+            })
+        })
     })
 
     describe('getUsers', () => {
@@ -82,13 +138,7 @@ describe('model.user', () => {
             })
 
             expect(gqlUsers).to.exist
-            expect(gqlUsers.length).to.equal(1)
-            expect(gqlUsers[0]).to.deep.include({
-                user_id: user.user_id,
-                given_name: user.given_name,
-                family_name: user.family_name,
-            })
-            expect(user).to.include(gqlUsers[0])
+            expect(gqlUsers.length).to.equal(0)
         })
     })
 

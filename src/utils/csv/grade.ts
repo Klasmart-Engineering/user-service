@@ -30,7 +30,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
     errCode: string,
     fileErrors: CSVError[],
     notFoundErrorMessage: string,
-    params: Record<string, any>
+    params: Record<string, unknown>
 ) {
     const gradeFound = await manager.findOne(Grade, {
         where: {

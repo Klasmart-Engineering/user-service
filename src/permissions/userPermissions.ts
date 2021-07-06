@@ -30,7 +30,7 @@ export class UserPermissions {
     private readonly email: string
     public readonly isAdmin?: boolean
 
-    public constructor(token?: any) {
+    public constructor(token?: Record<string, string>) {
         this.user_id = token?.id
         this.email = token?.email || ''
         this.isAdmin = this.isAdminEmail(this.email)
@@ -70,10 +70,27 @@ export class UserPermissions {
         }
     }
 
+    private async getUserIsActive(
+        userId: string | undefined
+    ): Promise<boolean> {
+        if (!userId) {
+            return false
+        }
+        const user = await getRepository(User).findOne(userId)
+        return user?.status === Status.ACTIVE
+    }
+
     public async rejectIfNotAllowed(
         { school_ids, organization_id }: PermissionContext,
         permission_name: PermissionName
     ) {
+        const isActive = this.getUserIsActive(this.user_id)
+        if (!isActive) {
+            throw new Error(
+                `User(${this.user_id}) has been deleted, so does not have Permission(${permission_name}) in Organization(${organization_id})`
+            )
+        }
+
         const isAllowed = await this.allowed(
             { school_ids, organization_id, user_id: this.user_id },
             permission_name
@@ -104,6 +121,11 @@ export class UserPermissions {
         { school_ids, organization_id, user_id }: PermissionContext,
         permission_name: PermissionName
     ) {
+        const isActive = this.getUserIsActive(user_id)
+        if (!isActive) {
+            return false
+        }
+
         const isAdmin = await this.isUserAdmin(user_id)
         let output =
             isAdmin && superAdminRole.permissions.includes(permission_name)

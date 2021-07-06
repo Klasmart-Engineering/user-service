@@ -3,15 +3,16 @@ import { initApp } from './app'
 import * as Sentry from '@sentry/node'
 import WebSocket from 'ws'
 import { UserPermissions } from './permissions/userPermissions'
+import express from 'express'
 import { IDataLoaders } from './loaders/setup'
 
 const port = process.env.PORT || 8080
 
 export interface Context {
-    token?: any
+    token?: Record<string, string>
     sessionId?: string
-    res?: any
-    req?: any
+    res?: express.Response
+    req?: express.Request
     websocket?: WebSocket
     permissions: UserPermissions
     loaders: IDataLoaders

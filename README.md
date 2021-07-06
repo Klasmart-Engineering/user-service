@@ -22,6 +22,10 @@ Create a database used for integration tests:
 1. Make sure the postgres docker container is running.
 2. `docker container exec -it postgres psql -U postgres -c "create database testdb;"`
 
+Create a database used for acceptance tests:
+
+`docker container exec -it postgres psql -U postgres -c "create database postgres1;"`
+
 Update the README coverage badges:
 
 1. `npm run coverage`
@@ -31,7 +35,8 @@ Running tests during development:
 
 -   `npm run test:unit`
 -   `npm run test:integration`
--   `npm test` (to run all)
+-   `npm run test:acceptance`
+-   `npm test` (to run unit & integration, for now we have to run acceptance separately)
 
 Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-mocha-test-adapter) VSCode extension for a nice UI and more fine-grained control.
 
@@ -48,7 +53,10 @@ Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.c
 
 ```shell
 docker exec -it postgres psql -U postgres
-INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>')
+```
+
+```shell
+INSERT INTO "user"(user_id, email) VALUES('<my-user-id>', '<my-email>');
 ```
 
 ### 2 - Your user has been assigned to a organisation
@@ -82,6 +90,7 @@ docker-compose up
 ```
 
 Finally, you can list the items in the bucket with the regular client:
+
 ```bash
 aws s3 ls s3://kidsloop-alpha-account-asset-objects/ --endpoint http://localhost:456
 ```

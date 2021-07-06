@@ -28,6 +28,11 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
+import { GradeSummaryNode } from '../../../src/types/graphQL/gradeSummaryNode'
+import { AgeRangeSummaryNode } from '../../../src/types/graphQL/ageRangeSummaryNode'
+import { SubjectSummaryNode } from '../../../src/types/graphQL/subjectSummaryNode'
+import { School } from '../../../src/entities/school'
+import { createSchool } from '../../factories/school.factory'
 
 use(chaiAsPromised)
 
@@ -37,10 +42,13 @@ describe('model', () => {
     let admin: User
     let org1: Organization
     let org2: Organization
+    let org1Programs: Program[] = []
+    let org2Programs: Program[] = []
     let programs: Program[] = []
     let ageRanges: AgeRange[] = []
     let grades: Grade[] = []
     let subjects: Subject[] = []
+    let school: School
 
     const programsCount = 12
     const ageRangesCount = 6
@@ -63,6 +71,10 @@ describe('model', () => {
         org2 = await createOrganization(admin)
         await connection.manager.save([org1, org2])
 
+        school = await createSchool(org1)
+
+        org1Programs = []
+        org2Programs = []
         programs = []
         ageRanges = []
         grades = []
@@ -103,17 +115,22 @@ describe('model', () => {
             ])
             program.system = i % 2 === 0
             program.status = Status.ACTIVE
-            programs.push(program)
+            org1Programs.push(program)
         }
 
         for (let i = 0; i < programsCount; i++) {
             let program = await createProgram(org2)
             program.name = `program ${i}`
             program.status = Status.INACTIVE
-            programs.push(program)
+            org2Programs.push(program)
         }
 
+        programs.push(...org1Programs, ...org2Programs)
+
         await connection.manager.save(programs)
+
+        school.programs = Promise.resolve([org1Programs[0]])
+        await connection.manager.save(school)
     })
 
     context('pagination', () => {
@@ -206,7 +223,7 @@ describe('model', () => {
 
             expect(result.edges.length).eq(10)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name!)
             const isSorted = isStringArraySortedAscending(names)
 
             expect(isSorted).to.be.true
@@ -231,7 +248,7 @@ describe('model', () => {
 
             expect(result.edges.length).eq(10)
 
-            const names = result.edges.map((edge) => edge.node.name)
+            const names = result.edges.map((edge) => edge.node.name!)
             const isSorted = isStringArraySortedDescending(names)
 
             expect(isSorted).to.be.true
@@ -239,11 +256,12 @@ describe('model', () => {
     })
 
     context('filtering', () => {
-        it('supports filtering by organizationId', async () => {
+        it('supports filtering by organization ID', async () => {
+            const organizationId = org1.organization_id
             const filter: IEntityFilter = {
                 organizationId: {
                     operator: 'eq',
-                    value: org1.organization_id,
+                    value: organizationId,
                 },
             }
 
@@ -263,13 +281,18 @@ describe('model', () => {
             expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
+
+            const programIds = result.edges.map((edge) => edge.node.id)
+            const org1ProgramIds = org1Programs.map((program) => program.id)
+            programIds.every((id) => org1ProgramIds.includes(id))
         })
 
         it('supports filtering by program ID', async () => {
+            const programId = programs[0].id
             const filter: IEntityFilter = {
                 id: {
                     operator: 'eq',
-                    value: programs[0].id,
+                    value: programId,
                 },
             }
 
@@ -282,13 +305,17 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(1)
+
+            const programIds = result.edges.map((edge) => edge.node.id)
+            programIds.every((id) => id === programId)
         })
 
         it('supports filtering by program name', async () => {
+            const filterValue = '1'
             const filter: IEntityFilter = {
                 name: {
                     operator: 'contains',
-                    value: '1',
+                    value: filterValue,
                 },
             }
 
@@ -301,13 +328,17 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(6)
+
+            const names = result.edges.map((edge) => edge.node.name) as string[]
+            names.every((name) => name.includes(filterValue))
         })
 
         it('supports filtering by program status', async () => {
+            const filterStatus = 'inactive'
             const filter: IEntityFilter = {
                 status: {
                     operator: 'eq',
-                    value: 'inactive',
+                    value: filterStatus,
                 },
             }
 
@@ -320,13 +351,17 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(programsCount)
+
+            const statuses = result.edges.map((edge) => edge.node.status)
+            statuses.every((status) => status === filterStatus)
         })
 
         it('supports filtering by program system', async () => {
+            const filterSystem = true
             const filter: IEntityFilter = {
                 system: {
                     operator: 'eq',
-                    value: true,
+                    value: filterSystem,
                 },
             }
 
@@ -339,6 +374,111 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(programsCount / 2)
+
+            const systems = result.edges.map((edge) => edge.node.system)
+            systems.every((system) => system === filterSystem)
+        })
+
+        it('supports filtering by grade ID', async () => {
+            const gradeId = grades[0].id
+            const filter: IEntityFilter = {
+                gradeId: {
+                    operator: 'eq',
+                    value: gradeId,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(3)
+
+            const gradesIds = result.edges.map((edge) => {
+                return edge.node.grades?.map(
+                    (grade: GradeSummaryNode) => grade.id
+                )
+            })
+
+            gradesIds.every((ids) => ids?.includes(gradeId))
+        })
+
+        it('supports filtering by age range ID', async () => {
+            const ageRangeId = ageRanges[0].id
+            const filter: IEntityFilter = {
+                ageRangeId: {
+                    operator: 'eq',
+                    value: ageRangeId,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(2)
+
+            const ageRangesIds = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeSummaryNode) => ageRange.id
+                )
+            })
+
+            ageRangesIds.every((ids) => ids?.includes(ageRangeId))
+        })
+
+        it('supports filtering by subject ID', async () => {
+            const subjectId = subjects[0].id
+            const filter: IEntityFilter = {
+                subjectId: {
+                    operator: 'eq',
+                    value: subjectId,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(4)
+
+            const subjectsIds = result.edges.map((edge) => {
+                return edge.node.subjects?.map(
+                    (subject: SubjectSummaryNode) => subject.id
+                )
+            })
+
+            subjectsIds.every((ids) => ids?.includes(subjectId))
+        })
+
+        it('supports filtering by school ID', async () => {
+            const schoolId = school.school_id
+            const filter: IEntityFilter = {
+                schoolId: {
+                    operator: 'eq',
+                    value: schoolId,
+                },
+            }
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(result.totalCount).to.eq(1)
         })
 
         it('fails if search value is longer than 250 characters', async () => {

@@ -63,7 +63,7 @@ const typeDefs = gql`
     }
 
     input UserSortInput {
-        field: UserSortBy!
+        field: [UserSortBy!]!
         order: SortOrder!
     }
 
@@ -137,7 +137,7 @@ const typeDefs = gql`
             filter: UserFilter
             sort: UserSortInput
         ): UsersConnectionResponse @isAdmin(entity: "user")
-        users: [User]
+        users: [User] @deprecated(reason: "Unused")
         my_users: [User!]
     }
 
@@ -211,7 +211,7 @@ const typeDefs = gql`
 
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
@@ -219,7 +219,7 @@ export default function getDefault(
             UserConnectionNode: {
                 organizations: async (
                     user: UserConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.usersConnection?.organizations?.load(
@@ -228,14 +228,14 @@ export default function getDefault(
                 },
                 schools: async (
                     user: UserConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.usersConnection?.schools?.load(user.id)
                 },
                 roles: async (
                     user: UserConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.usersConnection?.roles?.load(user.id)
@@ -269,7 +269,7 @@ export default function getDefault(
                     }
                     return model.usersConnection(ctx, args)
                 },
-                users: (_parent, _args, ctx, _info) => model.getUsers(),
+                users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, _context, _info) =>
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>

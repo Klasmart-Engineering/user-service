@@ -16,6 +16,12 @@ import { Stream } from 'stream'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { ISortField } from '../../../src/utils/pagination/sorting'
 import { IPaginatedResponse } from '../../../src/utils/pagination/paginate'
+import { UserConnectionNode } from '../../../src/types/graphQL/userConnectionNode'
+import { SchoolSummaryNode } from '../../../src/types/graphQL/schoolSummaryNode'
+import { ISchoolsConnectionNode } from '../../../src/types/graphQL/schoolsConnectionNode'
+import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionNode'
+import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -325,6 +331,7 @@ const PROGRAMS_CONNECTION = `
                     id
                     name
                     status
+                    system
 
                     ageRanges {
                         id
@@ -366,18 +373,50 @@ const GRADES_CONNECTION = `
                     id
                     name
                     status
+                    system
 
                     fromGrade {
                         id
                         name
                         status
+                        system
                     }
 
                     toGrade {
                         id
                         name
                         status
+                        system
                     }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+const AGE_RANGES_CONNECTION = `
+    query AgeRangesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: AgeRangeFilter, $sortArgs: AgeRangeSortInput) {
+        ageRangesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
+                    lowValue
+                    lowValueUnit
+                    highValue
+                    highValueUnit
                 }
             }
 
@@ -754,7 +793,7 @@ export async function userConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<UserConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -799,7 +838,7 @@ export async function programsConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<ProgramConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -824,7 +863,7 @@ export async function schoolsConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -849,7 +888,7 @@ export async function gradesConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse> {
+): Promise<IPaginatedResponse<GradeConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({
@@ -865,4 +904,29 @@ export async function gradesConnection(
 
     const res = await gqlTry(operation)
     return res.data?.gradesConnection
+}
+
+export async function ageRangesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<AgeRangeConnectionNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: AGE_RANGES_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.ageRangesConnection
 }

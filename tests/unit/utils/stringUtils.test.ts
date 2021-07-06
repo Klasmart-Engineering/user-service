@@ -1,5 +1,8 @@
 import { expect } from 'chai'
-import { stringInject, isHexadecimal } from '../../../src/utils/stringUtils'
+import {
+    stringInject,
+    isHexadecimalColor,
+} from '../../../src/utils/stringUtils'
 
 describe('stringInject', () => {
     context('replace brackets with array items', () => {
@@ -117,50 +120,42 @@ describe('stringInject', () => {
     })
 })
 
-describe('isHexadecimal', () => {
-    context('when the string is an hexadecimal', () => {
-        context('and it does not specify the str len', () => {
-            it('returns true for 6 characters', () => {
-                for (const num of ['ABCDEF']) {
-                    expect(isHexadecimal(num)).to.be.true
-                }
-            })
-
-            it('returns false for anything different to 6 characters', () => {
-                for (const num of [
-                    '0',
-                    '1',
-                    'A',
-                    'AB',
-                    'ABC',
-                    'ABCD',
-                    'ABCDE',
-                ]) {
-                    expect(isHexadecimal(num)).to.be.false
-                }
-            })
-        })
-
-        context('and it specifies the str len', () => {
-            it('returns true for specified len of characters', () => {
-                for (const num of ['AB', '0B', 'FF', 'EC']) {
-                    expect(isHexadecimal(num, 2)).to.be.true
-                }
-            })
-
-            it('returns false for anything different to specifed len of characters', () => {
-                for (const num of ['0', '1', 'A', 'ABC', 'ABCD', 'ABCDE']) {
-                    expect(isHexadecimal(num, 2)).to.be.false
-                }
-            })
-        })
+describe('isHexadecimalColor', () => {
+    it('must start with a hash', () => {
+        expect(isHexadecimalColor('000000')).to.be.false
+        expect(isHexadecimalColor('#000000')).to.be.true
+    })
+    it('must be 6 or 8 characters long', () => {
+        for (let i = 0; i < 10; i++) {
+            let hex = `#${'0'.repeat(i)}`
+            if (i === 6 || i === 8) {
+                expect(isHexadecimalColor(hex)).to.be.true
+            } else {
+                expect(isHexadecimalColor(hex)).to.be.false
+            }
+        }
     })
 
-    context('when the string is not an hexadecimal', () => {
-        it('returns false', () => {
-            for (const num of ['NONHEX', '']) {
-                expect(isHexadecimal(num)).to.be.false
+    it('can consist of numbers', () => {
+        for (let i = 0; i < 10; i++) {
+            let hex = `#${i.toString().repeat(6)}`
+            expect(isHexadecimalColor(hex)).to.be.true
+        }
+    })
+
+    it('can consist of letters in range a-f, case insensitive', () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz'
+
+        for (const c of chars.split('')) {
+            let hexLowercase = `#${c.toLowerCase().repeat(6)}`
+            let hexUppercase = `#${c.toUpperCase().repeat(6)}`
+            if (c.valueOf() <= 'f'.valueOf()) {
+                expect(isHexadecimalColor(hexLowercase)).to.be.true
+                expect(isHexadecimalColor(hexUppercase)).to.be.true
+            } else {
+                expect(isHexadecimalColor(hexLowercase)).to.be.false
+                expect(isHexadecimalColor(hexUppercase)).to.be.false
             }
-        })
+        }
     })
 })

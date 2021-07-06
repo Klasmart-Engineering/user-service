@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, EntityManager } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
 import { createGrade } from '../../factories/grade.factory'
@@ -13,7 +13,7 @@ use(chaiAsPromised)
 
 describe('Grade', () => {
     let connection: Connection
-    let manager: any
+    let manager: EntityManager
     let progressFromGrade: Grade
     let progressToGrade: Grade
     let grade: Grade

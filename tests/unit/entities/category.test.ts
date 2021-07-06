@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, EntityManager } from 'typeorm'
 
 import { Category } from '../../../src/entities/category'
 import { createTestConnection } from '../../utils/testConnection'
@@ -12,7 +12,7 @@ use(chaiAsPromised)
 
 describe('Category', () => {
     let connection: Connection
-    let manager: any
+    let manager: EntityManager
     let category: Category
     let org: Organization
 

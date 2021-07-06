@@ -1,6 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { Context } from '../main'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -8,9 +9,64 @@ const typeDefs = gql`
         uploadAgeRangesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
     }
+
+    # pagination extension types start here
+    type AgeRangesConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [AgeRangesConnectionEdge]
+    }
+
+    type AgeRangesConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: AgeRangeConnectionNode
+    }
+    # pagination extension types end here
+
+    enum AgeRangeSortBy {
+        id
+        lowValue
+        lowValueUnit
+    }
+
+    input AgeRangeSortInput {
+        field: [AgeRangeSortBy!]!
+        order: SortOrder!
+    }
+
+    input AgeRangeFilter {
+        # table columns
+        status: StringFilter
+        system: BooleanFilter
+
+        # joined columns
+        organizationId: UUIDFilter
+
+        AND: [AgeRangeFilter!]
+        OR: [AgeRangeFilter!]
+    }
+
+    type AgeRangeConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
+        lowValue: Int!
+        lowValueUnit: AgeRangeUnit!
+        highValue: Int!
+        highValueUnit: AgeRangeUnit!
+    }
+
     extend type Query {
         age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+        ageRangesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: AgeRangeFilter
+            sort: AgeRangeSortInput
+        ): AgeRangesConnectionResponse @isAdmin(entity: "ageRange")
     }
+
     type AgeRange {
         id: ID!
         name: String!
@@ -36,7 +92,7 @@ const typeDefs = gql`
 `
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
@@ -50,6 +106,8 @@ export default function getDefault(
             Query: {
                 age_range: (_parent, args, ctx, _info) =>
                     model.getAgeRange(args, ctx),
+                ageRangesConnection: (_parent, args, ctx: Context, _info) =>
+                    model.ageRangesConnection(ctx, args),
             },
         },
     }

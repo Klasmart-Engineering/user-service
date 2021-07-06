@@ -8,7 +8,7 @@ export function addCsvError(
     row: number,
     column: string,
     message: string,
-    params: Record<string, any> = {}
+    params: Record<string, unknown> = {}
 ): void {
     fileErrors.push(buildCsvError(code, row, column, message, params))
 }
@@ -29,7 +29,7 @@ function buildCsvError(
     row: number,
     column: string,
     message: string,
-    params: Record<string, any>
+    params: Record<string, unknown>
 ): CSVError {
     const csvError: CSVError = {
         code: code,

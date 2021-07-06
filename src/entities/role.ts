@@ -8,6 +8,7 @@ import {
     ManyToOne,
     getRepository,
     BaseEntity,
+    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -53,7 +54,7 @@ export class Role extends BaseEntity {
     public permissions?: Promise<Permission[]>
 
     public async set(
-        { role_name, role_description, system_role }: any,
+        { role_name, role_description, system_role }: Partial<Role>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -94,7 +95,7 @@ export class Role extends BaseEntity {
     }
 
     public async permission(
-        { permission_name }: any,
+        { permission_name }: { permission_name: PermissionName },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -120,7 +121,7 @@ export class Role extends BaseEntity {
     }
 
     public async grant(
-        { permission_name }: any,
+        { permission_name }: { permission_name: PermissionName },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -161,7 +162,7 @@ export class Role extends BaseEntity {
         }
     }
     public async revoke(
-        { permission_name }: any,
+        { permission_name }: { permission_name: PermissionName },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -202,7 +203,7 @@ export class Role extends BaseEntity {
         return false
     }
     public async deny(
-        { permission_name }: any,
+        { permission_name }: { permission_name: PermissionName },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -234,7 +235,7 @@ export class Role extends BaseEntity {
     }
 
     public async edit_permissions(
-        { permission_names }: any,
+        { permission_names }: { permission_names: PermissionName[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -279,7 +280,7 @@ export class Role extends BaseEntity {
     }
 
     public async delete_role(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -314,7 +315,7 @@ export class Role extends BaseEntity {
         return false
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 

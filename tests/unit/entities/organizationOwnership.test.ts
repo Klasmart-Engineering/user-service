@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import { Connection, EntityManager } from 'typeorm'
 import { QueryFailedError } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
@@ -15,7 +15,7 @@ use(chaiAsPromised)
 
 describe('OrganizationOwnership', () => {
     let connection: Connection
-    let manager: any
+    let manager: EntityManager
     let user: User
     let organization: Organization
 

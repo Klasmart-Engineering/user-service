@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, EntityManager } from 'typeorm'
 
 import { createTestConnection } from '../../utils/testConnection'
 import { createPermission } from '../../factories/permission.factory'
@@ -9,7 +9,7 @@ import { Role } from '../../../src/entities/role'
 
 describe('Permission', () => {
     let connection: Connection
-    let manager: any
+    let manager: EntityManager
     let permission: Permission
     let role: Role
 

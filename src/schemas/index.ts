@@ -22,8 +22,9 @@ import { Model } from '../model'
 import { IsAdminDirective } from '../directives/isAdmin'
 import { IsAuthenticatedDirective } from '../directives/isAuthenticated'
 import { IsMIMETypeDirective } from '../directives/isMIMEType'
+import { Context } from '../main'
 
-export default function getDefault(model: Model, context: any) {
+export default function getDefault(model: Model, context?: Context) {
     const schemas = mergeRawSchemas(
         utils(model, context),
         pagination(model, context),

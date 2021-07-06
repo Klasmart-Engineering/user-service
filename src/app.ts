@@ -21,7 +21,7 @@ export const initApp = async () => {
     const apolloServer = createServer(model)
 
     const app = express()
-    app.use(graphqlUploadExpress({ maxFileSize: 50000, maxFiles: 10 }))
+    app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
     app.use(cookieParser())
     app.use(express.json())
     app.use(checkIssuerAuthorization)

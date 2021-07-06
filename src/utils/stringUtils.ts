@@ -21,6 +21,8 @@
  * @param data any
  * @returns string|Error
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function stringInject(str: string, data: any) {
     if (data instanceof Array) {
         return str.replace(/({\d})/g, (i) => {
@@ -64,11 +66,6 @@ export function stringInject(str: string, data: any) {
     }
 }
 
-export function isHexadecimal(hex: string, strLen = 6): boolean {
-    return (
-        typeof hex === 'string' &&
-        hex.length === strLen &&
-        !isNaN(Number('0x' + hex))
-    )
+export function isHexadecimalColor(hex: string): boolean {
+    return !!hex.match(/#([0-9a-fA-F]{2}){3,4}$/)
 }
-

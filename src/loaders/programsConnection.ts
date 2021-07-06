@@ -24,16 +24,21 @@ export const ageRangesForPrograms = async (
         .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         .leftJoinAndSelect('Program.grades', 'Grade')
         .leftJoinAndSelect('Program.subjects', 'Subject')
+        .leftJoinAndSelect('Program.schools', 'School')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['Organization.organization_id'],
                 id: ['Program.id'],
                 name: ['Program.name'],
                 system: ['Program.system'],
                 status: ['Program.status'],
+                organizationId: ['Organization.organization_id'],
+                gradeId: ['Grade.id'],
+                ageRangeId: [],
+                subjectId: ['Subject.id'],
+                schoolId: ['School.school_id'],
             })
         )
     }
@@ -76,16 +81,21 @@ export const gradesForPrograms = async (
         .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         .leftJoinAndSelect('Program.grades', 'Grade')
         .leftJoinAndSelect('Program.subjects', 'Subject')
+        .leftJoinAndSelect('Program.schools', 'School')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['Organization.organization_id'],
                 id: ['Program.id'],
                 name: ['Program.name'],
                 system: ['Program.system'],
                 status: ['Program.status'],
+                organizationId: ['Organization.organization_id'],
+                gradeId: [],
+                ageRangeId: ['AgeRange.id'],
+                subjectId: ['Subject.id'],
+                schoolId: ['School.school_id'],
             })
         )
     }
@@ -123,16 +133,21 @@ export const subjectsForPrograms = async (
         .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         .leftJoinAndSelect('Program.grades', 'Grade')
         .leftJoinAndSelect('Program.subjects', 'Subject')
+        .leftJoinAndSelect('Program.schools', 'School')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['Organization.organization_id'],
                 id: ['Program.id'],
                 name: ['Program.name'],
                 system: ['Program.system'],
                 status: ['Program.status'],
+                organizationId: ['Organization.organization_id'],
+                gradeId: ['Grade.id'],
+                ageRangeId: ['AgeRange.id'],
+                subjectId: [],
+                schoolId: ['School.school_id'],
             })
         )
     }

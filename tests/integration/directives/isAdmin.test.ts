@@ -33,6 +33,11 @@ import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createUser } from '../../factories/user.factory'
+import { createClass } from '../../factories/class.factory'
+import {
+    addStudentToClass,
+    addTeacherToClass,
+} from '../../utils/operations/classOps'
 
 use(chaiAsPromised)
 
@@ -298,7 +303,101 @@ describe('isAdmin', () => {
                 expect(usersConnection.totalCount).to.eq(11)
             })
 
-            it('requires view_my_school_users_40111 or view_my_class_users_40112 permission to view school users', async () => {
+            it('only shows users in taught classes for users with view_my_class_users_40112 permission', async () => {
+                const user = await createNonAdminUser(testClient)
+                const token = getNonAdminAuthToken()
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
+                )
+
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    roleList[0].role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                await grantPermission(
+                    testClient,
+                    roleList[0].role_id,
+                    PermissionName.view_my_class_users_40112,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                const classes = await Promise.all(
+                    Array.from({ length: 3 }).map((_) =>
+                        createClass(
+                            schools.slice(0, 1),
+                            organizations[0]
+                        ).save()
+                    )
+                )
+
+                // Make user a teacher of 2 of the 3 classes
+                await Promise.all(
+                    classes.slice(0, 2).map((_class) => {
+                        return addTeacherToClass(
+                            testClient,
+                            _class.class_id,
+                            user.user_id,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    })
+                )
+
+                // Add 2 students to each class + one student being a member of 2 classes
+
+                await Promise.all(
+                    usersList.slice(0, 3).map((student) => {
+                        return addStudentToClass(
+                            testClient,
+                            classes[0].class_id,
+                            student.user_id,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    })
+                )
+
+                await Promise.all(
+                    usersList.slice(3, 4).map((student) => {
+                        return addStudentToClass(
+                            testClient,
+                            classes[1].class_id,
+                            student.user_id,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    })
+                )
+
+                await Promise.all(
+                    usersList.slice(5, 6).map((student) => {
+                        return addStudentToClass(
+                            testClient,
+                            classes[2].class_id,
+                            student.user_id,
+                            { authorization: getAdminAuthToken() }
+                        )
+                    })
+                )
+
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 30 },
+                    { authorization: token }
+                )
+
+                expect(usersConnection.totalCount).to.eq(
+                    5,
+                    'the Teacher and the 4 students in their taught classes'
+                )
+            })
+
+            it('requires view_my_school_users_40111 to view school users', async () => {
                 const user = await createNonAdminUser(testClient)
                 const token = getNonAdminAuthToken()
                 await addOrganizationToUserAndValidate(
@@ -337,39 +436,6 @@ describe('isAdmin', () => {
                     testClient,
                     roleList[0].role_id,
                     PermissionName.view_my_school_users_40111,
-                    { authorization: getAdminAuthToken() }
-                )
-
-                usersConnection = await userConnection(
-                    testClient,
-                    direction,
-                    { count: 30 },
-                    { authorization: token }
-                )
-
-                expect(usersConnection.totalCount).to.eq(11)
-
-                await revokePermission(
-                    testClient,
-                    roleList[0].role_id,
-                    PermissionName.view_my_school_users_40111,
-                    { authorization: getAdminAuthToken() }
-                )
-
-                usersConnection = await userConnection(
-                    testClient,
-                    direction,
-                    { count: 3 },
-                    { authorization: token }
-                )
-
-                // can view my user only
-                expect(usersConnection.totalCount).to.eq(1)
-
-                await grantPermission(
-                    testClient,
-                    roleList[0].role_id,
-                    PermissionName.view_my_class_users_40112,
                     { authorization: getAdminAuthToken() }
                 )
 

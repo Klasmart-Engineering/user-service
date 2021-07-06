@@ -100,9 +100,11 @@ describe('model', () => {
 
     describe('myUsers', () => {
         let user: User
+        let otherUser: User
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
+            otherUser = await createNonAdminUser(testClient)
         })
 
         context('when user is not logged in', () => {
@@ -125,6 +127,24 @@ describe('model', () => {
                 })
 
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
+            })
+        })
+        context('when user is inactive in', () => {
+            beforeEach(async () => {
+                const dbOtherUser = await User.findOneOrFail(otherUser.user_id)
+                if (dbOtherUser) {
+                    dbOtherUser.status = Status.INACTIVE
+                    await connection.manager.save(dbOtherUser)
+                }
+            })
+
+            it('returns no users', async () => {
+                const fn = () =>
+                    myUsers(testClient, {
+                        authorization: getNonAdminAuthToken(),
+                    })
+
+                expect(fn()).to.be.rejected
             })
         })
     })
@@ -1782,7 +1802,7 @@ describe('model', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    expect(gqlPermissions?.totalCount).to.eql(427)
+                    expect(gqlPermissions?.totalCount).to.eql(441)
                     expect(gqlPermissions?.edges.length).to.equal(50)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(
@@ -1826,7 +1846,7 @@ describe('model', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    expect(gqlPermissions?.totalCount).to.eql(427)
+                    expect(gqlPermissions?.totalCount).to.eql(441)
                     expect(gqlPermissions?.edges.length).to.equal(3)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(

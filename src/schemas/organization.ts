@@ -1,8 +1,8 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { Organization } from '../entities/organization'
 import { Context } from '../main'
+import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 
 const typeDefs = gql`
@@ -26,6 +26,11 @@ const typeDefs = gql`
             iconImage: Upload
             primaryColor: HexColor
         ): Branding
+        deleteBrandingImage(
+            organizationId: ID!
+            type: BrandingImageTag!
+        ): Boolean
+        deleteBrandingColor(organizationId: ID!): Boolean
     }
     extend type Query {
         organization(organization_id: ID!): Organization
@@ -171,10 +176,14 @@ const typeDefs = gql`
         iconImageURL: Url
         primaryColor: HexColor
     }
+
+    enum BrandingImageTag {
+        ICON
+    }
 `
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
@@ -188,6 +197,10 @@ export default function getDefault(
                     model.renameDuplicateOrganizations(args, ctx, info),
                 setBranding: (_parent, args, ctx, info) =>
                     model.setBranding(args, ctx, info),
+                deleteBrandingImage: (_parent, args, ctx, info) =>
+                    model.deleteBrandingImage(args, ctx, info),
+                deleteBrandingColor: (_parent, args, ctx, info) =>
+                    model.deleteBrandingColor(args, ctx, info),
             },
             Query: {
                 organizations: (_parent, args, _context, _info) =>

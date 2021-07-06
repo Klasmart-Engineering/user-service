@@ -19,7 +19,7 @@ export const permissionInfo = async () => {
     await new Promise((resolve) =>
         readStream
             .pipe(csvParser())
-            .on('data', (row: any) => {
+            .on('data', (row: Record<string, string>) => {
                 const key: string = row['Permission Name (BE)']
 
                 permissionsInfo.set(key, {

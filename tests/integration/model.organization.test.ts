@@ -1,4 +1,4 @@
-import { stub, restore } from 'sinon';
+import { stub, restore } from 'sinon'
 
 import { expect } from 'chai'
 import { Connection } from 'typeorm'
@@ -18,6 +18,8 @@ import { getAdminAuthToken } from '../utils/testConfig'
 import { setBranding } from '../utils/operations/brandingOps'
 import fs from 'fs'
 import { resolve } from 'path'
+import { createOrganization } from '../factories/organization.factory'
+import { BrandingResult } from '../../src/types/graphQL/branding'
 
 const GET_ORGANIZATIONS = `
     query getOrganizations {
@@ -27,7 +29,7 @@ const GET_ORGANIZATIONS = `
             branding {
                 iconImageURL
                 primaryColor
-              }
+            }
         }
     }
 `
@@ -69,9 +71,13 @@ describe('model.organization', () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
+        stub(CloudStorageUploader, 'call').returns(
+            Promise.resolve('http://some.url/icon.png')
+        )
     })
 
     after(async () => {
+        restore()
         await connection?.close()
     })
 
@@ -113,6 +119,61 @@ describe('model.organization', () => {
                 const organizations = res.data?.organizations as Organization[]
                 expect(organizations).to.exist
                 expect(organizations).to.have.lengthOf(1)
+            })
+        })
+
+        context('when many', () => {
+            let orgs: Organization[] = []
+            let brandings: BrandingResult[] = []
+            beforeEach(async () => {
+                orgs = []
+                brandings = []
+                for (let i = 0; i < 3; i++) {
+                    const org = await createOrganization()
+                    org.organization_name = `org ${i}`
+                    await connection.manager.save(org)
+
+                    const branding = await setBranding(
+                        testClient,
+                        org.organization_id,
+                        fs.createReadStream(resolve(`tests/fixtures/icon.png`)),
+                        'icon.png',
+                        'image/png',
+                        '7bit',
+                        `#${i.toString().repeat(6)}`
+                    )
+                    brandings.push(branding)
+                    orgs.push(org)
+                }
+            })
+
+            it('returns all orgs with the correct data associated with each', async () => {
+                const { query } = testClient
+
+                const res = await query({
+                    query: GET_ORGANIZATIONS,
+                    headers: { authorization: getAdminAuthToken() },
+                })
+
+                expect(res.errors, res.errors?.toString()).to.be.undefined
+                const organizations = res.data?.organizations
+                expect(organizations).to.exist
+                expect(organizations).to.have.lengthOf(orgs.length)
+
+                for (let i = 0; i < orgs.length; i++) {
+                    expect(orgs[i].organization_id).to.eq(
+                        organizations[i].organization_id
+                    )
+                    expect(orgs[i].organization_name).to.eq(
+                        organizations[i].organization_name
+                    )
+                    expect(organizations[i].branding.iconImageURL).to.eq(
+                        brandings[i].iconImageURL
+                    )
+                    expect(organizations[i].branding.primaryColor).to.eq(
+                        brandings[i].primaryColor
+                    )
+                }
             })
         })
     })
@@ -168,10 +229,12 @@ describe('model.organization', () => {
                     restore()
                 })
 
-                const primaryColor = 'cd657b'
+                const primaryColor = '#cd657b'
                 it('returns branding info if it has been set', async () => {
                     const remoteUrl = 'http://some.url/icon.png'
-                    stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+                    stub(CloudStorageUploader, 'call').returns(
+                        Promise.resolve(remoteUrl)
+                    )
 
                     const branding = await setBranding(
                         testClient,
@@ -199,7 +262,9 @@ describe('model.organization', () => {
 
                 it('returns the latest branding info if it has been set multiple times', async () => {
                     let remoteUrl = 'http://some.url/icon.png'
-                    stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+                    stub(CloudStorageUploader, 'call').returns(
+                        Promise.resolve(remoteUrl)
+                    )
 
                     const { query } = testClient
                     let branding = await setBranding(
@@ -226,7 +291,9 @@ describe('model.organization', () => {
 
                     restore()
                     remoteUrl = 'http://some.url/icon.jpg'
-                    stub(CloudStorageUploader, "call").returns(Promise.resolve(remoteUrl));
+                    stub(CloudStorageUploader, 'call').returns(
+                        Promise.resolve(remoteUrl)
+                    )
 
                     branding = await setBranding(
                         testClient,

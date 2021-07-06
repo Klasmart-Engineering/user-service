@@ -38,7 +38,7 @@ const typeDefs = gql`
     }
 
     input GradeSortInput {
-        field: GradeSortBy!
+        field: [GradeSortBy!]!
         order: SortOrder!
     }
 
@@ -51,6 +51,8 @@ const typeDefs = gql`
 
         #joined columns
         organizationId: UUIDFilter
+        fromGradeId: UUIDFilter
+        toGradeId: UUIDFilter
 
         AND: [GradeFilter!]
         OR: [GradeFilter!]
@@ -97,7 +99,7 @@ const typeDefs = gql`
 
 export default function getDefault(
     model: Model,
-    context?: any
+    context?: Context
 ): ApolloServerExpressConfig {
     return {
         typeDefs: [typeDefs],
@@ -105,7 +107,7 @@ export default function getDefault(
             GradeConnectionNode: {
                 fromGrade: async (
                     grade: GradeConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.gradesConnection?.fromGrade?.load(
@@ -114,7 +116,7 @@ export default function getDefault(
                 },
                 toGrade: async (
                     grade: GradeConnectionNode,
-                    args: any,
+                    args: Record<string, unknown>,
                     ctx: Context
                 ) => {
                     return ctx.loaders.gradesConnection?.toGrade?.load(grade.id)

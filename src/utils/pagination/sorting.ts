@@ -16,7 +16,7 @@ export interface ISortingConfig {
 // TS interface for the sort input in the GraphQL request
 // e.g. UserSortInput for usersConnection
 export interface ISortField {
-    field: string
+    field: string | string[]
     order: 'ASC' | 'DESC'
 }
 
@@ -36,11 +36,24 @@ export function addOrderByClause(
     }
 
     // aliases column to sort by first
-    let primaryColumn
+    const primaryColumns: string[] = []
 
     if (config.sort) {
-        primaryColumn = config.aliases?.[config.sort.field] || config.sort.field
-        scope.addOrderBy(`${scope.alias}.${primaryColumn}`, order, 'NULLS LAST')
+        let fields = config.sort.field
+
+        if (typeof fields === 'string') {
+            fields = [fields]
+        }
+
+        fields.forEach((field) => {
+            const primaryColumn = config.aliases?.[field] || field
+            primaryColumns.push(primaryColumn)
+            scope.addOrderBy(
+                `${scope.alias}.${primaryColumn}`,
+                order,
+                'NULLS LAST'
+            )
+        })
     }
 
     // always sort by the primary key, and always to do it last
@@ -48,6 +61,6 @@ export function addOrderByClause(
 
     return {
         order,
-        primaryColumn,
+        primaryColumns,
     }
 }

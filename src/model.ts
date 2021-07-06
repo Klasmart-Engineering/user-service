@@ -5,6 +5,7 @@ import {
     getRepository,
     EntityManager,
     Repository,
+    SelectQueryBuilder,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -25,7 +26,7 @@ import { Context } from './main'
 import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
-
+import clean from './utils/clean'
 import { processUserFromCSVRow } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
@@ -54,14 +55,26 @@ import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
 import { renameDuplicatedGrades } from './utils/renameMigration/grade'
-import { setBrandingInput } from './types/graphQL/setBrandingInput'
 import { Grade } from './entities/grade'
+import { Category } from './entities/category'
+import { Subcategory } from './entities/subcategory'
+import { Subject } from './entities/subject'
+import { Upload } from './types/upload'
+import { setBrandingInput } from './types/graphQL/setBrandingInput'
 import { GradeConnectionNode } from './types/graphQL/gradeConnectionNode'
 import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
 import { BrandingStorer } from './services/brandingStorer'
 import { CloudStorageUploader } from './services/cloudStorageUploader'
 import { BrandingImageTag } from './types/graphQL/brandingImageTag'
 import { buildFilePath } from './utils/storage'
+import { Branding } from './entities/branding'
+import { CustomError } from './types/errors/customError'
+import BrandingErrorConstants from './types/errors/branding/brandingErrorConstants'
+import { BrandingError } from './types/errors/branding/brandingError'
+import { BrandingImage } from './entities/brandingImage'
+import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInput'
+import { Status } from './entities/status'
+import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 
 export class Model {
     public static async create() {
@@ -154,7 +167,7 @@ export class Model {
         avatar,
         date_of_birth,
         username,
-    }: any) {
+    }: Partial<User>) {
         console.info('Unauthenticated endpoint call newUser')
 
         const newUser = new User()
@@ -201,7 +214,7 @@ export class Model {
         username,
         alternate_email,
         alternate_phone,
-    }: any) {
+    }: Partial<User>) {
         console.info('Unauthenticated endpoint call setUser')
         if (email) {
             if (!validateEmail(email)) {
@@ -242,13 +255,9 @@ export class Model {
         if (username !== undefined) {
             user.username = username
         }
-        if (alternate_email && validateEmail(alternate_email)) {
-            user.alternate_email = alternate_email
-        }
 
-        if (alternate_phone) {
-            user.alternate_phone = alternate_phone
-        }
+        user.alternate_email = clean.email(alternate_email)
+        user.alternate_phone = clean.phone(alternate_phone)
 
         await this.manager.save(user)
         return user
@@ -261,7 +270,7 @@ export class Model {
     }
 
     public async myUsers(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -270,9 +279,13 @@ export class Model {
         let users: User[] = []
 
         if (userEmail) {
-            users = await User.find({ where: { email: userEmail } })
+            users = await User.find({
+                where: { email: userEmail, status: Status.ACTIVE },
+            })
         } else if (userPhone) {
-            users = await User.find({ where: { phone: userPhone } })
+            users = await User.find({
+                where: { phone: userPhone, status: Status.ACTIVE },
+            })
         }
 
         if (users.length === 0) {
@@ -280,12 +293,6 @@ export class Model {
         }
 
         return users
-    }
-
-    public async getUsers() {
-        console.log('Unauthenticated endpoint call getUsers')
-
-        return await this.userRepository.find()
     }
 
     public async setOrganization({
@@ -329,7 +336,13 @@ export class Model {
         return organization
     }
 
-    public async getOrganizations({ organization_ids, scope }: any) {
+    public async getOrganizations({
+        organization_ids,
+        scope,
+    }: {
+        organization_ids: string[]
+        scope: SelectQueryBuilder<Organization>
+    }) {
         if (organization_ids) {
             return await scope.whereInIds(organization_ids).getMany()
         } else {
@@ -380,7 +393,7 @@ export class Model {
             },
         })
         for (const edge of data.edges) {
-            const user: User = edge.node
+            const user = edge.node as User
             const newNode: Partial<UserConnectionNode> = {
                 id: user.user_id,
                 givenName: user.given_name,
@@ -406,7 +419,7 @@ export class Model {
 
     public async permissionsConnection(
         context: Context,
-        { direction, directionArgs, filter }: any
+        { direction, directionArgs, filter }: IPaginationArgs<Permission>
     ) {
         const scope = this.permissionRepository.createQueryBuilder()
 
@@ -469,7 +482,7 @@ export class Model {
                 organizationId:
                     (await school.organization)?.organization_id || '',
             }
-
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             edge.node = newNode as any
         }
 
@@ -491,13 +504,33 @@ export class Model {
                 scope.leftJoinAndSelect('Program.organization', 'Organization')
             }
 
+            if (filterHasProperty('gradeId', filter)) {
+                scope.leftJoinAndSelect('Program.grades', 'Grade')
+            }
+
+            if (filterHasProperty('ageRangeId', filter)) {
+                scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            }
+
+            if (filterHasProperty('subjectId', filter)) {
+                scope.leftJoinAndSelect('Program.subjects', 'Subject')
+            }
+
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect('Program.schools', 'School')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['Organization.organization_id'],
                     id: ['Program.id'],
                     name: ['Program.name'],
                     system: ['Program.system'],
                     status: ['Program.status'],
+                    organizationId: ['Organization.organization_id'],
+                    gradeId: ['Grade.id'],
+                    ageRangeId: ['AgeRange.id'],
+                    subjectId: ['Subject.id'],
+                    schoolId: ['School.school_id'],
                 })
             )
         }
@@ -517,7 +550,7 @@ export class Model {
         })
 
         for (const edge of data.edges) {
-            const program: Program = edge.node
+            const program = edge.node as Program
             const newNode: Partial<ProgramConnectionNode> = {
                 id: program.id,
                 name: program.name,
@@ -547,13 +580,26 @@ export class Model {
                 scope.leftJoinAndSelect('Grade.organization', 'Organization')
             }
 
+            if (filterHasProperty('fromGradeId', filter)) {
+                scope.leftJoinAndSelect(
+                    'Grade.progress_from_grade',
+                    'FromGrade'
+                )
+            }
+
+            if (filterHasProperty('toGradeId', filter)) {
+                scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['Organization.organization_id'],
                     id: ['Grade.id'],
                     name: ['Grade.name'],
                     system: ['Grade.system'],
                     status: ['Grade.status'],
+                    organizationId: ['Organization.organization_id'],
+                    fromGradeId: ['FromGrade.id'],
+                    toGradeId: ['ToGrade.id'],
                 })
             )
         }
@@ -573,13 +619,71 @@ export class Model {
         })
 
         for (const edge of data.edges) {
-            const grade: Grade = edge.node
+            const grade = edge.node as Grade
             const newNode: Partial<GradeConnectionNode> = {
                 id: grade.id,
                 name: grade.name,
                 status: grade.status,
                 system: grade.system,
                 // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async ageRangesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<AgeRange>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    organizationId: ['Organization.organization_id'],
+                    system: ['AgeRange.system'],
+                    status: ['AgeRange.status'],
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    lowValue: 'low_value',
+                    lowValueUnit: 'low_value_unit',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const ageRange = edge.node as AgeRange
+            const newNode: Partial<AgeRangeConnectionNode> = {
+                id: ageRange.id,
+                name: ageRange.name,
+                status: ageRange.status,
+                system: ageRange.system,
+                lowValue: ageRange.low_value,
+                lowValueUnit: ageRange.low_value_unit,
+                highValue: ageRange.high_value,
+                highValueUnit: ageRange.high_value_unit,
             }
 
             edge.node = newNode
@@ -646,7 +750,10 @@ export class Model {
         }
     }
 
-    public async getAgeRange({ id, scope }: any, context: Context) {
+    public async getAgeRange(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<AgeRange> },
+        context: Context
+    ) {
         const ageRange = await scope
             .andWhere('AgeRange.id = :id', {
                 id: id,
@@ -656,7 +763,10 @@ export class Model {
         return ageRange
     }
 
-    public async getGrade({ id, scope }: any, context: Context) {
+    public async getGrade(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Grade> },
+        context: Context
+    ) {
         const grade = await scope
             .andWhere('Grade.id = :id', {
                 id: id,
@@ -666,7 +776,10 @@ export class Model {
         return grade
     }
 
-    public async getCategory({ id, scope }: any, context: Context) {
+    public async getCategory(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Category> },
+        context: Context
+    ) {
         const category = await scope
             .andWhere('Category.id = :id', {
                 id: id,
@@ -676,7 +789,10 @@ export class Model {
         return category
     }
 
-    public async getProgram({ id, scope }: any, context: Context) {
+    public async getProgram(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Program> },
+        context: Context
+    ) {
         const program = await scope
             .andWhere('Program.id = :id', {
                 id: id,
@@ -686,7 +802,10 @@ export class Model {
         return program
     }
 
-    public async getSubcategory({ id, scope }: any, context: Context) {
+    public async getSubcategory(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Subcategory> },
+        context: Context
+    ) {
         const subcategory = await scope
             .andWhere('Subcategory.id = :id', {
                 id: id,
@@ -696,7 +815,10 @@ export class Model {
         return subcategory
     }
 
-    public async getSubject({ id, scope }: any, context: Context) {
+    public async getSubject(
+        { id, scope }: { id: string; scope: SelectQueryBuilder<Subject> },
+        context: Context
+    ) {
         const subject = await scope
             .andWhere('Subject.id = :id', {
                 id: id,
@@ -719,7 +841,7 @@ export class Model {
     }
 
     public async uploadOrganizationsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -727,7 +849,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processOrganizationFromCSVRow,
         ])
@@ -736,7 +858,7 @@ export class Model {
     }
 
     public async uploadUsersFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -744,7 +866,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processUserFromCSVRow,
         ])
@@ -753,7 +875,7 @@ export class Model {
     }
 
     public async uploadClassesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -761,7 +883,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processClassFromCSVRow,
         ])
@@ -770,14 +892,14 @@ export class Model {
     }
 
     public async uploadSchoolsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
         if (info.operation.operation !== 'mutation') {
             return null
         }
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSchoolFromCSVRow,
         ])
@@ -786,7 +908,7 @@ export class Model {
     }
 
     public async uploadGradesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -794,7 +916,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processGradeFromCSVRow,
             setGradeFromToFields,
@@ -804,7 +926,7 @@ export class Model {
     }
 
     public async uploadSubCategoriesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -812,7 +934,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSubCategoriesFromCSVRow,
         ])
@@ -821,7 +943,7 @@ export class Model {
     }
 
     public async uploadRolesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -829,7 +951,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processRoleFromCSVRow,
         ])
@@ -838,7 +960,7 @@ export class Model {
     }
 
     public async uploadCategoriesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -846,7 +968,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processCategoryFromCSVRow,
         ])
@@ -855,7 +977,7 @@ export class Model {
     }
 
     public async uploadSubjectsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -863,7 +985,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processSubjectFromCSVRow,
         ])
@@ -872,7 +994,7 @@ export class Model {
     }
 
     public async uploadProgramsFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -880,7 +1002,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processProgramFromCSVRow,
         ])
@@ -889,7 +1011,7 @@ export class Model {
     }
 
     public async uploadAgeRangesFromCSV(
-        args: any,
+        args: Record<string, unknown>,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -897,7 +1019,7 @@ export class Model {
             return null
         }
 
-        const { file } = await args.file
+        const { file } = (await args.file) as { file: Upload }
         await createEntityFromCsvWithRollBack(this.connection, file, [
             processAgeRangeFromCSVRow,
         ])
@@ -906,7 +1028,7 @@ export class Model {
     }
 
     public async renameDuplicateOrganizations(
-        _args: any,
+        _args: Record<string, unknown>,
         _context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -932,7 +1054,7 @@ export class Model {
     }
 
     public async renameDuplicateSubjects(
-        _args: any,
+        _args: Record<string, unknown>,
         _context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -957,7 +1079,7 @@ export class Model {
     }
 
     public async renameDuplicateGrades(
-        _args: any,
+        _args: Record<string, unknown>,
         _context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -987,7 +1109,7 @@ export class Model {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const { file } = await args.iconImage
+        const iconImage = await args.iconImage
         const primaryColor = args.primaryColor
         const organizationId = args.organizationId
 
@@ -999,41 +1121,130 @@ export class Model {
         const brandingImagesInfo: BrandingImageInfo[] = []
 
         // Here we should build an image per tag
-        for (const tag of [BrandingImageTag.ICON]) {
-            // Build path for image
-            const remoteFilePath = buildFilePath(
-                organizationId,
-                file.filename,
-                'organizations',
-                tag.toLowerCase()
-            )
+        if (iconImage) {
+            const file = iconImage.file
 
-            // Upload image to cloud
-            const remoteUrl = await CloudStorageUploader.call(file.createReadStream(), remoteFilePath)
+            for (const tag of [BrandingImageTag.ICON]) {
+                // Build path for image
+                const remoteFilePath = buildFilePath(
+                    organizationId,
+                    file.filename,
+                    'organizations',
+                    tag.toLowerCase()
+                )
 
-            //Safe info for saving later on DB
-            if(remoteUrl){
-                brandingImagesInfo.push({
-                    imageUrl: remoteUrl,
-                    tag: tag,
-                })
+                // Upload image to cloud
+                const remoteUrl = await CloudStorageUploader.call(
+                    file.createReadStream(),
+                    remoteFilePath
+                )
+
+                //Safe info for saving later on DB
+                if (remoteUrl) {
+                    brandingImagesInfo.push({
+                        imageUrl: remoteUrl,
+                        tag: tag,
+                    })
+                }
+
+                // Build the resolver output
+                const brandingKey = (tag.toLowerCase() +
+                    'ImageURL') as keyof BrandingResult
+                result[brandingKey] = remoteUrl
             }
-
-            // Build the resolver output
-            const brandingKey = (tag.toLowerCase() +
-                'ImageURL') as keyof BrandingResult
-            result[brandingKey] = remoteUrl
         }
 
         // Safe branding in DB
         await BrandingStorer.call(
             organizationId,
-            file,
+            iconImage?.file,
             brandingImagesInfo,
             primaryColor,
             this.connection
         )
 
         return result
+    }
+
+    public async deleteBrandingImage(
+        args: deleteBrandingImageInput,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        if (info.operation.operation !== 'mutation') {
+            return false
+        }
+
+        const { organizationId, type } = args
+        const organizationBranding = await Branding.findOne({
+            where: {
+                organization: { organization_id: organizationId },
+                status: Status.ACTIVE,
+            },
+        })
+
+        // Organization has not branding
+        if (!organizationBranding) {
+            const errorDetails: CustomError = {
+                code: BrandingErrorConstants.ERR_BRANDING_NONE_EXIST,
+                message: BrandingErrorConstants.MSG_BRANDING_NONE_EXIST,
+                params: { organizationId },
+            }
+
+            throw new BrandingError(errorDetails)
+        }
+
+        const imageToRemove = await BrandingImage.findOne({
+            where: {
+                branding: organizationBranding,
+                tag: type,
+                status: Status.ACTIVE,
+            },
+        })
+
+        // Branding has not images of the given type
+        if (!imageToRemove) {
+            const errorDetails: CustomError = {
+                code: BrandingErrorConstants.ERR_IMAGE_BRANDING_NONE_EXIST,
+                message: BrandingErrorConstants.MSG_IMAGE_BRANDING_NONE_EXIST,
+                params: { organizationId, type },
+            }
+
+            throw new BrandingError(errorDetails)
+        }
+
+        imageToRemove.status = Status.INACTIVE
+        await BrandingImage.save(imageToRemove)
+
+        return true
+    }
+
+    public async deleteBrandingColor(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organizationId = args.organizationId
+        const organizationBranding = await Branding.findOne({
+            where: {
+                organization: { organization_id: organizationId },
+            },
+        })
+
+        // Organization has no branding
+        if (!organizationBranding) {
+            const errorDetails: CustomError = {
+                code: BrandingErrorConstants.ERR_BRANDING_NONE_EXIST,
+                message: BrandingErrorConstants.MSG_BRANDING_NONE_EXIST,
+                params: { organizationId },
+            }
+
+            throw new BrandingError(errorDetails)
+        }
+
+        organizationBranding.primaryColor = null
+        await Branding.save(organizationBranding)
+
+        return true
     }
 }

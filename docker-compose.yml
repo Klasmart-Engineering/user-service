@@ -7,7 +7,7 @@ services:
         container_name: user-service
         environment:
             - DOMAIN=kidsloop-user-service:8080
-            - DATABASE_URL=postgres://postgres:kidsloop@postgres1
+            - DATABASE_URL=postgres://postgres:kidsloop@postgres1:5432/postgres1
             - STORAGE_BUCKET=kidsloop-alpha-account-asset-objects
             - STORAGE_PROVIDER=amazon
             - FORCE_LOCAL_STORAGE=true
@@ -28,6 +28,7 @@ services:
         image: postgres
         restart: always
         environment:
+            - POSTGRES_DB=postgres1
             - POSTGRES_PASSWORD=kidsloop
         ports:
             - 5432:5432

@@ -8,6 +8,7 @@ import {
     BaseEntity,
     getRepository,
     getManager,
+    EntityManager,
 } from 'typeorm'
 import { User } from './user'
 import { Organization } from './organization'
@@ -17,6 +18,7 @@ import { Context } from '../main'
 import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
 import { Class } from './class'
+import { PermissionName } from '../permissions/permissionNames'
 
 export const MEMBERSHIP_SHORTCODE_MAXLEN = 16
 @Entity()
@@ -49,7 +51,7 @@ export class OrganizationMembership extends BaseEntity {
     public deleted_at?: Date
 
     public async schoolMemberships(
-        { permission_name }: any,
+        { permission_name }: { permission_name: string },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -136,7 +138,7 @@ export class OrganizationMembership extends BaseEntity {
         }
     }
 
-    public async classesTeaching(context: any, info: GraphQLResolveInfo) {
+    public async classesTeaching(context: Context, info: GraphQLResolveInfo) {
         console.info(
             `Unauthenticated endpoint call classesTeaching by ${context.permissions?.getUserId()}`
         )
@@ -157,8 +159,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async checkAllowed(
-        { permission_name }: any,
-        context: any,
+        { permission_name }: { permission_name: PermissionName },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         const permisionContext = {
@@ -173,8 +175,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async addRole(
-        { role_id }: any,
-        context: any,
+        { role_id }: { role_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -209,8 +211,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async addRoles(
-        { role_ids }: any,
-        context: any,
+        { role_ids }: { role_ids: string[] },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -255,8 +257,8 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async removeRole(
-        { role_id }: any,
-        context: any,
+        { role_id }: { role_id: string },
+        context: Context,
         info: GraphQLResolveInfo
     ) {
         console.info(
@@ -285,7 +287,11 @@ export class OrganizationMembership extends BaseEntity {
             console.error(e)
         }
     }
-    public async leave(args: any, context: any, info: GraphQLResolveInfo) {
+    public async leave(
+        args: Record<string, unknown>,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
         console.info(
             `Unauthenticated endpoint call organizationMembership leave by ${context.permissions?.getUserId()}`
         )
@@ -306,7 +312,7 @@ export class OrganizationMembership extends BaseEntity {
         return false
     }
 
-    public async inactivate(manager: any) {
+    public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 
