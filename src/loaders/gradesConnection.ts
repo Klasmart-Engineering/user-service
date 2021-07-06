@@ -28,16 +28,19 @@ export const fromGradeForGrades = async (
     const scope = await Grade.createQueryBuilder('Grade')
         .leftJoinAndSelect('Grade.organization', 'Organization')
         .leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
+        .leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
         .where('Grade.id IN (:...ids)', { ids: gradeIds })
 
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['Organization.organization_id'],
                 id: ['Grade.id'],
                 name: ['Grade.name'],
                 system: ['Grade.system'],
                 status: ['Grade.status'],
+                organizationId: ['Organization.organization_id'],
+                fromGradeId: [],
+                toGradeId: ['ToGrade.id'],
             })
         )
     }
@@ -81,17 +84,20 @@ export const toGradeForGrades = async (
     const gradeToGrades: (GradeSummaryNode | undefined)[] = []
     const scope = await Grade.createQueryBuilder('Grade')
         .leftJoinAndSelect('Grade.organization', 'Organization')
+        .leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
         .leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
         .where('Grade.id IN (:...ids)', { ids: gradeIds })
 
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['Organization.organization_id'],
                 id: ['Grade.id'],
                 name: ['Grade.name'],
                 system: ['Grade.system'],
                 status: ['Grade.status'],
+                organizationId: ['Organization.organization_id'],
+                fromGradeId: ['FromGrade.id'],
+                toGradeId: [],
             })
         )
     }

@@ -51,6 +51,8 @@ const typeDefs = gql`
 
         #joined columns
         organizationId: UUIDFilter
+        fromGradeId: UUIDFilter
+        toGradeId: UUIDFilter
 
         AND: [GradeFilter!]
         OR: [GradeFilter!]

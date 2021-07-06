@@ -580,13 +580,26 @@ export class Model {
                 scope.leftJoinAndSelect('Grade.organization', 'Organization')
             }
 
+            if (filterHasProperty('fromGradeId', filter)) {
+                scope.leftJoinAndSelect(
+                    'Grade.progress_from_grade',
+                    'FromGrade'
+                )
+            }
+
+            if (filterHasProperty('toGradeId', filter)) {
+                scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['Organization.organization_id'],
                     id: ['Grade.id'],
                     name: ['Grade.name'],
                     system: ['Grade.system'],
                     status: ['Grade.status'],
+                    organizationId: ['Organization.organization_id'],
+                    fromGradeId: ['FromGrade.id'],
+                    toGradeId: ['ToGrade.id'],
                 })
             )
         }

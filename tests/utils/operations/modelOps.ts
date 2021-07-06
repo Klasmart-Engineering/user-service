@@ -373,17 +373,20 @@ const GRADES_CONNECTION = `
                     id
                     name
                     status
+                    system
 
                     fromGrade {
                         id
                         name
                         status
+                        system
                     }
 
                     toGrade {
                         id
                         name
                         status
+                        system
                     }
                 }
             }
