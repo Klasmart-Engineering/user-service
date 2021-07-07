@@ -19,8 +19,9 @@ import { v4 as uuid_v4 } from 'uuid'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import { validateDOB, validateEmail, validatePhone } from '../validations'
-import validationConstants from './validationConstants'
+
+import { validateUser } from '../../entities/validations/user'
+import { getCustomConstraintDetails } from '../joiMessages'
 
 export const processUserFromCSVRow = async (
     manager: EntityManager,
@@ -41,38 +42,6 @@ export const processUserFromCSVRow = async (
             }
         )
     }
-
-    if (!row.user_email && !row.user_phone) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
-            rowNumber,
-            'user_email, user_phone',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
-            {
-                entity: 'user',
-                attribute: 'email',
-                other_entity: 'user',
-                other_attribute: 'phone',
-            }
-        )
-    }
-
-    if (row.user_date_of_birth && !validateDOB(row.user_date_of_birth)) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_DATE_FORMAT,
-            rowNumber,
-            'date_of_birth',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_DATE_FORMAT,
-            {
-                entity: 'user',
-                attribute: 'date_of_birth',
-                format: 'MM-YYYY',
-            }
-        )
-    }
-
     if (row.user_shortcode?.length > 0) {
         if (
             !validateShortCode(row.user_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
@@ -92,20 +61,6 @@ export const processUserFromCSVRow = async (
         }
     }
 
-    if (row.user_email && !validateEmail(row.user_email)) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_EMAIL,
-            rowNumber,
-            'user_email',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_EMAIL,
-            {
-                entity: 'user',
-                attribute: 'email',
-            }
-        )
-    }
-
     if (!row.organization_role_name) {
         addCsvError(
             fileErrors,
@@ -116,84 +71,6 @@ export const processUserFromCSVRow = async (
             {
                 entity: 'user',
                 attribute: 'organization role',
-            }
-        )
-    }
-
-    if (!row.user_given_name) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
-            rowNumber,
-            'user_given_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
-            {
-                entity: 'user',
-                attribute: 'given name',
-            }
-        )
-    }
-
-    if (
-        row.user_given_name?.length >
-        validationConstants.USER_GIVEN_NAME_MAX_LENGTH
-    ) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
-            rowNumber,
-            'user_given_name',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
-            {
-                entity: 'user',
-                attribute: 'given name',
-                max: validationConstants.USER_GIVEN_NAME_MAX_LENGTH,
-            }
-        )
-    }
-
-    if (!row.user_family_name) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
-            rowNumber,
-            'user_family_name',
-            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
-            {
-                entity: 'user',
-                attribute: 'family name',
-            }
-        )
-    }
-
-    if (row.user_phone && !validatePhone(row.user_phone)) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_PHONE,
-            rowNumber,
-            'user_phone',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_PHONE,
-            {
-                entity: 'user',
-                attribute: 'phone',
-            }
-        )
-    }
-
-    if (
-        row.user_family_name?.length >
-        validationConstants.USER_FAMILY_NAME_MAX_LENGTH
-    ) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_INVALID_LENGTH,
-            rowNumber,
-            'user_family_name',
-            csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
-            {
-                entity: 'user',
-                attribute: 'family name',
-                max: validationConstants.USER_FAMILY_NAME_MAX_LENGTH,
             }
         )
     }
@@ -417,6 +294,29 @@ export const processUserFromCSVRow = async (
                 }
             )
         }
+    }
+
+    const result = await validateUser(user)
+
+    for (const error of result?.details || []) {
+        const prop = error.context?.key
+        const details = getCustomConstraintDetails(error)
+        addCsvError(
+            fileErrors,
+            details?.code,
+            rowNumber,
+            `user_${prop}`,
+            details?.message,
+            {
+                entity: 'user',
+                attribute: prop,
+                ...error.context,
+                ...details?.params,
+            }
+        )
+    }
+    if (fileErrors && fileErrors.length > 0) {
+        return
     }
 
     await manager.save(user)

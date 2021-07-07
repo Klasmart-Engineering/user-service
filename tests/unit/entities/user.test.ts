@@ -4,6 +4,11 @@ import { Connection, EntityManager } from 'typeorm'
 import { createTestConnection } from '../../utils/testConnection'
 import { createUser } from '../../factories/user.factory'
 import { User } from '../../../src/entities/user'
+import { validateUser } from '../../../src/entities/validations/user'
+import { CSVError } from '../../../src/types/csv/csvError'
+import { addCsvError } from '../../../src/utils/csv/csvUtils'
+import { getCustomConstraintDetails } from '../../../src/utils/joiMessages'
+import validationConstants from '../../../src/utils/csv/validationConstants'
 
 describe('User', () => {
     let connection: Connection
@@ -46,6 +51,47 @@ describe('User', () => {
                 expect(dbUser.email).to.eq(user.email)
                 expect(dbUser.username).to.eq(user.username)
             })
+        })
+    })
+
+    describe('validations', () => {
+        const fileErrors: CSVError[] = []
+        const rowNumber = 0
+        it('works', async () => {
+            try {
+                const user = new User()
+                user.phone = '123'
+                user.given_name = 'a'.repeat(
+                    validationConstants.USER_GIVEN_NAME_MAX_LENGTH + 1
+                )
+                user.email = 'abc'
+                user.gender = 'abc'
+
+                const result = await validateUser(user)
+                console.log('validation result', result)
+
+                for (const x of result?.details || []) {
+                    console.log(x.context)
+                    const prop = x.context?.key
+                    const details = getCustomConstraintDetails(x)
+                    addCsvError(
+                        fileErrors,
+                        details?.code,
+                        rowNumber,
+                        `user_${prop}`,
+                        details?.message,
+                        {
+                            entity: 'user',
+                            attribute: prop,
+                            ...x.context,
+                            ...details?.params,
+                        }
+                    )
+                }
+                console.log(fileErrors)
+            } catch (e) {
+                console.log('validation error ', e)
+            }
         })
     })
 })
