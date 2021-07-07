@@ -1,7 +1,15 @@
 import csvErrorConstants from '../types/errors/csv/csvErrorConstants'
 import { ValidationErrorItem } from 'joi'
 
-export function getCustomConstraintDetails(error: ValidationErrorItem) {
+interface ICustomMessage {
+    code: string
+    message: string
+    params?: Record<string, unknown>
+}
+
+export function getCustomConstraintDetails(
+    error: ValidationErrorItem
+): ICustomMessage {
     const constraintType = error.type
     const property = error.context?.key
 
@@ -10,6 +18,10 @@ export function getCustomConstraintDetails(error: ValidationErrorItem) {
             return {
                 code: csvErrorConstants.ERR_CSV_INVALID_LENGTH,
                 message: csvErrorConstants.MSG_ERR_CSV_INVALID_LENGTH,
+                params: {
+                    // CSV error message expect a "max" property
+                    max: error.context?.limit,
+                },
             }
         }
         case 'any.required': {
