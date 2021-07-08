@@ -11,7 +11,7 @@ if (!domain) {
     throw Error(`The DOMAIN enviroment variable was not set`)
 }
 const domainRegex = new RegExp(
-    `^https://(.*\\.)?${escapeStringRegexp(domain)}(:\\d{1,5})?$`
+    `^https://(.*)?${escapeStringRegexp(domain)}(:\\d{1,5})?$`
 )
 
 const routePrefix = process.env.ROUTE_PREFIX || ''
@@ -32,12 +32,14 @@ export const initApp = async () => {
             allowedHeaders: ['Authorization', 'Content-Type'],
             credentials: true,
             origin: (origin, callback) => {
+                console.log(`origin is ${origin}\nrex is ${domainRegex}`)
                 try {
                     if (!origin) {
                         callback(null, false)
                         return
                     }
                     const match = origin.match(domainRegex)
+                    console.log(`matched is ${Boolean(match)}`)
                     callback(null, Boolean(match))
                 } catch (e) {
                     console.error(e)
