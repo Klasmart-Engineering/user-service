@@ -288,10 +288,6 @@ export class Model {
             })
         }
 
-        if (users.length === 0) {
-            throw new Error(`Please try authenticating again`)
-        }
-
         return users
     }
 
