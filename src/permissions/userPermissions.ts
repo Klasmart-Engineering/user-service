@@ -121,7 +121,7 @@ export class UserPermissions {
         { school_ids, organization_id, user_id }: PermissionContext,
         permission_name: PermissionName
     ) {
-        const isActive = this.getUserIsActive(user_id)
+        const isActive = await this.getUserIsActive(user_id)
         if (!isActive) {
             return false
         }

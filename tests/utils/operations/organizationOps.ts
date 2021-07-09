@@ -378,6 +378,20 @@ const LIST_PROGRAMS = `
     }
 `
 
+const LIST_CLASSES = `
+query myQuery($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            getClasses {
+                class_id
+                class_name
+                status
+            }
+        }
+    }
+`
+
+
+
 export async function createClass(
     testClient: ApolloServerTestClient,
     organizationId: string,
@@ -996,4 +1010,39 @@ export async function updateOrganization(
     const res = await gqlTry(operation)
     const gqlOrganization = res.data?.organization.set as Organization
     return gqlOrganization
+}
+
+
+export async function listClasses(
+    testClient: ApolloServerTestClient,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: LIST_CLASSES,
+            variables: { organization_id: organizationId },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    const gqlClasses = res.data?.organization.getClasses as Class[]
+
+    return gqlClasses
+}
+
+
+export async function getSystemRoleIds() {
+    const dbRoles = await Role.find({system_role:true})
+
+    if(dbRoles){
+       var result = dbRoles.reduce(function (map:any, obj:Role) {
+            obj.role_name = obj.role_name || ""
+            map[obj.role_name] = obj.role_id 
+            return map
+        }, {})
+    }
+    return result
 }

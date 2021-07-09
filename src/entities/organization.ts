@@ -129,6 +129,65 @@ export class Organization extends BaseEntity {
     @JoinColumn()
     public classes?: Promise<Class[]>
 
+    public async getClasses(
+        args: Record<string, unknown>,
+        context: Context,
+        info: Record<string, unknown>
+    ): Promise<Class[]> {
+        const userId = context.permissions.getUserId()
+
+        const permisionContext = {
+            organization_id: this.organization_id,
+            user_id: userId,
+        }
+
+        const viewOrgClasses = await context.permissions.allowed(
+            permisionContext,
+            PermissionName.view_classes_20114
+        )
+
+        const viewSchoolClasses = await context.permissions.allowed(
+            permisionContext,
+            PermissionName.view_school_classes_20117
+        )
+
+        let membership: OrganizationMembership | undefined
+
+        if (!context.permissions.isAdmin) {
+            membership = await OrganizationMembership.findOne({
+                organization_id: this.organization_id,
+                user_id: userId,
+            })
+
+            if (!membership) {
+                return []
+            }
+        }
+        if (viewOrgClasses || context.permissions.isAdmin) {
+            return await getRepository(Class)
+                .createQueryBuilder()
+                .innerJoin('Class.schools', 'School')
+                .where('School.organization = :organization_id', {
+                    organization_id: this.organization_id,
+                })
+                .getMany()
+        }
+        if (viewSchoolClasses) {
+            return await getRepository(Class)
+                .createQueryBuilder()
+                .innerJoin('Class.schools', 'School')
+                .innerJoinAndSelect('School.memberships', 'SchoolMembership')
+                .where('School.organization = :organization_id', {
+                    organization_id: this.organization_id,
+                })
+                .andWhere('SchoolMembership.user_id = :user_id', {
+                    user_id: userId,
+                })
+                .getMany()
+        }
+        return []
+    }
+
     public async ageRanges(
         args: Record<string, unknown>,
         context: Context,

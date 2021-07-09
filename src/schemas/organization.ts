@@ -62,7 +62,8 @@ const typeDefs = gql`
         teachers: [OrganizationMembership]
         students: [OrganizationMembership]
         schools: [School]
-        classes: [Class]
+        classes: [Class] @deprecated(reason: "Use 'getClasses'.")
+        getClasses: [Class]
         ageRanges: [AgeRange!]
         grades: [Grade!]
         categories: [Category!]

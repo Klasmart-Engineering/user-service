@@ -43,6 +43,8 @@ import {
     listPrograms,
     createOrUpdatePrograms,
     updateOrganization,
+    listClasses,
+    getSystemRoleIds,
 } from '../utils/operations/organizationOps'
 import { grantPermission } from '../utils/operations/roleOps'
 import {
@@ -77,6 +79,9 @@ import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
 import RoleInitializer from '../../src/initializers/roles'
 import { studentRole } from '../../src/permissions/student'
 import { UserPermissions } from '../../src/permissions/userPermissions'
+import { Class } from '../../src/entities/class'
+import { addSchoolToClass } from '../utils/operations/classOps'
+import { AnyKindOfDictionary } from 'lodash'
 
 use(chaiAsPromised)
 
@@ -7347,6 +7352,205 @@ describe('organization', () => {
                         expect(dprogramsDetails).to.deep.eq([programDetails])
                     })
                 })
+            })
+        })
+    })
+
+    describe('getClasses', () => {
+        let user: User
+        let organization: Organization
+        let class1: Class
+        let class2: Class
+        let class1Id: string
+        let class2Id: string
+        let organizationId: string
+        let school1: School
+        let school2: School
+        let school1Id: string
+        let school2Id: string
+        let systemRoles: any
+
+        beforeEach(async () => {
+            systemRoles = await getSystemRoleIds()
+            const orgOwner = await createAdminUser(testClient)
+            user = await createNonAdminUser(testClient)
+            organization = await createOrganizationAndValidate(
+                testClient,
+                orgOwner.user_id
+            )
+            organizationId = organization?.organization_id
+
+            class1 = await createClass(
+                testClient,
+                organization.organization_id,
+                'class1',
+                'CLASS1',
+                { authorization: getAdminAuthToken() }
+            )
+            class1Id = class1.class_id
+
+            class2 = await createClass(
+                testClient,
+                organization.organization_id,
+                'class2',
+                'CLASS2',
+                { authorization: getAdminAuthToken() }
+            )
+            class2Id = class2.class_id
+
+            school1 = await createSchool(
+                testClient,
+                organizationId,
+                'school 1',
+                undefined,
+                { authorization: getAdminAuthToken() }
+            )
+            school1Id = school1?.school_id
+            school2 = await createSchool(
+                testClient,
+                organizationId,
+                'school 2',
+                undefined,
+                { authorization: getAdminAuthToken() }
+            )
+            school2Id = school2?.school_id
+
+            await addSchoolToClass(testClient, class1Id, school1Id, {
+                authorization: getAdminAuthToken(),
+            })
+
+            await addSchoolToClass(testClient, class2Id, school2Id, {
+                authorization: getAdminAuthToken(),
+            })
+
+            await addUserToOrganizationAndValidate(
+                testClient,
+                user.user_id,
+                organization.organization_id,
+                { authorization: getAdminAuthToken() }
+            )
+        })
+
+        context('when not authenticated', () => {
+            it('fails to list classes in the organization', async () => {
+                const fn = () =>
+                    listClasses(testClient, organization.organization_id, {
+                        authorization: undefined,
+                    })
+
+                expect(fn()).to.be.rejected
+                const dbClasses = await Class.find({
+                    where: {
+                        organization: {
+                            organization_id: organization.organization_id,
+                        },
+                    },
+                })
+                expect(dbClasses.length).to.equal(2)
+            })
+        })
+
+        context('when authenticated', () => {
+            context(
+                'and the user does not have view classes permissions',
+                () => {
+                    beforeEach(async () => {
+                        const role = await createRole(
+                            testClient,
+                            organization.organization_id
+                        )
+                        await addRoleToOrganizationMembership(
+                            testClient,
+                            user.user_id,
+                            organization.organization_id,
+                            role.role_id
+                        )
+                    })
+
+                    it('fails to list Classes in the organization', async () => {
+                        const fn = () =>
+                            listClasses(
+                                testClient,
+                                organization.organization_id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                        expect(fn()).to.be.rejected
+                        const dbClasses = await Class.find({
+                            where: {
+                                organization: {
+                                    organization_id:
+                                        organization.organization_id,
+                                },
+                            },
+                        })
+                        expect(dbClasses.length).to.equal(2)
+                    })
+                }
+            )
+            context('and the user is a school admin', () => {
+                beforeEach(async () => {
+                    const schoolAdminRoleId = systemRoles['School Admin']
+
+                    await addUserToSchool(testClient, user.user_id, school1Id, {
+                        authorization: getAdminAuthToken(),
+                    })
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        organization.organization_id,
+                        schoolAdminRoleId
+                    )
+                })
+
+                it('lists the Classes in the school', async () => {
+                    const gqlClasses = await listClasses(
+                        testClient,
+                        organization.organization_id,
+                        { authorization: getNonAdminAuthToken() }
+                    )
+                    expect(gqlClasses.length).to.equal(1)
+                    expect(gqlClasses[0].class_id).to.equal(class1Id)
+                })
+                context(
+                    'and the user has Organization Admin the permissions',
+                    () => {
+                        beforeEach(async () => {
+                            const orgAdminRoleId =
+                                systemRoles['Organization Admin']
+
+                            await addUserToSchool(
+                                testClient,
+                                user.user_id,
+                                school1Id,
+                                {
+                                    authorization: getAdminAuthToken(),
+                                }
+                            )
+                            await addRoleToOrganizationMembership(
+                                testClient,
+                                user.user_id,
+                                organization.organization_id,
+                                orgAdminRoleId
+                            )
+                        })
+
+                        it('lists all the classes in the organization', async () => {
+                            const gqlprograms = await listPrograms(
+                                testClient,
+                                organization.organization_id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                            const gqlClasses = await listClasses(
+                                testClient,
+                                organization.organization_id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+                            expect(gqlClasses.length).to.equal(2)
+                        })
+                    }
+                )
             })
         })
     })

@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         {
             "name": "main.ts",
             "type": "pwa-node",
@@ -31,6 +32,18 @@
             "type": "pwa-node",
             "request": "launch",
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "src/main.dev.ts"],
+            "env": {
+                "DOMAIN": "fe.alpha.kidsloop.net:3000",
+                "ROUTE_PREFIX":"/user",
+                "STORAGE_BUCKET": "kidsloop-alpha-account-asset-objects",
+                "STORAGE_PROVIDER": "amazon",
+                "FORCE_LOCAL_STORAGE": "true",
+                "STORAGE_ENDPOINT": "http://localhost:4566",
+                "STORAGE_ACCESS_KEY_ID": "test",
+                "STORAGE_SECRET_ACCESS_KEY": "test",
+                "STORAGE_SESSION_TOKEN": "test",
+                            "STORAGE_REGION": "eu-west-1"
+            },
             "sourceMaps": true,
             "smartStep": true,
             "cwd": "${workspaceRoot}"
