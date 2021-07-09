@@ -169,7 +169,10 @@ export class Model {
         username,
     }: Partial<User>) {
         console.info('Unauthenticated endpoint call newUser')
-
+ 
+        console.info('------------------------------------')
+        console.info('====================================')
+        console.info(JSON.stringify(arguments[0], null, 2))
         const newUser = new User()
         if (email) {
             if (!validateEmail(email)) {
@@ -188,6 +191,7 @@ export class Model {
             }
         }
         if (!(email ?? phone)) {
+            console.log("either email or phone is valid, new user is invalid, return")
             return null
         }
         newUser.user_id = uuid_v4()
@@ -199,7 +203,9 @@ export class Model {
         newUser.date_of_birth = date_of_birth
         newUser.username = username
 
+        console.info(`user is created: ${JSON.stringify(newUser, null, 2)}`)
         await this.manager.save(newUser)
+        console.info(`newUser commited into db`)
         return newUser
     }
 
