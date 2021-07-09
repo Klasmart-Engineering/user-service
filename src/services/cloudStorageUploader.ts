@@ -6,7 +6,8 @@ export class CloudStorageUploader {
         imageStream: ReadStream,
         filePath: string,
     ) : Promise<string | undefined> {
-        const client = createCloudClient(process.env.STORAGE_PROVIDER || 'amazon')
+        const provider = process.env.STORAGE_PROVIDER || 'amazon'
+        const client = createCloudClient(provider)
         let remoteUrl = undefined
 
         const writeStream = await client.upload({
@@ -19,7 +20,11 @@ export class CloudStorageUploader {
             .pipe(writeStream)
             .on('success', function (remoteFile) {
                 // AWS || GCP || VNGClound needs to be verified
-                remoteUrl = remoteFile?.location || remoteFile?.mediaLink
+                if (provider == 'vngcloud') {
+                    remoteUrl = buildVNGCloudUrl(filePath)
+                } else {
+                    remoteUrl = remoteFile?.location || remoteFile?.mediaLink
+                }
                 resolve()
             })
             .on('error', function (err) {
@@ -29,4 +34,12 @@ export class CloudStorageUploader {
 
         return Promise.resolve(remoteUrl)
     }
+}
+
+function buildVNGCloudUrl(filePath: string) {
+    return [
+        `${process.env.STORAGE_ENDPOINT}/v1/AUTH_${process.env.STORAGE_PROJECT_ID}`,
+        process.env.STORAGE_BUCKET,
+        filePath,
+    ].join('/')
 }
