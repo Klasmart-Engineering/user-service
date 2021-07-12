@@ -4,6 +4,7 @@ import { AgeRangeSummaryNode } from '../types/graphQL/ageRangeSummaryNode'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 import {
+    filterHasProperty,
     getWhereClauseFromFilter,
     IEntityFilter,
 } from '../utils/pagination/filtering'
@@ -20,14 +21,28 @@ export const ageRangesForPrograms = async (
 ): Promise<AgeRangeSummaryNode[][]> => {
     const programAgeRanges: AgeRangeSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
-        .leftJoinAndSelect('Program.organization', 'Organization')
-        .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
-        .leftJoinAndSelect('Program.grades', 'Grade')
-        .leftJoinAndSelect('Program.subjects', 'Subject')
-        .leftJoinAndSelect('Program.schools', 'School')
-        .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('Program.organization', 'Organization')
+        }
+
+        if (filterHasProperty('gradeId', filter)) {
+            scope.leftJoinAndSelect('Program.grades', 'Grade')
+        }
+
+        if (filterHasProperty('ageRangeId', filter)) {
+            scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+        }
+
+        if (filterHasProperty('subjectId', filter)) {
+            scope.leftJoinAndSelect('Program.subjects', 'Subject')
+        }
+
+        if (filterHasProperty('schoolId', filter)) {
+            scope.leftJoinAndSelect('Program.schools', 'School')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Program.id'],
@@ -43,12 +58,15 @@ export const ageRangesForPrograms = async (
         )
     }
 
+    scope.where('Program.id IN (:...ids)', { ids: programIds })
+
     const programs = await scope.getMany()
+
     for (const programId of programIds) {
-        const currentAgeRanges: AgeRangeSummaryNode[] = []
         const program = programs.find((p) => p.id === programId)
 
         if (program) {
+            const currentAgeRanges: AgeRangeSummaryNode[] = []
             const ageRanges = (await program.age_ranges) || []
 
             for (const ageRange of ageRanges) {
@@ -63,9 +81,11 @@ export const ageRangesForPrograms = async (
                     system: !!ageRange.system,
                 })
             }
-        }
 
-        programAgeRanges.push(currentAgeRanges)
+            programAgeRanges.push(currentAgeRanges)
+        } else {
+            programAgeRanges.push([])
+        }
     }
 
     return programAgeRanges
@@ -77,14 +97,28 @@ export const gradesForPrograms = async (
 ): Promise<GradeSummaryNode[][]> => {
     const programGrades: GradeSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
-        .leftJoinAndSelect('Program.organization', 'Organization')
-        .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
-        .leftJoinAndSelect('Program.grades', 'Grade')
-        .leftJoinAndSelect('Program.subjects', 'Subject')
-        .leftJoinAndSelect('Program.schools', 'School')
-        .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('Program.organization', 'Organization')
+        }
+
+        if (filterHasProperty('gradeId', filter)) {
+            scope.leftJoinAndSelect('Program.grades', 'Grade')
+        }
+
+        if (filterHasProperty('ageRangeId', filter)) {
+            scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+        }
+
+        if (filterHasProperty('subjectId', filter)) {
+            scope.leftJoinAndSelect('Program.subjects', 'Subject')
+        }
+
+        if (filterHasProperty('schoolId', filter)) {
+            scope.leftJoinAndSelect('Program.schools', 'School')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Program.id'],
@@ -100,12 +134,14 @@ export const gradesForPrograms = async (
         )
     }
 
+    scope.where('Program.id IN (:...ids)', { ids: programIds })
+
     const programs = await scope.getMany()
     for (const programId of programIds) {
-        const currentGrades: GradeSummaryNode[] = []
         const program = programs.find((p) => p.id === programId)
 
         if (program) {
+            const currentGrades: GradeSummaryNode[] = []
             const grades = (await program.grades) || []
             for (const grade of grades) {
                 currentGrades.push({
@@ -115,9 +151,11 @@ export const gradesForPrograms = async (
                     system: !!grade.system,
                 })
             }
-        }
 
-        programGrades.push(currentGrades)
+            programGrades.push(currentGrades)
+        } else {
+            programGrades.push([])
+        }
     }
 
     return programGrades
@@ -129,14 +167,28 @@ export const subjectsForPrograms = async (
 ): Promise<SubjectSummaryNode[][]> => {
     const programSubjects: SubjectSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
-        .leftJoinAndSelect('Program.organization', 'Organization')
-        .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
-        .leftJoinAndSelect('Program.grades', 'Grade')
-        .leftJoinAndSelect('Program.subjects', 'Subject')
-        .leftJoinAndSelect('Program.schools', 'School')
-        .where('Program.id IN (:...ids)', { ids: programIds })
 
     if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('Program.organization', 'Organization')
+        }
+
+        if (filterHasProperty('gradeId', filter)) {
+            scope.leftJoinAndSelect('Program.grades', 'Grade')
+        }
+
+        if (filterHasProperty('ageRangeId', filter)) {
+            scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+        }
+
+        if (filterHasProperty('subjectId', filter)) {
+            scope.leftJoinAndSelect('Program.subjects', 'Subject')
+        }
+
+        if (filterHasProperty('schoolId', filter)) {
+            scope.leftJoinAndSelect('Program.schools', 'School')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Program.id'],
@@ -152,12 +204,14 @@ export const subjectsForPrograms = async (
         )
     }
 
+    scope.where('Program.id IN (:...ids)', { ids: programIds })
+
     const programs = await scope.getMany()
     for (const programId of programIds) {
-        const currentSubjects: SubjectSummaryNode[] = []
         const program = programs.find((p) => p.id === programId)
 
         if (program) {
+            const currentSubjects: SubjectSummaryNode[] = []
             const subjects = (await program.subjects) || []
             for (const subject of subjects) {
                 currentSubjects.push({
@@ -167,9 +221,11 @@ export const subjectsForPrograms = async (
                     system: !!subject.system,
                 })
             }
-        }
 
-        programSubjects.push(currentSubjects)
+            programSubjects.push(currentSubjects)
+        } else {
+            programSubjects.push([])
+        }
     }
 
     return programSubjects
