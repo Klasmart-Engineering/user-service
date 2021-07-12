@@ -2,6 +2,7 @@ import DataLoader from 'dataloader'
 import { Grade } from '../entities/grade'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
 import {
+    filterHasProperty,
     getWhereClauseFromFilter,
     IEntityFilter,
 } from '../utils/pagination/filtering'
@@ -26,12 +27,20 @@ export const fromGradeForGrades = async (
 
     const gradeFromGrades: (GradeSummaryNode | undefined)[] = []
     const scope = await Grade.createQueryBuilder('Grade')
-        .leftJoinAndSelect('Grade.organization', 'Organization')
-        .leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
-        .leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
-        .where('Grade.id IN (:...ids)', { ids: gradeIds })
 
     if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('Grade.organization', 'Organization')
+        }
+
+        if (filterHasProperty('fromGradeId', filter)) {
+            scope.leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
+        }
+
+        if (filterHasProperty('toGradeId', filter)) {
+            scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Grade.id'],
@@ -44,6 +53,8 @@ export const fromGradeForGrades = async (
             })
         )
     }
+
+    scope.where('Grade.id IN (:...ids)', { ids: gradeIds })
 
     const grades = await scope.getMany()
     for (const gradeId of gradeIds) {
@@ -83,12 +94,20 @@ export const toGradeForGrades = async (
 
     const gradeToGrades: (GradeSummaryNode | undefined)[] = []
     const scope = await Grade.createQueryBuilder('Grade')
-        .leftJoinAndSelect('Grade.organization', 'Organization')
-        .leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
-        .leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
-        .where('Grade.id IN (:...ids)', { ids: gradeIds })
 
     if (filter) {
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('Grade.organization', 'Organization')
+        }
+
+        if (filterHasProperty('fromGradeId', filter)) {
+            scope.leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
+        }
+
+        if (filterHasProperty('toGradeId', filter)) {
+            scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Grade.id'],
@@ -101,6 +120,8 @@ export const toGradeForGrades = async (
             })
         )
     }
+
+    scope.where('Grade.id IN (:...ids)', { ids: gradeIds })
 
     const grades = await scope.getMany()
     for (const gradeId of gradeIds) {
