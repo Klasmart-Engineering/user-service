@@ -13,6 +13,11 @@ export interface ISortingConfig {
     aliases?: Record<string, string>
 }
 
+export enum SortOrder {
+    ASC = 'ASC',
+    DESC = 'DESC',
+}
+
 // TS interface for the sort input in the GraphQL request
 // e.g. UserSortInput for usersConnection
 export interface ISortField {
@@ -26,8 +31,12 @@ export function addOrderByClause(
     config: ISortingConfig
 ) {
     // reverse order if pagination backwards
-    let order = config.sort?.order || 'ASC'
+    let order = config.sort?.order || SortOrder.ASC
+    let primaryKeyOrder = SortOrder.ASC
+
     if (direction === 'BACKWARD') {
+        primaryKeyOrder = SortOrder.DESC
+
         if (order === 'ASC') {
             order = 'DESC'
         } else {
@@ -56,8 +65,14 @@ export function addOrderByClause(
         })
     }
 
-    // always sort by the primary key, and always to do it last
-    scope.addOrderBy(`${scope.alias}.${config.primaryKey}`, order, 'NULLS LAST')
+    if (!primaryColumns.includes(config.primaryKey)) {
+        // sort by the primary in ASC order key lastly, if this is not in the primaryColumns
+        scope.addOrderBy(
+            `${scope.alias}.${config.primaryKey}`,
+            primaryKeyOrder,
+            'NULLS LAST'
+        )
+    }
 
     return {
         order,

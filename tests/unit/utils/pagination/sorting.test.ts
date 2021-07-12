@@ -63,17 +63,17 @@ describe('paginated sorting', () => {
                 'ORDER BY "User"."given_name" ASC NULLS LAST, "User"."user_id" ASC NULLS LAST'
             )
         })
-        it('uses the same ordering for each column', () => {
-            addOrderByClause(scope, 'BACKWARD', {
+        it('primary columns order is independent to primary key order', () => {
+            addOrderByClause(scope, 'FORWARD', {
                 primaryKey: 'user_id',
                 sort: {
                     field: 'given_name',
-                    order: 'ASC',
+                    order: 'DESC',
                 },
             })
             const sql = scope.getSql()
             expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
-                'ORDER BY "User"."given_name" DESC NULLS LAST, "User"."user_id" DESC NULLS LAST'
+                'ORDER BY "User"."given_name" DESC NULLS LAST, "User"."user_id" ASC NULLS LAST'
             )
         })
         it('sorts by two columns first and primaryKey last', () => {
@@ -88,6 +88,23 @@ describe('paginated sorting', () => {
             expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
                 'ORDER BY "User"."family_name" ASC NULLS LAST, "User"."given_name" ASC NULLS LAST, "User"."user_id" ASC NULLS LAST'
             )
+        })
+
+        context('when primary key is mentioned in primary columns', () => {
+            it('sorts just by mentioned columns', () => {
+                addOrderByClause(scope, 'FORWARD', {
+                    primaryKey: 'user_id',
+                    sort: {
+                        field: ['family_name', 'user_id'],
+                        order: 'DESC',
+                    },
+                })
+
+                const sql = scope.getSql()
+                expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
+                    'ORDER BY "User"."family_name" DESC NULLS LAST, "User"."user_id" DESC NULLS LAST'
+                )
+            })
         })
     })
     context('aliasing', () => {
@@ -139,9 +156,10 @@ describe('paginated sorting', () => {
             })
             const sql = scope.getSql()
             expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
-                'ORDER BY "User"."given_name" DESC NULLS LAST, "User"."user_id" DESC NULLS LAST'
+                'ORDER BY "User"."given_name" DESC NULLS LAST, "User"."user_id" ASC NULLS LAST'
             )
         })
+
         it('reverses the specified order when paginating backwards', () => {
             addOrderByClause(scope, 'BACKWARD', {
                 primaryKey: 'user_id',
@@ -155,7 +173,41 @@ describe('paginated sorting', () => {
             })
             const sql = scope.getSql()
             expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
-                'ORDER BY "User"."given_name" ASC NULLS LAST, "User"."user_id" ASC NULLS LAST'
+                'ORDER BY "User"."given_name" ASC NULLS LAST, "User"."user_id" DESC NULLS LAST'
+            )
+        })
+
+        it('primary key order is ASC in FORWARD direction', () => {
+            addOrderByClause(scope, 'FORWARD', {
+                primaryKey: 'user_id',
+                sort: {
+                    field: 'givenName',
+                    order: 'DESC',
+                },
+                aliases: {
+                    givenName: 'given_name',
+                },
+            })
+            const sql = scope.getSql()
+            expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
+                'ORDER BY "User"."given_name" DESC NULLS LAST, "User"."user_id" ASC NULLS LAST'
+            )
+        })
+
+        it('primary key order is DESC in BACKWARD direction', () => {
+            addOrderByClause(scope, 'BACKWARD', {
+                primaryKey: 'user_id',
+                sort: {
+                    field: 'givenName',
+                    order: 'DESC',
+                },
+                aliases: {
+                    givenName: 'given_name',
+                },
+            })
+            const sql = scope.getSql()
+            expect(sql.slice(sql.indexOf('ORDER BY'))).to.eq(
+                'ORDER BY "User"."given_name" ASC NULLS LAST, "User"."user_id" DESC NULLS LAST'
             )
         })
     })
