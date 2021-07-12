@@ -1,4 +1,6 @@
 import chaiAsPromised from 'chai-as-promised'
+import fs from 'fs'
+import path from 'path'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { expect, use } from 'chai'
@@ -90,10 +92,14 @@ describe('acceptance.branding', () => {
         expect(createOrgData.organization_name).to.eq(org_name)
 
         // set branding
+        const imagePath = path.resolve(
+            path.dirname(__filename),
+            '..',
+            'fixtures/icon.png'
+        )
         const setBrandingResponse = await request
             .post('/graphql')
             .set({
-                ContentType: 'application/json',
                 Authorization: getAdminAuthToken(),
             })
             .field(
@@ -102,7 +108,6 @@ describe('acceptance.branding', () => {
                     query: SET_BRANDING,
                     variables: {
                         organizationId: orgId,
-                        iconImage: null,
                         primaryColor: primaryColor,
                     },
                 })
@@ -111,10 +116,11 @@ describe('acceptance.branding', () => {
                 'map',
                 JSON.stringify({ image: ['variables.organizationLogo'] })
             )
-            .attach('image', __dirname + '/../fixtures/icon.png')
+            .attach('image', imagePath)
+
         expect(setBrandingResponse.status).to.eq(200)
 
-        const setBrandingData = setBrandingResponse.body.data.setBranding
+        const setBrandingData = await setBrandingResponse.body.data.setBranding
         expect(setBrandingData.primaryColor).to.eq(primaryColor)
         expect(setBrandingData.iconImageURL).to.exist
 
@@ -137,7 +143,6 @@ describe('acceptance.branding', () => {
         const getOrgData = getOrgResponse.body.data.organization
         expect(getOrgData).to.exist
         expect(getOrgData.organization_id).to.eq(orgId)
-        console.log(getOrgData.branding)
         const brandingData = getOrgData.branding
         expect(brandingData.primaryColor).to.equal(primaryColor)
     })

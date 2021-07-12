@@ -12,21 +12,37 @@ definitions:
         POSTGRES_DB: testdb
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
+
 pipelines:
   pull-requests:
     '**': # This runs as default for any branch not elsewhere defined.
-      - step:
-          services:
-            - postgres
-          caches:
-            - node
-          script:
-            - npm install
-            - npm run lint
-            - npm test
+    - step:
+        name: "Unit and integration tests"
+        services:
+          - postgres
+        caches:
+          - node
+        script:
+           - npm install
+           - npm run lint
+           - npm test
+    - step:
+        name: "Acceptance tests"
+        services:
+          - docker
+        caches:
+          - node
+        script:
+          - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          - chmod +x /usr/local/bin/docker-compose
+          - npm install
+          - docker-compose up -d && sleep 20
+          - npm run test:acceptance
+
   branches:
     master:
       - step:
+          name: "Unit and integration tests"
           services:
             - postgres
           caches:
@@ -35,6 +51,18 @@ pipelines:
             - npm install
             - npm run lint
             - npm test
+      - step:
+          name: "Acceptance tests"
+          services:
+            - docker
+          caches:
+            - node
+          script:
+            - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            - chmod +x /usr/local/bin/docker-compose
+            - npm install
+            - docker-compose up -d && sleep 20
+            - npm run test:acceptance
   tags:
     v*:
       - step:

@@ -17,28 +17,30 @@
 
 # Testing
 
-Create a database used for integration tests:
-
-1. Make sure the postgres docker container is running.
-2. `docker container exec -it postgres psql -U postgres -c "create database testdb;"`
-
-Create a database used for acceptance tests:
-
-`docker container exec -it postgres psql -U postgres -c "create database postgres1;"`
-
-Update the README coverage badges:
+### Update the README coverage badges:
 
 1. `npm run coverage`
 2. `npm run make-badges`
 
-Running tests during development:
+### Running tests unit and integration during development:
+
+ Make sure the postgres docker container is running, if you are not using the [docker-compose]((#docker))
+
+```bash
+docker container exec -it postgres psql -U postgres -c "create database testdb;"
+```
 
 -   `npm run test:unit`
 -   `npm run test:integration`
--   `npm run test:acceptance`
 -   `npm test` (to run unit & integration, for now we have to run acceptance separately)
 
 Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-mocha-test-adapter) VSCode extension for a nice UI and more fine-grained control.
+
+### Running tests acceptance during development:
+
+ **Make sure you have the [docker-compose running](#docker) first**
+
+-   `npm run test:acceptance`
 
 # Connecting to a locally running frontend
 
