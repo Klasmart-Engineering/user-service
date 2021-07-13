@@ -63,6 +63,12 @@ pipelines:
             - npm install
             - docker-compose up -d && sleep 20
             - npm run test:acceptance
+      - step:
+          name: "Deploy to Alpha"
+          script:
+            - npm install
+            - npm run lint
+            - ./deploy-alpha.sh
   tags:
     v*:
       - step:
