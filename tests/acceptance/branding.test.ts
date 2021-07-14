@@ -1,5 +1,6 @@
 import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
+import * as os from 'os'
 import path from 'path'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
@@ -77,6 +78,7 @@ const DELETE_BRANDING_COLOR = `
 describe('acceptance.branding', () => {
     let connection: Connection
     const primaryColor = '#cd657b'
+    const platform = os.platform()
 
     before(async () => {
         connection = await createTestConnection()
