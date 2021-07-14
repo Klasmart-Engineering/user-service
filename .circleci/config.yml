@@ -1,0 +1,25 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+parameters:
+  image-tag:
+    type: string
+    default: ''
+
+orbs:
+  # The Node.js orb contains a set of prepackaged CircleCI configuration you can utilize
+  # Orbs reduce the amount of configuration required for common tasks.
+  # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/node
+  aws-ecs: circleci/aws-ecs@2.2.1
+
+workflows:
+    conditional-workflow:
+       when:
+         and:
+            - << pipeline.parameters.image-tag >>
+       jobs:
+         - aws-ecs/deploy-service-update:
+             cluster-name: kidsloop-alpha
+             service-name: kidsloop-alpha-user
+             container-image-name-updates: container=kidsloop-alpha-user,image-and-tag=942095822719.dkr.ecr.eu-west-2.amazonaws.com/kidsloop-user:<< pipeline.parameters.image-tag >>
+             family: kidsloop-alpha-user

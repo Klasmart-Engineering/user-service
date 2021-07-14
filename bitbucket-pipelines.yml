@@ -123,6 +123,16 @@ pipelines:
             - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG-latest; fi
             - docker push $REPO:$TAG-$BITBUCKET_BUILD_NUMBER
             - docker push $REPO:$TAG-$COMMIT_TAG
+      - step:
+          name: "Deploy"
+          script:
+              - |
+                  curl --request POST \
+                  --url https://circleci.com/api/v2/project/bitbucket/calmisland/kidsloop-user-service/pipeline \
+                  --header "Circle-Token: $CIRCLECI_TOKEN" \
+                  --header "content-type: application/json" \
+                  --data "{\"branch\":\"$BITBUCKET_BRANCH\",\"parameters\":{\"image-tag\":\"$TAG-$COMMIT_TAG\"}}"
+
   tags:
     v*:
       - step:
