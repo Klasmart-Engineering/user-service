@@ -241,7 +241,6 @@ describe('acceptance.branding', () => {
         expect(setBrandingData.iconImageURL).to.exist
 
         // get organization
-        //console.log(orgId)
         const getOrgResponse = await request
             .post('/graphql')
             .set({
