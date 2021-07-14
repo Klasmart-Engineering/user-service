@@ -5,14 +5,14 @@ import { Context } from '../main'
 
 const typeDefs = gql`
     input StringFilter {
-        operator: StringOperator
-        value: String
+        operator: StringOperator!
+        value: String!
         caseInsensitive: Boolean
     }
 
     input NumberFilter {
-        operator: NumberOrDateOperator
-        value: Float
+        operator: NumberOrDateOperator!
+        value: Float!
     }
 
     input UUIDFilter {
@@ -21,13 +21,13 @@ const typeDefs = gql`
     }
 
     input BooleanFilter {
-        operator: BooleanOperator
-        value: Boolean
+        operator: BooleanOperator!
+        value: Boolean!
     }
 
     input DateFilter {
-        operator: NumberOrDateOperator
-        value: String # YYYY-MM-DD
+        operator: NumberOrDateOperator!
+        value: String! # YYYY-MM-DD
     }
 
     enum StringOperator {
