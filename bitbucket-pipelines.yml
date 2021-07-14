@@ -38,19 +38,6 @@ pipelines:
           - npm install
           - docker-compose up -d && sleep 20
           - npm run test:acceptance
-    - step:
-        name: "Run dry deployment to Alpha"
-        image: python:3.9-alpine
-        services:
-          - docker
-        caches:
-          - pip
-        script:
-          - pip3 install -U awscli
-          - apk update && apk add --update nodejs npm
-          - npm install
-          - aws --version
-          - docker --version
 
   branches:
     master:
@@ -76,19 +63,6 @@ pipelines:
             - npm install
             - docker-compose up -d && sleep 20
             - npm run test:acceptance
-      - step:
-          name: "Deploy to Alpha"
-          image: python:3.9-alpine
-          services:
-            - docker
-          caches:
-            - pip
-          script:
-            - pip3 install -U awscli
-            - apk update && apk add --update nodejs npm
-            - npm install
-            - npm run lint
-            - ./deploy-alpha.sh
   tags:
     v*:
       - step:

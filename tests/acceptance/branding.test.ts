@@ -97,6 +97,9 @@ describe('acceptance.branding', () => {
             '..',
             'fixtures/icon.png'
         )
+
+        const imageData = fs.readFileSync(imagePath)
+        const imageBuffer = Buffer.from(imageData)
         const setBrandingResponse = await request
             .post('/graphql')
             .set({
@@ -116,7 +119,7 @@ describe('acceptance.branding', () => {
                 'map',
                 JSON.stringify({ image: ['variables.organizationLogo'] })
             )
-            .attach('image', imagePath)
+            .attach('image', imageBuffer, imagePath)
 
         expect(setBrandingResponse.status).to.eq(200)
 
