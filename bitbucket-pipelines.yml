@@ -38,6 +38,34 @@ pipelines:
           - npm install
           - docker-compose up -d && sleep 20
           - npm run test:acceptance
+    - step:
+        name: "Build and publish docker image"
+        services:
+          - docker
+        caches:
+          - pip
+        image: python:3.9-alpine
+        script:
+          # auth to AWS ECR
+          - pip3 install -U awscli
+          - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
+
+          # define vars
+          - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          - export REPO=$DOCKER_REPO_URL/kidsloop-user
+          - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
+          - if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
+
+          # build image
+          - docker build -t kidsloop-user .
+
+          # tag image
+          - docker tag kidsloop-user:latest $REPO:$TAG
+          - docker tag kidsloop-user:latest $REPO:$TAG-$COMMIT_TAG
+
+          # push images
+          - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG; fi
+          - docker push $REPO:$TAG-$COMMIT_TAG
 
   branches:
     master:
@@ -63,23 +91,8 @@ pipelines:
             - npm install
             - docker-compose up -d && sleep 20
             - npm run test:acceptance
-  tags:
-    v*:
       - step:
-          name: Build and deploy
-          services:
-            - postgres
-            - docker
-          caches:
-            - node
-          script:
-            - npm install
-            - npm test
-            - ./deploy.sh
-  custom:
-    infra-ecr:
-      - step:
-          name: Deploy
+          name: "Build and publish docker image"
           services:
             - docker
           caches:
@@ -110,3 +123,16 @@ pipelines:
             - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG-latest; fi
             - docker push $REPO:$TAG-$BITBUCKET_BUILD_NUMBER
             - docker push $REPO:$TAG-$COMMIT_TAG
+  tags:
+    v*:
+      - step:
+          name: Build and deploy
+          services:
+            - postgres
+            - docker
+          caches:
+            - node
+          script:
+            - npm install
+            - npm test
+            - ./deploy.sh
