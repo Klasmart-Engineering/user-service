@@ -237,10 +237,7 @@ describe('acceptance.branding', () => {
         const getOrgResponse = await getOrg(orgId, token)
 
         expect(getOrgResponse.status).to.eq(200)
-        expect(getOrgResponse.body.errors).to.not.exist
         const getOrgData = getOrgResponse.body.data.organization
-        expect(getOrgData).to.exist
-        expect(getOrgData.organization_id).to.eq(orgId)
         const brandingData = await getOrgData.branding
         expect(brandingData.iconImageURL).to.exist
 
@@ -316,10 +313,7 @@ describe('acceptance.branding', () => {
         const getOrgResponse = await getOrg(orgId, token)
 
         expect(getOrgResponse.status).to.eq(200)
-        expect(getOrgResponse.body.errors).to.not.exist
         const getOrgData = getOrgResponse.body.data.organization
-        expect(getOrgData).to.exist
-        expect(getOrgData.organization_id).to.eq(orgId)
         const brandingData = await getOrgData.branding
         expect(brandingData.primaryColor).to.equal(primaryColor)
         expect(brandingData.iconImageURL).to.exist
