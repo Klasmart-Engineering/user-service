@@ -223,7 +223,6 @@ describe('acceptance.branding', () => {
                     query: SET_BRANDING,
                     variables: {
                         organizationId: orgId,
-                        iconImage: null,
                         primaryColor: primaryColor,
                     },
                 })
@@ -350,7 +349,6 @@ describe('acceptance.branding', () => {
                     query: SET_BRANDING,
                     variables: {
                         organizationId: orgId,
-                        iconImage: null,
                         primaryColor: primaryColor,
                     },
                 })
