@@ -126,6 +126,12 @@ pipelines:
       - step:
           name: "Deploy"
           script:
+              - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+              - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
+              - if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
+              - echo "TAG: ${TAG}"
+              - echo "COMMIT_TAG: ${COMMIT_TAG}"
+              - echo "IMAGE_TAG: $TAG-$COMMIT_TAG"
               - |
                   curl --request POST \
                   --url https://circleci.com/api/v2/project/bitbucket/calmisland/kidsloop-user-service/pipeline \
