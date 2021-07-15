@@ -1,6 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
-import * as os from 'os'
 import path from 'path'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
@@ -75,10 +74,66 @@ const DELETE_BRANDING_COLOR = `
         ) 
     }
 `
+async function createOrg(user_id: string, token: string) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_ORGANIZATION,
+            variables: {
+                user_id,
+            },
+        })
+}
+
+async function getOrg(orgId: string, token: string) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: GET_ORGANIZATION,
+            variables: {
+                organizationId: orgId,
+            },
+        })
+}
+
+async function setBranding(
+    orgId: string,
+    primaryColor: string,
+    imagePath: string,
+    token: string
+) {
+    const imageData = fs.readFileSync(imagePath)
+    const imageBuffer = Buffer.from(imageData)
+    return await request
+        .post('/graphql')
+        .set({
+            Authorization: token,
+        })
+        .field(
+            'operations',
+            JSON.stringify({
+                query: SET_BRANDING,
+                variables: {
+                    organizationId: orgId,
+                    primaryColor: primaryColor,
+                },
+            })
+        )
+        .field('map', JSON.stringify({ image: ['variables.organizationLogo'] }))
+        .attach('image', imageBuffer, imagePath)
+}
+
 describe('acceptance.branding', () => {
     let connection: Connection
     const primaryColor = '#cd657b'
-    const platform = os.platform()
 
     before(async () => {
         connection = await createTestConnection()
@@ -96,18 +151,8 @@ describe('acceptance.branding', () => {
         let organization_id: string = ''
 
         // create organization
-        const createOrgResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
-            })
-            .send({
-                query: CREATE_ORGANIZATION,
-                variables: {
-                    user_id,
-                },
-            })
+        const createOrgResponse = await createOrg(user_id, getAdminAuthToken())
+
         expect(createOrgResponse.status).to.eq(200)
 
         const createOrgData =
@@ -123,28 +168,12 @@ describe('acceptance.branding', () => {
             'fixtures/icon.png'
         )
 
-        const imageData = fs.readFileSync(imagePath)
-        const imageBuffer = Buffer.from(imageData)
-        const setBrandingResponse = await request
-            .post('/graphql')
-            .set({
-                Authorization: getAdminAuthToken(),
-            })
-            .field(
-                'operations',
-                JSON.stringify({
-                    query: SET_BRANDING,
-                    variables: {
-                        organizationId: orgId,
-                        primaryColor: primaryColor,
-                    },
-                })
-            )
-            .field(
-                'map',
-                JSON.stringify({ image: ['variables.organizationLogo'] })
-            )
-            .attach('image', imageBuffer, imagePath)
+        const setBrandingResponse = await setBranding(
+            orgId,
+            primaryColor,
+            imagePath,
+            getAdminAuthToken()
+        )
 
         expect(setBrandingResponse.status).to.eq(200)
 
@@ -153,18 +182,8 @@ describe('acceptance.branding', () => {
         expect(setBrandingData.iconImageURL).to.exist
 
         // get organization
-        const getOrgResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: getAdminAuthToken(),
-            })
-            .send({
-                query: GET_ORGANIZATION,
-                variables: {
-                    organizationId: orgId,
-                },
-            })
+        const getOrgResponse = await getOrg(orgId, getAdminAuthToken())
+
         expect(getOrgResponse.status).to.eq(200)
         expect(getOrgResponse.body.errors).to.not.exist
 
@@ -183,18 +202,8 @@ describe('acceptance.branding', () => {
             .findOneOrFail({ user_id: user2_id })
         const token = generateToken(userToPayload(user2))
         // create organization
-        const createOrgResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .send({
-                query: CREATE_ORGANIZATION,
-                variables: {
-                    user2_id,
-                },
-            })
+        const createOrgResponse = await createOrg(user2_id, token)
+
         expect(createOrgResponse.status).to.eq(200)
 
         const createOrgData =
@@ -211,27 +220,12 @@ describe('acceptance.branding', () => {
         )
         const data = fs.readFileSync(imagePath)
         const buffer = Buffer.from(data)
-        const setBrandingResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .field(
-                'operations',
-                JSON.stringify({
-                    query: SET_BRANDING,
-                    variables: {
-                        organizationId: orgId,
-                        primaryColor: primaryColor,
-                    },
-                })
-            )
-            .field(
-                'map',
-                JSON.stringify({ image: ['variables.organizationLogo'] })
-            )
-            .attach('image', buffer, imagePath)
+        const setBrandingResponse = await setBranding(
+            orgId,
+            primaryColor,
+            imagePath,
+            token
+        )
 
         expect(setBrandingResponse.status).to.eq(200)
 
@@ -240,25 +234,14 @@ describe('acceptance.branding', () => {
         expect(setBrandingData.iconImageURL).to.exist
 
         // get organization
-        const getOrgResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .send({
-                query: GET_ORGANIZATION,
-                variables: {
-                    organizationId: orgId,
-                },
-            })
+        const getOrgResponse = await getOrg(orgId, token)
+
         expect(getOrgResponse.status).to.eq(200)
         expect(getOrgResponse.body.errors).to.not.exist
         const getOrgData = getOrgResponse.body.data.organization
         expect(getOrgData).to.exist
         expect(getOrgData.organization_id).to.eq(orgId)
         const brandingData = await getOrgData.branding
-        expect(brandingData.primaryColor).to.equal(primaryColor)
         expect(brandingData.iconImageURL).to.exist
 
         const setDeleteBrandingImageResponse = await request
@@ -277,18 +260,8 @@ describe('acceptance.branding', () => {
 
         expect(setDeleteBrandingImageResponse.status).to.eq(200)
 
-        const getOrgResponse2 = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .send({
-                query: GET_ORGANIZATION,
-                variables: {
-                    organizationId: orgId,
-                },
-            })
+        const getOrgResponse2 = await getOrg(orgId, token)
+
         expect(getOrgResponse2.status).to.eq(200)
         expect(getOrgResponse2.body.errors).to.not.exist
 
@@ -309,18 +282,8 @@ describe('acceptance.branding', () => {
             .findOneOrFail({ user_id: user2_id })
         const token = generateToken(userToPayload(user2))
         // create organization
-        const createOrgResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .send({
-                query: CREATE_ORGANIZATION,
-                variables: {
-                    user2_id,
-                },
-            })
+        const createOrgResponse = await createOrg(user2_id, token)
+
         expect(createOrgResponse.status).to.eq(200)
 
         const createOrgData =
@@ -335,49 +298,23 @@ describe('acceptance.branding', () => {
             '..',
             'fixtures/icon.png'
         )
-        const data = fs.readFileSync(imagePath)
-        const buffer = Buffer.from(data)
-        const setBrandingResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .field(
-                'operations',
-                JSON.stringify({
-                    query: SET_BRANDING,
-                    variables: {
-                        organizationId: orgId,
-                        primaryColor: primaryColor,
-                    },
-                })
-            )
-            .field(
-                'map',
-                JSON.stringify({ image: ['variables.organizationLogo'] })
-            )
-            .attach('image', buffer, imagePath)
+
+        const setBrandingResponse = await setBranding(
+            orgId,
+            primaryColor,
+            imagePath,
+            token
+        )
 
         expect(setBrandingResponse.status).to.eq(200)
 
         const setBrandingData = setBrandingResponse.body.data.setBranding
         expect(setBrandingData.primaryColor).to.eq(primaryColor)
-        expect(setBrandingData.iconImageURL).to.exist
 
         // get organization
-        const getOrgResponse = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .send({
-                query: GET_ORGANIZATION,
-                variables: {
-                    organizationId: orgId,
-                },
-            })
+
+        const getOrgResponse = await getOrg(orgId, token)
+
         expect(getOrgResponse.status).to.eq(200)
         expect(getOrgResponse.body.errors).to.not.exist
         const getOrgData = getOrgResponse.body.data.organization
@@ -401,18 +338,8 @@ describe('acceptance.branding', () => {
             })
         expect(setDeleteBrandingColorResponse.status).to.eq(200)
 
-        const getOrgResponse2 = await request
-            .post('/graphql')
-            .set({
-                ContentType: 'application/json',
-                Authorization: token,
-            })
-            .send({
-                query: GET_ORGANIZATION,
-                variables: {
-                    organizationId: orgId,
-                },
-            })
+        const getOrgResponse2 = await getOrg(orgId, token)
+
         expect(getOrgResponse2.status).to.eq(200)
         expect(getOrgResponse2.body.errors).to.not.exist
 
