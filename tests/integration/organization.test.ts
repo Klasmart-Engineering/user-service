@@ -1567,7 +1567,7 @@ describe('organization', () => {
                     let phone = 'bob.dylan@nowhere.com'
                     let given = 'Bob'
                     let family = 'Smith'
-                    let dateOfBirth = '21-1978'
+                    let dateOfBirth = '11-1978'
                     let gqlresult = await inviteUser(
                         testClient,
                         organizationId,
@@ -1584,6 +1584,7 @@ describe('organization', () => {
                         new Array(roleId),
                         { authorization: adminToken }
                     )
+                    console.log(gqlresult)
                     let newUser = gqlresult?.user
                     let membership = gqlresult?.membership
                     let schoolmemberships = gqlresult?.schoolMemberships
@@ -1592,7 +1593,7 @@ describe('organization', () => {
 
                     expect(newUser.email).to.eq(phone)
                     expect(newUser.phone).to.be.null
-                    expect(newUser.date_of_birth).to.be.null
+                    expect(newUser.date_of_birth).to.equal('11-1978')
                     expect(newUser.username).to.equal('Buster')
                     expect(newUser?.gender).to.equal('Male')
 
@@ -1825,36 +1826,68 @@ describe('organization', () => {
                     expect(membership.shortcode).to.equal('RANGER13')
                 })
 
-                it('creates user with a shortcode ignoring non validating custom input', async () => {
+                it('fails to create user shortcode with non validating custom input', async () => {
                     let email = 'bob@nowhere.com'
-                    let phone = undefined
+                    let phone: string | undefined = undefined
                     let given = 'Bob'
                     let family = 'Smith'
                     let dateOfBirth = '02-1978'
-                    let gqlresult = await inviteUser(
-                        testClient,
-                        organizationId,
-                        email,
-                        phone,
-                        given,
-                        family,
-                        dateOfBirth,
-                        'Bunter',
-                        'Male',
-                        'ranger 13',
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: adminToken }
-                    )
-                    let newUser = gqlresult?.user
-                    let membership = gqlresult?.membership
-                    let schoolmemberships = gqlresult?.schoolMemberships
 
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.shortcode).to.match(shortcode_re)
-                    expect(membership.shortcode).to.not.equal('RANGER 13')
+                    try {
+                        await inviteUser(
+                            testClient,
+                            organizationId,
+                            email,
+                            phone,
+                            given,
+                            family,
+                            dateOfBirth,
+                            'Bunter',
+                            'Male',
+                            'ranger 13',
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: adminToken }
+                        )
+                        expect(true).to.be.false //We should never get here
+                    } catch (result) {
+                        expect(result.message).to.equal(
+                            '"shortcode" must only contain alpha-numeric characters'
+                        )
+                    }
+                })
+
+                it('fails to create user with a missing family name', async () => {
+                    let email = 'bob@nowhere.com'
+                    let phone: string | undefined = undefined
+                    let given = 'Bob'
+                    let family = undefined
+                    let dateOfBirth = '02-1978'
+
+                    try {
+                        const res = await inviteUser(
+                            testClient,
+                            organizationId,
+                            email,
+                            phone,
+                            given,
+                            family,
+                            dateOfBirth,
+                            'Bunter',
+                            'Male',
+                            'NOD13',
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: adminToken }
+                        )
+                        expect(true).to.be.false //We should never get here
+                    } catch (result) {
+                        expect(result.message).to.equal(
+                            '"family_name" is required'
+                        )
+                    }
                 })
 
                 it('creates the user with alternate_email and altnernate_phone when provided', async () => {
@@ -1866,8 +1899,8 @@ describe('organization', () => {
                         organizationId,
                         email,
                         undefined,
-                        undefined,
-                        undefined,
+                        'Bob',
+                        'Jones',
                         undefined,
                         'Bunter',
                         'Male',

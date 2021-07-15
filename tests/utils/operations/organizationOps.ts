@@ -633,6 +633,7 @@ export async function inviteUser(
         })
 
     const res = await gqlTry(operation)
+    console.log('res', res)
     const result = res.data?.organization.inviteUser as {
         user: User
         membership: OrganizationMembership

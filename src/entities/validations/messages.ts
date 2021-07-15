@@ -84,7 +84,7 @@ export function getCustomConstraintDetails(
                         code: customErrors.invalid_date.code,
                         message: customErrors.invalid_date.message,
                         params: {
-                            format: 'MM-YYYY',
+                            dateFormat: 'MM-YYYY',
                         },
                     }
                 }

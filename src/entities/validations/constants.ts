@@ -1,4 +1,4 @@
-export default {
+export const validationConstants = {
     // Validation rules
     AGE_RANGE_LOW_VALUE_MIN: 0,
     AGE_RANGE_LOW_VALUE_MAX: 99,
@@ -12,4 +12,9 @@ export default {
     EMAIL_MAX_LENGTH: 250,
     ROLE_NAME_MAX_LENGTH: 20,
     SHORTCODE_MAX_LENGTH: 16,
-} as const
+    GENDER_MIN_LENGTH: 3,
+    GENDER_MAX_LENGTH: 16,
+    USERNAME_MAX_LEN: 35,
+}
+
+export default validationConstants

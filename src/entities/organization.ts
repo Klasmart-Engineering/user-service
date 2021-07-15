@@ -39,11 +39,29 @@ import {
 import clean from '../utils/clean'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
 import validationConstants from './validations/constants'
+import { userValidations } from './validations/user'
+import Joi from 'joi'
+import { organizationMembershipValidations } from './validations/organizationMembership'
+import { REGEX } from './validations/regex'
 
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 
 export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)
+
+function isEmail(email?: string): boolean {
+    if (email !== undefined && email.match(REGEX.email)) {
+        return true
+    }
+    return false
+}
+
+function isPhone(phone?: string): boolean {
+    if (phone !== undefined && phone.match(REGEX.phone)) {
+        return true
+    }
+    return false
+}
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -538,6 +556,61 @@ export class Organization extends BaseEntity {
         }
     }
 
+    private async createUser(
+        email?: string,
+        phone?: string,
+        given_name?: string,
+        family_name?: string,
+        date_of_birth?: string,
+        username?: string,
+        alternate_email?: string | null,
+        alternate_phone?: string | null,
+        gender?: string
+    ): Promise<User> {
+        const user_id = uuid_v4()
+        const user = new User()
+        user.user_id = user_id
+
+        user.email = email
+        user.phone = phone
+
+        if (given_name !== undefined) {
+            user.given_name = given_name
+        }
+        if (family_name !== undefined) {
+            user.family_name = family_name
+        }
+        if (date_of_birth !== undefined) {
+            user.date_of_birth = date_of_birth
+        }
+        if (username !== undefined) {
+            user.username = username
+        }
+
+        user.alternate_email = alternate_email
+        user.alternate_phone = alternate_phone
+
+        if (gender !== undefined) {
+            user.gender = gender
+        }
+        return user
+    }
+
+    private unswapEmailPhone(
+        email?: string,
+        phone?: string
+    ): (string | undefined)[] {
+        if (!isEmail(email) && isPhone(email)) {
+            phone = email
+            email = undefined
+        } else if (!isPhone(phone) && isEmail(phone)) {
+            email = phone
+            phone = undefined
+        }
+
+        return [email, phone]
+    }
+
     public async inviteUser(
         {
             email,
@@ -576,8 +649,12 @@ export class Organization extends BaseEntity {
             ) {
                 return null
             }
+
+            ;[email, phone] = this.unswapEmailPhone(email, phone)
+
             email = normalizedLowercaseTrimmed(email)
             phone = normalizedLowercaseTrimmed(phone)
+
             if (typeof alternate_email === 'string') {
                 alternate_email = normalizedLowercaseTrimmed(alternate_email)
             }
@@ -585,29 +662,112 @@ export class Organization extends BaseEntity {
                 alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
             }
 
+            if (typeof shortcode === 'string') {
+                shortcode = shortcode.toUpperCase()
+            }
+
             date_of_birth = padShortDob(date_of_birth)
 
-            const result = await this._setMembership(
-                restricted,
-                false,
-                undefined,
-                email,
-                phone,
-                given_name,
-                family_name,
-                date_of_birth,
-                username,
-                gender,
-                shortcode,
-                organization_role_ids,
-                school_ids,
-                school_role_ids,
-                alternate_email,
-                alternate_phone
+            const validatingUser = {
+                email: email,
+                phone: phone,
+                given_name: given_name,
+                family_name: family_name,
+                date_of_birth: date_of_birth,
+                username: username,
+                gender: gender,
+                alternate_email: alternate_email,
+                alternate_phone: alternate_phone,
+            }
+
+            const userResult = Joi.object(userValidations).validate(
+                validatingUser,
+                {
+                    abortEarly: false,
+                }
             )
-            return result
+            if (userResult.error) {
+                throw userResult.error
+            }
+
+            const validatingMembership = {
+                shortcode: shortcode,
+            }
+            const membershipResult = Joi.object(
+                organizationMembershipValidations
+            ).validate(validatingMembership, {
+                abortEarly: false,
+            })
+
+            if (membershipResult.error) {
+                throw membershipResult.error
+            }
+
+            return getManager().transaction(async (manager) => {
+                console.log(
+                    'invite_user',
+                    email,
+                    phone,
+                    user_id,
+                    given_name,
+                    family_name,
+                    date_of_birth,
+                    username,
+                    gender,
+                    shortcode,
+                    organization_role_ids,
+                    school_ids,
+                    school_role_ids,
+                    alternate_email,
+                    alternate_phone
+                )
+                const roleLookup = await this.getRoleLookup()
+                const organizationRoles = (await Promise.all(
+                    organization_role_ids.map((role_id: string) =>
+                        roleLookup(role_id)
+                    )
+                )) as Role[]
+                const schoolRoles = (await Promise.all(
+                    school_role_ids.map((role_id: string) =>
+                        roleLookup(role_id)
+                    )
+                )) as Role[]
+                const user = await this.createUser(
+                    email,
+                    phone,
+                    given_name,
+                    family_name,
+                    date_of_birth,
+                    username,
+                    alternate_email,
+                    alternate_phone,
+                    gender
+                )
+
+                const membership = await this.membershipOrganization(
+                    user,
+                    organizationRoles,
+                    shortcode
+                )
+                const [
+                    schoolMemberships,
+                    oldSchoolMemberships,
+                ] = await this.membershipSchools(user, school_ids, schoolRoles)
+                if (restricted) {
+                    await manager.save([
+                        user,
+                        membership,
+                        ...oldSchoolMemberships,
+                    ])
+                    return { user, membership, oldSchoolMemberships }
+                }
+                await manager.remove(oldSchoolMemberships)
+                await manager.save([user, membership, ...schoolMemberships])
+                return { user, membership, schoolMemberships }
+            })
         } catch (e) {
             console.error(e)
+            throw e
         }
     }
 
@@ -847,6 +1007,7 @@ export class Organization extends BaseEntity {
         if (!validateDOB(date_of_birth)) {
             date_of_birth = undefined
         }
+
         if (typeof shortcode === 'string') {
             shortcode = shortcode.toUpperCase()
             if (
