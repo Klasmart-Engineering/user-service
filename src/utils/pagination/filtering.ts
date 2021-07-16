@@ -12,13 +12,19 @@ type FilteringOperator = 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains'
 
 interface IFilter {
     operator: FilteringOperator
-    value: string | number | boolean
+    value: string | number | boolean | Record<string, string | number | boolean>
     caseInsensitive?: boolean
 }
 
 type ColumnAliases = Record<string, string[]> // use empty to ignore
 
 const FILTER_VALUE_MAX_LENGTH = 250
+
+// these aliases won't be used to filter if neq operator is applied
+const AVOID_NOT_EQUAL_OPERATOR_ALIASES = [
+    'AgeRange.low_value_unit',
+    'AgeRange.high_value_unit',
+]
 
 // generates a WHERE clause for a given query filter
 export function getWhereClauseFromFilter(
@@ -60,10 +66,35 @@ export function getWhereClauseFromFilter(
             }
 
             for (const alias of aliases) {
+                let currentValue = data.value
+                let currentOperator = data.operator
+
+                // a value of type object is considered as a compound value
+                if (typeof currentValue === 'object') {
+                    // in a neq opeartion is necessary check if is correct to check the current alias
+                    if (
+                        currentOperator === 'neq' &&
+                        AVOID_NOT_EQUAL_OPERATOR_ALIASES.includes(alias)
+                    ) {
+                        continue
+                    }
+
+                    // resetting value and operator to work properly with the given compound value
+                    currentValue = processComposedValue(currentValue, alias)
+                    currentOperator = setOperatorInComposedValue(
+                        currentOperator,
+                        alias
+                    )
+                }
+
                 const sqlOperator = getSQLOperatorFromFilterOperator(
-                    data.operator
+                    currentOperator
                 )
-                const value = parseValueForSQLOperator(sqlOperator, data.value)
+
+                const value = parseValueForSQLOperator(
+                    sqlOperator,
+                    currentValue
+                )
 
                 // parameter keys must be unique when using typeorm querybuilder
                 const uniqueId = uuid_v4()
@@ -158,6 +189,37 @@ function parseValueForSQLOperator(operator: string, value: unknown) {
             return `%${value}%`
         default:
             return value
+    }
+}
+
+// process a composed value to assign the correct property for a given alias
+export function processComposedValue(
+    composedValue: Record<string, string | number | boolean>,
+    alias: string
+) {
+    switch (alias) {
+        case 'AgeRange.low_value':
+        case 'AgeRange.high_value':
+            return composedValue.value
+        case 'AgeRange.low_value_unit':
+        case 'AgeRange.high_value_unit':
+            return composedValue.unit
+        default:
+            return composedValue
+    }
+}
+
+// changes the operator when it has not to be the received from filter data
+export function setOperatorInComposedValue(
+    operator: FilteringOperator,
+    alias: string
+) {
+    switch (alias) {
+        case 'AgeRange.low_value_unit':
+        case 'AgeRange.high_value_unit':
+            return 'eq'
+        default:
+            return operator
     }
 }
 

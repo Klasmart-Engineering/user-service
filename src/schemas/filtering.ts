@@ -30,6 +30,16 @@ const typeDefs = gql`
         value: String! # YYYY-MM-DD
     }
 
+    input AgeRangeTypeFilter {
+        operator: NumberOrDateOperator!
+        value: AgeRangeValue!
+    }
+
+    input AgeRangeValue {
+        value: Int!
+        unit: AgeRangeUnit!
+    }
+
     enum StringOperator {
         contains
         eq

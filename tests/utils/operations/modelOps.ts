@@ -336,6 +336,11 @@ const PROGRAMS_CONNECTION = `
                     ageRanges {
                         id
                         name
+                        lowValue
+                        lowValueUnit
+                        highValue
+                        highValueUnit
+                        system
                         status
                     }
 
@@ -343,12 +348,14 @@ const PROGRAMS_CONNECTION = `
                         id
                         name
                         status
+                        system
                     }
 
                     subjects {
                         id
                         name
                         status
+                        system
                     }
                 }
             }

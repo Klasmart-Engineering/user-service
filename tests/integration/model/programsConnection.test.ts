@@ -407,12 +407,17 @@ describe('model', () => {
             gradesIds.every((ids) => ids?.includes(gradeId))
         })
 
-        it('supports filtering by age range ID', async () => {
-            const ageRangeId = ageRanges[0].id
+        it('supports filtering by age range from', async () => {
+            const ageRange = ageRanges[0]
+            const ageRangeFrom = {
+                value: ageRange.low_value,
+                unit: ageRange.low_value_unit,
+            }
+
             const filter: IEntityFilter = {
-                ageRangeId: {
+                ageRangeFrom: {
                     operator: 'eq',
-                    value: ageRangeId,
+                    value: ageRangeFrom,
                 },
             }
 
@@ -424,15 +429,66 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(2)
+            expect(result.totalCount).to.eq(programsCount / ageRangesCount)
 
-            const ageRangesIds = result.edges.map((edge) => {
+            const ageRangesValues = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.id
+                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValue
                 )
             })
 
-            ageRangesIds.every((ids) => ids?.includes(ageRangeId))
+            const ageRangesUnits = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValueUnit
+                )
+            })
+
+            ageRangesValues.every((values) =>
+                values?.includes(ageRangeFrom.value)
+            )
+            ageRangesUnits.every((units) => units?.includes(ageRangeFrom.unit))
+        })
+
+        it('supports filtering by age range to', async () => {
+            const ageRange = ageRanges[1]
+            const ageRangeTo = {
+                value: ageRange.high_value,
+                unit: ageRange.high_value_unit,
+            }
+
+            const filter: IEntityFilter = {
+                ageRangeTo: {
+                    operator: 'eq',
+                    value: ageRangeTo,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(programsCount / ageRangesCount)
+
+            const ageRangesValues = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeSummaryNode) => ageRange.highValue
+                )
+            })
+
+            const ageRangesUnits = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeSummaryNode) => ageRange.highValueUnit
+                )
+            })
+
+            ageRangesValues.every((values) =>
+                values?.includes(ageRangeTo.value)
+            )
+            ageRangesUnits.every((units) => units?.includes(ageRangeTo.unit))
         })
 
         it('supports filtering by subject ID', async () => {

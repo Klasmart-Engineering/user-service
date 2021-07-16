@@ -504,7 +504,10 @@ export class Model {
                 scope.leftJoinAndSelect('Program.grades', 'Grade')
             }
 
-            if (filterHasProperty('ageRangeId', filter)) {
+            if (
+                filterHasProperty('ageRangeFrom', filter) ||
+                filterHasProperty('ageRangeTo', filter)
+            ) {
                 scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             }
 
@@ -524,7 +527,14 @@ export class Model {
                     status: ['Program.status'],
                     organizationId: ['Organization.organization_id'],
                     gradeId: ['Grade.id'],
-                    ageRangeId: ['AgeRange.id'],
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                    ageRangeTo: [
+                        'AgeRange.high_value',
+                        'AgeRange.high_value_unit',
+                    ],
                     subjectId: ['Subject.id'],
                     schoolId: ['School.school_id'],
                 })

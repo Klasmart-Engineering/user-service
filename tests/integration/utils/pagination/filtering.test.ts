@@ -7,6 +7,9 @@ import {
     IEntityFilter,
     getWhereClauseFromFilter,
 } from '../../../../src/utils/pagination/filtering'
+import { AgeRange } from '../../../../src/entities/ageRange'
+import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
+import { Program } from '../../../../src/entities/program'
 
 use(chaiAsPromised)
 
@@ -55,9 +58,119 @@ function getUsers() {
     return users
 }
 
+const ageRangeData = [
+    {
+        id: '3f9a4f12-aabd-464a-b2a3-59bdc3fa70e4',
+        name: '9-12 month(s)',
+        low_value: 9,
+        low_value_unit: AgeRangeUnit.MONTH,
+        high_value: 12,
+        high_value_unit: AgeRangeUnit.MONTH,
+    },
+    {
+        id: '6429f000-3704-43f5-8b2b-c472f09b7512',
+        name: '12-24 month(s)',
+        low_value: 12,
+        low_value_unit: AgeRangeUnit.MONTH,
+        high_value: 24,
+        high_value_unit: AgeRangeUnit.MONTH,
+    },
+    {
+        id: '6bc34d1f-ac28-4344-88a9-6e679ed400ba',
+        name: '24-36 month(s)',
+        low_value: 24,
+        low_value_unit: AgeRangeUnit.MONTH,
+        high_value: 36,
+        high_value_unit: AgeRangeUnit.MONTH,
+    },
+    {
+        id: 'd4a7c445-8eb9-44e6-a153-c1b1bc13e8f5',
+        name: '3-4 year(s)',
+        low_value: 3,
+        low_value_unit: AgeRangeUnit.YEAR,
+        high_value: 4,
+        high_value_unit: AgeRangeUnit.YEAR,
+    },
+    {
+        id: '6c2b2756-ad24-4d30-b9ae-a316d4e136ae',
+        name: '4-5 year(s)',
+        low_value: 4,
+        low_value_unit: AgeRangeUnit.YEAR,
+        high_value: 5,
+        high_value_unit: AgeRangeUnit.YEAR,
+    },
+    {
+        id: '87403ab4-2d9a-4e3d-b1d0-66e0e6d21de1',
+        name: '5-6 year(s)',
+        low_value: 5,
+        low_value_unit: AgeRangeUnit.YEAR,
+        high_value: 6,
+        high_value_unit: AgeRangeUnit.YEAR,
+    },
+]
+
+function getAgeRanges() {
+    const ageRanges: AgeRange[] = []
+    for (const ar of ageRangeData) {
+        const ageRange = new AgeRange()
+        ageRange.id = ar.id
+        ageRange.name = ar.name
+        ageRange.low_value = ar.low_value
+        ageRange.low_value_unit = ar.low_value_unit
+        ageRange.high_value = ar.high_value
+        ageRange.high_value_unit = ar.high_value_unit
+
+        ageRanges.push(ageRange)
+    }
+
+    return ageRanges
+}
+
+async function getPrograms() {
+    const programData = [
+        {
+            id: '5e9837fd-1469-4752-a4bb-fc18935a6370',
+            name: 'Nursery',
+            age_ranges: [ageRangeData[0], ageRangeData[1], ageRangeData[2]],
+        },
+        {
+            id: '40c1f13d-f750-4b7b-bc71-bc6636399f3d',
+            name: 'Three to Four',
+            age_ranges: [ageRangeData[3]],
+        },
+        {
+            id: '2194d455-629d-4495-8a85-e1e60825fe72',
+            name: 'Kindergarten Full',
+            age_ranges: [ageRangeData[3], ageRangeData[4], ageRangeData[5]],
+        },
+        {
+            id: 'df099b0f-baf0-4793-9409-78076fb1ae65',
+            name: 'Kindergarten Partial',
+            age_ranges: [ageRangeData[4], ageRangeData[5]],
+        },
+    ]
+
+    const programs: Program[] = []
+    for (const p of programData) {
+        const ageRanges = await getRepository(AgeRange).findByIds(
+            p.age_ranges.map((ar) => ar.id)
+        )
+
+        const program = new Program()
+        program.id = p.id
+        program.name = p.name
+        program.age_ranges = Promise.resolve(ageRanges)
+
+        programs.push(program)
+    }
+
+    return programs
+}
+
 describe('filtering', () => {
     let connection: Connection
     let scope: SelectQueryBuilder<any>
+    let programScope: SelectQueryBuilder<any>
 
     before(async () => {
         connection = await createTestConnection()
@@ -70,6 +183,10 @@ describe('filtering', () => {
     beforeEach(async () => {
         await connection.manager.save(getUsers())
         scope = getRepository(User).createQueryBuilder()
+
+        await connection.manager.save(getAgeRanges())
+        await connection.manager.save(await getPrograms())
+        programScope = getRepository(Program).createQueryBuilder()
     })
 
     context('strings', () => {
@@ -294,6 +411,164 @@ describe('filtering', () => {
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
+        })
+    })
+
+    context('ageRanges', () => {
+        it('supports ageRange.eq', async () => {
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'eq',
+                    value: {
+                        value: 4,
+                        unit: AgeRangeUnit.YEAR,
+                    },
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                })
+            )
+
+            const data: Program[] = await programScope.getMany()
+
+            expect(data.length).to.equal(2)
+        })
+
+        it('supports ageRange.neq', async () => {
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'neq',
+                    value: {
+                        value: 3,
+                        unit: AgeRangeUnit.YEAR,
+                    },
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                })
+            )
+
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(3)
+        })
+
+        it('supports ageRange.gt', async () => {
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'gt',
+                    value: {
+                        value: 12,
+                        unit: AgeRangeUnit.MONTH,
+                    },
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                })
+            )
+
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it('supports ageRange.gte', async () => {
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'gte',
+                    value: {
+                        value: 12,
+                        unit: AgeRangeUnit.MONTH,
+                    },
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                })
+            )
+
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it('supports ageRange.lt', async () => {
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'lt',
+                    value: {
+                        value: 4,
+                        unit: AgeRangeUnit.YEAR,
+                    },
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                })
+            )
+
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(2)
+        })
+
+        it('supports ageRange.lte', async () => {
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'lte',
+                    value: {
+                        value: 4,
+                        unit: AgeRangeUnit.YEAR,
+                    },
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeFrom: [
+                        'AgeRange.low_value',
+                        'AgeRange.low_value_unit',
+                    ],
+                })
+            )
+
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(3)
         })
     })
 })

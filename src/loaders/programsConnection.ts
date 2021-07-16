@@ -31,7 +31,10 @@ export const ageRangesForPrograms = async (
             scope.leftJoinAndSelect('Program.grades', 'Grade')
         }
 
-        if (filterHasProperty('ageRangeId', filter)) {
+        if (
+            filterHasProperty('ageRangeFrom', filter) ||
+            filterHasProperty('ageRangeTo', filter)
+        ) {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         }
 
@@ -51,7 +54,8 @@ export const ageRangesForPrograms = async (
                 status: ['Program.status'],
                 organizationId: ['Organization.organization_id'],
                 gradeId: ['Grade.id'],
-                ageRangeId: [],
+                ageRangeFrom: [],
+                ageRangeTo: [],
                 subjectId: ['Subject.id'],
                 schoolId: ['School.school_id'],
             })
@@ -107,7 +111,10 @@ export const gradesForPrograms = async (
             scope.leftJoinAndSelect('Program.grades', 'Grade')
         }
 
-        if (filterHasProperty('ageRangeId', filter)) {
+        if (
+            filterHasProperty('ageRangeFrom', filter) ||
+            filterHasProperty('ageRangeTo', filter)
+        ) {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         }
 
@@ -127,7 +134,8 @@ export const gradesForPrograms = async (
                 status: ['Program.status'],
                 organizationId: ['Organization.organization_id'],
                 gradeId: [],
-                ageRangeId: ['AgeRange.id'],
+                ageRangeFrom: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
+                ageRangeTo: ['AgeRange.high_value', 'AgeRange.high_value_unit'],
                 subjectId: ['Subject.id'],
                 schoolId: ['School.school_id'],
             })
@@ -177,7 +185,10 @@ export const subjectsForPrograms = async (
             scope.leftJoinAndSelect('Program.grades', 'Grade')
         }
 
-        if (filterHasProperty('ageRangeId', filter)) {
+        if (
+            filterHasProperty('ageRangeFrom', filter) ||
+            filterHasProperty('ageRangeTo', filter)
+        ) {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
         }
 
@@ -197,7 +208,8 @@ export const subjectsForPrograms = async (
                 status: ['Program.status'],
                 organizationId: ['Organization.organization_id'],
                 gradeId: ['Grade.id'],
-                ageRangeId: ['AgeRange.id'],
+                ageRangeFrom: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
+                ageRangeTo: ['AgeRange.high_value', 'AgeRange.high_value_unit'],
                 subjectId: [],
                 schoolId: ['School.school_id'],
             })
