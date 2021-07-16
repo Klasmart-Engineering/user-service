@@ -141,6 +141,17 @@ export class SubjectsInitializer {
                 'dfed32b5-f0bd-42ea-999b-e10b376038d5',
             ],
         },
+        {
+            id: 'f12276a9-4331-4699-b0fa-68e8df172843',
+            name: 'STEAM',
+            categories: [
+                '70d1dff5-4b5a-4029-98e8-8d9fd531b509',
+                '17e2dc7e-4911-4a73-9ff0-06baba99900f',
+                '51ae3bca-0e55-465c-8302-6fdf132fa316',
+                '1d3b076f-0968-4a06-bbaa-18cff13f3db8',
+                'dafb0af8-877f-4af4-99b1-79d1a67de059',
+            ],
+        },
     ]
 
     public async run() {

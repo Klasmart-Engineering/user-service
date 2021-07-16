@@ -231,6 +231,96 @@ export class SubcategoriesInitializer {
             id: '47169b0a-ac39-4e25-bd6e-77eecaf4e051',
             name: 'Interpreting',
         },
+        {
+            id: '3e7c719b-aa3c-45c3-87ac-08ae0e6138b1',
+            name: "Animal's Needs",
+        },
+        {
+            id: 'b60f9fa0-a160-42e2-9cea-9ec39de2692a',
+            name: 'Classification',
+        },
+        {
+            id: '7dfc3b4c-3037-42f6-89be-75839e8ab40d',
+            name: 'Food',
+        },
+        {
+            id: '60c8428a-98db-445f-9a91-fbddb20eb315',
+            name: 'Adaptations',
+        },
+        {
+            id: 'db49ef2b-e680-488f-a241-dd5c0f0ee727',
+            name: 'Environment',
+        },
+        {
+            id: 'eca38066-c702-4ca0-a1e7-420d8becf687',
+            name: 'Senses',
+        },
+        {
+            id: '92055ac9-45a8-4905-b713-e7b6473593f6',
+            name: 'Growth & Development',
+        },
+        {
+            id: 'b39b4fe4-2bc1-4d92-a8e3-ce163f6a3306',
+            name: 'Habitats',
+        },
+        {
+            id: '00878904-73cc-4fb8-8ef6-9676cf89dd74',
+            name: 'Plants & Food Chains',
+        },
+        {
+            id: 'fe0766c7-0c91-4652-b1fe-e949590cb9a2',
+            name: 'Movement & Interactions',
+        },
+        {
+            id: 'e601b3ef-5bcc-4dda-bf37-47244a63d067',
+            name: 'Ecosystems',
+        },
+        {
+            id: '76cc0ed5-c00c-42f3-9e3b-7d1355e2d9c0',
+            name: 'Endangered Species & Extinction',
+        },
+        {
+            id: '26654f67-ddc4-493d-9bc3-f260d8125d20',
+            name: 'Sets and Sorting',
+        },
+        {
+            id: '485eb5a6-73a3-497e-8d19-51cd9c10b323',
+            name: 'Uses of Number',
+        },
+        {
+            id: 'c9dd0e2a-608c-4833-9bf6-b73d51dfd7eb',
+            name: 'Numerosity',
+        },
+        {
+            id: '4c523f7b-88ca-4e47-b0e3-27b66caf696b',
+            name: 'Quantity',
+        },
+        {
+            id: 'c5e36c28-2d3d-43e1-b35a-2cd9a60a30c9',
+            name: 'Counting Rules',
+        },
+        {
+            id: 'd46ad925-10b2-4ff9-916e-e645cf4b308d',
+            name:
+                'Science Process (Observing, Classifying, Communicating, Measuring, Predicting)',
+        },
+        {
+            id: '1456ca91-1099-4dd2-a4fc-6f4408bc0249',
+            name:
+                'Critical Thinking (Interpretation, Analysis, Evaluation, Inference, Explanation, and Self-Regulation)',
+        },
+        {
+            id: '50165ef8-b723-4822-aa05-68fb44ecbcd1',
+            name: 'Reasoning Skills',
+        },
+        {
+            id: '56ec83c8-39c7-462e-bd2b-365f2a7aae72',
+            name: 'Creative Thinking Skills',
+        },
+        {
+            id: '5fff3596-42e9-416d-a2d2-29bc885fbb76',
+            name: 'Social Emotional',
+        },
     ]
 
     public async run() {
