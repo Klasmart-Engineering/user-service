@@ -300,20 +300,6 @@ export class SubcategoriesInitializer {
             name: 'Counting Rules',
         },
         {
-            id: 'd46ad925-10b2-4ff9-916e-e645cf4b308d',
-            name:
-                'Science Process (Observing, Classifying, Communicating, Measuring, Predicting)',
-        },
-        {
-            id: '1456ca91-1099-4dd2-a4fc-6f4408bc0249',
-            name:
-                'Critical Thinking (Interpretation, Analysis, Evaluation, Inference, Explanation, and Self-Regulation)',
-        },
-        {
-            id: '50165ef8-b723-4822-aa05-68fb44ecbcd1',
-            name: 'Reasoning Skills',
-        },
-        {
             id: '56ec83c8-39c7-462e-bd2b-365f2a7aae72',
             name: 'Creative Thinking Skills',
         },
