@@ -715,9 +715,9 @@ export class CategoriesInitializer {
             id: '51ae3bca-0e55-465c-8302-6fdf132fa316',
             name: 'Cognitive',
             subcategories: [
-                'd46ad925-10b2-4ff9-916e-e645cf4b308d',
-                '1456ca91-1099-4dd2-a4fc-6f4408bc0249',
-                '50165ef8-b723-4822-aa05-68fb44ecbcd1',
+                '8d3f987a-7f7c-4035-a709-9526060b2177',
+                '9a1e0589-0361-40e1-851c-b95b641e271e',
+                'b9d5a570-5be3-491b-9fdc-d26ea1c13847',
                 '56ec83c8-39c7-462e-bd2b-365f2a7aae72',
             ],
         },
