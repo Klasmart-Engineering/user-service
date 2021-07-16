@@ -3,7 +3,6 @@ import {
     PrimaryGeneratedColumn,
     Check,
     Entity,
-    Unique,
     OneToMany,
     getRepository,
     getManager,
@@ -14,6 +13,7 @@ import {
     ManyToOne,
     BaseEntity,
     EntityManager,
+    Index,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './user'
@@ -30,7 +30,12 @@ import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 
 @Entity()
 @Check(`"school_name" <> ''`)
-@Unique(['school_name', 'organization'])
+// @Unique doesn't support conditions, but the functionality can be replicated with @Index
+// https://github.com/typeorm/typeorm/issues/7709
+@Index(['organization', 'school_name'], {
+    unique: true,
+    where: `"status" = '${Status.ACTIVE}'`,
+})
 export class School extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public readonly school_id!: string
