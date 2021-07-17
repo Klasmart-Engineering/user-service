@@ -682,6 +682,61 @@ export class CategoriesInitializer {
                 '6fb79402-2fb6-4415-874c-338c949332ed',
             ],
         },
+        {
+            id: '70d1dff5-4b5a-4029-98e8-8d9fd531b509',
+            name: 'Science',
+            subcategories: [
+                '3e7c719b-aa3c-45c3-87ac-08ae0e6138b1',
+                'b60f9fa0-a160-42e2-9cea-9ec39de2692a',
+                '7dfc3b4c-3037-42f6-89be-75839e8ab40d',
+                '60c8428a-98db-445f-9a91-fbddb20eb315',
+                'db49ef2b-e680-488f-a241-dd5c0f0ee727',
+                'eca38066-c702-4ca0-a1e7-420d8becf687',
+                '92055ac9-45a8-4905-b713-e7b6473593f6',
+                'b39b4fe4-2bc1-4d92-a8e3-ce163f6a3306',
+                '00878904-73cc-4fb8-8ef6-9676cf89dd74',
+                'fe0766c7-0c91-4652-b1fe-e949590cb9a2',
+                'e601b3ef-5bcc-4dda-bf37-47244a63d067',
+                '76cc0ed5-c00c-42f3-9e3b-7d1355e2d9c0',
+            ],
+        },
+        {
+            id: '17e2dc7e-4911-4a73-9ff0-06baba99900f',
+            name: 'Mathematics',
+            subcategories: [
+                '26654f67-ddc4-493d-9bc3-f260d8125d20',
+                '485eb5a6-73a3-497e-8d19-51cd9c10b323',
+                'c9dd0e2a-608c-4833-9bf6-b73d51dfd7eb',
+                '4c523f7b-88ca-4e47-b0e3-27b66caf696b',
+                'c5e36c28-2d3d-43e1-b35a-2cd9a60a30c9',
+            ],
+        },
+        {
+            id: '51ae3bca-0e55-465c-8302-6fdf132fa316',
+            name: 'Cognitive',
+            subcategories: [
+                '8d3f987a-7f7c-4035-a709-9526060b2177',
+                '9a1e0589-0361-40e1-851c-b95b641e271e',
+                'b9d5a570-5be3-491b-9fdc-d26ea1c13847',
+                '56ec83c8-39c7-462e-bd2b-365f2a7aae72',
+            ],
+        },
+        {
+            id: '1d3b076f-0968-4a06-bbaa-18cff13f3db8',
+            name: 'Oral Language',
+            subcategories: [
+                '2d1152a3-fb03-4c4e-aeba-98856c3241bd',
+                '843e4fea-7f4d-4746-87ff-693f5a44b467',
+            ],
+        },
+        {
+            id: 'dafb0af8-877f-4af4-99b1-79d1a67de059',
+            name: 'Whole Child',
+            subcategories: [
+                '5fff3596-42e9-416d-a2d2-29bc885fbb76',
+                '144a3478-1946-4460-a965-0d7d74e63d65',
+            ],
+        },
     ]
 
     public async run() {

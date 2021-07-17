@@ -101,7 +101,7 @@ describe('acceptance.program', () => {
             const programsConnection = response.body.data.programsConnection
 
             expect(response.status).to.eq(200)
-            expect(programsConnection.totalCount).to.equal(11)
+            expect(programsConnection.totalCount).to.equal(12)
         })
 
         it('queries paginated programs filtering by age range from', async () => {
@@ -132,7 +132,7 @@ describe('acceptance.program', () => {
             const programsConnection = response.body.data.programsConnection
 
             expect(response.status).to.eq(200)
-            expect(programsConnection.totalCount).to.equal(5)
+            expect(programsConnection.totalCount).to.equal(6)
 
             const ageRangesValues = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
@@ -187,7 +187,7 @@ describe('acceptance.program', () => {
             const programsConnection = response.body.data.programsConnection
 
             expect(response.status).to.eq(200)
-            expect(programsConnection.totalCount).to.equal(10)
+            expect(programsConnection.totalCount).to.equal(11)
 
             const ageRangesValues = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
