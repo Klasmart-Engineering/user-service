@@ -20,6 +20,7 @@ import { Subject } from './subject'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
 import { School } from './school'
+import { Class } from './class'
 
 @Entity()
 export class Program extends BaseEntity {
@@ -50,7 +51,6 @@ export class Program extends BaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.programs)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
-
     @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
     public created_at!: Date
 
@@ -59,6 +59,9 @@ export class Program extends BaseEntity {
 
     @ManyToMany(() => School, (school) => school.programs)
     public schools?: Promise<School>
+
+    @ManyToMany(() => Class, (class_) => class_.programs)
+    public classes?: Promise<Class>
 
     public async editAgeRanges(
         { age_range_ids }: { age_range_ids: string[] },

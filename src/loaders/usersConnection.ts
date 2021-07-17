@@ -24,6 +24,7 @@ export const orgsForUsers = async (
     //
     const scope = await User.createQueryBuilder('user')
         .leftJoinAndSelect('user.memberships', 'memberships')
+        .leftJoinAndSelect('user.classes', 'class')
         .leftJoinAndSelect('memberships.organization', 'organization')
         .leftJoinAndSelect('memberships.roles', 'roles')
         .where('user.user_id IN (:...ids)', { ids: userIds })
@@ -37,6 +38,7 @@ export const orgsForUsers = async (
                 organizationUserStatus: ['memberships.status'],
                 userId: ["concat(user.user_id, '')"],
                 phone: ['user.phone'],
+                classId: ['class.class_id'],
             })
         )
     }
@@ -78,6 +80,7 @@ export const schoolsForUsers = async (
     //
     const scope = await User.createQueryBuilder('user')
         .leftJoinAndSelect('user.school_memberships', 'memberships')
+        .leftJoinAndSelect('user.classes', 'class')
         .leftJoinAndSelect('memberships.school', 'school')
         .leftJoinAndSelect('memberships.roles', 'roles')
         .leftJoinAndSelect('school.organization', 'organization')
@@ -92,6 +95,7 @@ export const schoolsForUsers = async (
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
                 phone: ['user.phone'],
+                classId: ['class.class_id'],
             })
         )
     }
@@ -133,6 +137,7 @@ export const rolesForUsers = async (
     // fetch school & organization membership roles for each user
     const orgScope = await User.createQueryBuilder('user')
         .leftJoinAndSelect('user.memberships', 'orgMemberships')
+        .leftJoinAndSelect('user.classes', 'class')
         .leftJoinAndSelect('orgMemberships.roles', 'orgRoles')
         .where('user.user_id IN (:...ids)', { ids: userIds })
 
@@ -151,6 +156,7 @@ export const rolesForUsers = async (
                 roleId: ['orgRoles.role_id'],
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
+                classId: ['class.class_id'],
             })
         )
         schoolScope.andWhere(
@@ -161,6 +167,7 @@ export const rolesForUsers = async (
                 organizationUserStatus: [],
                 userId: ["concat(user.user_id, '')"],
                 phone: ['user.phone'],
+                classId: ['class.class_id'],
             })
         )
     }

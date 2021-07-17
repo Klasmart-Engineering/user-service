@@ -46,6 +46,10 @@ export const ageRangesForPrograms = async (
             scope.leftJoinAndSelect('Program.schools', 'School')
         }
 
+        if (filterHasProperty('classId', filter)) {
+            scope.leftJoin('Program.classes', 'Class')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Program.id'],
@@ -58,6 +62,7 @@ export const ageRangesForPrograms = async (
                 ageRangeTo: [],
                 subjectId: ['Subject.id'],
                 schoolId: ['School.school_id'],
+                classId: ['Class.class_id'],
             })
         )
     }
@@ -126,6 +131,10 @@ export const gradesForPrograms = async (
             scope.leftJoinAndSelect('Program.schools', 'School')
         }
 
+        if (filterHasProperty('classId', filter)) {
+            scope.leftJoin('Program.classes', 'Class')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Program.id'],
@@ -138,6 +147,7 @@ export const gradesForPrograms = async (
                 ageRangeTo: ['AgeRange.high_value', 'AgeRange.high_value_unit'],
                 subjectId: ['Subject.id'],
                 schoolId: ['School.school_id'],
+                classId: ['Class.class_id'],
             })
         )
     }
@@ -200,6 +210,10 @@ export const subjectsForPrograms = async (
             scope.leftJoinAndSelect('Program.schools', 'School')
         }
 
+        if (filterHasProperty('classId', filter)) {
+            scope.leftJoin('Program.classes', 'Class')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: ['Program.id'],
@@ -212,6 +226,7 @@ export const subjectsForPrograms = async (
                 ageRangeTo: ['AgeRange.high_value', 'AgeRange.high_value_unit'],
                 subjectId: [],
                 schoolId: ['School.school_id'],
+                classId: ['Class.class_id'],
             })
         )
     }

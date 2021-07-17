@@ -54,7 +54,7 @@ export class Class extends BaseEntity {
     @ManyToMany(() => User, (user) => user.classesStudying)
     public students?: Promise<User[]>
 
-    @ManyToMany(() => Program)
+    @ManyToMany(() => Program, (program) => program.classes)
     @JoinTable()
     public programs?: Promise<Program[]>
 
