@@ -101,7 +101,7 @@ describe('acceptance.program', () => {
             const programsConnection = response.body.data.programsConnection
 
             expect(response.status).to.eq(200)
-            expect(programsConnection.totalCount).to.equal(11)
+            expect(programsConnection.totalCount).to.equal(12)
         })
 
         it('queries paginated programs filtering by age range from', async () => {
