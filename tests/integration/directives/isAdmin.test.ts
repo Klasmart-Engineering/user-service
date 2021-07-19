@@ -338,15 +338,17 @@ describe('isAdmin', () => {
                 )
 
                 // Make user a teacher of 2 of the 3 classes
-                await Promise.all(
-                    classes.slice(0, 2).map((_class) => {
-                        return addTeacherToClass(
-                            testClient,
-                            _class.class_id,
-                            user.user_id,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    })
+                await addTeacherToClass(
+                    testClient,
+                    classes[0].class_id,
+                    user.user_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                await addTeacherToClass(
+                    testClient,
+                    classes[1].class_id,
+                    user.user_id,
+                    { authorization: getAdminAuthToken() }
                 )
 
                 // Add 2 students to each class + one student being a member of 2 classes
@@ -363,7 +365,7 @@ describe('isAdmin', () => {
                 )
 
                 await Promise.all(
-                    usersList.slice(3, 4).map((student) => {
+                    usersList.slice(2, 4).map((student) => {
                         return addStudentToClass(
                             testClient,
                             classes[1].class_id,
@@ -374,7 +376,7 @@ describe('isAdmin', () => {
                 )
 
                 await Promise.all(
-                    usersList.slice(5, 6).map((student) => {
+                    usersList.slice(4, 6).map((student) => {
                         return addStudentToClass(
                             testClient,
                             classes[2].class_id,
