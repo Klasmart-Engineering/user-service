@@ -162,6 +162,34 @@ describe('schoolsConnection', () => {
 
             expect(result.totalCount).to.eq(10)
         })
+        // "status" appears in both, make sure we won't produce an ambiguous column reference
+        it('supports filtering by school status and organization', async () => {
+            const filter: IEntityFilter = {
+                AND: [
+                    {
+                        status: {
+                            operator: 'eq',
+                            value: 'inactive',
+                        },
+                    },
+                    {
+                        organizationId: {
+                            operator: 'eq',
+                            value: org2.organization_id,
+                        },
+                    },
+                ],
+            }
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(10)
+        })
     })
 
     context('sorting', () => {

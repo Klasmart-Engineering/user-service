@@ -449,6 +449,7 @@ export class Model {
                     schoolId: ['school_id'],
                     name: ['school_name'],
                     shortCode: ['shortcode'],
+                    status: ['School.status'], // not organization status!
                 })
             )
         }
