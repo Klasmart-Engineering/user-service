@@ -353,8 +353,6 @@ export const processUserFromCSVRow = async (
     const personalInfo = {
         given_name: row.user_given_name,
         family_name: row.user_family_name,
-        date_of_birth: row.user_date_of_birth,
-        gender: row.user_gender,
     }
 
     let user = await manager.findOne(User, {
@@ -364,25 +362,26 @@ export const processUserFromCSVRow = async (
             { email: email, phone: phone, ...personalInfo },
         ],
     })
-
+    let isNewUser = false
     if (!user) {
         user = new User()
         user.user_id = uuid_v4()
+        isNewUser = true
     }
 
-    if (email) {
+    if (isNewUser && email) {
         user.email = row.user_email
     }
 
-    if (phone) {
+    if (isNewUser && phone) {
         user.phone = row.user_phone
     }
 
-    if (row.user_given_name) {
+    if (isNewUser && row.user_given_name) {
         user.given_name = row.user_given_name
     }
 
-    if (row.user_family_name) {
+    if (isNewUser && row.user_family_name) {
         user.family_name = row.user_family_name
     }
 

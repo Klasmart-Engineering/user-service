@@ -997,6 +997,11 @@ describe('model.csv', () => {
                     where: { email: 'test@test.com' },
                 })
                 expect(usersCount).eq(2)
+                const dbUser = await User.findOne({
+                    where: { email: 'test@test.com', given_name: 'Three' },
+                })
+                expect(dbUser).to.exist
+                expect(dbUser?.date_of_birth).to.equal('06-2018')
             })
         })
     })
