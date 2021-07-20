@@ -172,7 +172,15 @@ export class Model {
  
         console.info('------------------------------------')
         console.info('====================================')
-        console.info(JSON.stringify(arguments[0], null, 2))
+        console.info(JSON.stringify({
+            given_name,
+            family_name,
+            email,
+            phone,
+            avatar,
+            date_of_birth,
+            username,
+        }, null, 2))
         const newUser = new User()
         if (email) {
             if (!validateEmail(email)) {
