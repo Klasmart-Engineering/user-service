@@ -81,7 +81,7 @@ describe('model', () => {
         subjects = []
 
         for (let i = 0; i < ageRangesCount; i++) {
-            let ageRange = await createAgeRange(org1)
+            let ageRange = await createAgeRange(org1, i, i + 1)
             ageRanges.push(ageRange)
         }
 
