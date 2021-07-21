@@ -891,7 +891,8 @@ describe('school', () => {
                     )
                 })
 
-                it('deletes the school classes', async () => {
+                it("doesn't inactivate the school classes", async () => {
+                    // UD-572
                     const gqlSchool = await deleteSchool(
                         testClient,
                         school.school_id,
@@ -905,7 +906,7 @@ describe('school', () => {
 
                     expect(dbClasses).to.satisfy((classes: Class[]) => {
                         return classes.every(
-                            (cls) => cls.status === Status.INACTIVE
+                            (cls) => cls.status === Status.ACTIVE
                         )
                     })
                 })

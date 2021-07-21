@@ -253,21 +253,10 @@ export class School extends BaseEntity {
         return schoolMemberships
     }
 
-    private async inactivateClasses(manager: EntityManager) {
-        const classes = (await this.classes) || []
-
-        for (const cls of classes) {
-            await cls.inactivate(manager)
-        }
-
-        return classes
-    }
-
     public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
 
-        await this.inactivateClasses(manager)
         await this.inactivateSchoolMemberships(manager)
         await manager.save(this)
     }
