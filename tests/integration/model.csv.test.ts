@@ -119,7 +119,7 @@ describe('model.csv', () => {
                     mimetype,
                     encoding
                 )
-            expect(fn()).to.be.rejectedWith(Error)
+            await expect(fn()).to.be.rejectedWith(Error)
 
             const organizationsCreated = await Organization.count()
             expect(organizationsCreated).eq(0)
@@ -148,7 +148,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -170,7 +170,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -198,7 +198,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                await expect(fn()).to.be.rejectedWith(CustomError)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
@@ -265,7 +265,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const rolesCreated = await Role.count({
                     where: { system_role: false },
@@ -288,7 +288,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const rolesCreated = await Role.count({
                     where: { system_role: false },
@@ -353,7 +353,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const subjectsCreated = await Subject.count({
                     where: { system: false },
@@ -376,7 +376,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const subjectsCreated = await Subject.count({
                     where: { system: false },
@@ -440,7 +440,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const gradesCreated = await Grade.count()
                 expect(gradesCreated).eq(0)
@@ -462,7 +462,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const gradesCreated = await Grade.count()
                 expect(gradesCreated).eq(0)
@@ -529,7 +529,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const classesCreated = await Class.count()
                 expect(classesCreated).eq(0)
@@ -550,7 +550,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const classesreated = await Class.count()
                 expect(classesreated).eq(0)
@@ -630,7 +630,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const schoolsCreated = await School.count()
                 expect(schoolsCreated).eq(0)
@@ -650,7 +650,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const schoolsCreated = await School.count()
                 expect(schoolsCreated).eq(0)
@@ -706,7 +706,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const subCategoriesCreated = await Subcategory.count()
                 expect(subCategoriesCreated).eq(0)
@@ -726,7 +726,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const subCategoriesCreated = await Subcategory.count()
                 expect(subCategoriesCreated).eq(0)
@@ -784,7 +784,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
@@ -805,7 +805,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
@@ -825,7 +825,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                await expect(fn()).to.be.rejectedWith(CustomError)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
@@ -875,7 +875,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                await expect(fn()).to.be.rejectedWith(CustomError)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
@@ -921,7 +921,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                await expect(fn()).to.be.rejectedWith(CustomError)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
@@ -1026,7 +1026,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const categoriesCreated = await Category.count({
                     where: { system: false },
@@ -1049,7 +1049,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const categoriesCreated = await Category.count({
                     where: { system: false },
@@ -1119,7 +1119,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const programsCreated = await Program.count({
                     where: { system: false },
@@ -1141,7 +1141,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const programsCreated = await Program.count({
                     where: { system: false },
@@ -1163,7 +1163,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                await expect(fn()).to.be.rejectedWith(CustomError)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
@@ -1308,7 +1308,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },
@@ -1331,7 +1331,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },
@@ -1355,7 +1355,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                await expect(fn()).to.be.rejectedWith(CustomError)
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },

@@ -225,7 +225,7 @@ describe('program', () => {
                                                 }
                                             )
 
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbProgram = await Program.findOneOrFail(
                                             program.id
                                         )
@@ -269,7 +269,7 @@ describe('program', () => {
                                                 }
                                             )
 
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbProgram = await Program.findOneOrFail(
                                             program.id
                                         )
@@ -295,7 +295,7 @@ describe('program', () => {
                                                 }
                                             )
 
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbProgram = await Program.findOneOrFail(
                                             program.id
                                         )
@@ -489,7 +489,7 @@ describe('program', () => {
                     editAgeRanges(testClient, program.id, [ageRange.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbAgeRanges = (await program.age_ranges) || []
                 expect(dbAgeRanges).to.be.empty
@@ -520,7 +520,7 @@ describe('program', () => {
                                 [ageRange.id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbAgeRanges = (await program.age_ranges) || []
                         expect(dbAgeRanges).to.be.empty
@@ -619,7 +619,7 @@ describe('program', () => {
                     editGrades(testClient, program.id, [grade.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbGrades = (await program.grades) || []
                 expect(dbGrades).to.be.empty
@@ -647,7 +647,7 @@ describe('program', () => {
                             editGrades(testClient, program.id, [grade.id], {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbGrades = (await program.grades) || []
                         expect(dbGrades).to.be.empty
@@ -743,7 +743,7 @@ describe('program', () => {
                     editSubjects(testClient, program.id, [subject.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbSubjects = (await program.subjects) || []
                 expect(dbSubjects).to.be.empty
@@ -771,7 +771,7 @@ describe('program', () => {
                             editSubjects(testClient, program.id, [subject.id], {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbSubjects = (await program.subjects) || []
                         expect(dbSubjects).to.be.empty

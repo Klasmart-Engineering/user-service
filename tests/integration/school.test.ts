@@ -471,7 +471,7 @@ describe('school', () => {
                         undefined,
                         { authorization: getNonAdminAuthToken() }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbSchool = await School.findOneOrFail({
                     where: { school_id: schoolId },
@@ -743,7 +743,7 @@ describe('school', () => {
                     addUserToSchool(testClient, idOfUserToBeAdded, schoolId, {
                         authorization: getNonAdminAuthToken(),
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbMembership = await SchoolMembership.findOne({
                     where: { user_id: idOfUserToBeAdded, school_id: schoolId },
@@ -793,7 +793,7 @@ describe('school', () => {
                     deleteSchool(testClient, school.school_id, {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbSchool = await School.findOneOrFail(school.school_id)
                 expect(dbSchool.status).to.eq(Status.ACTIVE)
@@ -823,7 +823,7 @@ describe('school', () => {
                             deleteSchool(testClient, school.school_id, {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbSchool = await School.findOneOrFail(
                             school.school_id
@@ -985,7 +985,7 @@ describe('school', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -997,7 +997,7 @@ describe('school', () => {
                             authorization: getNonAdminAuthToken(),
                         })
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
 
@@ -1083,7 +1083,7 @@ describe('school', () => {
                     editPrograms(testClient, school.school_id, [program.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbPrograms = (await school.programs) || []
                 expect(dbPrograms).to.be.empty
@@ -1114,7 +1114,7 @@ describe('school', () => {
                                 [program.id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbPrograms = (await school.programs) || []
                         expect(dbPrograms).to.be.empty

@@ -89,7 +89,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const user = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -107,7 +107,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const user = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -125,7 +125,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -143,7 +143,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -161,7 +161,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -179,7 +179,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -205,7 +205,7 @@ describe('processUserFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
                     where: { email: row.user_email },
                 })
@@ -227,7 +227,7 @@ describe('processUserFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
                     where: { email: row.user_email },
                 })
@@ -265,7 +265,7 @@ describe('processUserFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
                     where: { email: row.user_email },
                 })
@@ -291,7 +291,7 @@ describe('processUserFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
                     where: { email: row.user_email },
                 })
@@ -317,7 +317,7 @@ describe('processUserFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbUser = await User.findOne({
                     where: { email: row.user_email },
                 })
@@ -337,7 +337,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -356,7 +356,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -374,7 +374,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -392,7 +392,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -410,7 +410,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })
@@ -428,7 +428,7 @@ describe('processUserFromCSVRow', () => {
             const fn = () =>
                 processUserFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const dbUser = await User.findOne({
                 where: { email: row.user_email },
             })

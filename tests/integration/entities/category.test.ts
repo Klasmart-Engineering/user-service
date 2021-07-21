@@ -218,7 +218,7 @@ describe('Category', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbCategory = await Category.findOneOrFail(
                                             category.id
                                         )
@@ -260,7 +260,7 @@ describe('Category', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbCategory = await Category.findOneOrFail(
                                             category.id
                                         )
@@ -284,7 +284,7 @@ describe('Category', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbCategory = await Category.findOneOrFail(
                                             category.id
                                         )
@@ -482,7 +482,7 @@ describe('Category', () => {
                         [subcategory.id],
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbSubcategories = (await category.subcategories) || []
                 expect(dbSubcategories).to.be.empty
@@ -513,7 +513,7 @@ describe('Category', () => {
                                 [subcategory.id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbSubcategories =
                             (await category.subcategories) || []

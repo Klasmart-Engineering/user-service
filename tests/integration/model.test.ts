@@ -112,7 +112,7 @@ describe('model', () => {
                 const fn = () =>
                     myUsers(testClient, { authorization: undefined })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -144,7 +144,7 @@ describe('model', () => {
                         authorization: getNonAdminAuthToken(),
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
     })
@@ -193,7 +193,7 @@ describe('model', () => {
                             authorization: getNonAdminAuthToken(),
                         })
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
 
@@ -1916,7 +1916,7 @@ describe('model', () => {
             it('should throw an error', async () => {
                 const fn = async () =>
                     await renameDuplicateOrganizationsQuery(testClient)
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const nullOrgs = await Organization.count({
                     where: { organization_name: null },
@@ -1933,7 +1933,7 @@ describe('model', () => {
             it('should throw an error', async () => {
                 const fn = async () =>
                     await renameDuplicateOrganizationsMutation(testClient)
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const nullOrgs = await Organization.count({
                     where: { organization_name: null },
@@ -1987,7 +1987,7 @@ describe('model', () => {
                 const fn = async () =>
                     await renameDuplicateSubjectsQuery(testClient)
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const duplicatedSubjects = await Subject.count({
                     where: { name: subjectName, organization },
@@ -2039,7 +2039,7 @@ describe('model', () => {
                 const fn = async () =>
                     await renameDuplicateGradesQuery(testClient)
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const duplicatedGrades = await Grade.count({
                     where: { name: gradeName, organization },
@@ -2054,7 +2054,7 @@ describe('model', () => {
                 const fn = async () =>
                     await renameDuplicateGradesMutation(testClient)
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const duplicatedGrades = await Grade.count({
                     where: { name: gradeName, organization },

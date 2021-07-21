@@ -67,7 +67,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -95,7 +95,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -123,7 +123,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -151,7 +151,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -188,7 +188,7 @@ describe('processCategoryFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const category = await Category.findOne({
                     where: {
                         name: row.category_name,

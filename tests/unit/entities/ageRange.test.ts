@@ -57,7 +57,7 @@ describe('AgeRange', () => {
             it('raises an error', async () => {
                 const fn = () => manager.save(ageRange)
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -71,7 +71,7 @@ describe('AgeRange', () => {
                     ageRange.high_value = nonValidValue
                     const fn = () => manager.save(ageRange)
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 }
             })
         })
@@ -86,7 +86,7 @@ describe('AgeRange', () => {
                     ageRange.low_value = nonValidValue
                     const fn = () => manager.save(ageRange)
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 }
             })
         })
@@ -105,7 +105,7 @@ describe('AgeRange', () => {
                     newAgeRange.low_value = ageRange.low_value
                     const fn = () => manager.save(newAgeRange)
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             }
         )

@@ -202,7 +202,7 @@ describe('Grade', () => {
                                             deleteGrade(testClient, grade.id, {
                                                 authorization: getNonAdminAuthToken(),
                                             })
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbGrade = await Grade.findOneOrFail(
                                             grade.id
                                         )
@@ -237,7 +237,7 @@ describe('Grade', () => {
                                         deleteGrade(testClient, grade.id, {
                                             authorization: getNonAdminAuthToken(),
                                         })
-                                    expect(fn()).to.be.rejected
+                                    await expect(fn()).to.be.rejected
                                     const dbGrade = await Grade.findOneOrFail(
                                         grade.id
                                     )
@@ -255,7 +255,7 @@ describe('Grade', () => {
                                             deleteGrade(testClient, grade.id, {
                                                 authorization: getNonAdminAuthToken(),
                                             })
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbGrade = await Grade.findOneOrFail(
                                             grade.id
                                         )

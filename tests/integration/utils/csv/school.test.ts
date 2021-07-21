@@ -70,7 +70,7 @@ describe('processSchoolFromCSVRow', () => {
             const fn = () =>
                 processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const school = await School.findOne({
                 where: {
                     school_name: row.school_name,
@@ -92,7 +92,7 @@ describe('processSchoolFromCSVRow', () => {
             const fn = () =>
                 processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const school = await School.findOne({
                 where: {
                     school_name: row.school_name,
@@ -125,7 +125,7 @@ describe('processSchoolFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const school = await School.findOne({
                     where: {
                         school_name: row.school_name,
@@ -148,7 +148,7 @@ describe('processSchoolFromCSVRow', () => {
             const fn = () =>
                 processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const school = await School.findOne({
                 where: {
                     school_name: row.school_name,
@@ -170,7 +170,7 @@ describe('processSchoolFromCSVRow', () => {
             const fn = () =>
                 processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const school = await School.findOne({
                 where: {
                     school_name: row.school_name,
@@ -201,7 +201,7 @@ describe('processSchoolFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const school = await School.findOne({
                     where: {
                         school_name: row.school_name,
@@ -256,7 +256,7 @@ describe('processSchoolFromCSVRow', () => {
             const fn = () =>
                 processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const school = await School.findOne({
                 where: {
                     school_name: row.school_name,
@@ -278,7 +278,7 @@ describe('processSchoolFromCSVRow', () => {
             const fn = () =>
                 processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const school = await School.findOne({
                 where: {
                     school_name: row.school_name,
@@ -319,7 +319,7 @@ describe('processSchoolFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const school = await School.findOne({
                     where: {
                         school_name: row.school_name,

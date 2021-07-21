@@ -45,7 +45,7 @@ describe('createEntityFromCsvWithRollBack', () => {
                 createEntityFromCsvWithRollBack(connection, file, [
                     processOrganizationFromCSVRow,
                 ])
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             organizationCount = await connection.manager
                 .getRepository(Organization)

@@ -205,7 +205,7 @@ describe('organization', () => {
                     updateOrganization(testClient, organizationId, mods, {
                         authorization: authTokenOfUserMakingMod,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbOrg = await Organization.findOneOrFail(organizationId)
                 expect(dbOrg).to.not.include(mods)
             })
@@ -404,7 +404,7 @@ describe('organization', () => {
                             'very horrid',
                             { authorization: getAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
         })
@@ -657,7 +657,7 @@ describe('organization', () => {
                             'myverywrong1',
                             { authorization: getAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
         })
@@ -2823,7 +2823,7 @@ describe('organization', () => {
                             { authorization: idLessToken }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             }
         )
@@ -2980,7 +2980,7 @@ describe('organization', () => {
                         organization.organization_id,
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbOrganization = await Organization.findOneOrFail(
                     organization.organization_id
                 )
@@ -3013,7 +3013,7 @@ describe('organization', () => {
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbOrganization = await Organization.findOneOrFail(
                             organization.organization_id
                         )
@@ -3196,7 +3196,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbAgeRanges = await AgeRange.find({
                         where: {
                             organization: {
@@ -3236,7 +3236,7 @@ describe('organization', () => {
                                 { authorization: undefined }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbAgeRanges = await AgeRange.find({
                             where: {
                                 organization: {
@@ -3282,7 +3282,7 @@ describe('organization', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
                                     organization: {
@@ -3346,7 +3346,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
                                         organization: {
@@ -3499,7 +3499,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
                                         organization: {
@@ -3686,7 +3686,7 @@ describe('organization', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbAgeRanges = await AgeRange.find({
                     where: {
                         organization: {
@@ -3723,7 +3723,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbAgeRanges = await AgeRange.find({
                             where: {
                                 organization: {
@@ -3844,7 +3844,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbGrades = await Grade.find({
                         where: {
                             organization: {
@@ -3890,7 +3890,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbGrades = await Grade.find({
                         where: {
                             organization: {
@@ -3939,7 +3939,7 @@ describe('organization', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbGrades = await Grade.find({
                                 where: {
                                     organization: {
@@ -4011,7 +4011,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbGrades = await Grade.find({
                                     where: {
                                         organization: {
@@ -4183,7 +4183,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbGrades = await Grade.find({
                                     where: {
                                         organization: {
@@ -4416,7 +4416,7 @@ describe('organization', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbGrades = await Grade.find({
                     where: {
                         organization: {
@@ -4456,7 +4456,7 @@ describe('organization', () => {
                             authorization: getNonAdminAuthToken(),
                         })
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbGrades = await Grade.find({
                         where: {
                             organization: {
@@ -4529,7 +4529,7 @@ describe('organization', () => {
                                 }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbGrades = await Grade.find({
                             where: {
                                 organization: {
@@ -4593,7 +4593,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbSubcategories = await Subcategory.find({
                         where: {
                             organization: {
@@ -4631,7 +4631,7 @@ describe('organization', () => {
                                 { authorization: undefined }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbSubcategories = await Subcategory.find({
                             where: {
                                 organization: {
@@ -4677,7 +4677,7 @@ describe('organization', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbSubcategories = await Subcategory.find({
                                 where: {
                                     organization: {
@@ -4739,7 +4739,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
                                         organization: {
@@ -4890,7 +4890,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
                                         organization: {
@@ -5076,7 +5076,7 @@ describe('organization', () => {
                         { authorization: undefined }
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbSubcategories = await Subcategory.find({
                     where: {
                         organization: {
@@ -5113,7 +5113,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbSubcategories = await Subcategory.find({
                             where: {
                                 organization: {
@@ -5183,7 +5183,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbSubcategories = await Subcategory.find({
                             where: {
                                 organization: {
@@ -5253,7 +5253,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbCategories = await Category.find({
                         where: {
                             organization: {
@@ -5291,7 +5291,7 @@ describe('organization', () => {
                                 { authorization: undefined }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbCategories = await Category.find({
                             where: {
                                 organization: {
@@ -5338,7 +5338,7 @@ describe('organization', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbCategories = await Category.find({
                                 where: {
                                     organization: {
@@ -5400,7 +5400,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbCategories = await Category.find({
                                     where: {
                                         organization: {
@@ -5593,7 +5593,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbCategories = await Category.find({
                                     where: {
                                         organization: {
@@ -5807,7 +5807,7 @@ describe('organization', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbCategories = await Category.find({
                     where: {
                         organization: {
@@ -5844,7 +5844,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbCategories = await Category.find({
                             where: {
                                 organization: {
@@ -5960,7 +5960,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbSubjects = await Subject.find({
                         where: {
                             organization: {
@@ -5998,7 +5998,7 @@ describe('organization', () => {
                                 { authorization: undefined }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbSubjects = await Subject.find({
                             where: {
                                 organization: {
@@ -6045,7 +6045,7 @@ describe('organization', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbSubjects = await Subject.find({
                                 where: {
                                     organization: {
@@ -6107,7 +6107,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbSubjects = await Subject.find({
                                     where: {
                                         organization: {
@@ -6306,7 +6306,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbSubjects = await Subject.find({
                                     where: {
                                         organization: {
@@ -6520,7 +6520,7 @@ describe('organization', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbSubjects = await Subject.find({
                     where: {
                         organization: {
@@ -6557,7 +6557,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbSubjects = await Subject.find({
                             where: {
                                 organization: {
@@ -6684,7 +6684,7 @@ describe('organization', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbPrograms = await Program.find({
                         where: {
                             organization: {
@@ -6722,7 +6722,7 @@ describe('organization', () => {
                                 { authorization: undefined }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbPrograms = await Program.find({
                             where: {
                                 organization: {
@@ -6769,7 +6769,7 @@ describe('organization', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbPrograms = await Program.find({
                                 where: {
                                     organization: {
@@ -6831,7 +6831,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbPrograms = await Program.find({
                                     where: {
                                         organization: {
@@ -7026,7 +7026,7 @@ describe('organization', () => {
                                         }
                                     )
 
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
                                 const dbPrograms = await Program.find({
                                     where: {
                                         organization: {
@@ -7232,7 +7232,7 @@ describe('organization', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbprograms = await Program.find({
                     where: {
                         organization: {
@@ -7272,7 +7272,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbprograms = await Program.find({
                             where: {
                                 organization: {
@@ -7337,7 +7337,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbprograms = await Program.find({
                             where: {
                                 organization: {
@@ -7438,7 +7438,7 @@ describe('organization', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbClasses = await Class.find({
                     where: {
                         organization: {
@@ -7475,7 +7475,7 @@ describe('organization', () => {
                                 { authorization: getNonAdminAuthToken() }
                             )
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbClasses = await Class.find({
                             where: {
                                 organization: {

@@ -64,7 +64,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -97,7 +97,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -130,7 +130,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -163,7 +163,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -196,7 +196,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -229,7 +229,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -269,7 +269,7 @@ describe('processAgeRangeFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const ageRange = await AgeRange.findOne({
                     where: {
@@ -303,7 +303,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -336,7 +336,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -376,7 +376,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {

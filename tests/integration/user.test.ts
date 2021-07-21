@@ -514,7 +514,7 @@ describe('user', () => {
                             'very wrong'
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
         })
@@ -546,7 +546,7 @@ describe('user', () => {
                 const fn = () =>
                     createOrganization(testClient, user.user_id, 'Another Org')
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
     })

@@ -56,7 +56,7 @@ describe('processRoleFromCSVRow', () => {
             const fn = () =>
                 processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -79,7 +79,7 @@ describe('processRoleFromCSVRow', () => {
             const fn = () =>
                 processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -102,7 +102,7 @@ describe('processRoleFromCSVRow', () => {
             const fn = () =>
                 processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -125,7 +125,7 @@ describe('processRoleFromCSVRow', () => {
             const fn = () =>
                 processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -148,7 +148,7 @@ describe('processRoleFromCSVRow', () => {
             const fn = () =>
                 processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -188,7 +188,7 @@ describe('processRoleFromCSVRow', () => {
                         fileErrors
                     )
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const role = await Role.findOne({
                     where: {
                         role_name: row.role_name,

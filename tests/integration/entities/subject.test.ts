@@ -101,7 +101,7 @@ describe('Subject', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -128,7 +128,7 @@ describe('Subject', () => {
                                 authorization: getNonAdminAuthToken(),
                             })
 
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                     })
                 }
             )
@@ -343,7 +343,7 @@ describe('Subject', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbSubject = await Subject.findOneOrFail(
                                             subject.id
                                         )
@@ -385,7 +385,7 @@ describe('Subject', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbSubject = await Subject.findOneOrFail(
                                             subject.id
                                         )
@@ -409,7 +409,7 @@ describe('Subject', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbSubject = await Subject.findOneOrFail(
                                             subject.id
                                         )

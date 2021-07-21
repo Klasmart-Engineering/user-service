@@ -215,7 +215,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -231,7 +231,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -247,7 +247,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -263,7 +263,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -279,7 +279,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -295,7 +295,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -311,7 +311,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -327,7 +327,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -343,7 +343,7 @@ describe('processClassFromCSVRow', () => {
         const fn = () =>
             processClassFromCSVRow(connection.manager, row, 1, fileErrors)
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)

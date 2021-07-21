@@ -61,7 +61,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -84,7 +84,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -107,7 +107,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -138,7 +138,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -167,7 +167,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })

@@ -134,7 +134,7 @@ describe('class', () => {
                     updateClass(testClient, cls.class_id, newClassName, {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 expect(dbClass.class_name).to.equal(originalClassName)
             })
@@ -183,7 +183,7 @@ describe('class', () => {
                     updateClass(testClient, cls.class_id, newClassName, {
                         authorization: getNonAdminAuthToken(),
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 expect(dbClass.class_name).to.equal(originalClassName)
             })
@@ -1066,7 +1066,7 @@ describe('class', () => {
                         [user.user_id],
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbTeacher = await User.findOneOrFail(user.user_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const teachers = await dbClass.teachers
@@ -1107,7 +1107,7 @@ describe('class', () => {
                                 [user.user_id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbTeacher = await User.findOneOrFail(user.user_id)
                         const dbClass = await Class.findOneOrFail(cls.class_id)
                         const teachers = await dbClass.teachers
@@ -1148,7 +1148,7 @@ describe('class', () => {
                                 [user.user_id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbTeacher = await User.findOneOrFail(user.user_id)
                         const dbClass = await Class.findOneOrFail(cls.class_id)
                         const teachers = await dbClass.teachers
@@ -1298,7 +1298,7 @@ describe('class', () => {
                     addTeacherToClass(testClient, cls.class_id, user.user_id, {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbTeacher = await User.findOneOrFail(user.user_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const teachers = await dbClass.teachers
@@ -1346,7 +1346,7 @@ describe('class', () => {
                     addTeacherToClass(testClient, cls.class_id, user.user_id, {
                         authorization: getNonAdminAuthToken(),
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbTeacher = await User.findOneOrFail(user.user_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const teachers = await dbClass.teachers
@@ -1498,7 +1498,7 @@ describe('class', () => {
                             user.user_id,
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbTeacher = await User.findOneOrFail(user.user_id)
                     const dbClass = await Class.findOneOrFail(cls.class_id)
                     const teachers = (await dbClass.teachers) || []
@@ -1777,7 +1777,7 @@ describe('class', () => {
                         [user.user_id],
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbStudent = await User.findOneOrFail(user.user_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const students = await dbClass.students
@@ -1818,7 +1818,7 @@ describe('class', () => {
                                 [user.user_id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbStudent = await User.findOneOrFail(user.user_id)
                         const dbClass = await Class.findOneOrFail(cls.class_id)
                         const students = await dbClass.students
@@ -1859,7 +1859,7 @@ describe('class', () => {
                                 [user.user_id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbStudent = await User.findOneOrFail(user.user_id)
                         const dbClass = await Class.findOneOrFail(cls.class_id)
                         const students = await dbClass.students
@@ -2008,7 +2008,7 @@ describe('class', () => {
                     addStudentToClass(testClient, cls.class_id, user.user_id, {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbStudent = await User.findOneOrFail(user.user_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const students = await dbClass.students
@@ -2056,7 +2056,7 @@ describe('class', () => {
                     addStudentToClass(testClient, cls.class_id, user.user_id, {
                         authorization: getNonAdminAuthToken(),
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbStudent = await User.findOneOrFail(user.user_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const students = await dbClass.students
@@ -2201,7 +2201,7 @@ describe('class', () => {
                         removeStudentInClass(testClient, classId, userId, {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbStudent = await User.findOneOrFail(userId)
                     const dbClass = await Class.findOneOrFail(classId)
                     const students = (await dbClass.students) || []
@@ -2431,7 +2431,7 @@ describe('class', () => {
                         [school.school_id],
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbSchool = await School.findOneOrFail(school.school_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const schools = await dbClass.schools
@@ -2472,7 +2472,7 @@ describe('class', () => {
                                 [school.school_id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbSchool = await School.findOneOrFail(
                             school.school_id
                         )
@@ -2513,7 +2513,7 @@ describe('class', () => {
                             [school.school_id],
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbSchool = await School.findOneOrFail(
                         school.school_id
                     )
@@ -2676,7 +2676,7 @@ describe('class', () => {
                         school.school_id,
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbSchool = await School.findOneOrFail(school.school_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const schools = await dbClass.schools
@@ -2734,7 +2734,7 @@ describe('class', () => {
                         school.school_id,
                         { authorization: getNonAdminAuthToken() }
                     )
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbSchool = await School.findOneOrFail(school.school_id)
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 const schools = await dbClass.schools
@@ -2904,7 +2904,7 @@ describe('class', () => {
                         removeSchoolFromClass(testClient, classId, schoolId, {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbSchool = await School.findOneOrFail(schoolId)
                     const dbClass = await Class.findOneOrFail(classId)
                     const classSchools = (await dbClass.schools) || []
@@ -3140,7 +3140,7 @@ describe('class', () => {
                     deleteClass(testClient, cls.class_id, {
                         authorization: getNonAdminAuthToken(),
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
                 const dbClass = await Class.findOneOrFail(cls.class_id)
                 expect(dbClass.status).to.eq(Status.ACTIVE)
                 expect(dbClass.deleted_at).to.be.null
@@ -3169,7 +3169,7 @@ describe('class', () => {
                             deleteClass(testClient, cls.class_id, {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                         const dbClass = await Class.findOneOrFail(cls.class_id)
                         expect(dbClass.status).to.eq(Status.ACTIVE)
                         expect(dbClass.deleted_at).to.be.null
@@ -3339,7 +3339,7 @@ describe('class', () => {
                     editPrograms(testClient, cls.class_id, [program.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbPrograms = (await cls.programs) || []
                 expect(dbPrograms).to.be.empty
@@ -3365,7 +3365,7 @@ describe('class', () => {
                         editPrograms(testClient, cls.class_id, [program.id], {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbPrograms = (await cls.programs) || []
                     expect(dbPrograms).to.be.empty
@@ -3485,7 +3485,7 @@ describe('class', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -3497,7 +3497,7 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
 
@@ -3586,7 +3586,7 @@ describe('class', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -3598,7 +3598,7 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
 
@@ -3687,7 +3687,7 @@ describe('class', () => {
                         authorization: undefined,
                     })
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
@@ -3699,7 +3699,7 @@ describe('class', () => {
                             authorization: getNonAdminAuthToken(),
                         })
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                 })
             })
 
@@ -3774,7 +3774,7 @@ describe('class', () => {
                     editAgeRanges(testClient, cls.class_id, [ageRange.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbAgeRanges = (await cls.age_ranges) || []
                 expect(dbAgeRanges).to.be.empty
@@ -3803,7 +3803,7 @@ describe('class', () => {
                         editAgeRanges(testClient, cls.class_id, [ageRange.id], {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbAgeRanges = (await cls.age_ranges) || []
                     expect(dbAgeRanges).to.be.empty
@@ -3909,7 +3909,7 @@ describe('class', () => {
                     editGrades(testClient, cls.class_id, [grade.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbGrades = (await cls.grades) || []
                 expect(dbGrades).to.be.empty
@@ -3938,7 +3938,7 @@ describe('class', () => {
                         editGrades(testClient, cls.class_id, [grade.id], {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbGrades = (await cls.grades) || []
                     expect(dbGrades).to.be.empty
@@ -4041,7 +4041,7 @@ describe('class', () => {
                     editSubjects(testClient, cls.class_id, [subject.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
 
                 const dbSubjects = (await cls.subjects) || []
                 expect(dbSubjects).to.be.empty
@@ -4070,7 +4070,7 @@ describe('class', () => {
                         editSubjects(testClient, cls.class_id, [subject.id], {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbSubjects = (await cls.subjects) || []
                     expect(dbSubjects).to.be.empty

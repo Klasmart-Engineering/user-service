@@ -217,7 +217,7 @@ describe('Subcategory', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbSubcategory = await Subcategory.findOneOrFail(
                                             subcategory.id
                                         )
@@ -260,7 +260,7 @@ describe('Subcategory', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbSubcategory = await Subcategory.findOneOrFail(
                                             subcategory.id
                                         )
@@ -285,7 +285,7 @@ describe('Subcategory', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbSubcategory = await Subcategory.findOneOrFail(
                                             subcategory.id
                                         )

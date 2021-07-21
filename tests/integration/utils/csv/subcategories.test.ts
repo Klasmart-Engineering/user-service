@@ -66,7 +66,7 @@ describe('processSubCategoriesFromCSVRow', () => {
                 fileErrors
             )
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
         const dbSubCategories = await Subcategory.find()
         expect(dbSubCategories.length).to.equal(0)
     })
@@ -81,7 +81,7 @@ describe('processSubCategoriesFromCSVRow', () => {
                 fileErrors
             )
 
-        expect(fn()).to.be.rejected
+        await expect(fn()).to.be.rejected
         const dbSubCategories = await Subcategory.find()
         expect(dbSubCategories.length).to.equal(0)
     })

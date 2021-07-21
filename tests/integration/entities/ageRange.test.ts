@@ -215,7 +215,7 @@ describe('ageRange', () => {
                                                 }
                                             )
 
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbAgeRange = await AgeRange.findOneOrFail(
                                             ageRange.id
                                         )
@@ -259,7 +259,7 @@ describe('ageRange', () => {
                                                 }
                                             )
 
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbAgeRange = await AgeRange.findOneOrFail(
                                             ageRange.id
                                         )
@@ -285,7 +285,7 @@ describe('ageRange', () => {
                                                 }
                                             )
 
-                                        expect(fn()).to.be.rejected
+                                        await expect(fn()).to.be.rejected
                                         const dbAgeRange = await AgeRange.findOneOrFail(
                                             ageRange.id
                                         )

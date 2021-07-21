@@ -53,7 +53,7 @@ describe('processGradeFromCSVRow', () => {
             const fn = () =>
                 processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -75,7 +75,7 @@ describe('processGradeFromCSVRow', () => {
             const fn = () =>
                 processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -93,7 +93,7 @@ describe('processGradeFromCSVRow', () => {
             const fn = () =>
                 processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -130,7 +130,7 @@ describe('processGradeFromCSVRow', () => {
             const fn = () =>
                 processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     organization,

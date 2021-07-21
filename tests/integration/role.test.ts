@@ -132,7 +132,7 @@ describe('role', () => {
                             { roleId, newRoleName, roleDescription },
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbRole = await Role.findOneOrFail({
                         where: { role_id: roleId },
@@ -204,7 +204,7 @@ describe('role', () => {
                                 { roleId, newRoleName, roleDescription },
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbRole = await Role.findOneOrFail({
                             where: { role_id: roleId },
@@ -300,7 +300,7 @@ describe('role', () => {
                                 nameOfPermissionToGet,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                     })
                 }
             )
@@ -346,7 +346,7 @@ describe('role', () => {
                                 nameOfPermissionToGet,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
                     })
                 }
             )
@@ -408,7 +408,7 @@ describe('role', () => {
                             nameOfPermissionToGrant,
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbPermission = await Permission.findOne({
                         where: { permission_name: nameOfPermissionToGrant },
@@ -534,7 +534,7 @@ describe('role', () => {
                                                 authorization: getAdminAuthToken(),
                                             }
                                         )
-                                    expect(fn()).to.be.rejected
+                                    await expect(fn()).to.be.rejected
 
                                     const dbPermission = await Permission.findOneOrFail(
                                         {
@@ -557,7 +557,7 @@ describe('role', () => {
                                         nameOfPermissionToGrant,
                                         { authorization: getAdminAuthToken() }
                                     )
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
 
                                 const dbPermission = await Permission.findOne({
                                     where: {
@@ -689,7 +689,7 @@ describe('role', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-                                expect(fn()).to.be.rejected
+                                await expect(fn()).to.be.rejected
 
                                 const dbPermission = await Permission.findOneOrFail(
                                     {
@@ -712,7 +712,7 @@ describe('role', () => {
                                     nameOfPermissionToGrant,
                                     { authorization: getNonAdminAuthToken() }
                                 )
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
 
                             const dbPermission = await Permission.findOne({
                                 where: {
@@ -776,7 +776,7 @@ describe('role', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbRole = await Role.findOneOrFail(roleId)
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
@@ -813,7 +813,7 @@ describe('role', () => {
                                     { authorization: getAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbRole = await Role.findOneOrFail(roleId)
                             const dbPermissions =
                                 (await dbRole.permissions) || []
@@ -908,7 +908,7 @@ describe('role', () => {
                             { authorization: undefined }
                         )
 
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
                     const dbRole = await Role.findOneOrFail(roleId)
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
@@ -945,7 +945,7 @@ describe('role', () => {
                                     { authorization: getNonAdminAuthToken() }
                                 )
 
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
                             const dbRole = await Role.findOneOrFail(roleId)
                             const dbPermissions =
                                 (await dbRole.permissions) || []
@@ -1081,7 +1081,7 @@ describe('role', () => {
                             nameOfPermissionToRevoke,
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbPermission = await Permission.findOneOrFail({
                         where: { permission_name: nameOfPermissionToRevoke },
@@ -1137,7 +1137,7 @@ describe('role', () => {
                                     nameOfPermissionToRevoke,
                                     { authorization: getAdminAuthToken() }
                                 )
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
 
                             const dbPermission = await Permission.findOneOrFail(
                                 {
@@ -1200,7 +1200,7 @@ describe('role', () => {
                                 nameOfPermissionToRevoke,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        await expect(fn()).to.be.rejected
 
                         const dbPermission = await Permission.findOneOrFail({
                             where: {
@@ -1261,7 +1261,7 @@ describe('role', () => {
                         deleteRole(testClient, roleId, {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbRole = await Role.findOneOrFail(roleId)
                     expect(dbRole.status).to.eq(Status.ACTIVE)
@@ -1278,7 +1278,7 @@ describe('role', () => {
                                 deleteRole(testClient, roleId, {
                                     authorization: getAdminAuthToken(),
                                 })
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
 
                             const dbRole = await Role.findOneOrFail(roleId)
                             expect(dbRole.status).to.eq(Status.ACTIVE)
@@ -1341,7 +1341,7 @@ describe('role', () => {
                         deleteRole(testClient, roleId, {
                             authorization: undefined,
                         })
-                    expect(fn()).to.be.rejected
+                    await expect(fn()).to.be.rejected
 
                     const dbRole = await Role.findOneOrFail(roleId)
                     expect(dbRole.status).to.eq(Status.ACTIVE)
@@ -1358,7 +1358,7 @@ describe('role', () => {
                                 deleteRole(testClient, roleId, {
                                     authorization: getNonAdminAuthToken(),
                                 })
-                            expect(fn()).to.be.rejected
+                            await expect(fn()).to.be.rejected
 
                             const dbRole = await Role.findOneOrFail(roleId)
                             expect(dbRole.status).to.eq(Status.ACTIVE)

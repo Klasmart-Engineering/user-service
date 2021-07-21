@@ -66,7 +66,7 @@ describe('Grade', () => {
             it('raises an error', async () => {
                 const fn = () => manager.save(grade)
 
-                expect(fn()).to.be.rejected
+                await expect(fn()).to.be.rejected
             })
         })
 
