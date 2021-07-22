@@ -366,11 +366,11 @@ export class Model {
             }
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['OrgMembership.organization_id'],
-                    organizationUserStatus: ['OrgMembership.status'],
-                    userId: ["concat(User.user_id, '')"],
-                    phone: ['User.phone'],
-                    schoolId: ['SchoolMembership.school_id'],
+                    organizationId: 'OrgMembership.organization_id',
+                    organizationUserStatus: 'OrgMembership.status',
+                    userId: "concat(User.user_id, '')",
+                    phone: 'User.phone',
+                    schoolId: 'SchoolMembership.school_id',
                 })
             )
         }
@@ -445,11 +445,11 @@ export class Model {
             }
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['Organization.organization_id'],
-                    schoolId: ['school_id'],
-                    name: ['school_name'],
-                    shortCode: ['shortcode'],
-                    status: ['School.status'], // not organization status!
+                    organizationId: 'Organization.organization_id',
+                    schoolId: 'school_id',
+                    name: 'school_name',
+                    shortCode: 'shortcode',
+                    status: 'School.status', // not organization status!
                 })
             )
         }
@@ -522,22 +522,28 @@ export class Model {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    id: ['Program.id'],
-                    name: ['Program.name'],
-                    system: ['Program.system'],
-                    status: ['Program.status'],
-                    organizationId: ['Organization.organization_id'],
-                    gradeId: ['Grade.id'],
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
-                    ageRangeTo: [
-                        'AgeRange.high_value',
-                        'AgeRange.high_value_unit',
-                    ],
-                    subjectId: ['Subject.id'],
-                    schoolId: ['School.school_id'],
+                    id: 'Program.id',
+                    name: 'Program.name',
+                    system: 'Program.system',
+                    status: 'Program.status',
+                    organizationId: 'Organization.organization_id',
+                    gradeId: 'Grade.id',
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
+                    ageRangeTo: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.high_value',
+                            'AgeRange.high_value_unit',
+                        ],
+                    },
+                    subjectId: 'Subject.id',
+                    schoolId: 'School.school_id',
                 })
             )
         }
@@ -600,13 +606,13 @@ export class Model {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    id: ['Grade.id'],
-                    name: ['Grade.name'],
-                    system: ['Grade.system'],
-                    status: ['Grade.status'],
-                    organizationId: ['Organization.organization_id'],
-                    fromGradeId: ['FromGrade.id'],
-                    toGradeId: ['ToGrade.id'],
+                    id: 'Grade.id',
+                    name: 'Grade.name',
+                    system: 'Grade.system',
+                    status: 'Grade.status',
+                    organizationId: 'Organization.organization_id',
+                    fromGradeId: 'FromGrade.id',
+                    toGradeId: 'ToGrade.id',
                 })
             )
         }
@@ -658,9 +664,9 @@ export class Model {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: ['Organization.organization_id'],
-                    system: ['AgeRange.system'],
-                    status: ['AgeRange.status'],
+                    organizationId: 'Organization.organization_id',
+                    system: 'AgeRange.system',
+                    status: 'AgeRange.status',
                 })
             )
         }

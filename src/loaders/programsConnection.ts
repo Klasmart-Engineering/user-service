@@ -48,16 +48,16 @@ export const ageRangesForPrograms = async (
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                id: ['Program.id'],
-                name: ['Program.name'],
-                system: ['Program.system'],
-                status: ['Program.status'],
-                organizationId: ['Organization.organization_id'],
-                gradeId: ['Grade.id'],
-                ageRangeFrom: [],
-                ageRangeTo: [],
-                subjectId: ['Subject.id'],
-                schoolId: ['School.school_id'],
+                id: 'Program.id',
+                name: 'Program.name',
+                system: 'Program.system',
+                status: 'Program.status',
+                organizationId: 'Organization.organization_id',
+                gradeId: 'Grade.id',
+                ageRangeFrom: '',
+                ageRangeTo: '',
+                subjectId: 'Subject.id',
+                schoolId: 'School.school_id',
             })
         )
     }
@@ -128,16 +128,25 @@ export const gradesForPrograms = async (
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                id: ['Program.id'],
-                name: ['Program.name'],
-                system: ['Program.system'],
-                status: ['Program.status'],
-                organizationId: ['Organization.organization_id'],
-                gradeId: [],
-                ageRangeFrom: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
-                ageRangeTo: ['AgeRange.high_value', 'AgeRange.high_value_unit'],
-                subjectId: ['Subject.id'],
-                schoolId: ['School.school_id'],
+                id: 'Program.id',
+                name: 'Program.name',
+                system: 'Program.system',
+                status: 'Program.status',
+                organizationId: 'Organization.organization_id',
+                gradeId: '',
+                ageRangeFrom: {
+                    operator: 'AND',
+                    aliases: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
+                },
+                ageRangeTo: {
+                    operator: 'AND',
+                    aliases: [
+                        'AgeRange.high_value',
+                        'AgeRange.high_value_unit',
+                    ],
+                },
+                subjectId: 'Subject.id',
+                schoolId: 'School.school_id',
             })
         )
     }
@@ -202,16 +211,25 @@ export const subjectsForPrograms = async (
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                id: ['Program.id'],
-                name: ['Program.name'],
-                system: ['Program.system'],
-                status: ['Program.status'],
-                organizationId: ['Organization.organization_id'],
-                gradeId: ['Grade.id'],
-                ageRangeFrom: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
-                ageRangeTo: ['AgeRange.high_value', 'AgeRange.high_value_unit'],
-                subjectId: [],
-                schoolId: ['School.school_id'],
+                id: 'Program.id',
+                name: 'Program.name',
+                system: 'Program.system',
+                status: 'Program.status',
+                organizationId: 'Organization.organization_id',
+                gradeId: 'Grade.id',
+                ageRangeFrom: {
+                    operator: 'AND',
+                    aliases: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
+                },
+                ageRangeTo: {
+                    operator: 'AND',
+                    aliases: [
+                        'AgeRange.high_value',
+                        'AgeRange.high_value_unit',
+                    ],
+                },
+                subjectId: '',
+                schoolId: 'School.school_id',
             })
         )
     }
