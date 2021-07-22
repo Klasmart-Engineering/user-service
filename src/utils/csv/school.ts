@@ -11,7 +11,7 @@ import {
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import validationConstants from './validationConstants'
+import validationConstants from '../../entities/validations/constants'
 
 export async function processSchoolFromCSVRow(
     manager: EntityManager,

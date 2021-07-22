@@ -7,16 +7,14 @@ import {
     normalizedLowercaseTrimmed,
     Organization,
 } from '../../entities/organization'
-import {
-    MEMBERSHIP_SHORTCODE_MAXLEN,
-    OrganizationMembership,
-} from '../../entities/organizationMembership'
+import { OrganizationMembership } from '../../entities/organizationMembership'
 import { OrganizationOwnership } from '../../entities/organizationOwnership'
 import { Role } from '../../entities/role'
 import { Status } from '../../entities/status'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
+import validationConstants from '../../entities/validations/constants'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,
@@ -167,7 +165,10 @@ export async function processOrganizationFromCSVRow(
 
     if (
         owner_shortcode &&
-        !validateShortCode(owner_shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)
+        !validateShortCode(
+            owner_shortcode,
+            validationConstants.SHORTCODE_MAX_LENGTH
+        )
     ) {
         addCsvError(
             fileErrors,
@@ -178,7 +179,7 @@ export async function processOrganizationFromCSVRow(
             {
                 entity: 'user',
                 attribute: 'short_code',
-                max: MEMBERSHIP_SHORTCODE_MAXLEN,
+                max: validationConstants.SHORTCODE_MAX_LENGTH,
             }
         )
     }

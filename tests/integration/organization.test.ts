@@ -59,10 +59,7 @@ import {
     generateToken,
 } from '../utils/testConfig'
 import { Organization } from '../../src/entities/organization'
-import {
-    MEMBERSHIP_SHORTCODE_MAXLEN,
-    OrganizationMembership,
-} from '../../src/entities/organizationMembership'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { OrganizationOwnership } from '../../src/entities/organizationOwnership'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { Role } from '../../src/entities/role'
@@ -82,6 +79,7 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
 import { AnyKindOfDictionary } from 'lodash'
+import { validationConstants } from '../../src/entities/validations/constants'
 
 use(chaiAsPromised)
 
@@ -1147,7 +1145,7 @@ describe('organization', () => {
                     expect(membership.user_id).to.equal(newUser.user_id)
                     expect(membership.shortcode).to.match(shortcode_re)
                     expect(membership.shortcode.length).to.equal(
-                        MEMBERSHIP_SHORTCODE_MAXLEN
+                        validationConstants.SHORTCODE_MAX_LENGTH
                     )
 
                     const gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(
@@ -1251,7 +1249,7 @@ describe('organization', () => {
                             expect(membership.user_id).to.equal(newUser.user_id)
                             expect(membership.shortcode).to.match(shortcode_re)
                             expect(membership.shortcode.length).to.equal(
-                                MEMBERSHIP_SHORTCODE_MAXLEN
+                                validationConstants.SHORTCODE_MAX_LENGTH
                             )
 
                             const gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(
@@ -1508,7 +1506,7 @@ describe('organization', () => {
                     expect(membership.user_id).to.equal(newUser?.user_id)
                     expect(membership.shortcode).to.match(shortcode_re)
                     expect(membership.shortcode.length).to.equal(
-                        MEMBERSHIP_SHORTCODE_MAXLEN
+                        validationConstants.SHORTCODE_MAX_LENGTH
                     )
                 })
 
@@ -2163,7 +2161,7 @@ describe('organization', () => {
                     expect(membership.user_id).to.equal(newUser.user_id)
                     expect(membership.shortcode).to.match(shortcode_re)
                     expect(membership.shortcode.length).to.equal(
-                        MEMBERSHIP_SHORTCODE_MAXLEN
+                        validationConstants.SHORTCODE_MAX_LENGTH
                     )
                 })
 

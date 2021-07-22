@@ -1,3 +1,8 @@
+
+//
+// TODO
+// Deprecate and use new error codes & messages in customErrors.ts
+//
 export default {
     MSG_ERR_CSV_AT_ROW: "On row number {row}",
 
@@ -84,5 +89,5 @@ export default {
     MSG_ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD: "\"{name}\" {entity} already exists more than once in \"{parent_name}\" {parent_entity}.",
 
     ERR_CSV_INVALID_LENGTH: "ERR_CSV_INVALID_LENGTH",
-    MSG_ERR_CSV_INVALID_LENGTH: "{entity} {attribute} must not be greater than {max} characters.",
+    MSG_ERR_CSV_INVALID_LENGTH: "{entity} {attribute} must not be greater than {max} characters."
 } as const;

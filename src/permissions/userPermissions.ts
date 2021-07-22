@@ -30,7 +30,7 @@ export class UserPermissions {
     private readonly email: string
     public readonly isAdmin?: boolean
 
-    public constructor(token?: Record<string, string>) {
+    public constructor(token?: { id: string; email: string }) {
         this.user_id = token?.id
         this.email = token?.email || ''
         this.isAdmin = this.isAdminEmail(this.email)

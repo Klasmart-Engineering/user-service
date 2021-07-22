@@ -16,17 +16,26 @@ import chaiAsPromised from 'chai-as-promised'
 import { processSubjectFromCSVRow } from '../../../../src/utils/csv/subject'
 import { readCSVFile } from '../../../../src/utils/csv/readFile'
 import { Upload } from '../../../../src/types/upload'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
+import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
 
 use(chaiAsPromised)
 
 describe('read file', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
+        const adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     after(async () => {
@@ -37,13 +46,11 @@ describe('read file', () => {
         const filename = 'empty.csv'
         const mimetype = 'text/csv'
         const encoding = '7bit'
-        const dummyFn = (
+        const dummyFn: CreateEntityRowCallback = async (
             manager: EntityManager,
             row: any,
             rowCount: number
-        ) => {
-            return rowCount
-        }
+        ) => {}
         it('should throw an error', async () => {
             const upload = {
                 filename: filename,
@@ -56,7 +63,12 @@ describe('read file', () => {
                 },
             } as Upload
             const fn = async () =>
-                await readCSVFile(connection.manager, upload, [dummyFn])
+                await readCSVFile(
+                    connection.manager,
+                    upload,
+                    [dummyFn],
+                    adminPermissions
+                )
             expect(fn()).to.be.rejectedWith('Empty input file: ' + filename)
         })
     })
