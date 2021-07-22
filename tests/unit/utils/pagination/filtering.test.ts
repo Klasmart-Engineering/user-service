@@ -44,7 +44,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (email = $1)')
+        expect(whereClause).to.equal('WHERE ((email = $1))')
         expect(Object.keys(scope.getParameters()).length).to.equal(1)
     })
 
@@ -66,7 +66,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (email = $1 AND username = $2)')
+        expect(whereClause).to.equal('WHERE ((email = $1) AND (username = $2))')
         expect(Object.keys(scope.getParameters()).length).to.equal(2)
     })
 
@@ -101,7 +101,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (((email = $1) OR (username = $2) OR (gender = $3)))'
+            'WHERE ((((email = $1)) OR ((username = $2)) OR ((gender = $3))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(3)
     })
@@ -137,7 +137,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (((email = $1) OR (email = $2) OR (email = $3)))'
+            'WHERE ((((email = $1)) OR ((email = $2)) OR ((email = $3))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(3)
     })
@@ -171,7 +171,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (email = $1 AND ((username = $2) OR (gender = $3)))'
+            'WHERE ((email = $1) AND (((username = $2)) OR ((gender = $3))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(3)
     })
@@ -221,7 +221,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (((((email = $1) OR (username = $2))) AND (((email = $3) OR (username = $4)))))'
+            'WHERE ((((((email = $1)) OR ((username = $2)))) AND ((((email = $3)) OR ((username = $4))))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(4)
     })
@@ -254,7 +254,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (((email = $1)))')
+        expect(whereClause).to.equal('WHERE ((((email = $1))))')
     })
 
     it("produces the correct query when using the 'contains' operator", () => {
@@ -270,7 +270,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (email LIKE $1)')
+        expect(whereClause).to.equal('WHERE ((email LIKE $1))')
         expect(Object.keys(scope.getParameters()).length).to.equal(1)
         expect(
             scope.getParameters()[Object.keys(scope.getParameters())[0]]
@@ -291,7 +291,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (lower(email) LIKE lower($1))')
+        expect(whereClause).to.equal('WHERE ((lower(email) LIKE lower($1)))')
     })
 
     context('column aliases', () => {
@@ -313,7 +313,7 @@ describe('getWhereClauseFromFilter', () => {
                 .getSql()
                 .slice(scope.getSql().indexOf('WHERE'))
 
-            expect(whereClause).to.equal('WHERE (email = $1)')
+            expect(whereClause).to.equal('WHERE ((email = $1))')
             expect(Object.keys(scope.getParameters()).length).to.equal(1)
         })
 
