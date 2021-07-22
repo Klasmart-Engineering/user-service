@@ -1,4 +1,4 @@
-import { Brackets, WhereExpression } from 'typeorm'
+import { Brackets } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 
 export interface IEntityFilter {
@@ -51,8 +51,10 @@ export function getWhereClauseFromFilter(
                 // process these recursively afterwards
                 continue
             }
+
             const data = filter[key] as IFilter
 
+            // string type values have a length limit
             if (
                 typeof data.value === 'string' &&
                 data.value.length > FILTER_VALUE_MAX_LENGTH
@@ -80,131 +82,114 @@ export function getWhereClauseFromFilter(
                     continue // avoid returning empty brackets
                 }
 
-                if ((columnAliasValue as IMultipleColumn).aliases) {
-                    aliases = (columnAliasValue as IMultipleColumn).aliases
-                } else {
-                    aliases = [columnAliasValue as string]
+                if (
+                    (columnAliasValue as IMultipleColumn).aliases?.length === 0
+                ) {
+                    throw new Error('Aliases array must not be empty')
                 }
+
+                aliases = (columnAliasValue as IMultipleColumn).aliases || [
+                    columnAliasValue,
+                ]
             }
 
-            if (aliases.length === 1) {
-                // just one alias was provided
-                // columnAliasValue is string type
+            // a value of type object is considered as a compound value
+            // deprecated, just common type values will be allowed
+            if (typeof data.value === 'object') {
+                for (const alias of aliases) {
+                    let currentOperator = data.operator
+                    let currentValue: FilteringValue = data.value
 
-                const alias = aliases[0]
-                const { sqlOperator, value } = setOperatorAndValue(
-                    data.operator,
-                    data.value as CommonValue
-                )
-
-                // parameter keys must be unique when using typeorm querybuilder
-                const uniqueId = uuid_v4()
-
-                addWhere(
-                    qb,
-                    'andWhere',
-                    !!data.caseInsensitive,
-                    alias,
-                    sqlOperator,
-                    uniqueId,
-                    value
-                )
-            } else if (aliases.length > 0) {
-                // more than one aliases provided
-                // columnAliasValue is IMultipleColumn type
-
-                if (typeof data.value === 'object') {
-                    // a value of type object is considered as a compound value
-
-                    for (const alias of aliases) {
-                        // in a neq opeartion is necessary check if is correct to check the current alias
-                        if (
-                            data.operator === 'neq' &&
-                            AVOID_NOT_EQUAL_OPERATOR_ALIASES.includes(alias)
-                        ) {
-                            continue
-                        }
-
-                        const {
-                            currentOperator,
-                            currentValue,
-                        } = reassignOperatorAndValue(data, alias)
-
-                        const { sqlOperator, value } = setOperatorAndValue(
-                            currentOperator,
-                            currentValue as CommonValue
-                        )
-
-                        // parameter keys must be unique when using typeorm querybuilder
-                        const uniqueId = uuid_v4()
-
-                        addWhere(
-                            qb,
-                            'andWhere',
-                            !!data.caseInsensitive,
-                            alias,
-                            sqlOperator,
-                            uniqueId,
-                            value
-                        )
+                    // in a neq opeartion is necessary check if is correct to check the current alias
+                    if (
+                        data.operator === 'neq' &&
+                        AVOID_NOT_EQUAL_OPERATOR_ALIASES.includes(alias)
+                    ) {
+                        continue
                     }
-                } else {
-                    // value has a common type (string | number | boolean)
-                    const { sqlOperator, value } = setOperatorAndValue(
-                        data.operator,
-                        data.value
+
+                    // resetting value and operator to work properly with the given compound value
+                    currentValue = processComposedValue(
+                        currentValue,
+                        alias
+                    ) as CommonValue
+
+                    currentOperator = setOperatorInComposedValue(
+                        currentOperator,
+                        alias
                     )
 
-                    // adding main condition for this filter
-                    qb.andWhere(
-                        new Brackets((queryBuilder) => {
-                            for (let i = 0; i < aliases.length; i += 1) {
-                                const uniqueId = uuid_v4()
-
-                                if (i === 0) {
-                                    // adding the first condition inside main condition
-                                    addWhere(
-                                        queryBuilder,
-                                        'where',
-                                        !!data.caseInsensitive,
-                                        aliases[i],
-                                        sqlOperator,
-                                        uniqueId,
-                                        value
-                                    )
-                                } else {
-                                    // adding the rest of conditions
-                                    if (
-                                        (columnAliasValue as IMultipleColumn)
-                                            .operator === 'AND'
-                                    ) {
-                                        // conditions will be joined by 'AND' operators
-                                        addWhere(
-                                            queryBuilder,
-                                            'andWhere',
-                                            !!data.caseInsensitive,
-                                            aliases[i],
-                                            sqlOperator,
-                                            uniqueId,
-                                            value
-                                        )
-                                    } else {
-                                        // conditions will be joined by 'OR' operators
-                                        addWhere(
-                                            queryBuilder,
-                                            'orWhere',
-                                            !!data.caseInsensitive,
-                                            aliases[i],
-                                            sqlOperator,
-                                            uniqueId,
-                                            value
-                                        )
-                                    }
-                                }
-                            }
-                        })
+                    const sqlOperator = getSQLOperatorFromFilterOperator(
+                        currentOperator
                     )
+
+                    const value = parseValueForSQLOperator(
+                        sqlOperator,
+                        currentValue
+                    )
+
+                    // parameter keys must be unique when using typeorm querybuilder
+                    const uniqueId = uuid_v4()
+                    const whereCondition = createWhereCondition(
+                        !!data.caseInsensitive,
+                        alias,
+                        sqlOperator,
+                        uniqueId
+                    )
+
+                    qb.andWhere(whereCondition, {
+                        [uniqueId]: value,
+                    })
                 }
+            } else {
+                // value has a common type (string | number | boolean)
+                const sqlOperator = getSQLOperatorFromFilterOperator(
+                    data.operator
+                )
+
+                const value = parseValueForSQLOperator(sqlOperator, data.value)
+
+                // adding main condition for this filter
+                qb.andWhere(
+                    new Brackets((queryBuilder) => {
+                        // adding the first condition inside main condition
+                        let uniqueId = uuid_v4()
+                        let whereCondition = createWhereCondition(
+                            !!data.caseInsensitive,
+                            aliases[0],
+                            sqlOperator,
+                            uniqueId
+                        )
+
+                        queryBuilder.where(whereCondition, {
+                            [uniqueId]: value,
+                        })
+
+                        for (let i = 1; i < aliases.length; i += 1) {
+                            const operator = (columnAliasValue as IMultipleColumn)
+                                .operator
+                            uniqueId = uuid_v4()
+                            whereCondition = createWhereCondition(
+                                !!data.caseInsensitive,
+                                aliases[i],
+                                sqlOperator,
+                                uniqueId
+                            )
+
+                            if (operator === 'AND') {
+                                // conditions will be joined by 'AND' operators
+                                queryBuilder.andWhere(whereCondition, {
+                                    [uniqueId]: value,
+                                })
+                            } else {
+                                // conditions will be joined by 'OR' operators
+                                queryBuilder.orWhere(whereCondition, {
+                                    [uniqueId]: value,
+                                })
+                            }
+                        }
+                    })
+                )
             }
         }
 
@@ -331,50 +316,6 @@ function createWhereCondition(
     } else {
         return `${alias} ${sqlOperator} :${uniqueId}`
     }
-}
-
-// Parses data properties (operator and value)
-function setOperatorAndValue(
-    dataOperator: FilteringOperator,
-    dataValue: CommonValue
-): FilteringPropsParsed {
-    const sqlOperator = getSQLOperatorFromFilterOperator(dataOperator)
-    const value = parseValueForSQLOperator(sqlOperator, dataValue)
-
-    return {
-        sqlOperator,
-        value,
-    }
-}
-
-// Checks the given operator and composed value to change them if this necessary
-function reassignOperatorAndValue(data: IFilter, alias: string) {
-    let currentValue: FilteringValue = data.value
-    let currentOperator = data.operator
-
-    // resetting value and operator to work properly with the given compound value
-    currentValue = processComposedValue(currentValue as ComposedValue, alias)
-    currentOperator = setOperatorInComposedValue(currentOperator, alias)
-
-    return { currentValue, currentOperator }
-}
-
-// assign a where expression in the given one
-function addWhere(
-    qb: WhereExpression,
-    whereType: 'where' | 'andWhere' | 'orWhere',
-    caseInsensitive: boolean,
-    alias: string,
-    sqlOperator: string,
-    uniqueId: string,
-    value: CommonValue
-) {
-    qb[whereType](
-        createWhereCondition(caseInsensitive, alias, sqlOperator, uniqueId),
-        {
-            [uniqueId]: value,
-        }
-    )
 }
 
 // parses the given property name for use in SQL
