@@ -369,7 +369,7 @@ describe('filtering', () => {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    userId: ["concat(User.user_id, '')"],
+                    userId: "concat(User.user_id, '')",
                 })
             )
             const data = await scope.getMany()
@@ -387,7 +387,7 @@ describe('filtering', () => {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    userId: ["concat(User.user_id, '')"],
+                    userId: "concat(User.user_id, '')",
                 })
             )
             const data = await scope.getMany()
@@ -405,7 +405,7 @@ describe('filtering', () => {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    userId: ["concat(User.user_id, '')"],
+                    userId: "concat(User.user_id, '')",
                 })
             )
             const data = await scope.getMany()
@@ -429,10 +429,13 @@ describe('filtering', () => {
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -455,10 +458,13 @@ describe('filtering', () => {
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -481,10 +487,13 @@ describe('filtering', () => {
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -507,10 +516,13 @@ describe('filtering', () => {
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -533,10 +545,13 @@ describe('filtering', () => {
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -559,10 +574,13 @@ describe('filtering', () => {
             programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             programScope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 

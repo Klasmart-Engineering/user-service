@@ -31,12 +31,12 @@ export const orgsForUsers = async (
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['memberships.organization_id'],
-                schoolId: [], // don't attempt to filter by schoolId
-                roleId: ['roles.role_id'],
-                organizationUserStatus: ['memberships.status'],
-                userId: ["concat(user.user_id, '')"],
-                phone: ['user.phone'],
+                organizationId: 'memberships.organization_id',
+                schoolId: '', // don't attempt to filter by schoolId
+                roleId: 'roles.role_id',
+                organizationUserStatus: 'memberships.status',
+                userId: "concat(user.user_id, '')",
+                phone: 'user.phone',
             })
         )
     }
@@ -86,12 +86,12 @@ export const schoolsForUsers = async (
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['organization.organization_id'],
-                schoolId: ['memberships.school_id'],
-                roleId: ['roles.role_id'],
-                organizationUserStatus: [],
-                userId: ["concat(user.user_id, '')"],
-                phone: ['user.phone'],
+                organizationId: 'organization.organization_id',
+                schoolId: 'memberships.school_id',
+                roleId: 'roles.role_id',
+                organizationUserStatus: '',
+                userId: "concat(user.user_id, '')",
+                phone: 'user.phone',
             })
         )
     }
@@ -146,21 +146,21 @@ export const rolesForUsers = async (
     if (filter) {
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['orgMemberships.organization_id'],
-                schoolId: [],
-                roleId: ['orgRoles.role_id'],
-                organizationUserStatus: [],
-                userId: ["concat(user.user_id, '')"],
+                organizationId: 'orgMemberships.organization_id',
+                schoolId: '',
+                roleId: 'orgRoles.role_id',
+                organizationUserStatus: '',
+                userId: "concat(user.user_id, '')",
             })
         )
         schoolScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: ['schoolOrg.organization_id'],
-                schoolId: ['schoolMemberships.school_id'],
-                roleId: ['schoolRoles.role_id'],
-                organizationUserStatus: [],
-                userId: ["concat(user.user_id, '')"],
-                phone: ['user.phone'],
+                organizationId: 'schoolOrg.organization_id',
+                schoolId: 'schoolMemberships.school_id',
+                roleId: 'schoolRoles.role_id',
+                organizationUserStatus: '',
+                userId: "concat(user.user_id, '')",
+                phone: 'user.phone',
             })
         )
     }

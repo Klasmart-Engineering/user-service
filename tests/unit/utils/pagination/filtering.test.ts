@@ -44,7 +44,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (email = $1)')
+        expect(whereClause).to.equal('WHERE ((email = $1))')
         expect(Object.keys(scope.getParameters()).length).to.equal(1)
     })
 
@@ -66,7 +66,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (email = $1 AND username = $2)')
+        expect(whereClause).to.equal('WHERE ((email = $1) AND (username = $2))')
         expect(Object.keys(scope.getParameters()).length).to.equal(2)
     })
 
@@ -101,7 +101,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (((email = $1) OR (username = $2) OR (gender = $3)))'
+            'WHERE ((((email = $1)) OR ((username = $2)) OR ((gender = $3))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(3)
     })
@@ -137,7 +137,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (((email = $1) OR (email = $2) OR (email = $3)))'
+            'WHERE ((((email = $1)) OR ((email = $2)) OR ((email = $3))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(3)
     })
@@ -171,7 +171,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (email = $1 AND ((username = $2) OR (gender = $3)))'
+            'WHERE ((email = $1) AND (((username = $2)) OR ((gender = $3))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(3)
     })
@@ -221,7 +221,7 @@ describe('getWhereClauseFromFilter', () => {
             .slice(scope.getSql().indexOf('WHERE'))
 
         expect(whereClause).to.equal(
-            'WHERE (((((email = $1) OR (username = $2))) AND (((email = $3) OR (username = $4)))))'
+            'WHERE ((((((email = $1)) OR ((username = $2)))) AND ((((email = $3)) OR ((username = $4))))))'
         )
         expect(Object.keys(scope.getParameters()).length).to.equal(4)
     })
@@ -254,7 +254,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (((email = $1)))')
+        expect(whereClause).to.equal('WHERE ((((email = $1))))')
     })
 
     it("produces the correct query when using the 'contains' operator", () => {
@@ -270,7 +270,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (email LIKE $1)')
+        expect(whereClause).to.equal('WHERE ((email LIKE $1))')
         expect(Object.keys(scope.getParameters()).length).to.equal(1)
         expect(
             scope.getParameters()[Object.keys(scope.getParameters())[0]]
@@ -291,7 +291,7 @@ describe('getWhereClauseFromFilter', () => {
             .getSql()
             .slice(scope.getSql().indexOf('WHERE'))
 
-        expect(whereClause).to.equal('WHERE (lower(email) LIKE lower($1))')
+        expect(whereClause).to.equal('WHERE ((lower(email) LIKE lower($1)))')
     })
 
     context('column aliases', () => {
@@ -306,18 +306,18 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('user')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    asd: ['email'],
+                    asd: 'email',
                 })
             )
             const whereClause = scope
                 .getSql()
                 .slice(scope.getSql().indexOf('WHERE'))
 
-            expect(whereClause).to.equal('WHERE (email = $1)')
+            expect(whereClause).to.equal('WHERE ((email = $1))')
             expect(Object.keys(scope.getParameters()).length).to.equal(1)
         })
 
-        it('supports multiple aliases', () => {
+        it("supports multiple aliases ('AND' operator)", () => {
             const filter: IEntityFilter = {
                 asd: {
                     operator: 'contains',
@@ -328,7 +328,10 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('user')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    asd: ['email', 'username'],
+                    asd: {
+                        operator: 'AND',
+                        aliases: ['email', 'username'],
+                    },
                 })
             )
             const whereClause = scope
@@ -336,7 +339,33 @@ describe('getWhereClauseFromFilter', () => {
                 .slice(scope.getSql().indexOf('WHERE'))
 
             expect(whereClause).to.equal(
-                'WHERE (email LIKE $1 AND username LIKE $2)'
+                'WHERE ((email LIKE $1 AND username LIKE $2))'
+            )
+        })
+
+        it("supports multiple aliases ('OR' operator)", () => {
+            const filter: IEntityFilter = {
+                asd: {
+                    operator: 'contains',
+                    value: 'joe',
+                },
+            }
+
+            const scope = createQueryBuilder('user')
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    asd: {
+                        operator: 'OR',
+                        aliases: ['email', 'username'],
+                    },
+                })
+            )
+            const whereClause = scope
+                .getSql()
+                .slice(scope.getSql().indexOf('WHERE'))
+
+            expect(whereClause).to.equal(
+                'WHERE ((email LIKE $1 OR username LIKE $2))'
             )
         })
 
@@ -351,7 +380,7 @@ describe('getWhereClauseFromFilter', () => {
             const scope = createQueryBuilder('user')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    asd: [],
+                    asd: '',
                 })
             )
             const whereClause = scope
@@ -378,10 +407,13 @@ describe('getWhereClauseFromFilter', () => {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -411,10 +443,13 @@ describe('getWhereClauseFromFilter', () => {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -442,10 +477,13 @@ describe('getWhereClauseFromFilter', () => {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -475,10 +513,13 @@ describe('getWhereClauseFromFilter', () => {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -508,10 +549,13 @@ describe('getWhereClauseFromFilter', () => {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
@@ -541,10 +585,13 @@ describe('getWhereClauseFromFilter', () => {
             scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    ageRangeFrom: [
-                        'AgeRange.low_value',
-                        'AgeRange.low_value_unit',
-                    ],
+                    ageRangeFrom: {
+                        operator: 'AND',
+                        aliases: [
+                            'AgeRange.low_value',
+                            'AgeRange.low_value_unit',
+                        ],
+                    },
                 })
             )
 
