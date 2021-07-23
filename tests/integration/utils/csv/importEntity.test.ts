@@ -8,6 +8,11 @@ import { processOrganizationFromCSVRow } from '../../../../src/utils/csv/organiz
 import { createEntityFromCsvWithRollBack } from '../../../../src/utils/csv/importEntity'
 import { Organization } from '../../../../src/entities/organization'
 import { Upload } from '../../../../src/types/upload'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createServer } from '../../../../src/utils/createServer'
+import { Model } from '../../../../src/model'
+import { createTestClient } from '../../../utils/createTestClient'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -15,9 +20,18 @@ describe('createEntityFromCsvWithRollBack', () => {
     let connection: Connection
     let file: Upload
     let organizationCount: number
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
+        const server = createServer(new Model(connection))
+        const testClient = createTestClient(server)
+
+        const adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     after(async () => {
@@ -42,9 +56,12 @@ describe('createEntityFromCsvWithRollBack', () => {
 
         it('does not create any entities', async () => {
             const fn = () =>
-                createEntityFromCsvWithRollBack(connection, file, [
-                    processOrganizationFromCSVRow,
-                ])
+                createEntityFromCsvWithRollBack(
+                    connection,
+                    file,
+                    [processOrganizationFromCSVRow],
+                    adminPermissions
+                )
             expect(fn()).to.be.rejected
 
             organizationCount = await connection.manager
@@ -71,9 +88,12 @@ describe('createEntityFromCsvWithRollBack', () => {
         })
 
         it('creates all the expected entities', async () => {
-            await createEntityFromCsvWithRollBack(connection, file, [
-                processOrganizationFromCSVRow,
-            ])
+            await createEntityFromCsvWithRollBack(
+                connection,
+                file,
+                [processOrganizationFromCSVRow],
+                adminPermissions
+            )
             organizationCount = await connection.manager
                 .getRepository(Organization)
                 .count()

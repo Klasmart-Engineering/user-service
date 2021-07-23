@@ -1,10 +1,10 @@
 import { expect } from 'chai'
-import { MEMBERSHIP_SHORTCODE_MAXLEN } from '../../../src/entities/organizationMembership'
 import {
     generateShortCode,
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../../../src/utils/shortcode'
+import validationConstants from '../../../src/entities/validations/constants'
 
 describe('shortcode', () => {
     const shortcode_re = /^[A-Z|0-9]+$/
@@ -93,7 +93,10 @@ describe('valid long ShortCode', () => {
             '1234567890123456',
             'P5X',
         ].every(function (code) {
-            const res = validateShortCode(code, MEMBERSHIP_SHORTCODE_MAXLEN)
+            const res = validateShortCode(
+                code,
+                validationConstants.SHORTCODE_MAX_LENGTH
+            )
             expect(res).is.equal(true)
             return res
         })
@@ -106,7 +109,10 @@ describe('valid long ShortCode', () => {
             'P5/DS56YU=',
             '1234567890123456A',
         ].every(function (code) {
-            const res = !validateShortCode(code, MEMBERSHIP_SHORTCODE_MAXLEN)
+            const res = !validateShortCode(
+                code,
+                validationConstants.SHORTCODE_MAX_LENGTH
+            )
             expect(res).is.equal(true)
             return res
         })

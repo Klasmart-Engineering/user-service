@@ -863,9 +863,12 @@ export class Model {
         }
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processOrganizationFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processOrganizationFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -880,9 +883,12 @@ export class Model {
         }
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processUserFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processUserFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -897,9 +903,12 @@ export class Model {
         }
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processClassFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processClassFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -913,9 +922,12 @@ export class Model {
             return null
         }
         const { file } = await (args.file as Promise<{ file: Upload }>)
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processSchoolFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processSchoolFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -930,10 +942,12 @@ export class Model {
         }
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processGradeFromCSVRow,
-            setGradeFromToFields,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processGradeFromCSVRow, setGradeFromToFields],
+            context.permissions
+        )
 
         return file
     }
@@ -948,9 +962,12 @@ export class Model {
         }
 
         const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processSubCategoriesFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processSubCategoriesFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -965,9 +982,12 @@ export class Model {
         }
 
         const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processRoleFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processRoleFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -982,9 +1002,12 @@ export class Model {
         }
 
         const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processCategoryFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processCategoryFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -999,9 +1022,12 @@ export class Model {
         }
 
         const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processSubjectFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processSubjectFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -1016,9 +1042,12 @@ export class Model {
         }
 
         const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processProgramFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processProgramFromCSVRow],
+            context.permissions
+        )
 
         return file
     }
@@ -1033,9 +1062,12 @@ export class Model {
         }
 
         const { file } = (await args.file) as { file: Upload }
-        await createEntityFromCsvWithRollBack(this.connection, file, [
-            processAgeRangeFromCSVRow,
-        ])
+        await createEntityFromCsvWithRollBack(
+            this.connection,
+            file,
+            [processAgeRangeFromCSVRow],
+            context.permissions
+        )
 
         return file
     }

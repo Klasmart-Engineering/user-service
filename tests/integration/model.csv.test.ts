@@ -85,6 +85,8 @@ import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
 import { CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
+import { getAdminAuthToken } from '../utils/testConfig'
+import { createAdminUser } from '../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -974,6 +976,8 @@ describe('model.csv', () => {
                 cls = createClass([school], organization)
                 cls.class_name = 'Class I'
                 await connection.manager.save(cls)
+
+                await createAdminUser(testClient)
             })
 
             it('should create the user', async () => {
@@ -986,7 +990,8 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding
+                    encoding,
+                    { authorization: getAdminAuthToken() }
                 )
 
                 expect(result.filename).eq(filename)

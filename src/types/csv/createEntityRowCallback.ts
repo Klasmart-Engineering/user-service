@@ -1,10 +1,12 @@
 import { EntityManager } from 'typeorm'
 import { CSVError } from './csvError'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export type CreateEntityRowCallback = (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CreateEntityRowCallback<RowType = any> = (
     manager: EntityManager,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    chunk: any,
+    row: RowType,
     rowCounter: number,
-    fileErrors: CSVError[]
-) => void
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => Promise<void>

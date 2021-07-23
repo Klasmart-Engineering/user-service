@@ -29,7 +29,7 @@ import {
 } from '../../utils/sorting'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { GradeSummaryNode } from '../../../src/types/graphQL/gradeSummaryNode'
-import { AgeRangeSummaryNode } from '../../../src/types/graphQL/ageRangeSummaryNode'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { SubjectSummaryNode } from '../../../src/types/graphQL/subjectSummaryNode'
 import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
@@ -433,13 +433,13 @@ describe('model', () => {
 
             const ageRangesValues = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValue
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
                 )
             })
 
             const ageRangesUnits = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValueUnit
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValueUnit
                 )
             })
 
@@ -475,13 +475,13 @@ describe('model', () => {
 
             const ageRangesValues = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.highValue
+                    (ageRange: AgeRangeConnectionNode) => ageRange.highValue
                 )
             })
 
             const ageRangesUnits = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.highValueUnit
+                    (ageRange: AgeRangeConnectionNode) => ageRange.highValueUnit
                 )
             })
 

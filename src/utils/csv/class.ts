@@ -12,7 +12,7 @@ import { ClassRow } from '../../types/csv/classRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import validationConstants from './validationConstants'
+import validationConstants from '../../entities/validations/constants'
 
 export const processClassFromCSVRow = async (
     manager: EntityManager,
@@ -130,7 +130,7 @@ export const processClassFromCSVRow = async (
         return
     }
 
-    const classExist = await manager.findOne(Class ,{
+    const classExist = await manager.findOne(Class, {
         where: {
             shortcode: class_shortcode,
             organization: org,

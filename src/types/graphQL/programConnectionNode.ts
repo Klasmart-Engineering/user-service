@@ -1,5 +1,5 @@
 import { Status } from '../../entities/status'
-import { AgeRangeSummaryNode } from './ageRangeSummaryNode'
+import { AgeRangeConnectionNode } from './ageRangeConnectionNode'
 import { GradeSummaryNode } from './gradeSummaryNode'
 import { SubjectSummaryNode } from './subjectSummaryNode'
 
@@ -8,7 +8,7 @@ export interface ProgramConnectionNode {
     name?: string
     status: Status
     system: boolean
-    ageRanges?: AgeRangeSummaryNode[]
+    ageRanges?: AgeRangeConnectionNode[]
     grades?: GradeSummaryNode[]
     subjects?: SubjectSummaryNode[]
 }

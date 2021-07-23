@@ -13,10 +13,7 @@ import {
     EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
-import {
-    MEMBERSHIP_SHORTCODE_MAXLEN,
-    OrganizationMembership,
-} from './organizationMembership'
+import { OrganizationMembership } from './organizationMembership'
 import { v4 as uuid_v4 } from 'uuid'
 import { OrganizationOwnership } from './organizationOwnership'
 import { AgeRange } from './ageRange'
@@ -41,6 +38,7 @@ import {
 } from '../utils/shortcode'
 import clean from '../utils/clean'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
+import validationConstants from './validations/constants'
 
 export const normalizedLowercaseTrimmed = (x: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
@@ -522,7 +520,7 @@ export class Organization extends BaseEntity {
                 shortcode = shortcode.toUpperCase()
                 shortcode = validateShortCode(
                     shortcode,
-                    MEMBERSHIP_SHORTCODE_MAXLEN
+                    validationConstants.SHORTCODE_MAX_LENGTH
                 )
                     ? shortcode
                     : undefined
@@ -534,7 +532,10 @@ export class Organization extends BaseEntity {
             membership.user = Promise.resolve(user)
             membership.shortcode =
                 shortcode ||
-                generateShortCode(user_id, MEMBERSHIP_SHORTCODE_MAXLEN)
+                generateShortCode(
+                    user_id,
+                    validationConstants.SHORTCODE_MAX_LENGTH
+                )
             await membership.save()
 
             return membership
@@ -776,7 +777,7 @@ export class Organization extends BaseEntity {
         membership.shortcode =
             shortcode ||
             membership.shortcode ||
-            generateShortCode(user_id, MEMBERSHIP_SHORTCODE_MAXLEN)
+            generateShortCode(user_id, validationConstants.SHORTCODE_MAX_LENGTH)
         return membership
     }
 
@@ -853,7 +854,12 @@ export class Organization extends BaseEntity {
         }
         if (typeof shortcode === 'string') {
             shortcode = shortcode.toUpperCase()
-            if (!validateShortCode(shortcode, MEMBERSHIP_SHORTCODE_MAXLEN)) {
+            if (
+                !validateShortCode(
+                    shortcode,
+                    validationConstants.SHORTCODE_MAX_LENGTH
+                )
+            ) {
                 shortcode = undefined
             }
         }
