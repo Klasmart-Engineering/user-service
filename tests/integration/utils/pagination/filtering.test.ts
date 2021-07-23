@@ -10,6 +10,7 @@ import {
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import { Program } from '../../../../src/entities/program'
+import { Status } from '../../../../src/entities/status'
 
 use(chaiAsPromised)
 
@@ -23,6 +24,7 @@ function getUsers() {
             email: 'john@gmail.com',
             username: 'john',
             date_of_birth: '01-1993',
+            status: Status.ACTIVE,
             gender: 'male',
             primary: true,
             deleted_at: new Date(2020, 0, 1),
@@ -34,6 +36,7 @@ function getUsers() {
             email: 'sally@gmail.com',
             username: 'sally',
             date_of_birth: '01-2000',
+            status: Status.INACTIVE,
             gender: 'female',
             primary: false,
             deleted_at: new Date(2000, 0, 1),
@@ -52,6 +55,7 @@ function getUsers() {
         user.gender = u.gender
         user.primary = u.primary
         user.deleted_at = u.deleted_at
+        user.status = u.status
         users.push(user)
     }
 
@@ -587,6 +591,125 @@ describe('filtering', () => {
             const data = await programScope.getMany()
 
             expect(data.length).to.equal(3)
+        })
+    })
+
+    context('statuses', () => {
+        it('supports status.eq', async () => {
+            const filter: IEntityFilter = {
+                status: {
+                    operator: 'eq',
+                    value: Status.ACTIVE,
+                },
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'User.status',
+                })
+            )
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it('supports status.neq', async () => {
+            const filter: IEntityFilter = {
+                status: {
+                    operator: 'neq',
+                    value: Status.ACTIVE,
+                },
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'User.status',
+                })
+            )
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it("fails with a value different to 'active' or 'inactive", async () => {
+            {
+                const filter: IEntityFilter = {
+                    status: {
+                        operator: 'eq',
+                        value: 'available',
+                    },
+                }
+
+                scope.andWhere(
+                    getWhereClauseFromFilter(filter, {
+                        status: 'User.status',
+                    })
+                )
+
+                const fn = async () => await scope.getMany()
+
+                await expect(fn()).to.be.rejected
+            }
+        })
+    })
+
+    context('ageRangeUnits', () => {
+        it('supports ageRangeUnit.eq', async () => {
+            const filter: IEntityFilter = {
+                ageRangeUnitFrom: {
+                    operator: 'eq',
+                    value: AgeRangeUnit.MONTH,
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
+                })
+            )
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it('supports ageRangeUnit.neq', async () => {
+            const filter: IEntityFilter = {
+                ageRangeUnitTo: {
+                    operator: 'neq',
+                    value: AgeRangeUnit.YEAR,
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
+                })
+            )
+            const data = await programScope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it('fails with a value different to a valid Age Range Unit', async () => {
+            const filter: IEntityFilter = {
+                ageRangeUnitTo: {
+                    operator: 'neq',
+                    value: 'week',
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
+                })
+            )
+
+            const fn = async () => await programScope.getMany()
+
+            await expect(fn()).to.be.rejected
         })
     })
 })

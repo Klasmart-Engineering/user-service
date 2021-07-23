@@ -4,6 +4,7 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 
 const typeDefs = gql`
+    # Filter Types
     input StringFilter {
         operator: StringOperator!
         value: String!
@@ -35,6 +36,22 @@ const typeDefs = gql`
         value: AgeRangeValue!
     }
 
+    input AgeRangeUnitFilter {
+        operator: UUIDOperator!
+        value: AgeRangeUnit!
+    }
+
+    input AgeRangeValueFilter {
+        operator: NumberOrDateOperator!
+        value: Int!
+    }
+
+    input StatusFilter {
+        operator: UUIDOperator!
+        value: Status!
+    }
+
+    # Operators and Values Types
     input AgeRangeValue {
         value: Int!
         unit: AgeRangeUnit!

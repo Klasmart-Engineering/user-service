@@ -46,7 +46,7 @@ const typeDefs = gql`
         # table columns
         id: UUIDFilter
         name: StringFilter
-        status: StringFilter
+        status: StatusFilter
         system: BooleanFilter
 
         #joined columns
@@ -54,6 +54,10 @@ const typeDefs = gql`
         gradeId: UUIDFilter
         ageRangeFrom: AgeRangeTypeFilter
         ageRangeTo: AgeRangeTypeFilter
+        ageRangeUnitFrom: AgeRangeUnitFilter
+        ageRangeValueFrom: AgeRangeValueFilter
+        ageRangeUnitTo: AgeRangeUnitFilter
+        ageRangeValueTo: AgeRangeValueFilter
         subjectId: UUIDFilter
         schoolId: UUIDFilter
 

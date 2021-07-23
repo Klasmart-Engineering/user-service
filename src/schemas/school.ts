@@ -91,7 +91,7 @@ const typeDefs = gql`
         schoolId: UUIDFilter
         name: StringFilter
         shortCode: StringFilter
-        status: StringFilter
+        status: StatusFilter
 
         # joined columns
         organizationId: UUIDFilter

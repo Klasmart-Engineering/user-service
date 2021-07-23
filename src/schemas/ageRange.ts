@@ -36,7 +36,7 @@ const typeDefs = gql`
 
     input AgeRangeFilter {
         # table columns
-        status: StringFilter
+        status: StatusFilter
         system: BooleanFilter
 
         # joined columns

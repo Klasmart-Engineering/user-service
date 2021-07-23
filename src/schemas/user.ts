@@ -80,7 +80,7 @@ const typeDefs = gql`
         organizationId: UUIDFilter
         roleId: UUIDFilter
         schoolId: UUIDFilter
-        organizationUserStatus: StringFilter
+        organizationUserStatus: StatusFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]

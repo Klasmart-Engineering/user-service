@@ -46,7 +46,7 @@ const typeDefs = gql`
         # table columns
         id: UUIDFilter
         name: StringFilter
-        status: StringFilter
+        status: StatusFilter
         system: BooleanFilter
 
         #joined columns
