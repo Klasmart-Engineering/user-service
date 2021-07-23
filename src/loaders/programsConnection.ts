@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader'
 import { Program } from '../entities/program'
-import { AgeRangeSummaryNode } from '../types/graphQL/ageRangeSummaryNode'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 import {
@@ -10,7 +10,7 @@ import {
 } from '../utils/pagination/filtering'
 
 export interface IProgramsConnectionLoaders {
-    ageRanges?: DataLoader<string, AgeRangeSummaryNode[]>
+    ageRanges?: DataLoader<string, AgeRangeConnectionNode[]>
     grades?: DataLoader<string, GradeSummaryNode[]>
     subjects?: DataLoader<string, SubjectSummaryNode[]>
 }
@@ -18,8 +18,8 @@ export interface IProgramsConnectionLoaders {
 export const ageRangesForPrograms = async (
     programIds: readonly string[],
     filter?: IEntityFilter
-): Promise<AgeRangeSummaryNode[][]> => {
-    const programAgeRanges: AgeRangeSummaryNode[][] = []
+): Promise<AgeRangeConnectionNode[][]> => {
+    const programAgeRanges: AgeRangeConnectionNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
 
     if (filter) {
@@ -70,7 +70,7 @@ export const ageRangesForPrograms = async (
         const program = programs.find((p) => p.id === programId)
 
         if (program) {
-            const currentAgeRanges: AgeRangeSummaryNode[] = []
+            const currentAgeRanges: AgeRangeConnectionNode[] = []
             const ageRanges = (await program.age_ranges) || []
 
             for (const ageRange of ageRanges) {

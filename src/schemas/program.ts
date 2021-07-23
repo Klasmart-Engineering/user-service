@@ -66,20 +66,9 @@ const typeDefs = gql`
         name: String
         status: Status!
         system: Boolean!
-        ageRanges: [AgeRangeSummaryNode!]
+        ageRanges: [AgeRangeConnectionNode!]
         grades: [GradeSummaryNode!]
         subjects: [SubjectSummaryNode!]
-    }
-
-    type AgeRangeSummaryNode {
-        id: ID!
-        name: String
-        lowValue: Int!
-        highValue: Int!
-        lowValueUnit: AgeRangeUnit!
-        highValueUnit: AgeRangeUnit!
-        status: Status!
-        system: Boolean!
     }
 
     type GradeSummaryNode {

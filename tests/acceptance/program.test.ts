@@ -4,7 +4,7 @@ import { Connection } from 'typeorm'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import ProgramsInitializer from '../../src/initializers/programs'
-import { AgeRangeSummaryNode } from '../../src/types/graphQL/ageRangeSummaryNode'
+import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRangeConnectionNode'
 import { ProgramConnectionNode } from '../../src/types/graphQL/programConnectionNode'
 import { loadFixtures } from '../utils/fixtures'
 import { getAdminAuthToken } from '../utils/testConfig'
@@ -137,7 +137,7 @@ describe('acceptance.program', () => {
             const ageRangesValues = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
                     return edge.node.ageRanges?.map(
-                        (ageRange: AgeRangeSummaryNode) => ageRange.lowValue
+                        (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
                     )
                 }
             )
@@ -145,7 +145,8 @@ describe('acceptance.program', () => {
             const ageRangesUnits = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
                     return edge.node.ageRanges?.map(
-                        (ageRange: AgeRangeSummaryNode) => ageRange.lowValueUnit
+                        (ageRange: AgeRangeConnectionNode) =>
+                            ageRange.lowValueUnit
                     )
                 }
             )
@@ -192,7 +193,7 @@ describe('acceptance.program', () => {
             const ageRangesValues = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
                     return edge.node.ageRanges?.map(
-                        (ageRange: AgeRangeSummaryNode) => ageRange.lowValue
+                        (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
                     )
                 }
             )
@@ -200,7 +201,8 @@ describe('acceptance.program', () => {
             const ageRangesUnits = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
                     return edge.node.ageRanges?.map(
-                        (ageRange: AgeRangeSummaryNode) => ageRange.lowValueUnit
+                        (ageRange: AgeRangeConnectionNode) =>
+                            ageRange.lowValueUnit
                     )
                 }
             )
