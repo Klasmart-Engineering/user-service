@@ -523,7 +523,7 @@ describe('model', () => {
 
             const ageRangesUnits = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValueUnit
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValueUnit
                 )
             })
 
@@ -552,7 +552,7 @@ describe('model', () => {
 
             const ageRangesUnits = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.highValueUnit
+                    (ageRange: AgeRangeConnectionNode) => ageRange.highValueUnit
                 )
             })
 
@@ -583,7 +583,7 @@ describe('model', () => {
 
             const ageRangesValues = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValue
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
                 )
             })
 
@@ -614,7 +614,7 @@ describe('model', () => {
 
             const ageRangesValues = result.edges.map((edge) => {
                 return edge.node.ageRanges?.map(
-                    (ageRange: AgeRangeSummaryNode) => ageRange.lowValue
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
                 )
             })
 
