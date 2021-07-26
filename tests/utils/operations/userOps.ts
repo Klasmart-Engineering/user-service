@@ -1,16 +1,16 @@
-import { expect } from "chai";
-import { Class } from "../../../src/entities/class";
-import { Organization } from "../../../src/entities/organization";
-import { OrganizationMembership } from "../../../src/entities/organizationMembership";
-import { SchoolMembership } from "../../../src/entities/schoolMembership";
-import { User } from "../../../src/entities/user";
-import { ApolloServerTestClient } from "../createTestClient";
-import { gqlTry } from "../gqlTry";
-import { getAdminAuthToken } from "../testConfig";
-import { Headers } from 'node-mocks-http';
-import { Subject } from "../../../src/entities/subject";
+import { expect } from 'chai'
+import { Class } from '../../../src/entities/class'
+import { Organization } from '../../../src/entities/organization'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { SchoolMembership } from '../../../src/entities/schoolMembership'
+import { User } from '../../../src/entities/user'
+import { ApolloServerTestClient } from '../createTestClient'
+import { gqlTry } from '../gqlTry'
+import { getAdminAuthToken } from '../testConfig'
+import { Headers } from 'node-mocks-http'
+import { Subject } from '../../../src/entities/subject'
 
-const CREATE_ORGANIZATION = `
+export const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
         user(user_id: $user_id) {
             createOrganization(organization_name: $organization_name, shortCode: $shortCode) {
@@ -21,7 +21,7 @@ const CREATE_ORGANIZATION = `
             }
         }
     }
-`;
+`
 
 const ADD_ORGANIZATION_TO_USER = `
     mutation myMutation($user_id: ID!, $organization_id: ID!) {
@@ -32,7 +32,7 @@ const ADD_ORGANIZATION_TO_USER = `
             }
         }
     }
-`;
+`
 
 const SET = `
     mutation myMutation(
@@ -67,7 +67,7 @@ const SET = `
             }
         }
     }
-`;
+`
 
 const SET_EMAIL = `
     mutation myMutation(
@@ -81,7 +81,7 @@ const SET_EMAIL = `
             }
         }
     }
-`;
+`
 
 const SET_PRIMARY = `
     mutation myMutation($user_id: ID!) {
@@ -89,7 +89,7 @@ const SET_PRIMARY = `
             setPrimary
         }
     }
-`;
+`
 
 const GET_PRIMARY = `
     query myQuery($user_id: ID!) {
@@ -97,7 +97,7 @@ const GET_PRIMARY = `
             primary
         }
     }
-`;
+`
 
 const GET_ORGANIZATION_MEMBERSHIPS = `
     query myQuery($user_id: ID!) {
@@ -108,7 +108,7 @@ const GET_ORGANIZATION_MEMBERSHIPS = `
             }
         }
     }
-`;
+`
 
 const GET_ORGANIZATION_MEMBERSHIP = `
     query myQuery(
@@ -121,7 +121,7 @@ const GET_ORGANIZATION_MEMBERSHIP = `
             }
         }
     }
-`;
+`
 
 const GET_SCHOOL_MEMBERSHIPS = `
     query myQuery($user_id: ID!) {
@@ -132,7 +132,7 @@ const GET_SCHOOL_MEMBERSHIPS = `
             }
         }
     }
-`;
+`
 
 const GET_SCHOOL_MEMBERSHIP = `
     query myQuery(
@@ -145,7 +145,7 @@ const GET_SCHOOL_MEMBERSHIP = `
             }
         }
     }
-`;
+`
 
 const GET_CLASSES_TEACHING = `
     query myQuery($user_id: ID!) {
@@ -155,7 +155,7 @@ const GET_CLASSES_TEACHING = `
             }
         }
     }
-`;
+`
 
 const GET_CLASSES_STUDYING = `
     query myQuery($user_id: ID!) {
@@ -165,7 +165,7 @@ const GET_CLASSES_STUDYING = `
             }
         }
     }
-`;
+`
 
 const GET_SUBJECTS_TEACHING = `
     query myQuery($user_id: ID!) {
@@ -178,7 +178,7 @@ const GET_SUBJECTS_TEACHING = `
             }
         }
     }
-`;
+`
 
 const GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION = `
     query myQuery($user_id: ID!, $permission_name: String!) {
@@ -189,7 +189,7 @@ const GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION = `
             }
         }
     }
-`;
+`
 
 const MERGE_USER = `
 mutation myMutation($user_id: ID!, $other_id: String) {
@@ -216,7 +216,7 @@ mutation myMutation($user_id: ID!, $other_id: String) {
         }
     }
 }
-`;
+`
 
 const ADD_SCHOOL = `
     mutation myMutation($user_id: ID!, $school_id: ID!) {
@@ -227,7 +227,7 @@ const ADD_SCHOOL = `
             }
         }
     }
-`;
+`
 
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
@@ -236,14 +236,22 @@ export async function createOrganizationAndValidate(
     shortCode?: string,
     token?: string
 ): Promise<Organization> {
-    organizationName = organizationName ?? "My Organization";
-    const gqlOrganization = await createOrganization(testClient, userId, organizationName, shortCode, token)
+    organizationName = organizationName ?? 'My Organization'
+    const gqlOrganization = await createOrganization(
+        testClient,
+        userId,
+        organizationName,
+        shortCode,
+        token
+    )
 
-    expect(gqlOrganization).to.exist;
-    const dbOrganization = await Organization.findOneOrFail({ where: { organization_name: organizationName } });
-    expect(dbOrganization).to.include(gqlOrganization);
+    expect(gqlOrganization).to.exist
+    const dbOrganization = await Organization.findOneOrFail({
+        where: { organization_name: organizationName },
+    })
+    expect(dbOrganization).to.include(gqlOrganization)
 
-    return dbOrganization;
+    return dbOrganization
 }
 
 export async function createOrganization(
@@ -253,83 +261,112 @@ export async function createOrganization(
     shortCode?: string,
     token?: string
 ): Promise<Organization> {
-
     token = token ?? getAdminAuthToken()
-    const variables =  { user_id: userId, organization_name: organizationName } as any
+    const variables = {
+        user_id: userId,
+        organization_name: organizationName,
+    } as any
 
-    if(shortCode){
+    if (shortCode) {
         variables.shortCode = shortCode
     }
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: CREATE_ORGANIZATION,
-        variables: variables,
-        headers: { authorization: token },
-    });
+    const operation = () =>
+        mutate({
+            mutation: CREATE_ORGANIZATION,
+            variables: variables,
+            headers: { authorization: token },
+        })
 
-    const res = await gqlTry(operation);
-    const gqlOrganization = res.data?.user.createOrganization as Organization;
-    return gqlOrganization;
+    const res = await gqlTry(operation)
+    const gqlOrganization = res.data?.user.createOrganization as Organization
+    return gqlOrganization
 }
 
-export async function addOrganizationToUserAndValidate(testClient: ApolloServerTestClient, userId: string, organizationId: string, token?: string) {
-    const gqlMembership = await addOrganizationToUser(testClient, userId, organizationId, token);
+export async function addOrganizationToUserAndValidate(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    organizationId: string,
+    token?: string
+) {
+    const gqlMembership = await addOrganizationToUser(
+        testClient,
+        userId,
+        organizationId,
+        token
+    )
 
-    const dbUser = await User.findOneOrFail({ where: { user_id: userId } });
-    const dbOrganization = await Organization.findOneOrFail({ where: { organization_id: organizationId } });
-    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail({ where: { user_id: userId, organization_id: organizationId } });
+    const dbUser = await User.findOneOrFail({ where: { user_id: userId } })
+    const dbOrganization = await Organization.findOneOrFail({
+        where: { organization_id: organizationId },
+    })
+    const dbOrganizationMembership = await OrganizationMembership.findOneOrFail(
+        { where: { user_id: userId, organization_id: organizationId } }
+    )
 
-    const userMemberships = await dbUser.memberships;
-    const organizationMemberships = await dbOrganization.memberships;
+    const userMemberships = await dbUser.memberships
+    const organizationMemberships = await dbOrganization.memberships
 
-    expect(gqlMembership).to.exist;
-    expect(gqlMembership.user_id).equals(userId);
-    expect(gqlMembership.organization_id).equals(organizationId);
-    expect(userMemberships).to.deep.include(dbOrganizationMembership);
-    expect(organizationMemberships).to.deep.include(dbOrganizationMembership);
+    expect(gqlMembership).to.exist
+    expect(gqlMembership.user_id).equals(userId)
+    expect(gqlMembership.organization_id).equals(organizationId)
+    expect(userMemberships).to.deep.include(dbOrganizationMembership)
+    expect(organizationMemberships).to.deep.include(dbOrganizationMembership)
 
-    return gqlMembership;
+    return gqlMembership
 }
 
-export async function addOrganizationToUser(testClient: ApolloServerTestClient, userId: string, organizationId: string, token?: string) {
-    const { mutate } = testClient;
+export async function addOrganizationToUser(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    organizationId: string,
+    token?: string
+) {
+    const { mutate } = testClient
 
-    token = token ?? getAdminAuthToken();
+    token = token ?? getAdminAuthToken()
 
-    const operation = () => mutate({
-        mutation: ADD_ORGANIZATION_TO_USER,
-        variables: { user_id: userId, organization_id: organizationId },
-        headers: { authorization: token },
-    });
+    const operation = () =>
+        mutate({
+            mutation: ADD_ORGANIZATION_TO_USER,
+            variables: { user_id: userId, organization_id: organizationId },
+            headers: { authorization: token },
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.user.addOrganization as OrganizationMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.user
+        .addOrganization as OrganizationMembership
+    return gqlMembership
 }
 
-export async function updateUser(testClient: ApolloServerTestClient, user: User, headers?: Headers) {
-    const { mutate } = testClient;
+export async function updateUser(
+    testClient: ApolloServerTestClient,
+    user: User,
+    headers?: Headers
+) {
+    const { mutate } = testClient
     const userMods = {
-        given_name: "Billy",
-        family_name: "Bob",
-        username: "Big Ears",
-        avatar: "new_avatar",
-        date_of_birth: "03-1983",
-        gender: "Male",
-        alternate_email: "al@some.com",
-        alternate_phone: "+123456789"
-    };
+        given_name: 'Billy',
+        family_name: 'Bob',
+        username: 'Big Ears',
+        avatar: 'new_avatar',
+        date_of_birth: '03-1983',
+        gender: 'Male',
+        alternate_email: 'al@some.com',
+        alternate_phone: '+123456789',
+    }
 
-    const operation = () => mutate({
-        mutation: SET,
-        variables: { user_id: user.user_id, ...userMods },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: SET,
+            variables: { user_id: user.user_id, ...userMods },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.user.set as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.user.set as User
+    return gqlUser
 }
 
 export async function updateUserEmail(
@@ -338,18 +375,19 @@ export async function updateUserEmail(
     email: string,
     headers?: Headers
 ) {
-    const { mutate } = testClient;
-    const userMod = { email };
+    const { mutate } = testClient
+    const userMod = { email }
 
-    const operation = () => mutate({
-        mutation: SET_EMAIL,
-        variables: { user_id: user.user_id, ...userMod },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: SET_EMAIL,
+            variables: { user_id: user.user_id, ...userMod },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.user as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.user as User
+    return gqlUser
 }
 
 export async function setPrimaryUser(
@@ -357,192 +395,250 @@ export async function setPrimaryUser(
     user: User,
     headers?: Headers
 ) {
-    const { mutate, query } = testClient;
+    const { mutate, query } = testClient
 
-    const mutationOperation = () => mutate({
-        mutation: SET_PRIMARY,
-        variables: { user_id: user.user_id },
-        headers: headers,
-    });
-    await gqlTry(mutationOperation);
+    const mutationOperation = () =>
+        mutate({
+            mutation: SET_PRIMARY,
+            variables: { user_id: user.user_id },
+            headers: headers,
+        })
+    await gqlTry(mutationOperation)
 
-    const queryOperation = () => query({
-        query: GET_PRIMARY,
-        variables: { user_id: user.user_id },
-        headers: headers,
-    });
-    const res = await gqlTry(queryOperation);
+    const queryOperation = () =>
+        query({
+            query: GET_PRIMARY,
+            variables: { user_id: user.user_id },
+            headers: headers,
+        })
+    const res = await gqlTry(queryOperation)
 
-    const gqlUser = res.data?.user as User;
-    return gqlUser;
+    const gqlUser = res.data?.user as User
+    return gqlUser
 }
 
-export async function getOrganizationMemberships(testClient: ApolloServerTestClient, user: User, headers?: Headers) {
-    const { query } = testClient;
+export async function getOrganizationMemberships(
+    testClient: ApolloServerTestClient,
+    user: User,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_ORGANIZATION_MEMBERSHIPS,
-        variables: { user_id: user.user_id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_ORGANIZATION_MEMBERSHIPS,
+            variables: { user_id: user.user_id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMemberships = res.data?.user.memberships as OrganizationMembership[];
-    return gqlMemberships;
+    const res = await gqlTry(operation)
+    const gqlMemberships = res.data?.user
+        .memberships as OrganizationMembership[]
+    return gqlMemberships
 }
 
-export async function getOrganizationMembership(testClient: ApolloServerTestClient, userId: string, organizationId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getOrganizationMembership(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    organizationId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_ORGANIZATION_MEMBERSHIP,
-        variables: { user_id: userId, organization_id: organizationId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_ORGANIZATION_MEMBERSHIP,
+            variables: { user_id: userId, organization_id: organizationId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.user.membership as OrganizationMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.user.membership as OrganizationMembership
+    return gqlMembership
 }
 
-export async function getSchoolMemberships(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSchoolMemberships(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_SCHOOL_MEMBERSHIPS,
-        variables: { user_id: userId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_SCHOOL_MEMBERSHIPS,
+            variables: { user_id: userId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMemberships = res.data?.user.school_memberships as SchoolMembership[];
-    return gqlMemberships;
+    const res = await gqlTry(operation)
+    const gqlMemberships = res.data?.user
+        .school_memberships as SchoolMembership[]
+    return gqlMemberships
 }
 
-export async function getSchoolMembership(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSchoolMembership(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_SCHOOL_MEMBERSHIP,
-        variables: { user_id: userId, school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_SCHOOL_MEMBERSHIP,
+            variables: { user_id: userId, school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.user.school_membership as SchoolMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.user.school_membership as SchoolMembership
+    return gqlMembership
 }
 
-export async function getClassesTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getClassesTeaching(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_CLASSES_TEACHING,
-        variables: { user_id: userId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_CLASSES_TEACHING,
+            variables: { user_id: userId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlClasses = res.data?.user.classesTeaching as Class[];
-    return gqlClasses;
+    const res = await gqlTry(operation)
+    const gqlClasses = res.data?.user.classesTeaching as Class[]
+    return gqlClasses
 }
 
-export async function getClassesStudying(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getClassesStudying(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_CLASSES_STUDYING,
-        variables: { user_id: userId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_CLASSES_STUDYING,
+            variables: { user_id: userId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlClasses = res.data?.user.classesStudying as Class[];
-    return gqlClasses;
+    const res = await gqlTry(operation)
+    const gqlClasses = res.data?.user.classesStudying as Class[]
+    return gqlClasses
 }
 
-export async function getUserSchoolMembershipsWithPermission(testClient: ApolloServerTestClient, userId: string, permissionName: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getUserSchoolMembershipsWithPermission(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    permissionName: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION,
-        variables: { user_id: userId, permission_name: permissionName },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_SCHOOL_MEMBERSHIPS_WITH_PERMISSION,
+            variables: { user_id: userId, permission_name: permissionName },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMemberships = res.data?.user.schoolsWithPermission as SchoolMembership[];
-    return gqlMemberships;
+    const res = await gqlTry(operation)
+    const gqlMemberships = res.data?.user
+        .schoolsWithPermission as SchoolMembership[]
+    return gqlMemberships
 }
 
-export async function mergeUser(testClient: ApolloServerTestClient, userId: string, otherId: string, headers?: Headers){
-    const { mutate } = testClient;
+export async function mergeUser(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    otherId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    headers = headers ?? { authorization: getAdminAuthToken() };
-    console.log("userId:",userId,"otherId:",otherId)
-    const operation = () => mutate({
-        mutation: MERGE_USER,
-        variables: { user_id: userId, other_id: otherId },
-        headers: headers,
-    });
+    headers = headers ?? { authorization: getAdminAuthToken() }
+    console.log('userId:', userId, 'otherId:', otherId)
+    const operation = () =>
+        mutate({
+            mutation: MERGE_USER,
+            variables: { user_id: userId, other_id: otherId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlUser = res.data?.user.merge as User;
-    return gqlUser;
+    const res = await gqlTry(operation)
+    const gqlUser = res.data?.user.merge as User
+    return gqlUser
 }
-
 
 export function userToSuperPayload(user: User): any {
     return {
-        "id": user.user_id,
-        "email": user.email,
-        "given_name": user.given_name,
-        "family_name": user.family_name,
-        "name": user.user_name,
-        "admin": true,
-        "iss": "calmid-debug"
+        id: user.user_id,
+        email: user.email,
+        given_name: user.given_name,
+        family_name: user.family_name,
+        name: user.user_name,
+        admin: true,
+        iss: 'calmid-debug',
     }
 }
 
 export function userToPayload(user: User): any {
     const payload = {
-        "email": user.email,
-        "given_name": user.given_name,
-        "family_name": user.family_name,
-        "name": user.user_name,
-        "iss": "calmid-debug"
+        email: user.email,
+        given_name: user.given_name,
+        family_name: user.family_name,
+        name: user.user_name,
+        iss: 'calmid-debug',
     } as any
-    if (user.user_id){
+    if (user.user_id) {
         payload.id = user.user_id
     }
     return payload
 }
 
+export async function getSubjectsTeaching(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-export async function getSubjectsTeaching(testClient: ApolloServerTestClient, userId: string, headers?: Headers) {
-    const { query } = testClient;
+    const operation = () =>
+        query({
+            query: GET_SUBJECTS_TEACHING,
+            variables: { user_id: userId },
+            headers: headers,
+        })
 
-    const operation = () => query({
-        query: GET_SUBJECTS_TEACHING,
-        variables: { user_id: userId },
-        headers: headers,
-    });
-
-    const res = await gqlTry(operation);
-    const gqlSubjects = res.data?.user.subjectsTeaching as Subject[];
-    return gqlSubjects;
+    const res = await gqlTry(operation)
+    const gqlSubjects = res.data?.user.subjectsTeaching as Subject[]
+    return gqlSubjects
 }
 
-export async function addSchoolToUser(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
-    const { mutate } = testClient;
+export async function addSchoolToUser(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: ADD_SCHOOL,
-        variables: { user_id: userId, school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: ADD_SCHOOL,
+            variables: { user_id: userId, school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.user.addSchool as SchoolMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.user.addSchool as SchoolMembership
+    return gqlMembership
 }

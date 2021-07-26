@@ -175,7 +175,7 @@ const EDIT_MEMBERSHIP = `
     }
 `
 
-const CREATE_OR_UPDATE_AGE_RANGES = `
+export const CREATE_OR_UPDATE_AGE_RANGES = `
     mutation myMutation(
             $organization_id: ID!,
             $age_ranges: [AgeRangeDetail]!) {
@@ -343,7 +343,7 @@ const LIST_SUBJECTS = `
     }
 `
 
-const CREATE_OR_UPDATE_PROGRAMS = `
+export const CREATE_OR_UPDATE_PROGRAMS = `
     mutation myMutation(
             $organization_id: ID!,
             $programs: [ProgramDetail]!) {
@@ -389,8 +389,6 @@ query myQuery($organization_id: ID!) {
         }
     }
 `
-
-
 
 export async function createClass(
     testClient: ApolloServerTestClient,
@@ -1012,7 +1010,6 @@ export async function updateOrganization(
     return gqlOrganization
 }
 
-
 export async function listClasses(
     testClient: ApolloServerTestClient,
     organizationId: string,
@@ -1033,14 +1030,13 @@ export async function listClasses(
     return gqlClasses
 }
 
-
 export async function getSystemRoleIds() {
-    const dbRoles = await Role.find({system_role:true})
+    const dbRoles = await Role.find({ system_role: true })
 
-    if(dbRoles){
-       var result = dbRoles.reduce(function (map:any, obj:Role) {
-            obj.role_name = obj.role_name || ""
-            map[obj.role_name] = obj.role_id 
+    if (dbRoles) {
+        var result = dbRoles.reduce(function (map: any, obj: Role) {
+            obj.role_name = obj.role_name || ''
+            map[obj.role_name] = obj.role_id
             return map
         }, {})
     }

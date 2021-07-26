@@ -321,7 +321,7 @@ const SCHOOLS_CONNECTION = `
     }
 `
 
-const PROGRAMS_CONNECTION = `
+export const PROGRAMS_CONNECTION = `
     query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
         programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
             totalCount
