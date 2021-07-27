@@ -40,28 +40,20 @@ import clean from '../utils/clean'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
 import validationConstants from './validations/constants'
 import { userValidations } from './validations/user'
-import Joi from 'joi'
 import { organizationMembershipValidations } from './validations/organizationMembership'
-import { REGEX } from './validations/regex'
+import { isEmail, isPhone } from '../utils/data/diagnostics'
+import {
+    addApiError,
+    CustomApiError,
+    validateApiCall,
+} from '../types/errors/apiError'
+import { customErrors } from '../types/errors/customError'
+import apiErrorConstants from '../types/errors/apiErrorConstants'
 
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 
 export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)
-
-function isEmail(email?: string): boolean {
-    if (email !== undefined && email.match(REGEX.email)) {
-        return true
-    }
-    return false
-}
-
-function isPhone(phone?: string): boolean {
-    if (phone !== undefined && phone.match(REGEX.phone)) {
-        return true
-    }
-    return false
-}
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -599,7 +591,7 @@ export class Organization extends BaseEntity {
     private unswapEmailPhone(
         email?: string,
         phone?: string
-    ): (string | undefined)[] {
+    ): { email: string | undefined; phone: string | undefined } {
         if (!isEmail(email) && isPhone(email)) {
             phone = email
             email = undefined
@@ -608,7 +600,7 @@ export class Organization extends BaseEntity {
             phone = undefined
         }
 
-        return [email, phone]
+        return { email, phone }
     }
 
     public async inviteUser(
@@ -642,133 +634,179 @@ export class Organization extends BaseEntity {
                 PermissionName.join_organization_10881
             )
         }
-        try {
-            if (
-                info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
-            ) {
-                return null
+
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+
+        const unSwapped = this.unswapEmailPhone(email, phone)
+
+        if (unSwapped.email) {
+            email = normalizedLowercaseTrimmed(unSwapped.email)
+        } else {
+            email = undefined
+        }
+        if (unSwapped.phone) {
+            phone = normalizedLowercaseTrimmed(unSwapped.phone)
+        } else {
+            phone = undefined
+        }
+
+        if (typeof alternate_email === 'string') {
+            alternate_email = normalizedLowercaseTrimmed(alternate_email)
+        }
+        if (typeof alternate_phone === 'string') {
+            alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
+        }
+
+        if (typeof shortcode === 'string') {
+            shortcode = shortcode.toUpperCase()
+        }
+
+        date_of_birth = padShortDob(date_of_birth)
+
+        const validatingUser = {
+            email: email,
+            phone: phone,
+            given_name: given_name,
+            family_name: family_name,
+            date_of_birth: date_of_birth,
+            username: username,
+            gender: gender,
+            alternate_email: alternate_email,
+            alternate_phone: alternate_phone,
+        }
+
+        const userErrors = validateApiCall(
+            'inviteUser',
+            validatingUser,
+            userValidations,
+            'User'
+        )
+
+        const validatingMembership = {
+            shortcode: shortcode,
+        }
+        const membershipErrors = validateApiCall(
+            'inviteUser',
+            validatingMembership,
+            organizationMembershipValidations,
+            'OrganizationMembership'
+        )
+
+        if (shortcode) {
+            const userShortcodeCheck = await getRepository(
+                OrganizationMembership
+            ).findOne({
+                where: {
+                    shortcode: shortcode,
+                    organization: {
+                        organization_id: this.organization_id,
+                    },
+                },
+            })
+
+            if (userShortcodeCheck) {
+                addApiError(
+                    membershipErrors,
+                    customErrors.duplicate_entity.code,
+                    'inviteUser',
+                    'shortcode',
+                    customErrors.duplicate_entity.message,
+                    'OrganizationMembership',
+                    { value: shortcode }
+                )
             }
+        }
 
-            ;[email, phone] = this.unswapEmailPhone(email, phone)
+        const personalInfo = {
+            given_name: given_name,
+            family_name: family_name,
+        }
 
-            email = normalizedLowercaseTrimmed(email)
-            phone = normalizedLowercaseTrimmed(phone)
+        const userCheck = await getRepository(User).findOne({
+            where: [
+                { email: email, phone: null, ...personalInfo },
+                { email: null, phone: phone, ...personalInfo },
+                { email: email, phone: phone, ...personalInfo },
+            ],
+        })
 
-            if (typeof alternate_email === 'string') {
-                alternate_email = normalizedLowercaseTrimmed(alternate_email)
-            }
-            if (typeof alternate_phone === 'string') {
-                alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
-            }
-
-            if (typeof shortcode === 'string') {
-                shortcode = shortcode.toUpperCase()
-            }
-
-            date_of_birth = padShortDob(date_of_birth)
-
-            const validatingUser = {
-                email: email,
-                phone: phone,
-                given_name: given_name,
-                family_name: family_name,
-                date_of_birth: date_of_birth,
-                username: username,
-                gender: gender,
-                alternate_email: alternate_email,
-                alternate_phone: alternate_phone,
-            }
-
-            const userResult = Joi.object(userValidations).validate(
-                validatingUser,
+        if (userCheck) {
+            addApiError(
+                userErrors,
+                customErrors.duplicate_entity.code,
+                'inviteUser',
+                'email/phone, given_name, family_name',
+                customErrors.duplicate_entity.message,
+                'User',
                 {
-                    abortEarly: false,
+                    value:
+                        (email ? email : phone) +
+                        ', ' +
+                        given_name +
+                        ', ' +
+                        family_name,
                 }
             )
-            if (userResult.error) {
-                throw userResult.error
-            }
-
-            const validatingMembership = {
-                shortcode: shortcode,
-            }
-            const membershipResult = Joi.object(
-                organizationMembershipValidations
-            ).validate(validatingMembership, {
-                abortEarly: false,
-            })
-
-            if (membershipResult.error) {
-                throw membershipResult.error
-            }
-
-            return getManager().transaction(async (manager) => {
-                console.log(
-                    'invite_user',
-                    email,
-                    phone,
-                    user_id,
-                    given_name,
-                    family_name,
-                    date_of_birth,
-                    username,
-                    gender,
-                    shortcode,
-                    organization_role_ids,
-                    school_ids,
-                    school_role_ids,
-                    alternate_email,
-                    alternate_phone
-                )
-                const roleLookup = await this.getRoleLookup()
-                const organizationRoles = (await Promise.all(
-                    organization_role_ids.map((role_id: string) =>
-                        roleLookup(role_id)
-                    )
-                )) as Role[]
-                const schoolRoles = (await Promise.all(
-                    school_role_ids.map((role_id: string) =>
-                        roleLookup(role_id)
-                    )
-                )) as Role[]
-                const user = await this.createUser(
-                    email,
-                    phone,
-                    given_name,
-                    family_name,
-                    date_of_birth,
-                    username,
-                    alternate_email,
-                    alternate_phone,
-                    gender
-                )
-
-                const membership = await this.membershipOrganization(
-                    user,
-                    organizationRoles,
-                    shortcode
-                )
-                const [
-                    schoolMemberships,
-                    oldSchoolMemberships,
-                ] = await this.membershipSchools(user, school_ids, schoolRoles)
-                if (restricted) {
-                    await manager.save([
-                        user,
-                        membership,
-                        ...oldSchoolMemberships,
-                    ])
-                    return { user, membership, oldSchoolMemberships }
-                }
-                await manager.remove(oldSchoolMemberships)
-                await manager.save([user, membership, ...schoolMemberships])
-                return { user, membership, schoolMemberships }
-            })
-        } catch (e) {
-            console.error(e)
-            throw e
         }
+
+        const apiErrors = userErrors.concat(membershipErrors)
+        if (apiErrors.length > 0) {
+            throw new CustomApiError(
+                apiErrors,
+                apiErrorConstants.ERR_API_BAD_INPUT
+            )
+        }
+
+        return getManager().transaction(async (manager) => {
+            const roleLookup = await this.getRoleLookup()
+            if (!organization_role_ids) {
+                organization_role_ids = []
+            }
+            const organizationRoles = (await Promise.all(
+                organization_role_ids.map((role_id: string) =>
+                    roleLookup(role_id)
+                )
+            )) as Role[]
+            if (!school_role_ids) {
+                school_role_ids = []
+            }
+            const schoolRoles = (await Promise.all(
+                school_role_ids.map((role_id: string) => roleLookup(role_id))
+            )) as Role[]
+            const user = await this.createUser(
+                email,
+                phone,
+                given_name,
+                family_name,
+                date_of_birth,
+                username,
+                alternate_email,
+                alternate_phone,
+                gender
+            )
+
+            const membership = await this.membershipOrganization(
+                user,
+                organizationRoles,
+                shortcode
+            )
+            const [
+                schoolMemberships,
+                oldSchoolMemberships,
+            ] = await this.membershipSchools(user, school_ids, schoolRoles)
+            if (restricted) {
+                await manager.save([user, membership, ...oldSchoolMemberships])
+                return { user, membership, oldSchoolMemberships }
+            }
+            await manager.remove(oldSchoolMemberships)
+            await manager.save([user, membership, ...schoolMemberships])
+            return { user, membership, schoolMemberships }
+        })
     }
 
     public async editMembership(

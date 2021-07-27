@@ -27,6 +27,7 @@ import { School } from '../../src/entities/school'
 import { createUser } from '../factories/user.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { Organization } from '../../src/entities/organization'
+import { INVITE_USER } from '../utils/operations/organizationOps'
 
 use(chaiAsPromised)
 
@@ -85,7 +86,9 @@ describe('acceptance.user', () => {
                 `family${i + 1}`,
                 `user${i + 1}@gmail.com`,
                 orgId,
-                getAdminAuthToken()
+                'Male',
+                getAdminAuthToken(),
+                `SHORT${i + 1}`
             )
             const id = response.body.data.organization.inviteUser.user.user_id
             userIds.push(id)
@@ -311,6 +314,119 @@ describe('acceptance.user', () => {
 
             expect(response.status).to.eq(200)
             expect(response.body.data.my_users.length).to.equal(0)
+        })
+    })
+    context('inviteUser', async () => {
+        it('it fails to inviteUser with missing given_name and invalid family_name', async () => {
+            const expectedErrorObject1 = {
+                api: 'inviteUser',
+                code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
+                message: 'User given_name is required.',
+                entity: 'User',
+                attribute: 'given_name',
+                label: 'given_name',
+                key: 'given_name',
+            }
+            const expectedErrorObject2 = {
+                api: 'inviteUser',
+                code: 'ERR_INVALID_ALPHANUMERIC_SPECIAL_CHARACTERS',
+                message:
+                    'User family_name must only contain letters, numbers, space and & / , - .',
+                entity: 'User',
+                attribute: 'family_name',
+                name: 'alphanum_with_special_characters',
+                regex: {},
+                value: 'F$&',
+                label: 'family_name',
+                key: 'family_name',
+            }
+            const given_name: string | undefined = undefined
+            const family_name = 'F$&'
+            const email = 'somebody@gmail.com'
+            const organization_id = orgId
+            const gender = 'Male'
+            const organization_role_ids: string[] = []
+            const school_role_ids: string[] = []
+            const school_ids: string[] = []
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: INVITE_USER,
+                    variables: {
+                        given_name,
+                        family_name,
+                        email,
+                        organization_id,
+                        gender,
+                        organization_role_ids,
+                        school_role_ids,
+                        school_ids,
+                    },
+                })
+            const errors = response.body.errors[0].extensions.exception.errors
+            expect(errors).to.have.length(2)
+            const e1 = errors[0]
+            const e2 = errors[1]
+            expect(e1).to.deep.equal(expectedErrorObject1)
+            expect(e2).to.deep.equal(expectedErrorObject2)
+        })
+        it('it fails to inviteUser with a duplicate email, given_name, invalid family_name and a duplicate shortcode to an existing user', async () => {
+            const expectedErrorObject1 = {
+                api: 'inviteUser',
+                code: 'ERR_DUPLICATE_ENTITY',
+                message:
+                    'User user1@gmail.com, given1, family1 already exists.',
+                entity: 'User',
+                attribute: 'email/phone, given_name, family_name',
+                value: 'user1@gmail.com, given1, family1',
+            }
+            const expectedErrorObject2 = {
+                api: 'inviteUser',
+                code: 'ERR_DUPLICATE_ENTITY',
+                message: 'OrganizationMembership SHORT1 already exists.',
+                entity: 'OrganizationMembership',
+                attribute: 'shortcode',
+                value: 'SHORT1',
+            }
+            const given_name = 'given1'
+            const family_name = 'family1'
+            const email = userEmails[0]
+            const organization_id = orgId
+            const gender = 'Male'
+            const organization_role_ids: string[] = []
+            const shortcode = 'SHORT1'
+            const school_role_ids: string[] = []
+            const school_ids: string[] = []
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: INVITE_USER,
+                    variables: {
+                        given_name,
+                        family_name,
+                        email,
+                        organization_id,
+                        gender,
+                        shortcode,
+                        organization_role_ids,
+                        school_role_ids,
+                        school_ids,
+                    },
+                })
+            const errors = response.body.errors[0].extensions.exception.errors
+            expect(errors).to.have.length(2)
+            const e1 = errors[0]
+            const e2 = errors[1]
+            expect(e1).to.deep.equal(expectedErrorObject1)
+            expect(e2).to.deep.equal(expectedErrorObject2)
         })
     })
 })

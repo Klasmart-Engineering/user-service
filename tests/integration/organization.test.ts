@@ -83,6 +83,7 @@ import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
 import { AnyKindOfDictionary } from 'lodash'
 import { validationConstants } from '../../src/entities/validations/constants'
+import { CustomApiError } from '../../src/types/errors/apiError'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)
@@ -1584,7 +1585,7 @@ describe('organization', () => {
                         new Array(roleId),
                         { authorization: adminToken }
                     )
-                    console.log(gqlresult)
+
                     let newUser = gqlresult?.user
                     let membership = gqlresult?.membership
                     let schoolmemberships = gqlresult?.schoolMemberships
@@ -1827,13 +1828,24 @@ describe('organization', () => {
                 })
 
                 it('fails to create user shortcode with non validating custom input', async () => {
+                    const expectedErrorObject = {
+                        api: 'inviteUser',
+                        code: 'ERR_INVALID_ALPHANUMERIC',
+                        message:
+                            'OrganizationMembership shortcode must only contain letters and numbers.',
+                        entity: 'OrganizationMembership',
+                        attribute: 'shortcode',
+                        label: 'shortcode',
+                        value: 'RANGER 13',
+                        key: 'shortcode',
+                    }
                     let email = 'bob@nowhere.com'
                     let phone: string | undefined = undefined
                     let given = 'Bob'
                     let family = 'Smith'
                     let dateOfBirth = '02-1978'
 
-                    try {
+                    const fn = async () =>
                         await inviteUser(
                             testClient,
                             organizationId,
@@ -1850,23 +1862,38 @@ describe('organization', () => {
                             new Array(roleId),
                             { authorization: adminToken }
                         )
-                        expect(true).to.be.false //We should never get here
-                    } catch (result) {
-                        expect(result.message).to.equal(
-                            '"shortcode" must only contain alpha-numeric characters'
-                        )
+                    try {
+                        await fn().then(() => {
+                            expect.fail(`Function incorrectly resolved.`)
+                        })
+                    } catch (e) {
+                        expect(e)
+                            .to.have.property('message')
+                            .equal('ERR_API_BAD_INPUT')
+                        expect(e).to.have.property('errors').to.have.length(1)
+                        expect(e)
+                            .to.have.property('errors')
+                            .to.have.deep.members([expectedErrorObject])
                     }
                 })
 
                 it('fails to create user with a missing family name', async () => {
+                    const expectedErrorObject = {
+                        api: 'inviteUser',
+                        code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
+                        message: 'User family_name is required.',
+                        entity: 'User',
+                        attribute: 'family_name',
+                        label: 'family_name',
+                        key: 'family_name',
+                    }
                     let email = 'bob@nowhere.com'
                     let phone: string | undefined = undefined
                     let given = 'Bob'
-                    let family = undefined
+                    let family: string | undefined = undefined
                     let dateOfBirth = '02-1978'
-
-                    try {
-                        const res = await inviteUser(
+                    const fn = async () =>
+                        await inviteUser(
                             testClient,
                             organizationId,
                             email,
@@ -1882,11 +1909,18 @@ describe('organization', () => {
                             new Array(roleId),
                             { authorization: adminToken }
                         )
-                        expect(true).to.be.false //We should never get here
-                    } catch (result) {
-                        expect(result.message).to.equal(
-                            '"family_name" is required'
-                        )
+                    try {
+                        await fn().then(() => {
+                            expect.fail(`Function incorrectly resolved.`)
+                        })
+                    } catch (e) {
+                        expect(e)
+                            .to.have.property('message')
+                            .equal('ERR_API_BAD_INPUT')
+                        expect(e).to.have.property('errors').to.have.length(1)
+                        expect(e)
+                            .to.have.property('errors')
+                            .to.have.deep.members([expectedErrorObject])
                     }
                 })
 
@@ -2033,7 +2067,7 @@ describe('organization', () => {
                         dateOfBirth,
                         'Bunter',
                         'Male',
-                        undefined,
+                        'THUNDER499',
                         new Array(roleId),
                         Array(schoolId),
                         new Array(roleId),
@@ -2096,6 +2130,98 @@ describe('organization', () => {
 
                     expect(gqlMyUsers).to.exist
                     expect(gqlMyUsers.length).to.equal(2)
+                })
+                it('fails to create a user if their personal information is repeated', async () => {
+                    const expectedErrorObject = {
+                        api: 'inviteUser',
+                        code: 'ERR_DUPLICATE_ENTITY',
+                        message:
+                            'User bob@nowhere.com, Bob, Smith already exists.',
+                        entity: 'User',
+                        attribute: 'email/phone, given_name, family_name',
+                        value: 'bob@nowhere.com, Bob, Smith',
+                    }
+                    let email = 'bob@nowhere.com'
+                    let phone: string | undefined = undefined
+                    let given = 'Bob'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    const fn = async () =>
+                        await inviteUser(
+                            testClient,
+                            organizationId,
+                            email,
+                            phone,
+                            given,
+                            family,
+                            dateOfBirth,
+                            'Bunter',
+                            'Male',
+                            undefined,
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: adminToken }
+                        )
+                    try {
+                        await fn().then(() => {
+                            expect.fail(`Function incorrectly resolved.`)
+                        })
+                    } catch (e) {
+                        expect(e)
+                            .to.have.property('message')
+                            .equal('ERR_API_BAD_INPUT')
+                        expect(e).to.have.property('errors').to.have.length(1)
+                        expect(e)
+                            .to.have.property('errors')
+                            .to.have.deep.members([expectedErrorObject])
+                    }
+                })
+                it('fails to create a user if their shortcode is repeated', async () => {
+                    const expectedErrorObject = {
+                        api: 'inviteUser',
+                        code: 'ERR_DUPLICATE_ENTITY',
+                        message:
+                            'OrganizationMembership THUNDER499 already exists.',
+                        entity: 'OrganizationMembership',
+                        attribute: 'shortcode',
+                        value: 'THUNDER499',
+                    }
+                    let email = 'bob@nowhere.com'
+                    let phone: string | undefined = undefined
+                    let given = 'James'
+                    let family = 'Smith'
+                    let dateOfBirth = '02-1978'
+                    const fn = async () =>
+                        await inviteUser(
+                            testClient,
+                            organizationId,
+                            email,
+                            phone,
+                            given,
+                            family,
+                            dateOfBirth,
+                            'Bunter',
+                            'Male',
+                            'THUNDER499',
+                            new Array(roleId),
+                            Array(schoolId),
+                            new Array(roleId),
+                            { authorization: adminToken }
+                        )
+                    try {
+                        await fn().then(() => {
+                            expect.fail(`Function incorrectly resolved.`)
+                        })
+                    } catch (e) {
+                        expect(e)
+                            .to.have.property('message')
+                            .equal('ERR_API_BAD_INPUT')
+                        expect(e).to.have.property('errors').to.have.length(1)
+                        expect(e)
+                            .to.have.property('errors')
+                            .to.have.deep.members([expectedErrorObject])
+                    }
                 })
             }
         )
@@ -3035,6 +3161,7 @@ describe('organization', () => {
                 email = 'bob@nowhere.com'
                 let phone = undefined
                 let given = 'Bob'
+                let given2 = 'Billy'
                 let family = 'Smith'
                 let dateOfBirth = '02-1978'
                 let gqlresult = await inviteUser(
@@ -3060,7 +3187,7 @@ describe('organization', () => {
                     organization1Id,
                     email,
                     phone,
-                    given,
+                    given2,
                     family,
                     dateOfBirth,
                     'Bunty',

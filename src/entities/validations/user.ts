@@ -44,14 +44,7 @@ export const userValidations = {
         .min(validationConstants.GENDER_MIN_LENGTH)
         .max(validationConstants.GENDER_MAX_LENGTH),
 
-    alternate_email: Joi.string()
-        .regex(REGEX.email, {
-            name: 'email',
-        })
-        .max(validationConstants.EMAIL_MAX_LENGTH)
-        .optional(),
+    alternate_email: sharedValidations.email.allow(null).optional(),
 
-    alternate_phone: Joi.string().allow(null).regex(REGEX.phone, {
-        name: 'phone',
-    }),
+    alternate_phone: sharedValidations.phone.allow(null).optional(),
 }

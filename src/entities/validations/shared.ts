@@ -13,4 +13,12 @@ export const sharedValidations = {
             name: 'alphanum_with_special_characters',
         }
     ),
+    email: Joi.string()
+        .regex(REGEX.email, {
+            name: 'email',
+        })
+        .max(validationConstants.EMAIL_MAX_LENGTH),
+    phone: Joi.string().allow(null).regex(REGEX.phone, {
+        name: 'phone',
+    }),
 }

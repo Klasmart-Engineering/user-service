@@ -1,7 +1,8 @@
 import { HttpQueryError, GraphQLResponse } from 'apollo-server-core'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { CustomError } from '../../src/types/csv/csvError'
-import * as util from 'util'
+import { CustomApiError } from '../../src/types/errors/apiError'
+import apiErrorConstants from '../../src/types/errors/apiErrorConstants'
 
 export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
     try {
@@ -10,6 +11,11 @@ export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
             if (res.errors[0].message == csvErrorConstants.ERR_CSV_BAD_INPUT) {
                 throw new CustomError(
                     res.errors[0]?.extensions?.exception?.errors
+                )
+            } else if (res.errors[0].message === apiErrorConstants.ERR_API_BAD_INPUT) {
+                throw new CustomApiError(
+                    res.errors[0]?.extensions?.exception?.errors,
+                    apiErrorConstants.ERR_API_BAD_INPUT
                 )
             } else {
                 throw new Error(res.errors?.map((x) => x.message).join('\n'))
