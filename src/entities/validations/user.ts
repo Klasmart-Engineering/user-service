@@ -34,6 +34,11 @@ export const userValidations = {
         name: 'date_mm_yyy',
     }),
 
+    username: sharedValidations.alphanum_with_special_characters
+        .allow('', null)
+        .optional()
+        .max(validationConstants.USERNAME_MAX_LEN),
+
     gender: sharedValidations.alphanum_with_special_characters
         .required()
         .min(validationConstants.GENDER_MIN_LENGTH)
