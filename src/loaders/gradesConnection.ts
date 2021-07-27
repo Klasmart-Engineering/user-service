@@ -34,13 +34,13 @@ export const fromGradeForGrades = async (
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                id: ['Grade.id'],
-                name: ['Grade.name'],
-                system: ['Grade.system'],
-                status: ['Grade.status'],
-                organizationId: ['Organization.organization_id'],
-                fromGradeId: [],
-                toGradeId: ['ToGrade.id'],
+                id: 'Grade.id',
+                name: 'Grade.name',
+                system: 'Grade.system',
+                status: 'Grade.status',
+                organizationId: 'Organization.organization_id',
+                fromGradeId: '',
+                toGradeId: 'ToGrade.id',
             })
         )
     }
@@ -91,13 +91,13 @@ export const toGradeForGrades = async (
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                id: ['Grade.id'],
-                name: ['Grade.name'],
-                system: ['Grade.system'],
-                status: ['Grade.status'],
-                organizationId: ['Organization.organization_id'],
-                fromGradeId: ['FromGrade.id'],
-                toGradeId: [],
+                id: 'Grade.id',
+                name: 'Grade.name',
+                system: 'Grade.system',
+                status: 'Grade.status',
+                organizationId: 'Organization.organization_id',
+                fromGradeId: 'FromGrade.id',
+                toGradeId: '',
             })
         )
     }

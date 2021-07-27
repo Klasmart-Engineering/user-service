@@ -12,11 +12,25 @@ type FilteringOperator = 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains'
 
 interface IFilter {
     operator: FilteringOperator
-    value: string | number | boolean | Record<string, string | number | boolean>
+    value: FilteringValue
     caseInsensitive?: boolean
 }
 
-type ColumnAliases = Record<string, string[]> // use empty to ignore
+interface IMultipleColumn {
+    aliases: string[]
+    operator: 'AND' | 'OR'
+}
+
+interface FilteringPropsParsed {
+    sqlOperator: string
+    value: CommonValue
+}
+
+type ColumnAliasValue = string | IMultipleColumn
+type CommonValue = string | number | boolean
+type ComposedValue = Record<string, CommonValue>
+type FilteringValue = CommonValue | ComposedValue
+type ColumnAliases = Record<string, ColumnAliasValue> // use empty string to ignore
 
 const FILTER_VALUE_MAX_LENGTH = 250
 
@@ -37,8 +51,10 @@ export function getWhereClauseFromFilter(
                 // process these recursively afterwards
                 continue
             }
+
             const data = filter[key] as IFilter
 
+            // string type values have a length limit
             if (
                 typeof data.value === 'string' &&
                 data.value.length > FILTER_VALUE_MAX_LENGTH
@@ -57,58 +73,123 @@ export function getWhereClauseFromFilter(
             // check if there are multiple aliases for a single field
             // to be queried
             let aliases: string[] = [parseField(key)]
-            if (columnAliases?.[key]) {
-                if (columnAliases?.[key].length === 0) {
+            const columnAliasValue: ColumnAliasValue | undefined =
+                columnAliases?.[key]
+
+            if (columnAliasValue !== undefined) {
+                if ((columnAliasValue as string).length === 0) {
                     qb.andWhere('true')
                     continue // avoid returning empty brackets
                 }
-                aliases = columnAliases?.[key]
+
+                if (
+                    (columnAliasValue as IMultipleColumn).aliases?.length === 0
+                ) {
+                    throw new Error('Aliases array must not be empty')
+                }
+
+                aliases = (columnAliasValue as IMultipleColumn).aliases || [
+                    columnAliasValue,
+                ]
             }
 
-            for (const alias of aliases) {
-                let currentValue = data.value
-                let currentOperator = data.operator
+            // a value of type object is considered as a compound value
+            // deprecated, just common type values will be allowed
+            if (typeof data.value === 'object') {
+                for (const alias of aliases) {
+                    let currentOperator = data.operator
+                    let currentValue: FilteringValue = data.value
 
-                // a value of type object is considered as a compound value
-                if (typeof currentValue === 'object') {
                     // in a neq opeartion is necessary check if is correct to check the current alias
                     if (
-                        currentOperator === 'neq' &&
+                        data.operator === 'neq' &&
                         AVOID_NOT_EQUAL_OPERATOR_ALIASES.includes(alias)
                     ) {
                         continue
                     }
 
                     // resetting value and operator to work properly with the given compound value
-                    currentValue = processComposedValue(currentValue, alias)
+                    currentValue = processComposedValue(
+                        currentValue,
+                        alias
+                    ) as CommonValue
+
                     currentOperator = setOperatorInComposedValue(
                         currentOperator,
                         alias
                     )
-                }
 
-                const sqlOperator = getSQLOperatorFromFilterOperator(
-                    currentOperator
-                )
-
-                const value = parseValueForSQLOperator(
-                    sqlOperator,
-                    currentValue
-                )
-
-                // parameter keys must be unique when using typeorm querybuilder
-                const uniqueId = uuid_v4()
-
-                if (data.caseInsensitive) {
-                    qb.andWhere(
-                        `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`,
-                        { [uniqueId]: value }
+                    const sqlOperator = getSQLOperatorFromFilterOperator(
+                        currentOperator
                     )
-                } else {
-                    qb.andWhere(`${alias} ${sqlOperator} :${uniqueId}`, {
+
+                    const value = parseValueForSQLOperator(
+                        sqlOperator,
+                        currentValue
+                    )
+
+                    // parameter keys must be unique when using typeorm querybuilder
+                    const uniqueId = uuid_v4()
+                    const whereCondition = createWhereCondition(
+                        !!data.caseInsensitive,
+                        alias,
+                        sqlOperator,
+                        uniqueId
+                    )
+
+                    qb.andWhere(whereCondition, {
                         [uniqueId]: value,
                     })
                 }
+            } else {
+                // value has a common type (string | number | boolean)
+                const sqlOperator = getSQLOperatorFromFilterOperator(
+                    data.operator
+                )
+
+                const value = parseValueForSQLOperator(sqlOperator, data.value)
+
+                // adding main condition for this filter
+                qb.andWhere(
+                    new Brackets((queryBuilder) => {
+                        // adding the first condition inside main condition
+                        let uniqueId = uuid_v4()
+                        let whereCondition = createWhereCondition(
+                            !!data.caseInsensitive,
+                            aliases[0],
+                            sqlOperator,
+                            uniqueId
+                        )
+
+                        queryBuilder.where(whereCondition, {
+                            [uniqueId]: value,
+                        })
+
+                        for (let i = 1; i < aliases.length; i += 1) {
+                            const operator = (columnAliasValue as IMultipleColumn)
+                                .operator
+                            uniqueId = uuid_v4()
+                            whereCondition = createWhereCondition(
+                                !!data.caseInsensitive,
+                                aliases[i],
+                                sqlOperator,
+                                uniqueId
+                            )
+
+                            if (operator === 'AND') {
+                                // conditions will be joined by 'AND' operators
+                                queryBuilder.andWhere(whereCondition, {
+                                    [uniqueId]: value,
+                                })
+                            } else {
+                                // conditions will be joined by 'OR' operators
+                                queryBuilder.orWhere(whereCondition, {
+                                    [uniqueId]: value,
+                                })
+                            }
+                        }
+                    })
+                )
             }
         }
 
@@ -183,7 +264,7 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
 }
 
 // parses the value given for use in SQL
-function parseValueForSQLOperator(operator: string, value: unknown) {
+function parseValueForSQLOperator(operator: string, value: CommonValue) {
     switch (operator) {
         case 'LIKE':
             return `%${value}%`
@@ -194,7 +275,7 @@ function parseValueForSQLOperator(operator: string, value: unknown) {
 
 // process a composed value to assign the correct property for a given alias
 export function processComposedValue(
-    composedValue: Record<string, string | number | boolean>,
+    composedValue: ComposedValue,
     alias: string
 ) {
     switch (alias) {
@@ -220,6 +301,20 @@ export function setOperatorInComposedValue(
             return 'eq'
         default:
             return operator
+    }
+}
+
+// creates case insentive/sensitive condition
+function createWhereCondition(
+    caseInsensitive: boolean,
+    alias: string,
+    sqlOperator: string,
+    uniqueId: string
+) {
+    if (caseInsensitive) {
+        return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`
+    } else {
+        return `${alias} ${sqlOperator} :${uniqueId}`
     }
 }
 
