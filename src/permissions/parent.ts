@@ -12,6 +12,8 @@ export const parentRole = {
         PermissionName.schedule_500,
         PermissionName.view_my_calendar_510,
         PermissionName.student_reports_605,
+        PermissionName.report_learning_summary_student_649,
+        PermissionName.learning_summary_report_653,
         PermissionName.view_my_organization_profile_10111,
         PermissionName.create_own_organization_10220,
         PermissionName.join_organization_10881,

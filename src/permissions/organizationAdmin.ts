@@ -184,6 +184,8 @@ export const organizationAdminRole = {
         PermissionName.report_organizations_skills_taught_640,
         PermissionName.skills_taught_by_all_teachers_in_this_org_report_643,
         PermissionName.report_organizations_class_achievements_646,
+        PermissionName.report_learning_summary_org_652,
+        PermissionName.learning_summary_report_653,
         PermissionName.report_settings_680,
         PermissionName.organizational_profile_10100,
         PermissionName.view_this_organization_profile_10110,
