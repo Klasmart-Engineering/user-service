@@ -9,7 +9,8 @@ export async function createEntityFromCsvWithRollBack(
     connection: Connection,
     file: Upload,
     functionsToSaveEntityFromCsvRow: CreateEntityRowCallback[],
-    userPermissions: UserPermissions
+    userPermissions: UserPermissions,
+    isDryRun = false
 ) {
     const queryRunner = connection.createQueryRunner()
     await queryRunner.connect()
@@ -22,9 +23,18 @@ export async function createEntityFromCsvWithRollBack(
             userPermissions
         )
         console.log('Generic Upload CSV File finished')
-        await queryRunner.commitTransaction()
+
+        if (!isDryRun) {
+            await queryRunner.commitTransaction()
+        } else {
+            await queryRunner.rollbackTransaction()
+        }
     } catch (errors) {
-        console.error('Error uploading from CSV file: ', errors)
+        if (isDryRun) {
+            console.error('Errors found when previewing CSV file: ', errors)
+        } else {
+            console.error('Error uploading from CSV file: ', errors)
+        }
         await queryRunner.rollbackTransaction()
         if (
             Array.isArray(errors) &&

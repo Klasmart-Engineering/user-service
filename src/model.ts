@@ -883,11 +883,13 @@ export class Model {
         }
 
         const { file } = await (args.file as Promise<{ file: Upload }>)
+        const isDryRun = args.isDryRun as boolean
         await createEntityFromCsvWithRollBack(
             this.connection,
             file,
             [processUserFromCSVRow],
-            context.permissions
+            context.permissions,
+            isDryRun
         )
 
         return file
@@ -921,6 +923,7 @@ export class Model {
         if (info.operation.operation !== 'mutation') {
             return null
         }
+
         const { file } = await (args.file as Promise<{ file: Upload }>)
         await createEntityFromCsvWithRollBack(
             this.connection,

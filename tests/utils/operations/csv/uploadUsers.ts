@@ -5,8 +5,8 @@ import { fileMockInput } from '../modelOps'
 import { Headers } from 'node-mocks-http'
 
 const UPLOAD_USERS_MUTATION = `
-    mutation UploadUsersFromCSV($file: Upload!) {
-        uploadUsersFromCSV(file: $file) {
+    mutation UploadUsersFromCSV($file: Upload!, $isDryRun: Boolean) {
+        uploadUsersFromCSV(file: $file, isDryRun: $isDryRun) {
             filename
             mimetype
             encoding
@@ -30,10 +30,12 @@ export async function uploadUsers(
     filename: string,
     mimetype: string,
     encoding: string,
+    isDryRun: boolean = false,
     headers?: Headers
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
+        isDryRun,
     }
 
     const { mutate } = testClient

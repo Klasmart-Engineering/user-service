@@ -909,7 +909,7 @@ describe('model.csv', () => {
                 expect(usersCount).eq(0)
             })
 
-            it('should throw errors when user email is invalid', async () => {
+            it('should throw errors when user phone is invalid', async () => {
                 const filename = 'usersWithInvalidPhone.csv'
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -991,6 +991,7 @@ describe('model.csv', () => {
                     filename,
                     mimetype,
                     encoding,
+                    false,
                     { authorization: getAdminAuthToken() }
                 )
 
@@ -1007,6 +1008,32 @@ describe('model.csv', () => {
                 })
                 expect(dbUser).to.exist
                 expect(dbUser?.date_of_birth).to.equal('06-2018')
+            })
+
+            it('should not create user on dry run', async () => {
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+                const dryRun = true
+
+                const result = await uploadUsers(
+                    testClient,
+                    file,
+                    filename,
+                    mimetype,
+                    encoding,
+                    dryRun,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                expect(result.filename).eq(filename)
+                expect(result.mimetype).eq(mimetype)
+                expect(result.encoding).eq(encoding)
+
+                const usersCount = await User.count({
+                    where: { email: 'test@test.com' },
+                })
+                expect(usersCount).eq(0)
             })
         })
     })

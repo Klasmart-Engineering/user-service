@@ -39,7 +39,7 @@ const typeDefs = gql`
         ): User @deprecated(reason: "Use the inviteUser() method")
         switch_user(user_id: ID!): User
             @deprecated(reason: "Moved to auth service")
-        uploadUsersFromCSV(file: Upload!): File
+        uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
     }
 
