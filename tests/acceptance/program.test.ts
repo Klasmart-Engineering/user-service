@@ -1,12 +1,22 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
+import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
-import AgeRangesInitializer from '../../src/initializers/ageRanges'
-import ProgramsInitializer from '../../src/initializers/programs'
+import { Program } from '../../src/entities/program'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRangeConnectionNode'
 import { ProgramConnectionNode } from '../../src/types/graphQL/programConnectionNode'
 import { loadFixtures } from '../utils/fixtures'
+import {
+    addProgramsToClass,
+    createAgeRanges,
+    createClass,
+    createOrg,
+    createPrograms,
+    IAgeRangeDetail,
+    IProgramDetail,
+} from '../utils/operations/acceptance/acceptanceOps.test'
+import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 
@@ -16,62 +26,20 @@ interface IProgramEdge {
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
+const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
+const org_name = 'my-org'
+const programsCount = 12
+const ageRangesCount = 6
+const classesCount = 2
 
-const PROGRAMS_CONNECTION = `
-    query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
-        programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
-            totalCount
-            edges {
-                cursor
-                node {
-                    id
-                    name
-                    status
-                    system
-
-                    ageRanges {
-                        id
-                        name
-                        lowValue
-                        lowValueUnit
-                        highValue
-                        highValueUnit
-                        system
-                        status
-                    }
-
-                    grades {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    subjects {
-                        id
-                        name
-                        status
-                        system
-                    }
-                }
-            }
-
-            pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-            }
-        }
-    }
-`
+let classIds: string[] = []
+let orgId: string
 
 describe('acceptance.program', () => {
     let connection: Connection
 
     before(async () => {
         connection = await createTestConnection()
-        await loadFixtures('users', connection)
     })
 
     after(async () => {
@@ -79,8 +47,75 @@ describe('acceptance.program', () => {
     })
 
     beforeEach(async () => {
-        await AgeRangesInitializer.run()
-        await ProgramsInitializer.run()
+        classIds = []
+
+        await loadFixtures('users', connection)
+
+        const ageRangeDetails: IAgeRangeDetail[] = []
+        const programDetails: IProgramDetail[] = []
+
+        const createOrg1Response = await createOrg(
+            user_id,
+            org_name,
+            getAdminAuthToken()
+        )
+
+        const createOrg1Data =
+            createOrg1Response.body.data.user.createOrganization
+
+        orgId = createOrg1Data.organization_id
+
+        for (let i = 0; i < ageRangesCount; i++) {
+            const unit = i % 2 === 0 ? AgeRangeUnit.YEAR : AgeRangeUnit.MONTH
+            ageRangeDetails.push({
+                name: `Age Range ${i + 1}`,
+                low_value: i + 1,
+                low_value_unit: unit,
+                high_value: i + 2,
+                high_value_unit: unit,
+            })
+        }
+
+        await createAgeRanges(orgId, ageRangeDetails, getAdminAuthToken())
+
+        const ageRanges = (await connection.manager.find(AgeRange)) || []
+        const ageRangeIds = ageRanges.map((ar) => ar.id)
+
+        for (let i = 0; i < programsCount; i++) {
+            const index = i >= ageRangesCount ? i % ageRangesCount : i
+            programDetails.push({
+                name: `Age Range ${i + 1}`,
+                age_ranges: [ageRangeIds[index]],
+            })
+        }
+
+        const programsResponse = await createPrograms(
+            orgId,
+            programDetails,
+            getAdminAuthToken()
+        )
+
+        const programs =
+            programsResponse.body.data.organization.createOrUpdatePrograms
+        const programIds = programs.map((p: Program) => p.id)
+
+        for (let i = 0; i < classesCount; i++) {
+            const classResponse = await createClass(
+                orgId,
+                `class ${i + 1}`,
+                getAdminAuthToken()
+            )
+
+            const classId =
+                classResponse.body.data.organization.createClass.class_id
+            classIds.push(classId)
+        }
+
+        for (const classId of classIds) {
+            const ids = [programIds[0], programIds[1], programIds[2]]
+
+            await addProgramsToClass(classId, ids, getAdminAuthToken())
+        }
     })
 
     context('programsConnection', () => {
@@ -106,8 +141,8 @@ describe('acceptance.program', () => {
 
         it('queries paginated programs filtering by age range from', async () => {
             const ageRangeValue = {
-                value: 6,
-                unit: AgeRangeUnit.YEAR,
+                value: 4,
+                unit: AgeRangeUnit.MONTH,
             }
 
             const response = await request
@@ -132,7 +167,7 @@ describe('acceptance.program', () => {
             const programsConnection = response.body.data.programsConnection
 
             expect(response.status).to.eq(200)
-            expect(programsConnection.totalCount).to.equal(6)
+            expect(programsConnection.totalCount).to.equal(2)
 
             const ageRangesValues = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
@@ -162,7 +197,7 @@ describe('acceptance.program', () => {
 
         it('queries paginated programs filtering by age range to', async () => {
             const ageRangeValue = {
-                value: 6,
+                value: 4,
                 unit: AgeRangeUnit.YEAR,
             }
 
@@ -188,7 +223,7 @@ describe('acceptance.program', () => {
             const programsConnection = response.body.data.programsConnection
 
             expect(response.status).to.eq(200)
-            expect(programsConnection.totalCount).to.equal(11)
+            expect(programsConnection.totalCount).to.equal(2)
 
             const ageRangesValues = programsConnection.edges.map(
                 (edge: IProgramEdge) => {
@@ -214,6 +249,33 @@ describe('acceptance.program', () => {
             ageRangesUnits.every((units: AgeRangeUnit[]) =>
                 units?.includes(ageRangeValue.unit)
             )
+        })
+
+        it('queries paginated programs filtering by class ID', async () => {
+            const classId = classIds[0]
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: PROGRAMS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            classId: {
+                                operator: 'eq',
+                                value: classId,
+                            },
+                        },
+                    },
+                })
+
+            const programsConnection = response.body.data.programsConnection
+
+            expect(response.status).to.eq(200)
+            expect(programsConnection.totalCount).to.equal(3)
         })
 
         it('responds with an error if the filter is wrong', async () => {

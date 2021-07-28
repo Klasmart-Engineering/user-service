@@ -73,8 +73,12 @@ import {
     renameDuplicateGradesQuery,
 } from '../utils/operations/renameDuplicateGrades'
 import { convertDataToCursor } from '../../src/utils/pagination/paginate'
+import { Class } from '../../src/entities/class'
+import { createClass } from '../factories/class.factory'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('model', () => {
     let connection: Connection
@@ -1689,6 +1693,183 @@ describe('model', () => {
 
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.false
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('class filter', () => {
+            let org: Organization
+            let school: School
+            let class1: Class
+            let class2: Class
+            let role1: Role
+
+            beforeEach(async () => {
+                //org used to filter
+                const superAdmin = await createAdminUser(testClient)
+                org = createOrganization(superAdmin)
+                await connection.manager.save(org)
+                role1 = createRole('role 1', org)
+                await connection.manager.save(role1)
+                school = createSchool(org)
+
+                await connection.manager.save(school)
+
+                class1 = createClass([school])
+                class2 = createClass([school])
+
+                await connection.manager.save(class1)
+                await connection.manager.save(class2)
+
+                usersList = []
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        role1.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                const class1Users = []
+                const class2Users = []
+
+                // add half of users to one class and other half to different class
+                // also add 5th user to both classes
+                for (let i = 0; i <= 5; i++) {
+                    class1Users.push(usersList[i])
+                }
+
+                for (let i = 5; i < 10; i++) {
+                    class2Users.push(usersList[i])
+                }
+
+                class1.students = Promise.resolve(class1Users)
+                await class1.save()
+
+                class2.students = Promise.resolve(class2Users)
+                await class2.save()
+            })
+
+            it('should filter the pagination results on classId', async () => {
+                let directionArgs = {
+                    count: 5,
+                }
+
+                const filter: IEntityFilter = {
+                    classId: {
+                        operator: 'eq',
+                        value: class2.class_id,
+                    },
+                }
+
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(5)
+                expect(usersConnection?.edges.length).to.equal(5)
+
+                expect(usersConnection?.edges[0].node.id).to.equal(
+                    usersList[5].user_id
+                )
+
+                for (let i = 1; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[5 + i].user_id
+                    )
+                }
+
+                const userIds = usersConnection?.edges.map((edge) => {
+                    return edge.node.id
+                })
+
+                const DBClass = await connection.manager.findOne(Class, {
+                    where: { class_id: class2.class_id },
+                })
+
+                const classUserIds =
+                    (await DBClass?.students)?.map((student) => {
+                        return student.user_id
+                    }) || []
+
+                expect(userIds).to.deep.equalInAnyOrder(classUserIds)
+            })
+
+            it('works for non-admins', async () => {
+                const nonAdmin = await createNonAdminUser(testClient)
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    nonAdmin.user_id,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+
+                await grantPermission(
+                    testClient,
+                    role1.role_id,
+                    PermissionName.view_users_40110,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    nonAdmin.user_id,
+                    org.organization_id,
+                    role1.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                const filter: IEntityFilter = {
+                    classId: {
+                        operator: 'eq',
+                        value: class2.class_id,
+                    },
+                }
+
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(5)
+
+                const userIds = usersConnection?.edges.map((edge) => {
+                    return edge.node.id
+                })
+
+                const DBClass = await connection.manager.findOne(Class, {
+                    where: { class_id: class2.class_id },
+                })
+
+                const classUserIds =
+                    (await DBClass?.students)?.map((student) => {
+                        return student.user_id
+                    }) || []
+
+                expect(userIds).to.deep.equalInAnyOrder(classUserIds)
             })
         })
 

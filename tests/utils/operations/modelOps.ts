@@ -246,7 +246,7 @@ const SCHOOLS_CSV_UPLOAD_MUTATION = `
     }
 `
 
-const USERS_CONNECTION = `
+export const USERS_CONNECTION = `
     query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter, $sortArgs: UserSortInput) {
         usersConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
             totalCount
@@ -321,7 +321,7 @@ const SCHOOLS_CONNECTION = `
     }
 `
 
-const PROGRAMS_CONNECTION = `
+export const PROGRAMS_CONNECTION = `
     query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
         programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
             totalCount

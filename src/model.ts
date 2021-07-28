@@ -364,6 +364,10 @@ export class Model {
                     'SchoolMembership'
                 )
             }
+            if (filterHasProperty('classId', filter)) {
+                scope.leftJoin('User.classesStudying', 'ClassStudying')
+                scope.leftJoin('User.classesTeaching', 'ClassTeaching')
+            }
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     organizationId: 'OrgMembership.organization_id',
@@ -371,6 +375,13 @@ export class Model {
                     userId: "concat(User.user_id, '')",
                     phone: 'User.phone',
                     schoolId: 'SchoolMembership.school_id',
+                    classId: {
+                        operator: 'OR',
+                        aliases: [
+                            'ClassStudying.class_id',
+                            'ClassTeaching.class_id',
+                        ],
+                    },
                 })
             )
         }
@@ -520,6 +531,10 @@ export class Model {
                 scope.leftJoinAndSelect('Program.schools', 'School')
             }
 
+            if (filterHasProperty('classId', filter)) {
+                scope.leftJoin('Program.classes', 'Class')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     id: 'Program.id',
@@ -544,6 +559,7 @@ export class Model {
                     },
                     subjectId: 'Subject.id',
                     schoolId: 'School.school_id',
+                    classId: 'Class.class_id',
                 })
             )
         }
