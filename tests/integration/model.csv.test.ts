@@ -121,7 +121,7 @@ describe('model.csv', () => {
                     mimetype,
                     encoding
                 )
-            expect(fn()).to.be.rejectedWith(Error)
+            await expect(fn()).to.be.rejectedWith(Error)
 
             const organizationsCreated = await Organization.count()
             expect(organizationsCreated).eq(0)

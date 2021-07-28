@@ -9,6 +9,9 @@ export default {
     ERR_CSV_EMPTY_FILE: "ERR_CSV_EMPTY_FILE",
     MSG_ERR_CSV_EMPTY_FILE: "{filename} is empty.",
 
+    ERR_CSV_FILE_FORMAT: "ERR_CSV_FILE_FORMAT",
+    MSG_ERR_CSV_FILE_FORMAT: "Upload file must be in CSV format.",
+
     ERR_CSV_BAD_INPUT: "ERR_CSV_BAD_INPUT",
 
     ERR_CSV_MISSING_REQUIRED: "ERR_CSV_MISSING_REQUIRED",

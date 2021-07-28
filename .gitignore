@@ -5,3 +5,5 @@ coverage
 .env
 .nvmrc
 .env.test
+.idea
+.mocharc

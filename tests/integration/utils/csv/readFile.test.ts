@@ -69,7 +69,71 @@ describe('read file', () => {
                     [dummyFn],
                     adminPermissions
                 )
+            await expect(fn()).to.be.rejectedWith(
+                'Empty input file: ' + filename
+            )
+        })
+    })
+
+    context('when file header but no rows', () => {
+        const filename = 'onlyHeader.csv'
+        const mimetype = 'text/csv'
+        const encoding = '7bit'
+        const dummyFn: CreateEntityRowCallback = async (
+            manager: EntityManager,
+            row: any,
+            rowCount: number
+        ) => {}
+        it('should throw an error', async () => {
+            const upload = {
+                filename: filename,
+                mimetype: mimetype,
+                encoding: encoding,
+                createReadStream: () => {
+                    return fs.createReadStream(
+                        resolve(`tests/fixtures/onlyHeader.csv`)
+                    )
+                },
+            } as Upload
+            const fn = async () =>
+                await readCSVFile(
+                    connection.manager,
+                    upload,
+                    [dummyFn],
+                    adminPermissions
+                )
             expect(fn()).to.be.rejectedWith('Empty input file: ' + filename)
+        })
+    })
+
+    context('when incorrect file type', () => {
+        const filename = 'asTxtFileType.txt'
+        const mimetype = 'text/plain'
+        const encoding = '7bit'
+        const dummyFn: CreateEntityRowCallback = async (
+            manager: EntityManager,
+            row: any,
+            rowCount: number
+        ) => {}
+        it('should throw an error', async () => {
+            const upload = {
+                filename: filename,
+                mimetype: mimetype,
+                encoding: encoding,
+                createReadStream: () => {
+                    return fs.createReadStream(
+                        resolve(`tests/fixtures/asTxtFileType.txt`)
+                    )
+                },
+            } as Upload
+            const fn = async () =>
+                await readCSVFile(
+                    connection.manager,
+                    upload,
+                    [dummyFn],
+                    adminPermissions
+                )
+            expect(fn()).to.be.rejectedWith('File must be in .csv format.')
         })
     })
 })
