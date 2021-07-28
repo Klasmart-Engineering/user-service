@@ -60,6 +60,7 @@ const typeDefs = gql`
         ageRangeValueTo: AgeRangeValueFilter
         subjectId: UUIDFilter
         schoolId: UUIDFilter
+        classId: UUIDFilter
 
         AND: [ProgramFilter!]
         OR: [ProgramFilter!]

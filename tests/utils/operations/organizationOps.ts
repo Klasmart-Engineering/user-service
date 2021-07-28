@@ -22,7 +22,7 @@ import {
 import { utils } from 'mocha'
 import { Program } from '../../../src/entities/program'
 
-const CREATE_CLASS = `
+export const CREATE_CLASS = `
     mutation myMutation(
             $organization_id: ID!
             $class_name: String
@@ -109,7 +109,7 @@ const UPDATE_ORGANIZATION = `
     }
 `
 
-const INVITE_USER = `
+export const INVITE_USER = `
     mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email: String, $alternate_phone: String) {
         organization(organization_id: $organization_id) {
             inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email: $alternate_email, alternate_phone: $alternate_phone){

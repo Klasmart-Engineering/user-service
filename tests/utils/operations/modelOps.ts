@@ -246,7 +246,7 @@ const SCHOOLS_CSV_UPLOAD_MUTATION = `
     }
 `
 
-const USERS_CONNECTION = `
+export const USERS_CONNECTION = `
     query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter, $sortArgs: UserSortInput) {
         usersConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
             totalCount

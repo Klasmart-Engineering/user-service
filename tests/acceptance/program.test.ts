@@ -3,33 +3,25 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
+import { Program } from '../../src/entities/program'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRangeConnectionNode'
 import { ProgramConnectionNode } from '../../src/types/graphQL/programConnectionNode'
 import { loadFixtures } from '../utils/fixtures'
-import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
 import {
-    CREATE_OR_UPDATE_AGE_RANGES,
-    CREATE_OR_UPDATE_PROGRAMS,
-} from '../utils/operations/organizationOps'
-import { CREATE_ORGANIZATION } from '../utils/operations/userOps'
+    addProgramsToClass,
+    createAgeRanges,
+    createClass,
+    createOrg,
+    createPrograms,
+    IAgeRangeDetail,
+    IProgramDetail,
+} from '../utils/operations/acceptance/acceptanceOps.test'
+import { PROGRAMS_CONNECTION } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 
 interface IProgramEdge {
     node: ProgramConnectionNode
-}
-
-interface IProgramDetail {
-    name: string
-    age_ranges: string[]
-}
-
-interface IAgeRangeDetail {
-    name: string
-    low_value: number
-    low_value_unit: AgeRangeUnit
-    high_value: number
-    high_value_unit: AgeRangeUnit
 }
 
 const url = 'http://localhost:8080'
@@ -38,64 +30,10 @@ const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const programsCount = 12
 const ageRangesCount = 6
+const classesCount = 2
 
+let classIds: string[] = []
 let orgId: string
-
-async function createOrg(user_id: string, org_name: string, token: string) {
-    return await request
-        .post('/graphql')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: CREATE_ORGANIZATION,
-            variables: {
-                user_id,
-                org_name,
-            },
-        })
-}
-
-async function createAgeRanges(
-    organization_id: string,
-    age_ranges: IAgeRangeDetail[],
-    token: string
-) {
-    return await request
-        .post('/graphql')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: CREATE_OR_UPDATE_AGE_RANGES,
-            variables: {
-                organization_id,
-                age_ranges,
-            },
-        })
-}
-
-async function createPrograms(
-    organization_id: string,
-    programs: IProgramDetail[],
-    token: string
-) {
-    return await request
-        .post('/graphql')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: CREATE_OR_UPDATE_PROGRAMS,
-            variables: {
-                organization_id,
-                programs,
-            },
-        })
-}
 
 describe('acceptance.program', () => {
     let connection: Connection
@@ -109,6 +47,8 @@ describe('acceptance.program', () => {
     })
 
     beforeEach(async () => {
+        classIds = []
+
         await loadFixtures('users', connection)
 
         const ageRangeDetails: IAgeRangeDetail[] = []
@@ -149,7 +89,33 @@ describe('acceptance.program', () => {
             })
         }
 
-        await createPrograms(orgId, programDetails, getAdminAuthToken())
+        const programsResponse = await createPrograms(
+            orgId,
+            programDetails,
+            getAdminAuthToken()
+        )
+
+        const programs =
+            programsResponse.body.data.organization.createOrUpdatePrograms
+        const programIds = programs.map((p: Program) => p.id)
+
+        for (let i = 0; i < classesCount; i++) {
+            const classResponse = await createClass(
+                orgId,
+                `class ${i + 1}`,
+                getAdminAuthToken()
+            )
+
+            const classId =
+                classResponse.body.data.organization.createClass.class_id
+            classIds.push(classId)
+        }
+
+        for (const classId of classIds) {
+            const ids = [programIds[0], programIds[1], programIds[2]]
+
+            await addProgramsToClass(classId, ids, getAdminAuthToken())
+        }
     })
 
     context('programsConnection', () => {
@@ -445,6 +411,33 @@ describe('acceptance.program', () => {
             ageRangesUnits.every((units: AgeRangeUnit[]) =>
                 units?.includes(ageRangeValue.unit)
             )
+        })
+
+        it('queries paginated programs filtering by class ID', async () => {
+            const classId = classIds[0]
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: PROGRAMS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            classId: {
+                                operator: 'eq',
+                                value: classId,
+                            },
+                        },
+                    },
+                })
+
+            const programsConnection = response.body.data.programsConnection
+
+            expect(response.status).to.eq(200)
+            expect(programsConnection.totalCount).to.equal(3)
         })
 
         it('responds with an error if the filter is wrong', async () => {

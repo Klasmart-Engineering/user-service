@@ -69,14 +69,18 @@ describe('model', () => {
         ageRanges = []
 
         for (let i = 0; i < ageRangesCount; i++) {
-            let ageRange = await createAgeRange(org1)
+            let ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.name = `age range ${i}`
             ageRange.status = Status.ACTIVE
             org1AgeRanges.push(ageRange)
         }
 
         for (let i = 0; i < ageRangesCount; i++) {
-            let ageRange = await createAgeRange(org2)
+            let ageRange = await createAgeRange(
+                org2,
+                ageRangesCount + i,
+                ageRangesCount + i + 1
+            )
             ageRange.name = `program ${i}`
             ageRange.status = Status.INACTIVE
             org2AgeRanges.push(ageRange)

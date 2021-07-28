@@ -100,4 +100,36 @@ describe('createEntityFromCsvWithRollBack', () => {
             expect(organizationCount).gt(0)
         })
     })
+
+    context('when dry run', () => {
+        let fileName = 'organizationsExample.csv'
+        let fileStream = fs.createReadStream(
+            `tests/fixtures/${fileName}`,
+            'utf-8'
+        )
+        let isDryRun = true
+
+        beforeEach(async () => {
+            file = {
+                filename: fileName,
+                mimetype: 'text/csv',
+                encoding: '7bit',
+                createReadStream: () => fileStream,
+            }
+        })
+
+        it('no entities are created', async () => {
+            await createEntityFromCsvWithRollBack(
+                connection,
+                file,
+                [processOrganizationFromCSVRow],
+                adminPermissions,
+                isDryRun
+            )
+            organizationCount = await connection.manager
+                .getRepository(Organization)
+                .count()
+            expect(organizationCount).eq(0)
+        })
+    })
 })

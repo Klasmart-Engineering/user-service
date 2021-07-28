@@ -1,5 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Connection } from 'typeorm'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { Grade } from '../../../src/entities/grade'
@@ -34,8 +35,11 @@ import { SubjectSummaryNode } from '../../../src/types/graphQL/subjectSummaryNod
 import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
+import { Class } from '../../../src/entities/class'
+import { createClass } from '../../factories/class.factory'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('model', () => {
     let connection: Connection
@@ -50,6 +54,8 @@ describe('model', () => {
     let grades: Grade[] = []
     let subjects: Subject[] = []
     let school: School
+    let class1: Class
+    let class2: Class
 
     const programsCount = 12
     const ageRangesCount = 6
@@ -73,6 +79,8 @@ describe('model', () => {
         await connection.manager.save([org1, org2])
 
         school = await createSchool(org1)
+        class1 = await createClass([school])
+        class2 = await createClass([school])
 
         org1Programs = []
         org2Programs = []
@@ -141,6 +149,20 @@ describe('model', () => {
 
         school.programs = Promise.resolve([org1Programs[0]])
         await connection.manager.save(school)
+
+        class1.programs = Promise.resolve([
+            org1Programs[1],
+            org1Programs[3],
+            org1Programs[5],
+        ])
+
+        class2.programs = Promise.resolve([
+            org1Programs[0],
+            org1Programs[2],
+            org1Programs[4],
+        ])
+
+        await connection.manager.save([class1, class2])
     })
 
     context('pagination', () => {
@@ -665,6 +687,41 @@ describe('model', () => {
                 filter
             )
             expect(result.totalCount).to.eq(1)
+        })
+
+        it('supports filtering by class ID', async () => {
+            const classId = class1.class_id
+            const filter: IEntityFilter = {
+                classId: {
+                    operator: 'eq',
+                    value: classId,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(3)
+
+            const programIds = result.edges.map((edge) => {
+                return edge.node.id
+            })
+
+            const DBClass = await connection.manager.findOne(Class, {
+                where: { class_id: classId },
+            })
+
+            const classProgramIds =
+                (await DBClass?.programs)?.map((program) => {
+                    return program.id
+                }) || []
+
+            expect(programIds).to.deep.equalInAnyOrder(classProgramIds)
         })
 
         it('fails if search value is longer than 250 characters', async () => {

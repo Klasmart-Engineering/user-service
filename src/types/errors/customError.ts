@@ -91,9 +91,15 @@ export const customErrors = {
     code: "ERR_INVALID_UUID",
     message: "{entity} {attribute} must be a valid UUID.",
   },
+
+  // auth
   unauthorized: {
     code: "UNAUTHORIZED",
     message: "You are unauthorized to perform this action.",
+  },
+  unauthorized_org_upload: {
+    code: "UNAUTHORIZED_UPLOAD_TO_ORGANIZATION",
+    message: "Unauthorized to upload {entity} to organization ${organizationName}.",
   },
 
   // generic fallback if a joi constraint is not overridden
