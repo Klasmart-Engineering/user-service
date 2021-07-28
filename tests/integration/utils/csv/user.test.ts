@@ -140,9 +140,9 @@ describe('processUserFromCSVRow', async () => {
                 })
             )
             let err = fileErrors[0]
-            expect(err.code).to.eq(customErrors.unauthorized.code)
-            expect(err.entity).to.eq('organization')
-            expect(err.attribute).to.eq('name')
+            expect(err.code).to.eq(customErrors.unauthorized_org_upload.code)
+            expect(err.entity).to.eq('user')
+            expect(err.organizationName).to.eq(row.organization_name)
             expect(err.column).to.eq('organization_name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist

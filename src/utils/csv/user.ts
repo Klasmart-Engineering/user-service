@@ -69,14 +69,13 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     } catch (e) {
         addCsvError(
             fileErrors,
-            customErrors.unauthorized.code,
+            customErrors.unauthorized_org_upload.code,
             rowNumber,
             'organization_name',
-            customErrors.unauthorized.message,
+            customErrors.unauthorized_org_upload.message,
             {
-                entity: 'organization',
-                attribute: 'name',
-                entityName: row.organization_name,
+                entity: 'user',
+                organizationName: row.organization_name,
             }
         )
     }
