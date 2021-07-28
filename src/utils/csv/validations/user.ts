@@ -30,8 +30,8 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
         validation: userValidations.family_name.required(),
     },
     user_shortcode: {
-        entity: 'user',
-        attribute: 'shortcode',
+        entity: 'shortcode',
+        attribute: 'user shortcode',
         validation: sharedValidations.shortcode.allow(null).optional(),
     },
     user_email: {
