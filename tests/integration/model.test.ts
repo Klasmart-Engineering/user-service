@@ -105,10 +105,26 @@ describe('model', () => {
     describe('myUsers', () => {
         let user: User
         let otherUser: User
+        let org: Organization
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             otherUser = await createNonAdminUser(testClient)
+            org = createOrganization()
+            await connection.manager.save(org)
+            await addOrganizationToUserAndValidate(
+                testClient,
+                user.user_id,
+                org.organization_id,
+                getAdminAuthToken()
+            )
+
+            await addOrganizationToUserAndValidate(
+                testClient,
+                otherUser.user_id,
+                org.organization_id,
+                getAdminAuthToken()
+            )
         })
 
         context('when user is not logged in', () => {
@@ -133,12 +149,17 @@ describe('model', () => {
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
             })
         })
-        context('when user is inactive in', () => {
+        context('when usermembership is inactive', () => {
             beforeEach(async () => {
-                const dbOtherUser = await User.findOneOrFail(otherUser.user_id)
-                if (dbOtherUser) {
-                    dbOtherUser.status = Status.INACTIVE
-                    await connection.manager.save(dbOtherUser)
+                const dbOtherMembership = await OrganizationMembership.findOneOrFail(
+                    {
+                        user_id: otherUser.user_id,
+                        organization_id: org.organization_id,
+                    }
+                )
+                if (dbOtherMembership) {
+                    dbOtherMembership.status = Status.INACTIVE
+                    await connection.manager.save(dbOtherMembership)
                 }
             })
 
