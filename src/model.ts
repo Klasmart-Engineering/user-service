@@ -278,14 +278,25 @@ export class Model {
         const userPhone = context.token?.phone
         let users: User[] = []
 
+        const scope = getRepository(User)
+            .createQueryBuilder()
+            .distinctOn(['User.user_id'])
+            .innerJoin('User.memberships', 'OrganizationMembership')
+            .where('OrganizationMembership.status=:status', {
+                status: Status.ACTIVE,
+            })
         if (userEmail) {
-            users = await User.find({
-                where: { email: userEmail, status: Status.ACTIVE },
-            })
+            users = await scope
+                .andWhere('User.email = :email', {
+                    email: userEmail,
+                })
+                .getMany()
         } else if (userPhone) {
-            users = await User.find({
-                where: { phone: userPhone, status: Status.ACTIVE },
-            })
+            users = await scope
+                .andWhere('User.phone = :phone', {
+                    phone: userPhone,
+                })
+                .getMany()
         }
 
         return users
