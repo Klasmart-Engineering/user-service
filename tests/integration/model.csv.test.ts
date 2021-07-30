@@ -114,14 +114,14 @@ describe('model.csv', () => {
             file = fs.createReadStream(resolve(`tests/fixtures/${filename}`))
 
             const fn = async () =>
-                await queryUploadOrganizations(
+                await uploadOrganizations(
                     testClient,
                     file,
                     filename,
                     mimetype,
                     encoding
                 )
-            await expect(fn()).to.be.rejectedWith(Error)
+            await expect(fn()).to.be.rejectedWith("File size exceeds max file size (50KB)")
 
             const organizationsCreated = await Organization.count()
             expect(organizationsCreated).eq(0)
@@ -200,7 +200,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn()).to.be.rejectedWith(csvErrorConstants.ERR_CSV_BAD_INPUT)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
@@ -213,7 +213,7 @@ describe('model.csv', () => {
                     .equal(1)
                 expect(fn())
                     .to.eventually.have.property('errors')
-                    .to.have.property('code')
+                    .to.eventually.have.property('code')
                     .equal(
                         csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER
                     )
@@ -877,7 +877,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                expect(fn()).to.eventually.be.rejectedWith(csvErrorConstants.ERR_CSV_BAD_INPUT)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)

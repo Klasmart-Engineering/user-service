@@ -4,11 +4,17 @@ import { File } from '../../types/file'
 import { ReReadable } from 'rereadable-stream'
 import { EntityManager } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
-import { Transform } from 'stream'
+import { Transform, Readable } from 'stream'
 import { CSVError } from '../../types/csv/csvError'
 import { stringInject } from '../stringUtils'
 import constants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
+import {
+    CSV_MAX_FILESIZE,
+    CSV_MIMETYPES,
+    CsvMimeType,
+} from '../../types/csvFormat'
+import * as Stream from 'stream'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -31,6 +37,29 @@ function canFinish(
     return index === callbacks.length - 1 && !stream.readableLength
 }
 
+async function isFileOversized(readStream: Stream, maxSize: number) {
+
+    return new Promise((resolve, reject) => {
+
+        let byteLength = 0
+
+        readStream.on('data', (chunk) => {
+            console.log("chunk")
+            byteLength += chunk.length
+            console.log(byteLength)
+            if (byteLength > maxSize) {
+                reject()
+            }
+
+        })
+        readStream.on('end', () => {
+            console.log("end")
+            readStream.removeAllListeners()
+            resolve()
+        })
+    })
+}
+
 export async function readCSVFile(
     manager: EntityManager,
     file: Upload,
@@ -44,16 +73,29 @@ export async function readCSVFile(
 
     return new Promise<File>(async (resolve, reject) => {
         try {
+            if (!CSV_MIMETYPES.includes(file.mimetype as CsvMimeType)) {
+                throw new Error(constants.MSG_ERR_CSV_FILE_FORMAT)
+            }
+
             const readStream = file.createReadStream()
             const rereadableStream = readStream.pipe(new ReReadable())
 
+            await isFileOversized(readStream, CSV_MAX_FILESIZE).catch(() => {
+                const mess = stringInject(
+                    constants.MSG_ERR_FILE_EXCEEDS_MAX_FILE_SIZE,
+                    {
+                        max: CSV_MAX_FILESIZE / 1024,
+                    }
+                )
+                throw mess
+            })
+
             for (let i = 0; i < callbacks.length; i += 1) {
-                csvStream = i
-                    ? rereadableStream.rewind().pipe(csv())
-                    : readStream.pipe(csv())
+                csvStream = rereadableStream.rewind().pipe(csv())
                 rowCounter = 0
                 for await (let chunk of csvStream) {
                     rowCounter += 1
+
                     chunk = formatCSVRow(chunk)
                     await callbacks[i](
                         manager,

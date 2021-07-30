@@ -69,9 +69,7 @@ describe('read file', () => {
                     [dummyFn],
                     adminPermissions
                 )
-            await expect(fn()).to.be.rejectedWith(
-                'Empty input file: ' + filename
-            )
+            await expect(fn()).to.be.rejectedWith(`The ${filename} file is empty.`)
         })
     })
 
@@ -102,7 +100,7 @@ describe('read file', () => {
                     [dummyFn],
                     adminPermissions
                 )
-            expect(fn()).to.be.rejectedWith('Empty input file: ' + filename)
+            await expect(fn()).to.be.rejectedWith(`The ${filename} file is empty.`)
         })
     })
 
@@ -133,7 +131,7 @@ describe('read file', () => {
                     [dummyFn],
                     adminPermissions
                 )
-            expect(fn()).to.be.rejectedWith('File must be in .csv format.')
+            await expect(fn()).to.be.rejectedWith('File must be in .csv format.')
         })
     })
 })
