@@ -4,7 +4,7 @@ import { File } from '../../types/file'
 import { ReReadable } from 'rereadable-stream'
 import { EntityManager } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
-import { Transform, Readable } from 'stream'
+import { Transform } from 'stream'
 import { CSVError } from '../../types/csv/csvError'
 import { stringInject } from '../stringUtils'
 import constants from '../../types/errors/csv/csvErrorConstants'
@@ -44,16 +44,13 @@ async function isFileOversized(readStream: Stream, maxSize: number) {
         let byteLength = 0
 
         readStream.on('data', (chunk) => {
-            console.log("chunk")
             byteLength += chunk.length
-            console.log(byteLength)
             if (byteLength > maxSize) {
                 reject()
             }
 
         })
         readStream.on('end', () => {
-            console.log("end")
             readStream.removeAllListeners()
             resolve()
         })

@@ -877,7 +877,7 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.eventually.be.rejectedWith(csvErrorConstants.ERR_CSV_BAD_INPUT)
+                await expect(fn()).to.be.rejectedWith(csvErrorConstants.ERR_CSV_BAD_INPUT)
                 expect(fn())
                     .to.eventually.have.property('errors')
                     .to.have.length(1)
