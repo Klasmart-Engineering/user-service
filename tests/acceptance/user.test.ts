@@ -5,16 +5,19 @@ import { expect, use } from 'chai'
 import { before } from 'mocha'
 
 import { createTestConnection } from '../utils/testConnection'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addStudentsToClass,
     inviteUserToOrganization,
     createClass,
     createOrg,
+    leaveTheOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
-import { USERS_CONNECTION } from '../utils/operations/modelOps'
+import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
+import { userToPayload } from '../utils/operations/userOps'
+import { leaveOrganization } from '../utils/operations/organizationMembershipOps'
 
 use(chaiAsPromised)
 
@@ -28,6 +31,7 @@ const classesCount = 2
 let orgId: string
 let userIds: string[]
 let classIds: string[]
+let userEmails: string[]
 
 const ME = `
     query {
@@ -51,6 +55,7 @@ describe('acceptance.user', () => {
 
     beforeEach(async () => {
         userIds = []
+        userEmails = []
         classIds = []
 
         await loadFixtures('users', connection)
@@ -67,13 +72,15 @@ describe('acceptance.user', () => {
 
         for (let i = 0; i < usersCount; i++) {
             const response = await inviteUserToOrganization(
+                `given${i + 1}`,
+                `family${i + 1}`,
                 `user${i + 1}@gmail.com`,
                 orgId,
                 getAdminAuthToken()
             )
-
             const id = response.body.data.organization.inviteUser.user.user_id
             userIds.push(id)
+            userEmails.push(`user${i + 1}@gmail.com`)
         }
 
         for (let i = 0; i < classesCount; i++) {
@@ -182,6 +189,62 @@ describe('acceptance.user', () => {
 
             expect(response.status).to.eq(400)
             expect(response.body).to.have.property('errors')
+        })
+    })
+    context('my_users', async () => {
+        it('Finds no users if I am not logged in', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: '',
+                })
+                .send({
+                    query: MY_USERS,
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body.data.my_users.length).to.equal(0)
+        })
+
+        it('Finds one user with active membership ', async () => {
+            const token = generateToken({
+                id: userIds[0],
+                email: userEmails[0],
+                iss: 'calmid-debug',
+            })
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query: MY_USERS,
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body.data.my_users.length).to.equal(1)
+        })
+        it('Finds no users if my membership is inactive', async () => {
+            await leaveTheOrganization(userIds[0], orgId, getAdminAuthToken())
+            const token = generateToken({
+                id: userIds[0],
+                email: userEmails[0],
+                iss: 'calmid-debug',
+            })
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query: MY_USERS,
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body.data.my_users.length).to.equal(0)
         })
     })
 })

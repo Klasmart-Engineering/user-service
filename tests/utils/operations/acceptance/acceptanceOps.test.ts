@@ -1,6 +1,8 @@
 import supertest from 'supertest'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import { EDIT_PROGRAM_CLASS, EDIT_STUDENTS_IN_CLASS } from '../classOps'
+import { MY_USERS } from '../modelOps'
+import { LEAVE_ORGANIZATION } from '../organizationMembershipOps'
 import {
     CREATE_CLASS,
     CREATE_OR_UPDATE_AGE_RANGES,
@@ -146,6 +148,8 @@ export async function addStudentsToClass(
 }
 
 export async function inviteUserToOrganization(
+    given_name: string,
+    family_name: string,
     email: string,
     organization_id: string,
     token: string
@@ -159,7 +163,29 @@ export async function inviteUserToOrganization(
         .send({
             query: INVITE_USER,
             variables: {
+                given_name,
+                family_name,
                 email,
+                organization_id,
+            },
+        })
+}
+
+export async function leaveTheOrganization(
+    user_id: string,
+    organization_id: string,
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: LEAVE_ORGANIZATION,
+            variables: {
+                user_id,
                 organization_id,
             },
         })
