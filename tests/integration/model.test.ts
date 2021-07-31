@@ -172,6 +172,24 @@ describe('model', () => {
                 expect(fn()).to.be.rejected
             })
         })
+        context('when user is inactive in', () => {
+            beforeEach(async () => {
+                const dbOtherUser = await User.findOneOrFail(otherUser.user_id)
+                if (dbOtherUser) {
+                    dbOtherUser.status = Status.INACTIVE
+                    await connection.manager.save(dbOtherUser)
+                }
+            })
+
+            it('returns no users', async () => {
+                const fn = () =>
+                    myUsers(testClient, {
+                        authorization: getNonAdminAuthToken(),
+                    })
+
+                expect(fn()).to.be.rejected
+            })
+        })
     })
 
     describe('getOrganizations', () => {

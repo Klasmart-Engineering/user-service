@@ -285,6 +285,9 @@ export class Model {
             .where('OrganizationMembership.status=:status', {
                 status: Status.ACTIVE,
             })
+            .andWhere('User.status=:status', {
+                status: Status.ACTIVE,
+            })
         if (userEmail) {
             users = await scope
                 .andWhere('User.email = :email', {
