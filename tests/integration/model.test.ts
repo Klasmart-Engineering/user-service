@@ -105,18 +105,34 @@ describe('model', () => {
     describe('myUsers', () => {
         let user: User
         let otherUser: User
+        let org: Organization
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             otherUser = await createNonAdminUser(testClient)
+            org = createOrganization()
+            await connection.manager.save(org)
+            await addOrganizationToUserAndValidate(
+                testClient,
+                user.user_id,
+                org.organization_id,
+                getAdminAuthToken()
+            )
+
+            await addOrganizationToUserAndValidate(
+                testClient,
+                otherUser.user_id,
+                org.organization_id,
+                getAdminAuthToken()
+            )
         })
 
         context('when user is not logged in', () => {
-            it('raises an error', async () => {
-                const fn = () =>
-                    myUsers(testClient, { authorization: undefined })
-
-                expect(fn()).to.be.rejected
+            it('returns no users', async () => {
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: '',
+                })
+                expect(gqlUsers.length).to.equal(0)
             })
         })
 
@@ -133,7 +149,29 @@ describe('model', () => {
                 expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
             })
         })
-        context('when user is inactive in', () => {
+        context('when usermembership is inactive', () => {
+            beforeEach(async () => {
+                const dbOtherMembership = await OrganizationMembership.findOneOrFail(
+                    {
+                        user_id: otherUser.user_id,
+                        organization_id: org.organization_id,
+                    }
+                )
+                if (dbOtherMembership) {
+                    dbOtherMembership.status = Status.INACTIVE
+                    await connection.manager.save(dbOtherMembership)
+                }
+            })
+
+            it('returns no users', async () => {
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: getNonAdminAuthToken(),
+                })
+
+                expect(gqlUsers.length).to.equal(0)
+            })
+        })
+        context('when user is inactive', () => {
             beforeEach(async () => {
                 const dbOtherUser = await User.findOneOrFail(otherUser.user_id)
                 if (dbOtherUser) {
@@ -143,12 +181,10 @@ describe('model', () => {
             })
 
             it('returns no users', async () => {
-                const fn = () =>
-                    myUsers(testClient, {
-                        authorization: getNonAdminAuthToken(),
-                    })
-
-                expect(fn()).to.be.rejected
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: getNonAdminAuthToken(),
+                })
+                expect(gqlUsers.length).to.equal(0)
             })
         })
     })

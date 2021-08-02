@@ -103,10 +103,15 @@ const GET_USERS = `
     }
 `
 
-const MY_USERS = `
+export const MY_USERS = `
     query myQuery {
         my_users {
             user_id
+            email
+            phone
+            given_name
+            family_name
+
         }
     }
 `
