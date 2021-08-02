@@ -57,7 +57,7 @@ export function validateRow<Row>(
 ) {
     // first create the Joi validation schema
     const validationSchema: Partial<Record<keyof Row, Joi.AnySchema>> = {}
-    for (const prop in row) {
+    for (const prop in schema) {
         validationSchema[prop] = schema[prop].validation
     }
 

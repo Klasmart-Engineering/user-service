@@ -196,6 +196,20 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
+            delete row.organization_name
+            await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            err = fileErrors[0]
+            expect(err.code).to.eq(
+                customErrors.missing_required_entity_attribute.code
+            )
+        })
+        it('errors when blank', async () => {
             row.organization_name = ''
             await processUserFromCSVRow(
                 connection.manager,
@@ -251,6 +265,20 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
+            delete row.user_given_name
+            await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            err = fileErrors[0]
+            expect(err.code).to.eq(
+                customErrors.missing_required_entity_attribute.code
+            )
+        })
+        it('errors when blank', async () => {
             row.user_given_name = ''
             await processUserFromCSVRow(
                 connection.manager,
@@ -309,6 +337,20 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
+            delete row.user_family_name
+            await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            err = fileErrors[0]
+            expect(err.code).to.eq(
+                customErrors.missing_required_entity_attribute.code
+            )
+        })
+        it('errors when blank', async () => {
             row.user_family_name = ''
             await processUserFromCSVRow(
                 connection.manager,
@@ -397,6 +439,20 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
+            delete row.user_gender
+            await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            err = fileErrors[0]
+            expect(err.code).to.eq(
+                customErrors.missing_required_entity_attribute.code
+            )
+        })
+        it('errors when blank', async () => {
             row.user_gender = ''
             await processUserFromCSVRow(
                 connection.manager,
@@ -462,8 +518,8 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('is required if phone is not provided', async () => {
-            row.user_email = undefined
-            row.user_phone = undefined
+            delete row.user_email
+            delete row.user_phone
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -478,7 +534,7 @@ describe('processUserFromCSVRow', async () => {
             )
         })
         it('is not required if phone is provided', async () => {
-            row.user_email = undefined
+            delete row.user_email
             row.user_phone = '+4400000000000'
             await processUserFromCSVRow(
                 connection.manager,
@@ -643,6 +699,21 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
+            delete row.organization_role_name
+            await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+
+            err = fileErrors[0]
+            expect(err.code).to.eq(
+                customErrors.missing_required_entity_attribute.code
+            )
+        })
+        it('errors when blank', async () => {
             row.organization_role_name = ''
             await processUserFromCSVRow(
                 connection.manager,
