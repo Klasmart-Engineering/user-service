@@ -128,11 +128,11 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('raises an error', async () => {
-                const fn = () =>
-                    myUsers(testClient, { authorization: undefined })
-
-                expect(fn()).to.be.rejected
+            it('returns no users', async () => {
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: '',
+                })
+                expect(gqlUsers.length).to.equal(0)
             })
         })
 
@@ -164,15 +164,14 @@ describe('model', () => {
             })
 
             it('returns no users', async () => {
-                const fn = () =>
-                    myUsers(testClient, {
-                        authorization: getNonAdminAuthToken(),
-                    })
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: getNonAdminAuthToken(),
+                })
 
-                expect(fn()).to.be.rejected
+                expect(gqlUsers.length).to.equal(0)
             })
         })
-        context('when user is inactive in', () => {
+        context('when user is inactive', () => {
             beforeEach(async () => {
                 const dbOtherUser = await User.findOneOrFail(otherUser.user_id)
                 if (dbOtherUser) {
@@ -182,12 +181,10 @@ describe('model', () => {
             })
 
             it('returns no users', async () => {
-                const fn = () =>
-                    myUsers(testClient, {
-                        authorization: getNonAdminAuthToken(),
-                    })
-
-                expect(fn()).to.be.rejected
+                const gqlUsers = await myUsers(testClient, {
+                    authorization: getNonAdminAuthToken(),
+                })
+                expect(gqlUsers.length).to.equal(0)
             })
         })
     })
