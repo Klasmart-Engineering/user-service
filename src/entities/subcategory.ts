@@ -7,6 +7,8 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     EntityManager,
+    ManyToMany,
+    JoinTable,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -25,6 +27,10 @@ export class Subcategory extends BaseEntity {
 
     @Column({ nullable: false, default: false })
     public system?: boolean
+
+    @ManyToMany(() => Organization)
+    @JoinTable()
+    public shared_orgs?: Promise<Organization[]>
 
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })

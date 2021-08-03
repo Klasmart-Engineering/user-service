@@ -195,6 +195,9 @@ query getSubcategory($id: ID!){
     name
     system
     status
+    organization {
+      organization_id
+    }
   }
 }
 `

@@ -18,6 +18,8 @@ const typeDefs = gql`
         system: Boolean!
         status: Status
 
+        organization: Organization
+
         # Mutations
         delete(_: Int): Boolean
     }

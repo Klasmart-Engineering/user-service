@@ -630,6 +630,44 @@ describe('model', () => {
                         })
                     }
                 )
+
+                context('shared orgs', () => {
+                    it('returns subcategories owned by and shared with membership orgs', async () => {
+                        // create a new org, and share the subcategory belonging to another org with it
+                        const org2 = createOrganization()
+                        await connection.manager.save(org2)
+                        subcategory.shared_orgs = Promise.resolve([org2])
+                        await connection.manager.save(subcategory)
+
+                        // add the user to the _new_ org
+                        await addUserToOrganizationAndValidate(
+                            testClient,
+                            otherUserId,
+                            org2.organization_id,
+                            { authorization: getAdminAuthToken() }
+                        )
+
+                        const gqlSubcategory = await getSubcategory(
+                            testClient,
+                            subcategory.id,
+                            { authorization: getNonAdminAuthToken() }
+                        )
+
+                        console.log(gqlSubcategory)
+
+                        expect(gqlSubcategory).not.to.be.null
+                        expect(subcategoryInfo(gqlSubcategory)).to.deep.eq(
+                            subcategoryInfo(subcategory)
+                        )
+
+                        const ownerOrgId = (await gqlSubcategory.organization)
+                            ?.organization_id
+                        const isSharedItem = ownerOrgId !== org2.organization_id
+
+                        expect(ownerOrgId).to.eq(organizationId)
+                        expect(isSharedItem).to.eq(true)
+                    })
+                })
             })
 
             context('and the user is an admin', () => {
