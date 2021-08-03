@@ -682,7 +682,9 @@ describe('organization', () => {
                 ])
             })
 
-            context(
+            // Unique constraint on School.organization_id/School.school_name has been temporarily removed
+            // due to existing duplicates failing the migration
+            context.skip(
                 'and the school name is duplicated in the same organization',
                 () => {
                     let oldSchool: any
