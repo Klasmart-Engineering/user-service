@@ -633,8 +633,8 @@ describe('model', () => {
                 )
 
                 context('shared orgs', () => {
-                    it('returns subcategories owned by and shared with membership orgs', async () => {
-                        // create a new org, and share the subcategory belonging to another org with it
+                    it('returns subcategories owned by and shared with users orgs', async () => {
+                        // create a new org and share the subcategory belonging to another org with it
                         const org2 = createOrganization()
                         await connection.manager.save(org2)
 
@@ -653,6 +653,7 @@ describe('model', () => {
                             { authorization: getAdminAuthToken() }
                         )
 
+                        // can the user see the subcategory from the other org?
                         const gqlSubcategory = await getSubcategory(
                             testClient,
                             subcategory.id,
