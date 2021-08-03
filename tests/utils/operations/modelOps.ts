@@ -202,6 +202,14 @@ query getSubcategory($id: ID!){
 }
 `
 
+const SHARE_SUBCATEGORY = `
+mutation shareSubcategory($categoryId: ID!, $orgId: ID!){
+  shareSubcategory(categoryId: $categoryId, orgId: $orgId) {
+    id
+  }
+}
+`
+
 const GET_PROGRAM = `
 query getProgram($id: ID!){
   program(id: $id) {
@@ -663,6 +671,26 @@ export async function getSubcategory(
         query({
             query: GET_SUBCATEGORY,
             variables: { id: id },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    const gqlSubcategory = res.data?.subcategory as Subcategory
+    return gqlSubcategory
+}
+
+export async function shareSubcategory(
+    testClient: ApolloServerTestClient,
+    categoryId: string,
+    orgId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: SHARE_SUBCATEGORY,
+            variables: { categoryId, orgId },
             headers: headers,
         })
 

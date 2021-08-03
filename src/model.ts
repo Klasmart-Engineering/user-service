@@ -858,6 +858,35 @@ export class Model {
         return subcategory
     }
 
+    public async shareSubcategory(
+        {
+            categoryId,
+            orgId,
+            scope,
+        }: {
+            categoryId: string
+            orgId: string
+            scope: SelectQueryBuilder<Subcategory>
+        },
+        context: Context
+    ) {
+        const subcategory = await scope
+            .andWhere('Subcategory.id = :id', {
+                id: categoryId,
+            })
+            .getOne()
+
+        const org = await getRepository(Organization).findOne(orgId)
+
+        const sharedOrgs = (await subcategory?.shared_orgs) || []
+        sharedOrgs.push(org!)
+        subcategory!.shared_orgs = Promise.resolve(sharedOrgs)
+
+        subcategory?.save()
+
+        return subcategory
+    }
+
     public async getSubject(
         { id, scope }: { id: string; scope: SelectQueryBuilder<Subject> },
         context: Context

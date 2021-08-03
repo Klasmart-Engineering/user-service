@@ -26,6 +26,7 @@ import {
     permissionsConnection,
     uploadSchoolsFile,
     userConnection,
+    shareSubcategory,
 } from '../utils/operations/modelOps'
 import {
     getAdminAuthToken,
@@ -636,8 +637,13 @@ describe('model', () => {
                         // create a new org, and share the subcategory belonging to another org with it
                         const org2 = createOrganization()
                         await connection.manager.save(org2)
-                        subcategory.shared_orgs = Promise.resolve([org2])
-                        await connection.manager.save(subcategory)
+
+                        await shareSubcategory(
+                            testClient,
+                            subcategory.id,
+                            org2.organization_id,
+                            { authorization: getAdminAuthToken() }
+                        )
 
                         // add the user to the _new_ org
                         await addUserToOrganizationAndValidate(

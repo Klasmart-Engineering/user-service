@@ -8,6 +8,9 @@ const typeDefs = gql`
         subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
         uploadSubCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+
+        shareSubcategory(categoryId: ID!, orgId: ID!): Subcategory
+            @isAdmin(entity: "subcategory")
     }
     extend type Query {
         subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
@@ -41,6 +44,8 @@ export default function getDefault(
                     model.getSubcategory(args, ctx),
                 uploadSubCategoriesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSubCategoriesFromCSV(args, ctx, info),
+                shareSubcategory: (_parent, args, ctx, _info) =>
+                    model.shareSubcategory(args, ctx),
             },
             Query: {
                 subcategory: (_parent, args, ctx, _info) =>
