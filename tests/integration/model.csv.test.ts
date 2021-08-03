@@ -189,7 +189,7 @@ describe('model.csv', () => {
                 await connection.manager.save(owner)
 
                 const org = await createOrganization(owner)
-                org.organization_name = 'Company 2'
+                org.organization_name = 'Company 1'
                 await connection.manager.save(org)
 
                 const fn = async () =>
