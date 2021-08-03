@@ -9,6 +9,7 @@ interface ICustomMessage {
 
 //
 // mapping of Joi constraint to custom error message
+// https://github.com/sideway/joi/blob/master/lib/types
 //
 export function getCustomConstraintDetails(
     error: ValidationErrorItem
@@ -38,6 +39,7 @@ export function getCustomConstraintDetails(
         }
 
         case 'any.required':
+        case 'string.base':
         case 'string.empty': {
             return {
                 code: customErrors.missing_required_entity_attribute.code,

@@ -18,7 +18,7 @@ export const userValidations = {
         })
         .max(validationConstants.EMAIL_MAX_LENGTH)
         .when('phone', {
-            is: undefined,
+            is: Joi.exist(),
             then: Joi.optional(),
             otherwise: Joi.required(),
         }),

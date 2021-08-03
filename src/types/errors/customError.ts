@@ -81,11 +81,11 @@ export const customErrors = {
   },
   invalid_phone: {
     code: "ERR_INVALID_PHONE",
-    message: "{entity} {attribute} must be a valid phone number.",
+    message: "Invalid phone number.",
   },
   invalid_date: {
     code: "ERR_INVALID_DATE",
-    message: "{entity} {attribute} does not match the format {format}.",
+    message: "Must be a valid email in format yourname@example.com",
   },
   invalid_uuid: {
     code: "ERR_INVALID_UUID",

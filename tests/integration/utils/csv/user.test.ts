@@ -188,8 +188,8 @@ describe('processUserFromCSVRow', async () => {
         let err: CSVError
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
-            expect(err.entity).to.eq('organization')
-            expect(err.attribute).to.eq('name')
+            expect(err.entity).to.eq('Organization')
+            expect(err.attribute).to.eq('Name')
             expect(err.column).to.eq('organization_name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
@@ -258,8 +258,8 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('user_given_name')
-            expect(err.entity).to.eq('user')
-            expect(err.attribute).to.eq('given_name')
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Given Name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -330,8 +330,8 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('user_family_name')
-            expect(err.entity).to.eq('user')
-            expect(err.attribute).to.eq('family_name')
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Family Name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -416,8 +416,8 @@ describe('processUserFromCSVRow', async () => {
                 const err = fileErrors[0]
                 expect(fileErrors.length).to.eq(1)
                 expect(err.column).to.eq('user_date_of_birth')
-                expect(err.entity).to.eq('user')
-                expect(err.attribute).to.eq('date_of_birth')
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('date of birth')
                 expect(err.format).to.eq('MM-YYYY')
                 expect(err.code).to.eq(customErrors.invalid_date.code)
                 for (const v of getCustomErrorMessageVariables(err.message)) {
@@ -432,8 +432,8 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('user_gender')
-            expect(err.entity).to.eq('user')
-            expect(err.attribute).to.eq('gender')
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Gender')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -511,8 +511,8 @@ describe('processUserFromCSVRow', async () => {
         let err: CSVError
         afterEach(() => {
             expect(err.column).to.eq('user_email')
-            expect(err.entity).to.eq('user')
-            expect(err.attribute).to.eq('email')
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Email')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -604,8 +604,8 @@ describe('processUserFromCSVRow', async () => {
                 const err = fileErrors[0]
                 expect(fileErrors.length).to.eq(1)
                 expect(err.column).to.eq('user_phone')
-                expect(err.entity).to.eq('user')
-                expect(err.attribute).to.eq('phone')
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('Phone')
                 expect(err.code).to.eq(customErrors.invalid_phone.code)
                 for (const v of getCustomErrorMessageVariables(err.message)) {
                     expect(err[v]).to.exist
@@ -619,7 +619,6 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('user_shortcode')
-            expect(err.entity).to.eq('shortcode')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -637,6 +636,8 @@ describe('processUserFromCSVRow', async () => {
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(constants.SHORTCODE_MAX_LENGTH)
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Short Code')
         })
         it('errors when not alphanumberic', async () => {
             for (const shortcode of ['de/f', '$abc', '@1234']) {
@@ -651,6 +652,8 @@ describe('processUserFromCSVRow', async () => {
                 )
                 err = fileErrors[0]
                 expect(err.code).to.eq(customErrors.invalid_alphanumeric.code)
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('Short Code')
                 for (const v of getCustomErrorMessageVariables(err.message)) {
                     expect(err[v]).to.exist
                 }
@@ -680,6 +683,7 @@ describe('processUserFromCSVRow', async () => {
             )
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.duplicate_entity.code)
+            expect(err.entity).to.eq('Short Code')
             expect(err.entityName).to.eq(row.user_shortcode)
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
@@ -692,8 +696,6 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('organization_role_name')
-            expect(err.entity).to.eq('user')
-            expect(err.attribute).to.eq('organization_role')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -727,6 +729,8 @@ describe('processUserFromCSVRow', async () => {
             expect(err.code).to.eq(
                 customErrors.missing_required_entity_attribute.code
             )
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Organization Role')
         })
         it('errors when too long', async () => {
             row.organization_role_name = 'a'.repeat(
@@ -743,6 +747,8 @@ describe('processUserFromCSVRow', async () => {
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(constants.ROLE_NAME_MAX_LENGTH)
+            expect(err.entity).to.eq('User')
+            expect(err.attribute).to.eq('Organization Role')
         })
         it('errors when nonexistent', async () => {
             row.school_role_name = undefined
@@ -756,7 +762,11 @@ describe('processUserFromCSVRow', async () => {
             )
 
             err = fileErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            expect(err.code).to.eq(customErrors.nonexistent_child.code)
+            expect(err.entity).to.eq('Organization Role')
+            expect(err.entityName).to.eq(row.organization_role_name)
+            expect(err.parentEntity).to.eq('Organization')
+            expect(err.parentName).to.eq(row.organization_name)
         })
     })
 
@@ -765,8 +775,6 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('school_name')
-            expect(err.entity).to.eq('school')
-            expect(err.attribute).to.eq('name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -784,9 +792,12 @@ describe('processUserFromCSVRow', async () => {
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(constants.SCHOOL_NAME_MAX_LENGTH)
+            expect(err.entity).to.eq('School')
+            expect(err.attribute).to.eq('Name')
         })
         it('errors when doesnt exist', async () => {
             row.school_name = 'Non existing school'
+            row.class_name = undefined
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -796,7 +807,11 @@ describe('processUserFromCSVRow', async () => {
             )
 
             err = fileErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            expect(err.code).to.eq(customErrors.nonexistent_child.code)
+            expect(err.entity).to.eq('School')
+            expect(err.entityName).to.eq(row.school_name)
+            expect(err.parentEntity).to.eq('Organization')
+            expect(err.parentName).to.eq(row.organization_name)
         })
     })
     context('class name', () => {
@@ -804,8 +819,6 @@ describe('processUserFromCSVRow', async () => {
         afterEach(() => {
             expect(fileErrors.length).to.eq(1)
             expect(err.column).to.eq('class_name')
-            expect(err.entity).to.eq('class')
-            expect(err.attribute).to.eq('name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
@@ -823,6 +836,8 @@ describe('processUserFromCSVRow', async () => {
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(constants.CLASS_NAME_MAX_LENGTH)
+            expect(err.entity).to.eq('Class')
+            expect(err.attribute).to.eq('Name')
         })
         it('errors when doesnt exist', async () => {
             row.class_name = 'Non existing class'
@@ -835,7 +850,11 @@ describe('processUserFromCSVRow', async () => {
             )
 
             err = fileErrors[0]
-            expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            expect(err.code).to.eq(customErrors.nonexistent_child.code)
+            expect(err.entity).to.eq('Class')
+            expect(err.entityName).to.eq(row.class_name)
+            expect(err.parentEntity).to.eq('School')
+            expect(err.parentName).to.eq(row.school_name)
         })
     })
 
