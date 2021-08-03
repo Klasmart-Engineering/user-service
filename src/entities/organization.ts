@@ -162,13 +162,7 @@ export class Organization extends BaseEntity {
             }
         }
         if (viewOrgClasses || context.permissions.isAdmin) {
-            return await getRepository(Class)
-                .createQueryBuilder()
-                .innerJoin('Class.schools', 'School')
-                .where('School.organization = :organization_id', {
-                    organization_id: this.organization_id,
-                })
-                .getMany()
+            return (await this?.classes) as Class[]
         }
         if (viewSchoolClasses) {
             return await getRepository(Class)

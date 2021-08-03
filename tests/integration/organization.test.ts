@@ -80,8 +80,10 @@ import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
 import { AnyKindOfDictionary } from 'lodash'
 import { validationConstants } from '../../src/entities/validations/constants'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('organization', () => {
     let connection: Connection
@@ -7361,8 +7363,7 @@ describe('organization', () => {
         let organization: Organization
         let class1: Class
         let class2: Class
-        let class1Id: string
-        let class2Id: string
+        let class3: Class
         let organizationId: string
         let school1: School
         let school2: School
@@ -7387,7 +7388,6 @@ describe('organization', () => {
                 'CLASS1',
                 { authorization: getAdminAuthToken() }
             )
-            class1Id = class1.class_id
 
             class2 = await createClass(
                 testClient,
@@ -7396,7 +7396,16 @@ describe('organization', () => {
                 'CLASS2',
                 { authorization: getAdminAuthToken() }
             )
-            class2Id = class2.class_id
+
+            class3 = await createClass(
+                testClient,
+                organization.organization_id,
+                undefined,
+                undefined,
+                {
+                    authorization: getAdminAuthToken(),
+                }
+            )
 
             school1 = await createSchool(
                 testClient,
@@ -7415,11 +7424,11 @@ describe('organization', () => {
             )
             school2Id = school2?.school_id
 
-            await addSchoolToClass(testClient, class1Id, school1Id, {
+            await addSchoolToClass(testClient, class1.class_id, school1Id, {
                 authorization: getAdminAuthToken(),
             })
 
-            await addSchoolToClass(testClient, class2Id, school2Id, {
+            await addSchoolToClass(testClient, class2.class_id, school2Id, {
                 authorization: getAdminAuthToken(),
             })
 
@@ -7432,21 +7441,16 @@ describe('organization', () => {
         })
 
         context('when not authenticated', () => {
-            it('fails to list classes in the organization', async () => {
-                const fn = () =>
-                    listClasses(testClient, organization.organization_id, {
+            it('returns an empty array', async () => {
+                const gqlClasses = await listClasses(
+                    testClient,
+                    organization.organization_id,
+                    {
                         authorization: undefined,
-                    })
+                    }
+                )
 
-                expect(fn()).to.be.rejected
-                const dbClasses = await Class.find({
-                    where: {
-                        organization: {
-                            organization_id: organization.organization_id,
-                        },
-                    },
-                })
-                expect(dbClasses.length).to.equal(2)
+                expect(gqlClasses).to.deep.equal([])
             })
         })
 
@@ -7467,24 +7471,14 @@ describe('organization', () => {
                         )
                     })
 
-                    it('fails to list Classes in the organization', async () => {
-                        const fn = () =>
-                            listClasses(
-                                testClient,
-                                organization.organization_id,
-                                { authorization: getNonAdminAuthToken() }
-                            )
+                    it('returns an empty array', async () => {
+                        const gqlClasses = await listClasses(
+                            testClient,
+                            organization.organization_id,
+                            { authorization: getNonAdminAuthToken() }
+                        )
 
-                        expect(fn()).to.be.rejected
-                        const dbClasses = await Class.find({
-                            where: {
-                                organization: {
-                                    organization_id:
-                                        organization.organization_id,
-                                },
-                            },
-                        })
-                        expect(dbClasses.length).to.equal(2)
+                        expect(gqlClasses).to.deep.equal([])
                     })
                 }
             )
@@ -7510,7 +7504,7 @@ describe('organization', () => {
                         { authorization: getNonAdminAuthToken() }
                     )
                     expect(gqlClasses.length).to.equal(1)
-                    expect(gqlClasses[0].class_id).to.equal(class1Id)
+                    expect(gqlClasses[0].class_id).to.equal(class1.class_id)
                 })
                 context(
                     'and the user has Organization Admin the permissions',
@@ -7535,19 +7529,20 @@ describe('organization', () => {
                             )
                         })
 
-                        it('lists all the classes in the organization', async () => {
-                            const gqlprograms = await listPrograms(
-                                testClient,
-                                organization.organization_id,
-                                { authorization: getNonAdminAuthToken() }
-                            )
-
+                        it('lists all the classes in the organization, including classes without a school', async () => {
                             const gqlClasses = await listClasses(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                            expect(gqlClasses.length).to.equal(2)
+
+                            expect(
+                                gqlClasses.map((cls) => cls.class_id)
+                            ).to.deep.equalInAnyOrder([
+                                class1.class_id,
+                                class2.class_id,
+                                class3.class_id,
+                            ])
                         })
                     }
                 )
