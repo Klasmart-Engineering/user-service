@@ -237,9 +237,9 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     let user = await manager.findOne(User, {
         where: [
-            { email: email, phone: null, ...personalInfo },
-            { email: null, phone: phone, ...personalInfo },
-            { email: email, phone: phone, ...personalInfo },
+            { email: email || undefined, ...personalInfo },
+            { phone: phone || undefined, ...personalInfo },
+            { email: email || undefined, phone: phone || undefined, ...personalInfo },
         ],
     })
     let isNewUser = false
