@@ -295,7 +295,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 'OrganizationMembership.organization = Subcategory.organization OR OrganizationMembership.organization = SharedOrg.organization_id' // OR in Subcategory.shared
             )
             .where(
-                `(OrganizationMembership.user_id = :d_user_id OR Subcategory.system = :system)`,
+                `(OrganizationMembership.user_id = :d_user_id OR Subcategory.isPublic = true OR Subcategory.system = :system)`,
                 {
                     d_user_id: context.permissions.getUserId(),
                     system: true,

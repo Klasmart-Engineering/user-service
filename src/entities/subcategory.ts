@@ -28,6 +28,9 @@ export class Subcategory extends BaseEntity {
     @Column({ nullable: false, default: false })
     public system?: boolean
 
+    @Column({ type: 'boolean', default: () => false })
+    public isPublic?: boolean
+
     @ManyToMany(() => Organization)
     @JoinTable()
     public shared_orgs?: Promise<Organization[]>
