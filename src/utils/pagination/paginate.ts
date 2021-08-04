@@ -59,7 +59,7 @@ export const convertDataToCursor = (data: Record<string, unknown>) => {
 }
 
 const getDataFromCursor = (cursor: string) => {
-    return JSON.parse(Buffer.from(cursor, 'base64').toString('ascii'))
+    return JSON.parse(Buffer.from(cursor, 'base64').toString())
 }
 
 const getEdges = (
