@@ -129,8 +129,7 @@ describe('model.organization', () => {
                 orgs = []
                 brandings = []
                 for (let i = 0; i < 3; i++) {
-                    const org = await createOrganization({organization_name: `org ${i}`})
-                    await connection.manager.save(org)
+                    const org = await createOrganization({organization_name: `org ${i}`}).save()
 
                     const branding = await setBranding(
                         testClient,

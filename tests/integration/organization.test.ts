@@ -4514,7 +4514,7 @@ describe('organization', () => {
                         const dbUser = await User.findOneOrFail(user.user_id)
                         if (dbUser) {
                             dbUser.status = Status.INACTIVE
-                            await connection.manager.save(dbUser)
+                            await dbUser.save()
                         }
                     })
                     it('fails to list grades in the organization', async () => {
@@ -5170,7 +5170,7 @@ describe('organization', () => {
                         const dbUser = await User.findOneOrFail(user.user_id)
                         if (dbUser) {
                             dbUser.status = Status.INACTIVE
-                            await connection.manager.save(dbUser)
+                            await dbUser.save()
                         }
                     })
                     it('fails to list subcategories in the organization', async () => {
@@ -7324,7 +7324,7 @@ describe('organization', () => {
                         const dbUser = await User.findOneOrFail(user.user_id)
                         if (dbUser) {
                             dbUser.status = Status.INACTIVE
-                            await connection.manager.save(dbUser)
+                            await dbUser.save()
                         }
                     })
                     it('fails to list programs in the organization', async () => {

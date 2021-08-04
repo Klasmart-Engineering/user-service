@@ -202,12 +202,9 @@ describe('sorting', () => {
 
         beforeEach(async () => {
             userIds = []
-            const org = createOrganization({}, )
-            await connection.manager.save(org)
+            const org = await createOrganization({}, ).save()
             for (let i = 0; i < totalUsers; i++) {
-                const user = createUser({ given_name: 'duplicate given name'})
-                await connection.manager.save(user)
-
+                const user = await createUser({ given_name: 'duplicate given name'}).save()
                 userIds.push(user.user_id)
             }
 

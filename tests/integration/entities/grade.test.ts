@@ -53,11 +53,9 @@ describe('Grade', () => {
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             userId = user.user_id
-            org = createOrganization({})
-            await connection.manager.save(org)
+            org = await createOrganization({}).save()
             organizationId = org.organization_id
-            grade = createGrade(org)
-            await connection.manager.save(grade)
+            grade = await createGrade(org).save()
         })
 
         context('when user is not logged in', () => {

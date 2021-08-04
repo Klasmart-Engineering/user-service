@@ -43,8 +43,7 @@ describe('processSchoolFromCSVRow', () => {
     })
 
     beforeEach(async () => {
-        organization = await createOrganization({organization_name: 'Company 1'})
-        await connection.manager.save(organization)
+        organization = await createOrganization({organization_name: 'Company 1'}).save()
         await AgeRangesInitializer.run()
         await GradesInitializer.run()
         await SubjectsInitializer.run()
@@ -380,8 +379,7 @@ describe('processSchoolFromCSVRow', () => {
             'and the shortcode is duplicated in another organization',
             () => {
                 beforeEach(async () => {
-                    const secondOrg = createOrganization({})
-                    await connection.manager.save(secondOrg)
+                    const secondOrg = await createOrganization({}).save()
 
                     const secondSchool = createSchool(
                         secondOrg,

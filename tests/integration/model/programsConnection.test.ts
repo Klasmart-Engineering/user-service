@@ -73,9 +73,8 @@ describe('model', () => {
 
     beforeEach(async () => {
         admin = await createAdminUser(testClient)
-        org1 = await createOrganization({}, admin)
-        org2 = await createOrganization({}, admin)
-        await connection.manager.save([org1, org2])
+        org1 = await createOrganization({}, admin).save()
+        org2 = await createOrganization({}, admin).save()
 
         school = await createSchool(org1)
         class1 = await createClass([school])
@@ -96,8 +95,7 @@ describe('model', () => {
         await connection.manager.save(ageRanges)
 
         for (let i = 0; i < gradesCount; i++) {
-            let grade = await createGrade(org1)
-            grades.push(grade)
+            let grade = await createGrade(org1).save()
         }
 
         await connection.manager.save(grades)

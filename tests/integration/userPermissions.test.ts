@@ -251,7 +251,7 @@ describe('userPermissions', () => {
                     const dbUser = await User.findOneOrFail(userId)
                     if (dbUser) {
                         dbUser.status = Status.INACTIVE
-                        await connection.manager.save(dbUser)
+                        await dbUser.save()
                     }
                 })
                 it('should throw error when school ID array is provided', async () => {
@@ -375,16 +375,13 @@ describe('userPermissions', () => {
             const superAdmin = await createAdminUser(testClient)
 
             for (let i = 0; i < 2; i++) {
-                const org = createOrganization({}, superAdmin)
-                await connection.manager.save(org)
+                const org = await createOrganization({}, superAdmin).save()
                 orgs.push(org)
 
-                let role = await createRoleFactory('role', org)
-                await connection.manager.save(role)
+                let role = await createRoleFactory('role', org).save()
                 roles.push(role)
 
-                const school = createSchoolFactory(org)
-                await connection.manager.save(school)
+                const school = await createSchoolFactory(org).save()
 
                 await addOrganizationToUserAndValidate(
                     testClient,

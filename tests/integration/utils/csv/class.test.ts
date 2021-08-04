@@ -59,11 +59,9 @@ describe('processClassFromCSVRow', () => {
     })
 
     beforeEach(async () => {
-        expectedOrg = createOrganization( {organization_name: orgName} )
-        await connection.manager.save(expectedOrg)
+        expectedOrg = await createOrganization( {organization_name: orgName} ).save()
 
-        secondOrg = createOrganization( { organization_name: secondOrgName } )
-        await connection.manager.save(secondOrg)
+        secondOrg = await createOrganization( { organization_name: secondOrgName } ).save()
 
         expectedProg = createProgram(expectedOrg)
         expectedProg.name = progName
@@ -81,11 +79,9 @@ describe('processClassFromCSVRow', () => {
         expectedNoneProg.system = true
         await connection.manager.save(expectedNoneProg)
 
-        expectedSchool = createSchool(expectedOrg, school1Name)
-        await connection.manager.save(expectedSchool)
+        expectedSchool = await createSchool(expectedOrg, school1Name).save()
 
-        expectedSchool2 = createSchool(expectedOrg, school2Name)
-        await connection.manager.save(expectedSchool2)
+        expectedSchool2 = await createSchool(expectedOrg, school2Name).save()
 
         expectedShortcodeDuplicatedSchool = createSchool(
             expectedOrg,
@@ -93,8 +89,7 @@ describe('processClassFromCSVRow', () => {
         )
         await connection.manager.save(expectedShortcodeDuplicatedSchool)
 
-        secondSchool = createSchool(secondOrg, secondSchoolName)
-        await connection.manager.save(secondSchool)
+        secondSchool = await createSchool(secondOrg, secondSchoolName).save()
 
         expectedClass = createClass([], expectedOrg)
         expectedClass.class_name = className

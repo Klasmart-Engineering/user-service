@@ -38,8 +38,7 @@ describe('processSubjectFromCSVRow', () => {
     beforeEach(async () => {
         await SubcategoriesInitializer.run()
         await CategoriesInitializer.run()
-        organization = createOrganization({organization_name: 'Company 1'})
-        await connection.manager.save(organization)
+        organization = await createOrganization({organization_name: 'Company 1'}).save()
 
         row = {
             organization_name: 'Company 1',
