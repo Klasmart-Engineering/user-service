@@ -118,7 +118,7 @@ describe('processOrganizationFromCSVRow', () => {
 
     context('when the given organization already exists', () => {
         beforeEach(async () => {
-            const existentOrganization = await createOrganization()
+            const existentOrganization = await createOrganization({})
             await connection.manager.save(existentOrganization)
 
             row = {
@@ -149,10 +149,10 @@ describe('processOrganizationFromCSVRow', () => {
 
     context('when the given owner already has an organization', () => {
         beforeEach(async () => {
-            const existentOwner = await createUser()
+            const existentOwner = await createUser({})
             await connection.manager.save(existentOwner)
 
-            const existentOrganization = await createOrganization(existentOwner)
+            const existentOrganization = await createOrganization({}, existentOwner)
             await connection.manager.save(existentOrganization)
 
             row = { ...row, owner_email: String(existentOwner.email) }

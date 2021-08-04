@@ -27,7 +27,7 @@ describe('Subject', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        org = createOrganization()
+        org = createOrganization({})
         subject = createSubject(org)
     })
 

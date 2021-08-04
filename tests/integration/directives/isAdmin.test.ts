@@ -137,7 +137,7 @@ describe('isAdmin', () => {
 
             // create two orgs and two schools
             for (let i = 0; i < 2; i++) {
-                const org = createOrganization(superAdmin)
+                const org = createOrganization({}, superAdmin)
                 await connection.manager.save(org)
                 organizations.push(org)
                 let role = createRole('role ' + i, org)
@@ -149,7 +149,7 @@ describe('isAdmin', () => {
             }
             // create 10 users
             for (let i = 0; i < 10; i++) {
-                usersList.push(createUser())
+                usersList.push(createUser({}))
             }
             //sort users by userId
             await connection.manager.save(usersList)
@@ -196,8 +196,7 @@ describe('isAdmin', () => {
         context('non admin', () => {
             it("only shows the logged in user if they aren't part of a school/org", async () => {
                 const user = await createNonAdminUser(testClient)
-                const user2 = createUser()
-                user2.email = user.email
+                const user2 = createUser({ email: user.email })
                 await connection.manager.save([user2])
 
                 let usersConnection = await userConnection(
@@ -212,8 +211,7 @@ describe('isAdmin', () => {
             })
             it('requires view_my_users_40113 permission to view my users', async () => {
                 const user = await createNonAdminUser(testClient)
-                const user2 = createUser()
-                user2.email = user.email
+                const user2 = createUser({ email: user.email })
                 await connection.manager.save([user2])
 
                 await addOrganizationToUserAndValidate(
@@ -476,7 +474,7 @@ describe('isAdmin', () => {
                 )
 
                 // add a new user to a different org
-                const newUser = createUser()
+                const newUser = createUser({})
 
                 await connection.manager.save([newUser])
                 await addOrganizationToUserAndValidate(
@@ -528,7 +526,7 @@ describe('isAdmin', () => {
                 )
 
                 // add a new user to a school in a different org
-                const newUser = createUser()
+                const newUser = createUser({})
                 await connection.manager.save([newUser])
                 await addSchoolToUser(
                     testClient,
@@ -548,7 +546,7 @@ describe('isAdmin', () => {
                 )
 
                 // add another user to same org, without school
-                const anotherUser = createUser()
+                const anotherUser = createUser({})
                 await connection.manager.save([anotherUser])
                 await addOrganizationToUserAndValidate(
                     testClient,

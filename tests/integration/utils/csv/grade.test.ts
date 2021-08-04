@@ -110,10 +110,10 @@ describe('processGradeFromCSVRow', () => {
         let organization: Organization
 
         beforeEach(async () => {
-            const owner = await createUser()
+            const owner = await createUser({})
             await owner.save()
 
-            organization = await createOrganization(owner)
+            organization = await createOrganization({}, owner)
             await organization.save()
 
             const grade = await createGrade(organization)
@@ -148,10 +148,10 @@ describe('processGradeFromCSVRow', () => {
         let organization: Organization
 
         beforeEach(async () => {
-            const owner = await createUser()
+            const owner = await createUser({})
             await owner.save()
 
-            organization = await createOrganization(owner)
+            organization = await createOrganization({}, owner)
             await organization.save()
 
             row = {

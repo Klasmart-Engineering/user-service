@@ -44,8 +44,9 @@ describe('processCategoryFromCSVRow', () => {
             subcategory_name: 'Subcategory 1',
         }
 
-        organization = await createOrganization()
-        organization.organization_name = row.organization_name
+        organization = await createOrganization(
+            {organization_name: row.organization_name} )
+
         await connection.manager.save(organization)
 
         subcategory = await createSubcategory(organization)

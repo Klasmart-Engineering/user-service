@@ -115,10 +115,10 @@ describe('processGradeFromCSVRow', () => {
 
     context("when 'from grade' doesn't exists", () => {
         beforeEach(async () => {
-            const owner = await createUser()
+            const owner = await createUser({})
             await owner.save()
 
-            const organization = await createOrganization(owner)
+            const organization = await createOrganization({}, owner)
             await organization.save()
 
             const noneSpecifiedGrade = await createGrade()
@@ -152,10 +152,10 @@ describe('processGradeFromCSVRow', () => {
 
     context("when 'to grade' doesn't exists", () => {
         beforeEach(async () => {
-            const owner = await createUser()
+            const owner = await createUser({})
             await owner.save()
 
-            const organization = await createOrganization(owner)
+            const organization = await createOrganization({}, owner)
             await organization.save()
 
             const noneSpecifiedGrade = await createGrade()
@@ -198,10 +198,10 @@ describe('processGradeFromCSVRow', () => {
         let grade: Grade
 
         beforeEach(async () => {
-            const owner = await createUser()
+            const owner = await createUser({})
             await owner.save()
 
-            organization = await createOrganization(owner)
+            organization = await createOrganization({}, owner)
             await organization.save()
 
             const noneSpecifiedGrade = await createGrade()

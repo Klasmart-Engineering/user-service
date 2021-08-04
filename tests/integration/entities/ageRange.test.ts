@@ -53,7 +53,7 @@ describe('ageRange', () => {
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             userId = user.user_id
-            org = createOrganization()
+            org = createOrganization({})
             await connection.manager.save(org)
             organizationId = org.organization_id
             ageRange = createAgeRange(org)

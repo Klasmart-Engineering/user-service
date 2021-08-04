@@ -30,7 +30,7 @@ describe('Grade', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        org = createOrganization()
+        org = createOrganization({})
         progressFromGrade = createGrade(org)
         progressToGrade = createGrade(org)
         grade = createGrade(org, progressFromGrade, progressToGrade)

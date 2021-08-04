@@ -69,8 +69,8 @@ describe('processUserFromCSVRow', async () => {
     beforeEach(async () => {
         fileErrors = []
         adminUser = await createAdminUser(testClient)
-        user = createUser()
-        organization = createOrganization()
+        user = createUser({})
+        organization = createOrganization({})
         await connection.manager.save(organization)
         school = createSchool(organization)
         await connection.manager.save(school)
@@ -971,10 +971,10 @@ describe('processUserFromCSVRow', async () => {
             'and the shortcode is duplicated in another organization',
             () => {
                 beforeEach(async () => {
-                    const secondOrg = createOrganization()
+                    const secondOrg = createOrganization({})
                     await connection.manager.save(secondOrg)
 
-                    const secondUser = createUser()
+                    const secondUser = createUser({})
                     await connection.manager.save(secondUser)
 
                     const secondMembership = new OrganizationMembership()
@@ -1053,13 +1053,15 @@ describe('processUserFromCSVRow', async () => {
                     const updateShortcode = 'OTHER01'
 
                     beforeEach(async () => {
-                        const existentUser = createUser()
-                        existentUser.given_name = 'existent'
-                        existentUser.family_name = 'user'
-                        existentUser.email = 'existent_user@gmail.com'
+                        const existentUser = createUser({
+                            given_name: 'existent',
+                            family_name: 'user',
+                            email: 'existent_user@gmail.com',
+                            date_of_birth: '01-2000',
+                            gender: 'male',
+                        })
                         existentUser.phone = undefined
-                        existentUser.date_of_birth = '01-2000'
-                        existentUser.gender = 'male'
+
                         await connection.manager.save(existentUser)
 
                         const existentMembership = new OrganizationMembership()
@@ -1075,11 +1077,11 @@ describe('processUserFromCSVRow', async () => {
 
                         row = {
                             ...row,
-                            user_given_name: existentUser.given_name,
-                            user_family_name: existentUser.family_name,
+                            user_given_name: existentUser.given_name || "",
+                            user_family_name: existentUser.family_name || "",
                             user_email: existentUser.email,
                             user_date_of_birth: existentUser.date_of_birth,
-                            user_gender: existentUser.gender,
+                            user_gender: existentUser.gender || "",
                             user_shortcode: updateShortcode,
                         }
                     })

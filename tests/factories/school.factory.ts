@@ -6,7 +6,7 @@ import { Organization } from '../../src/entities/organization'
 import { generateShortCode } from '../../src/utils/shortcode'
 
 export function createSchool(
-    org: Organization = createOrganization(),
+    org: Organization = createOrganization({}),
     name?: string
 ) {
     const school = new School()

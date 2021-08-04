@@ -27,7 +27,7 @@ describe('Subcategory', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        org = createOrganization()
+        org = createOrganization({})
         subcategory = createSubcategory(org)
     })
 

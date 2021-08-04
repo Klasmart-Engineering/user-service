@@ -8,7 +8,7 @@ import { Subject } from '../../src/entities/subject'
 import { Organization } from '../../src/entities/organization'
 
 export function createProgram(
-    org: Organization = createOrganization(),
+    org: Organization = createOrganization({}),
     age_ranges: AgeRange[] = [],
     grades: Grade[] = [],
     subjects: Subject[] = []
