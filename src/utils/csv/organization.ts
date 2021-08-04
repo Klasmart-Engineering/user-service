@@ -137,13 +137,13 @@ export async function processOrganizationFromCSVRow(
     if (!organization_name) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
             {
-                name: organization_name,
                 entity: 'organization',
+                attribute: 'organization_name',
             }
         )
     }
@@ -210,8 +210,8 @@ export async function processOrganizationFromCSVRow(
 
     const ownerUploaded = await manager.findOne(User, {
         where: [
-            { email: owner_email},
-            { phone: owner_phone },
+            { email: owner_email || undefined },
+            { phone: owner_phone || undefined },
         ],
     })
     const ownerExists = await getUserByEmailOrPhone(
@@ -219,10 +219,10 @@ export async function processOrganizationFromCSVRow(
         owner_email,
         owner_phone
     )
-    const organizationAlreadyOwned = (await ownerExists?.my_organization)?.organization_name
-    const organizationUploadedOwned = (await ownerUploaded?.my_organization)?.organization_name
+    const organizationAlreadyOwned = ( await ownerExists?.my_organization)?.organization_name
+    const organizationUploadedOwned = ( await ownerUploaded?.my_organization)?.organization_name
 
-    if (organizationUploadedOwned || organizationAlreadyOwned) {
+    if ( organizationUploadedOwned || organizationAlreadyOwned ) {
         addCsvError(
             fileErrors,
             customErrors.duplicate_child.code,
@@ -236,7 +236,6 @@ export async function processOrganizationFromCSVRow(
                 parentName: organizationUploadedOwned || organizationAlreadyOwned,
             }
         )
-
         return
     }
 

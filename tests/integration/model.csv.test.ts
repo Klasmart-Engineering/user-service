@@ -93,6 +93,8 @@ import {
 } from '../../src/types/errors/customError'
 import { stringInject } from '../../src/utils/stringUtils'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
+import { HttpQueryError } from 'apollo-server-core'
+import * as assert from 'assert'
 
 use(chaiAsPromised)
 
@@ -148,6 +150,7 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadOrganizationsFromCSV" on type "Query".'
 
                 const fn = async () =>
                     await queryUploadOrganizations(
@@ -157,7 +160,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -171,6 +180,17 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                const expectedErrorObject = buildCsvError(
+                    csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                    2,
+                    'organization_name',
+                    csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                    {
+                        entity: 'organization',
+                        attribute: 'organization_name',
+                    }
+                )
+
                 const fn = async () =>
                     await uploadOrganizations(
                         testClient,
@@ -179,7 +199,18 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn()
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedErrorObject])
+                }
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -191,14 +222,24 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const owner = await createUser({
-                    email: 'owner@company2.com',
-                }).save()
+                const owner = await createUser({ email: 'owner@company2.com', }).save()
 
-                const org = await createOrganization(
-                    { organization_name: 'Company 1' },
-                    owner
-                ).save()
+                const org = await createOrganization({ organization_name: 'Company 1' },
+                    owner ).save()
+
+                const expectedError = customErrors.duplicate_child
+                const expectedErrorObject = buildCsvError(
+                    expectedError.code,
+                    1,
+                    'owner_email',
+                    expectedError.message,
+                    {
+                        entity: 'user',
+                        entityName: owner.email,
+                        parentEntity: 'organization',
+                        parentName: 'Company 1',
+                    }
+                )
 
                 const fn = async () =>
                     await uploadOrganizations(
@@ -209,21 +250,10 @@ describe('model.csv', () => {
                         encoding
                     )
 
-                const expectedCSVError = buildCsvError(
-                    customErrors.duplicate_child.code,
-                    1,
-                    'owner_email',
-                    customErrors.duplicate_child.message,
-                    {
-                        entity: 'user',
-                        entityName: owner.email,
-                        parentEntity: 'organization',
-                        parentName: 'Company 1',
-                    }
-                )
-
                 try {
-                    await fn()
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
                 } catch (e) {
                     expect(e)
                         .to.have.property('message')
@@ -231,7 +261,7 @@ describe('model.csv', () => {
                     expect(e).to.have.property('errors').to.have.length(1)
                     expect(e)
                         .to.have.property('errors')
-                        .to.have.deep.members([expectedCSVError])
+                        .to.have.deep.members([expectedErrorObject])
                 }
 
                 const allOrganizations = await Organization.count()
@@ -275,6 +305,9 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                const expectedError =
+                    'Cannot query field "uploadRolesFromCSV" on type "Query".'
+
                 const fn = async () =>
                     await queryUploadRoles(
                         testClient,
@@ -283,7 +316,14 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const rolesCreated = await Role.count({
                     where: { system_role: false },
@@ -298,6 +338,17 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                const expectedErrorObject = buildCsvError(
+                    csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                    1,
+                    'organization_name',
+                    csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                    {
+                        name: 'Company 1',
+                        entity: 'organization',
+                    }
+                )
+
                 const fn = async () =>
                     await uploadRoles(
                         testClient,
@@ -306,7 +357,20 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedErrorObject])
+                }
 
                 const rolesCreated = await Role.count({
                     where: { system_role: false },
@@ -352,7 +416,7 @@ describe('model.csv', () => {
         let file: ReadStream
         const mimetype = 'text/csv'
         const encoding = '7bit'
-        const filename = 'subjectsExample.csv'
+        const filename = 'subjectsDuplicates.csv'
         beforeEach(async () => {
             await SubcategoriesInitializer.run()
             await CategoriesInitializer.run()
@@ -362,6 +426,7 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadSubjectsFromCSV" on type "Query".'
 
                 const fn = async () =>
                     await queryUploadSubjects(
@@ -371,7 +436,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const subjectsCreated = await Subject.count({
                     where: { system: false },
@@ -413,6 +484,7 @@ describe('model.csv', () => {
             })
 
             it('should create subjects', async () => {
+                const filename = "subjectsExample.csv"
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
@@ -449,6 +521,7 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadGradesFromCSV" on type "Query".'
 
                 const fn = async () =>
                     await queryUploadGrades(
@@ -458,7 +531,14 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const gradesCreated = await Grade.count()
                 expect(gradesCreated).eq(0)
@@ -538,6 +618,7 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadClassesFromCSV" on type "Query".'
 
                 const fn = async () =>
                     await queryUploadClasses(
@@ -547,7 +628,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const classesCreated = await Class.count()
                 expect(classesCreated).eq(0)
@@ -560,6 +647,38 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                const expectedErrorObjects = [
+                    buildCsvError(
+                        csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                        1,
+                        'organization_name',
+                        csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                        {
+                            name: 'my-org',
+                            entity: 'organization',
+                        }
+                    ),
+                    buildCsvError(
+                        csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                        2,
+                        'organization_name',
+                        csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                        {
+                            attribute: 'name',
+                            entity: 'organization',
+                        }
+                    ),
+                    buildCsvError(
+                        csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
+                        2,
+                        'class_name',
+                        csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED,
+                        {
+                            attribute: 'name',
+                            entity: 'class',
+                        }
+                    ),
+                ]
                 const fn = async () =>
                     await uploadClasses(
                         testClient,
@@ -568,7 +687,19 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(3)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members(expectedErrorObjects)
+                }
 
                 const classesreated = await Class.count()
                 expect(classesreated).eq(0)
@@ -593,7 +724,10 @@ describe('model.csv', () => {
                 expectedProg.name = 'outdoor activities'
                 await expectedProg.save()
 
-                expectedSchool = await createSchool(expectedOrg, 'test-school').save()
+                expectedSchool = await createSchool(
+                    expectedOrg,
+                    'test-school'
+                ).save()
             })
 
             it('should create classes', async () => {
@@ -639,6 +773,9 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+
+                const expectedError = 'Cannot query field "uploadSchoolsFromCSV" on type "Query".'
+
                 const fn = async () =>
                     await queryUploadSchools(
                         testClient,
@@ -647,7 +784,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const schoolsCreated = await School.count()
                 expect(schoolsCreated).eq(0)
@@ -659,6 +802,18 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+
+                const expectedErrorObject = buildCsvError(
+                    csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                    1,
+                    'organization_name',
+                    csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                    {
+                        name: 'Company 1',
+                        entity: 'organization',
+                    }
+                )
+
                 const fn = async () =>
                     await uploadSchools(
                         testClient,
@@ -667,7 +822,20 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedErrorObject])
+                }
 
                 const schoolsCreated = await School.count()
                 expect(schoolsCreated).eq(0)
@@ -715,6 +883,8 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadSubCategoriesFromCSV" on type "Query".'
+
                 const fn = async () =>
                     await queryUploadSubCategories(
                         testClient,
@@ -723,7 +893,14 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const subCategoriesCreated = await Subcategory.count()
                 expect(subCategoriesCreated).eq(0)
@@ -735,6 +912,18 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+
+                const expectedErrorObject = buildCsvError(
+                    csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                    1,
+                    'organization_name',
+                    csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+                    {
+                        name: 'my-org',
+                        entity: 'organization',
+                    }
+                )
+
                 const fn = async () =>
                     await uploadSubCategories(
                         testClient,
@@ -743,7 +932,20 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedErrorObject])
+                }
 
                 const subCategoriesCreated = await Subcategory.count()
                 expect(subCategoriesCreated).eq(0)
@@ -793,6 +995,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                const expectedError = 'Cannot query field "uploadUsersFromCSV" on type "Query".'
+
                 const fn = async () =>
                     await queryUploadUsers(
                         testClient,
@@ -801,7 +1005,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
@@ -814,6 +1024,17 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                const expectedErrorObject = buildCsvError(
+                    customErrors.nonexistent_entity.code,
+                    1,
+                    'organization_name',
+                    customErrors.nonexistent_entity.message,
+                    {
+                        entityName: 'Apollo 1 Org',
+                        entity: 'organization',
+                    }
+                )
+
                 const fn = async () =>
                     await uploadUsers(
                         testClient,
@@ -822,7 +1043,19 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedErrorObject])
+                }
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
@@ -834,6 +1067,32 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
+                // const expectedErrorObject = buildCsvError(
+                //     csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
+                //     1,
+                //     'email or phone',
+                //     csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
+                //     {
+                //         entity: 'user',
+                //         attribute: 'email',
+                //         other_entity: 'user',
+                //         other_attribute: 'phone',
+                //     }
+                // )
+
+                const expectedErrorObject = buildCsvError(
+                    'ERR_INVALID_FORMAT',
+                    1,
+                    'email or phone',
+                    customErrors.invalid_format.message,
+                    {
+                        entity: 'user',
+                        attribute: 'email',
+                        other_entity: 'user',
+                        other_attribute: 'phone',
+                    }
+                )
+
                 const fn = async () =>
                     await uploadUsers(
                         testClient,
@@ -842,37 +1101,19 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.length(1)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('message')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('row')
-                    .equal(1)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('column')
-                    .equal('user_email, user_phone')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('entity')
-                    .equal('user')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('attribute')
-                    .equal('email')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('other_entity')
-                    .equal('user')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('other_attribute')
-                    .equal('phone')
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedErrorObject])
+                }
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(0)
@@ -984,7 +1225,10 @@ describe('model.csv', () => {
                 school = await createSchool(organization, 'School I').save()
                 role = createRole('Teacher', organization)
                 await role.save()
-                const anotherRole = await createRole('School Admin', organization).save()
+                const anotherRole = await createRole(
+                    'School Admin',
+                    organization
+                ).save()
                 cls = createClass([school], organization)
                 cls.class_name = 'Class I'
                 await cls.save()
@@ -1061,6 +1305,7 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadCategoriesFromCSV" on type "Query".'
 
                 const fn = async () =>
                     await queryUploadCategories(
@@ -1070,7 +1315,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const categoriesCreated = await Category.count({
                     where: { system: false },
@@ -1111,7 +1362,7 @@ describe('model.csv', () => {
 
                     let subcategory = await createSubcategory(org)
                     subcategory.name = `Subcategory ${i}`
-                await subcategory.save()
+                    await subcategory.save()
                 }
 
                 const noneSpecifiedSubcategory = new Subcategory()
@@ -1155,6 +1406,9 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+
+                const expectedError = 'Cannot query field "uploadProgramsFromCSV" on type "Query".'
+
                 const fn = async () =>
                     await queryUploadPrograms(
                         testClient,
@@ -1163,7 +1417,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const programsCreated = await Program.count({
                     where: { system: false },
@@ -1246,7 +1506,7 @@ describe('model.csv', () => {
                     for (let i = 1; i <= 3; i += 1) {
                         let subject = await createSubject(org)
                         subject.name = `Subject ${i}`
-                    await subject.save()
+                        await subject.save()
                     }
 
                     const ageRange1 = await createAgeRange(org)
@@ -1343,6 +1603,7 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
+                const expectedError = 'Cannot query field "uploadAgeRangesFromCSV" on type "Query".'
 
                 const fn = async () =>
                     await queryUploadAgeRanges(
@@ -1352,7 +1613,13 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e.message).to.be.eq(expectedError)
+                }
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },

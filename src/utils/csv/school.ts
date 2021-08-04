@@ -104,8 +104,22 @@ export async function processSchoolFromCSVRow(
         where: { organization_name: row.organization_name },
     })
 
-    if (!organizations || organizations.length != 1) {
-        const organization_count = organizations ? organizations.length : 0
+    if (organizations.length == 0) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            rowNumber,
+            'organization_name',
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                entity: 'organization',
+                name: row.organization_name,
+            }
+        )
+        return
+    }
+
+    if (organizations.length > 1) {
         addCsvError(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_MULTIPLE_EXIST,
@@ -115,10 +129,9 @@ export async function processSchoolFromCSVRow(
             {
                 entity: 'organization',
                 name: row.organization_name,
-                count: organization_count,
+                count: organizations.length,
             }
         )
-
         return
     }
 

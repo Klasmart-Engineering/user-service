@@ -1,15 +1,5 @@
 organization_name,subject_name,category_name
 Company 1,Subject 1,Speech & Language Skills
-Company 1,Subject 1,Fine Motor Skills
-Company 1,Subject 1,Gross Motor Skills
-Company 2,Subject 1,Cognitive Skills
-Company 2,Subject 1,Personal Development
-Company 2,Subject 1,Oral Language
-Company 3,Subject 2,Literacy
-Company 3,Subject 2,Whole-Child
+Company 2,Subject 2,Literacy
 Company 3,Subject 3,Knowledge
-Company 3,Subject 3,Literacy
-Company 4,Subject 2,Oral Language
-Company 4,Subject 2,Knowledge
-Company 4,Subject 3,Fine Motor Skills
-Company 4,Subject 3,Whole-Child
+Company 4,Subject 4,Oral Language

@@ -21,6 +21,7 @@ import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
+import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 
 export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     manager: EntityManager,
@@ -52,7 +53,6 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             customErrors.nonexistent_entity.message,
             {
                 entity: 'organization',
-                attribute: 'name',
                 entityName: row.organization_name,
             }
         )
@@ -198,8 +198,27 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         return
     }
 
+
     let email = row.user_email
     let phone = row.user_phone
+
+    if( !email && !phone) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
+            rowNumber,
+            'email',
+            csvErrorConstants.MSG_ERR_CSV_MISSING_REQUIRED_EITHER,
+            {
+                entity: 'user',
+                attribute: 'email',
+                other_entity: 'user',
+                other_attribute: 'phone',
+            }
+        )
+
+        return
+    }
 
     if (email) {
         email = normalizedLowercaseTrimmed(email)

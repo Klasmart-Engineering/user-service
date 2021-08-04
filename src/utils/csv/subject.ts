@@ -50,8 +50,22 @@ export async function processSubjectFromCSVRow(
         where: { organization_name: row.organization_name },
     })
 
-    if (!organizations || organizations.length != 1) {
-        const organization_count = organizations ? organizations.length : 0
+    if (!organizations) {
+        addCsvError(
+            fileErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            rowNumber,
+            'organization_name',
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                entity: 'organization',
+                name: row.organization_name,
+            }
+        )
+    }
+
+
+    if (organizations.length > 1) {
         addCsvError(
             fileErrors,
             csvErrorConstants.ERR_CSV_INVALID_MULTIPLE_EXIST,
@@ -61,7 +75,7 @@ export async function processSubjectFromCSVRow(
             {
                 entity: 'organization',
                 name: row.organization_name,
-                count: organization_count,
+                count: organizations.length,
             }
         )
 
@@ -76,8 +90,6 @@ export async function processSubjectFromCSVRow(
             organization: organization,
         },
     })
-
-    let subject = new Subject()
 
     if (subjects) {
         if (subjects.length > 1) {
@@ -94,15 +106,11 @@ export async function processSubjectFromCSVRow(
                     parent_name: row.organization_name,
                 }
             )
-
             return
-        }
-
-        if (subjects.length === 1) {
-            subject = subjects[0]
         }
     }
 
+    const subject = new Subject()
     subject.name = row.subject_name
     subject.organization = Promise.resolve(organization)
     await manager.save(subject)
