@@ -149,6 +149,8 @@ function addFilterJoins(
 
     scope.andWhere(
         getWhereClauseFromFilter(filter, {
+            id: 'Class.class_id',
+            name: 'Class.class_name',
             status: 'Class.status',
             organizationId: 'Organization.organization_id',
         })

@@ -45,6 +45,8 @@ const typeDefs = gql`
     }
 
     input ClassFilter {
+        id: UUIDFilter
+        name: StringFilter
         status: StringFilter
 
         #joined columns

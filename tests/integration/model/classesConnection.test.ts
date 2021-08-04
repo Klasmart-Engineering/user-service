@@ -102,7 +102,7 @@ describe('classesConnection', () => {
         // creating org1 classes
         for (let i = 0; i < classesCount; i++) {
             let class_ = await createClass(undefined, org1)
-            class_.class_name = `class ${i}`
+            class_.class_name = `class ${i + 1}`
             class_.status = Status.ACTIVE
             org1Classes.push(class_)
         }
@@ -110,7 +110,7 @@ describe('classesConnection', () => {
         // creating org2 classes
         for (let i = 0; i < classesCount; i++) {
             let class_ = await createClass(undefined, org2)
-            class_.class_name = `class ${i}`
+            class_.class_name = `class ${i + 1}`
             class_.status = Status.INACTIVE
             org2Classes.push(class_)
         }
@@ -129,7 +129,7 @@ describe('classesConnection', () => {
             const index = Math.floor(i / (classesCount / schoolsCount))
             let class_ = await createClass([org3Schools[index]], org3)
 
-            class_.class_name = `class ${i}`
+            class_.class_name = `class ${i + 1}`
             class_.status = Status.ACTIVE
             org3Classes.push(class_)
         }
@@ -566,6 +566,77 @@ describe('classesConnection', () => {
 
             const statuses = result.edges.map((edge) => edge.node.status)
             statuses.every((status) => status === filterStatus)
+        })
+
+        it('supports filtering by class ID', async () => {
+            const classId = classes[0].class_id
+
+            const filter: IEntityFilter = {
+                id: {
+                    operator: 'eq',
+                    value: classId,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(1)
+
+            const ids = result.edges.map((edge) => edge.node.id)
+            ids.every((id) => id === classId)
+        })
+
+        it('supports filtering by class name', async () => {
+            const search = 'class 1'
+
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: search,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(12)
+
+            const names = result.edges.map((edge) => edge.node.name)
+            names.every((name) => name?.includes(search))
+        })
+
+        it('fails if search value is longer than 250 characters', async () => {
+            const longValue =
+                'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
+
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: longValue,
+                },
+            }
+
+            const fn = async () =>
+                await classesConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+            await expect(fn()).to.be.rejected
         })
     })
 })

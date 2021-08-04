@@ -37,6 +37,8 @@ let schoolAdmin: User
 let orgMember: User
 let org1Id: string
 let org2Id: string
+let class1Ids: string[]
+let class2Ids: string[]
 
 async function createOrg(user_id: string, org_name: string, token: string) {
     return await request
@@ -104,6 +106,8 @@ describe('acceptance.class', () => {
         const systemRoles = await getSystemRoleIds()
         const schoolAdminRoleId = String(systemRoles['School Admin'])
 
+        class1Ids = []
+        class2Ids = []
         schoolIds = []
 
         await loadFixtures('users', connection)
@@ -179,27 +183,35 @@ describe('acceptance.class', () => {
         orgMember = await connection.manager.findOneOrFail(User, orgMemberId)
 
         for (let i = 1; i <= classesCount; i++) {
-            const createClassResponse = await createClass(
+            const org1ClassResponse = await createClass(
                 org1Id,
                 `class ${i}`,
                 getAdminAuthToken()
             )
 
-            const createClassData =
-                createClassResponse.body.data.organization.createClass
+            const class1Id =
+                org1ClassResponse.body.data.organization.createClass.class_id
+
+            class1Ids.push(class1Id)
 
             await addSchoolToClass(
-                createClassData.class_id,
+                class1Id,
                 schoolIds[i % 2],
                 getAdminAuthToken()
             )
 
             if (i > classesCount / 2) {
-                await createClass(
+                const org2ClassResponse = await createClass(
                     org2Id,
                     `class ${i}`,
                     generateToken(userToPayload(user2))
                 )
+
+                const class2Id =
+                    org2ClassResponse.body.data.organization.createClass
+                        .class_id
+
+                class2Ids.push(class2Id)
             }
         }
 
@@ -334,6 +346,62 @@ describe('acceptance.class', () => {
             expect(classesConnection.totalCount).to.equal(1)
         })
 
+        it('queries paginated classes filtering by class ID', async () => {
+            const classId = class1Ids[0]
+
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            id: {
+                                operator: 'eq',
+                                value: classId,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+        })
+
+        it('queries paginated classes filtering by class name', async () => {
+            const search = 'class 1'
+
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            name: {
+                                operator: 'contains',
+                                value: search,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(4)
+        })
+
         it("returns just the classes that belongs to user's school", async () => {
             const organizationId = org1Id
 
@@ -418,6 +486,33 @@ describe('acceptance.class', () => {
 
             expect(response.status).to.eq(200)
             expect(classesConnection.totalCount).to.equal(0)
+        })
+
+        it('responds with an error if the string filter length is longer than 250 chars', async () => {
+            const search =
+                'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
+
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            name: {
+                                operator: 'contains',
+                                value: search,
+                            },
+                        },
+                    },
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body).to.have.property('errors')
         })
 
         it('responds with an error if the filter is wrong', async () => {
