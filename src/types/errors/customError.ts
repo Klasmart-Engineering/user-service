@@ -5,7 +5,16 @@ export interface CustomError {
 }
 
 export function getCustomErrorMessageVariables(message: string) {
-  return message.match(/(?<={)(.*?)(?=})/g) || []
+    return message.match(/(?<={)(.*?)(?=})/g) || []
+}
+
+export function getCustomErrorMessageFromCode(code: string) {
+    let error: keyof typeof customErrors
+    for (error in customErrors) {
+        if (customErrors[error].code == code) {
+            return customErrors[error].message
+        }
+    }
 }
 
 export const customErrors = {
@@ -106,5 +115,7 @@ export const customErrors = {
   // see messages.ts
   invalid_format: {
     code: "ERR_INVALID_FORMAT",
+    message: ""
   }
 }
+
