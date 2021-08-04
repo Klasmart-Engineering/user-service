@@ -37,6 +37,10 @@ export const customErrors = {
   },
 
   // files (csv)
+  csv_bad_input: {
+    code: "ERR_CSV_BAD_INPUT",
+    message: "ERR_CSV_BAD_INPUT",
+  },
   csv_missing_required_column: {
     code: "ERR_CSV_MISSING_REQUIRED_COLUMN",
     message: "{fileName} is missing {columnName} column header.",
@@ -58,6 +62,10 @@ export const customErrors = {
   nonexistent_child: {
     code: "ERR_NON_EXISTENT_CHILD_ENTITY",
     message: "{entity} {entityName} doesn't exist for {parentEntity} {parentName}.",
+  },
+  duplicate_child: {
+    code: "ERR_CSV_DUPLICATE_CHILD_ENTITY",
+    message: "{entity} \"{entityName}\" already exists for {parentEntity} \"{parentName}\".",
   },
   missing_required_entity_attribute: {
     code: "ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE",

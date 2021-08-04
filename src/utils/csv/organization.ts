@@ -15,6 +15,7 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
+import { customErrors } from '../../types/errors/customError'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,
@@ -189,11 +190,10 @@ export async function processOrganizationFromCSVRow(
         return
     }
 
-    const organizationExists = await Organization.findOne({
-        organization_name,
-    })
+    const organizationExists = await Organization.findOne({ organization_name })
+    const organizationUploaded = await manager.findOne(Organization, { organization_name } )
 
-    if (organizationExists) {
+    if (organizationExists || organizationUploaded) {
         addCsvError(
             fileErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
@@ -205,27 +205,6 @@ export async function processOrganizationFromCSVRow(
                 entity: 'organization',
             }
         )
-
-        return
-    }
-
-    const organizationUploaded = await manager.findOne(Organization, {
-        where: { organization_name },
-    })
-
-    if (organizationUploaded) {
-        addCsvError(
-            fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
-            rowNumber,
-            'organization_name',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_ENTITY,
-            {
-                name: organization_name,
-                entity: 'organization',
-            }
-        )
-
         return
     }
 
@@ -235,30 +214,33 @@ export async function processOrganizationFromCSVRow(
             { phone: owner_phone },
         ],
     })
+    const ownerExists = await getUserByEmailOrPhone(
+        manager,
+        owner_email,
+        owner_phone
+    )
+    const organizationAlreadyOwned = (await ownerExists?.my_organization)?.organization_name
+    const organizationUploadedOwned = (await ownerUploaded?.my_organization)?.organization_name
 
-    if (ownerUploaded) {
+    if (organizationUploadedOwned || organizationAlreadyOwned) {
         addCsvError(
             fileErrors,
-            csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.duplicate_child.code,
             rowNumber,
             'owner_email',
-            csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+            customErrors.duplicate_child.message,
             {
-                name: owner_email,
                 entity: 'user',
-                parent_name: organization_name,
-                parent_entity: 'organization',
+                entityName: owner_email,
+                parentEntity: 'organization',
+                parentName: organizationUploadedOwned || organizationAlreadyOwned,
             }
         )
 
         return
     }
 
-    const ownerExists = await getUserByEmailOrPhone(
-        manager,
-        owner_email,
-        owner_phone
-    )
+
 
     const owner =
         ownerExists ||

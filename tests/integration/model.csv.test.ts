@@ -83,10 +83,16 @@ import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
-import { CustomError } from '../../src/types/csv/csvError'
+import { CSVError, CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser } from '../utils/testEntities'
+import {
+    customErrors,
+    getCustomErrorMessageFromCode
+} from '../../src/types/errors/customError'
+import { stringInject } from '../../src/utils/stringUtils'
+import { buildCsvError } from '../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -96,6 +102,7 @@ describe('model.csv', () => {
 
     before(async () => {
         connection = await createTestConnection()
+
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
     })
@@ -198,26 +205,34 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.length(1)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('message')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('row')
-                    .equal(1)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('code')
-                    .equal(
-                        csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER
-                    )
+
+                const expectedCSVError = buildCsvError(
+                    customErrors.duplicate_child.code,
+                    1,
+                    'owner_email',
+                    customErrors.duplicate_child.message,
+                    {
+                        entity: 'user',
+                        entityName: owner.email,
+                        parentEntity: 'organization',
+                        parentName: 'Company 1',
+                    }
+                )
+
+                try {
+                    await fn()
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedCSVError])
+                }
 
                 const allOrganizations = await Organization.count()
-                expect(allOrganizations).eq(1) // pre created "Company 2" org
+                expect(allOrganizations).eq(1) // pre created "Company 1" org
             })
         })
 
