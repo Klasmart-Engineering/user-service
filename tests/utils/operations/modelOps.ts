@@ -22,6 +22,7 @@ import { ISchoolsConnectionNode } from '../../../src/types/graphQL/schoolsConnec
 import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionNode'
 import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
+import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -429,6 +430,68 @@ const AGE_RANGES_CONNECTION = `
                     lowValueUnit
                     highValue
                     highValueUnit
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const CLASSES_CONNECTION = `
+    query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
+        classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+
+                    schools {
+                        id
+                        name
+                        status
+                    }
+
+                    ageRanges {
+                        id
+                        name
+                        lowValue
+                        lowValueUnit
+                        highValue
+                        highValueUnit
+                        status
+                        system
+                    }
+
+                    grades {
+                        id
+                        name
+                        status
+                        system
+                    }
+
+                    subjects {
+                        id
+                        name
+                        status
+                        system
+                    }
+
+                    programs {
+                        id
+                        name
+                        status
+                        system
+                    }
                 }
             }
 
@@ -941,4 +1004,30 @@ export async function ageRangesConnection(
 
     const res = await gqlTry(operation)
     return res.data?.ageRangesConnection
+}
+
+export async function classesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<ClassConnectionNode>> {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: CLASSES_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.classesConnection
 }

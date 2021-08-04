@@ -1,0 +1,1 @@
+export const SUMMARY_ELEMENTS_LIMIT = 50
