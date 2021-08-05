@@ -58,11 +58,12 @@ export function validateRow<Row>(
     // first create the Joi validation schema
     const validationSchema: Partial<Record<keyof Row, Joi.AnySchema>> = {}
     for (const prop in schema) {
-        validationSchema[prop] = schema[prop].validation
+        validationSchema[prop] = schema[prop]?.validation
     }
 
     const result = Joi.object(validationSchema).validate(row, {
         abortEarly: false,
+        allowUnknown: true,
     })
 
     return joiResultToCSVErrors(result, rowNumber, schema)
@@ -85,8 +86,8 @@ export function joiResultToCSVErrors(
             prop,
             details.message,
             {
-                entity: propDetails.entity,
-                attribute: propDetails.attribute,
+                entity: propDetails?.entity,
+                attribute: propDetails?.attribute,
                 ...error.context,
                 ...details?.params,
             }

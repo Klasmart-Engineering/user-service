@@ -8,5 +8,5 @@ export interface ICsvPropertyValidationDetails {
 
 export type CsvRowValidationSchema<Row = Record<string, string>> = Record<
     keyof Row,
-    ICsvPropertyValidationDetails
+    ICsvPropertyValidationDetails | undefined
 >

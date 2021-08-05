@@ -22,7 +22,7 @@ export function getCustomConstraintDetails(
         case 'string.max': {
             return {
                 code: customErrors.invalid_max_length.code,
-                message: customErrors.invalid_max_length.code,
+                message: customErrors.invalid_max_length.message,
                 params: {
                     max: error.context?.limit,
                 },
@@ -88,7 +88,8 @@ export function getCustomConstraintDetails(
                 case 'alphanum_with_special_characters': {
                     return {
                         code: customErrors.invalid_alphanumeric_special.code,
-                        message: customErrors.invalid_alphanumeric_special.code,
+                        message:
+                            customErrors.invalid_alphanumeric_special.message,
                     }
                 }
                 default: {

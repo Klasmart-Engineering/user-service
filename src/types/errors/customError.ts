@@ -77,7 +77,7 @@ export const customErrors = {
   },
   invalid_email: {
     code: "ERR_INVALID_EMAIL",
-    message: "{entity} {attribute} must be a valid email address.",
+    message: "Must be a valid email in format yourname@example.com",
   },
   invalid_phone: {
     code: "ERR_INVALID_PHONE",
@@ -85,7 +85,7 @@ export const customErrors = {
   },
   invalid_date: {
     code: "ERR_INVALID_DATE",
-    message: "Must be a valid email in format yourname@example.com",
+    message: "{entity} {attribute} does not match the format {format}.",
   },
   invalid_uuid: {
     code: "ERR_INVALID_UUID",
