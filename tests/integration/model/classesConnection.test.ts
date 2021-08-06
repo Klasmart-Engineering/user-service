@@ -76,14 +76,14 @@ describe('classesConnection', () => {
         const orgAdminRoleId = systemRoles['Organization Admin']
 
         admin = await createAdminUser(testClient)
-        orgOwner = await createUser()
-        schoolAdmin = await createUser()
-        orgMember = await createUser()
-        ownerAndSchoolAdmin = await createUser()
+        orgOwner = await createUser({})
+        schoolAdmin = await createUser({})
+        orgMember = await createUser({})
+        ownerAndSchoolAdmin = await createUser({})
 
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(ownerAndSchoolAdmin)
-        org3 = await createOrganization(orgOwner)
+        org1 = await createOrganization({}, admin)
+        org2 = await createOrganization({}, ownerAndSchoolAdmin)
+        org3 = await createOrganization({}, orgOwner)
 
         await connection.manager.save([
             orgOwner,
@@ -243,8 +243,11 @@ describe('classesConnection', () => {
                 const school = createSchool(org1, `school ${i}`)
                 schools.push(school)
 
-                const ageRange = createAgeRange(org1, i, i + 1)
-                ageRange.name = `ageRange ${i}`
+                const ageRange = createAgeRange({
+                    name: `ageRange ${i}`,
+                    low_value: i,
+                    high_value: i
+                }, org1)
                 ageRanges.push(ageRange)
 
                 const grade = createGrade(org1)
