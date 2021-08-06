@@ -68,11 +68,6 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
         attribute: 'Name',
         validation: schoolValidations.school_name.allow(null).optional(),
     },
-    school_role_name: {
-        entity: 'User',
-        attribute: 'School Role',
-        validation: roleValidations.role_name.allow(null).optional(),
-    },
     class_name: {
         entity: 'Class',
         attribute: 'Name',

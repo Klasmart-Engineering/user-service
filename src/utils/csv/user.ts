@@ -139,39 +139,6 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         }
     }
 
-    let schoolRole = undefined
-    if (row.school_role_name) {
-        schoolRole = await manager.findOne(Role, {
-            where: [
-                {
-                    role_name: row.organization_role_name,
-                    system_role: true,
-                    organization: null,
-                },
-                {
-                    role_name: row.organization_role_name,
-                    organization: { organization_id: org.organization_id },
-                },
-            ],
-        })
-
-        if (!schoolRole) {
-            addCsvError(
-                fileErrors,
-                customErrors.nonexistent_child.code,
-                rowNumber,
-                'school_role_name',
-                customErrors.nonexistent_child.message,
-                {
-                    entity: 'School Role',
-                    entityName: row.school_role_name,
-                    parentEntity: 'Organization',
-                    parentName: row.organization_name,
-                }
-            )
-        }
-    }
-
     let cls = undefined
     if (row.class_name) {
         cls = await manager.findOne(Class, {
@@ -340,22 +307,11 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.school = Promise.resolve(school)
             schoolMembership.user_id = user.user_id
             schoolMembership.user = Promise.resolve(user)
+            await manager.save(schoolMembership)
         }
 
-        if (schoolRole) {
-            const schoolRoles = (await schoolMembership.roles) || []
-
-            if (!schoolRoles.includes(schoolRole)) {
-                schoolRoles.push(schoolRole)
-                schoolMembership.roles = Promise.resolve(schoolRoles)
-            }
-        }
-
-        await manager.save(schoolMembership)
-
-        if ((organizationRole || schoolRole) && cls) {
-            const roleName =
-                organizationRole?.role_name || schoolRole?.role_name
+        if (organizationRole && cls) {
+            const roleName = organizationRole?.role_name
 
             if (roleName?.includes('Student')) {
                 const students = (await cls.students) || []

@@ -9,6 +9,5 @@ export interface UserRow {
     user_gender: string
     organization_role_name: string
     school_name?: string
-    school_role_name?: string
     class_name?: string
 }

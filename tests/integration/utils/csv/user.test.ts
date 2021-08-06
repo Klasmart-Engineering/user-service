@@ -101,7 +101,6 @@ describe('processUserFromCSVRow', async () => {
             user_gender: user.gender || '',
             organization_role_name: role.role_name || '',
             school_name: school.school_name || '',
-            school_role_name: role.role_name || '',
             class_name: cls.class_name || '',
         }
     })
@@ -751,7 +750,6 @@ describe('processUserFromCSVRow', async () => {
             expect(err.attribute).to.eq('Organization Role')
         })
         it('errors when nonexistent', async () => {
-            row.school_role_name = undefined
             row.organization_role_name = 'Non existing role'
             await processUserFromCSVRow(
                 connection.manager,
@@ -814,6 +812,20 @@ describe('processUserFromCSVRow', async () => {
             expect(err.parentName).to.eq(row.organization_name)
         })
     })
+
+    it(`does not validate school_role_name column`, async () => {
+        // Fix for UD-738, which removes `school_role_name` handling added on original story KL-4408
+        await processUserFromCSVRow(
+            connection.manager,
+            { ...row, school_role_name: `Nonexistant Role` } as UserRow,
+            1,
+            fileErrors,
+            adminPermissions
+        )
+
+        expect(fileErrors).to.deep.equal([])
+    })
+
     context('class name', () => {
         let err: CSVError
         afterEach(() => {
@@ -898,7 +910,28 @@ describe('processUserFromCSVRow', async () => {
                 where: { user: dbUser, school: school },
             })
             const schoolRoles = (await schoolMembership.roles) || []
-            expect(schoolRoles.map(roleInfo)).to.deep.eq([role].map(roleInfo))
+            expect(schoolRoles).to.deep.eq([])
+        })
+
+        it('it does not update SchoolMembership.roles based on `school_role_name` column', async () => {
+            // Fix for UD-738, which removes `school_role_name` handling added on original story KL-4408
+            await processUserFromCSVRow(
+                connection.manager,
+                { ...row, school_role_name: role.role_name } as UserRow,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+
+            const dbUser = await User.findOneOrFail({
+                where: { email: row.user_email },
+            })
+
+            const schoolMembership = await SchoolMembership.findOneOrFail({
+                relations: [`roles`],
+                where: { user: dbUser, school: school },
+            })
+            expect(await schoolMembership.roles).to.deep.eq([])
         })
 
         context('and the role is not student neither teacher related', () => {
@@ -926,7 +959,6 @@ describe('processUserFromCSVRow', async () => {
                 row = {
                     ...row,
                     organization_role_name: role.role_name || '',
-                    school_role_name: role.role_name || '',
                 }
             })
 
@@ -960,7 +992,6 @@ describe('processUserFromCSVRow', async () => {
                 row = {
                     ...row,
                     organization_role_name: role.role_name || '',
-                    school_role_name: role.role_name || '',
                 }
             })
 
