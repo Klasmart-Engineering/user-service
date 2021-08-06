@@ -50,8 +50,7 @@ describe('processAgeRangeFromCSVRow', () => {
         row = rowModel
 
         organization = await createOrganization(
-            { organization_name: rowModel.organization_name } )
-        await connection.manager.save(organization)
+            { organization_name: rowModel.organization_name } ).save()
     })
 
     context('when the organization name is not provided', () => {

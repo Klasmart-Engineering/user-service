@@ -59,13 +59,11 @@ describe('usersConnection loaders', async () => {
             await connection.manager.save(usersList)
         }
         userIds = usersList.map((u) => u.user_id)
-        org1 = createOrganization({status: Status.INACTIVE})
-        await connection.manager.save(org1)
+        org1 = await createOrganization({status: Status.INACTIVE}).save()
         school1 = createSchool(org1, 'school 1')
         school1.status = Status.INACTIVE
         await connection.manager.save(school1)
-        role1 = createRole('role 1', org1)
-        await connection.manager.save(role1)
+        role1 = await createRole('role 1', org1).save()
     })
 
     context('orgsForUsers', () => {

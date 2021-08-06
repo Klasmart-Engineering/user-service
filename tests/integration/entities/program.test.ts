@@ -62,11 +62,9 @@ describe('program', () => {
         user = await createAdminUser(testClient)
         userId = user.user_id
 
-        org = createOrganization({})
-        await connection.manager.save(org)
+        org = await createOrganization({}).save()
         organizationId = org.organization_id
-        program = createProgram(org)
-        await connection.manager.save(program)
+        program = await createProgram(org).save()
     })
 
     describe('delete', () => {

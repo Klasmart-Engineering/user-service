@@ -1,5 +1,5 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, EntityManager } from 'typeorm'
+import { BaseEntity, Connection, EntityManager } from 'typeorm'
 import { expect, use } from 'chai'
 
 import {
@@ -70,14 +70,10 @@ describe('processUserFromCSVRow', async () => {
         fileErrors = []
         adminUser = await createAdminUser(testClient)
         user = createUser({})
-        organization = createOrganization({})
-        await connection.manager.save(organization)
-        school = createSchool(organization)
-        await connection.manager.save(school)
-        role = createRole(undefined, organization)
-        await connection.manager.save(role)
-        cls = createClass([school], organization)
-        await connection.manager.save(cls)
+        organization = await createOrganization({}).save()
+        school = await createSchool(organization).save()
+        role = await createRole(undefined, organization).save()
+        cls = await createClass([school], organization).save()
 
         await addOrganizationToUserAndValidate(
             testClient,
@@ -901,8 +897,7 @@ describe('processUserFromCSVRow', async () => {
 
         context('and the role is student related', () => {
             beforeEach(async () => {
-                role = createRole('My Student Role', organization)
-                await connection.manager.save(role)
+                role = await createRole('My Student Role', organization).save()
 
                 row = {
                     ...row,
@@ -935,8 +930,7 @@ describe('processUserFromCSVRow', async () => {
 
         context('and the role is teacher related', () => {
             beforeEach(async () => {
-                role = createRole('My Teacher Role', organization)
-                await connection.manager.save(role)
+                role = await createRole('My Teacher Role', organization).save()
 
                 row = {
                     ...row,
@@ -971,11 +965,9 @@ describe('processUserFromCSVRow', async () => {
             'and the shortcode is duplicated in another organization',
             () => {
                 beforeEach(async () => {
-                    const secondOrg = createOrganization({})
-                    await connection.manager.save(secondOrg)
+                    const secondOrg = await createOrganization({}).save()
 
-                    const secondUser = createUser({})
-                    await connection.manager.save(secondUser)
+                    const secondUser = await createUser({}).save()
 
                     const secondMembership = new OrganizationMembership()
                     secondMembership.organization = Promise.resolve(secondOrg)

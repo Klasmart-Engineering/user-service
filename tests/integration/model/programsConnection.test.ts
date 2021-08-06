@@ -98,8 +98,7 @@ describe('model', () => {
         await connection.manager.save(ageRanges)
 
         for (let i = 0; i < gradesCount; i++) {
-            let grade = await createGrade(org1)
-            grades.push(grade)
+            let grade = await createGrade(org1).save()
         }
 
         await connection.manager.save(grades)

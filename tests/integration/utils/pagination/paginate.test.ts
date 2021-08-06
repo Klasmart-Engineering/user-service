@@ -152,8 +152,10 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(0)
         })
         it('counts items with joins correctly', async () => {
-            const orgs = [createOrganization({}), createOrganization({})]
-            await connection.manager.save(orgs)
+            const orgs = [
+                await createOrganization({}).save(),
+                await createOrganization({}).save()]
+
             for (const user of usersList) {
                 for (const org of orgs) {
                     await addOrganizationToUserAndValidate(
@@ -312,8 +314,9 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(0)
         })
         it('counts items with joins correctly', async () => {
-            const orgs = [createOrganization({}), createOrganization({})]
-            await connection.manager.save(orgs)
+            const orgs = [
+                await createOrganization({}).save(), 
+                await createOrganization({}).save()]
             for (const user of usersList) {
                 for (const org of orgs) {
                     await addOrganizationToUserAndValidate(

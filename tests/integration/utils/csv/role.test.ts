@@ -36,8 +36,7 @@ describe('processRoleFromCSVRow', () => {
     })
 
     beforeEach(async () => {
-        organization = await createOrganization({organization_name: 'Company 1'})
-        await connection.manager.save(organization)
+        organization = await createOrganization({organization_name: 'Company 1'}).save()
 
         row = {
             organization_name: 'Company 1',
