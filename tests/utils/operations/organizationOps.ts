@@ -53,7 +53,7 @@ const CREATE_ROLE = `
     }
 `
 
-const CREATE_SCHOOL = `
+export const CREATE_SCHOOL = `
     mutation myMutation(
             $organization_id: ID!
             $school_name: String

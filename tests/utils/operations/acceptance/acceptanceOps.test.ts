@@ -1,12 +1,16 @@
 import supertest from 'supertest'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
-import { EDIT_PROGRAM_CLASS, EDIT_STUDENTS_IN_CLASS } from '../classOps'
-import { MY_USERS } from '../modelOps'
+import {
+    ADD_SCHOOL_TO_CLASS,
+    EDIT_PROGRAM_CLASS,
+    EDIT_STUDENTS_IN_CLASS,
+} from '../classOps'
 import { LEAVE_ORGANIZATION } from '../organizationMembershipOps'
 import {
     CREATE_CLASS,
     CREATE_OR_UPDATE_AGE_RANGES,
     CREATE_OR_UPDATE_PROGRAMS,
+    CREATE_SCHOOL,
     INVITE_USER,
 } from '../organizationOps'
 import { CREATE_ORGANIZATION } from '../userOps'
@@ -152,7 +156,10 @@ export async function inviteUserToOrganization(
     family_name: string,
     email: string,
     organization_id: string,
-    token: string
+    token: string,
+    organization_role_ids?: string[],
+    school_role_ids?: string[],
+    school_ids?: string[]
 ) {
     return await request
         .post('/graphql')
@@ -167,6 +174,49 @@ export async function inviteUserToOrganization(
                 family_name,
                 email,
                 organization_id,
+                organization_role_ids,
+                school_role_ids,
+                school_ids,
+            },
+        })
+}
+
+export async function createSchool(
+    organization_id: string,
+    school_name: string,
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_SCHOOL,
+            variables: {
+                organization_id,
+                school_name,
+            },
+        })
+}
+
+export async function addSchoolToClass(
+    class_id: string,
+    school_id: string,
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: ADD_SCHOOL_TO_CLASS,
+            variables: {
+                class_id,
+                school_id,
             },
         })
 }

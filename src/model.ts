@@ -75,6 +75,7 @@ import { BrandingImage } from './entities/brandingImage'
 import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInput'
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
+import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
 
 export class Model {
     public static async create() {
@@ -727,6 +728,60 @@ export class Model {
                 lowValueUnit: ageRange.low_value_unit,
                 highValue: ageRange.high_value,
                 highValueUnit: ageRange.high_value_unit,
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async classesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Class>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Class.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    id: 'Class.class_id',
+                    name: 'Class.class_name',
+                    status: 'Class.status',
+                    organizationId: 'Organization.organization_id',
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'class_id',
+                aliases: {
+                    id: 'class_id',
+                    name: 'class_name',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const class_ = edge.node as Class
+            const newNode: Partial<ClassConnectionNode> = {
+                id: class_.class_id,
+                name: class_.class_name,
+                status: class_.status,
+                // other properties have dedicated resolvers that use Dataloader
             }
 
             edge.node = newNode

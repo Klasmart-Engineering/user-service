@@ -36,7 +36,9 @@ describe('School', () => {
         await manager.save(existingSchool)
     })
 
-    describe('create', () => {
+    // Unique constraint on School.organization_id/School.school_name has been temporarily removed
+    // due to existing duplicates failing the migration
+    describe.skip('create', () => {
         context('duplicate name outside the organization', () => {
             it('succeeds', async () => {
                 const org = createOrganization({})

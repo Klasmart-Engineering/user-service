@@ -51,8 +51,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             'organization_name',
             customErrors.nonexistent_entity.message,
             {
-                entity: 'organization',
-                attribute: 'name',
+                entity: 'Organization',
+                attribute: 'Name',
                 entityName: row.organization_name,
             }
         )
@@ -99,20 +99,21 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         if (!organizationRole) {
             addCsvError(
                 fileErrors,
-                customErrors.nonexistent_entity.code,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'organization_role_name',
-                customErrors.nonexistent_entity.message,
+                customErrors.nonexistent_child.message,
                 {
-                    entity: 'user',
-                    attribute: 'organization_role',
+                    entity: 'Organization Role',
                     entityName: row.organization_role_name,
+                    parentEntity: 'Organization',
+                    parentName: row.organization_name,
                 }
             )
         }
     }
 
-    let school = undefined
+    let school: School | undefined = undefined
     if (row.school_name) {
         school = await manager.findOne(School, {
             where: {
@@ -124,46 +125,15 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         if (!school) {
             addCsvError(
                 fileErrors,
-                customErrors.nonexistent_entity.code,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'school_name',
-                customErrors.nonexistent_entity.message,
+                customErrors.nonexistent_child.message,
                 {
-                    entity: 'school',
-                    attribute: 'name',
+                    entity: 'School',
                     entityName: row.school_name,
-                }
-            )
-        }
-    }
-
-    let schoolRole = undefined
-    if (row.school_role_name) {
-        schoolRole = await manager.findOne(Role, {
-            where: [
-                {
-                    role_name: row.organization_role_name,
-                    system_role: true,
-                    organization: null,
-                },
-                {
-                    role_name: row.organization_role_name,
-                    organization: { organization_id: org.organization_id },
-                },
-            ],
-        })
-
-        if (!schoolRole) {
-            addCsvError(
-                fileErrors,
-                customErrors.nonexistent_entity.code,
-                rowNumber,
-                'school_role_name',
-                customErrors.nonexistent_entity.message,
-                {
-                    entity: 'organizationRole',
-                    entityName: row.school_role_name,
-                    attribute: 'school_role',
+                    parentEntity: 'Organization',
+                    parentName: row.organization_name,
                 }
             )
         }
@@ -178,17 +148,22 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             },
         })
 
-        if (!cls) {
+        const classIsAssignedToSchool = (await cls?.schools)?.find(
+            (s) => s.school_id === school?.school_id
+        )
+
+        if (!cls || !school || !classIsAssignedToSchool) {
             addCsvError(
                 fileErrors,
-                customErrors.nonexistent_entity.code,
+                customErrors.nonexistent_child.code,
                 rowNumber,
                 'class_name',
-                customErrors.nonexistent_entity.message,
+                customErrors.nonexistent_child.message,
                 {
-                    entity: 'class',
+                    entity: 'Class',
                     entityName: row.class_name,
-                    attribute: 'name',
+                    parentEntity: 'School',
+                    parentName: row.school_name,
                 }
             )
         }
@@ -270,7 +245,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 'user_shortcode',
                 customErrors.duplicate_entity.message,
                 {
-                    entity: 'shortcode',
+                    entity: 'Short Code',
                     entityName: row.user_shortcode,
                 }
             )
@@ -332,22 +307,11 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.school = Promise.resolve(school)
             schoolMembership.user_id = user.user_id
             schoolMembership.user = Promise.resolve(user)
+            await manager.save(schoolMembership)
         }
 
-        if (schoolRole) {
-            const schoolRoles = (await schoolMembership.roles) || []
-
-            if (!schoolRoles.includes(schoolRole)) {
-                schoolRoles.push(schoolRole)
-                schoolMembership.roles = Promise.resolve(schoolRoles)
-            }
-        }
-
-        await manager.save(schoolMembership)
-
-        if ((organizationRole || schoolRole) && cls) {
-            const roleName =
-                organizationRole?.role_name || schoolRole?.role_name
+        if (organizationRole && cls) {
+            const roleName = organizationRole?.role_name
 
             if (roleName?.includes('Student')) {
                 const students = (await cls.students) || []

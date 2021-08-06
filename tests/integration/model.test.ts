@@ -1662,7 +1662,7 @@ describe('model', () => {
 
                 // create 5 users
                 for (let i = 0; i < 5; i++) {
-                    usersList.push(createUser({}))
+                    usersList.push(createUser({phone: '000000000'}))
                 }
 
                 //sort users by userId

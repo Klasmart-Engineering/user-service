@@ -1,2 +1,2 @@
-organization_name,user_given_name,user_family_name,user_shortcode,user_email,user_phone,user_date_of_birth,user_gender,organization_role_name,school_name,school_role_name,class_name
-Apollo 1 Org,One,Test,,test@test.com,invalid_phone,03-2019,Male,Teacher,School I,,Class I
+organization_name,user_given_name,user_family_name,user_shortcode,user_email,user_phone,user_date_of_birth,user_gender,organization_role_name,school_name,class_name
+Apollo 1 Org,One,Test,,test@test.com,invalid_phone,03-2019,Male,Teacher,School I,Class I

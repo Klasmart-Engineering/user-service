@@ -3,6 +3,7 @@ import { IUsersConnectionLoaders } from './usersConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import { IUsersLoaders, orgMembershipsForUsers } from './user'
+import { IClassesConnectionLoaders } from './classesConnection'
 import {
     IOrganizationLoaders,
     brandingForOrganizations,
@@ -13,6 +14,7 @@ export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection?: IProgramsConnectionLoaders
     gradesConnection?: IGradesConnectionLoaders
+    classesConnection?: IClassesConnectionLoaders
     user: IUsersLoaders
     organization: IOrganizationLoaders
 }

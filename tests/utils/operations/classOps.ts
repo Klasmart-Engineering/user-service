@@ -42,7 +42,7 @@ const ELIGIBLE_STUDENTS = `
     }
 `
 
-const ADD_SCHOOL_TO_CLASS = `
+export const ADD_SCHOOL_TO_CLASS = `
     mutation myMutation(
             $class_id: ID!
             $school_id: ID!) {
@@ -246,7 +246,7 @@ const REMOVE_SCHOOL = `
     }
 `
 
-const DELETE_CLASS = `
+export const DELETE_CLASS = `
     mutation myMutation($class_id: ID!) {
         class(class_id: $class_id) {
             delete

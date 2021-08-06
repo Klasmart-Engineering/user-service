@@ -94,6 +94,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                     case 'program':
                         this.nonAdminProgamScope(scope, context)
                         break
+                    case 'class':
+                        await this.nonAdminClassScope(scope, context)
+                        break
                     default:
                     // do nothing
                 }
@@ -338,5 +341,55 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                     system: true,
                 }
             )
+    }
+
+    private async nonAdminClassScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
+        const userId = context.permissions.getUserId()
+        const classOrgs = await context.permissions.orgMembershipsWithPermissions(
+            [PermissionName.view_classes_20114]
+        )
+
+        const schoolOrgs = await context.permissions.orgMembershipsWithPermissions(
+            [PermissionName.view_school_classes_20117]
+        )
+
+        // can watch all the classes that belongs to its organization
+        if (classOrgs.length) {
+            scope
+                .leftJoinAndSelect(
+                    OrganizationMembership,
+                    'OrganizationMembership',
+                    'OrganizationMembership.organization = Class.organization'
+                )
+                .where(
+                    'OrganizationMembership.organization_id IN (:...classOrgs) AND OrganizationMembership.user_id = :d_user_id',
+                    {
+                        classOrgs,
+                        d_user_id: userId,
+                    }
+                )
+        }
+
+        // can watch just the classes that belongs to its schools
+        if (schoolOrgs.length) {
+            scope
+                .leftJoin('Class.schools', 'School')
+                .leftJoinAndSelect('School.memberships', 'SchoolMembership')
+                .orWhere(
+                    'School.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
+                    {
+                        schoolOrgs,
+                        user_id: userId,
+                    }
+                )
+        }
+
+        if (!classOrgs.length && !schoolOrgs.length) {
+            // user has not permissions, can see anything
+            scope.where('false')
+        }
     }
 }
