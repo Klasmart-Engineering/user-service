@@ -56,8 +56,7 @@ describe('ageRange', () => {
             org = createOrganization({})
             await connection.manager.save(org)
             organizationId = org.organization_id
-            ageRange = createAgeRange(org)
-            await connection.manager.save(ageRange)
+            ageRange = await createAgeRange({}, org).save()
         })
 
         context('when user is not logged in', () => {

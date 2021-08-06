@@ -19,6 +19,10 @@ import { createTestConnection } from '../../../utils/testConnection'
 
 use(chaiAsPromised)
 
+function getAgeRangeName(rowModel: AgeRangeRow) {
+    return `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`
+}
+
 describe('processAgeRangeFromCSVRow', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
@@ -68,7 +72,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -101,7 +105,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -134,7 +138,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -167,7 +171,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -200,7 +204,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -233,7 +237,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -273,7 +277,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
                 const ageRange = await AgeRange.findOne({
                     where: {
-                        name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                        name: getAgeRangeName(rowModel),
                         low_value: Number(rowModel.age_range_low_value),
                         high_value: Number(rowModel.age_range_high_value),
                         low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -307,7 +311,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -340,7 +344,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -357,14 +361,13 @@ describe('processAgeRangeFromCSVRow', () => {
 
     context('when the provided age range already exists', () => {
         beforeEach(async () => {
-            const ageRange = await createAgeRange()
-            ageRange.name = `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`
-            ageRange.low_value = Number(rowModel.age_range_low_value)
-            ageRange.high_value = Number(rowModel.age_range_high_value)
-            ageRange.low_value_unit = rowModel.age_range_unit as AgeRangeUnit
-            ageRange.high_value_unit = rowModel.age_range_unit as AgeRangeUnit
-            ageRange.organization = Promise.resolve(organization)
-            await connection.manager.save(ageRange)
+            await createAgeRange({
+                name: getAgeRangeName(rowModel),
+                low_value: Number(rowModel.age_range_low_value),
+                high_value: Number(rowModel.age_range_high_value),
+                low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
+                high_value_unit: rowModel.age_range_unit as AgeRangeUnit
+            }, organization).save()
         })
 
         it('throws an error', async () => {
@@ -380,7 +383,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOne({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -406,7 +409,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
             const ageRange = await AgeRange.findOneOrFail({
                 where: {
-                    name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                    name: getAgeRangeName(rowModel),
                     low_value: Number(rowModel.age_range_low_value),
                     high_value: Number(rowModel.age_range_high_value),
                     low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
@@ -420,9 +423,7 @@ describe('processAgeRangeFromCSVRow', () => {
             const organizationInAgeRange = await ageRange.organization
 
             expect(ageRange).to.exist
-            expect(ageRange.name).eq(
-                `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`
-            )
+            expect(ageRange.name).eq( getAgeRangeName(rowModel) )
             expect(ageRange.system).eq(false)
             expect(ageRange.status).eq('active')
             expect(ageRange.low_value).eq(Number(rowModel.age_range_low_value))

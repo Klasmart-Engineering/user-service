@@ -479,8 +479,7 @@ describe('program', () => {
                 organizationId,
                 { authorization: getAdminAuthToken() }
             )
-            ageRange = createAgeRange(org)
-            await ageRange.save()
+            ageRange = await createAgeRange({}, org).save()
         })
 
         context('when not authenticated', () => {

@@ -28,7 +28,7 @@ describe('AgeRange', () => {
     beforeEach(async () => {
         await connection.synchronize(true)
         org = createOrganization({})
-        ageRange = createAgeRange(org)
+        ageRange = createAgeRange({}, org)
     })
 
     describe('.new', () => {
@@ -100,9 +100,10 @@ describe('AgeRange', () => {
                 })
 
                 it('raises an error', async () => {
-                    const newAgeRange = createAgeRange(org)
-                    newAgeRange.high_value = ageRange.high_value
-                    newAgeRange.low_value = ageRange.low_value
+                    const newAgeRange = createAgeRange({
+                        high_value: ageRange.high_value,
+                        low_value: ageRange.low_value,
+                    }, org)
                     const fn = () => manager.save(newAgeRange)
 
                     expect(fn()).to.be.rejected

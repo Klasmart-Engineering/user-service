@@ -14,14 +14,14 @@ import { createAgeRange } from '../../factories/ageRange.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import {
     ApolloServerTestClient,
-    createTestClient,
+    createTestClient
 } from '../../utils/createTestClient'
 import { ageRangesConnection } from '../../utils/operations/modelOps'
 import {
     isNumberArraySortedAscending,
     isNumberArraySortedDescending,
     isStringArraySortedAscending,
-    isStringArraySortedDescending,
+    isStringArraySortedDescending
 } from '../../utils/sorting'
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { createTestConnection } from '../../utils/testConnection'
@@ -69,20 +69,22 @@ describe('model', () => {
         ageRanges = []
 
         for (let i = 0; i < ageRangesCount; i++) {
-            let ageRange = await createAgeRange(org1, i, i + 1)
-            ageRange.name = `age range ${i}`
-            ageRange.status = Status.ACTIVE
+            let ageRange = await createAgeRange({
+                name: `age range ${i}`,
+                low_value: i,
+                high_value: i + 1,
+                status: Status.ACTIVE
+            }, org1)
             org1AgeRanges.push(ageRange)
         }
 
         for (let i = 0; i < ageRangesCount; i++) {
-            let ageRange = await createAgeRange(
-                org2,
-                ageRangesCount + i,
-                ageRangesCount + i + 1
-            )
-            ageRange.name = `program ${i}`
-            ageRange.status = Status.INACTIVE
+            let ageRange = await createAgeRange({
+                name: `program ${i}`,
+                low_value: i,
+                high_value: i + 1,
+                status: Status.INACTIVE
+            }, org2)
             org2AgeRanges.push(ageRange)
         }
 

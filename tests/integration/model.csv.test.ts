@@ -1225,30 +1225,33 @@ describe('model.csv', () => {
                         await connection.manager.save(subject)
                     }
 
-                    const ageRange1 = await createAgeRange(org)
-                    ageRange1.name = '6 - 7 year(s)'
-                    ageRange1.low_value = 6
-                    ageRange1.high_value = 7
-                    ageRange1.low_value_unit = AgeRangeUnit.YEAR
-                    ageRange1.high_value_unit = AgeRangeUnit.YEAR
-                    await connection.manager.save(ageRange1)
+                    await createAgeRange({
+                            name: '6 - 7 year(s)',
+                            low_value: 6,
+                            high_value: 7,
+                            low_value_unit: AgeRangeUnit.YEAR,
+                            high_value_unit: AgeRangeUnit.YEAR,
+                        }, org
+                    ).save()
 
-                    const ageRange2 = await createAgeRange(org)
-                    ageRange2.name = '9 - 10 year(s)'
-                    ageRange2.low_value = 9
-                    ageRange2.high_value = 10
-                    ageRange2.low_value_unit = AgeRangeUnit.YEAR
-                    ageRange2.high_value_unit = AgeRangeUnit.YEAR
-                    await connection.manager.save(ageRange2)
+                    await createAgeRange({
+                            name: '9 - 10 year(s)',
+                            low_value: 9,
+                            high_value: 10,
+                            low_value_unit: AgeRangeUnit.YEAR,
+                            high_value_unit: AgeRangeUnit.YEAR,
+                        }, org
+                    ).save()
 
-                    const ageRange3 = await createAgeRange(org)
-                    ageRange3.name = '24 - 30 month(s)'
-                    ageRange3.low_value = 24
-                    ageRange3.high_value = 30
-                    ageRange3.low_value_unit = AgeRangeUnit.MONTH
-                    ageRange3.high_value_unit = AgeRangeUnit.MONTH
-                    ageRange3.system = false
-                    await connection.manager.save(ageRange3)
+                    await createAgeRange({
+                            name: '24 - 30 month(s)',
+                            low_value: 24,
+                            high_value: 30,
+                            low_value_unit: AgeRangeUnit.MONTH,
+                            high_value_unit: AgeRangeUnit.MONTH,
+                            system: false,
+                        }, org
+                    ).save()
 
                     const grade1 = await createGrade(org)
                     grade1.name = 'First Grade'
@@ -1263,14 +1266,14 @@ describe('model.csv', () => {
                     await connection.manager.save(grade3)
                 }
 
-                const noneSpecifiedAgeRange = new AgeRange()
-                noneSpecifiedAgeRange.name = 'None Specified'
-                noneSpecifiedAgeRange.low_value = 0
-                noneSpecifiedAgeRange.high_value = 99
-                noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR
-                noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR
-                noneSpecifiedAgeRange.system = true
-                await connection.manager.save(noneSpecifiedAgeRange)
+                await createAgeRange({
+                    name: 'None Specified',
+                    low_value: 0,
+                    high_value: 99,
+                    low_value_unit: AgeRangeUnit.YEAR,
+                    high_value_unit: AgeRangeUnit.YEAR,
+                    system: true,
+                }).save()
 
                 const noneSpecifiedGrade = new Grade()
                 noneSpecifiedGrade.name = 'None Specified'

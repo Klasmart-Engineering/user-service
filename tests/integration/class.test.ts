@@ -3459,8 +3459,7 @@ describe('class', () => {
                 orgOwner.user_id
             )
             cls = await createClass(testClient, organization.organization_id)
-            ageRange = createAgeRange(organization)
-            await ageRange.save()
+            ageRange = await createAgeRange({}, organization).save()
             await editAgeRanges(testClient, cls.class_id, [ageRange.id], {
                 authorization: getAdminAuthToken(),
             })
@@ -3764,8 +3763,7 @@ describe('class', () => {
                 organization.organization_id,
                 { authorization: getAdminAuthToken() }
             )
-            ageRange = createAgeRange(organization)
-            await ageRange.save()
+            ageRange = await createAgeRange({}, organization).save()
         })
 
         context('when not authenticated', () => {

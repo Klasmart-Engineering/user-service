@@ -3173,7 +3173,7 @@ describe('organization', () => {
                 testClient,
                 orgOwner.user_id
             )
-            ageRange = createAgeRange(organization)
+            ageRange = createAgeRange({}, organization)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
@@ -3666,7 +3666,7 @@ describe('organization', () => {
                 testClient,
                 orgOwner.user_id
             )
-            ageRange = createAgeRange(organization)
+            ageRange = createAgeRange({}, organization)
             const organizationId = organization?.organization_id
             await addUserToOrganizationAndValidate(
                 testClient,
@@ -6649,12 +6649,9 @@ describe('organization', () => {
                 testClient,
                 orgOwner.user_id
             )
-            ageRange = createAgeRange(organization)
-            await ageRange.save()
-            grade = createGrade(organization)
-            await grade.save()
-            subject = createSubject(organization)
-            await subject.save()
+            ageRange = await createAgeRange({}, organization).save()
+            grade = await createGrade(organization).save()
+            subject = await createSubject(organization).save()
             program = createProgram(
                 organization,
                 [ageRange],

@@ -59,16 +59,20 @@ describe('processProgramFromCSVRow', () => {
     beforeEach(async () => {
         row = rowModel
 
-        organization = await createOrganization({organization_name: rowModel.organization_name})
-        await connection.manager.save(organization)
+        organization = await createOrganization({
+            organization_name: rowModel.organization_name,
+        }).save()
 
-        ageRange = await createAgeRange(organization)
-        ageRange.name = `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`
-        ageRange.low_value = Number(rowModel.age_range_low_value)
-        ageRange.high_value = Number(rowModel.age_range_high_value)
-        ageRange.high_value_unit = rowModel.age_range_unit as AgeRangeUnit
-        ageRange.low_value_unit = rowModel.age_range_unit as AgeRangeUnit
-        await connection.manager.save(ageRange)
+        ageRange = await createAgeRange(
+            {
+                name: `${rowModel.age_range_low_value} - ${rowModel.age_range_high_value} ${rowModel.age_range_unit}(s)`,
+                low_value: Number(rowModel.age_range_low_value),
+                high_value: Number(rowModel.age_range_high_value),
+                high_value_unit: rowModel.age_range_unit as AgeRangeUnit,
+                low_value_unit: rowModel.age_range_unit as AgeRangeUnit,
+            },
+            organization
+        ).save()
 
         grade = await createGrade(organization)
         grade.name = rowModel.grade_name
@@ -78,14 +82,14 @@ describe('processProgramFromCSVRow', () => {
         subject.name = rowModel.subject_name
         await connection.manager.save(subject)
 
-        noneSpecifiedAgeRange = new AgeRange()
-        noneSpecifiedAgeRange.name = 'None Specified'
-        noneSpecifiedAgeRange.low_value = 0
-        noneSpecifiedAgeRange.high_value = 99
-        noneSpecifiedAgeRange.low_value_unit = AgeRangeUnit.YEAR
-        noneSpecifiedAgeRange.high_value_unit = AgeRangeUnit.YEAR
-        noneSpecifiedAgeRange.system = true
-        await connection.manager.save(noneSpecifiedAgeRange)
+        noneSpecifiedAgeRange = await createAgeRange({
+            name: 'None Specified',
+            low_value: 0,
+            high_value: 99,
+            low_value_unit: AgeRangeUnit.YEAR,
+            high_value_unit: AgeRangeUnit.YEAR,
+            system: true,
+        }).save()
 
         noneSpecifiedGrade = new Grade()
         noneSpecifiedGrade.name = 'None Specified'

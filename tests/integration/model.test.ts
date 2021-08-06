@@ -285,11 +285,9 @@ describe('model', () => {
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
-            const org = createOrganization({}, user)
-            await connection.manager.save(org)
+            const org = await createOrganization({}, user).save()
             organizationId = org.organization_id
-            ageRange = createAgeRange(org)
-            await connection.manager.save(ageRange)
+            ageRange = await createAgeRange({}, org).save()
         })
 
         context('when user is not logged in', () => {
