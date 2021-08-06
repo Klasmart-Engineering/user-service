@@ -5,7 +5,7 @@ import { createOrganization } from './organization.factory'
 import { Organization } from '../../src/entities/organization'
 
 export function createAgeRange(
-    org: Organization = createOrganization(),
+    org: Organization = createOrganization({}),
     lowValue?: number,
     highValue?: number
 ) {

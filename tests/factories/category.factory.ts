@@ -5,7 +5,7 @@ import { Organization } from '../../src/entities/organization'
 import { Subcategory } from '../../src/entities/subcategory'
 
 export function createCategory(
-    org: Organization = createOrganization(),
+    org: Organization = createOrganization({}),
     subcategories: Subcategory[] = []
 ) {
     const category = new Category()

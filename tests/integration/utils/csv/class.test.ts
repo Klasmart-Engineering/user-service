@@ -59,12 +59,10 @@ describe('processClassFromCSVRow', () => {
     })
 
     beforeEach(async () => {
-        expectedOrg = createOrganization()
-        expectedOrg.organization_name = orgName
+        expectedOrg = createOrganization( {organization_name: orgName} )
         await connection.manager.save(expectedOrg)
 
-        secondOrg = createOrganization()
-        secondOrg.organization_name = secondOrgName
+        secondOrg = createOrganization( { organization_name: secondOrgName } )
         await connection.manager.save(secondOrg)
 
         expectedProg = createProgram(expectedOrg)

@@ -56,7 +56,7 @@ describe('Category', () => {
     beforeEach(async () => {
         user = await createAdminUser(testClient)
         userId = user.user_id
-        org = createOrganization()
+        org = createOrganization({})
         await org.save()
         organizationId = org.organization_id
         category = createCategory(org)

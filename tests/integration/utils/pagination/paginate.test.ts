@@ -42,7 +42,7 @@ describe('paginate', () => {
         usersList = []
         // create 10 users
         for (let i = 0; i < 10; i++) {
-            usersList.push(createUser())
+            usersList.push(createUser({}))
             await connection.manager.save(usersList)
         }
         scope = getRepository(User).createQueryBuilder()
@@ -152,7 +152,7 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(0)
         })
         it('counts items with joins correctly', async () => {
-            const orgs = [createOrganization(), createOrganization()]
+            const orgs = [createOrganization({}), createOrganization({})]
             await connection.manager.save(orgs)
             for (const user of usersList) {
                 for (const org of orgs) {
@@ -312,7 +312,7 @@ describe('paginate', () => {
             expect(data.edges.length).to.equal(0)
         })
         it('counts items with joins correctly', async () => {
-            const orgs = [createOrganization(), createOrganization()]
+            const orgs = [createOrganization({}), createOrganization({})]
             await connection.manager.save(orgs)
             for (const user of usersList) {
                 for (const org of orgs) {
@@ -348,7 +348,7 @@ describe('paginate', () => {
         beforeEach(async () => {
             // create 50 more users
             for (let i = 0; i < 50; i++) {
-                usersList.push(createUser())
+                usersList.push(createUser({}))
                 await connection.manager.save(usersList)
             }
             scope = getRepository(User).createQueryBuilder()

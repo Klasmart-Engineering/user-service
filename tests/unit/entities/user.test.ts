@@ -21,7 +21,7 @@ describe('User', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        user = createUser()
+        user = createUser({})
     })
 
     describe('.new', () => {

@@ -55,12 +55,11 @@ describe('usersConnection loaders', async () => {
     beforeEach(async () => {
         usersList = []
         for (let i = 0; i < 10; i++) {
-            usersList.push(createUser())
+            usersList.push(createUser({}))
             await connection.manager.save(usersList)
         }
         userIds = usersList.map((u) => u.user_id)
-        org1 = createOrganization()
-        org1.status = Status.INACTIVE
+        org1 = createOrganization({status: Status.INACTIVE})
         await connection.manager.save(org1)
         school1 = createSchool(org1, 'school 1')
         school1.status = Status.INACTIVE

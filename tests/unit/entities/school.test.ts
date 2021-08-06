@@ -29,7 +29,7 @@ describe('School', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        existingOrg = createOrganization()
+        existingOrg = createOrganization({})
         await manager.save(existingOrg)
 
         existingSchool = createSchool(existingOrg)
@@ -39,7 +39,7 @@ describe('School', () => {
     describe('create', () => {
         context('duplicate name outside the organization', () => {
             it('succeeds', async () => {
-                const org = createOrganization()
+                const org = createOrganization({})
                 await manager.save(org)
 
                 const school = createSchool(org, existingSchool.school_name)

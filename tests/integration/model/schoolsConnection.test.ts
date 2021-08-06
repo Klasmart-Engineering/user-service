@@ -43,8 +43,8 @@ describe('schoolsConnection', () => {
 
     beforeEach(async () => {
         admin = await createAdminUser(testClient)
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(admin)
+        org1 = await createOrganization({}, admin)
+        org2 = await createOrganization({}, admin)
         await connection.manager.save([org1, org2])
         schools = []
         for (let i = 0; i < 10; i++) {

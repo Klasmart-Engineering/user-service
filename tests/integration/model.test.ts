@@ -110,7 +110,7 @@ describe('model', () => {
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             otherUser = await createNonAdminUser(testClient)
-            org = createOrganization()
+            org = createOrganization({})
             await connection.manager.save(org)
             await addOrganizationToUserAndValidate(
                 testClient,
@@ -285,7 +285,7 @@ describe('model', () => {
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
-            const org = createOrganization(user)
+            const org = createOrganization({}, user)
             await connection.manager.save(org)
             organizationId = org.organization_id
             ageRange = createAgeRange(org)
@@ -561,7 +561,7 @@ describe('model', () => {
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
-            const org = createOrganization(user)
+            const org = createOrganization({}, user)
             await connection.manager.save(org)
             organizationId = org.organization_id
             subcategory = createSubcategory(org)
@@ -695,7 +695,7 @@ describe('model', () => {
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
-            const org = createOrganization(user)
+            const org = createOrganization({}, user)
             await connection.manager.save(org)
             organizationId = org.organization_id
             program = createProgram(org)
@@ -826,7 +826,7 @@ describe('model', () => {
             const schools: School[] = []
             // create two orgs and two schools
             for (let i = 0; i < 2; i++) {
-                const org = createOrganization()
+                const org = createOrganization({})
                 await connection.manager.save(org)
                 organizations.push(org)
                 let role = createRole('role ' + i, org)
@@ -838,7 +838,7 @@ describe('model', () => {
             }
             // create 10 users
             for (let i = 0; i < 10; i++) {
-                usersList.push(createUser())
+                usersList.push(createUser({}))
             }
             //sort users by userId
             await connection.manager.save(usersList)
@@ -924,14 +924,14 @@ describe('model', () => {
             let role1: Role
             beforeEach(async () => {
                 //org used to filter
-                org = createOrganization()
+                org = createOrganization({})
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
                 school1 = createSchool(org)
 
                 // org and school whose membership shouldnt be included
-                let org2 = createOrganization()
+                let org2 = createOrganization({})
                 await connection.manager.save(org2)
                 let role2 = createRole('role 2', org2)
                 await connection.manager.save(role2)
@@ -943,7 +943,7 @@ describe('model', () => {
                 usersList = []
                 // create 10 users
                 for (let i = 0; i < 10; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)
@@ -1061,7 +1061,7 @@ describe('model', () => {
             })
 
             it('returns roles if the user has no school memberships', async () => {
-                const newUser = createUser()
+                const newUser = createUser({})
                 await connection.manager.save([newUser])
 
                 await addOrganizationToUserAndValidate(
@@ -1108,7 +1108,7 @@ describe('model', () => {
             beforeEach(async () => {
                 //org used to filter
                 const superAdmin = await createAdminUser(testClient)
-                org = createOrganization(superAdmin)
+                org = createOrganization({}, superAdmin)
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
@@ -1121,7 +1121,7 @@ describe('model', () => {
                 usersList = []
                 // create 10 users
                 for (let i = 0; i < 10; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)
@@ -1256,7 +1256,7 @@ describe('model', () => {
             let role2: Role
             beforeEach(async () => {
                 //org used to filter
-                org = createOrganization()
+                org = createOrganization({})
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
@@ -1268,7 +1268,7 @@ describe('model', () => {
                 usersList = []
                 // create 10 users
                 for (let i = 0; i < 10; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)
@@ -1381,7 +1381,7 @@ describe('model', () => {
             let role1: Role
             beforeEach(async () => {
                 //org used to filter
-                org = createOrganization()
+                org = createOrganization({})
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
@@ -1392,7 +1392,7 @@ describe('model', () => {
                 usersList = []
                 // create 10 users
                 for (let i = 0; i < 10; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
                 await connection.manager.save(usersList)
                 //sort users by userId
@@ -1504,7 +1504,7 @@ describe('model', () => {
             let role3: Role
             beforeEach(async () => {
                 //org role and school used to filter
-                org = createOrganization()
+                org = createOrganization({})
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
@@ -1517,7 +1517,7 @@ describe('model', () => {
                 usersList = []
                 // create 15 users
                 for (let i = 0; i < 15; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)
@@ -1580,7 +1580,7 @@ describe('model', () => {
                 }
 
                 // create second org and add other users to this org
-                org2 = createOrganization()
+                org2 = createOrganization({})
                 await connection.manager.save(org2)
                 role3 = createRole('role 3', org2)
                 await connection.manager.save(role3)
@@ -1672,12 +1672,12 @@ describe('model', () => {
 
                 // create an org
                 let org: Organization
-                org = createOrganization()
+                org = createOrganization({})
                 await connection.manager.save(org)
 
                 // create 5 users
                 for (let i = 0; i < 5; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
 
                 //sort users by userId
@@ -1742,7 +1742,7 @@ describe('model', () => {
             beforeEach(async () => {
                 //org used to filter
                 const superAdmin = await createAdminUser(testClient)
-                org = createOrganization(superAdmin)
+                org = createOrganization({}, superAdmin)
                 await connection.manager.save(org)
                 role1 = createRole('role 1', org)
                 await connection.manager.save(role1)
@@ -1759,7 +1759,7 @@ describe('model', () => {
                 usersList = []
                 // create 10 users
                 for (let i = 0; i < 10; i++) {
-                    usersList.push(createUser())
+                    usersList.push(createUser({}))
                 }
                 //sort users by userId
                 await connection.manager.save(usersList)

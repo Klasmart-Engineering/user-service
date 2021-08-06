@@ -3,7 +3,7 @@ import { Subcategory } from '../../src/entities/subcategory'
 import { createOrganization } from './organization.factory'
 import { Organization } from '../../src/entities/organization'
 
-export function createSubcategory(org: Organization = createOrganization()) {
+export function createSubcategory(org: Organization = createOrganization({})) {
     const subcategory = new Subcategory()
 
     subcategory.name = faker.random.word()

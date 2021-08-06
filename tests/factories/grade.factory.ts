@@ -5,7 +5,7 @@ import { Grade } from '../../src/entities/grade'
 import { Organization } from '../../src/entities/organization'
 
 export function createGrade(
-    org: Organization = createOrganization(),
+    org: Organization = createOrganization( {} ),
     progressFromGrade?: Grade,
     progressToGrade?: Grade
 ) {

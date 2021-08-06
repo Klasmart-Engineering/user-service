@@ -33,8 +33,7 @@ describe('processSubCategoriesFromCSVRow', () => {
     })
 
     beforeEach(async () => {
-        expectedOrg = createOrganization()
-        expectedOrg.organization_name = orgName
+        expectedOrg = createOrganization({organization_name: orgName})
         await connection.manager.save(expectedOrg)
     })
 

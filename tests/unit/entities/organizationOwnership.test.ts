@@ -30,8 +30,8 @@ describe('OrganizationOwnership', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        user = createUser()
-        organization = createOrganization(user)
+        user = createUser({})
+        organization = createOrganization({}, user)
     })
 
     describe('.new', () => {

@@ -59,8 +59,7 @@ describe('processProgramFromCSVRow', () => {
     beforeEach(async () => {
         row = rowModel
 
-        organization = await createOrganization()
-        organization.organization_name = rowModel.organization_name
+        organization = await createOrganization({organization_name: rowModel.organization_name})
         await connection.manager.save(organization)
 
         ageRange = await createAgeRange(organization)

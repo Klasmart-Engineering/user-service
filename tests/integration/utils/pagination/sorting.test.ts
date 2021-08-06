@@ -50,8 +50,7 @@ describe('sorting', () => {
             hasNextPage = true
             hasPreviousPage = true
             for (let i = 0; i < totalUsers; i++) {
-                const user = createUser()
-                user.given_name = orderedStrings[i]
+                const user = createUser({ given_name: orderedStrings[i]})
                 usersList.push(user)
             }
             await connection.manager.save(usersList)
@@ -203,12 +202,10 @@ describe('sorting', () => {
 
         beforeEach(async () => {
             userIds = []
-            const org = createOrganization()
+            const org = createOrganization({}, )
             await connection.manager.save(org)
             for (let i = 0; i < totalUsers; i++) {
-                const user = createUser()
-                user.given_name = 'duplicate given name'
-
+                const user = createUser({ given_name: 'duplicate given name'})
                 await connection.manager.save(user)
 
                 userIds.push(user.user_id)
@@ -280,7 +277,7 @@ describe('sorting', () => {
             hasPreviousPage = true
 
             for (let i = 0; i < totalUsers; i++) {
-                const user = createUser()
+                const user = createUser({})
 
                 user.given_name =
                     orderedStrings[

@@ -375,7 +375,7 @@ describe('userPermissions', () => {
             const superAdmin = await createAdminUser(testClient)
 
             for (let i = 0; i < 2; i++) {
-                const org = createOrganization(superAdmin)
+                const org = createOrganization({}, superAdmin)
                 await connection.manager.save(org)
                 orgs.push(org)
 

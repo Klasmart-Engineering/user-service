@@ -77,7 +77,7 @@ describe('Subject', () => {
         beforeEach(async () => {
             const orgOwner = await createAdminUser(testClient)
             user = await createNonAdminUser(testClient)
-            organization = createOrganization()
+            organization = createOrganization({})
             await organization.save()
             subcategory = createSubcategory(organization)
             await subcategory.save()
@@ -182,7 +182,7 @@ describe('Subject', () => {
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             userId = user.user_id
-            org = createOrganization()
+            org = createOrganization({})
             await connection.manager.save(org)
             organizationId = org.organization_id
             subject = createSubject(org)

@@ -58,8 +58,8 @@ describe('model', () => {
         })
 
         admin = await createAdminUser(testClient)
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(admin)
+        org1 = await createOrganization({}, admin)
+        org2 = await createOrganization({}, admin)
         await connection.manager.save([org1, org2])
         org1Grades = []
         org2Grades = []

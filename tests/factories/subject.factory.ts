@@ -6,7 +6,7 @@ import { Subcategory } from '../../src/entities/subcategory'
 import { Subject } from '../../src/entities/subject'
 
 export function createSubject(
-    org: Organization = createOrganization(),
+    org: Organization = createOrganization({}),
     categories: Category[] = []
 ) {
     const subject = new Subject()

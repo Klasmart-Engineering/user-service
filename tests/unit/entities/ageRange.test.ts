@@ -27,7 +27,7 @@ describe('AgeRange', () => {
 
     beforeEach(async () => {
         await connection.synchronize(true)
-        org = createOrganization()
+        org = createOrganization({})
         ageRange = createAgeRange(org)
     })
 
