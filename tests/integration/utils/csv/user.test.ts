@@ -509,11 +509,13 @@ describe('processUserFromCSVRow', async () => {
     context('email', () => {
         let err: CSVError
         afterEach(() => {
-            expect(err.column).to.eq('user_email')
-            expect(err.entity).to.eq('User')
-            expect(err.attribute).to.eq('Email')
-            for (const v of getCustomErrorMessageVariables(err.message)) {
-                expect(err[v]).to.exist
+            if (err) {
+                expect(err.column).to.eq('user_email')
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('Email')
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
             }
         })
         it('is required if phone is not provided', async () => {
@@ -533,7 +535,7 @@ describe('processUserFromCSVRow', async () => {
             )
         })
         it('is not required if phone is provided', async () => {
-            delete row.user_email
+            ;(row as any).user_email = null
             row.user_phone = '+4400000000000'
             await processUserFromCSVRow(
                 connection.manager,

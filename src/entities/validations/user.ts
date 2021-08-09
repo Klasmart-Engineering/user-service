@@ -19,15 +19,15 @@ export const userValidations = {
         .max(validationConstants.EMAIL_MAX_LENGTH)
         .when('phone', {
             is: Joi.exist(),
-            then: Joi.optional(),
+            then: Joi.optional().allow('', null),
             otherwise: Joi.required(),
         }),
 
-    phone: Joi.string().allow(null).regex(REGEX.phone, {
+    phone: Joi.string().allow(null, '').empty(null).regex(REGEX.phone, {
         name: 'phone',
     }),
 
-    date_of_birth: Joi.string().allow(null).regex(REGEX.dob, {
+    date_of_birth: Joi.string().allow(null, '').regex(REGEX.dob, {
         name: 'date_mm_yyy',
     }),
 

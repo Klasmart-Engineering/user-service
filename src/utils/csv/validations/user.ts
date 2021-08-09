@@ -32,14 +32,14 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
     user_shortcode: {
         entity: 'User',
         attribute: 'Short Code',
-        validation: sharedValidations.shortcode.allow(null).optional(),
+        validation: sharedValidations.shortcode.allow(null, '').optional(),
     },
     user_email: {
         entity: 'User',
         attribute: 'Email',
         validation: userValidations.email.when('user_phone', {
             is: Joi.exist(),
-            then: Joi.optional(),
+            then: Joi.optional().allow(null, ''),
             otherwise: Joi.required(),
         }),
     },
@@ -51,7 +51,7 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
     user_date_of_birth: {
         entity: 'User',
         attribute: 'date of birth',
-        validation: userValidations.date_of_birth.optional(),
+        validation: userValidations.date_of_birth.optional().allow(null, ''),
     },
     user_gender: {
         entity: 'User',
@@ -66,11 +66,11 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
     school_name: {
         entity: 'School',
         attribute: 'Name',
-        validation: schoolValidations.school_name.allow(null).optional(),
+        validation: schoolValidations.school_name.allow(null, '').optional(),
     },
     class_name: {
         entity: 'Class',
         attribute: 'Name',
-        validation: classValidations.class_name.allow(null).optional(),
+        validation: classValidations.class_name.allow(null, '').optional(),
     },
 }
