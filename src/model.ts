@@ -6,6 +6,7 @@ import {
     EntityManager,
     Repository,
     SelectQueryBuilder,
+    Brackets,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -535,7 +536,28 @@ export class Model {
                 filterHasProperty('ageRangeFrom', filter) ||
                 filterHasProperty('ageRangeTo', filter)
             ) {
-                scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+                scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange').where(
+                    new Brackets((qb) => {
+                        qb.where(
+                            new Brackets((whereExpession) => {
+                                // Get all the system age ranges except the 'None Specified' one
+                                whereExpession
+                                    .where('AgeRange.name != :noneSpecified', {
+                                        noneSpecified: 'None Specified',
+                                    })
+                                    .andWhere(
+                                        'AgeRange.system = :truthyValue',
+                                        {
+                                            truthyValue: true,
+                                        }
+                                    )
+                            })
+                            // Get all the non system age ranges
+                        ).orWhere('AgeRange.system = :falseyValue', {
+                            falseyValue: false,
+                        })
+                    })
+                )
             }
 
             if (filterHasProperty('subjectId', filter)) {

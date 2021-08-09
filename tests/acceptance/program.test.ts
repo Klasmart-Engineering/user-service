@@ -4,6 +4,7 @@ import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Program } from '../../src/entities/program'
+import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRangeConnectionNode'
 import { ProgramConnectionNode } from '../../src/types/graphQL/programConnectionNode'
 import { loadFixtures } from '../utils/fixtures'
@@ -49,6 +50,7 @@ describe('acceptance.program', () => {
     beforeEach(async () => {
         classIds = []
 
+        await AgeRangesInitializer.run()
         await loadFixtures('users', connection)
 
         const ageRangeDetails: IAgeRangeDetail[] = []
@@ -78,7 +80,11 @@ describe('acceptance.program', () => {
 
         await createAgeRanges(orgId, ageRangeDetails, getAdminAuthToken())
 
-        const ageRanges = (await connection.manager.find(AgeRange)) || []
+        const ageRanges =
+            (await connection.manager.find(AgeRange, {
+                where: { system: false },
+            })) || []
+
         const ageRangeIds = ageRanges.map((ar) => ar.id)
 
         for (let i = 0; i < programsCount; i++) {

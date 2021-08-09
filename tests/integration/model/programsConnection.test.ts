@@ -36,6 +36,9 @@ import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
 import { Class } from '../../../src/entities/class'
 import { createClass } from '../../factories/class.factory'
+import AgeRangesInitializer from '../../../src/initializers/ageRanges'
+import ProgramsInitializer from '../../../src/initializers/programs'
+import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -49,6 +52,7 @@ describe('model', () => {
     let org1Programs: Program[] = []
     let org2Programs: Program[] = []
     let programs: Program[] = []
+    let systemPrograms: Program[] = []
     let ageRanges: AgeRange[] = []
     let grades: Grade[] = []
     let subjects: Subject[] = []
@@ -72,6 +76,8 @@ describe('model', () => {
     })
 
     beforeEach(async () => {
+        await AgeRangesInitializer.run()
+        await ProgramsInitializer.run()
         admin = await createAdminUser(testClient)
         org1 = await createOrganization(admin)
         org2 = await createOrganization(admin)
@@ -88,12 +94,28 @@ describe('model', () => {
         grades = []
         subjects = []
 
-        for (let i = 0; i < ageRangesCount; i++) {
+        for (let i = 0; i < ageRangesCount / 2; i++) {
             let ageRange = await createAgeRange(org1, i, i + 1)
+            ageRange.low_value_unit = AgeRangeUnit.MONTH
+            ageRange.high_value_unit = AgeRangeUnit.MONTH
+            ageRanges.push(ageRange)
+        }
+
+        for (let i = 0; i < ageRangesCount / 2; i++) {
+            let ageRange = await createAgeRange(org1, i, i + 1)
+            ageRange.low_value_unit = AgeRangeUnit.YEAR
+            ageRange.high_value_unit = AgeRangeUnit.YEAR
             ageRanges.push(ageRange)
         }
 
         await connection.manager.save(ageRanges)
+
+        systemPrograms =
+            (await connection.manager.find(Program, {
+                where: { system: true },
+            })) || []
+
+        programs.push(...systemPrograms)
 
         for (let i = 0; i < gradesCount; i++) {
             let grade = await createGrade(org1)
@@ -164,7 +186,9 @@ describe('model', () => {
                 { authorization: getAdminAuthToken() }
             )
 
-            expect(result.totalCount).to.eq(programsCount * 2)
+            expect(result.totalCount).to.eq(
+                programsCount * 2 + systemPrograms.length
+            )
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
@@ -186,7 +210,9 @@ describe('model', () => {
                 { field: 'id', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(programsCount * 2)
+            expect(result.totalCount).to.eq(
+                programsCount * 2 + systemPrograms.length
+            )
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
@@ -211,7 +237,9 @@ describe('model', () => {
                 { field: 'id', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(programsCount * 2)
+            expect(result.totalCount).to.eq(
+                programsCount * 2 + systemPrograms.length
+            )
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
@@ -236,7 +264,9 @@ describe('model', () => {
                 { field: 'name', order: 'ASC' }
             )
 
-            expect(result.totalCount).to.eq(programsCount * 2)
+            expect(result.totalCount).to.eq(
+                programsCount * 2 + systemPrograms.length
+            )
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
@@ -261,7 +291,9 @@ describe('model', () => {
                 { field: 'name', order: 'DESC' }
             )
 
-            expect(result.totalCount).to.eq(programsCount * 2)
+            expect(result.totalCount).to.eq(
+                programsCount * 2 + systemPrograms.length
+            )
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
@@ -333,7 +365,7 @@ describe('model', () => {
         })
 
         it('supports filtering by program name', async () => {
-            const filterValue = '1'
+            const filterValue = 'program 1'
             const filter: IEntityFilter = {
                 name: {
                     operator: 'contains',
@@ -395,7 +427,9 @@ describe('model', () => {
                 filter
             )
 
-            expect(result.totalCount).to.eq(programsCount / 2)
+            expect(result.totalCount).to.eq(
+                programsCount / 2 + systemPrograms.length
+            )
 
             const systems = result.edges.map((edge) => edge.node.system)
             systems.every((system) => system === filterSystem)
@@ -430,7 +464,7 @@ describe('model', () => {
         })
 
         it('supports filtering by age range from', async () => {
-            const ageRange = ageRanges[0]
+            const ageRange = ageRanges[1]
             const ageRangeFrom = {
                 value: ageRange.low_value,
                 unit: ageRange.low_value_unit,
@@ -472,7 +506,7 @@ describe('model', () => {
         })
 
         it('supports filtering by age range to', async () => {
-            const ageRange = ageRanges[1]
+            const ageRange = ageRanges[2]
             const ageRangeTo = {
                 value: ageRange.high_value,
                 unit: ageRange.high_value_unit,
@@ -614,6 +648,58 @@ describe('model', () => {
                 )
 
             expect(fn()).to.be.rejected
+        })
+
+        it("filters by age range from avoiding 'None Specified'", async () => {
+            const lowValue = 0
+            const lowValueUnit = AgeRangeUnit.YEAR
+            const ageRangeFrom = {
+                value: lowValue,
+                unit: lowValueUnit,
+            }
+
+            const filter: IEntityFilter = {
+                ageRangeFrom: {
+                    operator: 'eq',
+                    value: ageRangeFrom,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(0)
+        })
+
+        it("filters by age range to avoiding 'None Specified'", async () => {
+            const highValue = 99
+            const highValueUnit = AgeRangeUnit.YEAR
+            const ageRangeTo = {
+                value: highValue,
+                unit: highValueUnit,
+            }
+
+            const filter: IEntityFilter = {
+                ageRangeTo: {
+                    operator: 'eq',
+                    value: ageRangeTo,
+                },
+            }
+
+            const result = await programsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(0)
         })
     })
 })
