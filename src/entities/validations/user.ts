@@ -44,7 +44,7 @@ export const userValidations = {
         .min(validationConstants.GENDER_MIN_LENGTH)
         .max(validationConstants.GENDER_MAX_LENGTH),
 
-    alternate_email: sharedValidations.email.allow(null).optional(),
+    alternate_email: sharedValidations.email.allow('', null).optional(),
 
-    alternate_phone: sharedValidations.phone.allow(null).optional(),
+    alternate_phone: sharedValidations.phone.allow('', null).optional(),
 }

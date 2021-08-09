@@ -1891,7 +1891,7 @@ describe('organization', () => {
                     let phone: string | undefined = undefined
                     let given = 'Bob'
                     let family: string | undefined = undefined
-                    let dateOfBirth = '02-1978'
+                    let dateOfBirth = ''
                     const fn = async () =>
                         await inviteUser(
                             testClient,

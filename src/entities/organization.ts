@@ -53,7 +53,13 @@ import apiErrorConstants from '../types/errors/apiErrorConstants'
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 
-export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)
+export const padShortDob = (dob: string) => {
+    if (dob && dob.length > 0) {
+        return dob?.length < 7 ? '0' + dob : dob
+    } else {
+        return dob
+    }
+}
 
 @Entity()
 export class Organization extends BaseEntity {
