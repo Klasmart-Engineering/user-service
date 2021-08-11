@@ -323,7 +323,7 @@ describe('acceptance.user', () => {
                 code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
                 message: 'User given_name is required.',
                 entity: 'User',
-                attribute: 'given_name',
+                attribute: ['given_name'],
                 label: 'given_name',
                 key: 'given_name',
             }
@@ -333,7 +333,7 @@ describe('acceptance.user', () => {
                 message:
                     'User family_name must only contain letters, numbers, space and & / , - .',
                 entity: 'User',
-                attribute: 'family_name',
+                attribute: ['family_name'],
                 name: 'alphanum_with_special_characters',
                 regex: {},
                 value: 'F$&',
@@ -381,7 +381,7 @@ describe('acceptance.user', () => {
                 message:
                     'User user1@gmail.com, given1, family1 already exists.',
                 entity: 'User',
-                attribute: 'email/phone, given_name, family_name',
+                attribute: ['email', 'phone', 'given_name', 'family_name'],
                 value: 'user1@gmail.com, given1, family1',
             }
             const expectedErrorObject2 = {
@@ -389,7 +389,7 @@ describe('acceptance.user', () => {
                 code: 'ERR_DUPLICATE_ENTITY',
                 message: 'OrganizationMembership SHORT1 already exists.',
                 entity: 'OrganizationMembership',
-                attribute: 'shortcode',
+                attribute: ['shortcode'],
                 value: 'SHORT1',
             }
             const given_name = 'given1'

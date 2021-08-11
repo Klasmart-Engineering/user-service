@@ -8,7 +8,7 @@ export interface apiError {
     message: string
     api: string
     entity:string
-    attribute:string
+    attribute: string[]
     [params: string]: unknown
 }
 
@@ -16,19 +16,19 @@ export function addApiError(
     fileErrors: apiError[],
     code: string,
     api:string,
-    parameter:string,
+    attribute :string[],
     message: string,
     entity:string,
     params: Record<string, unknown> = {}
 ): void {
-    fileErrors.push(buildApiError(code, api, parameter, message, entity, params))
+    fileErrors.push(buildApiError(code, api, attribute, message, entity, params))
 }
 
 
 function buildApiError(
     code: string,
     api: string,
-    attribute: string,
+    attribute: string[],
     message: string,
     entity: string,
     params: Record<string, unknown>
@@ -57,7 +57,7 @@ export function joiResultToAPIErrors( result: ValidationResult,
         const apiError = buildApiError(
             details.code,
             api,
-            prop,    
+            [prop],    
             details.message, 
             entity,
              {

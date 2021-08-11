@@ -720,7 +720,7 @@ export class Organization extends BaseEntity {
                     membershipErrors,
                     customErrors.duplicate_entity.code,
                     'inviteUser',
-                    'shortcode',
+                    ['shortcode'],
                     customErrors.duplicate_entity.message,
                     'OrganizationMembership',
                     { value: shortcode }
@@ -746,16 +746,11 @@ export class Organization extends BaseEntity {
                 userErrors,
                 customErrors.duplicate_entity.code,
                 'inviteUser',
-                'email/phone, given_name, family_name',
+                ['email', 'phone', 'given_name', 'family_name'],
                 customErrors.duplicate_entity.message,
                 'User',
                 {
-                    value:
-                        (email ? email : phone) +
-                        ', ' +
-                        given_name +
-                        ', ' +
-                        family_name,
+                    value: [email || phone, given_name, family_name].join(', '),
                 }
             )
         }

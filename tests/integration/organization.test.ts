@@ -1834,7 +1834,7 @@ describe('organization', () => {
                         message:
                             'OrganizationMembership shortcode must only contain letters and numbers.',
                         entity: 'OrganizationMembership',
-                        attribute: 'shortcode',
+                        attribute: ['shortcode'],
                         label: 'shortcode',
                         value: 'RANGER 13',
                         key: 'shortcode',
@@ -1883,7 +1883,7 @@ describe('organization', () => {
                         code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
                         message: 'User family_name is required.',
                         entity: 'User',
-                        attribute: 'family_name',
+                        attribute: ['family_name'],
                         label: 'family_name',
                         key: 'family_name',
                     }
@@ -2138,7 +2138,12 @@ describe('organization', () => {
                         message:
                             'User bob@nowhere.com, Bob, Smith already exists.',
                         entity: 'User',
-                        attribute: 'email/phone, given_name, family_name',
+                        attribute: [
+                            'email',
+                            'phone',
+                            'given_name',
+                            'family_name',
+                        ],
                         value: 'bob@nowhere.com, Bob, Smith',
                     }
                     let email = 'bob@nowhere.com'
@@ -2184,7 +2189,7 @@ describe('organization', () => {
                         message:
                             'OrganizationMembership THUNDER499 already exists.',
                         entity: 'OrganizationMembership',
-                        attribute: 'shortcode',
+                        attribute: ['shortcode'],
                         value: 'THUNDER499',
                     }
                     let email = 'bob@nowhere.com'
