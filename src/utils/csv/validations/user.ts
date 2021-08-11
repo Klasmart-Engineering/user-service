@@ -61,8 +61,8 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
         validation: userValidations.gender.required(),
     },
     organization_role_name: {
-        entity: 'User',
-        attribute: 'Organization Role',
+        entity: 'Organization',
+        attribute: 'Role',
         validation: roleValidations.role_name.required(),
     },
     school_name: {

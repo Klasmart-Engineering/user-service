@@ -729,8 +729,8 @@ describe('processUserFromCSVRow', async () => {
             expect(err.code).to.eq(
                 customErrors.missing_required_entity_attribute.code
             )
-            expect(err.entity).to.eq('User')
-            expect(err.attribute).to.eq('Organization Role')
+            expect(err.entity).to.eq('Organization')
+            expect(err.attribute).to.eq('Role')
         })
         it('errors when too long', async () => {
             row.organization_role_name = 'a'.repeat(
@@ -747,8 +747,8 @@ describe('processUserFromCSVRow', async () => {
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
             expect(err.max).to.eq(constants.ROLE_NAME_MAX_LENGTH)
-            expect(err.entity).to.eq('User')
-            expect(err.attribute).to.eq('Organization Role')
+            expect(err.entity).to.eq('Organization')
+            expect(err.attribute).to.eq('Role')
         })
         it('errors when nonexistent', async () => {
             row.organization_role_name = 'Non existing role'
