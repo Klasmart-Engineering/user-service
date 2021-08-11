@@ -54,6 +54,10 @@ export const customErrors = {
     code: "ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE",
     message: "{entity} {attribute} is required.",
   },
+  missing_required_either: {
+    code: "ERR_MISSING_REQUIRED_EITHER",
+    message: "{entity} {attribute}/{otherAttribute} is required.",
+  },
 
   invalid_max_length: {
     code: "ERR_INVALID_MAX_LENGTH",

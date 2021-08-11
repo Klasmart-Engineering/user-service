@@ -40,7 +40,9 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
         validation: userValidations.email.when('user_phone', {
             is: Joi.exist(),
             then: Joi.optional().allow(null, ''),
-            otherwise: Joi.required(),
+            otherwise: Joi.required().messages({
+                'any.required': 'email/phone is required',
+            }),
         }),
     },
     user_phone: {

@@ -530,9 +530,8 @@ describe('processUserFromCSVRow', async () => {
             )
             err = fileErrors[0]
             expect(fileErrors.length).to.eq(1)
-            expect(err.code).to.eq(
-                customErrors.missing_required_entity_attribute.code
-            )
+            expect(err.code).to.eq(customErrors.missing_required_either.code)
+            expect(err.otherAttribute).to.eq('Phone')
         })
         it('is not required if phone is provided', async () => {
             ;(row as any).user_email = null

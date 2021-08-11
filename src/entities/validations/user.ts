@@ -20,7 +20,9 @@ export const userValidations = {
         .when('phone', {
             is: Joi.exist(),
             then: Joi.optional().allow('', null),
-            otherwise: Joi.required(),
+            otherwise: Joi.required().messages({
+                'any.required': 'email/phone is required',
+            }),
         }),
 
     phone: Joi.string().allow(null, '').empty(null).regex(REGEX.phone, {

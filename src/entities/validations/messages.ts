@@ -16,8 +16,23 @@ export function getCustomConstraintDetails(
 ): ICustomMessage {
     const constraintType = error.type
 
-    // TODO add custom errors for other Joi constrains
+    // first check for special cases identified via a custom message
+    switch (error.message) {
+        case 'email/phone is required': {
+            return {
+                code: customErrors.missing_required_either.code,
+                message: customErrors.missing_required_either.message,
+                params: {
+                    otherAttribute: 'Phone',
+                },
+            }
+        }
+        default: {
+            break
+        }
+    }
 
+    // TODO add custom errors for other Joi constrains
     switch (constraintType) {
         case 'string.max': {
             return {
