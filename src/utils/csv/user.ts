@@ -245,8 +245,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 'user_shortcode',
                 customErrors.duplicate_entity.message,
                 {
-                    entity: 'Short Code',
-                    entityName: row.user_shortcode,
+                    entity: 'User',
+                    entityName: 'Short Code',
                 }
             )
         }
