@@ -589,4 +589,63 @@ describe('filtering', () => {
             expect(data.length).to.equal(3)
         })
     })
+
+    context('ageRangeUnits', () => {
+        it('supports ageRangeUnit.eq', async () => {
+            const filter: IEntityFilter = {
+                ageRangeUnitFrom: {
+                    operator: 'eq',
+                    value: AgeRangeUnit.MONTH,
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
+                })
+            )
+
+            const data = await programScope.getMany()
+            expect(data.length).to.equal(1)
+        })
+
+        it('supports ageRangeUnit.neq', async () => {
+            const filter: IEntityFilter = {
+                ageRangeUnitTo: {
+                    operator: 'neq',
+                    value: AgeRangeUnit.YEAR,
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
+                })
+            )
+
+            const data = await programScope.getMany()
+            expect(data.length).to.equal(1)
+        })
+
+        it('fails with a value different to a valid Age Range Unit', async () => {
+            const filter: IEntityFilter = {
+                ageRangeUnitTo: {
+                    operator: 'neq',
+                    value: 'week',
+                },
+            }
+
+            programScope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+            programScope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
+                })
+            )
+
+            const fn = async () => await programScope.getMany()
+            await expect(fn()).to.be.rejected
+        })
+    })
 })

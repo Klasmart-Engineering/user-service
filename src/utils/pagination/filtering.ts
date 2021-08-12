@@ -40,6 +40,25 @@ const AVOID_NOT_EQUAL_OPERATOR_ALIASES = [
     'AgeRange.high_value_unit',
 ]
 
+// Brackets to be used when in age ranges join you want to exclude the 'None Specified' one
+export const AVOID_NONE_SPECIFIED_BRACKETS = new Brackets((qb) => {
+    qb.where(
+        new Brackets((whereExpession) => {
+            // Get all the system age ranges except the 'None Specified' one
+            whereExpession
+                .where('AgeRange.name != :noneSpecified', {
+                    noneSpecified: 'None Specified',
+                })
+                .andWhere('AgeRange.system = :truthyValue', {
+                    truthyValue: true,
+                })
+        })
+        // Get all the non system age ranges
+    ).orWhere('AgeRange.system = :falseyValue', {
+        falseyValue: false,
+    })
+})
+
 // generates a WHERE clause for a given query filter
 export function getWhereClauseFromFilter(
     filter: IEntityFilter,

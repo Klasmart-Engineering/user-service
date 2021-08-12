@@ -2,30 +2,51 @@ import supertest from 'supertest'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import {
     ADD_SCHOOL_TO_CLASS,
+    EDIT_AGE_RANGE_CLASS,
+    EDIT_GRADES_CLASS,
     EDIT_PROGRAM_CLASS,
+    EDIT_SCHOOLS_IN_CLASS,
     EDIT_STUDENTS_IN_CLASS,
+    EDIT_SUBJECTS_CLASS,
 } from '../classOps'
 import { LEAVE_ORGANIZATION } from '../organizationMembershipOps'
 import {
     CREATE_CLASS,
     CREATE_OR_UPDATE_AGE_RANGES,
+    CREATE_OR_UPDATE_GRADES,
     CREATE_OR_UPDATE_PROGRAMS,
+    CREATE_OR_UPDATE_SUBJECTS,
     CREATE_SCHOOL,
     INVITE_USER,
 } from '../organizationOps'
 import { CREATE_ORGANIZATION } from '../userOps'
 
 export interface IProgramDetail {
-    name: string
-    age_ranges: string[]
+    name?: string
+    age_ranges?: string[]
 }
 
 export interface IAgeRangeDetail {
-    name: string
-    low_value: number
-    low_value_unit: AgeRangeUnit
-    high_value: number
-    high_value_unit: AgeRangeUnit
+    name?: string
+    low_value?: number
+    low_value_unit?: AgeRangeUnit
+    high_value?: number
+    high_value_unit?: AgeRangeUnit
+}
+
+export interface IGradeDetail {
+    id?: string
+    name?: string
+    progress_from_grade_id?: string
+    progress_to_grade_id?: string
+    system?: string
+}
+
+export interface ISubjectDetail {
+    id?: string
+    name?: string
+    categories?: string[]
+    system?: boolean
 }
 
 const url = 'http://localhost:8080'
@@ -237,6 +258,126 @@ export async function leaveTheOrganization(
             variables: {
                 user_id,
                 organization_id,
+            },
+        })
+}
+
+export async function createGrades(
+    organization_id: string,
+    grades: IGradeDetail[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_OR_UPDATE_GRADES,
+            variables: {
+                organization_id,
+                grades,
+            },
+        })
+}
+
+export async function createSubjects(
+    organization_id: string,
+    subjects: ISubjectDetail[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_OR_UPDATE_SUBJECTS,
+            variables: {
+                organization_id,
+                subjects,
+            },
+        })
+}
+
+export async function addAgeRangesToClass(
+    class_id: string,
+    age_range_ids: string[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: EDIT_AGE_RANGE_CLASS,
+            variables: {
+                id: class_id,
+                age_range_ids,
+            },
+        })
+}
+
+export async function addSchoolsToClass(
+    class_id: string,
+    school_ids: string[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: EDIT_SCHOOLS_IN_CLASS,
+            variables: {
+                class_id,
+                school_ids,
+            },
+        })
+}
+
+export async function addGradesToClass(
+    class_id: string,
+    grade_ids: string[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: EDIT_GRADES_CLASS,
+            variables: {
+                id: class_id,
+                grade_ids,
+            },
+        })
+}
+
+export async function addSubjectsToClass(
+    class_id: string,
+    subject_ids: string[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: EDIT_SUBJECTS_CLASS,
+            variables: {
+                id: class_id,
+                subject_ids,
             },
         })
 }

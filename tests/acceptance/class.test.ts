@@ -1,13 +1,30 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
+import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import { Class } from '../../src/entities/class'
 import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
+import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRangeConnectionNode'
+import { ClassConnectionNode } from '../../src/types/graphQL/classConnectionNode'
+import { GradeSummaryNode } from '../../src/types/graphQL/gradeSummaryNode'
+import { ProgramSummaryNode } from '../../src/types/graphQL/programSummaryNode'
+import { SchoolSimplifiedSummaryNode } from '../../src/types/graphQL/schoolSimplifiedSummaryNode'
+import { SubjectSummaryNode } from '../../src/types/graphQL/subjectSummaryNode'
 import { loadFixtures } from '../utils/fixtures'
 import {
+    addAgeRangesToClass,
+    addGradesToClass,
+    addProgramsToClass,
+    addSchoolsToClass,
     addSchoolToClass,
+    addSubjectsToClass,
+    createAgeRanges,
+    createGrades,
+    createPrograms,
     createSchool,
+    createSubjects,
+    IAgeRangeDetail,
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { DELETE_CLASS } from '../utils/operations/classOps'
@@ -19,6 +36,10 @@ import {
 import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
+
+interface IClassEdge {
+    node: ClassConnectionNode
+}
 
 let schoolAdminId: string
 let orgMemberId: string
@@ -39,6 +60,19 @@ let org1Id: string
 let org2Id: string
 let class1Ids: string[]
 let class2Ids: string[]
+
+let ageRangeId: string
+let schoolId: string
+let gradeId: string
+let subjectId: string
+let programId: string
+const ageRangeDetail: IAgeRangeDetail = {
+    name: '11 - 12 year(s)',
+    low_value: 11,
+    low_value_unit: AgeRangeUnit.YEAR,
+    high_value: 12,
+    high_value_unit: AgeRangeUnit.YEAR,
+}
 
 async function createOrg(user_id: string, org_name: string, token: string) {
     return await request
@@ -182,6 +216,60 @@ describe('acceptance.class', () => {
         orgMemberId = createOrgMemberData.user.user_id
         orgMember = await connection.manager.findOneOrFail(User, orgMemberId)
 
+        // Creating Age Range to Filter
+        const createAgeRangeResponse = await createAgeRanges(
+            org1Id,
+            [ageRangeDetail],
+            getAdminAuthToken()
+        )
+
+        ageRangeId =
+            createAgeRangeResponse.body.data.organization
+                .createOrUpdateAgeRanges[0].id
+
+        // Creating School to Filter
+        const createSchoolResponse = await createSchool(
+            org1Id,
+            'School One',
+            getAdminAuthToken()
+        )
+
+        schoolId =
+            createSchoolResponse.body.data.organization.createSchool.school_id
+
+        // Creating Grade to Filter
+        const createGradeResponse = await createGrades(
+            org1Id,
+            [{ name: 'Grade One' }],
+            getAdminAuthToken()
+        )
+
+        gradeId =
+            createGradeResponse.body.data.organization.createOrUpdateGrades[0]
+                .id
+
+        // Creating Subject to Filter
+        const createSubjectResponse = await createSubjects(
+            org1Id,
+            [{ name: 'Subject One' }],
+            getAdminAuthToken()
+        )
+
+        subjectId =
+            createSubjectResponse.body.data.organization
+                .createOrUpdateSubjects[0].id
+
+        // Creating Program to Filter
+        const createProgramResponse = await createPrograms(
+            org1Id,
+            [{ name: 'Program One' }],
+            getAdminAuthToken()
+        )
+
+        programId =
+            createProgramResponse.body.data.organization
+                .createOrUpdatePrograms[0].id
+
         for (let i = 1; i <= classesCount; i++) {
             const org1ClassResponse = await createClass(
                 org1Id,
@@ -219,6 +307,15 @@ describe('acceptance.class', () => {
         const inactiveClassId = classes[0].class_id
 
         await deleteClass(inactiveClassId, getAdminAuthToken())
+        await addAgeRangesToClass(
+            class1Ids[1],
+            [ageRangeId],
+            getAdminAuthToken()
+        )
+        await addSchoolsToClass(class1Ids[2], [schoolId], getAdminAuthToken())
+        await addGradesToClass(class1Ids[3], [gradeId], getAdminAuthToken())
+        await addSubjectsToClass(class1Ids[4], [subjectId], getAdminAuthToken())
+        await addProgramsToClass(class1Ids[5], [programId], getAdminAuthToken())
     })
 
     context('classesConnection', () => {
@@ -372,6 +469,234 @@ describe('acceptance.class', () => {
 
             expect(response.status).to.eq(200)
             expect(classesConnection.totalCount).to.equal(1)
+        })
+
+        it('queries paginated classes filtering by age range from', async () => {
+            const lowValue = ageRangeDetail.low_value
+            const lowUnit = ageRangeDetail.low_value_unit
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            ageRangeValueFrom: {
+                                operator: 'eq',
+                                value: lowValue,
+                            },
+                            ageRangeUnitFrom: {
+                                operator: 'eq',
+                                value: lowUnit,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+
+            const classAgeRanges = classesConnection.edges.map(
+                (edge: IClassEdge) => edge.node.ageRanges
+            )
+
+            classAgeRanges.every((ars: AgeRangeConnectionNode[]) => {
+                const lowValues = ars.map((ar) => ar.lowValue)
+                const lowUnits = ars.map((ar) => ar.lowValueUnit)
+
+                expect(lowValues).includes(lowValue)
+                expect(lowUnits).includes(lowUnit)
+            })
+        })
+
+        it('queries paginated classes filtering by age range to', async () => {
+            const highValue = ageRangeDetail.high_value
+            const highUnit = ageRangeDetail.high_value_unit
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            ageRangeValueTo: {
+                                operator: 'eq',
+                                value: highValue,
+                            },
+                            ageRangeUnitTo: {
+                                operator: 'eq',
+                                value: highUnit,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+
+            const classAgeRanges = classesConnection.edges.map(
+                (edge: IClassEdge) => edge.node.ageRanges
+            )
+
+            classAgeRanges.every((ars: AgeRangeConnectionNode[]) => {
+                const highValues = ars.map((ar) => ar.highValue)
+                const highUnits = ars.map((ar) => ar.highValueUnit)
+
+                expect(highValues).includes(highValue)
+                expect(highUnits).includes(highUnit)
+            })
+        })
+
+        it('queries paginated classes filtering by school ID', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            schoolId: {
+                                operator: 'eq',
+                                value: schoolId,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+
+            const classSchools = classesConnection.edges.map(
+                (edge: IClassEdge) => edge.node.schools
+            )
+
+            classSchools.every((schools: SchoolSimplifiedSummaryNode[]) => {
+                const schoolIds = schools.map((school) => school.id)
+                expect(schoolIds).includes(schoolId)
+            })
+        })
+
+        it('queries paginated classes filtering by grade ID', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            gradeId: {
+                                operator: 'eq',
+                                value: gradeId,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+
+            const classGrades = classesConnection.edges.map(
+                (edge: IClassEdge) => edge.node.grades
+            )
+
+            classGrades.every((grades: GradeSummaryNode[]) => {
+                const gradeIds = grades.map((grade) => grade.id)
+                expect(gradeIds).includes(gradeId)
+            })
+        })
+
+        it('queries paginated classes filtering by subject ID', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            subjectId: {
+                                operator: 'eq',
+                                value: subjectId,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+
+            const classSubjects = classesConnection.edges.map(
+                (edge: IClassEdge) => edge.node.subjects
+            )
+
+            classSubjects.every((subjects: SubjectSummaryNode[]) => {
+                const subjectIds = subjects.map((subject) => subject.id)
+                expect(subjectIds).includes(subjectId)
+            })
+        })
+
+        it('queries paginated classes filtering by program ID', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CLASSES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            programId: {
+                                operator: 'eq',
+                                value: programId,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            expect(response.status).to.eq(200)
+            expect(classesConnection.totalCount).to.equal(1)
+
+            const classPrograms = classesConnection.edges.map(
+                (edge: IClassEdge) => edge.node.programs
+            )
+
+            classPrograms.every((programs: ProgramSummaryNode[]) => {
+                const programIds = programs.map((program) => program.id)
+                expect(programIds).includes(programId)
+            })
         })
 
         it('queries paginated classes filtering by class name', async () => {

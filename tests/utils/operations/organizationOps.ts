@@ -209,7 +209,7 @@ const LIST_AGE_RANGES = `
     }
 `
 
-const CREATE_OR_UPDATE_GRADES = `
+export const CREATE_OR_UPDATE_GRADES = `
     mutation myMutation(
             $organization_id: ID!,
             $grades: [GradeDetail]!) {
@@ -305,7 +305,7 @@ const LIST_CATEGORIES = `
     }
 `
 
-const CREATE_OR_UPDATE_SUBJECTS = `
+export const CREATE_OR_UPDATE_SUBJECTS = `
     mutation myMutation(
             $organization_id: ID!,
             $subjects: [SubjectDetail]!) {

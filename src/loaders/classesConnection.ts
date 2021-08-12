@@ -44,7 +44,7 @@ export const schoolsForClasses = async (
         .where('Class.class_id IN (:...ids)', { ids: classIds })
 
     if (filter) {
-        addFilterJoins(filter, scope)
+        addFilterJoins(filter, scope, 'schools')
     }
 
     const classSchools = getNestedEntities(
@@ -65,7 +65,7 @@ export const ageRangesForClasses = async (
         .where('Class.class_id IN (:...ids)', { ids: classIds })
 
     if (filter) {
-        addFilterJoins(filter, scope)
+        addFilterJoins(filter, scope, 'age_ranges')
     }
 
     const classAgeRanges = getNestedEntities(
@@ -86,7 +86,7 @@ export const gradesForClasses = async (
         .where('Class.class_id IN (:...ids)', { ids: classIds })
 
     if (filter) {
-        addFilterJoins(filter, scope)
+        addFilterJoins(filter, scope, 'grades')
     }
 
     const classGrades = getNestedEntities(scope, classIds, 'grades') as Promise<
@@ -105,7 +105,7 @@ export const subjectsForClasses = async (
         .where('Class.class_id IN (:...ids)', { ids: classIds })
 
     if (filter) {
-        addFilterJoins(filter, scope)
+        addFilterJoins(filter, scope, 'subjects')
     }
 
     const classSubjects = getNestedEntities(
@@ -126,7 +126,7 @@ export const programsForClasses = async (
         .where('Class.class_id IN (:...ids)', { ids: classIds })
 
     if (filter) {
-        addFilterJoins(filter, scope)
+        addFilterJoins(filter, scope, 'programs')
     }
 
     const classPrograms = getNestedEntities(
@@ -141,20 +141,63 @@ export const programsForClasses = async (
 // generates the needed joins when a filter is applied
 function addFilterJoins(
     filter: IEntityFilter,
-    scope: SelectQueryBuilder<Class>
+    scope: SelectQueryBuilder<Class>,
+    entityName: ClassEntities
 ) {
+    const columnAliases = {
+        id: 'Class.class_id',
+        name: 'Class.class_name',
+        status: 'Class.status',
+        organizationId: 'Organization.organization_id',
+        ageRangeValueFrom: '',
+        ageRangeUnitFrom: '',
+        ageRangeValueTo: '',
+        ageRangeUnitTo: '',
+        schoolId: '',
+        gradeId: '',
+        subjectId: '',
+        programId: '',
+    }
+
     if (filterHasProperty('organizationId', filter)) {
         scope.leftJoinAndSelect('Class.organization', 'Organization')
     }
 
-    scope.andWhere(
-        getWhereClauseFromFilter(filter, {
-            id: 'Class.class_id',
-            name: 'Class.class_name',
-            status: 'Class.status',
-            organizationId: 'Organization.organization_id',
-        })
-    )
+    if (
+        entityName !== 'age_ranges' &&
+        (filterHasProperty('ageRangeValueFrom', filter) ||
+            filterHasProperty('ageRangeUnitFrom', filter) ||
+            filterHasProperty('ageRangeValueTo', filter) ||
+            filterHasProperty('ageRangeUnitTo', filter))
+    ) {
+        scope.leftJoinAndSelect('Class.age_ranges', 'AgeRange')
+        columnAliases.ageRangeValueFrom = 'AgeRange.low_value'
+        columnAliases.ageRangeUnitFrom = 'AgeRange.low_value_unit'
+        columnAliases.ageRangeValueTo = 'AgeRange.high_value'
+        columnAliases.ageRangeUnitTo = 'AgeRange.high_value_unit'
+    }
+
+    if (entityName !== 'schools' && filterHasProperty('schoolId', filter)) {
+        scope.leftJoinAndSelect('Class.schools', 'School')
+        columnAliases.schoolId = 'School.school_id'
+    }
+
+    if (entityName !== 'grades' && filterHasProperty('gradeId', filter)) {
+        scope.leftJoinAndSelect('Class.grades', 'Grade')
+        columnAliases.gradeId = 'Grade.id'
+    }
+
+    if (entityName !== 'subjects' && filterHasProperty('subjectId', filter)) {
+        scope.leftJoinAndSelect('Class.subjects', 'Subject')
+        columnAliases.subjectId = 'Subject.id'
+    }
+
+    if (entityName !== 'programs' && filterHasProperty('programId', filter)) {
+        scope.leftJoinAndSelect('Class.programs', 'Program')
+        columnAliases.programId = 'Program.id'
+    }
+
+    scope.andWhere(getWhereClauseFromFilter(filter, columnAliases))
 }
 
 // gets the specified entity of classes

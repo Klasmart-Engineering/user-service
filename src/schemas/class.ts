@@ -51,6 +51,14 @@ const typeDefs = gql`
 
         #joined columns
         organizationId: UUIDFilter
+        ageRangeValueFrom: AgeRangeValueFilter
+        ageRangeUnitFrom: AgeRangeUnitFilter
+        ageRangeValueTo: AgeRangeValueFilter
+        ageRangeUnitTo: AgeRangeUnitFilter
+        schoolId: UUIDFilter
+        gradeId: UUIDFilter
+        subjectId: UUIDFilter
+        programId: UUIDFilter
 
         AND: [ClassFilter!]
         OR: [ClassFilter!]

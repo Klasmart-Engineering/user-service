@@ -123,7 +123,7 @@ export const EDIT_STUDENTS_IN_CLASS = `
     }
 `
 
-const EDIT_SCHOOLS_IN_CLASS = `
+export const EDIT_SCHOOLS_IN_CLASS = `
     mutation myEditStudents(
             $class_id: ID!
             $school_ids: [ID!]) {
@@ -203,7 +203,7 @@ export const EDIT_PROGRAM_CLASS = `
     }
 `
 
-const EDIT_AGE_RANGE_CLASS = `
+export const EDIT_AGE_RANGE_CLASS = `
     mutation editAgeRangesClass($id: ID!, $age_range_ids: [ID!]) {
        class(class_id: $id) {
           editAgeRanges(age_range_ids: $age_range_ids) {
@@ -214,7 +214,7 @@ const EDIT_AGE_RANGE_CLASS = `
     }
 `
 
-const EDIT_GRADES_CLASS = `
+export const EDIT_GRADES_CLASS = `
     mutation editGradesClass($id: ID!, $grade_ids: [ID!]) {
        class(class_id: $id) {
           editGrades(grade_ids: $grade_ids) {
@@ -225,7 +225,7 @@ const EDIT_GRADES_CLASS = `
     }
 `
 
-const EDIT_SUBJECTS_CLASS = `
+export const EDIT_SUBJECTS_CLASS = `
     mutation editSubjectsClass($id: ID!, $subject_ids: [ID!]) {
        class(class_id: $id) {
           editSubjects(subject_ids: $subject_ids) {

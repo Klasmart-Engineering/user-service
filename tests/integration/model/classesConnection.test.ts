@@ -1,12 +1,19 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Connection } from 'typeorm'
+import { AgeRange } from '../../../src/entities/ageRange'
+import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 import { Class } from '../../../src/entities/class'
+import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
+import { Program } from '../../../src/entities/program'
 import { School } from '../../../src/entities/school'
 import { Status } from '../../../src/entities/status'
+import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
+import AgeRangesInitializer from '../../../src/initializers/ageRanges'
 import { Model } from '../../../src/model'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { SchoolSimplifiedSummaryNode } from '../../../src/types/graphQL/schoolSimplifiedSummaryNode'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
@@ -56,9 +63,17 @@ describe('classesConnection', () => {
     let org3Classes: Class[] = []
     let classes: Class[] = []
     let org3Schools: School[] = []
+    let ageRanges: AgeRange[] = []
+    let grades: Grade[] = []
+    let subjects: Subject[] = []
+    let programs: Program[] = []
 
     const classesCount = 12
+    const ageRangesCount = 6
+    const gradesCount = 4
+    const subjectsCount = 3
     const schoolsCount = 3
+    const programsCount = 2
 
     before(async () => {
         connection = await createTestConnection()
@@ -71,9 +86,17 @@ describe('classesConnection', () => {
     })
 
     beforeEach(async () => {
+        await AgeRangesInitializer.run()
+
         const systemRoles = await getSystemRoleIds()
         const schoolAdminRoleId = systemRoles['School Admin']
         const orgAdminRoleId = systemRoles['Organization Admin']
+        const noneSpecifiedAgeRange = await connection.manager.findOneOrFail(
+            AgeRange,
+            {
+                where: { name: 'None Specified', system: true },
+            }
+        )
 
         admin = await createAdminUser(testClient)
         orgOwner = await createUser()
@@ -98,12 +121,76 @@ describe('classesConnection', () => {
         org3Classes = []
         classes = []
         org3Schools = []
+        ageRanges = []
+        grades = []
+        subjects = []
+        programs = []
+
+        // creating org1 age ranges
+        for (let i = 1; i <= ageRangesCount / 2; i++) {
+            let ageRange = await createAgeRange(org1, i, i + 1)
+            ageRange.low_value_unit = AgeRangeUnit.MONTH
+            ageRange.high_value_unit = AgeRangeUnit.MONTH
+            ageRanges.push(ageRange)
+        }
+
+        for (let i = 1; i <= ageRangesCount / 2; i++) {
+            let ageRange = await createAgeRange(org1, i, i + 1)
+            ageRange.low_value_unit = AgeRangeUnit.YEAR
+            ageRange.high_value_unit = AgeRangeUnit.YEAR
+            ageRanges.push(ageRange)
+        }
+
+        await connection.manager.save(ageRanges)
+
+        // creating org1 grades
+        for (let i = 0; i < gradesCount; i++) {
+            let grade = await createGrade(org1)
+            grades.push(grade)
+        }
+
+        await connection.manager.save(grades)
+
+        // creating org1 subjects
+        for (let i = 0; i < subjectsCount; i++) {
+            let subject = await createSubject(org1)
+            subjects.push(subject)
+        }
+
+        await connection.manager.save(subjects)
+
+        // creating org1 programs
+        for (let i = 0; i < programsCount; i++) {
+            let program = await createProgram(org1)
+            programs.push(program)
+        }
+
+        await connection.manager.save(programs)
 
         // creating org1 classes
         for (let i = 0; i < classesCount; i++) {
             let class_ = await createClass(undefined, org1)
+            let ageRangesForClass = [
+                ageRanges[Math.floor(i / (classesCount / ageRangesCount))],
+            ]
+
+            if (i % 2) {
+                ageRangesForClass.push(noneSpecifiedAgeRange)
+            }
+
             class_.class_name = `class ${i + 1}`
             class_.status = Status.ACTIVE
+            class_.age_ranges = Promise.resolve(ageRangesForClass)
+            class_.grades = Promise.resolve([
+                grades[Math.floor(i / (classesCount / gradesCount))],
+            ])
+            class_.subjects = Promise.resolve([
+                subjects[Math.floor(i / (classesCount / subjectsCount))],
+            ])
+            class_.programs = Promise.resolve([
+                programs[Math.floor(i / (classesCount / programsCount))],
+            ])
+
             org1Classes.push(class_)
         }
 
@@ -243,7 +330,7 @@ describe('classesConnection', () => {
                 const school = createSchool(org1, `school ${i}`)
                 schools.push(school)
 
-                const ageRange = createAgeRange(org1, i, i + 1)
+                const ageRange = createAgeRange(org1, i + 10, i + 11)
                 ageRange.name = `ageRange ${i}`
                 ageRanges.push(ageRange)
 
@@ -616,6 +703,228 @@ describe('classesConnection', () => {
             names.every((name) => name?.includes(search))
         })
 
+        it('supports filtering by age range unit from', async () => {
+            const unit = AgeRangeUnit.MONTH
+
+            const filter: IEntityFilter = {
+                ageRangeUnitFrom: {
+                    operator: 'eq',
+                    value: unit,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(ageRangesCount)
+            const ageRangesUnits = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValueUnit
+                )
+            })
+
+            ageRangesUnits.every((units) => units?.includes(unit))
+        })
+
+        it('supports filtering by age range unit to', async () => {
+            const unit = AgeRangeUnit.YEAR
+
+            const filter: IEntityFilter = {
+                ageRangeUnitTo: {
+                    operator: 'eq',
+                    value: unit,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(ageRangesCount)
+
+            const ageRangesUnits = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeConnectionNode) => ageRange.highValueUnit
+                )
+            })
+
+            ageRangesUnits.every((units) => units?.includes(unit))
+        })
+
+        it('supports filtering by age range value from', async () => {
+            const value = 1
+
+            const filter: IEntityFilter = {
+                ageRangeValueFrom: {
+                    operator: 'eq',
+                    value: value,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq((classesCount / ageRangesCount) * 2)
+
+            const ageRangesValues = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
+                )
+            })
+
+            ageRangesValues.every((values) => values?.includes(value))
+        })
+
+        it('supports filtering by age range value to', async () => {
+            const value = 1
+            const filter: IEntityFilter = {
+                ageRangeValueFrom: {
+                    operator: 'eq',
+                    value: value,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq((classesCount / ageRangesCount) * 2)
+
+            const ageRangesValues = result.edges.map((edge) => {
+                return edge.node.ageRanges?.map(
+                    (ageRange: AgeRangeConnectionNode) => ageRange.lowValue
+                )
+            })
+
+            ageRangesValues.every((values) => values?.includes(value))
+        })
+
+        it('supports filtering by school ID', async () => {
+            const schoolId = org3Schools[0].school_id
+
+            const filter: IEntityFilter = {
+                schoolId: {
+                    operator: 'eq',
+                    value: schoolId,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(classesCount / schoolsCount)
+
+            const schoolIds = result.edges.map((edge) => {
+                return edge.node.schools?.map((school) => school.id)
+            })
+
+            schoolIds.every((ids) => ids?.includes(schoolId))
+        })
+
+        it('supports filtering by grade ID', async () => {
+            const gradeId = grades[0].id
+
+            const filter: IEntityFilter = {
+                gradeId: {
+                    operator: 'eq',
+                    value: gradeId,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(classesCount / gradesCount)
+
+            const gradeIds = result.edges.map((edge) => {
+                return edge.node.grades?.map((grade) => grade.id)
+            })
+
+            gradeIds.every((ids) => ids?.includes(gradeId))
+        })
+
+        it('supports filtering by subject ID', async () => {
+            const subjectId = subjects[0].id
+
+            const filter: IEntityFilter = {
+                subjectId: {
+                    operator: 'eq',
+                    value: subjectId,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(classesCount / subjectsCount)
+
+            const subjectIds = result.edges.map((edge) => {
+                return edge.node.subjects?.map((subject) => subject.id)
+            })
+
+            subjectIds.every((ids) => ids?.includes(subjectId))
+        })
+
+        it('supports filtering by program ID', async () => {
+            const programId = programs[0].id
+
+            const filter: IEntityFilter = {
+                programId: {
+                    operator: 'eq',
+                    value: programId,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(classesCount / programsCount)
+
+            const programIds = result.edges.map((edge) => {
+                return edge.node.programs?.map((program) => program.id)
+            })
+
+            programIds.every((ids) => ids?.includes(programId))
+        })
+
         it('fails if search value is longer than 250 characters', async () => {
             const longValue =
                 'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
@@ -637,6 +946,58 @@ describe('classesConnection', () => {
                 )
 
             await expect(fn()).to.be.rejected
+        })
+
+        it("filters by age range value/unit from avoiding 'None Specified'", async () => {
+            const lowValue = 0
+            const lowValueUnit = AgeRangeUnit.YEAR
+
+            const filter: IEntityFilter = {
+                ageRangeValueFrom: {
+                    operator: 'eq',
+                    value: lowValue,
+                },
+                ageRangeUnitFrom: {
+                    operator: 'eq',
+                    value: lowValueUnit,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(0)
+        })
+
+        it("filters by age range to avoiding 'None Specified'", async () => {
+            const highValue = 99
+            const highValueUnit = AgeRangeUnit.YEAR
+
+            const filter: IEntityFilter = {
+                ageRangeValueTo: {
+                    operator: 'eq',
+                    value: highValue,
+                },
+                ageRangeUnitTo: {
+                    operator: 'eq',
+                    value: highValueUnit,
+                },
+            }
+
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(0)
         })
     })
 })

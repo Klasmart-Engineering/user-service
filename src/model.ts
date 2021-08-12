@@ -6,7 +6,6 @@ import {
     EntityManager,
     Repository,
     SelectQueryBuilder,
-    Brackets,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
@@ -48,6 +47,7 @@ import {
 import {
     getWhereClauseFromFilter,
     filterHasProperty,
+    AVOID_NONE_SPECIFIED_BRACKETS,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
@@ -536,28 +536,9 @@ export class Model {
                 filterHasProperty('ageRangeFrom', filter) ||
                 filterHasProperty('ageRangeTo', filter)
             ) {
-                scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange').where(
-                    new Brackets((qb) => {
-                        qb.where(
-                            new Brackets((whereExpession) => {
-                                // Get all the system age ranges except the 'None Specified' one
-                                whereExpession
-                                    .where('AgeRange.name != :noneSpecified', {
-                                        noneSpecified: 'None Specified',
-                                    })
-                                    .andWhere(
-                                        'AgeRange.system = :truthyValue',
-                                        {
-                                            truthyValue: true,
-                                        }
-                                    )
-                            })
-                            // Get all the non system age ranges
-                        ).orWhere('AgeRange.system = :falseyValue', {
-                            falseyValue: false,
-                        })
-                    })
-                )
+                scope
+                    .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+                    .where(AVOID_NONE_SPECIFIED_BRACKETS)
             }
 
             if (filterHasProperty('subjectId', filter)) {
@@ -773,12 +754,47 @@ export class Model {
                 scope.leftJoinAndSelect('Class.organization', 'Organization')
             }
 
+            if (
+                filterHasProperty('ageRangeValueFrom', filter) ||
+                filterHasProperty('ageRangeUnitFrom', filter) ||
+                filterHasProperty('ageRangeValueTo', filter) ||
+                filterHasProperty('ageRangeUnitTo', filter)
+            ) {
+                scope
+                    .leftJoinAndSelect('Class.age_ranges', 'AgeRange')
+                    .where(AVOID_NONE_SPECIFIED_BRACKETS)
+            }
+
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoinAndSelect('Class.schools', 'School')
+            }
+
+            if (filterHasProperty('gradeId', filter)) {
+                scope.leftJoinAndSelect('Class.grades', 'Grade')
+            }
+
+            if (filterHasProperty('subjectId', filter)) {
+                scope.leftJoinAndSelect('Class.subjects', 'Subject')
+            }
+
+            if (filterHasProperty('programId', filter)) {
+                scope.leftJoinAndSelect('Class.programs', 'Program')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     id: 'Class.class_id',
                     name: 'Class.class_name',
                     status: 'Class.status',
                     organizationId: 'Organization.organization_id',
+                    ageRangeValueFrom: 'AgeRange.low_value',
+                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
+                    ageRangeValueTo: 'AgeRange.high_value',
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
+                    schoolId: 'School.school_id',
+                    gradeId: 'Grade.id',
+                    subjectId: 'Subject.id',
+                    programId: 'Program.id',
                 })
             )
         }
