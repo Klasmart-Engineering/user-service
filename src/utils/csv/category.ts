@@ -6,13 +6,16 @@ import { CategoryRow } from '../../types/csv/categoryRow'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export async function processCategoryFromCSVRow(
+export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = async (
     manager: EntityManager,
     row: CategoryRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     let category: Category | undefined
     let subcategory: Subcategory | undefined
     let subcategories: Subcategory[] = []

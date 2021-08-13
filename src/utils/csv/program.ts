@@ -10,13 +10,16 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export async function processProgramFromCSVRow(
+export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = async (
     manager: EntityManager,
     row: ProgramRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     let ageRange: AgeRange | undefined
     let grade: Grade | undefined
     let subject: Subject | undefined

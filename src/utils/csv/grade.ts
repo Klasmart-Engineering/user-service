@@ -5,6 +5,8 @@ import { Organization } from '../../entities/organization'
 import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
 function findGradeInDatabaseOrTransaction(
     manager: EntityManager,
@@ -55,12 +57,13 @@ async function findOrFailGradeInDatabaseOrTransaction(
     return gradeFound
 }
 
-export async function processGradeFromCSVRow(
+export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     const {
         organization_name,
         grade_name,
@@ -205,12 +208,13 @@ export async function processGradeFromCSVRow(
     await manager.save(grade)
 }
 
-export async function setGradeFromToFields(
+export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
     manager: EntityManager,
     row: GradeRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     let toGrade: Grade | undefined
     let fromGrade: Grade | undefined
 

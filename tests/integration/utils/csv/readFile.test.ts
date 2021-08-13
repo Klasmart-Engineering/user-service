@@ -19,6 +19,8 @@ import { Upload } from '../../../../src/types/upload'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
+import { processOrganizationFromCSVRow } from '../../../../src/utils/csv/organization'
+import { CSVError } from '../../../../src/types/csv/csvError'
 
 use(chaiAsPromised)
 
@@ -50,7 +52,9 @@ describe('read file', () => {
             manager: EntityManager,
             row: any,
             rowCount: number
-        ) => {}
+        ) => {
+            return
+        }
         it('should throw an error', async () => {
             const upload = {
                 filename: filename,

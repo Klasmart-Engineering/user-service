@@ -16,6 +16,9 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { createTestConnection } from '../../../utils/testConnection'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { User } from '../../../../src/entities/user'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -25,6 +28,8 @@ describe('processAgeRangeFromCSVRow', () => {
     let row: AgeRangeRow
     let organization: Organization
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
     const rowModel: AgeRangeRow = {
         organization_name: 'Company 1',
         age_range_low_value: '6',
@@ -45,6 +50,12 @@ describe('processAgeRangeFromCSVRow', () => {
     beforeEach(async () => {
         row = rowModel
 
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
+
         organization = await createOrganization()
         organization.organization_name = rowModel.organization_name
         await connection.manager.save(organization)
@@ -61,7 +72,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -94,7 +106,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -127,7 +140,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -160,7 +174,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -193,7 +208,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -226,7 +242,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -266,7 +283,8 @@ describe('processAgeRangeFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -300,7 +318,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -333,7 +352,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -373,7 +393,8 @@ describe('processAgeRangeFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -401,7 +422,8 @@ describe('processAgeRangeFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
             const ageRange = await AgeRange.findOneOrFail({

@@ -21,6 +21,9 @@ import { processClassFromCSVRow } from '../../../../src/utils/csv/class'
 import { ClassRow } from '../../../../src/types/csv/classRow'
 import { CSVError } from '../../../../src/types/csv/csvError'
 import { createClass } from '../../../factories/class.factory'
+import { User } from '../../../../src/entities/user'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -41,6 +44,9 @@ describe('processClassFromCSVRow', () => {
     let secondSchool: School
     let fileErrors: CSVError[] = []
 
+    let adminUser: User
+    let adminPermissions: UserPermissions
+
     const orgName: string = 'my-org'
     const secondOrgName: string = 'second-org'
     const school1Name: string = 'test-school'
@@ -59,6 +65,12 @@ describe('processClassFromCSVRow', () => {
     })
 
     beforeEach(async () => {
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
+
         expectedOrg = createOrganization()
         expectedOrg.organization_name = orgName
         await connection.manager.save(expectedOrg)
@@ -114,7 +126,13 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+        await processClassFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
 
         const dbClass = await Class.findOneOrFail({
             where: { class_name: 'class1', organization: expectedOrg },
@@ -134,7 +152,13 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: systemProgName,
         }
-        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+        await processClassFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
 
         const dbClass = await Class.findOneOrFail({
             where: { class_name: 'class2', organization: expectedOrg },
@@ -151,7 +175,13 @@ describe('processClassFromCSVRow', () => {
 
     it('should create a class with no school and none specified program', async () => {
         row = { organization_name: orgName, class_name: 'class3' }
-        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+        await processClassFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
 
         const dbClass = await Class.findOneOrFail({
             where: { class_name: 'class3', organization: expectedOrg },
@@ -172,7 +202,13 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+        await processClassFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
 
         const dbClass = await Class.findOneOrFail({
             where: { class_name: 'class4', organization: expectedOrg },
@@ -190,7 +226,13 @@ describe('processClassFromCSVRow', () => {
             class_name: 'class40',
             class_shortcode: secondSchool.shortcode,
         }
-        await processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+        await processClassFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
 
         const dbClass = await Class.findOneOrFail({
             where: { class_name: 'class40', organization: expectedOrg },
@@ -213,7 +255,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
         const dbClass = await Class.find()
@@ -229,7 +277,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
         const dbClass = await Class.find()
@@ -245,7 +299,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
         const dbClass = await Class.find()
@@ -261,7 +321,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
         const dbClass = await Class.find()
@@ -277,7 +343,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
 
@@ -293,7 +365,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
 
@@ -309,7 +387,13 @@ describe('processClassFromCSVRow', () => {
             program_name: progName,
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
 
@@ -325,7 +409,13 @@ describe('processClassFromCSVRow', () => {
             program_name: 'some-prog',
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
 
@@ -341,7 +431,13 @@ describe('processClassFromCSVRow', () => {
             program_name: 'some-prog',
         }
         const fn = () =>
-            processClassFromCSVRow(connection.manager, row, 1, fileErrors)
+            processClassFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
         expect(fn()).to.be.rejected
 

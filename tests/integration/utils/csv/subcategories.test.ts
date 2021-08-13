@@ -15,6 +15,9 @@ import { createOrganization } from '../../../factories/organization.factory'
 import { processSubCategoriesFromCSVRow } from '../../../../src/utils/csv/subCategories'
 import { SubCategoryRow } from '../../../../src/types/csv/subCategoryRow'
 import { CSVError } from '../../../../src/types/csv/csvError'
+import { User } from '../../../../src/entities/user'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -24,6 +27,8 @@ describe('processSubCategoriesFromCSVRow', () => {
     let row: SubCategoryRow
     let expectedOrg: Organization
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     const orgName: string = 'my-org'
     before(async () => {
@@ -36,6 +41,12 @@ describe('processSubCategoriesFromCSVRow', () => {
         expectedOrg = createOrganization()
         expectedOrg.organization_name = orgName
         await connection.manager.save(expectedOrg)
+
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     after(async () => {
@@ -48,7 +59,8 @@ describe('processSubCategoriesFromCSVRow', () => {
             connection.manager,
             row,
             1,
-            fileErrors
+            fileErrors,
+            adminPermissions
         )
 
         await Subcategory.findOneOrFail({
@@ -63,7 +75,8 @@ describe('processSubCategoriesFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
         expect(fn()).to.be.rejected
@@ -78,7 +91,8 @@ describe('processSubCategoriesFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
         expect(fn()).to.be.rejected

@@ -15,6 +15,8 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,
@@ -118,12 +120,13 @@ async function createOrganization(
     await manager.save(organizationOwnership)
 }
 
-export async function processOrganizationFromCSVRow(
+export const processOrganizationFromCSVRow: CreateEntityRowCallback<OrganizationRow> = async (
     manager: EntityManager,
     row: OrganizationRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     const {
         organization_name,
         owner_given_name,

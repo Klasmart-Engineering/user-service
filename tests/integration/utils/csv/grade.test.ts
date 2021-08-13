@@ -16,6 +16,9 @@ import { createOrganization } from '../../../factories/organization.factory'
 import { Grade } from '../../../../src/entities/grade'
 import { createGrade } from '../../../factories/grade.factory'
 import { CSVError } from '../../../../src/types/csv/csvError'
+import { User } from '../../../../src/entities/user'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -24,6 +27,8 @@ describe('processGradeFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: GradeRow
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
@@ -35,13 +40,19 @@ describe('processGradeFromCSVRow', () => {
         await connection?.close()
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
         row = {
             organization_name: 'Larson-Wyman',
             grade_name: 'First Grade',
             progress_from_grade_name: 'Kindergarten',
             progress_to_grade_name: 'Second Grade',
         }
+
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     context('when the organization name is not provided', () => {
@@ -51,7 +62,13 @@ describe('processGradeFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
+                processGradeFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -73,7 +90,13 @@ describe('processGradeFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
+                processGradeFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -91,7 +114,13 @@ describe('processGradeFromCSVRow', () => {
     context("when the organization provided doesn't exists", () => {
         it('throws an error', async () => {
             const fn = () =>
-                processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
+                processGradeFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -128,7 +157,13 @@ describe('processGradeFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
+                processGradeFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const grade = await Grade.findOne({
@@ -161,7 +196,13 @@ describe('processGradeFromCSVRow', () => {
         })
 
         it('creates the grade', async () => {
-            await processGradeFromCSVRow(connection.manager, row, 1, fileErrors)
+            await processGradeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
             const grade = await Grade.findOneOrFail({
                 where: {

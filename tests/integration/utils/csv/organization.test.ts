@@ -17,6 +17,8 @@ import { processOrganizationFromCSVRow } from '../../../../src/utils/csv/organiz
 import { createOrganization } from '../../../factories/organization.factory'
 import { createUser } from '../../../factories/user.factory'
 import { CSVError } from '../../../../src/types/csv/csvError'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -25,6 +27,8 @@ describe('processOrganizationFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: OrganizationRow
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
@@ -45,6 +49,11 @@ describe('processOrganizationFromCSVRow', () => {
             owner_email: 'bpresnellj@marketwatch.com',
             owner_phone: '+232 938 966 2102',
         }
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     context('when the organization name is not provided', () => {
@@ -58,7 +67,8 @@ describe('processOrganizationFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -81,7 +91,8 @@ describe('processOrganizationFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -104,7 +115,8 @@ describe('processOrganizationFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -135,7 +147,8 @@ describe('processOrganizationFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -164,7 +177,8 @@ describe('processOrganizationFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -187,7 +201,8 @@ describe('processOrganizationFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
             organization = await Organization.findOneOrFail({

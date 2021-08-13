@@ -7,13 +7,16 @@ import { addCsvError } from './csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export async function processAgeRangeFromCSVRow(
+export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = async (
     manager: EntityManager,
     row: AgeRangeRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     let ageRange: AgeRange | undefined
 
     const {

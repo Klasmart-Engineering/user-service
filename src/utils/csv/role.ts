@@ -6,13 +6,16 @@ import { RoleRow } from '../../types/csv/roleRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export async function processRoleFromCSVRow(
+export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
     manager: EntityManager,
     row: RoleRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     let role
     let rolePermissions: Permission[] = []
     const { organization_name, role_name, permission_id } = row

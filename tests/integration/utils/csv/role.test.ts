@@ -15,6 +15,9 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { createTestConnection } from '../../../utils/testConnection'
+import { User } from '../../../../src/entities/user'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -24,6 +27,8 @@ describe('processRoleFromCSVRow', () => {
     let row: RoleRow
     let organization: Organization
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
@@ -45,6 +50,12 @@ describe('processRoleFromCSVRow', () => {
             role_name: 'Asistant',
             permission_id: 'add_teachers_to_class_20226',
         }
+
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     context('when the organization name is not provided', () => {
@@ -54,7 +65,13 @@ describe('processRoleFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
+                processRoleFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const role = await Role.findOne({
@@ -77,7 +94,13 @@ describe('processRoleFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
+                processRoleFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const role = await Role.findOne({
@@ -100,7 +123,13 @@ describe('processRoleFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
+                processRoleFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const role = await Role.findOne({
@@ -123,7 +152,13 @@ describe('processRoleFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
+                processRoleFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const role = await Role.findOne({
@@ -146,7 +181,13 @@ describe('processRoleFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
+                processRoleFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const role = await Role.findOne({
@@ -185,7 +226,8 @@ describe('processRoleFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -205,7 +247,13 @@ describe('processRoleFromCSVRow', () => {
 
     context('when all data provided is valid', () => {
         it('creates the roles with its relations', async () => {
-            await processRoleFromCSVRow(connection.manager, row, 1, fileErrors)
+            await processRoleFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
             const role = await Role.findOneOrFail({
                 where: {

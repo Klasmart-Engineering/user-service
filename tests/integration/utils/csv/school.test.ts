@@ -22,6 +22,9 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { createTestConnection } from '../../../utils/testConnection'
+import { User } from '@sentry/node'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -31,6 +34,8 @@ describe('processSchoolFromCSVRow', () => {
     let row: SchoolRow
     let organization: Organization
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
@@ -59,6 +64,12 @@ describe('processSchoolFromCSVRow', () => {
             school_shortcode: 'SCHOOL1',
             program_name: 'Math',
         }
+
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     context('when the organization name is not provided', () => {
@@ -68,7 +79,13 @@ describe('processSchoolFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSchoolFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -90,7 +107,13 @@ describe('processSchoolFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSchoolFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -122,7 +145,8 @@ describe('processSchoolFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -146,7 +170,13 @@ describe('processSchoolFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSchoolFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -168,7 +198,13 @@ describe('processSchoolFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSchoolFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -198,7 +234,8 @@ describe('processSchoolFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -225,7 +262,8 @@ describe('processSchoolFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
             const school = await School.findOneOrFail({
@@ -254,7 +292,13 @@ describe('processSchoolFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSchoolFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -276,7 +320,13 @@ describe('processSchoolFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSchoolFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSchoolFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.be.rejected
             const school = await School.findOne({
@@ -316,7 +366,8 @@ describe('processSchoolFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -339,7 +390,8 @@ describe('processSchoolFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
             const school = await School.findOneOrFail({
@@ -399,7 +451,8 @@ describe('processSchoolFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                     const school = await School.findOneOrFail({

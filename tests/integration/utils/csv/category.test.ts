@@ -16,6 +16,9 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { createTestConnection } from '../../../utils/testConnection'
+import { User } from '../../../../src/entities/user'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -26,6 +29,8 @@ describe('processCategoryFromCSVRow', () => {
     let organization: Organization
     let subcategory: Subcategory
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
@@ -43,6 +48,12 @@ describe('processCategoryFromCSVRow', () => {
             category_name: 'Category 1',
             subcategory_name: 'Subcategory 1',
         }
+
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
 
         organization = await createOrganization()
         organization.organization_name = row.organization_name
@@ -64,7 +75,8 @@ describe('processCategoryFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -92,7 +104,8 @@ describe('processCategoryFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -120,7 +133,8 @@ describe('processCategoryFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -148,7 +162,8 @@ describe('processCategoryFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
             expect(fn()).to.be.rejected
@@ -185,7 +200,8 @@ describe('processCategoryFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.be.rejected
@@ -210,7 +226,8 @@ describe('processCategoryFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
                 const category = await Category.findOneOrFail({
@@ -256,7 +273,8 @@ describe('processCategoryFromCSVRow', () => {
                     connection.manager,
                     row,
                     1,
-                    fileErrors
+                    fileErrors,
+                    adminPermissions
                 )
 
                 const category = await Category.findOneOrFail({

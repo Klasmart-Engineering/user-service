@@ -13,8 +13,10 @@ import { CSVError } from '../../types/csv/csvError'
 import { addCsvError } from '../csv/csvUtils'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export const processClassFromCSVRow = async (
+export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
     manager: EntityManager,
     {
         organization_name,
@@ -24,7 +26,8 @@ export const processClassFromCSVRow = async (
         program_name,
     }: ClassRow,
     rowNumber: number,
-    fileErrors: CSVError[]
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
 ) => {
     if (!organization_name) {
         addCsvError(

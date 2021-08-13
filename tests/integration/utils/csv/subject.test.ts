@@ -17,6 +17,9 @@ import { createTestConnection } from '../../../utils/testConnection'
 import CategoriesInitializer from '../../../../src/initializers/categories'
 import SubcategoriesInitializer from '../../../../src/initializers/subcategories'
 import { CSVError } from '../../../../src/types/csv/csvError'
+import { User } from '../../../../src/entities/user'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
+import { createAdminUser } from '../../../utils/testEntities'
 
 describe('processSubjectFromCSVRow', () => {
     let connection: Connection
@@ -24,6 +27,8 @@ describe('processSubjectFromCSVRow', () => {
     let row: SubjectRow
     let organization: Organization
     let fileErrors: CSVError[]
+    let adminUser: User
+    let adminPermissions: UserPermissions
 
     before(async () => {
         connection = await createTestConnection()
@@ -47,6 +52,12 @@ describe('processSubjectFromCSVRow', () => {
             subject_name: 'Wacking',
             category_name: 'Gross Motor Skills',
         }
+
+        adminUser = await createAdminUser(testClient)
+        adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
     })
 
     context('when the organization name is not provided', () => {
@@ -56,7 +67,13 @@ describe('processSubjectFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSubjectFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSubjectFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -79,7 +96,13 @@ describe('processSubjectFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSubjectFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSubjectFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -105,7 +128,8 @@ describe('processSubjectFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
             const subject = await Subject.findOne({
@@ -141,7 +165,13 @@ describe('processSubjectFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSubjectFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSubjectFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -164,7 +194,13 @@ describe('processSubjectFromCSVRow', () => {
 
         it('throws an error', async () => {
             const fn = () =>
-                processSubjectFromCSVRow(connection.manager, row, 1, fileErrors)
+                processSubjectFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
 
             expect(fn()).to.throw
             const subject = await Subject.findOne({
@@ -205,7 +241,8 @@ describe('processSubjectFromCSVRow', () => {
                         connection.manager,
                         row,
                         1,
-                        fileErrors
+                        fileErrors,
+                        adminPermissions
                     )
 
                 expect(fn()).to.throw
@@ -219,7 +256,8 @@ describe('processSubjectFromCSVRow', () => {
                 connection.manager,
                 row,
                 1,
-                fileErrors
+                fileErrors,
+                adminPermissions
             )
 
             const subject = await Subject.findOneOrFail({

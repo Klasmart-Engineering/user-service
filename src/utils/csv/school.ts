@@ -12,13 +12,16 @@ import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
+import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
+import { UserPermissions } from '../../permissions/userPermissions'
 
-export async function processSchoolFromCSVRow(
+export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async (
     manager: EntityManager,
     row: SchoolRow,
     rowNumber: number,
-    fileErrors: CSVError[]
-) {
+    fileErrors: CSVError[],
+    userPermissions: UserPermissions
+) => {
     if (!row.organization_name) {
         addCsvError(
             fileErrors,
