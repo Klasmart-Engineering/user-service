@@ -195,7 +195,7 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
-            delete row.organization_name
+            ;(row as any).organization_name = null
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -264,7 +264,7 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
-            delete row.user_given_name
+            ;(row as any).user_given_name = null
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -336,7 +336,7 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
-            delete row.user_family_name
+            ;(row as any).user_family_name = null
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -438,7 +438,7 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
-            delete row.user_gender
+            ;(row as any).user_gender = null
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -519,8 +519,8 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('is required if phone is not provided', async () => {
-            delete row.user_email
-            delete row.user_phone
+            ;(row as any).user_email = null
+            ;(row as any).user_phone = null
             await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -701,7 +701,7 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when missing', async () => {
-            delete row.organization_role_name
+            ;(row as any).organization_role_name = null
             await processUserFromCSVRow(
                 connection.manager,
                 row,
