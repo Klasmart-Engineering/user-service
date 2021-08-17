@@ -683,8 +683,8 @@ describe('processUserFromCSVRow', async () => {
             )
             err = fileErrors[0]
             expect(err.code).to.eq(customErrors.duplicate_entity.code)
-            expect(err.entity).to.eq('User')
-            expect(err.entityName).to.eq('Short Code')
+            expect(err.entity).to.eq('Short Code')
+            expect(err.entityName).to.eq(row.user_shortcode)
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
             }
