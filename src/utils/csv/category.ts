@@ -16,6 +16,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     let category: Category | undefined
     let subcategory: Subcategory | undefined
     let subcategories: Subcategory[] = []
@@ -23,7 +24,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
 
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -37,7 +38,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
 
     if (!category_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'category_name',
@@ -55,7 +56,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
 
     if (!organization) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -68,8 +69,8 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     if (subcategory_name) {
@@ -88,7 +89,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
 
     if (!subcategory) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'subcategory_name',
@@ -100,12 +101,8 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
         )
     }
 
-    if (
-        (fileErrors && fileErrors.length > 0) ||
-        !organization ||
-        !subcategory
-    ) {
-        return
+    if (rowErrors.length > 0 || !organization || !subcategory) {
+        return rowErrors
     }
 
     category = await manager.findOne(Category, {
@@ -123,7 +120,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
 
         if (subcategoryNames.includes(subcategory_name)) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'subcategory_name',
@@ -136,7 +133,7 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
                 }
             )
 
-            return
+            return rowErrors
         }
     } else {
         category = new Category()
@@ -147,5 +144,12 @@ export const processCategoryFromCSVRow: CreateEntityRowCallback<CategoryRow> = a
     subcategories.push(subcategory)
     category.subcategories = Promise.resolve(subcategories)
 
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
+    }
+
     await manager.save(category)
+
+    return rowErrors
 }

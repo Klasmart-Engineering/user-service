@@ -17,6 +17,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     let ageRange: AgeRange | undefined
 
     const {
@@ -28,7 +29,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -42,7 +43,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (!age_range_low_value) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'age_range_low_value',
@@ -56,7 +57,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (!age_range_high_value) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'age_range_high_value',
@@ -70,7 +71,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (!age_range_unit) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'age_range_unit',
@@ -93,7 +94,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
         lowValueNumber > 99
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
             'age_range_low_value',
@@ -114,7 +115,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
         highValueNumber > 99
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
             'age_range_high_value',
@@ -130,7 +131,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (lowValueNumber >= highValueNumber) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_GREATER_THAN_OTHER,
             rowNumber,
             'age_range_high_value',
@@ -148,7 +149,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
         age_range_unit !== AgeRangeUnit.YEAR
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_ENUM,
             rowNumber,
             'age_range_unit',
@@ -159,12 +160,12 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
                 values: 'month, year',
             }
         )
-        return
+        return rowErrors
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organization = await manager.findOne(Organization, {
@@ -173,7 +174,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (!organization) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -201,7 +202,7 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
 
     if (ageRange) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'organization_name',
@@ -216,8 +217,8 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
     }
 
     // Return if there are any errors
-    if ((fileErrors && fileErrors.length > 0) || !organization) {
-        return
+    if (fileErrors.length > 0 || rowErrors.length > 0 || !organization) {
+        return rowErrors
     }
 
     ageRange = new AgeRange()
@@ -229,4 +230,6 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
     ageRange.organization = Promise.resolve(organization)
 
     await manager.save(ageRange)
+
+    return rowErrors
 }

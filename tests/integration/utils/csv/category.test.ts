@@ -28,7 +28,7 @@ describe('processCategoryFromCSVRow', () => {
     let row: CategoryRow
     let organization: Organization
     let subcategory: Subcategory
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

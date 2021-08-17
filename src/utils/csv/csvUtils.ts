@@ -6,14 +6,14 @@ import { getCustomConstraintDetails } from '../../entities/validations/messages'
 import { CsvRowValidationSchema } from './validations/types'
 
 export function addCsvError(
-    fileErrors: CSVError[],
+    errors: CSVError[],
     code: string,
     row: number,
     column: string,
     message: string,
     params: Record<string, unknown> = {}
 ): void {
-    fileErrors.push(buildCsvError(code, row, column, message, params))
+    errors.push(buildCsvError(code, row, column, message, params))
 }
 
 /**

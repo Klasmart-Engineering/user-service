@@ -59,7 +59,7 @@ async function createOrganization(
     organization_name: string,
     owner_shortcode: string,
     rowNumber: number,
-    fileErrors: CSVError[],
+    rowErrors: CSVError[],
     owner: User,
     manager: EntityManager
 ) {
@@ -69,7 +69,7 @@ async function createOrganization(
 
     if (active_organizations.length) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER,
             rowNumber,
             'organization_name',
@@ -127,6 +127,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     const {
         organization_name,
         owner_given_name,
@@ -138,7 +139,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
 
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -152,7 +153,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
 
     if (!owner_email && !owner_phone) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
             rowNumber,
             !owner_email ? 'owner_email' : 'owner_phone',
@@ -174,7 +175,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
         )
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             rowNumber,
             'owner_shortcode',
@@ -188,8 +189,8 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organizationExists = await Organization.findOne({
@@ -198,7 +199,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
 
     if (organizationExists) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
             'organization_name',
@@ -209,7 +210,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
             }
         )
 
-        return
+        return rowErrors
     }
 
     const organizationUploaded = await manager.findOne(Organization, {
@@ -218,7 +219,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
 
     if (organizationUploaded) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
             'organization_name',
@@ -229,7 +230,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
             }
         )
 
-        return
+        return rowErrors
     }
 
     const ownerUploaded = await manager.findOne(User, {
@@ -242,7 +243,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
 
     if (ownerUploaded) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'owner_email',
@@ -255,7 +256,12 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
             }
         )
 
-        return
+        return rowErrors
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     const ownerExists = await getUserByEmailOrPhone(
@@ -281,8 +287,10 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
         organization_name,
         owner_shortcode,
         rowNumber,
-        fileErrors,
+        rowErrors,
         owner,
         manager
     )
+
+    return rowErrors
 }

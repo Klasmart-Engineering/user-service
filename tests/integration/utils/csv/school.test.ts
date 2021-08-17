@@ -33,7 +33,7 @@ describe('processSchoolFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: SchoolRow
     let organization: Organization
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

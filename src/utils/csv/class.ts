@@ -29,9 +29,10 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -45,7 +46,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
     if (!class_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'class_name',
@@ -59,7 +60,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
     if (class_name?.length > validationConstants.CLASS_NAME_MAX_LENGTH) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_LENGTH,
             rowNumber,
             'class_name',
@@ -77,7 +78,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
         !validateShortCode(class_shortcode, SHORTCODE_DEFAULT_MAXLEN)
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             rowNumber,
             'class_shortcode',
@@ -91,15 +92,15 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const org = await Organization.findOne({ organization_name })
 
     if (!org) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -110,7 +111,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
             }
         )
 
-        return
+        return rowErrors
     }
 
     const classInDatabase = await Class.findOne({
@@ -119,7 +120,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
     if (classInDatabase) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
             rowNumber,
             'class_name',
@@ -130,7 +131,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
             }
         )
 
-        return
+        return rowErrors
     }
 
     const classExist = await manager.findOne(Class, {
@@ -143,7 +144,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
     if (class_shortcode && classExist) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'class_shortcode',
@@ -156,7 +157,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
             }
         )
 
-        return
+        return rowErrors
     }
 
     // check if class exists in manager
@@ -183,7 +184,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
         if (!school) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 rowNumber,
                 'school_name',
@@ -196,7 +197,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
                 }
             )
 
-            return
+            return rowErrors
         }
 
         const existingSchoolNames = existingSchools.map(
@@ -205,7 +206,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
         if (existingSchoolNames.includes(school_name)) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'school_name',
@@ -218,7 +219,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
                 }
             )
 
-            return
+            return rowErrors
         }
 
         existingSchools.push(school)
@@ -239,7 +240,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
         if (!programToAdd) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
@@ -252,7 +253,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
                 }
             )
 
-            return
+            return rowErrors
         }
 
         const existingProgramNames = existingPrograms.map(
@@ -261,7 +262,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
 
         if (existingProgramNames.includes(program_name)) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
@@ -273,7 +274,7 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
                     parent_entity: 'class',
                 }
             )
-            return
+            return rowErrors
         }
 
         existingPrograms.push(programToAdd)
@@ -288,6 +289,13 @@ export const processClassFromCSVRow: CreateEntityRowCallback<ClassRow> = async (
         }
     }
 
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
+    }
+
     c.programs = Promise.resolve(existingPrograms)
     await manager.save(c)
+
+    return rowErrors
 }

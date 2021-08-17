@@ -20,6 +20,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     let ageRange: AgeRange | undefined
     let grade: Grade | undefined
     let subject: Subject | undefined
@@ -45,7 +46,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -59,7 +60,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!program_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'program_name',
@@ -73,7 +74,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!allAgeRangeFieldsExists && !noneOfAgeRangeFieldsExists) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST,
             rowNumber,
             'age_range_high_value, age_range_low_value, age_range_unit',
@@ -92,7 +93,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             highValueNumber > validationConstants.AGE_RANGE_HIGH_VALUE_MAX)
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
             'age_range_high_value',
@@ -114,7 +115,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             lowValueNumber > validationConstants.AGE_RANGE_LOW_VALUE_MAX)
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_BETWEEN,
             rowNumber,
             'age_range_low_value',
@@ -134,7 +135,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
         lowValueNumber >= highValueNumber
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_GREATER_THAN_OTHER,
             rowNumber,
             'age_range_low_value',
@@ -153,7 +154,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
         age_range_unit !== AgeRangeUnit.YEAR
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_ENUM,
             rowNumber,
             'age_range_low_value',
@@ -167,8 +168,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organization = await manager.findOne(Organization, {
@@ -177,7 +178,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!organization) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -188,7 +189,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             }
         )
 
-        return
+        return rowErrors
     }
 
     if (noneOfAgeRangeFieldsExists) {
@@ -217,7 +218,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!ageRange) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
             'age_range_low_value, age_range_high_value, age_range_unit',
@@ -253,7 +254,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!grade) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
             'grade_name',
@@ -289,7 +290,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
     if (!subject) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
             'subject_name',
@@ -303,13 +304,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
         )
     }
 
-    if (
-        (fileErrors && fileErrors.length > 0) ||
-        !ageRange ||
-        !grade ||
-        !subject
-    ) {
-        return
+    if (fileErrors.length > 0 || !ageRange || !grade || !subject) {
+        return rowErrors
     }
 
     program = await manager.findOne(Program, {
@@ -331,7 +327,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             )
         ) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'age_range_low_value, age_range_high_value, age_range_unit',
@@ -344,7 +340,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
                 }
             )
 
-            return
+            return rowErrors
         }
 
         programGrades = (await program.grades) || []
@@ -352,7 +348,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
         if (gradeNames.includes(grade_name)) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'grade_name',
@@ -365,7 +361,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
                 }
             )
 
-            return
+            return rowErrors
         }
 
         programSubjects = (await program.subjects) || []
@@ -373,7 +369,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
 
         if (subjectNames.includes(subject_name)) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'subject_name',
@@ -386,12 +382,17 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
                 }
             )
 
-            return
+            return rowErrors
         }
     } else {
         program = new Program()
         program.name = program_name
         program.organization = Promise.resolve(organization)
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     programAgeRanges.push(ageRange)
@@ -403,4 +404,6 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
     program.subjects = Promise.resolve(programSubjects)
 
     await manager.save(program)
+
+    return rowErrors
 }

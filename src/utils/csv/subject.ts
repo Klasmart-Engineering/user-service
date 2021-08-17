@@ -16,9 +16,10 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     if (!row.organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -32,7 +33,7 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
 
     if (!row.subject_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'subject_name',
@@ -45,8 +46,8 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organizations = await manager.find(Organization, {
@@ -56,7 +57,7 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
     if (!organizations || organizations.length != 1) {
         const organization_count = organizations ? organizations.length : 0
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_MULTIPLE_EXIST,
             rowNumber,
             'organization_name',
@@ -68,7 +69,7 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
             }
         )
 
-        return
+        return rowErrors
     }
 
     const organization = organizations[0]
@@ -85,7 +86,7 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
     if (subjects) {
         if (subjects.length > 1) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD,
                 rowNumber,
                 'subject_name',
@@ -98,7 +99,7 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
                 }
             )
 
-            return
+            return rowErrors
         }
 
         if (subjects.length === 1) {
@@ -108,7 +109,6 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
 
     subject.name = row.subject_name
     subject.organization = Promise.resolve(organization)
-    await manager.save(subject)
 
     const existingCategories = (await subject.categories) || []
 
@@ -126,7 +126,7 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
 
     if (!categoryToAdd) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
             'category_name',
@@ -139,13 +139,13 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
             }
         )
 
-        return
+        return rowErrors
     }
 
     for (const p of existingCategories) {
         if (p.id === categoryToAdd.id) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'category_name',
@@ -158,11 +158,18 @@ export const processSubjectFromCSVRow: CreateEntityRowCallback<SubjectRow> = asy
                 }
             )
 
-            return
+            return rowErrors
         }
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     existingCategories.push(categoryToAdd)
     subject.categories = Promise.resolve(existingCategories)
     await manager.save(subject)
+
+    return rowErrors
 }

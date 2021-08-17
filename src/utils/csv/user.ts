@@ -29,13 +29,14 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     // First check static validation constraints
     const validationErrors = validateRow(row, rowNumber, userRowValidation)
-    fileErrors.push(...validationErrors)
+    rowErrors.push(...validationErrors)
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     // Now check dynamic constraints
@@ -45,7 +46,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     if (!org) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             customErrors.nonexistent_entity.code,
             rowNumber,
             'organization_name',
@@ -57,7 +58,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             }
         )
 
-        return
+        return rowErrors
     }
 
     // is the user authorized to upload to this org?
@@ -68,7 +69,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         )
     } catch (e) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             customErrors.unauthorized_org_upload.code,
             rowNumber,
             'organization_name',
@@ -98,7 +99,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
         if (!organizationRole) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 customErrors.nonexistent_child.code,
                 rowNumber,
                 'organization_role_name',
@@ -124,7 +125,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
         if (!school) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 customErrors.nonexistent_child.code,
                 rowNumber,
                 'school_name',
@@ -154,7 +155,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
         if (!cls || !school || !classIsAssignedToSchool) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 customErrors.nonexistent_child.code,
                 rowNumber,
                 'class_name',
@@ -169,8 +170,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         }
     }
 
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     let email = row.user_email
@@ -239,7 +240,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
         if (userShortcode && user.user_id !== userShortcode.user_id) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 customErrors.duplicate_entity.code,
                 rowNumber,
                 'user_shortcode',
@@ -250,6 +251,11 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 }
             )
         }
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     await manager.save(user)
@@ -332,4 +338,6 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             await manager.save(cls)
         }
     }
+
+    return rowErrors
 }

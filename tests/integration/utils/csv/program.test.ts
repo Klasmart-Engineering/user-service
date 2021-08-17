@@ -38,7 +38,7 @@ describe('processProgramFromCSVRow', () => {
     let noneSpecifiedAgeRange: AgeRange
     let noneSpecifiedGrade: Grade
     let noneSpecifiedSubject: Subject
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
     const rowModel: ProgramRow = {

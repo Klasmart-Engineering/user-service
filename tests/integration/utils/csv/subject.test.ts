@@ -26,7 +26,7 @@ describe('processSubjectFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: SubjectRow
     let organization: Organization
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

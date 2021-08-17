@@ -21,6 +21,7 @@ import { createAdminUser } from '../../../utils/testEntities'
 import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityRowCallback'
 import { processOrganizationFromCSVRow } from '../../../../src/utils/csv/organization'
 import { CSVError } from '../../../../src/types/csv/csvError'
+import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
 
 use(chaiAsPromised)
 
@@ -53,7 +54,7 @@ describe('read file', () => {
             row: any,
             rowCount: number
         ) => {
-            return
+            return []
         }
         it('should throw an error', async () => {
             const upload = {
@@ -73,7 +74,41 @@ describe('read file', () => {
                     [dummyFn],
                     adminPermissions
                 )
-            expect(fn()).to.be.rejectedWith('Empty input file: ' + filename)
+            expect(fn()).to.eventually.be.rejectedWith(
+                'Empty input file: ' + filename
+            )
+        })
+    })
+
+    context('when there are dynamic constraint errors in multiple rows', () => {
+        it("validates all rows and doesn't terminate after the first", async () => {
+            try {
+                await readCSVFile(
+                    connection.manager,
+                    {
+                        filename: `tests/fixtures/usersWithDynamicConstraintErrors.csv`,
+                        mimetype: 'text/csv',
+                        encoding: '7bit',
+                        createReadStream: () => {
+                            return fs.createReadStream(
+                                resolve(
+                                    `tests/fixtures/usersWithDynamicConstraintErrors.csv`
+                                )
+                            )
+                        },
+                    },
+                    [processUserFromCSVRow],
+                    adminPermissions
+                )
+                expect(false).to.eq(true) // should never reach here
+            } catch (e) {
+                const errors: CSVError[] = e
+                expect(errors.length).to.eq(2)
+                expect(errors[0].row).to.eq(1)
+                expect(errors[1].row).to.eq(2)
+                expect(errors[0].code).to.eq('ERR_NON_EXISTENT_ENTITY')
+                expect(errors[1].code).to.eq('ERR_NON_EXISTENT_ENTITY')
+            }
         })
     })
 })

@@ -55,13 +55,16 @@ export async function readCSVFile(
                 for await (let chunk of csvStream) {
                     rowCounter += 1
                     chunk = formatCSVRow(chunk)
-                    await callbacks[i](
+
+                    const rowErrors = await callbacks[i](
                         manager,
                         chunk,
                         rowCounter,
                         fileErrors,
                         userPermissions
                     )
+
+                    fileErrors.push(...rowErrors)
 
                     if (canFinish(i, callbacks, csvStream)) {
                         if (fileErrors.length) {
