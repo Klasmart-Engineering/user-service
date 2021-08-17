@@ -36,6 +36,10 @@ const typeDefs = gql`
 
     input AgeRangeFilter {
         # table columns
+        ageRangeValueFrom: AgeRangeValueFilter
+        ageRangeUnitFrom: AgeRangeUnitFilter
+        ageRangeValueTo: AgeRangeValueFilter
+        ageRangeUnitTo: AgeRangeUnitFilter
         status: StringFilter
         system: BooleanFilter
 
