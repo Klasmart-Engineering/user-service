@@ -1106,10 +1106,11 @@ describe('processUserFromCSVRow', async () => {
             context(
                 'and user_shortcode is different than already assigned shortcode',
                 () => {
-                    const updateShortcode = 'OTHER01'
-
+                    let existentUser: User
+                    let existentMembership: OrganizationMembership
+                    const originalShortcode = `CUSTOMCODE`
                     beforeEach(async () => {
-                        const existentUser = createUser()
+                        existentUser = createUser()
                         existentUser.given_name = 'existent'
                         existentUser.family_name = 'user'
                         existentUser.email = 'existent_user@gmail.com'
@@ -1118,13 +1119,13 @@ describe('processUserFromCSVRow', async () => {
                         existentUser.gender = 'male'
                         await connection.manager.save(existentUser)
 
-                        const existentMembership = new OrganizationMembership()
+                        existentMembership = new OrganizationMembership()
                         existentMembership.organization = Promise.resolve(
                             organization
                         )
                         existentMembership.organization_id =
                             organization.organization_id
-                        existentMembership.shortcode = row.user_shortcode!
+                        existentMembership.shortcode = originalShortcode
                         existentMembership.user = Promise.resolve(existentUser)
                         existentMembership.user_id = existentUser.user_id
                         await connection.manager.save(existentMembership)
@@ -1134,42 +1135,110 @@ describe('processUserFromCSVRow', async () => {
                             user_given_name: existentUser.given_name,
                             user_family_name: existentUser.family_name,
                             user_email: existentUser.email,
-                            user_date_of_birth: existentUser.date_of_birth,
-                            user_gender: existentUser.gender,
-                            user_shortcode: updateShortcode,
+                            user_date_of_birth: `12-1999`,
+                            user_gender: `female`,
+                            user_shortcode: originalShortcode,
+                            organization_role_name: `Student`,
                         }
                     })
 
-                    it('should update user shortcode', async () => {
-                        const rowErrors = await processUserFromCSVRow(
+                    async function getUpdatedUser() {
+                        return User.findOneOrFail({
+                            where: {
+                                email: row.user_email,
+                            },
+                            relations: [
+                                `memberships`,
+                                `memberships.roles`,
+                                `school_memberships`,
+                                `classesStudying`,
+                            ],
+                        })
+                    }
+
+                    async function expectCommonUpdates(user: User) {
+                        // Unchanged
+                        expect(user.user_id).to.eq(existentUser.user_id)
+                        expect(user.email).to.eq(existentUser.email)
+                        expect(user.phone).to.be.null
+                        expect(user.given_name).to.eq(existentUser.given_name)
+                        expect(user.family_name).to.eq(existentUser.family_name)
+
+                        // Updated
+                        expect(user.gender).to.eq(row.user_gender)
+                        expect(user.date_of_birth).to.eq(row.user_date_of_birth)
+                        expect(
+                            (await user.school_memberships)?.map(
+                                (membership) => membership.school_id
+                            )
+                        ).to.deep.eq([school.school_id])
+                        expect(
+                            (await user.classesStudying)?.map(
+                                (_class) => _class.class_id
+                            )
+                        ).to.deep.eq([cls.class_id])
+
+                        const memberships = (await user.memberships) ?? []
+                        const membershipRoles =
+                            (await Promise.all(
+                                memberships?.map(
+                                    async (membership) =>
+                                        await membership?.roles
+                                )
+                            )) ?? []
+                        const roleNames = membershipRoles?.flatMap((roles) =>
+                            roles?.map((role) => role.role_name)
+                        )
+
+                        expect(roleNames).to.deep.eq(['Student'])
+                    }
+
+                    it('if new shortcode, should update ', async () => {
+                        const newShortcode = `OTHER01`
+                        await processUserFromCSVRow(
                             connection.manager,
-                            row,
+                            {
+                                ...row,
+                                user_shortcode: newShortcode,
+                            },
                             1,
                             [],
                             adminPermissions
                         )
 
-                        const dbUser = await User.findOneOrFail({
-                            where: { email: row.user_email },
-                        })
+                        const dbUser = await getUpdatedUser()
 
-                        const organizationMembership = await dbUser.memberships
-                        const membershipShortcodes = organizationMembership?.map(
-                            (membership) => membership.shortcode
+                        await expectCommonUpdates(dbUser)
+
+                        expect(
+                            (await dbUser.memberships)?.map(
+                                (membership) => membership.shortcode
+                            )
+                        ).to.deep.eq([newShortcode])
+                    })
+
+                    it("if empty shortcode, doesn't update shortcode but updates D.O.B, gender, roles, schools and classes", async () => {
+                        // Fix: UD-844
+                        await processUserFromCSVRow(
+                            connection.manager,
+                            {
+                                ...row,
+                                user_shortcode: undefined,
+                            },
+                            1,
+                            [],
+                            adminPermissions
                         )
 
-                        expect(dbUser.user_id).to.not.be.empty
-                        expect(dbUser.email).to.eq(row.user_email)
-                        expect(dbUser.phone).to.be.null
-                        expect(dbUser.given_name).to.eq(row.user_given_name)
-                        expect(dbUser.family_name).to.eq(row.user_family_name)
-                        expect(dbUser.date_of_birth).to.eq(
-                            row.user_date_of_birth
-                        )
-                        expect(dbUser.gender).to.eq(row.user_gender)
-                        expect(membershipShortcodes).to.deep.eq([
-                            row.user_shortcode,
-                        ])
+                        const dbUser = await getUpdatedUser()
+
+                        await expectCommonUpdates(dbUser)
+
+                        expect(
+                            (await dbUser.memberships)?.map(
+                                (membership) => membership.shortcode
+                            )
+                        ).to.deep.eq([originalShortcode])
                     })
                 }
             )

@@ -279,13 +279,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 user.user_id,
                 validationConstants.SHORTCODE_MAX_LENGTH
             )
-    } else if (organizationMembership.shortcode !== row.user_shortcode) {
-        organizationMembership.shortcode =
-            row.user_shortcode ||
-            generateShortCode(
-                user.user_id,
-                validationConstants.SHORTCODE_MAX_LENGTH
-            )
+    } else if (row.user_shortcode) {
+        organizationMembership.shortcode = row.user_shortcode
     }
 
     if (organizationRole) {
