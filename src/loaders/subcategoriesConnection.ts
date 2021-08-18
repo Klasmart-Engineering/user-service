@@ -171,6 +171,7 @@ function addFilterJoins(
     scope.andWhere(
         getWhereClauseFromFilter(filter, {
             status: 'Subcategory.status',
+            system: 'Subcategory.system',
             organizationId: 'Organization.organization_id',
         })
     )
