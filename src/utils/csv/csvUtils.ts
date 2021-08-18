@@ -27,7 +27,7 @@ export function addCsvError(
  *
  * @returns CSVError
  */
-function buildCsvError(
+export function buildCsvError(
     code: string,
     row: number,
     column: string,

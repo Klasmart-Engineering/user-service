@@ -251,8 +251,8 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
             {
                 name: owner_email,
                 entity: 'user',
-                parent_name: organization_name,
                 parent_entity: 'organization',
+                parent_name: organization_name,
             }
         )
 

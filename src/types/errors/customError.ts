@@ -28,6 +28,10 @@ export const customErrors = {
   },
 
   // files (csv)
+  csv_bad_input: {
+    code: "ERR_CSV_BAD_INPUT",
+    message: "ERR_CSV_BAD_INPUT",
+  },
   csv_missing_required_column: {
     code: "ERR_CSV_MISSING_REQUIRED_COLUMN",
     message: "{fileName} is missing {columnName} column header.",
