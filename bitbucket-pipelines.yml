@@ -68,7 +68,7 @@ pipelines:
           - docker push $REPO:$TAG-$COMMIT_TAG
 
   branches:
-    master:
+    '{master,release}':
       - step:
           name: "Unit and integration tests"
           services:
