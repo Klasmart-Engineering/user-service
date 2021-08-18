@@ -9,12 +9,14 @@ import {
     brandingForOrganizations,
     organizationForMemberships,
 } from './organization'
+import { ISubcategoriesConnectionLoaders } from './subcategoriesConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection?: IProgramsConnectionLoaders
     gradesConnection?: IGradesConnectionLoaders
     classesConnection?: IClassesConnectionLoaders
+    subcategoriesConnection?: ISubcategoriesConnectionLoaders
     user: IUsersLoaders
     organization: IOrganizationLoaders
 }

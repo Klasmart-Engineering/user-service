@@ -19,6 +19,7 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Subcategory } from './subcategory'
 import { Status } from './status'
 import { Class } from './class'
+import { Program } from './program'
 
 @Entity()
 export class Subject extends BaseEntity {
@@ -35,7 +36,7 @@ export class Subject extends BaseEntity {
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
 
-    @ManyToMany(() => Category)
+    @ManyToMany(() => Category, (category) => category.subjects)
     @JoinTable()
     public categories?: Promise<Category[]>
 
@@ -73,6 +74,9 @@ export class Subject extends BaseEntity {
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
+
+    @ManyToMany(() => Program, (program) => program.subjects)
+    public programs?: Promise<Program[]>
 
     public async delete(
         args: Record<string, unknown>,

@@ -7,6 +7,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     EntityManager,
+    ManyToMany,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -14,6 +15,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
+import { Category } from './category'
 
 @Entity()
 export class Subcategory extends BaseEntity {
@@ -38,6 +40,9 @@ export class Subcategory extends BaseEntity {
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
+
+    @ManyToMany(() => Category, (category) => category.subcategories)
+    public categories?: Promise<Category[]>
 
     public async delete(
         args: Record<string, unknown>,
