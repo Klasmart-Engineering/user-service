@@ -1827,6 +1827,30 @@ describe('organization', () => {
                     expect(membership.shortcode).to.equal('RANGER13')
                 })
 
+                it('creates the User when only the required fields are provided', async () => {
+                    let gqlresult = await inviteUser(
+                        testClient,
+                        organizationId,
+                        'valid@email.com',
+                        undefined,
+                        'Joe',
+                        'Bloggs',
+                        undefined,
+                        undefined,
+                        'Male',
+                        '',
+                        [roleId],
+                        undefined,
+                        undefined,
+                        { authorization: adminToken }
+                    )
+                    let membership = gqlresult?.membership
+
+                    expect(membership).to.exist
+                    expect(membership.organization_id).to.equal(organizationId)
+                    expect(membership.shortcode).not.to.equal('')
+                })
+
                 it('fails to create user shortcode with non validating custom input', async () => {
                     const expectedErrorObject = {
                         api: 'inviteUser',

@@ -694,8 +694,9 @@ export class Organization extends BaseEntity {
         )
 
         const validatingMembership = {
-            shortcode: shortcode,
+            shortcode,
         }
+
         const membershipErrors = validateApiCall(
             'inviteUser',
             validatingMembership,
