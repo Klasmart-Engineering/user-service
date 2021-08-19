@@ -1,8 +1,7 @@
-import { ReadStream } from "typeorm/platform/PlatformTools";
-import { ApolloServerTestClient } from "../../createTestClient";
-import { gqlTry } from "../../gqlTry";
-import { fileMockInput } from "../modelOps";
-
+import { ReadStream } from 'typeorm/platform/PlatformTools'
+import { ApolloServerTestClient } from '../../createTestClient'
+import { gqlTry } from '../../gqlTry'
+import { fileMockInput } from '../modelOps'
 
 const UPLOAD_GRADES_MUTATION = `
     mutation UploadGradesFromCSV($file: Upload!) {
@@ -12,7 +11,7 @@ const UPLOAD_GRADES_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const UPLOAD_GRADES_QUERY = `
     query UploadGradesFromCSV($file: Upload!) {
@@ -22,7 +21,7 @@ const UPLOAD_GRADES_QUERY = `
             encoding
         }
     }
-`;
+`
 
 export async function uploadGrades(
     testClient: ApolloServerTestClient,
@@ -32,18 +31,19 @@ export async function uploadGrades(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: UPLOAD_GRADES_MUTATION,
-        variables: variables,
-    });
+    const operation = () =>
+        mutate({
+            mutation: UPLOAD_GRADES_MUTATION,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadGradesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadGradesFromCSV
 }
 
 export async function queryUploadGrades(
@@ -54,16 +54,17 @@ export async function queryUploadGrades(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { query } = testClient;
+    const { query } = testClient
 
-    const operation = () => query({
-        query: UPLOAD_GRADES_QUERY,
-        variables: variables,
-    });
+    const operation = () =>
+        query({
+            query: UPLOAD_GRADES_QUERY,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadGradesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadGradesFromCSV
 }

@@ -1,11 +1,11 @@
-import { ApolloServerTestClient } from "../createTestClient";
-import { Headers } from "node-mocks-http"
-import { gqlTry } from "../gqlTry";
-import { SchoolMembership } from "../../../src/entities/schoolMembership";
-import { School } from "../../../src/entities/school";
-import { Organization } from "../../../src/entities/organization";
-import { Program } from "../../../src/entities/program";
-import { Class } from "../../../src/entities/class";
+import { ApolloServerTestClient } from '../createTestClient'
+import { Headers } from 'node-mocks-http'
+import { gqlTry } from '../gqlTry'
+import { SchoolMembership } from '../../../src/entities/schoolMembership'
+import { School } from '../../../src/entities/school'
+import { Organization } from '../../../src/entities/organization'
+import { Program } from '../../../src/entities/program'
+import { Class } from '../../../src/entities/class'
 
 const GET_ORGANIZATION = `
     query myQuery($school_id: ID!) {
@@ -16,7 +16,7 @@ const GET_ORGANIZATION = `
             }
         }
     }
-`;
+`
 
 const GET_CLASSES = `
     query myQuery($school_id: ID!) {
@@ -27,7 +27,7 @@ const GET_CLASSES = `
             }
         }
     }
-`;
+`
 
 const GET_MEMBERSHIPS = `
     query myQuery($school_id: ID!) {
@@ -38,7 +38,7 @@ const GET_MEMBERSHIPS = `
             }
         }
     }
-`;
+`
 
 const GET_MEMBERSHIP = `
     query myQuery(
@@ -51,7 +51,7 @@ const GET_MEMBERSHIP = `
             }
         }
     }
-`;
+`
 
 const UPDATE_SCHOOL = `
     mutation myMutation(
@@ -66,7 +66,7 @@ const UPDATE_SCHOOL = `
             }
         }
     }
-`;
+`
 
 const ADD_USER_TO_SCHOOL = `
     mutation myMutation(
@@ -79,7 +79,7 @@ const ADD_USER_TO_SCHOOL = `
             }
         }
     }
-`;
+`
 
 const LIST_PROGRAMS = `
     mutation listPrograms($id: ID!) {
@@ -91,7 +91,7 @@ const LIST_PROGRAMS = `
           }
        }
     }
-`;
+`
 
 const EDIT_PROGRAM = `
     mutation editProgramClass($id: ID!, $program_ids: [ID!]) {
@@ -102,7 +102,7 @@ const EDIT_PROGRAM = `
           }
        }
     }
-`;
+`
 
 const DELETE_SCHOOL = `
     mutation myMutation($school_id: ID!) {
@@ -110,135 +110,185 @@ const DELETE_SCHOOL = `
             delete
         }
     }
-`;
+`
 
-export async function getSchoolOrganization(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSchoolOrganization(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_ORGANIZATION,
-        variables: { school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_ORGANIZATION,
+            variables: { school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlOrganization = res.data?.school.organization as Organization;
-    return gqlOrganization;
+    const res = await gqlTry(operation)
+    const gqlOrganization = res.data?.school.organization as Organization
+    return gqlOrganization
 }
 
-export async function getSchoolClasses(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSchoolClasses(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_CLASSES,
-        variables: { school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_CLASSES,
+            variables: { school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlClasses = res.data?.school.classes as Class[];
-    return gqlClasses;
+    const res = await gqlTry(operation)
+    const gqlClasses = res.data?.school.classes as Class[]
+    return gqlClasses
 }
 
-export async function getSchoolMembershipsViaSchool(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSchoolMembershipsViaSchool(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_MEMBERSHIPS,
-        variables: { school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_MEMBERSHIPS,
+            variables: { school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMemberships = res.data?.school.memberships as SchoolMembership[];
-    return gqlMemberships;
+    const res = await gqlTry(operation)
+    const gqlMemberships = res.data?.school.memberships as SchoolMembership[]
+    return gqlMemberships
 }
 
-export async function getSchoolMembershipViaSchool(testClient: ApolloServerTestClient, schoolId: string, userId: string, headers?: Headers) {
-    const { query } = testClient;
+export async function getSchoolMembershipViaSchool(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    userId: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: GET_MEMBERSHIP,
-        variables: { school_id: schoolId, user_id: userId },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: GET_MEMBERSHIP,
+            variables: { school_id: schoolId, user_id: userId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.school.membership as SchoolMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.school.membership as SchoolMembership
+    return gqlMembership
 }
 
-export async function updateSchool(testClient: ApolloServerTestClient, schoolId: string, schoolName: string, shortCode?: string, headers?: Headers) {
-    const { mutate } = testClient;
+export async function updateSchool(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    schoolName: string,
+    shortCode?: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
     const variables = { school_id: schoolId, school_name: schoolName } as any
-    if(shortCode){
+    if (shortCode) {
         variables.shortcode = shortCode
     }
-    const operation = () => mutate({
-        mutation: UPDATE_SCHOOL,
-        variables: variables,
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: UPDATE_SCHOOL,
+            variables: variables,
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSchool = res.data?.school.set as School;
-    return gqlSchool;
+    const res = await gqlTry(operation)
+    const gqlSchool = res.data?.school.set as School
+    return gqlSchool
 }
 
-export async function addUserToSchool(testClient: ApolloServerTestClient, userId: string, schoolId: string, headers?: Headers) {
-    const { mutate } = testClient;
+export async function addUserToSchool(
+    testClient: ApolloServerTestClient,
+    userId: string,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: ADD_USER_TO_SCHOOL,
-        variables: { user_id: userId, school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: ADD_USER_TO_SCHOOL,
+            variables: { user_id: userId, school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlMembership = res.data?.school.addUser as SchoolMembership;
-    return gqlMembership;
+    const res = await gqlTry(operation)
+    const gqlMembership = res.data?.school.addUser as SchoolMembership
+    return gqlMembership
 }
 
-export async function deleteSchool(testClient: ApolloServerTestClient, schoolId: string, headers?: Headers) {
-    const { mutate } = testClient;
+export async function deleteSchool(
+    testClient: ApolloServerTestClient,
+    schoolId: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: DELETE_SCHOOL,
-        variables: { school_id: schoolId },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: DELETE_SCHOOL,
+            variables: { school_id: schoolId },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlSchool = res.data?.school.delete as boolean;
-    return gqlSchool;
+    const res = await gqlTry(operation)
+    const gqlSchool = res.data?.school.delete as boolean
+    return gqlSchool
 }
 
-export async function listPrograms(testClient: ApolloServerTestClient, id: string, headers?: Headers) {
-    const { query } = testClient;
+export async function listPrograms(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
 
-    const operation = () => query({
-        query: LIST_PROGRAMS,
-        variables: { id: id },
-        headers: headers,
-    });
+    const operation = () =>
+        query({
+            query: LIST_PROGRAMS,
+            variables: { id: id },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlPrograms = res.data?.school.programs as Program[];
+    const res = await gqlTry(operation)
+    const gqlPrograms = res.data?.school.programs as Program[]
 
-    return gqlPrograms;
+    return gqlPrograms
 }
 
-export async function editPrograms( testClient: ApolloServerTestClient, id: string, program_ids: string[], headers?: Headers) {
-    const { mutate } = testClient;
+export async function editPrograms(
+    testClient: ApolloServerTestClient,
+    id: string,
+    program_ids: string[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: EDIT_PROGRAM,
-        variables: { id: id, program_ids: program_ids },
-        headers: headers,
-    });
+    const operation = () =>
+        mutate({
+            mutation: EDIT_PROGRAM,
+            variables: { id: id, program_ids: program_ids },
+            headers: headers,
+        })
 
-    const res = await gqlTry(operation);
-    const gqlPrograms = res.data?.school?.editPrograms as Program[];
-    return gqlPrograms;
+    const res = await gqlTry(operation)
+    const gqlPrograms = res.data?.school?.editPrograms as Program[]
+    return gqlPrograms
 }

@@ -1,7 +1,7 @@
-import { ReadStream } from "typeorm/platform/PlatformTools";
-import { ApolloServerTestClient } from "../../createTestClient";
-import { gqlTry } from "../../gqlTry";
-import { fileMockInput } from "../modelOps";
+import { ReadStream } from 'typeorm/platform/PlatformTools'
+import { ApolloServerTestClient } from '../../createTestClient'
+import { gqlTry } from '../../gqlTry'
+import { fileMockInput } from '../modelOps'
 
 const UPLOAD_ROLES_MUTATION = `
     mutation UploadRolesFromCSV($file: Upload!) {
@@ -11,7 +11,7 @@ const UPLOAD_ROLES_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const UPLOAD_ROLES_QUERY = `
     query UploadRolesFromCSV($file: Upload!) {
@@ -21,7 +21,7 @@ const UPLOAD_ROLES_QUERY = `
             encoding
         }
     }
-`;
+`
 
 export async function uploadRoles(
     testClient: ApolloServerTestClient,
@@ -31,18 +31,19 @@ export async function uploadRoles(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: UPLOAD_ROLES_MUTATION,
-        variables: variables,
-    });
+    const operation = () =>
+        mutate({
+            mutation: UPLOAD_ROLES_MUTATION,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadRolesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadRolesFromCSV
 }
 
 export async function queryUploadRoles(
@@ -53,16 +54,17 @@ export async function queryUploadRoles(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { query } = testClient;
+    const { query } = testClient
 
-    const operation = () => query({
-        query: UPLOAD_ROLES_QUERY,
-        variables: variables,
-    });
+    const operation = () =>
+        query({
+            query: UPLOAD_ROLES_QUERY,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadRolesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadRolesFromCSV
 }

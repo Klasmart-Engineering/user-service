@@ -8,7 +8,9 @@ export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
         const res = await gqlOperation()
         if (res.errors) {
             if (res.errors[0].message == csvErrorConstants.ERR_CSV_BAD_INPUT) {
-                throw new CustomError(res.errors[0]?.extensions?.exception?.errors)
+                throw new CustomError(
+                    res.errors[0]?.extensions?.exception?.errors
+                )
             } else {
                 throw new Error(res.errors?.map((x) => x.message).join('\n'))
             }

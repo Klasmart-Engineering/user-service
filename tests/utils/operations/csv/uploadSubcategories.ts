@@ -1,7 +1,7 @@
-import { ReadStream } from "typeorm/platform/PlatformTools";
-import { ApolloServerTestClient } from "../../createTestClient";
-import { gqlTry } from "../../gqlTry";
-import { fileMockInput } from "../modelOps";
+import { ReadStream } from 'typeorm/platform/PlatformTools'
+import { ApolloServerTestClient } from '../../createTestClient'
+import { gqlTry } from '../../gqlTry'
+import { fileMockInput } from '../modelOps'
 
 const UPLOAD_SUBCATEGORIES_MUTATION = `
     mutation UploadSubcategoriesFromCSV($file: Upload!) {
@@ -11,7 +11,7 @@ const UPLOAD_SUBCATEGORIES_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const UPLOAD_SUBCATEGORIES_QUERY = `
     query UploadSubcategoriesFromCSV($file: Upload!) {
@@ -21,7 +21,7 @@ const UPLOAD_SUBCATEGORIES_QUERY = `
             encoding
         }
     }
-`;
+`
 
 export async function uploadSubCategories(
     testClient: ApolloServerTestClient,
@@ -31,18 +31,19 @@ export async function uploadSubCategories(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: UPLOAD_SUBCATEGORIES_MUTATION,
-        variables,
-    });
+    const operation = () =>
+        mutate({
+            mutation: UPLOAD_SUBCATEGORIES_MUTATION,
+            variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadSubCategoriesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadSubCategoriesFromCSV
 }
 
 export async function queryUploadSubCategories(
@@ -53,16 +54,17 @@ export async function queryUploadSubCategories(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: UPLOAD_SUBCATEGORIES_QUERY,
-        variables: variables,
-    });
+    const operation = () =>
+        mutate({
+            mutation: UPLOAD_SUBCATEGORIES_QUERY,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadSubCategoriesFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadSubCategoriesFromCSV
 }

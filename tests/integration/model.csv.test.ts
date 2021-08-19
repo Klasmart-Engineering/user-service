@@ -87,9 +87,7 @@ import { CSVError, CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser } from '../utils/testEntities'
-import {
-    customErrors
-} from '../../src/types/errors/customError'
+import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
