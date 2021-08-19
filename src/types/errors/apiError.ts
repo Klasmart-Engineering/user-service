@@ -89,7 +89,7 @@ export class CustomAPIError extends ApolloError {
 
 export function validateApiCall(
     api: string,
-    dataObject: Record<string, string>,
+    dataObject: Record<string, unknown>,
     schema: Joi.PartialSchemaMap<Record<string, unknown>> | undefined,
     entity: string
 ) {

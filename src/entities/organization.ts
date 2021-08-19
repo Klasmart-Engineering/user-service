@@ -53,9 +53,9 @@ import apiErrorConstants from '../types/errors/apiErrorConstants'
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 
-export const padShortDob = (dob: string) => {
+export const padShortDob = (dob?: string) => {
     if (dob && dob.length > 0) {
-        return dob?.length < 7 ? '0' + dob : dob
+        return dob.length < 7 ? '0' + dob : dob
     } else {
         return dob
     }
@@ -624,8 +624,21 @@ export class Organization extends BaseEntity {
             school_role_ids,
             alternate_email,
             alternate_phone,
-        }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Record<string, any>,
+        }: {
+            email?: string,
+            phone?: string,
+            given_name?: string,
+            family_name?: string,
+            date_of_birth?: string,
+            username?: string,
+            gender?: string,
+            shortcode?: string,
+            organization_role_ids?: string[],
+            school_ids?: string[],
+            school_role_ids?: string[],
+            alternate_email?: string,
+            alternate_phone?: string
+        },
         context: Context,
         info: GraphQLResolveInfo
     ) {
