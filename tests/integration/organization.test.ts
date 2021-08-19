@@ -83,7 +83,6 @@ import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
 import { AnyKindOfDictionary } from 'lodash'
 import { validationConstants } from '../../src/entities/validations/constants'
-import { CustomApiError } from '../../src/types/errors/apiError'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)

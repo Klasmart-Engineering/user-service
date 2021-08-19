@@ -3,7 +3,7 @@ import Joi, { ValidationResult } from 'joi'
 import { getCustomConstraintDetails } from '../../entities/validations/messages'
 import { stringInject } from '../../utils/stringUtils'
 
-export interface apiError {
+export interface APIError {
     code: string
     message: string
     api: string
@@ -13,7 +13,7 @@ export interface apiError {
 }
 
 export function addApiError(
-    errors: apiError[],
+    errors: APIError[],
     code: string,
     api: string,
     attribute: string[],
@@ -33,8 +33,8 @@ function buildApiError(
     message: string,
     entity: string,
     params: Record<string, unknown>
-): apiError {
-    const apiError: apiError = {
+): APIError {
+    const apiError: APIError = {
         api,
         code,
         message: stringInject(`${message}`, {
@@ -55,7 +55,7 @@ export function joiResultToAPIErrors(
     entity: string,
     schema: Joi.PartialSchemaMap<Record<string, unknown>> | undefined
 ) {
-    const apiErrors: apiError[] = []
+    const apiErrors: APIError[] = []
     for (const error of result?.error?.details || []) {
         const prop = error.context?.key || ''
         const details = getCustomConstraintDetails(error)
@@ -75,8 +75,8 @@ export function joiResultToAPIErrors(
     return apiErrors
 }
 
-export class CustomApiError extends ApolloError {
-    constructor(errors: apiError[], message: string) {
+export class CustomAPIError extends ApolloError {
+    constructor(errors: APIError[], message: string) {
         super(message)
 
         this.errors = errors
@@ -84,7 +84,7 @@ export class CustomApiError extends ApolloError {
     /**
      * An array contains all errors' details
      */
-    public errors: Array<apiError>
+    public errors: Array<APIError>
 }
 
 export function validateApiCall(

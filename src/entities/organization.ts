@@ -44,7 +44,7 @@ import { organizationMembershipValidations } from './validations/organizationMem
 import { isEmail, isPhone } from '../utils/data/diagnostics'
 import {
     addApiError,
-    CustomApiError,
+    CustomAPIError,
     validateApiCall,
 } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -758,7 +758,7 @@ export class Organization extends BaseEntity {
 
         const apiErrors = userErrors.concat(membershipErrors)
         if (apiErrors.length > 0) {
-            throw new CustomApiError(
+            throw new CustomAPIError(
                 apiErrors,
                 apiErrorConstants.ERR_API_BAD_INPUT
             )
