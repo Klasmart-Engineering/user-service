@@ -13,7 +13,7 @@ export interface apiError {
 }
 
 export function addApiError(
-    fileErrors: apiError[],
+    errors: apiError[],
     code: string,
     api: string,
     attribute: string[],
@@ -21,7 +21,7 @@ export function addApiError(
     entity: string,
     params: Record<string, unknown> = {}
 ): void {
-    fileErrors.push(
+    errors.push(
         buildApiError(code, api, attribute, message, entity, params)
     )
 }
