@@ -9,6 +9,7 @@ import { Subcategory } from '../../../src/entities/subcategory'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
+import { SUMMARY_ELEMENTS_LIMIT } from '../../../src/types/paginationConstants'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createCategory } from '../../factories/category.factory'
@@ -342,9 +343,17 @@ describe('subcategoriesConnection', () => {
 
                 const subcategories = result.edges
                 subcategories.every((subcategory) => {
-                    expect(subcategory.node.categories?.length).to.eq(50)
-                    expect(subcategory.node.subjects?.length).to.eq(50)
-                    expect(subcategory.node.programs?.length).to.eq(50)
+                    expect(subcategory.node.categories?.length).to.eq(
+                        SUMMARY_ELEMENTS_LIMIT
+                    )
+
+                    expect(subcategory.node.subjects?.length).to.eq(
+                        SUMMARY_ELEMENTS_LIMIT
+                    )
+
+                    expect(subcategory.node.programs?.length).to.eq(
+                        SUMMARY_ELEMENTS_LIMIT
+                    )
                 })
             })
         })
