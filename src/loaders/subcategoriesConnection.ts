@@ -88,8 +88,15 @@ export const subjectsForSubcategories = async (
         )
 
         if (subjectsInSubcategory.length) {
+            let counter = 0
             const currentSubcategorySubjects: SubjectSummaryNode[] = []
             for (const subject of subjectsInSubcategory) {
+                // summary elements have a limit
+                if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                    break
+                }
+
+                counter += 1
                 currentSubcategorySubjects.push({
                     id: subject.Subject_id,
                     name: subject.Subject_name,
@@ -102,15 +109,6 @@ export const subjectsForSubcategories = async (
         } else {
             subcategorySubjects.push([])
         }
-
-        // const subcategory = subcategories.find((s) => s.id === subcategoryId)
-
-        // if (subcategory) {
-        //     const currentSubjects = await getSubcategorySubjects(subcategory)
-        //     subcategorySubjects.push(currentSubjects)
-        // } else {
-        //     subcategorySubjects.push([])
-        // }
     }
 
     return subcategorySubjects
@@ -140,8 +138,15 @@ export const programsForSubcategories = async (
         )
 
         if (programsInSubcategory.length) {
+            let counter = 0
             const currentSubcategoryPrograms: ProgramSummaryNode[] = []
             for (const program of programsInSubcategory) {
+                // summary elements have a limit
+                if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                    break
+                }
+
+                counter += 1
                 currentSubcategoryPrograms.push({
                     id: program.Program_id,
                     name: program.Program_name,
@@ -154,14 +159,6 @@ export const programsForSubcategories = async (
         } else {
             subcategoryPrograms.push([])
         }
-
-        // const subcategory = subcategories.find((s) => s.id === subcategoryId)
-        // if (subcategory) {
-        //     const currentPrograms = await getSubcategoryPrograms(subcategory)
-        //     subcategoryPrograms.push(currentPrograms)
-        // } else {
-        //     subcategoryPrograms.push([])
-        // }
     }
 
     return subcategoryPrograms
@@ -184,66 +181,3 @@ function addFilterJoins(
         })
     )
 }
-
-// goes through each category in subcategory to get the category's subjects
-// async function getSubcategorySubjects(subcategory: Subcategory) {
-//     let counter = 0
-//     let subjects: Subject[]
-//     const currentSubjects: SubjectSummaryNode[] = []
-//     const categories = (await subcategory.categories) || []
-
-//     for (const category of categories) {
-//         subjects = (await category.subjects) || []
-
-//         for (const subject of subjects) {
-//             // summary elements have a limit
-//             if (counter === SUMMARY_ELEMENTS_LIMIT) {
-//                 return currentSubjects
-//             }
-
-//             counter += 1
-//             currentSubjects.push({
-//                 id: subject.id,
-//                 name: subject.name,
-//                 status: subject.status,
-//                 system: !!subject.system,
-//             })
-//         }
-//     }
-
-//     return currentSubjects
-// }
-
-// goes through each subject in each category in subcategory to get the subject's programs
-// async function getSubcategoryPrograms(subcategory: Subcategory) {
-//     let counter = 0
-//     let subjects: Subject[]
-//     let programs: Program[]
-//     const currentPrograms: ProgramSummaryNode[] = []
-//     const categories = (await subcategory.categories) || []
-
-//     for (const category of categories) {
-//         subjects = (await category.subjects) || []
-
-//         for (const subject of subjects) {
-//             programs = (await subject.programs) || []
-
-//             for (const program of programs) {
-//                 // summary elements have a limit
-//                 if (counter === SUMMARY_ELEMENTS_LIMIT) {
-//                     return currentPrograms
-//                 }
-
-//                 counter += 1
-//                 currentPrograms.push({
-//                     id: program.id,
-//                     name: program.name,
-//                     status: program.status,
-//                     system: !!program.system,
-//                 })
-//             }
-//         }
-//     }
-
-//     return currentPrograms
-// }
