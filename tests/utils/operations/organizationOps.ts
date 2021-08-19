@@ -247,7 +247,7 @@ const LIST_GRADES = `
     }
 `
 
-const CREATE_OR_UPDATE_SUBCATEGORIES = `
+export const CREATE_OR_UPDATE_SUBCATEGORIES = `
     mutation myMutation(
             $organization_id: ID!,
             $subcategories: [SubcategoryDetail]!) {
@@ -273,7 +273,7 @@ const LIST_SUBCATEGORIES = `
     }
 `
 
-const CREATE_OR_UPDATE_CATEGORIES = `
+export const CREATE_OR_UPDATE_CATEGORIES = `
     mutation myMutation(
             $organization_id: ID!,
             $categories: [CategoryDetail]!) {

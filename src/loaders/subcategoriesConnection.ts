@@ -6,6 +6,7 @@ import { Subject } from '../entities/subject'
 import { CategorySummaryNode } from '../types/graphQL/categorySummaryNode'
 import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
+import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
@@ -38,10 +39,17 @@ export const categoriesForSubcategories = async (
         const subcategory = subcategories.find((s) => s.id === subcategoryId)
 
         if (subcategory) {
+            let counter = 0
             const currentCategories: CategorySummaryNode[] = []
             const categories = (await subcategory.categories) || []
 
             for (const category of categories) {
+                // summary elements have a limit
+                if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                    break
+                }
+
+                counter += 1
                 currentCategories.push({
                     id: category.id,
                     name: category.name,
@@ -80,14 +88,26 @@ export const subjectsForSubcategories = async (
         const subcategory = subcategories.find((s) => s.id === subcategoryId)
 
         if (subcategory) {
+            let counter = 0
             let subjects: Subject[]
             const currentSubjects: SubjectSummaryNode[] = []
             const categories = (await subcategory.categories) || []
 
             for (const category of categories) {
+                // summary elements have a limit
+                if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                    break
+                }
+
                 subjects = (await category.subjects) || []
 
                 for (const subject of subjects) {
+                    // summary elements have a limit
+                    if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                        break
+                    }
+
+                    counter += 1
                     currentSubjects.push({
                         id: subject.id,
                         name: subject.name,
@@ -128,18 +148,35 @@ export const programsForSubcategories = async (
         const subcategory = subcategories.find((s) => s.id === subcategoryId)
 
         if (subcategory) {
+            let counter = 0
             let subjects: Subject[]
             let programs: Program[]
             const currentPrograms: ProgramSummaryNode[] = []
             const categories = (await subcategory.categories) || []
 
             for (const category of categories) {
+                // summary elements have a limit
+                if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                    break
+                }
+
                 subjects = (await category.subjects) || []
 
                 for (const subject of subjects) {
+                    // summary elements have a limit
+                    if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                        break
+                    }
+
                     programs = (await subject.programs) || []
 
                     for (const program of programs) {
+                        // summary elements have a limit
+                        if (counter === SUMMARY_ELEMENTS_LIMIT) {
+                            break
+                        }
+
+                        counter += 1
                         currentPrograms.push({
                             id: program.id,
                             name: program.name,
