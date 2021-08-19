@@ -1,8 +1,6 @@
 import DataLoader from 'dataloader'
 import { SelectQueryBuilder } from 'typeorm'
-import { Program } from '../entities/program'
 import { Subcategory } from '../entities/subcategory'
-import { Subject } from '../entities/subject'
 import { CategorySummaryNode } from '../types/graphQL/categorySummaryNode'
 import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
@@ -82,17 +80,37 @@ export const subjectsForSubcategories = async (
         addFilterJoins(filter, scope)
     }
 
-    const subcategories = await scope.getMany()
+    const subjects = await scope.getRawMany()
 
     for (const subcategoryId of subcategoryIds) {
-        const subcategory = subcategories.find((s) => s.id === subcategoryId)
+        const subjectsInSubcategory = subjects.filter(
+            (ss) => ss.Subcategory_id === subcategoryId
+        )
 
-        if (subcategory) {
-            const currentSubjects = await getSubcategorySubjects(subcategory)
-            subcategorySubjects.push(currentSubjects)
+        if (subjectsInSubcategory.length) {
+            const currentSubcategorySubjects: SubjectSummaryNode[] = []
+            for (const subject of subjectsInSubcategory) {
+                currentSubcategorySubjects.push({
+                    id: subject.Subject_id,
+                    name: subject.Subject_name,
+                    status: subject.Subject_status,
+                    system: subject.Subject_system,
+                })
+            }
+
+            subcategorySubjects.push(currentSubcategorySubjects)
         } else {
             subcategorySubjects.push([])
         }
+
+        // const subcategory = subcategories.find((s) => s.id === subcategoryId)
+
+        // if (subcategory) {
+        //     const currentSubjects = await getSubcategorySubjects(subcategory)
+        //     subcategorySubjects.push(currentSubjects)
+        // } else {
+        //     subcategorySubjects.push([])
+        // }
     }
 
     return subcategorySubjects
@@ -114,17 +132,36 @@ export const programsForSubcategories = async (
         addFilterJoins(filter, scope)
     }
 
-    const subcategories = await scope.getMany()
+    const programs = await scope.getRawMany()
 
     for (const subcategoryId of subcategoryIds) {
-        const subcategory = subcategories.find((s) => s.id === subcategoryId)
+        const programsInSubcategory = programs.filter(
+            (ps) => ps.Subcategory_id === subcategoryId
+        )
 
-        if (subcategory) {
-            const currentPrograms = await getSubcategoryPrograms(subcategory)
-            subcategoryPrograms.push(currentPrograms)
+        if (programsInSubcategory.length) {
+            const currentSubcategoryPrograms: ProgramSummaryNode[] = []
+            for (const program of programsInSubcategory) {
+                currentSubcategoryPrograms.push({
+                    id: program.Program_id,
+                    name: program.Program_name,
+                    status: program.Program_status,
+                    system: program.Program_system,
+                })
+            }
+
+            subcategoryPrograms.push(currentSubcategoryPrograms)
         } else {
             subcategoryPrograms.push([])
         }
+
+        // const subcategory = subcategories.find((s) => s.id === subcategoryId)
+        // if (subcategory) {
+        //     const currentPrograms = await getSubcategoryPrograms(subcategory)
+        //     subcategoryPrograms.push(currentPrograms)
+        // } else {
+        //     subcategoryPrograms.push([])
+        // }
     }
 
     return subcategoryPrograms
@@ -149,64 +186,64 @@ function addFilterJoins(
 }
 
 // goes through each category in subcategory to get the category's subjects
-async function getSubcategorySubjects(subcategory: Subcategory) {
-    let counter = 0
-    let subjects: Subject[]
-    const currentSubjects: SubjectSummaryNode[] = []
-    const categories = (await subcategory.categories) || []
+// async function getSubcategorySubjects(subcategory: Subcategory) {
+//     let counter = 0
+//     let subjects: Subject[]
+//     const currentSubjects: SubjectSummaryNode[] = []
+//     const categories = (await subcategory.categories) || []
 
-    for (const category of categories) {
-        subjects = (await category.subjects) || []
+//     for (const category of categories) {
+//         subjects = (await category.subjects) || []
 
-        for (const subject of subjects) {
-            // summary elements have a limit
-            if (counter === SUMMARY_ELEMENTS_LIMIT) {
-                return currentSubjects
-            }
+//         for (const subject of subjects) {
+//             // summary elements have a limit
+//             if (counter === SUMMARY_ELEMENTS_LIMIT) {
+//                 return currentSubjects
+//             }
 
-            counter += 1
-            currentSubjects.push({
-                id: subject.id,
-                name: subject.name,
-                status: subject.status,
-                system: !!subject.system,
-            })
-        }
-    }
+//             counter += 1
+//             currentSubjects.push({
+//                 id: subject.id,
+//                 name: subject.name,
+//                 status: subject.status,
+//                 system: !!subject.system,
+//             })
+//         }
+//     }
 
-    return currentSubjects
-}
+//     return currentSubjects
+// }
 
 // goes through each subject in each category in subcategory to get the subject's programs
-async function getSubcategoryPrograms(subcategory: Subcategory) {
-    let counter = 0
-    let subjects: Subject[]
-    let programs: Program[]
-    const currentPrograms: ProgramSummaryNode[] = []
-    const categories = (await subcategory.categories) || []
+// async function getSubcategoryPrograms(subcategory: Subcategory) {
+//     let counter = 0
+//     let subjects: Subject[]
+//     let programs: Program[]
+//     const currentPrograms: ProgramSummaryNode[] = []
+//     const categories = (await subcategory.categories) || []
 
-    for (const category of categories) {
-        subjects = (await category.subjects) || []
+//     for (const category of categories) {
+//         subjects = (await category.subjects) || []
 
-        for (const subject of subjects) {
-            programs = (await subject.programs) || []
+//         for (const subject of subjects) {
+//             programs = (await subject.programs) || []
 
-            for (const program of programs) {
-                // summary elements have a limit
-                if (counter === SUMMARY_ELEMENTS_LIMIT) {
-                    return currentPrograms
-                }
+//             for (const program of programs) {
+//                 // summary elements have a limit
+//                 if (counter === SUMMARY_ELEMENTS_LIMIT) {
+//                     return currentPrograms
+//                 }
 
-                counter += 1
-                currentPrograms.push({
-                    id: program.id,
-                    name: program.name,
-                    status: program.status,
-                    system: !!program.system,
-                })
-            }
-        }
-    }
+//                 counter += 1
+//                 currentPrograms.push({
+//                     id: program.id,
+//                     name: program.name,
+//                     status: program.status,
+//                     system: !!program.system,
+//                 })
+//             }
+//         }
+//     }
 
-    return currentPrograms
-}
+//     return currentPrograms
+// }
