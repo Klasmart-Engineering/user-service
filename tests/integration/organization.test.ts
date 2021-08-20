@@ -1850,6 +1850,72 @@ describe('organization', () => {
                     expect(membership.shortcode).not.to.equal('')
                 })
 
+                it('fails to create the User when any required field is missing', async() => {
+                    const invite = async () => {
+                        return inviteUser(
+                            testClient,
+                            organizationId,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            { authorization: adminToken }
+                        )
+                    }
+
+                    return expect(invite()).to.be.rejected.then(e => {
+                        expect(e)
+                            .to.have.property('message')
+                            .equal('ERR_API_BAD_INPUT')
+                        expect(e)
+                            .to.have.property('errors')
+                            .that.deep.equals([
+                                {
+                                    code:
+                                        'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
+                                    message: 'User given_name is required.',
+                                    entity: 'User',
+                                    attribute: 'given_name',
+                                },
+                                {
+                                    code:
+                                        'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
+                                    message: 'User family_name is required.',
+                                    entity: 'User',
+                                    attribute: 'family_name',
+                                },
+                                {
+                                    code: 'ERR_MISSING_REQUIRED_EITHER',
+                                    message: 'User email/Phone is required.',
+                                    entity: 'User',
+                                    attribute: 'email',
+                                    otherAttribute: 'Phone',
+                                },
+                                {
+                                    code:
+                                        'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
+                                    message: 'User gender is required.',
+                                    entity: 'User',
+                                    attribute: 'gender',
+                                },
+                                // TODO add validation for missing Organization role
+                                // {
+                                //     code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
+                                //     message: 'Organization role is required.',
+                                //     entity: 'Organization',
+                                //     attribute: 'role'
+                                // }
+                            ])
+                    })
+                })
+
                 it('fails to create user shortcode with non validating custom input', async () => {
                     const expectedErrorObject = {
                         api: 'inviteUser',
