@@ -18,6 +18,7 @@ import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Subcategory } from './subcategory'
 import { Status } from './status'
+import { Subject } from './subject'
 
 @Entity()
 export class Category extends BaseEntity {
@@ -46,6 +47,9 @@ export class Category extends BaseEntity {
 
     @Column({ type: 'timestamp', nullable: true })
     public deleted_at?: Date
+
+    @ManyToMany(() => Subject, (subject) => subject.categories)
+    public subjects?: Promise<Subject[]>
 
     public async editSubcategories(
         { subcategory_ids }: { subcategory_ids: string[] },

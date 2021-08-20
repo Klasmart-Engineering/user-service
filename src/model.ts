@@ -77,6 +77,7 @@ import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInp
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
+import { CategoryConnectionNode } from './types/graphQL/categoryConnectionNode'
 
 export class Model {
     public static async create() {
@@ -823,6 +824,60 @@ export class Model {
                 id: class_.class_id,
                 name: class_.class_name,
                 status: class_.status,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async categoriesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Category>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Category.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'Category.status',
+                    system: 'Category.system',
+                    organizationId: 'Organization.organization_id',
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const category = edge.node as Category
+            const newNode: Partial<CategoryConnectionNode> = {
+                id: category.id,
+                name: category.name,
+                status: category.status,
+                system: category.system,
                 // other properties have dedicated resolvers that use Dataloader
             }
 
