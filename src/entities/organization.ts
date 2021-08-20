@@ -626,13 +626,13 @@ export class Organization extends BaseEntity {
         }: {
             email?: string,
             phone?: string,
-            given_name?: string,
-            family_name?: string,
+            given_name: string,
+            family_name: string,
             date_of_birth?: string,
             username?: string,
-            gender?: string,
+            gender: string,
             shortcode?: string,
-            organization_role_ids?: string[],
+            organization_role_ids: string[],
             school_ids?: string[],
             school_role_ids?: string[],
             alternate_email?: string,
@@ -767,9 +767,6 @@ export class Organization extends BaseEntity {
 
         return getManager().transaction(async (manager) => {
             const roleLookup = await this.getRoleLookup()
-            if (!organization_role_ids) {
-                organization_role_ids = []
-            }
             const organizationRoles = (await Promise.all(
                 organization_role_ids.map((role_id: string) =>
                     roleLookup(role_id)

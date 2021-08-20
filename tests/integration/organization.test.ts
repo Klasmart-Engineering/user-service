@@ -1851,7 +1851,7 @@ describe('organization', () => {
                     expect(membership.shortcode).not.to.equal('')
                 })
 
-                it('fails to create the User when any required field is missing', async() => {
+                it('fails to create the User when any required field on the schema level is missing (given_name, family_name, gender, organization_role_ids)', async () => {
                     const invite = async () => {
                         return inviteUser(
                             testClient,
@@ -1871,27 +1871,47 @@ describe('organization', () => {
                         )
                     }
 
-                    return expect(invite()).to.be.rejected.then(e => {
+                    return expect(invite()).to.be.rejected.then((e) => {
                         expect(e)
                             .to.have.property('message')
-                            .equal('ERR_API_BAD_INPUT')
+                            .that.equals(
+                                [
+                                    'Variable "$given_name" of required type "String!" was not provided.',
+                                    'Variable "$family_name" of required type "String!" was not provided.',
+                                    'Variable "$gender" of required type "String!" was not provided.',
+                                    'Variable "$organization_role_ids" of required type "[ID!]!" was not provided.',
+                                ].join('\n')
+                            )
+                    })
+                })
+
+                it('fails to create the User when server-side static validation fails (either of email/phone)', async () => {
+                    const invite = async () => {
+                        return inviteUser(
+                            testClient,
+                            organizationId,
+                            undefined,
+                            undefined,
+                            'Joe',
+                            'Bloggs',
+                            undefined,
+                            undefined,
+                            'Male',
+                            undefined,
+                            // TODO add static validation for at least one Role
+                            [],
+                            undefined,
+                            undefined,
+                            { authorization: adminToken }
+                        )
+                    }
+                    return expect(invite()).to.be.rejected.then((e) => {
+                        expect(e)
+                            .to.have.property('message')
+                            .that.equals('ERR_API_BAD_INPUT')
                         expect(e)
                             .to.have.property('errors')
                             .that.deep.equals([
-                                {
-                                    code:
-                                        'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
-                                    message: 'User given_name is required.',
-                                    entity: 'User',
-                                    attribute: 'given_name',
-                                },
-                                {
-                                    code:
-                                        'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
-                                    message: 'User family_name is required.',
-                                    entity: 'User',
-                                    attribute: 'family_name',
-                                },
                                 {
                                     code: 'ERR_MISSING_REQUIRED_EITHER',
                                     message: 'User email/Phone is required.',
@@ -1899,20 +1919,6 @@ describe('organization', () => {
                                     attribute: 'email',
                                     otherAttribute: 'Phone',
                                 },
-                                {
-                                    code:
-                                        'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
-                                    message: 'User gender is required.',
-                                    entity: 'User',
-                                    attribute: 'gender',
-                                },
-                                // TODO add validation for missing Organization role
-                                // {
-                                //     code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
-                                //     message: 'Organization role is required.',
-                                //     entity: 'Organization',
-                                //     attribute: 'role'
-                                // }
                             ])
                     })
                 })
@@ -1943,50 +1949,6 @@ describe('organization', () => {
                             'Bunter',
                             'Male',
                             'ranger 13',
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: adminToken }
-                        )
-                    try {
-                        await fn().then(() => {
-                            expect.fail(`Function incorrectly resolved.`)
-                        })
-                    } catch (e) {
-                        expect(e)
-                            .to.have.property('message')
-                            .equal('ERR_API_BAD_INPUT')
-                        expect(e).to.have.property('errors').to.have.length(1)
-                        expect(e)
-                            .to.have.property('errors')
-                            .to.have.deep.members([expectedErrorObject])
-                    }
-                })
-
-                it('fails to create user with a missing family name', async () => {
-                    const expectedErrorObject: IAPIError = {
-                        code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
-                        message: 'User family_name is required.',
-                        entity: 'User',
-                        attribute: 'family_name',
-                    }
-                    let email = 'bob@nowhere.com'
-                    let phone: string | undefined = undefined
-                    let given = 'Bob'
-                    let family: string | undefined = undefined
-                    let dateOfBirth = ''
-                    const fn = async () =>
-                        await inviteUser(
-                            testClient,
-                            organizationId,
-                            email,
-                            phone,
-                            given,
-                            family,
-                            dateOfBirth,
-                            'Bunter',
-                            'Male',
-                            'NOD13',
                             new Array(roleId),
                             Array(schoolId),
                             new Array(roleId),
