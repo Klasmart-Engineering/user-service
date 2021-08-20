@@ -19,10 +19,12 @@ export const userValidations = {
         .max(validationConstants.EMAIL_MAX_LENGTH)
         .empty(null)
         .when('phone', {
-            is: Joi.exist(),
+            is: Joi.string().exist(),
             then: Joi.optional().allow('', null),
             otherwise: Joi.required().messages({
+                'string.base': 'email/phone is required',
                 'any.required': 'email/phone is required',
+                'string.empty': 'email/phone is required',
             }),
         }),
 
