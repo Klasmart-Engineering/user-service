@@ -39,24 +39,9 @@ export const categoriesForSubcategories = async (
         const subcategory = subcategories.find((s) => s.id === subcategoryId)
 
         if (subcategory) {
-            let counter = 0
-            const currentCategories: CategorySummaryNode[] = []
-            const categories = (await subcategory.categories) || []
-
-            for (const category of categories) {
-                // summary elements have a limit
-                if (counter === SUMMARY_ELEMENTS_LIMIT) {
-                    break
-                }
-
-                counter += 1
-                currentCategories.push({
-                    id: category.id,
-                    name: category.name,
-                    status: category.status,
-                    system: !!category.system,
-                })
-            }
+            const currentCategories = await getSubcategoryCategories(
+                subcategory
+            )
 
             subcategoryCategories.push(currentCategories)
         } else {
@@ -146,6 +131,30 @@ function addFilterJoins(
             organizationId: 'Organization.organization_id',
         })
     )
+}
+
+// gets each category in subcategory
+async function getSubcategoryCategories(subcategory: Subcategory) {
+    let counter = 0
+    const categories = (await subcategory.categories) || []
+    const currentCategories: CategorySummaryNode[] = []
+
+    for (const category of categories) {
+        // summary elements have a limit
+        if (counter === SUMMARY_ELEMENTS_LIMIT) {
+            return currentCategories
+        }
+
+        counter += 1
+        currentCategories.push({
+            id: category.id,
+            name: category.name,
+            status: category.status,
+            system: !!category.system,
+        })
+    }
+
+    return currentCategories
 }
 
 // goes through each category in subcategory to get the category's subjects
