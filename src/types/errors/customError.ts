@@ -1,3 +1,5 @@
+import { CSVErrorParams } from '../csv/csvError'
+
 export interface CustomError {
     code: string
     message: string
@@ -5,7 +7,8 @@ export interface CustomError {
 }
 
 export function getCustomErrorMessageVariables(message: string) {
-    return message.match(/(?<={)(.*?)(?=})/g) || []
+    return (message.match(/(?<={)(.*?)(?=})/g) ||
+        []) as (keyof CSVErrorParams)[]
 }
 
 export const customErrors = {

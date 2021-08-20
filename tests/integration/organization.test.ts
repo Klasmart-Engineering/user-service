@@ -84,6 +84,7 @@ import { addSchoolToClass } from '../utils/operations/classOps'
 import { AnyKindOfDictionary } from 'lodash'
 import { validationConstants } from '../../src/entities/validations/constants'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { IAPIError } from '../../src/types/errors/apiError'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1917,16 +1918,12 @@ describe('organization', () => {
                 })
 
                 it('fails to create user shortcode with non validating custom input', async () => {
-                    const expectedErrorObject = {
-                        api: 'inviteUser',
+                    const expectedErrorObject: IAPIError = {
                         code: 'ERR_INVALID_ALPHANUMERIC',
                         message:
                             'OrganizationMembership shortcode must only contain letters and numbers.',
                         entity: 'OrganizationMembership',
-                        attribute: ['shortcode'],
-                        label: 'shortcode',
-                        value: 'RANGER 13',
-                        key: 'shortcode',
+                        attribute: 'shortcode',
                     }
                     let email = 'bob@nowhere.com'
                     let phone: string | undefined = undefined
@@ -1967,14 +1964,11 @@ describe('organization', () => {
                 })
 
                 it('fails to create user with a missing family name', async () => {
-                    const expectedErrorObject = {
-                        api: 'inviteUser',
+                    const expectedErrorObject: IAPIError = {
                         code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
                         message: 'User family_name is required.',
                         entity: 'User',
-                        attribute: ['family_name'],
-                        label: 'family_name',
-                        key: 'family_name',
+                        attribute: 'family_name',
                     }
                     let email = 'bob@nowhere.com'
                     let phone: string | undefined = undefined
@@ -2221,19 +2215,11 @@ describe('organization', () => {
                     expect(gqlMyUsers.length).to.equal(2)
                 })
                 it('fails to create a user if their personal information is repeated', async () => {
-                    const expectedErrorObject = {
-                        api: 'inviteUser',
+                    const expectedErrorObject: IAPIError = {
                         code: 'ERR_DUPLICATE_ENTITY',
-                        message:
-                            'User bob@nowhere.com, Bob, Smith already exists.',
+                        message: 'User Bob Smith already exists.',
                         entity: 'User',
-                        attribute: [
-                            'email',
-                            'phone',
-                            'given_name',
-                            'family_name',
-                        ],
-                        value: 'bob@nowhere.com, Bob, Smith',
+                        entityName: 'Bob Smith',
                     }
                     let email = 'bob@nowhere.com'
                     let phone: string | undefined = undefined
@@ -2272,14 +2258,12 @@ describe('organization', () => {
                     }
                 })
                 it('fails to create a user if their shortcode is repeated', async () => {
-                    const expectedErrorObject = {
-                        api: 'inviteUser',
+                    const expectedErrorObject: IAPIError = {
                         code: 'ERR_DUPLICATE_ENTITY',
                         message:
                             'OrganizationMembership THUNDER499 already exists.',
                         entity: 'OrganizationMembership',
-                        attribute: ['shortcode'],
-                        value: 'THUNDER499',
+                        entityName: 'THUNDER499',
                     }
                     let email = 'bob@nowhere.com'
                     let phone: string | undefined = undefined

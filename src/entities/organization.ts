@@ -43,12 +43,11 @@ import { userValidations } from './validations/user'
 import { organizationMembershipValidations } from './validations/organizationMembership'
 import { isEmail, isPhone } from '../utils/data/diagnostics'
 import {
-    addApiError,
-    CustomAPIError,
+    APIError,
+    APIErrorCollection,
     validateApiCall,
 } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
-import apiErrorConstants from '../types/errors/apiErrorConstants'
 
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
@@ -687,57 +686,52 @@ export class Organization extends BaseEntity {
 
         date_of_birth = padShortDob(date_of_birth)
 
-        const validatingUser = {
-            email: email,
-            phone: phone,
-            given_name: given_name,
-            family_name: family_name,
-            date_of_birth: date_of_birth,
-            username: username,
-            gender: gender,
-            alternate_email: alternate_email,
-            alternate_phone: alternate_phone,
-        }
-
         const userErrors = validateApiCall(
-            'inviteUser',
-            validatingUser,
+            {
+                email,
+                phone,
+                given_name,
+                family_name,
+                date_of_birth,
+                username,
+                gender,
+                alternate_email,
+                alternate_phone,
+            },
             userValidations,
-            'User'
+            {
+                entity: 'User',
+            }
         )
 
-        const validatingMembership = {
-            shortcode,
-        }
-
         const membershipErrors = validateApiCall(
-            'inviteUser',
-            validatingMembership,
+            {
+                shortcode,
+            },
             organizationMembershipValidations,
-            'OrganizationMembership'
+            { entity: 'OrganizationMembership' }
         )
 
         if (shortcode) {
-            const userShortcodeCheck = await getRepository(
+            const duplicateOrganizationMembership = await getRepository(
                 OrganizationMembership
             ).findOne({
                 where: {
-                    shortcode: shortcode,
+                    shortcode,
                     organization: {
                         organization_id: this.organization_id,
                     },
                 },
             })
 
-            if (userShortcodeCheck) {
-                addApiError(
-                    membershipErrors,
-                    customErrors.duplicate_entity.code,
-                    'inviteUser',
-                    ['shortcode'],
-                    customErrors.duplicate_entity.message,
-                    'OrganizationMembership',
-                    { value: shortcode }
+            if (duplicateOrganizationMembership) {
+                membershipErrors.push(
+                    new APIError({
+                        code: customErrors.duplicate_entity.code,
+                        message: customErrors.duplicate_entity.message,
+                        entity: 'OrganizationMembership',
+                        entityName: shortcode,
+                    })
                 )
             }
         }
@@ -747,7 +741,7 @@ export class Organization extends BaseEntity {
             family_name: family_name,
         }
 
-        const userCheck = await getRepository(User).findOne({
+        const duplicateUser = await getRepository(User).findOne({
             where: [
                 { email: email, phone: null, ...personalInfo },
                 { email: null, phone: phone, ...personalInfo },
@@ -755,26 +749,20 @@ export class Organization extends BaseEntity {
             ],
         })
 
-        if (userCheck) {
-            addApiError(
-                userErrors,
-                customErrors.duplicate_entity.code,
-                'inviteUser',
-                ['email', 'phone', 'given_name', 'family_name'],
-                customErrors.duplicate_entity.message,
-                'User',
-                {
-                    value: [email || phone, given_name, family_name].join(', '),
-                }
+        if (duplicateUser) {
+            userErrors.push(
+                new APIError({
+                    code: customErrors.duplicate_entity.code,
+                    message: customErrors.duplicate_entity.message,
+                    entity: 'User',
+                    entityName: duplicateUser.full_name(),
+                })
             )
         }
 
         const apiErrors = userErrors.concat(membershipErrors)
         if (apiErrors.length > 0) {
-            throw new CustomAPIError(
-                apiErrors,
-                apiErrorConstants.ERR_API_BAD_INPUT
-            )
+            throw new APIErrorCollection(apiErrors)
         }
 
         return getManager().transaction(async (manager) => {
