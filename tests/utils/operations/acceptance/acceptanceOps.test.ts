@@ -1,5 +1,6 @@
 import supertest from 'supertest'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
+import { DELETE_CATEGORY } from '../categoryOps'
 import {
     ADD_SCHOOL_TO_CLASS,
     EDIT_AGE_RANGE_CLASS,
@@ -13,8 +14,10 @@ import { LEAVE_ORGANIZATION } from '../organizationMembershipOps'
 import {
     CREATE_CLASS,
     CREATE_OR_UPDATE_AGE_RANGES,
+    CREATE_OR_UPDATE_CATEGORIES,
     CREATE_OR_UPDATE_GRADES,
     CREATE_OR_UPDATE_PROGRAMS,
+    CREATE_OR_UPDATE_SUBCATEGORIES,
     CREATE_OR_UPDATE_SUBJECTS,
     CREATE_SCHOOL,
     INVITE_USER,
@@ -24,6 +27,7 @@ import { CREATE_ORGANIZATION } from '../userOps'
 export interface IProgramDetail {
     name?: string
     age_ranges?: string[]
+    subjects?: string[]
 }
 
 export interface IAgeRangeDetail {
@@ -46,6 +50,19 @@ export interface ISubjectDetail {
     id?: string
     name?: string
     categories?: string[]
+    system?: boolean
+}
+
+export interface ISubcategoryDetail {
+    id?: string
+    name?: string
+    system?: boolean
+}
+
+export interface ICategoryDetail {
+    id?: string
+    name?: string
+    subcategories?: string[]
     system?: boolean
 }
 
@@ -378,6 +395,61 @@ export async function addSubjectsToClass(
             variables: {
                 id: class_id,
                 subject_ids,
+            },
+        })
+}
+
+export async function createSubcategories(
+    organization_id: string,
+    subcategories: ISubcategoryDetail[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_OR_UPDATE_SUBCATEGORIES,
+            variables: {
+                organization_id,
+                subcategories,
+            },
+        })
+}
+
+export async function createCategories(
+    organization_id: string,
+    categories: ICategoryDetail[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_OR_UPDATE_CATEGORIES,
+            variables: {
+                organization_id,
+                categories,
+            },
+        })
+}
+
+export async function deleteCategory(id: string, token: string) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: DELETE_CATEGORY,
+            variables: {
+                id,
             },
         })
 }

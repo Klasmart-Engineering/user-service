@@ -5,7 +5,7 @@ import { gqlTry } from '../gqlTry'
 
 import { Subcategory } from '../../../src/entities/subcategory'
 
-const DELETE_SUBCATEGORY = `
+export const DELETE_CATEGORY = `
     mutation deleteCategory($id: ID!) {
         category(id: $id) {
             delete
@@ -54,7 +54,7 @@ export async function deleteCategory(
 
     const operation = () =>
         mutate({
-            mutation: DELETE_SUBCATEGORY,
+            mutation: DELETE_CATEGORY,
             variables: { id: id },
             headers: headers,
         })

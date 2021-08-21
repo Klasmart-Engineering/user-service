@@ -23,6 +23,7 @@ import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionN
 import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { CategoryConnectionNode } from '../../../src/types/graphQL/categoryConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -473,6 +474,52 @@ export const CLASSES_CONNECTION = `
                     }
 
                     grades {
+                        id
+                        name
+                        status
+                        system
+                    }
+
+                    subjects {
+                        id
+                        name
+                        status
+                        system
+                    }
+
+                    programs {
+                        id
+                        name
+                        status
+                        system
+                    }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const CATEGORIES_CONNECTION = `
+    query CategoriesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: CategoryFilter, $sortArgs: CategorySortInput) {
+        categoriesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
+
+                    subcategories {
                         id
                         name
                         status
@@ -1030,4 +1077,29 @@ export async function classesConnection(
 
     const res = await gqlTry(operation)
     return res.data?.classesConnection
+}
+
+export async function categoriesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<CategoryConnectionNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: CATEGORIES_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.categoriesConnection
 }
