@@ -145,13 +145,13 @@ export default function getDefault(
                 categoriesConnection: (_parent, args, ctx: Context, _info) => {
                     ctx.loaders.categoriesConnection = {
                         subcategories: new DataLoader((keys) =>
-                            subcategoriesForCategories(keys, args.filter)
+                            subcategoriesForCategories(keys)
                         ),
                         subjects: new DataLoader((keys) =>
-                            subjectsForCategories(keys, args.filter)
+                            subjectsForCategories(keys)
                         ),
                         programs: new DataLoader((keys) =>
-                            programsForCategories(keys, args.filter)
+                            programsForCategories(keys)
                         ),
                     }
 
