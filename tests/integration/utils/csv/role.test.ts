@@ -26,7 +26,7 @@ describe('processRoleFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: RoleRow
     let organization: Organization
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

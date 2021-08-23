@@ -1,45 +1,47 @@
-import { ReadStream } from "typeorm/platform/PlatformTools";
-import { ApolloServerTestClient } from "../createTestClient";
-import { gqlTry } from "../gqlTry";
-import { getAdminAuthToken } from "../testConfig";
-import { fileMockInput } from "./modelOps";
+import { ReadStream } from 'typeorm/platform/PlatformTools'
+import { ApolloServerTestClient } from '../createTestClient'
+import { gqlTry } from '../gqlTry'
+import { getAdminAuthToken } from '../testConfig'
+import { fileMockInput } from './modelOps'
 
 const RENAME_DUPLICATE_ORGANIZATIONS_MUTATION = `
     mutation {
         renameDuplicateOrganizations
     }
-`;
+`
 
 const RENAME_DUPLICATE_ORGANIZATIONS_QUERY = `
     query {
         renameDuplicateOrganizations
     }
-`;
+`
 
 export async function renameDuplicateOrganizationsMutation(
     testClient: ApolloServerTestClient,
-    token?: string,
+    token?: string
 ) {
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: RENAME_DUPLICATE_ORGANIZATIONS_MUTATION,
-        headers: { authorization: token },
-    });
+    const operation = () =>
+        mutate({
+            mutation: RENAME_DUPLICATE_ORGANIZATIONS_MUTATION,
+            headers: { authorization: token },
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.renameDuplicateOrganizations;
+    const res = await gqlTry(operation)
+    return res.data?.renameDuplicateOrganizations
 }
 
 export async function renameDuplicateOrganizationsQuery(
-    testClient: ApolloServerTestClient,
+    testClient: ApolloServerTestClient
 ) {
-    const { query } = testClient;
+    const { query } = testClient
 
-    const operation = () => query({
-        query: RENAME_DUPLICATE_ORGANIZATIONS_QUERY,
-    });
+    const operation = () =>
+        query({
+            query: RENAME_DUPLICATE_ORGANIZATIONS_QUERY,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.renameDuplicateOrganizations;
+    const res = await gqlTry(operation)
+    return res.data?.renameDuplicateOrganizations
 }

@@ -9,4 +9,4 @@ export type CreateEntityRowCallback<RowType = any> = (
     rowCounter: number,
     fileErrors: CSVError[],
     userPermissions: UserPermissions
-) => Promise<void>
+) => Promise<CSVError[]>

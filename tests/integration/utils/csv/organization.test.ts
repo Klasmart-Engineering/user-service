@@ -26,7 +26,7 @@ describe('processOrganizationFromCSVRow', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let row: OrganizationRow
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

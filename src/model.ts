@@ -699,9 +699,13 @@ export class Model {
 
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
-                    organizationId: 'Organization.organization_id',
+                    ageRangeValueFrom: 'AgeRange.low_value',
+                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
+                    ageRangeValueTo: 'AgeRange.high_value',
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
                     system: 'AgeRange.system',
                     status: 'AgeRange.status',
+                    organizationId: 'Organization.organization_id',
                 })
             )
         }

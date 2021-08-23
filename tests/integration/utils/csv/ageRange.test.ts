@@ -27,7 +27,7 @@ describe('processAgeRangeFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: AgeRangeRow
     let organization: Organization
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
     const rowModel: AgeRangeRow = {

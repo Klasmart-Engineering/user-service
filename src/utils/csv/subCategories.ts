@@ -15,9 +15,10 @@ export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategory
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -31,7 +32,7 @@ export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategory
 
     if (!subcategory_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'subcategory_name',
@@ -44,15 +45,15 @@ export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategory
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const org = await Organization.findOne({ organization_name })
 
     if (!org) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -63,7 +64,7 @@ export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategory
             }
         )
 
-        return
+        return rowErrors
     }
 
     const subCategoryExists = await manager.findOne(Subcategory, {
@@ -72,7 +73,7 @@ export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategory
 
     if (subCategoryExists) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'subcategory_name',
@@ -85,11 +86,18 @@ export const processSubCategoriesFromCSVRow: CreateEntityRowCallback<SubCategory
             }
         )
 
-        return
+        return rowErrors
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     const s = new Subcategory()
     s.organization = Promise.resolve(org)
     s.name = subcategory_name
     await manager.save(s)
+
+    return rowErrors
 }

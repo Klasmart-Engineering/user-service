@@ -22,9 +22,10 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     if (!row.organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -38,7 +39,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
 
     if (!row.school_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'school_name',
@@ -52,7 +53,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
 
     if (row.school_name?.length > validationConstants.SCHOOL_NAME_MAX_LENGTH) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_LENGTH,
             rowNumber,
             'school_name',
@@ -67,7 +68,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
 
     if (row.school_shortcode?.length > SHORTCODE_DEFAULT_MAXLEN) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
             rowNumber,
             'school_shortcode',
@@ -86,7 +87,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
 
     if (!validateShortCode(shortcode)) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_ALPHA_NUM,
             rowNumber,
             'school_shortcode',
@@ -99,8 +100,8 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organizations = await manager.find(Organization, {
@@ -110,7 +111,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
     if (!organizations || organizations.length != 1) {
         const organization_count = organizations ? organizations.length : 0
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_MULTIPLE_EXIST,
             rowNumber,
             'organization_name',
@@ -122,18 +123,21 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
             }
         )
 
-        return
+        return rowErrors
     }
 
     const organization = organizations[0]
 
     const schoolShortcode = await manager.findOne(School, {
-        where: { shortcode: row.school_shortcode, organization: { organization_id: organization.organization_id } },
+        where: {
+            shortcode: row.school_shortcode,
+            organization: { organization_id: organization.organization_id },
+        },
     })
 
     if (schoolShortcode && row.school_name !== schoolShortcode.school_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'school_shortcode',
@@ -142,7 +146,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
                 entity: 'shortcode',
                 name: row.school_shortcode,
                 parent_entity: 'school',
-                parent_name: schoolShortcode.school_name
+                parent_name: schoolShortcode.school_name,
             }
         )
     }
@@ -159,7 +163,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
     if (schools) {
         if (schools.length > 1) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_INVALID_MULTIPLE_EXIST_CHILD,
                 rowNumber,
                 'school_name',
@@ -172,7 +176,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
                 }
             )
 
-            return
+            return rowErrors
         }
         if (schools.length === 1) {
             school = schools[0]
@@ -182,7 +186,6 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
     school.school_name = row.school_name
     school.shortcode = shortcode
     school.organization = Promise.resolve(organization)
-    await manager.save(school)
 
     const existingPrograms = (await school.programs) || []
 
@@ -203,7 +206,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
 
     if (!programToAdd) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             rowNumber,
             'program_name',
@@ -216,13 +219,13 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
             }
         )
 
-        return
+        return rowErrors
     }
 
     for (const p of existingPrograms) {
         if (p.id === programToAdd.id) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'program_name',
@@ -235,12 +238,19 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
                 }
             )
 
-            return
+            return rowErrors
         }
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     existingPrograms.push(programToAdd)
 
     school.programs = Promise.resolve(existingPrograms)
     await manager.save(school)
+
+    return rowErrors
 }

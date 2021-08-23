@@ -26,7 +26,7 @@ describe('processSubCategoriesFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: SubCategoryRow
     let expectedOrg: Organization
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

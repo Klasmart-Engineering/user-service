@@ -1,8 +1,7 @@
-import { Stream } from "stream";
-import { ReadStream } from "typeorm/platform/PlatformTools";
-import { ApolloServerTestClient } from "../../createTestClient";
-import { gqlTry } from "../../gqlTry";
-
+import { Stream } from 'stream'
+import { ReadStream } from 'typeorm/platform/PlatformTools'
+import { ApolloServerTestClient } from '../../createTestClient'
+import { gqlTry } from '../../gqlTry'
 
 const UPLOAD_ORGANIZATIONS_MUTATION = `
     mutation UploadOrganizationsFromCSV($file: Upload!) {
@@ -12,7 +11,7 @@ const UPLOAD_ORGANIZATIONS_MUTATION = `
             encoding
         }
     }
-`;
+`
 
 const UPLOAD_ORGANIZATIONS_QUERY = `
     query UploadOrganizationsFromCSV($file: Upload!) {
@@ -22,24 +21,31 @@ const UPLOAD_ORGANIZATIONS_QUERY = `
             encoding
         }
     }
-`;
+`
 
-function fileMockInput(file: Stream, filename: string, mimetype: string, encoding: string) {
+function fileMockInput(
+    file: Stream,
+    filename: string,
+    mimetype: string,
+    encoding: string
+) {
     return {
         resolve: () => {},
         reject: () => {},
-        promise: new Promise((resolve) => resolve({
-            filename,
-            mimetype,
-            encoding,
-            createReadStream: () => file
-        })),
+        promise: new Promise((resolve) =>
+            resolve({
+                filename,
+                mimetype,
+                encoding,
+                createReadStream: () => file,
+            })
+        ),
         file: {
             filename,
             mimetype,
             encoding,
-            createReadStream: () => file
-        }
+            createReadStream: () => file,
+        },
     }
 }
 
@@ -51,18 +57,19 @@ export async function uploadOrganizations(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { mutate } = testClient;
+    const { mutate } = testClient
 
-    const operation = () => mutate({
-        mutation: UPLOAD_ORGANIZATIONS_MUTATION,
-        variables: variables,
-    });
+    const operation = () =>
+        mutate({
+            mutation: UPLOAD_ORGANIZATIONS_MUTATION,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data?.uploadOrganizationsFromCSV;
+    const res = await gqlTry(operation)
+    return res.data?.uploadOrganizationsFromCSV
 }
 
 export async function queryUploadOrganizations(
@@ -73,16 +80,17 @@ export async function queryUploadOrganizations(
     encoding: string
 ) {
     const variables = {
-        file: fileMockInput(file, filename, mimetype, encoding)
-    };
+        file: fileMockInput(file, filename, mimetype, encoding),
+    }
 
-    const { query } = testClient;
+    const { query } = testClient
 
-    const operation = () => query({
-        query: UPLOAD_ORGANIZATIONS_QUERY,
-        variables: variables,
-    });
+    const operation = () =>
+        query({
+            query: UPLOAD_ORGANIZATIONS_QUERY,
+            variables: variables,
+        })
 
-    const res = await gqlTry(operation);
-    return res.data;
+    const res = await gqlTry(operation)
+    return res.data
 }

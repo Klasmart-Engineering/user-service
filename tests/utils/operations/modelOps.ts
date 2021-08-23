@@ -415,7 +415,7 @@ const GRADES_CONNECTION = `
     }
 `
 
-const AGE_RANGES_CONNECTION = `
+export const AGE_RANGES_CONNECTION = `
     query AgeRangesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: AgeRangeFilter, $sortArgs: AgeRangeSortInput) {
         ageRangesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
             totalCount

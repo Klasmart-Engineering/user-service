@@ -26,7 +26,7 @@ describe('processGradeFromCSVRow', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let row: GradeRow
-    let fileErrors: CSVError[]
+    let fileErrors: CSVError[] = []
     let adminUser: User
     let adminPermissions: UserPermissions
 

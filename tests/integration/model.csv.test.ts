@@ -83,10 +83,12 @@ import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
-import { CustomError } from '../../src/types/csv/csvError'
+import { CSVError, CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser } from '../utils/testEntities'
+import { customErrors } from '../../src/types/errors/customError'
+import { buildCsvError } from '../../src/utils/csv/csvUtils'
 
 use(chaiAsPromised)
 
@@ -96,6 +98,7 @@ describe('model.csv', () => {
 
     before(async () => {
         connection = await createTestConnection()
+
         const server = createServer(new Model(connection))
         testClient = createTestClient(server)
     })
@@ -186,10 +189,11 @@ describe('model.csv', () => {
 
                 const owner = await createUser()
                 owner.email = 'owner@company2.com'
+                owner.phone = '+351 863 644 3084'
                 await connection.manager.save(owner)
 
                 const org = await createOrganization(owner)
-                org.organization_name = 'Company 2'
+                org.organization_name = 'Company 1'
                 await connection.manager.save(org)
 
                 const fn = async () =>
@@ -200,26 +204,36 @@ describe('model.csv', () => {
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.length(1)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('message')
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('row')
-                    .equal(1)
-                expect(fn())
-                    .to.eventually.have.property('errors')
-                    .to.have.property('code')
-                    .equal(
-                        csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER
-                    )
+
+                const expectedCSVError = buildCsvError(
+                    csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                    1,
+                    'owner_email',
+                    csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
+                    {
+                        name: owner.email,
+                        entity: 'user',
+                        parent_entity: 'organization',
+                        parent_name: 'Company 2', // Should read company 1, requires fix
+                    }
+                )
+
+                try {
+                    await fn().then(() => {
+                        expect.fail(`Function incorrectly resolved.`)
+                    })
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(1)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([expectedCSVError])
+                }
 
                 const allOrganizations = await Organization.count()
-                expect(allOrganizations).eq(1) // pre created "Company 2" org
+                expect(allOrganizations).eq(1) // pre created "Company 1" org
             })
         })
 

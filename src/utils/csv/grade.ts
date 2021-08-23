@@ -30,7 +30,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
     rowNumber: number,
     column: string,
     errCode: string,
-    fileErrors: CSVError[],
+    rowErrors: CSVError[],
     notFoundErrorMessage: string,
     params: Record<string, unknown>
 ) {
@@ -45,7 +45,7 @@ async function findOrFailGradeInDatabaseOrTransaction(
 
     if (!gradeFound) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             errCode,
             rowNumber,
             column,
@@ -64,6 +64,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     const {
         organization_name,
         grade_name,
@@ -73,7 +74,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
 
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -87,7 +88,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
 
     if (!grade_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'grade_name',
@@ -102,7 +103,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     // From grade should be different to grade
     if (progress_from_grade_name && progress_from_grade_name === grade_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_DIFFERENT,
             rowNumber,
             'progress_from_grade_name',
@@ -118,7 +119,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     // To grade should be different to grade
     if (progress_to_grade_name && progress_to_grade_name === grade_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_DIFFERENT,
             rowNumber,
             'progress_to_grade_name',
@@ -138,7 +139,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
         progress_from_grade_name === progress_to_grade_name
     ) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_DIFFERENT,
             rowNumber,
             'progress_to_grade_name',
@@ -152,8 +153,8 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organization = await Organization.findOne({
@@ -162,7 +163,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
 
     if (!organization) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -173,7 +174,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
             }
         )
 
-        return
+        return rowErrors
     }
 
     let grade = await findGradeInDatabaseOrTransaction(
@@ -184,7 +185,7 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
 
     if (grade) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
             rowNumber,
             'grade_name',
@@ -197,7 +198,12 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
             }
         )
 
-        return
+        return rowErrors
+    }
+
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
     }
 
     grade = new Grade()
@@ -206,6 +212,8 @@ export const processGradeFromCSVRow: CreateEntityRowCallback<GradeRow> = async (
     grade.system = false
 
     await manager.save(grade)
+
+    return rowErrors
 }
 
 export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
@@ -215,6 +223,7 @@ export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     let toGrade: Grade | undefined
     let fromGrade: Grade | undefined
 
@@ -230,7 +239,18 @@ export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
     })
 
     if (!organization) {
-        return
+        addCsvError(
+            rowErrors,
+            csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+            rowNumber,
+            'organization_name',
+            csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_ENTITY,
+            {
+                name: organization_name,
+                entity: 'organization',
+            }
+        )
+        return rowErrors
     }
 
     if (progress_from_grade_name) {
@@ -241,7 +261,7 @@ export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
             rowNumber,
             'progress_from_grade_name',
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
-            fileErrors,
+            rowErrors,
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
                 name: progress_from_grade_name,
@@ -268,7 +288,7 @@ export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
             rowNumber,
             'progress_to_grade_name',
             csvErrorConstants.ERR_CSV_NONE_EXIST_CHILD_ENTITY,
-            fileErrors,
+            rowErrors,
             csvErrorConstants.MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY,
             {
                 name: progress_to_grade_name,
@@ -287,8 +307,14 @@ export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
         })
     }
 
-    if (!fromGrade || !toGrade) {
-        return
+    // never save if there are any errors in the file
+    if (
+        fileErrors.length > 0 ||
+        rowErrors.length > 0 ||
+        !fromGrade ||
+        !toGrade
+    ) {
+        return rowErrors
     }
 
     const grade = await manager.findOneOrFail(Grade, {
@@ -304,4 +330,6 @@ export const setGradeFromToFields: CreateEntityRowCallback<GradeRow> = async (
     grade.progress_to_grade = Promise.resolve(toGrade)
 
     await manager.save(grade)
+
+    return rowErrors
 }

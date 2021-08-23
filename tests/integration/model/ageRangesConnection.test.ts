@@ -68,20 +68,20 @@ describe('model', () => {
         org2AgeRanges = []
         ageRanges = []
 
-        for (let i = 0; i < ageRangesCount; i++) {
+        for (let i = 1; i <= ageRangesCount; i++) {
             let ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.name = `age range ${i}`
+            ageRange.low_value_unit = AgeRangeUnit.YEAR
+            ageRange.high_value_unit = AgeRangeUnit.YEAR
             ageRange.status = Status.ACTIVE
             org1AgeRanges.push(ageRange)
         }
 
-        for (let i = 0; i < ageRangesCount; i++) {
-            let ageRange = await createAgeRange(
-                org2,
-                ageRangesCount + i,
-                ageRangesCount + i + 1
-            )
-            ageRange.name = `program ${i}`
+        for (let i = 1; i <= ageRangesCount; i++) {
+            let ageRange = await createAgeRange(org2, i, i + 1)
+            ageRange.name = `age range ${i}`
+            ageRange.low_value_unit = AgeRangeUnit.MONTH
+            ageRange.high_value_unit = AgeRangeUnit.MONTH
             ageRange.status = Status.INACTIVE
             org2AgeRanges.push(ageRange)
         }
@@ -325,6 +325,163 @@ describe('model', () => {
 
             const systems = result.edges.map((edge) => edge.node.system)
             systems.every((system) => system === filterSystem)
+        })
+
+        it('supports filtering by age range unit from', async () => {
+            const unit = AgeRangeUnit.MONTH
+            const filter: IEntityFilter = {
+                ageRangeUnitFrom: {
+                    operator: 'eq',
+                    value: unit,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(ageRangesCount)
+
+            const filteredAgeRanges = result.edges.map((edge) => edge.node)
+            filteredAgeRanges.every((ar) => ar.lowValueUnit === unit)
+        })
+
+        it('supports filtering by age range unit to', async () => {
+            const unit = AgeRangeUnit.YEAR
+            const filter: IEntityFilter = {
+                ageRangeUnitTo: {
+                    operator: 'eq',
+                    value: unit,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            // customAgeRanges + systemAgeRanges
+            expect(result.totalCount).to.eq(
+                ageRangesCount + systemAgeRanges.length
+            )
+
+            const filteredAgeRanges = result.edges.map((edge) => edge.node)
+            filteredAgeRanges.every((ar) => ar.highValueUnit === unit)
+        })
+
+        it('supports filtering by age range value from', async () => {
+            const value = 10
+            const filter: IEntityFilter = {
+                ageRangeValueFrom: {
+                    operator: 'eq',
+                    value: value,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(2)
+
+            const filteredAgeRanges = result.edges.map((edge) => edge.node)
+            filteredAgeRanges.every((ar) => ar.lowValue === value)
+        })
+
+        it('supports filtering by age range value to', async () => {
+            const value = 10
+            const filter: IEntityFilter = {
+                ageRangeValueTo: {
+                    operator: 'eq',
+                    value: value,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(2)
+
+            const filteredAgeRanges = result.edges.map((edge) => edge.node)
+            filteredAgeRanges.every((ar) => ar.highValue === value)
+        })
+
+        it('supports filtering by age range value/unit from', async () => {
+            const value = 10
+            const unit = AgeRangeUnit.YEAR
+            const filter: IEntityFilter = {
+                ageRangeValueFrom: {
+                    operator: 'eq',
+                    value: value,
+                },
+                ageRangeUnitFrom: {
+                    operator: 'eq',
+                    value: unit,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(1)
+
+            const filteredAgeRanges = result.edges.map((edge) => edge.node)
+            filteredAgeRanges.every((ar) => {
+                expect(ar.lowValue).eq(value)
+                expect(ar.lowValueUnit).eq(unit)
+            })
+        })
+
+        it('supports filtering by age range value/unit to', async () => {
+            const value = 10
+            const unit = AgeRangeUnit.MONTH
+            const filter: IEntityFilter = {
+                ageRangeValueTo: {
+                    operator: 'eq',
+                    value: value,
+                },
+                ageRangeUnitTo: {
+                    operator: 'eq',
+                    value: unit,
+                },
+            }
+
+            const result = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(1)
+
+            const filteredAgeRanges = result.edges.map((edge) => edge.node)
+            filteredAgeRanges.every((ar) => {
+                expect(ar.highValue).eq(value)
+                expect(ar.highValueUnit).eq(unit)
+            })
         })
     })
 })

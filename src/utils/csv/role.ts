@@ -16,13 +16,14 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
     fileErrors: CSVError[],
     userPermissions: UserPermissions
 ) => {
+    const rowErrors: CSVError[] = []
     let role
     let rolePermissions: Permission[] = []
     const { organization_name, role_name, permission_id } = row
 
     if (!organization_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'organization_name',
@@ -36,7 +37,7 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
 
     if (!role_name) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'role_name',
@@ -50,7 +51,7 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
 
     if (!permission_id) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_MISSING_REQUIRED,
             rowNumber,
             'permission_id',
@@ -63,8 +64,8 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
     }
 
     // Return if there are any validation errors so that we don't need to waste any DB queries
-    if (fileErrors && fileErrors.length > 0) {
-        return
+    if (rowErrors.length > 0) {
+        return rowErrors
     }
 
     const organization = await Organization.findOne({
@@ -73,7 +74,7 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
 
     if (!organization) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -91,7 +92,7 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
 
     if (!permission) {
         addCsvError(
-            fileErrors,
+            rowErrors,
             csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
             rowNumber,
             'organization_name',
@@ -103,8 +104,8 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
         )
     }
 
-    if ((fileErrors && fileErrors.length > 0) || !organization || !permission) {
-        return
+    if (rowErrors.length > 0 || !organization || !permission) {
+        return rowErrors
     }
 
     role = await manager.findOne(Role, {
@@ -124,7 +125,7 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
 
         if (permissionNames.includes(permission_id)) {
             addCsvError(
-                fileErrors,
+                rowErrors,
                 csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 rowNumber,
                 'permission_id',
@@ -137,7 +138,7 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
                 }
             )
 
-            return
+            return rowErrors
         }
     } else {
         role = new Role()
@@ -145,8 +146,15 @@ export const processRoleFromCSVRow: CreateEntityRowCallback<RoleRow> = async (
         role.organization = Promise.resolve(organization)
     }
 
+    // never save if there are any errors in the file
+    if (fileErrors.length > 0 || rowErrors.length > 0) {
+        return rowErrors
+    }
+
     rolePermissions.push(permission)
     role.permissions = Promise.resolve(rolePermissions)
 
     await manager.save(role)
+
+    return rowErrors
 }
