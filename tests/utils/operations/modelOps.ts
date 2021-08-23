@@ -23,6 +23,7 @@ import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionN
 import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategoryConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -503,6 +504,52 @@ export const CLASSES_CONNECTION = `
             }
         }
     }
+`
+
+export const SUBCATEGORIES_CONNECTION = `
+query SubcategoriesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubcategoryFilter, $sortArgs: SubcategorySortInput) {
+    subcategoriesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+        totalCount
+
+        edges {
+            cursor
+            node {
+                id
+                name
+                status
+                system
+
+                categories {
+                    id
+                    name
+                    status
+                    system
+                }
+
+                subjects {
+                    id
+                    name
+                    status
+                    system
+                }
+
+                programs {
+                    id
+                    name
+                    status
+                    system
+                }
+            }
+        }
+
+        pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+        }
+    }
+}
 `
 
 /**
@@ -1030,4 +1077,30 @@ export async function classesConnection(
 
     const res = await gqlTry(operation)
     return res.data?.classesConnection
+}
+
+export async function subcategoriesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<SubcategoryConnectionNode>> {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: SUBCATEGORIES_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.subcategoriesConnection
 }

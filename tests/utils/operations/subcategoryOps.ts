@@ -3,7 +3,7 @@ import { Headers } from 'node-mocks-http'
 import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 
-const DELETE_SUBCATEGORY = `
+export const DELETE_SUBCATEGORY = `
     mutation deleteSubcategory($id: ID!) {
         subcategory(id: $id) {
             delete

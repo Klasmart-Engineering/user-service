@@ -77,6 +77,7 @@ import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInp
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
+import { SubcategoryConnectionNode } from './types/graphQL/subcategoryConnectionNode'
 
 export class Model {
     public static async create() {
@@ -735,6 +736,63 @@ export class Model {
                 lowValueUnit: ageRange.low_value_unit,
                 highValue: ageRange.high_value,
                 highValueUnit: ageRange.high_value_unit,
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async subcategoriesConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Subcategory>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect(
+                    'Subcategory.organization',
+                    'Organization'
+                )
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'Subcategory.status',
+                    system: 'Subcategory.system',
+                    organizationId: 'Organization.organization_id',
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const subcategory = edge.node as Subcategory
+            const newNode: Partial<SubcategoryConnectionNode> = {
+                id: subcategory.id,
+                name: subcategory.name,
+                status: subcategory.status,
+                system: subcategory.system,
+                // other properties have dedicated resolvers that use Dataloader
             }
 
             edge.node = newNode
