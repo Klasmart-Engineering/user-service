@@ -141,14 +141,14 @@ describe('subcategoriesConnection', () => {
         // Creating Org1 Subcategories
         for (let i = 0; i < subcategoriesCount; i++) {
             let subcategory = await createSubcategory(org1)
-            // subcategory.status = i % 2 ? Status.ACTIVE : Status.INACTIVE
+            subcategory.name = `Subcategory ${i + 1}`
             org1Subcategories.push(subcategory)
         }
 
         // Creating Org2 Subcategories
         for (let i = 0; i < subcategoriesCount; i++) {
             let subcategory = await createSubcategory(org2)
-            // subcategory.system = !!(i % 2)
+            subcategory.name = `Subcategory ${i + 1}`
             org2Subcategories.push(subcategory)
         }
 
@@ -537,9 +537,9 @@ describe('subcategoriesConnection', () => {
             const subcategories = result.edges
             const org1SubcategoryIds = org1Subcategories.map((s) => s.id)
 
-            subcategories.every((subcategory) =>
-                org1SubcategoryIds.includes(subcategory.node.id)
-            )
+            subcategories.forEach((subcategory) => {
+                expect(org1SubcategoryIds).includes(subcategory.node.id)
+            })
         })
 
         it('supports filtering by subcategory status', async () => {
@@ -568,9 +568,9 @@ describe('subcategoriesConnection', () => {
             expect(result.edges.length).eq(subcategoriesCount / 2)
 
             const subcategories = result.edges
-            subcategories.every(
-                (subcategory) => subcategory.node.status === filterStatus
-            )
+            subcategories.forEach((subcategory) => {
+                expect(subcategory.node.status).to.eq(filterStatus)
+            })
         })
 
         it('supports filtering by subcategory system', async () => {
@@ -599,9 +599,71 @@ describe('subcategoriesConnection', () => {
             expect(result.edges.length).eq(subcategoriesCount / 2)
 
             const subcategories = result.edges
-            subcategories.every(
-                (subcategory) => subcategory.node.system === filterSystem
+            subcategories.forEach((subcategory) => {
+                expect(subcategory.node.system).to.eq(filterSystem)
+            })
+        })
+
+        it('supports filtering by subcategory id', async () => {
+            const subcategoryId = org1Subcategories[0].id
+
+            const filter: IEntityFilter = {
+                id: {
+                    operator: 'eq',
+                    value: subcategoryId,
+                },
+            }
+
+            const result = await subcategoriesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
             )
+
+            expect(result.totalCount).to.eq(1)
+
+            expect(result.pageInfo.hasNextPage).to.be.false
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+
+            expect(result.edges.length).eq(1)
+
+            const subcategories = result.edges
+            subcategories.forEach((subcategory) => {
+                expect(subcategory.node.id).to.eq(subcategoryId)
+            })
+        })
+
+        it('supports filtering by subcategory name', async () => {
+            const search = '1'
+
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: search,
+                },
+            }
+
+            const result = await subcategoriesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(16)
+
+            expect(result.pageInfo.hasNextPage).to.be.true
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+
+            expect(result.edges.length).eq(10)
+
+            const subcategories = result.edges
+            subcategories.forEach((subcategory) => {
+                expect(subcategory.node.name).includes(search)
+            })
         })
     })
 })

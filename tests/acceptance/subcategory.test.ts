@@ -339,5 +339,61 @@ describe('acceptance.subcategory', () => {
                 systemSubcategoriesCount
             )
         })
+
+        it('queries paginated subcategories filtering by id', async () => {
+            const subcategoryId = subcategoryIds[0]
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBCATEGORIES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            id: {
+                                operator: 'eq',
+                                value: subcategoryId,
+                            },
+                        },
+                    },
+                })
+
+            const subcategoriesConnection =
+                response.body.data.subcategoriesConnection
+
+            expect(response.status).to.eq(200)
+            expect(subcategoriesConnection.totalCount).to.equal(1)
+        })
+
+        it('queries paginated subcategories filtering by name', async () => {
+            const search = '1'
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBCATEGORIES_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            name: {
+                                operator: 'contains',
+                                value: search,
+                            },
+                        },
+                    },
+                })
+
+            const subcategoriesConnection =
+                response.body.data.subcategoriesConnection
+
+            expect(response.status).to.eq(200)
+            expect(subcategoriesConnection.totalCount).to.equal(8)
+        })
     })
 })

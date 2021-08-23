@@ -42,6 +42,8 @@ const typeDefs = gql`
     }
 
     input SubcategoryFilter {
+        id: UUIDFilter
+        name: StringFilter
         status: StringFilter
         system: BooleanFilter
 
