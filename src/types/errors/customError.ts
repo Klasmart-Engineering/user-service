@@ -49,6 +49,10 @@ export const customErrors = {
         code: 'ERR_DUPLICATE_ENTITY',
         message: '{entity} {entityName} already exists.',
     },
+    duplicate_attribute_values: {
+        code: 'ERR_DUPLICATE_ATTRIBUTE_VALUES',
+        message: '{entity} {attribute} must contain unique values.',
+    },
     nonexistent_entity: {
         code: 'ERR_NON_EXISTENT_ENTITY',
         message: "{entity} {entityName} doesn't exist.",
