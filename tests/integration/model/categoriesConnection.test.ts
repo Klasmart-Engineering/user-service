@@ -530,10 +530,12 @@ describe('subcategoriesConnection', () => {
 
             expect(result.edges.length).eq(categoriesCount)
 
-            const categoryIds = result.edges.map((edge) => edge.node.id)
+            const categories = result.edges
             const org1CategoryIds = org1Categories.map((s) => s.id)
 
-            categoryIds.every((id) => org1CategoryIds.includes(id))
+            categories.every((category) =>
+                org1CategoryIds.includes(category.node.id)
+            )
         })
 
         it('supports filtering by category status', async () => {
@@ -560,9 +562,11 @@ describe('subcategoriesConnection', () => {
 
             expect(result.edges.length).eq(categoriesCount / 2)
 
-            const statuses = result.edges.map((edge) => edge.node.status)
+            const categories = result.edges
 
-            statuses.every((status) => status === filterStatus)
+            categories.every(
+                (category) => category.node.status === filterStatus
+            )
         })
 
         it('supports filtering by category system', async () => {
@@ -589,9 +593,11 @@ describe('subcategoriesConnection', () => {
 
             expect(result.edges.length).eq(categoriesCount / 2)
 
-            const systems = result.edges.map((edge) => edge.node.system)
+            const categories = result.edges
 
-            systems.every((value) => value === filterSystem)
+            categories.every(
+                (category) => category.node.system === filterSystem
+            )
         })
     })
 })
