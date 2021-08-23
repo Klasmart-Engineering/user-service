@@ -1,5 +1,4 @@
 import DataLoader from 'dataloader'
-import { SelectQueryBuilder } from 'typeorm'
 import { Program } from '../entities/program'
 import { Subcategory } from '../entities/subcategory'
 import { Subject } from '../entities/subject'
@@ -7,11 +6,6 @@ import { CategorySummaryNode } from '../types/graphQL/categorySummaryNode'
 import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
-import {
-    filterHasProperty,
-    getWhereClauseFromFilter,
-    IEntityFilter,
-} from '../utils/pagination/filtering'
 
 export interface ISubcategoriesConnectionLoaders {
     categories?: DataLoader<string, CategorySummaryNode[]>
@@ -20,18 +14,13 @@ export interface ISubcategoriesConnectionLoaders {
 }
 
 export const categoriesForSubcategories = async (
-    subcategoryIds: readonly string[],
-    filter?: IEntityFilter
+    subcategoryIds: readonly string[]
 ): Promise<CategorySummaryNode[][]> => {
     const subcategoryCategories: CategorySummaryNode[][] = []
     const scope = await Subcategory.createQueryBuilder('Subcategory')
         .leftJoinAndSelect('Subcategory.categories', 'Category')
         .distinctOn(['Category.name', 'Subcategory.id'])
         .where('Subcategory.id IN (:...ids)', { ids: subcategoryIds })
-
-    if (filter) {
-        addFilterJoins(filter, scope)
-    }
 
     const subcategories = await scope.getMany()
 
@@ -53,8 +42,7 @@ export const categoriesForSubcategories = async (
 }
 
 export const subjectsForSubcategories = async (
-    subcategoryIds: readonly string[],
-    filter?: IEntityFilter
+    subcategoryIds: readonly string[]
 ): Promise<SubjectSummaryNode[][]> => {
     const subcategorySubjects: SubjectSummaryNode[][] = []
     const scope = await Subcategory.createQueryBuilder('Subcategory')
@@ -62,10 +50,6 @@ export const subjectsForSubcategories = async (
         .leftJoinAndSelect('Category.subjects', 'Subject')
         .distinctOn(['Subject.name', 'Subcategory.id'])
         .where('Subcategory.id IN (:...ids)', { ids: subcategoryIds })
-
-    if (filter) {
-        addFilterJoins(filter, scope)
-    }
 
     const subcategories = await scope.getMany()
 
@@ -84,8 +68,7 @@ export const subjectsForSubcategories = async (
 }
 
 export const programsForSubcategories = async (
-    subcategoryIds: readonly string[],
-    filter?: IEntityFilter
+    subcategoryIds: readonly string[]
 ): Promise<ProgramSummaryNode[][]> => {
     const subcategoryPrograms: ProgramSummaryNode[][] = []
     const scope = await Subcategory.createQueryBuilder('Subcategory')
@@ -94,10 +77,6 @@ export const programsForSubcategories = async (
         .leftJoinAndSelect('Subject.programs', 'Program')
         .distinctOn(['Program.name', 'Subcategory.id'])
         .where('Subcategory.id IN (:...ids)', { ids: subcategoryIds })
-
-    if (filter) {
-        addFilterJoins(filter, scope)
-    }
 
     const subcategories = await scope.getMany()
 
@@ -113,24 +92,6 @@ export const programsForSubcategories = async (
     }
 
     return subcategoryPrograms
-}
-
-// generates the needed joins when a filter is applied
-function addFilterJoins(
-    filter: IEntityFilter,
-    scope: SelectQueryBuilder<Subcategory>
-) {
-    if (filterHasProperty('organizationId', filter)) {
-        scope.leftJoinAndSelect('Subcategory.organization', 'Organization')
-    }
-
-    scope.andWhere(
-        getWhereClauseFromFilter(filter, {
-            status: 'Subcategory.status',
-            system: 'Subcategory.system',
-            organizationId: 'Organization.organization_id',
-        })
-    )
 }
 
 // gets each category in subcategory
