@@ -265,8 +265,6 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
         })
@@ -336,8 +334,6 @@ describe('subcategoriesConnection', () => {
 
                 expect(result.pageInfo.hasNextPage).to.be.true
                 expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
 
                 expect(result.edges.length).eq(10)
 
@@ -390,8 +386,6 @@ describe('subcategoriesConnection', () => {
 
                 expect(result.pageInfo.hasNextPage).to.be.true
                 expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
 
                 expect(result.edges.length).eq(10)
 
@@ -420,8 +414,6 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
 
@@ -445,8 +437,6 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
 
@@ -470,8 +460,6 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
 
@@ -495,8 +483,6 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
 
@@ -545,15 +531,15 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.true
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(10)
 
-            const subcategoryIds = result.edges.map((edge) => edge.node.id)
+            const subcategories = result.edges
             const org1SubcategoryIds = org1Subcategories.map((s) => s.id)
 
-            subcategoryIds.every((id) => org1SubcategoryIds.includes(id))
+            subcategories.every((subcategory) =>
+                org1SubcategoryIds.includes(subcategory.node.id)
+            )
         })
 
         it('supports filtering by subcategory status', async () => {
@@ -578,13 +564,13 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.false
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(subcategoriesCount / 2)
 
-            const statuses = result.edges.map((edge) => edge.node.status)
-            statuses.every((status) => status === filterStatus)
+            const subcategories = result.edges
+            subcategories.every(
+                (subcategory) => subcategory.node.status === filterStatus
+            )
         })
 
         it('supports filtering by subcategory system', async () => {
@@ -609,13 +595,13 @@ describe('subcategoriesConnection', () => {
 
             expect(result.pageInfo.hasNextPage).to.be.false
             expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
 
             expect(result.edges.length).eq(subcategoriesCount / 2)
 
-            const systems = result.edges.map((edge) => edge.node.system)
-            systems.every((value) => value === filterSystem)
+            const subcategories = result.edges
+            subcategories.every(
+                (subcategory) => subcategory.node.system === filterSystem
+            )
         })
     })
 })
