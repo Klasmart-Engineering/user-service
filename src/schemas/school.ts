@@ -16,7 +16,7 @@ const typeDefs = gql`
             directionArgs: ConnectionsDirectionArgs
             filter: SchoolFilter
             sort: SchoolSortInput
-        ): SchoolsConnectionResponse
+        ): SchoolsConnectionResponse @isAdmin(entity: "school")
     }
     type School {
         school_id: ID!

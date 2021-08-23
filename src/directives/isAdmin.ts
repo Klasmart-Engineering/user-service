@@ -16,6 +16,7 @@ import { Program } from '../entities/program'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from '../entities/schoolMembership'
+import { School } from '../entities/school'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,6 +62,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                 case 'program':
                     scope = getRepository(Program).createQueryBuilder()
                     break
+                case 'school':
+                    scope = getRepository(School).createQueryBuilder()
+                    break
                 default:
                     context.permissions.rejectIfNotAdmin()
             }
@@ -96,6 +100,9 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         break
                     case 'class':
                         await this.nonAdminClassScope(scope, context)
+                        break
+                    case 'school':
+                        await this.nonAdminSchoolScope(scope, context)
                         break
                     default:
                     // do nothing
@@ -341,6 +348,51 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                     system: true,
                 }
             )
+    }
+
+    private async nonAdminSchoolScope(
+        scope: SelectQueryBuilder<unknown>,
+        context: Context
+    ) {
+        const userId = context.permissions.getUserId()
+        const schoolOrgs = await context.permissions.orgMembershipsWithPermissions(
+            [PermissionName.view_school_20110]
+        )
+
+        const mySchoolOrgs = await context.permissions.orgMembershipsWithPermissions(
+            [PermissionName.view_my_school_20119]
+        )
+        if (schoolOrgs.length) {
+            scope
+                .leftJoinAndSelect(
+                    OrganizationMembership,
+                    'OrganizationMembership',
+                    'OrganizationMembership.organization = School.organization'
+                )
+                .where(
+                    'OrganizationMembership.organization_id IN (:...schoolOrgs) AND OrganizationMembership.user_id = :d_user_id',
+                    {
+                        schoolOrgs,
+                        d_user_id: userId,
+                    }
+                )
+        }
+        if (mySchoolOrgs.length) {
+            scope
+                .leftJoinAndSelect('School.memberships', 'SchoolMembership')
+                .orWhere(
+                    'School.organization IN (:...mySchoolOrgs) AND SchoolMembership.user_id = :user_id',
+                    {
+                        mySchoolOrgs,
+                        user_id: userId,
+                    }
+                )
+        }
+
+        if (!mySchoolOrgs.length && !schoolOrgs.length) {
+            // user has not permissions, can not see anything
+            scope.where('false')
+        }
     }
 
     private async nonAdminClassScope(
