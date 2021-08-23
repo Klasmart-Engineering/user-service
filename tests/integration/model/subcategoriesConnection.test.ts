@@ -537,9 +537,9 @@ describe('subcategoriesConnection', () => {
             const subcategories = result.edges
             const org1SubcategoryIds = org1Subcategories.map((s) => s.id)
 
-            subcategories.every((subcategory) =>
-                org1SubcategoryIds.includes(subcategory.node.id)
-            )
+            subcategories.forEach((subcategory) => {
+                expect(org1SubcategoryIds).includes(subcategory.node.id)
+            })
         })
 
         it('supports filtering by subcategory status', async () => {
@@ -568,9 +568,9 @@ describe('subcategoriesConnection', () => {
             expect(result.edges.length).eq(subcategoriesCount / 2)
 
             const subcategories = result.edges
-            subcategories.every(
-                (subcategory) => subcategory.node.status === filterStatus
-            )
+            subcategories.forEach((subcategory) => {
+                expect(subcategory.node.status).to.eq(filterStatus)
+            })
         })
 
         it('supports filtering by subcategory system', async () => {
@@ -599,9 +599,9 @@ describe('subcategoriesConnection', () => {
             expect(result.edges.length).eq(subcategoriesCount / 2)
 
             const subcategories = result.edges
-            subcategories.every(
-                (subcategory) => subcategory.node.system === filterSystem
-            )
+            subcategories.forEach((subcategory) => {
+                expect(subcategory.node.system).to.eq(filterSystem)
+            })
         })
     })
 })
