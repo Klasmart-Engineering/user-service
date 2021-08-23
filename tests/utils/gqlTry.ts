@@ -1,8 +1,10 @@
 import { HttpQueryError, GraphQLResponse } from 'apollo-server-core'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { CustomError } from '../../src/types/csv/csvError'
-import { APIErrorCollection } from '../../src/types/errors/apiError'
-import { apiErrorConstants } from '../../src/types/errors/apiError'
+import {
+    APIErrorCollection,
+    apiErrorConstants,
+} from '../../src/types/errors/apiError'
 
 export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
     try {
