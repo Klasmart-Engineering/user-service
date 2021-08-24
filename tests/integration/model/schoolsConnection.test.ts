@@ -5,11 +5,16 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
+import faker from 'faker'
 import { createTestConnection } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { Model } from '../../../src/model'
 import { createAdminUser } from '../../utils/testEntities'
-import { getAdminAuthToken } from '../../utils/testConfig'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
 import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
@@ -19,8 +24,43 @@ import { createOrganization } from '../../factories/organization.factory'
 import { generateShortCode } from '../../../src/utils/shortcode'
 import { Status } from '../../../src/entities/status'
 import { createSchool } from '../../factories/school.factory'
+import {
+    getSystemRoleIds,
+    inviteUser,
+} from '../../utils/operations/organizationOps'
+import { userToPayload } from '../../utils/operations/userOps'
 
 use(chaiAsPromised)
+
+async function createUserInSystemOrgRoleAndGetToken(
+    testClient: ApolloServerTestClient,
+    orgId: string,
+    roleName: string,
+    schoolIds: string[],
+    orgOwnerToken: string
+): Promise<string> {
+    const systemRoles = await getSystemRoleIds()
+    const roleId = systemRoles[roleName]
+    const gender = ['Male', 'Female']
+    let gqlresult = await inviteUser(
+        testClient,
+        orgId,
+        faker.internet.email(),
+        undefined,
+        faker.name.firstName(),
+        faker.name.lastName(),
+        '02-1974',
+        faker.name.firstName(),
+        faker.random.arrayElement(gender),
+        undefined,
+        new Array(roleId),
+        schoolIds,
+        [],
+        { authorization: orgOwnerToken }
+    )
+
+    return generateToken(userToPayload(gqlresult.user))
+}
 
 describe('schoolsConnection', () => {
     let connection: Connection
@@ -61,6 +101,63 @@ describe('schoolsConnection', () => {
             schools.push(school)
         }
         await connection.manager.save(schools)
+    })
+
+    context('as School Admin', () => {
+        let schoolAdminToken: string
+        beforeEach(async () => {
+            schoolAdminToken = await createUserInSystemOrgRoleAndGetToken(
+                testClient,
+                org1.organization_id,
+                'School Admin',
+                [schools[0].school_id],
+                getAdminAuthToken()
+            )
+        })
+        it('returns one school', async () => {
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: schoolAdminToken }
+            )
+
+            expect(result.totalCount).to.eq(1)
+        })
+    })
+
+    context('as Org Admin', () => {
+        let orgAdminToken: string
+        beforeEach(async () => {
+            orgAdminToken = await createUserInSystemOrgRoleAndGetToken(
+                testClient,
+                org1.organization_id,
+                'Organization Admin',
+                [],
+                getAdminAuthToken()
+            )
+        })
+        it('returns ten schools', async () => {
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: orgAdminToken }
+            )
+            expect(result.totalCount).to.eq(10)
+        })
+    })
+
+    context('as a non org member', () => {
+        it('returns zero schools', async () => {
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getNonAdminAuthToken() }
+            )
+            expect(result.totalCount).to.eq(0)
+        })
     })
 
     context('unfiltered', () => {
