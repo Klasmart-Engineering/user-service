@@ -40,7 +40,7 @@ import clean from '../utils/clean'
 import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
 import validationConstants from './validations/constants'
 
-export const normalizedLowercaseTrimmed = (x: string) =>
+export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 
 export const padShortDob = (dob: string) => (dob?.length < 7 ? '0' + dob : dob)

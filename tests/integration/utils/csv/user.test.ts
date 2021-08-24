@@ -18,7 +18,10 @@ import { Class } from '../../../../src/entities/class'
 import { User } from '../../../../src/entities/user'
 import { UserRow } from '../../../../src/types/csv/userRow'
 import { Model } from '../../../../src/model'
-import { Organization } from '../../../../src/entities/organization'
+import {
+    Organization,
+    normalizedLowercaseTrimmed,
+} from '../../../../src/entities/organization'
 import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
 import { Role } from '../../../../src/entities/role'
 import { School } from '../../../../src/entities/school'
@@ -123,7 +126,7 @@ describe('processUserFromCSVRow', async () => {
         )
 
         const dbUser = await User.findOne({
-            where: { email: row.user_email },
+            where: { email: normalizedLowercaseTrimmed(row.user_email) },
         })
 
         expect(dbUser).to.be.undefined
@@ -653,6 +656,25 @@ describe('processUserFromCSVRow', async () => {
                 }
             }
         })
+        it('is preprocessed before saving', async () => {
+            const unprocessedEmail = 'ABC@gmail.com'
+            const processedEmail = normalizedLowercaseTrimmed(unprocessedEmail)
+            row.user_email = unprocessedEmail
+
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+            expect(rowErrors.length).to.eq(0)
+
+            const dbUser = await User.findOneOrFail({
+                where: { email: processedEmail },
+            })
+            expect(dbUser.email).to.eq(processedEmail)
+        })
     })
 
     context('user phone', () => {
@@ -962,7 +984,7 @@ describe('processUserFromCSVRow', async () => {
             )
 
             const dbUser = await User.findOneOrFail({
-                where: { email: row.user_email },
+                where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
             expect(dbUser.user_id).to.not.be.empty
@@ -998,7 +1020,7 @@ describe('processUserFromCSVRow', async () => {
             )
 
             const dbUser = await User.findOneOrFail({
-                where: { email: row.user_email },
+                where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
             const schoolMembership = await SchoolMembership.findOneOrFail({
@@ -1046,7 +1068,9 @@ describe('processUserFromCSVRow', async () => {
                 )
 
                 const dbUser = await User.findOneOrFail({
-                    where: { email: row.user_email },
+                    where: {
+                        email: normalizedLowercaseTrimmed(row.user_email),
+                    },
                 })
 
                 const students = (await cls.students) || []
@@ -1079,7 +1103,9 @@ describe('processUserFromCSVRow', async () => {
                 )
 
                 const dbUser = await User.findOneOrFail({
-                    where: { email: row.user_email },
+                    where: {
+                        email: normalizedLowercaseTrimmed(row.user_email),
+                    },
                 })
 
                 const students = (await cls.students) || []
@@ -1125,7 +1151,9 @@ describe('processUserFromCSVRow', async () => {
                     )
 
                     const dbUser = await User.findOneOrFail({
-                        where: { email: row.user_email },
+                        where: {
+                            email: normalizedLowercaseTrimmed(row.user_email),
+                        },
                     })
 
                     expect(dbUser.user_id).to.not.be.empty
@@ -1157,7 +1185,9 @@ describe('processUserFromCSVRow', async () => {
                 )
 
                 const dbUser = await User.findOneOrFail({
-                    where: { email: row.user_email },
+                    where: {
+                        email: normalizedLowercaseTrimmed(row.user_email),
+                    },
                 })
 
                 expect(dbUser.user_id).to.not.be.empty
@@ -1171,49 +1201,84 @@ describe('processUserFromCSVRow', async () => {
         })
 
         context('and the user already exists', () => {
+            let existentUser: User
+            let existentMembership: OrganizationMembership
+            const originalShortcode = `CUSTOMCODE`
+            beforeEach(async () => {
+                existentUser = createUser()
+                existentUser.given_name = 'existent'
+                existentUser.family_name = 'user'
+                existentUser.email = 'existent_user@gmail.com'
+                existentUser.phone = undefined
+                existentUser.date_of_birth = '01-2000'
+                existentUser.gender = 'male'
+                await connection.manager.save(existentUser)
+
+                existentMembership = await addOrganizationToUserAndValidate(
+                    testClient,
+                    existentUser.user_id,
+                    organization.organization_id,
+                    getAdminAuthToken()
+                )
+                existentMembership.shortcode = originalShortcode
+                await connection.manager.save(
+                    OrganizationMembership,
+                    existentMembership
+                )
+
+                row = {
+                    ...row,
+                    user_given_name: existentUser.given_name,
+                    user_family_name: existentUser.family_name,
+                    user_email: existentUser.email,
+                    user_date_of_birth: `12-1999`,
+                    user_gender: `female`,
+                    user_shortcode: originalShortcode,
+                    organization_role_name: `Student`,
+                }
+            })
+
+            it("doesn't duplicate users", async () => {
+                let rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions
+                )
+                let dbUsers = await User.find({
+                    where: { email: row.user_email },
+                })
+                expect(rowErrors.length).to.eq(0)
+                expect(dbUsers.length).to.eq(1)
+
+                // user adds their phone but is not updated in the CSV
+                // the user should still be correctly identified
+                existentUser.phone = '+123456789'
+                await existentUser.save()
+
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions
+                )
+                dbUsers = await User.find({
+                    where: { email: row.user_email },
+                })
+                expect(rowErrors.length).to.eq(0)
+                expect(dbUsers.length).to.eq(1)
+            })
             context(
                 'and user_shortcode is different than already assigned shortcode',
                 () => {
-                    let existentUser: User
-                    let existentMembership: OrganizationMembership
-                    const originalShortcode = `CUSTOMCODE`
-                    beforeEach(async () => {
-                        existentUser = createUser()
-                        existentUser.given_name = 'existent'
-                        existentUser.family_name = 'user'
-                        existentUser.email = 'existent_user@gmail.com'
-                        existentUser.phone = undefined
-                        existentUser.date_of_birth = '01-2000'
-                        existentUser.gender = 'male'
-                        await connection.manager.save(existentUser)
-
-                        existentMembership = new OrganizationMembership()
-                        existentMembership.organization = Promise.resolve(
-                            organization
-                        )
-                        existentMembership.organization_id =
-                            organization.organization_id
-                        existentMembership.shortcode = originalShortcode
-                        existentMembership.user = Promise.resolve(existentUser)
-                        existentMembership.user_id = existentUser.user_id
-                        await connection.manager.save(existentMembership)
-
-                        row = {
-                            ...row,
-                            user_given_name: existentUser.given_name,
-                            user_family_name: existentUser.family_name,
-                            user_email: existentUser.email,
-                            user_date_of_birth: `12-1999`,
-                            user_gender: `female`,
-                            user_shortcode: originalShortcode,
-                            organization_role_name: `Student`,
-                        }
-                    })
-
                     async function getUpdatedUser() {
                         return User.findOneOrFail({
                             where: {
-                                email: row.user_email,
+                                email: normalizedLowercaseTrimmed(
+                                    row.user_email
+                                ),
                             },
                             relations: [
                                 `memberships`,

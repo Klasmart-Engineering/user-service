@@ -182,17 +182,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         return rowErrors
     }
 
-    let email = row.user_email
-    let phone = row.user_phone
-
-    if (email) {
-        email = normalizedLowercaseTrimmed(email)
-    }
-
-    if (phone) {
-        phone = normalizedLowercaseTrimmed(phone)
-    }
-
+    row.user_email = normalizedLowercaseTrimmed(row.user_email)
+    row.user_phone = normalizedLowercaseTrimmed(row.user_phone)
     row.user_gender = row.user_gender?.toLowerCase()
 
     const personalInfo = {
@@ -202,9 +193,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     let user = await manager.findOne(User, {
         where: [
-            { email: email, phone: null, ...personalInfo },
-            { email: null, phone: phone, ...personalInfo },
-            { email: email, phone: phone, ...personalInfo },
+            { email: row.user_email, ...personalInfo },
+            { phone: row.user_phone, ...personalInfo },
         ],
     })
     let isNewUser = false
@@ -214,11 +204,11 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         isNewUser = true
     }
 
-    if (isNewUser && email) {
+    if (isNewUser && row.user_email) {
         user.email = row.user_email
     }
 
-    if (isNewUser && phone) {
+    if (isNewUser && row.user_phone) {
         user.phone = row.user_phone
     }
 
