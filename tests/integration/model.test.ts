@@ -128,11 +128,14 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('returns no users', async () => {
-                const gqlUsers = await myUsers(testClient, {
+            it('fails authentication', async () => {
+                const gqlResult = myUsers(testClient, {
                     authorization: '',
                 })
-                expect(gqlUsers.length).to.equal(0)
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 
@@ -202,12 +205,15 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('returns an empty list of organizations', async () => {
-                const gqlOrgs = await getAllOrganizations(testClient, {
+            it('fails authentication', async () => {
+                const gqlResult = getAllOrganizations(testClient, {
                     authorization: undefined,
                 })
 
-                expect(gqlOrgs).to.be.empty
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 
@@ -293,12 +299,15 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('returns no age range', async () => {
-                const gqlAgeRange = await getAgeRange(testClient, ageRange.id, {
+            it('fails authentication', async () => {
+                const gqlResult = getAgeRange(testClient, ageRange.id, {
                     authorization: undefined,
                 })
 
-                expect(gqlAgeRange).to.be.null
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 
@@ -446,12 +455,15 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('returns no age range', async () => {
-                const gqlGrade = await getGrade(testClient, grade.id, {
+            it('fails authentication', async () => {
+                const gqlGrade = getGrade(testClient, grade.id, {
                     authorization: undefined,
                 })
 
-                expect(gqlGrade).to.be.null
+                await expect(gqlGrade).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 
@@ -569,14 +581,17 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('returns no subcategory', async () => {
-                const gqlSubcategory = await getSubcategory(
+            it('fails authentication', async () => {
+                const gqlSubcategory = getSubcategory(
                     testClient,
                     subcategory.id,
                     { authorization: undefined }
                 )
 
-                expect(gqlSubcategory).to.be.null
+                await expect(gqlSubcategory).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 
@@ -703,12 +718,15 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('returns no program', async () => {
-                const gqlProgram = await getProgram(testClient, program.id, {
+            it('fails authentication', async () => {
+                const gqlResult = getProgram(testClient, program.id, {
                     authorization: undefined,
                 })
 
-                expect(gqlProgram).to.be.null
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 
@@ -1719,7 +1737,6 @@ describe('model', () => {
                     { authorization: getAdminAuthToken() },
                     filter
                 )
-
                 expect(usersConnection?.totalCount).to.eql(2)
                 expect(usersConnection?.edges.length).to.equal(2)
                 expect(usersConnection?.edges[0].node.id).to.equal(

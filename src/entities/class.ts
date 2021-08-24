@@ -117,10 +117,6 @@ export class Class extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ): Promise<User[] | IterableIterator<User>> {
-        console.info(
-            `Unauthenticated endpoint call eligibleTeachers by ${context.permissions?.getUserId()}`
-        )
-
         const members = await this._membersWithPermission(
             PermissionName.attend_live_class_as_a_teacher_186
         )
@@ -133,10 +129,6 @@ export class Class extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ): Promise<User[] | IterableIterator<User>> {
-        console.info(
-            `Unauthenticated endpoint call eligibleStudents by ${context.permissions?.getUserId()}`
-        )
-
         const members = await this._membersWithPermission(
             PermissionName.attend_live_class_as_a_student_187
         )

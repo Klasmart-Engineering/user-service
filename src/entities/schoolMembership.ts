@@ -68,10 +68,6 @@ export class SchoolMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call schoolMembership addRole by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -95,10 +91,6 @@ export class SchoolMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call schoolMembership addRoles by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -132,10 +124,6 @@ export class SchoolMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call schoolMembership removeRole by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -163,10 +151,6 @@ export class SchoolMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call school leave by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||

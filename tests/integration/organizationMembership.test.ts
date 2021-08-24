@@ -160,6 +160,7 @@ describe('organizationMembership', () => {
         const userToBeQueried = {
             email: 'testuser@gmail.com',
         } as User
+        let arbitraryUserToken: string
 
         beforeEach(async () => {
             const user = await createAdminUser(testClient)
@@ -240,6 +241,8 @@ describe('organizationMembership', () => {
             await grantPermission(testClient, org2RoleId, permissionName, {
                 authorization: tokenOfOrg2Owner,
             })
+            await createNonAdminUser(testClient)
+            arbitraryUserToken = getNonAdminAuthToken()
         })
 
         context(
@@ -267,7 +270,8 @@ describe('organizationMembership', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName
+                        permissionName,
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -291,7 +295,8 @@ describe('organizationMembership', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName
+                        permissionName,
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed).to.be.false
                     expect(gqlMemberships).to.exist
@@ -325,7 +330,8 @@ describe('organizationMembership', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName
+                        permissionName,
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -349,7 +355,8 @@ describe('organizationMembership', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName
+                        permissionName,
+                        { authorization: arbitraryUserToken }
                     )
                     expect(isAllowed).to.be.false
                     expect(gqlMemberships).to.exist
