@@ -89,6 +89,10 @@ import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
+import { addOrganizationToUserAndValidate } from '../utils/operations/userOps'
+import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
+import { grantPermission } from '../utils/operations/roleOps'
+import { PermissionName } from '../../src/permissions/permissionNames'
 
 use(chaiAsPromised)
 
@@ -1058,7 +1062,27 @@ describe('model.csv', () => {
                 cls.class_name = 'Class I'
                 await connection.manager.save(cls)
 
-                await createAdminUser(testClient)
+                const adminUser = await createAdminUser(testClient)
+
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    adminUser.user_id,
+                    organization.organization_id,
+                    getAdminAuthToken()
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    adminUser.user_id,
+                    organization.organization_id,
+                    role.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.upload_users_40880,
+                    { authorization: getAdminAuthToken() }
+                )
             })
 
             it('should create the user', async () => {

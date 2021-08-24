@@ -2,8 +2,8 @@ import { EntityManager } from 'typeorm'
 
 import { Class } from '../../entities/class'
 import {
-    Organization,
     normalizedLowercaseTrimmed,
+    Organization,
 } from '../../entities/organization'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { Role } from '../../entities/role'
@@ -40,9 +40,17 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     }
 
     // Now check dynamic constraints
-    const org = await manager.findOne(Organization, {
-        organization_name: row.organization_name,
-    })
+
+    // search for the organization by name as well as user membership
+    const org = await Organization.createQueryBuilder('Organization')
+        .innerJoin('Organization.memberships', 'OrganizationMembership')
+        .where('OrganizationMembership.user_id = :user_id', {
+            user_id: userPermissions.getUserId(),
+        })
+        .andWhere('Organization.organization_name = :organization_name', {
+            organization_name: row.organization_name,
+        })
+        .getOne()
 
     if (!org) {
         addCsvError(

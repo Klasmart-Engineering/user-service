@@ -54,6 +54,7 @@ describe('processUserFromCSVRow', async () => {
     let school: School
     let adminUser: User
     let adminPermissions: UserPermissions
+    let nonAdminUser: User
 
     before(async () => {
         connection = await createTestConnection()
@@ -67,6 +68,7 @@ describe('processUserFromCSVRow', async () => {
 
     beforeEach(async () => {
         adminUser = await createAdminUser(testClient)
+        nonAdminUser = await createNonAdminUser(testClient)
         user = createUser()
         organization = createOrganization()
         await connection.manager.save(organization)
@@ -88,6 +90,13 @@ describe('processUserFromCSVRow', async () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
+
+        await grantPermission(
+            testClient,
+            role.role_id,
+            PermissionName.upload_users_40880,
+            { authorization: getAdminAuthToken() }
+        )
 
         row = {
             organization_name: organization.organization_name || '',
@@ -120,13 +129,9 @@ describe('processUserFromCSVRow', async () => {
         expect(dbUser).to.be.undefined
     })
 
-    context('permissions', () => {
-        it('requires upload_users_40880 permission for the organization', async () => {
-            row.organization_name = organization.organization_name!
-
-            const nonAdminUser = await createNonAdminUser(testClient)
-
-            let rowErrors = await processUserFromCSVRow(
+    context('org permissions', () => {
+        async function processUsers() {
+            return await processUserFromCSVRow(
                 connection.manager,
                 row,
                 1,
@@ -136,47 +141,110 @@ describe('processUserFromCSVRow', async () => {
                     email: nonAdminUser.email || '',
                 })
             )
-            let err = rowErrors[0]
-            expect(err.code).to.eq(customErrors.unauthorized_org_upload.code)
-            expect(err.entity).to.eq('user')
-            expect(err.organizationName).to.eq(row.organization_name)
-            expect(err.column).to.eq('organization_name')
-            for (const v of getCustomErrorMessageVariables(err.message)) {
-                expect(err[v]).to.exist
+        }
+        context('organization does not exist', () => {
+            it('errors with nonexistent_entity', async () => {
+                row.organization_name = 'None existing org'
+                let rowErrors = await processUsers()
+                let err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            })
+        })
+        context('org exists but user is not a member', () => {
+            it('errors with nonexistent_entity', async () => {
+                let rowErrors = await processUsers()
+                let err = rowErrors[0]
+                expect(err.code).to.eq(customErrors.nonexistent_entity.code)
+            })
+        })
+        context(
+            "user is a member but doesn't have upload_users_40880 permission",
+            () => {
+                it('errors with unauthorized_org_upload', async () => {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        nonAdminUser.user_id,
+                        organization.organization_id,
+                        getAdminAuthToken()
+                    )
+                    let rowErrors = await processUsers()
+                    let err = rowErrors[0]
+                    expect(err.code).to.eq(
+                        customErrors.unauthorized_org_upload.code
+                    )
+                    expect(err.entity).to.eq('user')
+                    expect(err.organizationName).to.eq(row.organization_name)
+                    expect(err.column).to.eq('organization_name')
+                    for (const v of getCustomErrorMessageVariables(
+                        err.message
+                    )) {
+                        expect(err[v]).to.exist
+                    }
+                })
             }
-
-            await addOrganizationToUserAndValidate(
-                testClient,
-                nonAdminUser.user_id,
-                organization.organization_id,
-                getAdminAuthToken()
-            )
-            await addRoleToOrganizationMembership(
-                testClient,
-                nonAdminUser.user_id,
-                organization.organization_id,
-                role.role_id,
-                { authorization: getAdminAuthToken() }
-            )
-            await grantPermission(
-                testClient,
-                role.role_id,
-                PermissionName.upload_users_40880,
-                { authorization: getAdminAuthToken() }
-            )
-
-            rowErrors = await processUserFromCSVRow(
-                connection.manager,
-                row,
-                1,
-                [],
-                // important to create a new object to avoid caching
-                new UserPermissions({
-                    id: nonAdminUser.user_id,
-                    email: nonAdminUser.email || '',
+        )
+        context(
+            'user is a member and has upload_users_40880 permission',
+            () => {
+                it('does not error', async () => {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        nonAdminUser.user_id,
+                        organization.organization_id,
+                        getAdminAuthToken()
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        nonAdminUser.user_id,
+                        organization.organization_id,
+                        role.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    let rowErrors = await processUsers()
+                    expect(rowErrors).to.be.empty
                 })
-            )
-            expect(rowErrors.length).to.eq(0)
+            }
+        )
+
+        context('when there a multiple orgs with the same name', () => {
+            let anotherOrg: Organization
+            let anotherRole: Role
+            beforeEach(async () => {
+                anotherOrg = createOrganization()
+                anotherOrg.organization_name = organization.organization_name
+                await anotherOrg.save()
+
+                anotherRole = createRole(undefined, anotherOrg)
+                await connection.manager.save(anotherRole)
+
+                await grantPermission(
+                    testClient,
+                    anotherRole.role_id,
+                    PermissionName.upload_users_40880,
+                    { authorization: getAdminAuthToken() }
+                )
+            })
+            it('will not error if the user is a member of at least one with correct permissions', async () => {
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    nonAdminUser.user_id,
+                    anotherOrg.organization_id,
+                    getAdminAuthToken()
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    nonAdminUser.user_id,
+                    anotherOrg.organization_id,
+                    anotherRole.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                row.organization_role_name = anotherRole.role_name || ''
+                row.school_name = undefined
+                row.class_name = undefined
+
+                let rowErrors = await processUsers()
+                expect(rowErrors).to.be.empty
+            })
         })
     })
 
