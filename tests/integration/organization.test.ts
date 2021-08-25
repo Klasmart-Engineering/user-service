@@ -85,6 +85,18 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
+async function getSchoolMemberships(organizationId: string, userId: string) {
+    return await SchoolMembership.createQueryBuilder()
+        .innerJoinAndSelect('SchoolMembership.school', 'School')
+        .where('School.organization = :organization_id', {
+            organization_id: organizationId,
+        })
+        .andWhere('SchoolMembership.user_id = :user_id', {
+            user_id: userId,
+        })
+        .getMany()
+}
+
 describe('organization', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
@@ -2663,6 +2675,123 @@ describe('organization', () => {
                     expect(membership.organization_id).to.equal(organizationId)
                     expect(membership.user_id).to.equal(newUser.user_id)
                 })
+
+                context(
+                    'the user is a member of a school belonging to another organization',
+                    () => {
+                        let organization2: Organization
+                        let organization2Id: string
+                        let org2SchoolId: string
+                        let dbSchoolMemberships: SchoolMembership[] | undefined
+                        let email = 'bob@nowhere.com'
+                        let phone: string | undefined = undefined
+                        let given = 'Bob'
+                        let family = 'Smith'
+
+                        let bob = {
+                            given_name: given,
+                            family_name: family,
+                            email: email,
+                        } as User
+
+                        beforeEach(async () => {
+                            bob = await createUserAndValidate(testClient, bob)
+                            otherUserId = otherUser.user_id
+
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                bob.user_id,
+                                organizationId,
+                                { authorization: getAdminAuthToken() }
+                            )
+                            await addUserToSchool(
+                                testClient,
+                                bob.user_id,
+                                oldSchoolId,
+                                {
+                                    authorization: getAdminAuthToken(),
+                                }
+                            )
+
+                            organization2 = await createOrganizationAndValidate(
+                                testClient,
+                                otherUserId,
+                                'Second Org',
+                                undefined,
+                                getNonAdminAuthToken()
+                            )
+                            organization2Id = organization2.organization_id
+
+                            await addUserToOrganizationAndValidate(
+                                testClient,
+                                bob.user_id,
+                                organization2Id,
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                            await addUserToSchool(
+                                testClient,
+                                bob.user_id,
+                                oldSchoolId,
+                                {
+                                    authorization: getAdminAuthToken(),
+                                }
+                            )
+
+                            org2SchoolId = (
+                                await createSchool(
+                                    testClient,
+                                    organization2Id,
+                                    'other school',
+                                    undefined,
+                                    { authorization: getNonAdminAuthToken() }
+                                )
+                            ).school_id
+
+                            await addUserToSchool(
+                                testClient,
+                                bob.user_id,
+                                org2SchoolId,
+                                {
+                                    authorization: getNonAdminAuthToken(),
+                                }
+                            )
+
+                            dbSchoolMemberships = await getSchoolMemberships(
+                                organization2Id,
+                                bob.user_id
+                            )
+                        })
+                        it('edits membership on the organization1 without affecting schools for organization2', async () => {
+                            let gqlresult = await editMembership(
+                                testClient,
+                                organizationId,
+                                bob.user_id,
+                                email,
+                                phone,
+                                given,
+                                family,
+                                undefined,
+                                'Buster',
+                                'Male',
+                                undefined,
+                                new Array(roleId),
+                                Array(schoolId),
+                                new Array(roleId),
+                                { authorization: getAdminAuthToken() }
+                            )
+
+                            const dbSchoolMemberships2 = await getSchoolMemberships(
+                                organization2Id,
+                                bob.user_id
+                            )
+
+                            expect(dbSchoolMemberships2.length).to.equal(
+                                dbSchoolMemberships?.length
+                            )
+                        })
+                    }
+                )
 
                 context('and the organization is marked as inactive', () => {
                     beforeEach(async () => {

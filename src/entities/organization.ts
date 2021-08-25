@@ -530,7 +530,7 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async inviteUser(
+    public async User(
         {
             email,
             phone,
@@ -775,9 +775,17 @@ export class Organization extends BaseEntity {
         const schoolRepo = getRepository(School)
         const user_id = user.user_id
         const schoolMembershipRepo = getRepository(SchoolMembership)
-        const oldSchoolMemberships = await schoolMembershipRepo.find({
-            user_id,
-        })
+        const oldSchoolMemberships = await schoolMembershipRepo
+            .createQueryBuilder()
+            .innerJoinAndSelect('SchoolMembership.school', 'School')
+            .where('School.organization = :organization_id', {
+                organization_id: this.organization_id,
+            })
+            .andWhere('SchoolMembership.user_id = :user_id', {
+                user_id: user.user_id,
+            })
+            .getMany()
+
         const schoolMemberships = await Promise.all(
             school_ids.map(async (school_id) => {
                 const school = await schoolRepo.findOneOrFail({ school_id })
