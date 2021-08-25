@@ -698,7 +698,7 @@ export class Organization extends BaseEntity {
         )
 
         if (validData?.shortcode) {
-            const duplicateOrganizationMembership = await getRepository(
+            const duplicateShortcode = await getRepository(
                 OrganizationMembership
             ).findOne({
                 where: {
@@ -709,7 +709,7 @@ export class Organization extends BaseEntity {
                 },
             })
 
-            if (duplicateOrganizationMembership) {
+            if (duplicateShortcode) {
                 errors.push(
                     new APIError({
                         code: customErrors.duplicate_entity.code,
@@ -721,29 +721,38 @@ export class Organization extends BaseEntity {
             }
         }
 
+        let existingUser: User | undefined
         if (validData?.given_name && validData?.family_name) {
             const personalInfo = {
                 given_name: given_name,
                 family_name: family_name,
             }
 
-            const duplicateUser = await getRepository(User).findOne({
+            existingUser = await getRepository(User).findOne({
                 where: [
-                    { email: email, phone: null, ...personalInfo },
-                    { email: null, phone: phone, ...personalInfo },
-                    { email: email, phone: phone, ...personalInfo },
+                    { email: email, ...personalInfo },
+                    { phone: phone, ...personalInfo },
                 ],
             })
 
-            if (duplicateUser) {
-                errors.push(
-                    new APIError({
-                        code: customErrors.duplicate_entity.code,
-                        message: customErrors.duplicate_entity.message,
-                        entity: 'User',
-                        entityName: duplicateUser.full_name(),
-                    })
-                )
+            if (existingUser) {
+                const existingMembership = await getRepository(
+                    OrganizationMembership
+                ).findOne({
+                    user_id: existingUser.user_id,
+                    organization_id: this.organization_id,
+                })
+
+                if (existingMembership) {
+                    errors.push(
+                        new APIError({
+                            code: customErrors.duplicate_entity.code,
+                            message: customErrors.duplicate_entity.message,
+                            entity: 'User',
+                            entityName: existingUser.full_name(),
+                        })
+                    )
+                }
             }
         }
 
@@ -779,7 +788,9 @@ export class Organization extends BaseEntity {
         }
 
         return getManager().transaction(async (manager) => {
-            const user = await this.createUser(
+            const user = await this.findOrCreateUser(
+                existingUser !== undefined,
+                existingUser?.user_id,
                 email,
                 phone,
                 given_name,
