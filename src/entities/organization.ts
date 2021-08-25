@@ -530,7 +530,7 @@ export class Organization extends BaseEntity {
         }
     }
 
-    public async User(
+    public async inviteUser(
         {
             email,
             phone,
