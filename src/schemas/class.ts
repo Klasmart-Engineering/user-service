@@ -214,19 +214,19 @@ export default function getDefault(
                 classesConnection: (_parent, args, ctx: Context, _info) => {
                     ctx.loaders.classesConnection = {
                         schools: new DataLoader((keys) =>
-                            schoolsForClasses(keys, args.filter)
+                            schoolsForClasses(keys)
                         ),
                         ageRanges: new DataLoader((keys) =>
-                            ageRangesForClasses(keys, args.filter)
+                            ageRangesForClasses(keys)
                         ),
                         grades: new DataLoader((keys) =>
-                            gradesForClasses(keys, args.filter)
+                            gradesForClasses(keys)
                         ),
                         subjects: new DataLoader((keys) =>
-                            subjectsForClasses(keys, args.filter)
+                            subjectsForClasses(keys)
                         ),
                         programs: new DataLoader((keys) =>
-                            programsForClasses(keys, args.filter)
+                            programsForClasses(keys)
                         ),
                     }
 

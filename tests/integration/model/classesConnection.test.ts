@@ -999,5 +999,61 @@ describe('classesConnection', () => {
 
             expect(result.totalCount).to.eq(0)
         })
+
+        context(
+            'when child relation has a different organization',
+            async () => {
+                let class_: Class
+
+                beforeEach(async () => {
+                    let program = await createProgram(org1)
+
+                    await connection.manager.save([program])
+
+                    // use a different org to the program
+                    class_ = await createClass(undefined, org2)
+
+                    class_.class_name = `classWithAProgramFromAnotherOrg`
+                    class_.status = Status.ACTIVE
+                    class_.programs = Promise.resolve([program])
+
+                    await connection.manager.save([class_])
+                })
+
+                it('include it in results', async () => {
+                    let query = (filter: IEntityFilter) => {
+                        return classesConnection(
+                            testClient,
+                            'FORWARD',
+                            { count: 1 },
+                            { authorization: getAdminAuthToken() },
+                            filter
+                        )
+                    }
+
+                    const notFilteredOnOrgId = await query({
+                        id: {
+                            operator: 'eq',
+                            value: class_.class_id!,
+                        },
+                    })
+
+                    const filteredOnOrgId = await query({
+                        id: {
+                            operator: 'eq',
+                            value: class_.class_id!,
+                        },
+                        organizationId: {
+                            operator: 'eq',
+                            value: org2.organization_id,
+                        },
+                    })
+
+                    expect(
+                        notFilteredOnOrgId.edges[0].node.programs?.length
+                    ).to.be.eq(filteredOnOrgId.edges[0].node.programs?.length)
+                })
+            }
+        )
     })
 })
