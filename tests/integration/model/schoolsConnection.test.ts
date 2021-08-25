@@ -5,11 +5,16 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
+import faker from 'faker'
 import { createTestConnection } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { Model } from '../../../src/model'
 import { createAdminUser } from '../../utils/testEntities'
-import { getAdminAuthToken } from '../../utils/testConfig'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
 import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
@@ -19,8 +24,72 @@ import { createOrganization } from '../../factories/organization.factory'
 import { generateShortCode } from '../../../src/utils/shortcode'
 import { Status } from '../../../src/entities/status'
 import { createSchool } from '../../factories/school.factory'
+import {
+    createRole,
+    editMembership,
+    getSystemRoleIds,
+    inviteUser,
+} from '../../utils/operations/organizationOps'
+import { userToPayload } from '../../utils/operations/userOps'
+import { grantPermission } from '../../utils/operations/roleOps'
+import { PermissionName } from '../../../src/permissions/permissionNames'
 
 use(chaiAsPromised)
+
+async function createUserInRole(
+    testClient: ApolloServerTestClient,
+    orgId: string,
+    roleId: string,
+    schoolIds: string[],
+    orgOwnerToken: string
+): Promise<User> {
+    const gender = ['Male', 'Female']
+    let gqlresult = await inviteUser(
+        testClient,
+        orgId,
+        faker.internet.email(),
+        undefined,
+        faker.name.firstName(),
+        faker.name.lastName(),
+        '02-1974',
+        faker.name.firstName(),
+        faker.random.arrayElement(gender),
+        undefined,
+        new Array(roleId),
+        schoolIds,
+        [],
+        { authorization: orgOwnerToken }
+    )
+    return gqlresult.user
+}
+
+async function addUserRole(
+    testClient: ApolloServerTestClient,
+    orgId: string,
+    user: User,
+    roleId: string,
+    schoolIds: string[],
+    orgOwnerToken: string
+): Promise<User> {
+    let gqlresult = await editMembership(
+        testClient,
+        orgId,
+        user.user_id,
+        user.email,
+        user.phone,
+        user.given_name,
+        user.family_name,
+        user.date_of_birth,
+        user.username,
+        user.gender,
+        undefined,
+        new Array(roleId),
+        schoolIds,
+        [],
+        { authorization: orgOwnerToken }
+    )
+    return gqlresult.user
+}
 
 describe('schoolsConnection', () => {
     let connection: Connection
@@ -61,6 +130,140 @@ describe('schoolsConnection', () => {
             schools.push(school)
         }
         await connection.manager.save(schools)
+    })
+
+    context('as a user with PermissionName.view_my_school_20119', () => {
+        let userToken: string
+
+        beforeEach(async () => {
+            const role = await createRole(testClient, org1.organization_id)
+            await grantPermission(
+                testClient,
+                role.role_id,
+                PermissionName.view_my_school_20119,
+                { authorization: getAdminAuthToken() }
+            )
+            userToken = generateToken(
+                userToPayload(
+                    await createUserInRole(
+                        testClient,
+                        org1.organization_id,
+                        role.role_id,
+                        [schools[0].school_id],
+                        getAdminAuthToken()
+                    )
+                )
+            )
+        })
+        it('returns the school that the user is associated with', async () => {
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: userToken }
+            )
+
+            expect(result.totalCount).to.eq(1)
+        })
+    })
+
+    context('as a user with PermissionName.view_school_20110', () => {
+        let userToken: string
+        beforeEach(async () => {
+            const role = await createRole(testClient, org1.organization_id)
+            await grantPermission(
+                testClient,
+                role.role_id,
+                PermissionName.view_school_20110,
+                { authorization: getAdminAuthToken() }
+            )
+            userToken = generateToken(
+                userToPayload(
+                    await createUserInRole(
+                        testClient,
+                        org1.organization_id,
+                        role.role_id,
+                        [],
+                        getAdminAuthToken()
+                    )
+                )
+            )
+        })
+        it('returns all the schools within the organization', async () => {
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: userToken }
+            )
+            expect(result.totalCount).to.eq(10)
+        })
+    })
+
+    context(
+        'as having PermissionName.view_school_20110 of one Org and PermissionName.view_my_school_20119 of the other',
+        () => {
+            let userToken: string
+
+            beforeEach(async () => {
+                const orgRole = await createRole(
+                    testClient,
+                    org1.organization_id
+                )
+                await grantPermission(
+                    testClient,
+                    orgRole.role_id,
+                    PermissionName.view_school_20110,
+                    { authorization: getAdminAuthToken() }
+                )
+                const myRole = await createRole(
+                    testClient,
+                    org2.organization_id
+                )
+                await grantPermission(
+                    testClient,
+                    myRole.role_id,
+                    PermissionName.view_my_school_20119,
+                    { authorization: getAdminAuthToken() }
+                )
+                let user = await createUserInRole(
+                    testClient,
+                    org1.organization_id,
+                    orgRole.role_id,
+                    [],
+                    getAdminAuthToken()
+                )
+                await addUserRole(
+                    testClient,
+                    org2.organization_id,
+                    user,
+                    myRole.role_id,
+                    [schools[11].school_id],
+                    getAdminAuthToken()
+                )
+                userToken = generateToken(userToPayload(user))
+            })
+            it('returns all the schools in one organization and the school that the user is associated with in the other organization', async () => {
+                const result = await schoolsConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: userToken }
+                )
+                expect(result.totalCount).to.eq(11)
+            })
+        }
+    )
+    context('as a non org member', () => {
+        it('returns zero schools', async () => {
+            const result = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getNonAdminAuthToken() }
+            )
+            expect(result.totalCount).to.eq(0)
+        })
     })
 
     context('unfiltered', () => {

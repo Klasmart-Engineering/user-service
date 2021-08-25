@@ -454,10 +454,14 @@ export class Model {
 
     public async schoolsConnection(
         context: Context,
-        { direction, directionArgs, filter, sort }: IPaginationArgs<School>
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<School>
     ) {
-        const scope = this.schoolRepository.createQueryBuilder()
-
         if (filter) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('School.organization', 'Organization')
