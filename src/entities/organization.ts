@@ -11,6 +11,8 @@ import {
     ManyToOne,
     BaseEntity,
     EntityManager,
+    EntityTarget,
+    FindConditions,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -745,23 +747,38 @@ export class Organization extends BaseEntity {
             }
         }
 
+        let organizationRoles: Role[] = []
+        if (validData?.organization_role_ids?.length) {
+            const rolesResult = await this.findRolesById(
+                validData.organization_role_ids
+            )
+            organizationRoles = rolesResult.data
+            errors.push(...rolesResult.errors)
+        }
+
+        let schoolRoles: Role[] = []
+        if (validData?.school_role_ids?.length) {
+            const rolesResult = await this.findRolesById(
+                validData.school_role_ids
+            )
+            schoolRoles = rolesResult.data
+            errors.push(...rolesResult.errors)
+        }
+
+        let schools: School[] = []
+        if (validData?.school_ids?.length) {
+            const schoolsResult = await this.findSchoolsById(
+                validData.school_ids
+            )
+            schools = schoolsResult.data
+            errors.push(...schoolsResult.errors)
+        }
+
         if (errors.length > 0) {
             throw new APIErrorCollection(errors)
         }
 
         return getManager().transaction(async (manager) => {
-            const roleLookup = await this.getRoleLookup()
-            const organizationRoles = (await Promise.all(
-                organization_role_ids.map((role_id: string) =>
-                    roleLookup(role_id)
-                )
-            )) as Role[]
-            if (!school_role_ids) {
-                school_role_ids = []
-            }
-            const schoolRoles = (await Promise.all(
-                school_role_ids.map((role_id: string) => roleLookup(role_id))
-            )) as Role[]
             const user = await this.createUser(
                 email,
                 phone,
@@ -782,7 +799,7 @@ export class Organization extends BaseEntity {
             const [
                 schoolMemberships,
                 oldSchoolMemberships,
-            ] = await this.membershipSchools(user, school_ids, schoolRoles)
+            ] = await this.membershipSchools(user, schools, schoolRoles)
             if (restricted) {
                 await manager.save([user, membership, ...oldSchoolMemberships])
                 return { user, membership, oldSchoolMemberships }
@@ -858,6 +875,43 @@ export class Organization extends BaseEntity {
         } catch (e) {
             console.error(e)
         }
+    }
+
+    private async findChildEntitiesById<EntityClass extends BaseEntity>(
+        entity: EntityTarget<EntityClass>,
+        ids: string[],
+        orWhere?: FindConditions<EntityClass>
+    ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
+        const uniqueIds = [...new Set(ids)]
+        const repository = getRepository(entity)
+        const baseCondition = { organization: this.organization_id }
+        const records = await repository.findByIds(uniqueIds, {
+            where: orWhere ? [baseCondition, orWhere] : baseCondition,
+        })
+        const found = new Set(records.map((record) => repository.getId(record)))
+        const errors = uniqueIds
+            .filter((id) => !found.has(id))
+            .map(
+                (id) =>
+                    new APIError({
+                        code: customErrors.nonexistent_child.code,
+                        message: customErrors.nonexistent_child.message,
+                        entity: repository.metadata.targetName,
+                        entityName: id,
+                        parentEntity: 'Organization',
+                        parentName: this.organization_name,
+                    })
+            )
+        return { data: records, errors }
+    }
+
+    private async findRolesById(roleIds: string[]) {
+        // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
+        return this.findChildEntitiesById(Role, roleIds, { system_role: true })
+    }
+
+    private async findSchoolsById(schoolIds: string[]) {
+        return this.findChildEntitiesById(School, schoolIds)
     }
 
     private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {
@@ -959,10 +1013,9 @@ export class Organization extends BaseEntity {
 
     private async membershipSchools(
         user: User,
-        school_ids: string[] = [],
+        schools: School[],
         schoolRoles: Role[]
     ): Promise<[SchoolMembership[], SchoolMembership[]]> {
-        const schoolRepo = getRepository(School)
         const user_id = user.user_id
         const schoolMembershipRepo = getRepository(SchoolMembership)
         const oldSchoolMemberships = await getSchoolMemberships(
@@ -970,17 +1023,8 @@ export class Organization extends BaseEntity {
             user.user_id
         )
         const schoolMemberships = await Promise.all(
-            school_ids.map(async (school_id) => {
-                const school = await schoolRepo.findOneOrFail({ school_id })
-                const checkOrganization = await school.organization
-                if (
-                    !checkOrganization ||
-                    checkOrganization.organization_id !== this.organization_id
-                ) {
-                    throw new Error(
-                        `Can not add Organization(${checkOrganization?.organization_id}).School(${school_id}) to membership in Organization(${this.organization_id})`
-                    )
-                }
+            schools.map(async (school) => {
+                const school_id = school.school_id
                 const schoolMembership =
                     (await schoolMembershipRepo.findOne({
                         school_id,
@@ -1085,10 +1129,20 @@ export class Organization extends BaseEntity {
                 organizationRoles,
                 shortcode
             )
+
+            // TODO replace with handled error for UD-328
+            const schoolRepository = getRepository(School)
+            const schools = await Promise.all(
+                school_ids.map(async (school_id) => {
+                    return schoolRepository.findOneOrFail(school_id, {
+                        where: { organization: this.organization_id },
+                    })
+                })
+            )
             const [
                 schoolMemberships,
                 oldSchoolMemberships,
-            ] = await this.membershipSchools(user, school_ids, schoolRoles)
+            ] = await this.membershipSchools(user, schools, schoolRoles)
             if (restricted) {
                 await manager.save([user, membership, ...oldSchoolMemberships])
                 return { user, membership, oldSchoolMemberships }
