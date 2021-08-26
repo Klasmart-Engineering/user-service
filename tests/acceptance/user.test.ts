@@ -16,8 +16,17 @@ import {
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
 import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
-import { userToPayload } from '../utils/operations/userOps'
+import {
+    userToPayload,
+    GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
+} from '../utils/operations/userOps'
 import { leaveOrganization } from '../utils/operations/organizationMembershipOps'
+import { createSchool } from '../factories/school.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { School } from '../../src/entities/school'
+import { createUser } from '../factories/user.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { Organization } from '../../src/entities/organization'
 
 use(chaiAsPromised)
 
@@ -116,6 +125,63 @@ describe('acceptance.user', () => {
 
         expect(response.status).to.eq(200)
         expect(response.body.data.me.email).to.equal('joe@gmail.com')
+    })
+
+    context('school membership dataloaders', () => {
+        let myUser: User
+        let myOrg: Organization
+        beforeEach(async () => {
+            myUser = await createUser().save()
+            myOrg = await createOrganization().save()
+            const mySchools = await School.save(
+                Array.from(Array(5), (v: unknown, i: number) =>
+                    createSchool(myOrg)
+                )
+            )
+
+            for (let i = 0; i < 5; i++) {
+                await createSchoolMembership({
+                    user: myUser,
+                    school: mySchools[i],
+                }).save()
+            }
+
+            // create another user in different school to ensure they're not returned
+            const otherUser = await createUser().save()
+            const otherOrg = await createOrganization().save()
+            const otherSchools = await School.save(
+                Array.from(Array(5), (v: unknown, i: number) =>
+                    createSchool(myOrg)
+                )
+            )
+            for (let i = 0; i < 5; i++) {
+                await createSchoolMembership({
+                    user: otherUser,
+                    school: otherSchools[i],
+                }).save()
+            }
+        })
+        it('loads nested school membership relations', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
+                    variables: {
+                        user_id: myUser.user_id,
+                    },
+                })
+            const result = response.body.data
+            expect(result.user.school_memberships.length).to.eq(5)
+            for (const membership of result.user.school_memberships) {
+                expect(membership.school.organization.organization_id).to.eq(
+                    myOrg.organization_id
+                )
+            }
+        })
     })
 
     context('usersConnection', () => {

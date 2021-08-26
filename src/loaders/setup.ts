@@ -2,13 +2,19 @@ import Dataloader from 'dataloader'
 import { IUsersConnectionLoaders } from './usersConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
-import { IUsersLoaders, orgMembershipsForUsers } from './user'
+import {
+    IUsersLoaders,
+    orgMembershipsForUsers,
+    schoolMembershipsForUsers,
+} from './user'
 import { IClassesConnectionLoaders } from './classesConnection'
 import {
     IOrganizationLoaders,
     brandingForOrganizations,
     organizationForMemberships,
 } from './organization'
+
+import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -17,6 +23,7 @@ export interface IDataLoaders {
     classesConnection?: IClassesConnectionLoaders
     user: IUsersLoaders
     organization: IOrganizationLoaders
+    school: ISchoolLoaders
 }
 
 export function createDefaultDataLoaders(): IDataLoaders {
@@ -25,6 +32,9 @@ export function createDefaultDataLoaders(): IDataLoaders {
             orgMemberships: new Dataloader((keys) =>
                 orgMembershipsForUsers(keys)
             ),
+            schoolMemberships: new Dataloader((keys) =>
+                schoolMembershipsForUsers(keys)
+            ),
         },
         organization: {
             branding: new Dataloader((keys) => brandingForOrganizations(keys)),
@@ -32,6 +42,12 @@ export function createDefaultDataLoaders(): IDataLoaders {
             organization: new Dataloader((keys) =>
                 organizationForMemberships(keys)
             ),
+        },
+        school: {
+            organization: new Dataloader((keys) =>
+                organizationsForSchools(keys)
+            ),
+            schoolById: new Dataloader((keys) => schoolsByIds(keys)),
         },
     }
 }

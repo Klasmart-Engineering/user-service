@@ -2,6 +2,8 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
+import { SchoolMembership } from '../entities/schoolMembership'
+import { School } from '../entities/school'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -129,6 +131,25 @@ export default function getDefault(
                     model.getSchool(args),
                 schoolsConnection: (_parent, args, ctx, _info) => {
                     return model.schoolsConnection(ctx, args)
+                },
+            },
+            SchoolMembership: {
+                school: (
+                    schoolMembership: SchoolMembership,
+                    _args,
+                    ctx: Context,
+                    info
+                ) => {
+                    return ctx.loaders.school?.schoolById?.load(
+                        schoolMembership.school_id
+                    )
+                },
+            },
+            School: {
+                organization: (school: School, _args, ctx: Context, info) => {
+                    return ctx.loaders.school?.organization?.load(
+                        school.school_id
+                    )
                 },
             },
         },
