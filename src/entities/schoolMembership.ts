@@ -175,3 +175,18 @@ export class SchoolMembership extends BaseEntity {
         await manager.save(this)
     }
 }
+
+export async function getSchoolMemberships(
+    organizationId: string,
+    userId: string
+) {
+    return await SchoolMembership.createQueryBuilder()
+        .innerJoinAndSelect('SchoolMembership.school', 'School')
+        .where('School.organization = :organization_id', {
+            organization_id: organizationId,
+        })
+        .andWhere('SchoolMembership.user_id = :user_id', {
+            user_id: userId,
+        })
+        .getMany()
+}
