@@ -712,10 +712,12 @@ export class Organization extends BaseEntity {
             if (duplicateShortcode) {
                 errors.push(
                     new APIError({
-                        code: customErrors.duplicate_entity.code,
-                        message: customErrors.duplicate_entity.message,
+                        code: customErrors.duplicate_child_entity.code,
+                        message: customErrors.duplicate_child_entity.message,
                         entity: 'OrganizationMembership',
                         entityName: shortcode,
+                        parentEntity: 'Organization',
+                        parentName: this.organization_name,
                     })
                 )
             }
@@ -746,10 +748,13 @@ export class Organization extends BaseEntity {
                 if (existingMembership) {
                     errors.push(
                         new APIError({
-                            code: customErrors.duplicate_entity.code,
-                            message: customErrors.duplicate_entity.message,
+                            code: customErrors.duplicate_child_entity.code,
+                            message:
+                                customErrors.duplicate_child_entity.message,
                             entity: 'User',
                             entityName: existingUser.full_name(),
+                            parentEntity: 'Organization',
+                            parentName: this.organization_name,
                         })
                     )
                 }
