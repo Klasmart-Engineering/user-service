@@ -1,6 +1,7 @@
 import { OrganizationMembership } from '../entities/organizationMembership'
 import DataLoader from 'dataloader'
 import { SchoolMembership } from '../entities/schoolMembership'
+import { User } from '../entities/user'
 
 export interface IUsersLoaders {
     orgMemberships: DataLoader<string, OrganizationMembership[]>
@@ -45,4 +46,14 @@ export const schoolMembershipsForUsers = async (
     }
 
     return schoolMemberships
+}
+
+export async function usersByIds(
+    userIds: readonly string[]
+): Promise<(User | undefined)[]> {
+    const data = await User.findByIds(userIds as string[])
+
+    const map = new Map(data.map((user) => [user.user_id, user]))
+
+    return userIds.map((id) => map.get(id))
 }

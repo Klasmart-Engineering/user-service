@@ -227,6 +227,16 @@ export default function getDefault(
                         membership.organization_id
                     )
                 },
+                user: (
+                    membership: OrganizationMembership,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    return ctx.loaders.organizationMembership.user.load(
+                        membership.user_id
+                    )
+                },
             },
         },
     }
