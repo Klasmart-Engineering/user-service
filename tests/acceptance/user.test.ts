@@ -9,7 +9,6 @@ import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addStudentsToClass,
-    inviteUserToOrganization,
     createClass,
     createOrg,
     leaveTheOrganization,
@@ -28,6 +27,8 @@ import { createUser } from '../factories/user.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { Organization } from '../../src/entities/organization'
 import { INVITE_USER } from '../utils/operations/organizationOps'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
 
@@ -64,8 +65,6 @@ describe('acceptance.user', () => {
     })
 
     beforeEach(async () => {
-        userIds = []
-        userEmails = []
         classIds = []
 
         await loadFixtures('users', connection)
@@ -80,20 +79,20 @@ describe('acceptance.user', () => {
 
         orgId = createOrg1Data.organization_id
 
-        for (let i = 0; i < usersCount; i++) {
-            const response = await inviteUserToOrganization(
-                `given${i + 1}`,
-                `family${i + 1}`,
-                `user${i + 1}@gmail.com`,
-                orgId,
-                'Male',
-                getAdminAuthToken(),
-                `SHORT${i + 1}`
+        const organization = await Organization.findOneOrFail(orgId)
+
+        const users = await User.save(
+            Array(usersCount).fill(null).map(createUser)
+        )
+
+        await OrganizationMembership.save(
+            users.map((user) =>
+                createOrganizationMembership({ user, organization })
             )
-            const id = response.body.data.organization.inviteUser.user.user_id
-            userIds.push(id)
-            userEmails.push(`user${i + 1}@gmail.com`)
-        }
+        )
+
+        userIds = users.map(({ user_id }) => user_id)
+        userEmails = users.map(({ email }) => email ?? '')
 
         for (let i = 0; i < classesCount; i++) {
             const uIds = [

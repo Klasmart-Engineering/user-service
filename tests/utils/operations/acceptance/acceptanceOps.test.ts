@@ -180,7 +180,7 @@ export async function inviteUserToOrganization(
     gender: string,
     token: string,
     shortcode: string,
-    organization_role_ids?: string[],
+    organization_role_ids: string[],
     school_role_ids?: string[],
     school_ids?: string[]
 ) {
