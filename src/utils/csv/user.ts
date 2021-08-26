@@ -1,4 +1,4 @@
-import { EntityManager } from 'typeorm'
+import { EntityManager, In } from 'typeorm'
 
 import { Class } from '../../entities/class'
 import {
@@ -182,6 +182,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         return rowErrors
     }
 
+    const rawEmail = row.user_email
     row.user_email = normalizedLowercaseTrimmed(row.user_email)
     row.user_phone = normalizedLowercaseTrimmed(row.user_phone)
     row.user_gender = row.user_gender?.toLowerCase()
@@ -193,7 +194,14 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     let user = await manager.findOne(User, {
         where: [
-            { email: row.user_email, ...personalInfo },
+            {
+                // search for both the normalized and raw value.
+                // only need to do this because we were previously saving the raw
+                // value instead of the normalized value.
+                // this could be removed if a DB migration was run to normalize all email values.
+                email: In([rawEmail, normalizedLowercaseTrimmed(rawEmail)]),
+                ...personalInfo,
+            },
             { phone: row.user_phone, ...personalInfo },
         ],
     })

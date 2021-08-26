@@ -115,6 +115,26 @@ describe('processUserFromCSVRow', async () => {
         }
     })
 
+    async function assignUploadPermission(
+        userId: string,
+        organizationId: string,
+        roleId: string
+    ) {
+        await addOrganizationToUserAndValidate(
+            testClient,
+            userId,
+            organizationId,
+            getAdminAuthToken()
+        )
+        await addRoleToOrganizationMembership(
+            testClient,
+            userId,
+            organizationId,
+            roleId,
+            { authorization: getAdminAuthToken() }
+        )
+    }
+
     it("doesn't save the user if validation fails", async () => {
         row.user_email = 'abc'
         const rowErrors = await processUserFromCSVRow(
@@ -190,18 +210,10 @@ describe('processUserFromCSVRow', async () => {
             'user is a member and has upload_users_40880 permission',
             () => {
                 it('does not error', async () => {
-                    await addOrganizationToUserAndValidate(
-                        testClient,
+                    await assignUploadPermission(
                         nonAdminUser.user_id,
                         organization.organization_id,
-                        getAdminAuthToken()
-                    )
-                    await addRoleToOrganizationMembership(
-                        testClient,
-                        nonAdminUser.user_id,
-                        organization.organization_id,
-                        role.role_id,
-                        { authorization: getAdminAuthToken() }
+                        role.role_id
                     )
                     let rowErrors = await processUsers()
                     expect(rowErrors).to.be.empty
@@ -228,18 +240,10 @@ describe('processUserFromCSVRow', async () => {
                 )
             })
             it('will not error if the user is a member of at least one with correct permissions', async () => {
-                await addOrganizationToUserAndValidate(
-                    testClient,
+                await assignUploadPermission(
                     nonAdminUser.user_id,
                     anotherOrg.organization_id,
-                    getAdminAuthToken()
-                )
-                await addRoleToOrganizationMembership(
-                    testClient,
-                    nonAdminUser.user_id,
-                    anotherOrg.organization_id,
-                    anotherRole.role_id,
-                    { authorization: getAdminAuthToken() }
+                    anotherRole.role_id
                 )
                 row.organization_role_name = anotherRole.role_name || ''
                 row.school_name = undefined
@@ -674,6 +678,36 @@ describe('processUserFromCSVRow', async () => {
                 where: { email: processedEmail },
             })
             expect(dbUser.email).to.eq(processedEmail)
+        })
+        // even though we now save emails in lowercase we have existing
+        // data stored in mixed case that should be found in a search
+        it('supports mixed case in search', async () => {
+            adminUser.email = 'ABC@gmail.com'
+            adminUser.given_name = row.user_given_name
+            adminUser.family_name = row.user_family_name
+            await connection.manager.save(User, adminUser)
+
+            row.user_email = adminUser.email
+
+            await assignUploadPermission(
+                adminUser.user_id,
+                organization.organization_id,
+                role.role_id
+            )
+
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+            expect(rowErrors.length).to.eq(0)
+
+            const dbUsers = await User.find({
+                where: [{ email: row.user_email }, { email: adminUser.email }],
+            })
+            expect(dbUsers.length).to.eq(1)
         })
     })
 

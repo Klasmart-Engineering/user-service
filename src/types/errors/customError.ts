@@ -111,7 +111,7 @@ export const customErrors = {
     unauthorized_org_upload: {
         code: 'UNAUTHORIZED_UPLOAD_TO_ORGANIZATION',
         message:
-            'Unauthorized to upload {entity} to organization ${organizationName}.',
+            'Unauthorized to upload {entity} to organization {organizationName}.',
     },
 
     // generic fallback if a joi constraint is not overridden
