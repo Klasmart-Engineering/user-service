@@ -280,6 +280,11 @@ export default function getDefault(
                 memberships: (user: User, _args, ctx: Context, info) => {
                     return ctx.loaders.user?.orgMemberships?.load(user.user_id)
                 },
+                school_memberships: (user: User, _args, ctx: Context, info) => {
+                    return ctx.loaders.user?.schoolMemberships?.load(
+                        user.user_id
+                    )
+                },
             },
         },
     }

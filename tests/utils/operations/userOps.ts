@@ -134,6 +134,20 @@ const GET_SCHOOL_MEMBERSHIPS = `
     }
 `
 
+export const GET_SCHOOL_MEMBERSHIPS_WITH_ORG = `
+    query myQuery($user_id: ID!) {
+        user(user_id: $user_id) {
+            school_memberships {
+                school {
+                    organization {
+                        organization_id
+                    }
+                }
+            }
+        }
+    }
+`
+
 const GET_SCHOOL_MEMBERSHIP = `
     query myQuery(
             $user_id: ID!,
