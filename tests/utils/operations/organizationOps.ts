@@ -21,6 +21,7 @@ import {
 } from '../../utils/operations/userOps'
 import { utils } from 'mocha'
 import { Program } from '../../../src/entities/program'
+import { gql } from 'apollo-server-express'
 
 export const CREATE_CLASS = `
     mutation myMutation(
@@ -385,6 +386,24 @@ query myQuery($organization_id: ID!) {
                 class_id
                 class_name
                 status
+            }
+        }
+    }
+`
+export const LIST_MEMBERSHIPS = gql`
+    query getOrganizationMembershipsWithUser($organization_id: ID!) {
+        organization(organization_id: $organization_id) {
+            memberships {
+                organization_id
+                user_id
+                user {
+                    user_id
+                    username
+                    given_name
+                    family_name
+                    email
+                    avatar
+                }
             }
         }
     }
@@ -1041,4 +1060,26 @@ export async function getSystemRoleIds() {
         }, {})
     }
     return result
+}
+
+export async function listMemberships(
+    testClient: ApolloServerTestClient,
+    organization_id: string,
+    headers: Headers
+) {
+    const { query } = testClient
+
+    const operation = () =>
+        query({
+            query: LIST_MEMBERSHIPS,
+            variables: { organization_id },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data as {
+        organization: {
+            memberships: OrganizationMembership[]
+        }
+    }
 }

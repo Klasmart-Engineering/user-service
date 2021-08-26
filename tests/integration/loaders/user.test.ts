@@ -1,3 +1,7 @@
+import { expect } from 'chai'
+import faker from 'faker'
+import { pick } from 'lodash'
+import { Connection } from 'typeorm'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
 import { School } from '../../../src/entities/school'
@@ -8,88 +12,147 @@ import {
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
 } from '../../../src/loaders/user'
-import { expect } from 'chai'
 import { createTestConnection } from '../../utils/testConnection'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
-import { generateShortCode } from '../../../src/utils/shortcode'
-import validationConstants from '../../../src/entities/validations/constants'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
-import { Connection } from 'typeorm'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { usersByIds } from '../../../src/loaders/user'
 
-describe('User Dataloaders', () => {
-    const numUsers = 5
-    let users: User[]
-    let orgs: Organization[]
-    let schools: School[]
-
-    let orgMemberships: OrganizationMembership[][]
-    let schoolMemberships: SchoolMembership[][]
-
+context('User loaders', () => {
     let connection: Connection
+
     before(async () => {
         connection = await createTestConnection()
     })
+
     after(async () => {
         await connection?.close()
     })
 
-    beforeEach(async () => {
-        users = await User.save(Array.from(Array(numUsers), createUser))
-        orgs = await Organization.save(
-            Array.from(Array(numUsers), createOrganization)
-        )
-        schools = await School.save(
-            Array.from(Array(numUsers), (v: unknown, i: number) =>
-                createSchool(orgs[i])
+    describe('memberships', () => {
+        const numUsers = 5
+        let users: User[]
+        let orgs: Organization[]
+        beforeEach(async () => {
+            users = await User.save(Array.from(Array(numUsers), createUser))
+            orgs = await Organization.save(
+                Array.from(Array(numUsers), createOrganization)
             )
-        )
+        })
 
-        // add each user to a different org & school
-        for (let i = 0; i < numUsers; i++) {
-            await createOrganizationMembership({
-                user: users[i],
-                organization: orgs[i],
-            }).save()
-            await createSchoolMembership({
-                user: users[i],
-                school: schools[i],
-            }).save()
+        describe('#orgMembershipsForUsers', () => {
+            let orgMemberships: OrganizationMembership[][]
+
+            beforeEach(async () => {
+                // add each user to a different org
+                for (let i = 0; i < numUsers; i++) {
+                    await createOrganizationMembership({
+                        user: users[i],
+                        organization: orgs[i],
+                    }).save()
+                }
+                orgMemberships = await orgMembershipsForUsers(
+                    users.map((u) => u.user_id)
+                )
+            })
+
+            it('always returns an array of equal length', async () => {
+                expect(orgMemberships.length).to.eq(users.length)
+            })
+            it('returns all org memberships for the requested users in order', async () => {
+                for (let i = 0; i < numUsers; i++) {
+                    const memberships = orgMemberships[i]
+                    expect(memberships.length).to.eq(1)
+                    expect(memberships[0].organization_id).to.eq(
+                        orgs[i].organization_id
+                    )
+                }
+            })
+        })
+        describe('#schoolMembershipsForUsers', () => {
+            let schoolMemberships: SchoolMembership[][]
+            let schools: School[]
+
+            beforeEach(async () => {
+                schools = await School.save(
+                    Array.from(Array(numUsers), (v: unknown, i: number) =>
+                        createSchool(orgs[i])
+                    )
+                )
+                // add each user to a different school
+                for (let i = 0; i < numUsers; i++) {
+                    await createSchoolMembership({
+                        user: users[i],
+                        school: schools[i],
+                    }).save()
+                }
+                schoolMemberships = await schoolMembershipsForUsers(
+                    users.map((u) => u.user_id)
+                )
+            })
+
+            it('always returns an array of equal length', async () => {
+                expect(schoolMemberships.length).to.eq(users.length)
+            })
+            it('returns all school memberships for the requested users in order', async () => {
+                for (let i = 0; i < numUsers; i++) {
+                    const memberships = schoolMemberships[i]
+                    expect(memberships.length).to.eq(1)
+                    expect(memberships[0].school_id).to.eq(schools[i].school_id)
+                }
+            })
+        })
+    })
+
+    context('usersByIds', () => {
+        let users: User[]
+
+        function extractUserData(user: User | undefined) {
+            if (user === undefined) return undefined
+            return pick(user, [
+                'user_id',
+                'given_name',
+                'family_name',
+                'username',
+                'email',
+                'phone',
+                'date_of_birth',
+                'gender',
+                'status',
+            ])
         }
 
-        orgMemberships = await orgMembershipsForUsers(
-            users.map((u) => u.user_id)
-        )
-        schoolMemberships = await schoolMembershipsForUsers(
-            users.map((u) => u.user_id)
-        )
-    })
+        beforeEach(async () => {
+            users = await User.save(Array(3).fill(null).map(createUser))
+        })
 
-    describe('#orgMembershipsForUsers', () => {
         it('always returns an array of equal length', async () => {
-            expect(orgMemberships.length).to.eq(users.length)
+            const loadedUsers = (
+                await usersByIds([
+                    users[0].user_id,
+                    faker.random.uuid(),
+                    users[1].user_id,
+                    faker.random.uuid(),
+                ])
+            ).map(extractUserData)
+
+            expect(loadedUsers).to.deep.equal(
+                [users[0], undefined, users[1], undefined].map(extractUserData)
+            )
         })
-        it('returns all org memberships for the requested users in order', async () => {
-            for (let i = 0; i < numUsers; i++) {
-                const memberships = orgMemberships[i]
-                expect(memberships.length).to.eq(1)
-                expect(memberships[0].organization_id).to.eq(
-                    orgs[i].organization_id
-                )
-            }
-        })
-    })
-    describe('#schoolMembershipsForUsers', () => {
-        it('always returns an array of equal length', async () => {
-            expect(schoolMemberships.length).to.eq(users.length)
-        })
-        it('returns all school memberships for the requested users in order', async () => {
-            for (let i = 0; i < numUsers; i++) {
-                const memberships = schoolMemberships[i]
-                expect(memberships.length).to.eq(1)
-                expect(memberships[0].school_id).to.eq(schools[i].school_id)
-            }
+
+        it('returns the expected data in order', async () => {
+            // DB by default would return in A-Z `id` order, test the reverse
+            const sortedUsers = users
+                .sort((a, b) => -a.user_id.localeCompare(b.user_id))
+                .map(extractUserData)
+
+            const loadedUsers = (
+                await usersByIds(sortedUsers.map((u) => u!.user_id))
+            ).map(extractUserData)
+
+            expect(loadedUsers).to.deep.equal(sortedUsers)
         })
     })
 })
