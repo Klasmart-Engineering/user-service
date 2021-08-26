@@ -5,10 +5,14 @@ import { stringInject } from '../../utils/stringUtils'
 import { APISchema, APISchemaMetadata } from '../api'
 import { BaseError, ErrorParams } from './baseError'
 
-export interface IAPIError extends BaseError, ErrorParams {}
+export interface IAPIError extends BaseError, ErrorParams {
+    // Can't use `arguments` (GraphQL keyword) as it shadows builtin JS property
+    variables: string[]
+}
 
 export class APIError extends Error implements IAPIError {
     code: string
+    variables: string[]
     entity?: string
     attribute?: string
     otherAttribute?: string
@@ -21,9 +25,10 @@ export class APIError extends Error implements IAPIError {
     format?: string
 
     constructor(error: IAPIError) {
-        const { code, message, ...params } = error
+        const { code, message, variables, ...params } = error
         super()
         this.code = code
+        this.variables = variables
         // Must set message explicitly rather than with super(), otherwise it's private
         this.message = stringInject(message, params) ?? message
         Object.assign(this, params)
@@ -43,6 +48,7 @@ export function joiResultToAPIErrors<APIArguments>(
             return new APIError({
                 code,
                 message,
+                variables: [key],
                 entity: meta?.entity,
                 attribute: meta?.attribute ?? key,
                 ...params,

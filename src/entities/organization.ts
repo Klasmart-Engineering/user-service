@@ -45,6 +45,7 @@ import { isEmail, isPhone } from '../utils/data/diagnostics'
 import {
     APIError,
     APIErrorCollection,
+    IAPIError,
     validateApiCall,
 } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -714,6 +715,7 @@ export class Organization extends BaseEntity {
                     new APIError({
                         code: customErrors.duplicate_child_entity.code,
                         message: customErrors.duplicate_child_entity.message,
+                        variables: ['shortcode'],
                         entity: 'OrganizationMembership',
                         entityName: shortcode,
                         parentEntity: 'Organization',
@@ -751,6 +753,12 @@ export class Organization extends BaseEntity {
                             code: customErrors.duplicate_child_entity.code,
                             message:
                                 customErrors.duplicate_child_entity.message,
+                            variables: [
+                                'email',
+                                'phone',
+                                'given_name',
+                                'family_name',
+                            ],
                             entity: 'User',
                             entityName: existingUser.full_name(),
                             parentEntity: 'Organization',
@@ -764,7 +772,8 @@ export class Organization extends BaseEntity {
         let organizationRoles: Role[] = []
         if (validData?.organization_role_ids?.length) {
             const rolesResult = await this.findRolesById(
-                validData.organization_role_ids
+                validData.organization_role_ids,
+                ['organization_role_ids']
             )
             organizationRoles = rolesResult.data
             errors.push(...rolesResult.errors)
@@ -773,7 +782,8 @@ export class Organization extends BaseEntity {
         let schoolRoles: Role[] = []
         if (validData?.school_role_ids?.length) {
             const rolesResult = await this.findRolesById(
-                validData.school_role_ids
+                validData.school_role_ids,
+                ['school_role_ids']
             )
             schoolRoles = rolesResult.data
             errors.push(...rolesResult.errors)
@@ -782,7 +792,8 @@ export class Organization extends BaseEntity {
         let schools: School[] = []
         if (validData?.school_ids?.length) {
             const schoolsResult = await this.findSchoolsById(
-                validData.school_ids
+                validData.school_ids,
+                ['school_ids']
             )
             schools = schoolsResult.data
             errors.push(...schoolsResult.errors)
@@ -896,6 +907,7 @@ export class Organization extends BaseEntity {
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
         entity: EntityTarget<EntityClass>,
         ids: string[],
+        variables: IAPIError['variables'],
         orWhere?: FindConditions<EntityClass>
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
         const uniqueIds = [...new Set(ids)]
@@ -912,6 +924,7 @@ export class Organization extends BaseEntity {
                     new APIError({
                         code: customErrors.nonexistent_child.code,
                         message: customErrors.nonexistent_child.message,
+                        variables,
                         entity: repository.metadata.targetName,
                         entityName: id,
                         parentEntity: 'Organization',
@@ -921,13 +934,21 @@ export class Organization extends BaseEntity {
         return { data: records, errors }
     }
 
-    private async findRolesById(roleIds: string[]) {
+    private async findRolesById(
+        roleIds: string[],
+        variables: IAPIError['variables']
+    ) {
         // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
-        return this.findChildEntitiesById(Role, roleIds, { system_role: true })
+        return this.findChildEntitiesById(Role, roleIds, variables, {
+            system_role: true,
+        })
     }
 
-    private async findSchoolsById(schoolIds: string[]) {
-        return this.findChildEntitiesById(School, schoolIds)
+    private async findSchoolsById(
+        schoolIds: string[],
+        variables: IAPIError['variables']
+    ) {
+        return this.findChildEntitiesById(School, schoolIds, variables)
     }
 
     private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {
