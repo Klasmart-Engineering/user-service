@@ -26,7 +26,7 @@ import { Class } from './class'
 import { School } from './school'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
-import { SchoolMembership } from './schoolMembership'
+import { getSchoolMemberships, SchoolMembership } from './schoolMembership'
 import { Subject } from './subject'
 import { Model } from '../model'
 import { Status } from './status'
@@ -775,17 +775,10 @@ export class Organization extends BaseEntity {
         const schoolRepo = getRepository(School)
         const user_id = user.user_id
         const schoolMembershipRepo = getRepository(SchoolMembership)
-        const oldSchoolMemberships = await schoolMembershipRepo
-            .createQueryBuilder()
-            .innerJoinAndSelect('SchoolMembership.school', 'School')
-            .where('School.organization = :organization_id', {
-                organization_id: this.organization_id,
-            })
-            .andWhere('SchoolMembership.user_id = :user_id', {
-                user_id: user.user_id,
-            })
-            .getMany()
-
+        const oldSchoolMemberships = await getSchoolMemberships(
+            this.organization_id,
+            user.user_id
+        )
         const schoolMemberships = await Promise.all(
             school_ids.map(async (school_id) => {
                 const school = await schoolRepo.findOneOrFail({ school_id })

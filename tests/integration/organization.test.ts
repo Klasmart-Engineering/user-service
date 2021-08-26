@@ -52,7 +52,10 @@ import {
     createTestClient,
 } from '../utils/createTestClient'
 import { addUserToSchool } from '../utils/operations/schoolOps'
-import { SchoolMembership } from '../../src/entities/schoolMembership'
+import {
+    getSchoolMemberships,
+    SchoolMembership,
+} from '../../src/entities/schoolMembership'
 import {
     getAdminAuthToken,
     getNonAdminAuthToken,
@@ -84,18 +87,6 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
-
-async function getSchoolMemberships(organizationId: string, userId: string) {
-    return await SchoolMembership.createQueryBuilder()
-        .innerJoinAndSelect('SchoolMembership.school', 'School')
-        .where('School.organization = :organization_id', {
-            organization_id: organizationId,
-        })
-        .andWhere('SchoolMembership.user_id = :user_id', {
-            user_id: userId,
-        })
-        .getMany()
-}
 
 describe('organization', () => {
     let connection: Connection
