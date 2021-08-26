@@ -132,6 +132,7 @@ const typeDefs = gql`
     extend type Query {
         me: User
         user(user_id: ID!): User
+            @deprecated(reason: "Use 'usersConnection' with 'userId' filter.")
         usersConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
