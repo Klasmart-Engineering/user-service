@@ -30,12 +30,18 @@ type ClassEntities =
 
 type ClassEntityTypes = School | AgeRange | Grade | Subject | Program
 
+const baseClassQuery = (ids: readonly string[]) => {
+    return Class.createQueryBuilder('Class')
+        .whereInIds(ids)
+        .select('Class.class_id')
+}
+
 export const schoolsForClasses = async (
     classIds: readonly string[]
 ): Promise<SchoolSimplifiedSummaryNode[][]> => {
-    const scope = await Class.createQueryBuilder('Class')
-        .leftJoinAndSelect('Class.schools', 'School')
-        .where('Class.class_id IN (:...ids)', { ids: classIds })
+    const scope = baseClassQuery(classIds)
+        .leftJoin('Class.schools', 'School')
+        .addSelect(['School.school_id', 'School.school_name', 'School.status'])
 
     const classSchools = getNestedEntities(
         scope,
@@ -49,9 +55,18 @@ export const schoolsForClasses = async (
 export const ageRangesForClasses = async (
     classIds: readonly string[]
 ): Promise<AgeRangeConnectionNode[][]> => {
-    const scope = await Class.createQueryBuilder('Class')
-        .leftJoinAndSelect('Class.age_ranges', 'AgeRange')
-        .where('Class.class_id IN (:...ids)', { ids: classIds })
+    const scope = baseClassQuery(classIds)
+        .leftJoin('Class.age_ranges', 'AgeRange')
+        .addSelect([
+            'AgeRange.id',
+            'AgeRange.name',
+            'AgeRange.status',
+            'AgeRange.system',
+            'AgeRange.low_value',
+            'AgeRange.low_value_unit',
+            'AgeRange.high_value',
+            'AgeRange.high_value_unit',
+        ])
 
     const classAgeRanges = getNestedEntities(
         scope,
@@ -65,9 +80,9 @@ export const ageRangesForClasses = async (
 export const gradesForClasses = async (
     classIds: readonly string[]
 ): Promise<GradeSummaryNode[][]> => {
-    const scope = await Class.createQueryBuilder('Class')
-        .leftJoinAndSelect('Class.grades', 'Grade')
-        .where('Class.class_id IN (:...ids)', { ids: classIds })
+    const scope = baseClassQuery(classIds)
+        .leftJoin('Class.grades', 'Grade')
+        .addSelect(['Grade.id', 'Grade.name', 'Grade.status', 'Grade.system'])
 
     const classGrades = getNestedEntities(scope, classIds, 'grades') as Promise<
         GradeSummaryNode[][]
@@ -79,9 +94,14 @@ export const gradesForClasses = async (
 export const subjectsForClasses = async (
     classIds: readonly string[]
 ): Promise<SubjectSummaryNode[][]> => {
-    const scope = await Class.createQueryBuilder('Class')
-        .leftJoinAndSelect('Class.subjects', 'Subject')
-        .where('Class.class_id IN (:...ids)', { ids: classIds })
+    const scope = baseClassQuery(classIds)
+        .leftJoin('Class.subjects', 'Subject')
+        .addSelect([
+            'Subject.id',
+            'Subject.name',
+            'Subject.status',
+            'Subject.system',
+        ])
 
     const classSubjects = getNestedEntities(
         scope,
@@ -95,9 +115,14 @@ export const subjectsForClasses = async (
 export const programsForClasses = async (
     classIds: readonly string[]
 ): Promise<ProgramSummaryNode[][]> => {
-    const scope = await Class.createQueryBuilder('Class')
-        .leftJoinAndSelect('Class.programs', 'Program')
-        .where('Class.class_id IN (:...ids)', { ids: classIds })
+    const scope = baseClassQuery(classIds)
+        .leftJoin('Class.programs', 'Program')
+        .addSelect([
+            'Program.id',
+            'Program.name',
+            'Program.status',
+            'Program.system',
+        ])
 
     const classPrograms = getNestedEntities(
         scope,
