@@ -50,7 +50,7 @@ import {
     AVOID_NONE_SPECIFIED_BRACKETS,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
-import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { isDOB, isEmail, isPhone } from './utils/validations'
 import { ISchoolsConnectionNode } from './types/graphQL/schoolsConnectionNode'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
@@ -179,18 +179,18 @@ export class Model {
 
         const newUser = new User()
         if (email) {
-            if (!validateEmail(email)) {
+            if (!isEmail(email)) {
                 email = undefined
             }
         }
         if (phone) {
-            if (!validatePhone(phone)) {
+            if (!isPhone(phone)) {
                 phone = undefined
             }
         }
         if (date_of_birth) {
             date_of_birth = padShortDob(date_of_birth)
-            if (!validateDOB(date_of_birth)) {
+            if (!isDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
         }
@@ -224,17 +224,17 @@ export class Model {
     }: Partial<User>) {
         console.info('Unauthenticated endpoint call setUser')
         if (email) {
-            if (!validateEmail(email)) {
+            if (!isEmail(email)) {
                 email = undefined
             }
         }
         if (phone) {
-            if (!validatePhone(phone)) {
+            if (!isPhone(phone)) {
                 phone = undefined
             }
         }
         if (date_of_birth) {
-            if (!validateDOB(date_of_birth)) {
+            if (!isDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
         }

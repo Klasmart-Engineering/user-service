@@ -39,9 +39,8 @@ import {
     validateShortCode,
 } from '../utils/shortcode'
 import clean from '../utils/clean'
-import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
+import { isDOB, isEmail, isPhone } from '../utils/validations'
 import validationConstants from './validations/constants'
-import { isEmail, isPhone } from '../utils/data/diagnostics'
 import {
     APIError,
     APIErrorCollection,
@@ -1097,17 +1096,17 @@ export class Organization extends BaseEntity {
         alternate_email?: string | null,
         alternate_phone?: string | null
     ) {
-        if (!validateEmail(email) && validatePhone(email)) {
+        if (!isEmail(email) && isPhone(email)) {
             phone = email
             email = undefined
-        } else if (!validatePhone(phone) && validateEmail(phone)) {
+        } else if (!isPhone(phone) && isEmail(phone)) {
             email = phone
             phone = undefined
         }
-        if (!(validateEmail(email) || validatePhone(phone))) {
+        if (!(isEmail(email) || isPhone(phone))) {
             throw 'No valid email or international all digit with leading + sign E.164 phone number provided'
         }
-        if (!validateDOB(date_of_birth)) {
+        if (!isDOB(date_of_birth)) {
             date_of_birth = undefined
         }
 
