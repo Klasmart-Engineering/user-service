@@ -12,25 +12,17 @@ export const userValidations = {
         .required()
         .max(validationConstants.USER_FAMILY_NAME_MAX_LENGTH),
 
-    email: Joi.string()
-        .regex(REGEX.email, {
-            name: 'email',
-        })
-        .max(validationConstants.EMAIL_MAX_LENGTH)
-        .empty(null)
-        .when('phone', {
-            is: Joi.string().exist(),
-            then: Joi.optional().allow('', null),
-            otherwise: Joi.required().messages({
-                'string.base': 'email/phone is required',
-                'any.required': 'email/phone is required',
-                'string.empty': 'email/phone is required',
-            }),
+    email: sharedValidations.email.empty(null).when('phone', {
+        is: Joi.string().exist(),
+        then: Joi.optional().allow('', null),
+        otherwise: Joi.required().messages({
+            'string.base': 'email/phone is required',
+            'any.required': 'email/phone is required',
+            'string.empty': 'email/phone is required',
         }),
-
-    phone: Joi.string().allow(null, '').empty(null).regex(REGEX.phone, {
-        name: 'phone',
     }),
+
+    phone: sharedValidations.phone.allow(null, '').empty(null),
 
     date_of_birth: Joi.string().allow(null, '').regex(REGEX.dob, {
         name: 'date_mm_yyy',
