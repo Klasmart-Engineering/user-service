@@ -6,6 +6,8 @@ import {
     IUsersLoaders,
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
+    classesTeachingForUsers,
+    classesStudyingForUsers,
     usersByIds,
 } from './user'
 import { IClassesConnectionLoaders } from './classesConnection'
@@ -37,6 +39,12 @@ export function createDefaultDataLoaders(): IDataLoaders {
             ),
             schoolMemberships: new Dataloader((keys) =>
                 schoolMembershipsForUsers(keys)
+            ),
+            classesTeaching: new Dataloader((keys) =>
+                classesTeachingForUsers(keys)
+            ),
+            classesStudying: new Dataloader((keys) =>
+                classesStudyingForUsers(keys)
             ),
         },
         organization: {
