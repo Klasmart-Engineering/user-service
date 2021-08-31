@@ -89,8 +89,9 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        classes: [Class]
+        classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
         class(class_id: ID!): Class
+            @deprecated(reason: "Use 'classesConnection' with 'id' filter.")
         classesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
