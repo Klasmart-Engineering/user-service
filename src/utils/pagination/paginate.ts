@@ -86,18 +86,25 @@ const getEdges = (
     })
 }
 
-const forwardPaginate = async ({
-    scope,
-    pageSize,
-    defaultColumn,
-    primaryColumns,
-    cursorData,
-    totalCount,
-}: IPaginationOptions) => {
+const forwardPaginate = async (
+    {
+        scope,
+        pageSize,
+        defaultColumn,
+        primaryColumns,
+        cursorData,
+        totalCount,
+    }: IPaginationOptions,
+    getDuplicatedRows?: boolean
+) => {
     const seekPageSize = pageSize + 1 //end cursor will point to this record
 
     scope.take(seekPageSize)
-    const data = await scope.getMany()
+
+    const data = getDuplicatedRows
+        ? await scope.getRawMany()
+        : await scope.getMany()
+
     const hasPreviousPage = cursorData ? true : false
     const hasNextPage = data.length > pageSize ? true : false
     let edges = getEdges(data, defaultColumn, primaryColumns)
@@ -119,14 +126,17 @@ const forwardPaginate = async ({
     return { edges, pageInfo }
 }
 
-const backwardPaginate = async ({
-    scope,
-    pageSize,
-    cursorData,
-    defaultColumn,
-    primaryColumns,
-    totalCount,
-}: IPaginationOptions) => {
+const backwardPaginate = async (
+    {
+        scope,
+        pageSize,
+        cursorData,
+        defaultColumn,
+        primaryColumns,
+        totalCount,
+    }: IPaginationOptions,
+    getDuplicatedRows?: boolean
+) => {
     // we try to get items one more than the page size
     let newPageSize = pageSize
     // this is to make the first page going backwards look like offset pagination
@@ -139,7 +149,11 @@ const backwardPaginate = async ({
     const seekPageSize = newPageSize + 1 //start cursor will point to this record
 
     scope.take(seekPageSize)
-    const data = await scope.getMany()
+
+    const data = getDuplicatedRows
+        ? await scope.getRawMany()
+        : await scope.getMany()
+
     data.reverse()
 
     const hasPreviousPage = data.length > newPageSize ? true : false
@@ -161,12 +175,10 @@ const backwardPaginate = async ({
     return { edges, pageInfo }
 }
 
-export const paginateData = async <T = unknown>({
-    direction,
-    directionArgs,
-    scope,
-    sort,
-}: IPaginateData): Promise<IPaginatedResponse<T>> => {
+export const paginateData = async <T = unknown>(
+    { direction, directionArgs, scope, sort }: IPaginateData,
+    getDuplicatedRows?: boolean
+): Promise<IPaginatedResponse<T>> => {
     const pageSize = directionArgs?.count
         ? directionArgs.count
         : DEFAULT_PAGE_SIZE
@@ -175,7 +187,9 @@ export const paginateData = async <T = unknown>({
         ? getDataFromCursor(directionArgs.cursor)
         : null
 
-    const totalCount = await scope.getCount()
+    const totalCount = getDuplicatedRows
+        ? (await scope.getRawMany()).length
+        : await scope.getCount()
 
     const { order, primaryColumns } = addOrderByClause(scope, direction, sort)
 
@@ -216,22 +230,28 @@ export const paginateData = async <T = unknown>({
 
     const { edges, pageInfo } =
         direction && direction === SEEK_BACKWARD
-            ? await backwardPaginate({
-                  scope,
-                  pageSize,
-                  cursorData,
-                  defaultColumn: sort.primaryKey,
-                  primaryColumns,
-                  totalCount,
-              })
-            : await forwardPaginate({
-                  scope,
-                  pageSize,
-                  cursorData,
-                  defaultColumn: sort.primaryKey,
-                  primaryColumns,
-                  totalCount,
-              })
+            ? await backwardPaginate(
+                  {
+                      scope,
+                      pageSize,
+                      cursorData,
+                      defaultColumn: sort.primaryKey,
+                      primaryColumns,
+                      totalCount,
+                  },
+                  getDuplicatedRows
+              )
+            : await forwardPaginate(
+                  {
+                      scope,
+                      pageSize,
+                      cursorData,
+                      defaultColumn: sort.primaryKey,
+                      primaryColumns,
+                      totalCount,
+                  },
+                  getDuplicatedRows
+              )
 
     return {
         totalCount,

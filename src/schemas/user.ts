@@ -55,6 +55,17 @@ const typeDefs = gql`
         node: UserConnectionNode
     }
 
+    type SchoolRosterConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [SchoolRosterConnectionEdge]
+    }
+
+    type SchoolRosterConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: SchoolRosterConnectionNode
+    }
+
     # pagination extension types end here
 
     enum UserSortBy {
@@ -85,6 +96,19 @@ const typeDefs = gql`
 
         AND: [UserFilter!]
         OR: [UserFilter!]
+    }
+
+    input SchoolRosterFilter {
+        status: StringFilter
+
+        # joined columns
+        organizationId: UUIDFilter
+        schoolId: UUIDFilter
+        classId: UUIDFilter
+        role: StringFilter
+
+        AND: [SchoolRosterFilter!]
+        OR: [SchoolRosterFilter!]
     }
 
     type UserConnectionNode {
@@ -129,6 +153,16 @@ const typeDefs = gql`
         userStatus: Status
     }
 
+    type SchoolRosterConnectionNode {
+        id: ID!
+        givenName: String
+        familyName: String
+        email: String
+        phone: String
+        status: Status!
+        role: String!
+    }
+
     extend type Query {
         me: User
         user(user_id: ID!): User
@@ -140,6 +174,12 @@ const typeDefs = gql`
         ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User] @deprecated(reason: "Unused")
         my_users: [User!]
+        schoolRosterConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: SchoolRosterFilter
+            sort: UserSortInput
+        ): SchoolRosterConnectionResponse @isAdmin(entity: "user")
     }
 
     type User {
@@ -275,6 +315,14 @@ export default function getDefault(
                     model.getUser(user_id),
                 my_users: (_parent, _args, ctx, info) =>
                     model.myUsers({}, ctx, info),
+                schoolRosterConnection: (
+                    _parent,
+                    args,
+                    ctx: Context,
+                    _info
+                ) => {
+                    return model.schoolRosterConnection(ctx, args)
+                },
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {

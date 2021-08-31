@@ -8,6 +8,11 @@ export interface IEntityFilter {
     AND?: IEntityFilter[]
 }
 
+export interface IStringFilter {
+    operator: FilteringOperator
+    value: string
+}
+
 type FilteringOperator = 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains'
 
 interface IFilter {

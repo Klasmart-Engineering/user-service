@@ -48,6 +48,7 @@ import {
     getWhereClauseFromFilter,
     filterHasProperty,
     AVOID_NONE_SPECIFIED_BRACKETS,
+    IStringFilter,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
@@ -77,6 +78,9 @@ import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInp
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
+import { PermissionName } from './permissions/permissionNames'
+import { UserRawNode } from './types/graphQL/userRawNode'
+import { SchoolRosterConnectionNode } from './types/graphQL/schoolRosterConnectionNode'
 
 export class Model {
     public static async create() {
@@ -820,6 +824,139 @@ export class Model {
                 name: class_.class_name,
                 status: class_.status,
                 // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async schoolRosterConnection(
+        _context: Context,
+        { direction, directionArgs, filter, sort }: IPaginationArgs<User>
+    ) {
+        const studentPermission =
+            PermissionName.attend_live_class_as_a_student_187
+        const teacherPermission =
+            PermissionName.attend_live_class_as_a_teacher_186
+        const scope = this.userRepository
+            .createQueryBuilder('User')
+            .innerJoin('User.memberships', 'OrgMembership')
+            // .innerJoin('OrgMembership.organization', 'Organization')
+            // .innerJoin('User.school_memberships', 'SchoolMembership')
+            .innerJoin('OrgMembership.roles', 'Role')
+            // .innerJoin('SchoolMembership.roles', 'SchoolRole')
+            .innerJoin('Role.permissions', 'Permission')
+            // .innerJoin('SchoolRole.permissions', 'SchoolPermission')
+            .where('Permission.permission_id IN (:...permissionIds)', {
+                permissionIds: [teacherPermission, studentPermission],
+            })
+            // .orWhere('SchoolPermission.permission_id IN (:...permissionIds)', {
+            //     permissionIds: [
+            //         PermissionName.attend_live_class_as_a_teacher_186,
+            //         PermissionName.attend_live_class_as_a_student_187,
+            //     ],
+            // })
+
+            .andWhere('Role.status = :activeStatus', { activeStatus: 'active' })
+
+            // .orWhere('SchoolRole.status = :activeStatus', {
+            //     activeStatus: 'active',
+            // })
+            .groupBy('Permission.permission_id')
+            .addGroupBy('Permission.permission_name')
+            .addGroupBy('User.user_id')
+            .having('bool_and(Permission.allow) = :allowed', { allowed: true })
+            .select([
+                'User.user_id AS user_id',
+                // "CONCAT(User.user_id || '-' || SPLIT_PART(Permission.permission_id, '_', 6)) AS user_id",
+                'User.given_name AS given_name',
+                'User.family_name AS family_name',
+                'User.email AS email',
+                'User.phone AS phone',
+                'User.status AS status',
+                "INITCAP(SPLIT_PART(Permission.permission_id, '_', 6)) AS permission",
+            ])
+
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.innerJoin('OrgMembership.organization', 'Organization')
+            }
+
+            if (filterHasProperty('classId', filter)) {
+                scope.leftJoin('User.classesStudying', 'ClassStudying')
+                scope.leftJoin('User.classesTeaching', 'ClassTeaching')
+            }
+
+            if (filterHasProperty('schoolId', filter)) {
+                scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            }
+
+            if (filterHasProperty('role', filter)) {
+                const stringFilter = filter.role as IStringFilter
+                const value = stringFilter.value.toLowerCase()
+
+                switch (value.toLowerCase()) {
+                    case 'student':
+                        stringFilter.value = studentPermission
+                        break
+                    case 'teacher':
+                        stringFilter.value = teacherPermission
+                        break
+                    default:
+                        stringFilter.value = ''
+                        break
+                }
+
+                filter.role = stringFilter
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'User.status',
+                    organizationId: 'Organization.organization_id',
+                    role: 'Permission.permission_id',
+                    schoolId: 'SchoolMembership.school_id',
+                    classId: {
+                        operator: 'OR',
+                        aliases: [
+                            'ClassStudying.class_id',
+                            'ClassTeaching.class_id',
+                        ],
+                    },
+                })
+            )
+        }
+
+        const data = await paginateData(
+            {
+                direction,
+                directionArgs,
+                scope,
+                sort: {
+                    primaryKey: 'user_id',
+                    aliases: {
+                        givenName: 'given_name',
+                        familyName: 'family_name',
+                    },
+                    sort,
+                },
+            },
+            true
+        )
+
+        for (const edge of data.edges) {
+            const user = edge.node as User
+            const permission = (edge.node as UserRawNode).permission
+            const newNode: Partial<SchoolRosterConnectionNode> = {
+                id: `${user.user_id}-${permission.toLowerCase()}`,
+                givenName: user.given_name,
+                familyName: user.family_name,
+                email: user.email,
+                phone: user.phone,
+                status: user.status,
+                role: permission,
             }
 
             edge.node = newNode
