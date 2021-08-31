@@ -54,8 +54,7 @@ export async function uploadOrganizations(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string,
-    authToken: string
+    encoding: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -67,7 +66,6 @@ export async function uploadOrganizations(
         mutate({
             mutation: UPLOAD_ORGANIZATIONS_MUTATION,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)
@@ -79,8 +77,7 @@ export async function queryUploadOrganizations(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string,
-    authToken: string
+    encoding: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -92,7 +89,6 @@ export async function queryUploadOrganizations(
         query({
             query: UPLOAD_ORGANIZATIONS_QUERY,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)

@@ -1,4 +1,3 @@
-import { AuthenticationError } from 'apollo-server-express'
 import { NextFunction, Request, Response } from 'express'
 import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
 
@@ -28,6 +27,16 @@ FwIDAQAB
         },
     ],
     [
+        'calmid-debug',
+        {
+            options: {
+                issuer: 'calmid-debug',
+                algorithms: ['HS512', 'HS384', 'HS256'],
+            },
+            secretOrPublicKey: 'iXtZx1D5AqEB0B9pfn+hRQ==',
+        },
+    ],
+    [
         'KidsLoopChinaUser-live',
         {
             options: {
@@ -46,16 +55,6 @@ FwIDAQAB
     ],
 ])
 
-if (process.env.NODE_ENV === 'development') {
-    issuers.set('calmid-debug', {
-        options: {
-            issuer: 'calmid-debug',
-            algorithms: ['HS512', 'HS384', 'HS256'],
-        },
-        secretOrPublicKey: 'iXtZx1D5AqEB0B9pfn+hRQ==',
-    })
-}
-
 /*
     The next issuers are just for instance,
     these will be changed for real not allowed issuers
@@ -66,43 +65,40 @@ const blackListIssuers = [
     'not-allowed-issuer',
 ]
 
-export interface TokenPayload {
-    [k: string]: string
-    id: string
-    email: string
-    iss: string
-}
-
-export async function checkToken(token?: string): Promise<TokenPayload> {
-    if (!token) {
-        throw new AuthenticationError('No authentication token')
-    }
-    const payload = decode(token)
-    if (!payload || typeof payload === 'string') {
-        throw new AuthenticationError('Malformed authentication token')
-    }
-    const issuer = payload['iss']
-    if (!issuer || typeof issuer !== 'string') {
-        throw new AuthenticationError('Malformed authentication token issuer')
-    }
-    const issuerOptions = issuers.get(issuer)
-    if (!issuerOptions) {
-        throw new AuthenticationError('Unknown authentication token issuer')
-    }
-    const { options, secretOrPublicKey } = issuerOptions
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const verifiedToken = await new Promise<any>((resolve, reject) => {
-        verify(token, secretOrPublicKey, options, (err, decoded) => {
-            if (err) {
-                reject(err)
-            }
-            if (decoded) {
-                resolve(decoded)
-            }
-            reject(new AuthenticationError('Unexpected authorization error'))
+export async function checkToken(token?: string) {
+    try {
+        if (!token) {
+            return
+        }
+        const payload = decode(token)
+        if (!payload || typeof payload === 'string') {
+            return
+        }
+        const issuer = payload['iss']
+        if (!issuer || typeof issuer !== 'string') {
+            return
+        }
+        const issuerOptions = issuers.get(issuer)
+        if (!issuerOptions) {
+            return
+        }
+        const { options, secretOrPublicKey } = issuerOptions
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const verifiedToken = await new Promise<any>((resolve, reject) => {
+            verify(token, secretOrPublicKey, options, (err, decoded) => {
+                if (err) {
+                    reject(err)
+                }
+                if (decoded) {
+                    resolve(decoded)
+                }
+                reject(new Error('Unexpected authorization error'))
+            })
         })
-    })
-    return verifiedToken
+        return verifiedToken
+    } catch (e) {
+        console.error(e)
+    }
 }
 
 export function checkIssuerAuthorization(

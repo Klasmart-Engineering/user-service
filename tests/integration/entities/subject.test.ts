@@ -33,7 +33,6 @@ import { Subcategory } from '../../../src/entities/subcategory'
 import { Subject } from '../../../src/entities/subject'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
-import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
@@ -191,31 +190,23 @@ describe('Subject', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = deleteSubject(testClient, subject.id, {
+            it('cannot find the subject', async () => {
+                const gqlBool = await deleteSubject(testClient, subject.id, {
                     authorization: undefined,
                 })
 
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
+                expect(gqlBool).to.be.undefined
             })
         })
 
         context('when user is logged in', () => {
             let otherUserId: string
-            let otherUserToken: string
             let roleId: string
-            let arbitraryUserToken: string
 
             context('and the user is not an admin', () => {
                 beforeEach(async () => {
                     const otherUser = await createNonAdminUser(testClient)
                     otherUserId = otherUser.user_id
-                    otherUserToken = getNonAdminAuthToken()
-                    await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                 })
 
                 context(
@@ -225,7 +216,7 @@ describe('Subject', () => {
                             const gqlBool = await deleteSubject(
                                 testClient,
                                 subject.id,
-                                { authorization: arbitraryUserToken }
+                                { authorization: undefined }
                             )
 
                             expect(gqlBool).to.be.undefined
@@ -288,7 +279,7 @@ describe('Subject', () => {
                                             testClient,
                                             subject.id,
                                             {
-                                                authorization: otherUserToken,
+                                                authorization: getNonAdminAuthToken(),
                                             }
                                         )
 
@@ -321,7 +312,7 @@ describe('Subject', () => {
                                                     testClient,
                                                     subject.id,
                                                     {
-                                                        authorization: otherUserToken,
+                                                        authorization: getNonAdminAuthToken(),
                                                     }
                                                 )
 
@@ -349,7 +340,7 @@ describe('Subject', () => {
                                                 testClient,
                                                 subject.id,
                                                 {
-                                                    authorization: otherUserToken,
+                                                    authorization: getNonAdminAuthToken(),
                                                 }
                                             )
                                         expect(fn()).to.be.rejected

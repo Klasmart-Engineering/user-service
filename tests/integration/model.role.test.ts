@@ -6,13 +6,12 @@ import { createServer } from '../../src/utils/createServer'
 import { Role } from '../../src/entities/role'
 import { createRole } from '../utils/operations/organizationOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { createAdminUser } from '../utils/testEntities'
 import { accountUUID } from '../../src/entities/user'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { getNonAdminAuthToken } from '../utils/testConfig'
 
 const GET_ROLES = `
     query getRoles {
@@ -53,14 +52,10 @@ describe('model.role', () => {
     describe('getRoles', () => {
         context('when none', () => {
             it('returns only the system roles', async () => {
-                await createNonAdminUser(testClient)
-                let arbitraryUserToken = getNonAdminAuthToken()
-
                 const { query } = testClient
 
                 const res = await query({
                     query: GET_ROLES,
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -76,8 +71,6 @@ describe('model.role', () => {
         })
 
         context('when one', () => {
-            let arbitraryUserToken: string
-
             beforeEach(async () => {
                 const user = await createAdminUser(testClient)
                 const organization = await createOrganizationAndValidate(
@@ -85,8 +78,6 @@ describe('model.role', () => {
                     user.user_id
                 )
                 await createRole(testClient, organization.organization_id)
-                await createNonAdminUser(testClient)
-                arbitraryUserToken = getNonAdminAuthToken()
             })
 
             it('should return an array containing the default roles', async () => {
@@ -94,7 +85,6 @@ describe('model.role', () => {
 
                 const res = await query({
                     query: GET_ROLES,
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 const dbRoles = await Role.find()
@@ -112,13 +102,9 @@ describe('model.role', () => {
             it('should return null', async () => {
                 const { query } = testClient
 
-                await createNonAdminUser(testClient)
-                let arbitraryUserToken = getNonAdminAuthToken()
-
                 const res = await query({
                     query: GET_ROLE,
                     variables: { role_id: accountUUID() },
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -128,7 +114,6 @@ describe('model.role', () => {
 
         context('when one', () => {
             let role: Role
-            let arbitraryUserToken: string
 
             beforeEach(async () => {
                 const user = await createAdminUser(testClient)
@@ -140,9 +125,6 @@ describe('model.role', () => {
                     testClient,
                     organization.organization_id
                 )
-
-                await createNonAdminUser(testClient)
-                arbitraryUserToken = getNonAdminAuthToken()
             })
 
             it('should return an array containing the default roles', async () => {
@@ -151,7 +133,6 @@ describe('model.role', () => {
                 const res = await query({
                     query: GET_ROLE,
                     variables: { role_id: role.role_id },
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined

@@ -6,13 +6,13 @@ import { createServer } from '../../src/utils/createServer'
 import { Class } from '../../src/entities/class'
 import { createClass } from '../utils/operations/organizationOps'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { createAdminUser } from '../utils/testEntities'
 import { accountUUID } from '../../src/entities/user'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import { getAdminAuthToken } from '../utils/testConfig'
 
 const GET_CLASSES = `
     query getClasses {
@@ -47,13 +47,6 @@ describe('model.class', () => {
         await connection?.close()
     })
 
-    let arbitraryUserToken: string
-
-    beforeEach(async () => {
-        await createNonAdminUser(testClient)
-        arbitraryUserToken = getNonAdminAuthToken()
-    })
-
     describe('getClasses', () => {
         context('when none', () => {
             it('should return an empty array', async () => {
@@ -61,7 +54,6 @@ describe('model.class', () => {
 
                 const res = await query({
                     query: GET_CLASSES,
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -93,7 +85,6 @@ describe('model.class', () => {
 
                 const res = await query({
                     query: GET_CLASSES,
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -112,7 +103,6 @@ describe('model.class', () => {
                 const res = await query({
                     query: GET_CLASS,
                     variables: { class_id: accountUUID() },
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
@@ -147,7 +137,6 @@ describe('model.class', () => {
                 const res = await query({
                     query: GET_CLASS,
                     variables: { class_id: cls.class_id },
-                    headers: { authorization: arbitraryUserToken },
                 })
 
                 expect(res.errors, res.errors?.toString()).to.be.undefined
