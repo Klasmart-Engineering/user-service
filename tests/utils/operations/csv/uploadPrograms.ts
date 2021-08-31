@@ -28,8 +28,7 @@ export async function uploadPrograms(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string,
-    authToken: string
+    encoding: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -41,7 +40,6 @@ export async function uploadPrograms(
         mutate({
             mutation: UPLOAD_PROGRAMS_MUTATION,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)

@@ -90,6 +90,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call user membership by ${context.permissions?.getUserId()}`
+        )
+
         try {
             const membership = await getRepository(
                 OrganizationMembership
@@ -114,6 +118,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call user school_membership by ${context.permissions?.getUserId()}`
+        )
+
         try {
             const membership = await getRepository(
                 SchoolMembership
@@ -145,6 +153,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call organizationsWithPermission by ${context.permissions?.getUserId()}`
+        )
+
         try {
             return await getRepository(OrganizationMembership)
                 .createQueryBuilder()
@@ -173,6 +185,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call schoolsWithPermission by ${context.permissions?.getUserId()}`
+        )
+
         try {
             const schoolPermissionPromise = getRepository(SchoolMembership)
                 .createQueryBuilder()
@@ -252,6 +268,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call user set by ${context.permissions?.getUserId()}`
+        )
+
         try {
             if (info.operation.operation !== 'mutation') {
                 return null
@@ -387,6 +407,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call createOrganization by ${context.permissions?.getUserId()}`
+        )
+
         const active_organizations = await OrganizationOwnership.find({
             where: { user_id: this.user_id, status: Status.ACTIVE },
         })
@@ -458,6 +482,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call addOrganization by ${context.permissions?.getUserId()}`
+        )
+
         try {
             if (info.operation.operation !== 'mutation') {
                 return null
@@ -483,6 +511,10 @@ export class User extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call addSchool by ${context.permissions?.getUserId()}`
+        )
+
         try {
             if (info.operation.operation !== 'mutation') {
                 return null

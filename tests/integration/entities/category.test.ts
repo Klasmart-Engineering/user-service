@@ -31,7 +31,6 @@ import { Category } from '../../../src/entities/category'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
-import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
@@ -66,26 +65,23 @@ describe('Category', () => {
 
     describe('delete', () => {
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = deleteCategory(testClient, category.id, {
+            it('cannot find the category', async () => {
+                const gqlBool = await deleteCategory(testClient, category.id, {
                     authorization: undefined,
                 })
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
+
+                expect(gqlBool).to.be.undefined
             })
         })
+
         context('when user is logged in', () => {
             let otherUserId: string
             let roleId: string
-            let otherUserToken: string
 
             context('and the user is not an admin', () => {
                 beforeEach(async () => {
                     const otherUser = await createNonAdminUser(testClient)
                     otherUserId = otherUser.user_id
-                    otherUserToken = getNonAdminAuthToken()
                 })
 
                 context(
@@ -95,7 +91,7 @@ describe('Category', () => {
                             const gqlBool = await deleteCategory(
                                 testClient,
                                 category.id,
-                                { authorization: otherUserToken }
+                                { authorization: undefined }
                             )
 
                             expect(gqlBool).to.be.undefined
