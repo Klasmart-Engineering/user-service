@@ -13,6 +13,9 @@ const typeDefs = gql`
     }
     extend type Query {
         school(school_id: ID!): School
+            @deprecated(
+                reason: "Use 'schoolsConnection' with 'schoolId' filter."
+            )
         schoolsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
