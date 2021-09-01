@@ -13,6 +13,8 @@ import {
     EntityManager,
     EntityTarget,
     FindConditions,
+    Brackets,
+    FindOneOptions,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -907,13 +909,13 @@ export class Organization extends BaseEntity {
         entity: EntityTarget<EntityClass>,
         ids: string[],
         variables: IAPIError['variables'],
-        orWhere?: FindConditions<EntityClass>
+        customCondition?: FindOneOptions<EntityClass>['where']
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
         const uniqueIds = [...new Set(ids)]
         const repository = getRepository(entity)
-        const baseCondition = { organization: this.organization_id }
-        const records = await repository.findByIds(uniqueIds, {
-            where: orWhere ? [baseCondition, orWhere] : baseCondition,
+        const defaultCondition = { organization: this.organization_id }
+        const records = await repository.findByIds(ids, {
+            where: customCondition ?? defaultCondition,
         })
         const found = new Set(records.map((record) => repository.getId(record)))
         const errors = uniqueIds
@@ -937,10 +939,19 @@ export class Organization extends BaseEntity {
         roleIds: string[],
         variables: IAPIError['variables']
     ) {
-        // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
-        return this.findChildEntitiesById(Role, roleIds, variables, {
-            system_role: true,
-        })
+        return this.findChildEntitiesById(
+            Role,
+            roleIds,
+            variables,
+            // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
+            new Brackets((qb) =>
+                qb
+                    .where('Role.organization = :organization_id', {
+                        organization_id: this.organization_id,
+                    })
+                    .orWhere('Role.system_role IS TRUE')
+            )
+        )
     }
 
     private async findSchoolsById(
