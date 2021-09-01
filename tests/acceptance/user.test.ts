@@ -269,11 +269,8 @@ describe('acceptance.user', () => {
                     query: MY_USERS,
                 })
 
-            expect(response.status).to.eq(400)
-            expect(response.body.errors.length).to.equal(1)
-            expect(response.body.errors[0]['message']).to.equal(
-                'Context creation failed: No authentication token'
-            )
+            expect(response.status).to.eq(200)
+            expect(response.body.data.my_users.length).to.equal(0)
         })
 
         it('Finds one user with active membership ', async () => {

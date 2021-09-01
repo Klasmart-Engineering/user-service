@@ -85,8 +85,8 @@ import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
 import { CSVError, CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
-import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { getAdminAuthToken } from '../utils/testConfig'
+import { createAdminUser } from '../utils/testEntities'
 import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
 import { addOrganizationToUserAndValidate } from '../utils/operations/userOps'
@@ -117,13 +117,6 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const filename = 'fileSizeExceeded.csv'
 
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
-
         it('should throw high level error', async () => {
             file = fs.createReadStream(resolve(`tests/fixtures/${filename}`))
 
@@ -133,8 +126,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
             expect(fn()).to.be.rejectedWith(Error)
 
@@ -149,12 +141,6 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const correctFileName = 'organizationsExample.csv'
         const wrongFileName = 'organizationsWrong.csv'
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
 
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
@@ -169,8 +155,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -192,8 +177,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -222,8 +206,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
 
                 const expectedCSVError = buildCsvError(
@@ -270,8 +253,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -288,12 +270,6 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'rolesExample.csv'
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
 
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
@@ -307,8 +283,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -331,8 +306,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -362,8 +336,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -382,10 +355,7 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'subjectsExample.csv'
-        let arbitraryUserToken: string
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
             await SubcategoriesInitializer.run()
             await CategoriesInitializer.run()
         })
@@ -401,8 +371,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -425,8 +394,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -456,8 +424,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -477,12 +444,6 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const correctFilename = 'gradesExample.csv'
         const wrongFilename = 'gradesWrong.csv'
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
 
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
@@ -497,8 +458,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -520,8 +480,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -558,8 +517,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -577,13 +535,6 @@ describe('model.csv', () => {
         const encoding = '7bit'
         let filename = 'classes-bad.csv'
 
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
-
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
                 file = fs.createReadStream(
@@ -596,8 +547,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -618,8 +568,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -656,8 +605,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 const dbClass = await Class.findOneOrFail({
                     where: { class_name: 'class1', organization: expectedOrg },
@@ -679,7 +627,6 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'schoolsExample.csv'
-        let arbitraryUserToken: string
 
         beforeEach(async () => {
             await AgeRangesInitializer.run()
@@ -688,8 +635,6 @@ describe('model.csv', () => {
             await SubcategoriesInitializer.run()
             await CategoriesInitializer.run()
             await ProgramsInitializer.run()
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
         })
 
         context('when operation is not a mutation', () => {
@@ -703,8 +648,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -724,8 +668,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -752,8 +695,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -770,12 +712,6 @@ describe('model.csv', () => {
         let file: ReadStream
         const mimetype = 'text/csv'
         const encoding = '7bit'
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
 
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
@@ -788,8 +724,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -809,8 +744,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -835,8 +769,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
 
                 const dbSubcategory = await Subcategory.findOneOrFail({
@@ -1149,13 +1082,6 @@ describe('model.csv', () => {
         const encoding = '7bit'
         const filename = 'categoriesExample.csv'
 
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
-
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
                 file = fs.createReadStream(
@@ -1168,8 +1094,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -1192,8 +1117,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -1232,8 +1156,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)
@@ -1252,12 +1175,6 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'programsExample.csv'
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
 
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
@@ -1292,8 +1209,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -1304,8 +1220,6 @@ describe('model.csv', () => {
             })
 
             it('should throw errors when age range fields are not all present or all omitted', async () => {
-                let priorUserCount = await User.count()
-
                 const filename = 'programsWithErrors.csv'
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
@@ -1317,8 +1231,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejectedWith(CustomError)
                 expect(fn())
@@ -1345,7 +1258,7 @@ describe('model.csv', () => {
                     )
 
                 const usersCount = await User.count()
-                expect(usersCount).eq(priorUserCount)
+                expect(usersCount).eq(0)
             })
         })
 
@@ -1430,8 +1343,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
 
                 expect(result.filename).eq(filename)
@@ -1451,12 +1363,6 @@ describe('model.csv', () => {
         const mimetype = 'text/csv'
         const encoding = '7bit'
         const filename = 'ageRangesExample.csv'
-        let arbitraryUserToken: string
-
-        beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
-        })
 
         context('when operation is not a mutation', () => {
             it('should throw an error', async () => {
@@ -1470,8 +1376,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -1494,8 +1399,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejected
 
@@ -1519,8 +1423,7 @@ describe('model.csv', () => {
                         file,
                         filename,
                         mimetype,
-                        encoding,
-                        arbitraryUserToken
+                        encoding
                     )
                 expect(fn()).to.be.rejectedWith(CustomError)
 
@@ -1550,8 +1453,7 @@ describe('model.csv', () => {
                     file,
                     filename,
                     mimetype,
-                    encoding,
-                    arbitraryUserToken
+                    encoding
                 )
                 expect(result.filename).eq(filename)
                 expect(result.mimetype).eq(mimetype)

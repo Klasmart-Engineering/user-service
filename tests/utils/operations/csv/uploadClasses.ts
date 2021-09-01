@@ -28,8 +28,7 @@ export async function uploadClasses(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string,
-    authToken: string
+    encoding: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -41,7 +40,6 @@ export async function uploadClasses(
         mutate({
             mutation: UPLOAD_CLASSES_MUTATION,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)
@@ -53,8 +51,7 @@ export async function queryUploadClasses(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string,
-    authToken: string
+    encoding: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -66,7 +63,6 @@ export async function queryUploadClasses(
         query({
             query: UPLOAD_CLASSES_QUERY,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)

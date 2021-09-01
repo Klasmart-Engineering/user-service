@@ -38,7 +38,6 @@ import {
     addStudentToClass,
     addTeacherToClass,
 } from '../../utils/operations/classOps'
-import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
@@ -70,15 +69,12 @@ describe('isAdmin', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                let gqlResult = getAllOrganizations(testClient, {
+            it('returns an empty list of organizations', async () => {
+                const gqlOrgs = await getAllOrganizations(testClient, {
                     authorization: undefined,
                 })
 
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
+                expect(gqlOrgs).to.be.empty
             })
         })
 

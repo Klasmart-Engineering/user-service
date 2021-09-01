@@ -7,14 +7,14 @@ import { createTestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Organization } from '../../src/entities/organization'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
-import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
+import { createAdminUser } from '../utils/testEntities'
 import { CloudStorageUploader } from '../../src/services/cloudStorageUploader'
 import { accountUUID } from '../../src/entities/user'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import { getAdminAuthToken } from '../utils/testConfig'
 import { setBranding } from '../utils/operations/brandingOps'
 import fs from 'fs'
 import { resolve } from 'path'
@@ -125,10 +125,7 @@ describe('model.organization', () => {
         context('when many', () => {
             let orgs: Organization[] = []
             let brandings: BrandingResult[] = []
-
             beforeEach(async () => {
-                await createNonAdminUser(testClient)
-                let arbitraryUserToken = getNonAdminAuthToken()
                 orgs = []
                 brandings = []
                 for (let i = 0; i < 3; i++) {
@@ -143,8 +140,7 @@ describe('model.organization', () => {
                         'icon.png',
                         'image/png',
                         '7bit',
-                        `#${i.toString().repeat(6)}`,
-                        { authorization: arbitraryUserToken }
+                        `#${i.toString().repeat(6)}`
                     )
                     brandings.push(branding)
                     orgs.push(org)
@@ -229,13 +225,8 @@ describe('model.organization', () => {
             })
 
             context('branding', () => {
-                let arbitraryUserToken: string
-
                 beforeEach(async () => {
                     restore()
-
-                    await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                 })
 
                 const primaryColor = '#cd657b'
@@ -252,8 +243,7 @@ describe('model.organization', () => {
                         'icon.png',
                         'image/png',
                         '7bit',
-                        primaryColor,
-                        { authorization: arbitraryUserToken }
+                        primaryColor
                     )
                     const { query } = testClient
 
@@ -284,8 +274,7 @@ describe('model.organization', () => {
                         'icon.png',
                         'image/png',
                         '7bit',
-                        primaryColor,
-                        { authorization: arbitraryUserToken }
+                        primaryColor
                     )
 
                     let res = await query({
@@ -313,8 +302,7 @@ describe('model.organization', () => {
                         'icon.jpg',
                         'image/jpeg',
                         '7bit',
-                        primaryColor,
-                        { authorization: arbitraryUserToken }
+                        primaryColor
                     )
 
                     res = await query({
