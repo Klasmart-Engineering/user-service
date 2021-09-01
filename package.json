@@ -21,7 +21,8 @@
     "test": "npm run test:unit && npm run test:integration",
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
     "make-badges": "istanbul-badges-readme",
-    "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/directives/isMIMEType.test.ts --timeout 5000"
+    "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/directives/isMIMEType.test.ts --timeout 5000",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm"
   },
   "repository": {
     "type": "git",

@@ -24,7 +24,7 @@
 
 ### Running tests unit and integration during development:
 
- Make sure the postgres docker container is running, if you are not using the [docker-compose]((#docker))
+Make sure the postgres docker container is running, if you are not using the [docker-compose](<(#docker)>)
 
 ```bash
 docker container exec -it postgres psql -U postgres -c "create database testdb;"
@@ -38,7 +38,7 @@ Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.c
 
 ### Running tests acceptance during development:
 
- **Make sure you have the [docker-compose running](#docker) first**
+**Make sure you have the [docker-compose running](#docker) first**
 
 -   `npm run test:acceptance`
 
@@ -144,6 +144,29 @@ Make a request with below body (`form-data`), please replace `file_path` with yo
 ```
 
 Remember include `Authorization` with JWT token in request's header.
+
+## Create a database migration
+
+The user-service uses [TypeORM migrations](https://github.com/typeorm/typeorm/blob/master/docs/migrations.md) for managing database schema changes. If you need to change the database schema or modify existing data, you can create a new migration:
+
+-   Make the required schema changes
+-   Use the TypeORM CLI to create a migration file: `npm run typeorm migration:create -- -n <MigrationName>`
+-   Implement the migration logic in the `up` method of the migration file and the rollback logic in the `down` method
+-   Start the application and verify that the migration has run as expected
+
+TypeORM can also attempt to automatically generate SQL required for migrations:
+
+-   Run `npm run typeorm migration:generate -- -n <MigrationName>`
+-   Check the generated SQL _very_ carefully and make any required changes
+-   Note that only schema changes are generated - any changes to existing data will require manual migration
+
+### Testing database migrations
+
+The migration will only ever run once, so if you need to rerun it during development, you need to:
+
+-   Restore the database to it's original state
+-   Delete the corresponding migration row from the `migrations` Postgres table
+-   Rerun the application
 
 # Useful Tools
 

@@ -77,6 +77,7 @@ import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInp
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
+import { runMigrations } from './initializers/migrations'
 
 export class Model {
     public static async create() {
@@ -87,10 +88,14 @@ export class Model {
                 url:
                     process.env.DATABASE_URL ||
                     'postgres://postgres:kidsloop@localhost',
-                synchronize: true,
+                synchronize: false,
                 logging: Boolean(process.env.DATABASE_LOGGING),
                 entities: ['src/entities/*.ts'],
+                migrations: ['migrations/*.ts'],
             })
+
+            await runMigrations(connection)
+
             const model = new Model(connection)
             await getManager(connection.name).query(
                 'CREATE EXTENSION IF NOT EXISTS pg_trgm'
