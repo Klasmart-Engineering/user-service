@@ -78,6 +78,8 @@ import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
 import { runMigrations } from './initializers/migrations'
+import { UserWithPermissionId } from './types/graphQL/userWithPermissionId'
+import { PermissionName } from './permissions/permissionNames'
 
 export class Model {
     public static async create() {
@@ -371,6 +373,13 @@ export class Model {
         context: Context,
         { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
     ) {
+        const studentPermission =
+            PermissionName.attend_live_class_as_a_student_187
+        const teacherPermission =
+            PermissionName.attend_live_class_as_a_teacher_186
+        const permissionFilterApplied =
+            filter && filterHasProperty('permissionId', filter)
+
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
 
         if (filter) {
@@ -423,7 +432,7 @@ export class Model {
                         'User.phone AS phone',
                         'User.alternate_email AS email',
                         'User.alternate_phone AS phone',
-                        "INITCAP(SPLIT_PART(Permission.permission_id, '_', 6)) AS permission",
+                        'Permission.permission_id AS permission_id',
                     ])
             }
 
@@ -460,11 +469,12 @@ export class Model {
                     sort,
                 },
             },
-            filter && filterHasProperty('permissionId', filter)
+            permissionFilterApplied
         )
 
         for (const edge of data.edges) {
-            const user = edge.node as User
+            const user = edge.node as UserWithPermissionId
+
             const newNode: Partial<UserConnectionNode> = {
                 id: user.user_id,
                 givenName: user.given_name,
@@ -480,6 +490,19 @@ export class Model {
                     phone: user.alternate_phone,
                 },
                 // other properties have dedicated resolvers that use Dataloader
+            }
+
+            if (permissionFilterApplied) {
+                switch (user.permission_id) {
+                    case studentPermission:
+                        newNode.permissionRole = 'Student'
+                        break
+                    case teacherPermission:
+                        newNode.permissionRole = 'Teacher'
+                        break
+                    default:
+                        newNode.permissionRole = user.permission_id
+                }
             }
 
             edge.node = newNode

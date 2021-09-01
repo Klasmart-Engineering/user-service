@@ -9,6 +9,7 @@ export interface UserConnectionNode {
     givenName?: string
     familyName?: string
     avatar?: string
+    permissionRole?: string
     contactInfo: ContactInfo
     alternateContactInfo?: ContactInfo
     organizations: OrganizationSummaryNode[]

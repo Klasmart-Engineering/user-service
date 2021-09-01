@@ -99,6 +99,7 @@ const typeDefs = gql`
         roles: [RoleSummaryNode!]!
         schools: [SchoolSummaryNode!]!
         status: Status!
+        permissionRole: String
     }
 
     type ContactInfo {
