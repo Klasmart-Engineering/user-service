@@ -3,11 +3,6 @@ import { Program } from '../entities/program'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
-import {
-    filterHasProperty,
-    getWhereClauseFromFilter,
-    IEntityFilter,
-} from '../utils/pagination/filtering'
 
 export interface IProgramsConnectionLoaders {
     ageRanges?: DataLoader<string, AgeRangeConnectionNode[]>
@@ -16,53 +11,12 @@ export interface IProgramsConnectionLoaders {
 }
 
 export const ageRangesForPrograms = async (
-    programIds: readonly string[],
-    filter?: IEntityFilter
+    programIds: readonly string[]
 ): Promise<AgeRangeConnectionNode[][]> => {
     const programAgeRanges: AgeRangeConnectionNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
-
-    if (filter) {
-        if (filterHasProperty('organizationId', filter)) {
-            scope.leftJoinAndSelect('Program.organization', 'Organization')
-        }
-
-        if (filterHasProperty('gradeId', filter)) {
-            scope.leftJoinAndSelect('Program.grades', 'Grade')
-        }
-
-        if (
-            filterHasProperty('ageRangeFrom', filter) ||
-            filterHasProperty('ageRangeTo', filter)
-        ) {
-            scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
-        }
-
-        if (filterHasProperty('subjectId', filter)) {
-            scope.leftJoinAndSelect('Program.subjects', 'Subject')
-        }
-
-        if (filterHasProperty('schoolId', filter)) {
-            scope.leftJoinAndSelect('Program.schools', 'School')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                id: 'Program.id',
-                name: 'Program.name',
-                system: 'Program.system',
-                status: 'Program.status',
-                organizationId: 'Organization.organization_id',
-                gradeId: 'Grade.id',
-                ageRangeFrom: '',
-                ageRangeTo: '',
-                subjectId: 'Subject.id',
-                schoolId: 'School.school_id',
-            })
-        )
-    }
-
-    scope.where('Program.id IN (:...ids)', { ids: programIds })
+        .leftJoinAndSelect('Program.age_ranges', 'AgeRanges')
+        .where('Program.id IN (:...ids)', { ids: programIds })
 
     const programs = await scope.getMany()
 
@@ -96,62 +50,12 @@ export const ageRangesForPrograms = async (
 }
 
 export const gradesForPrograms = async (
-    programIds: readonly string[],
-    filter?: IEntityFilter
+    programIds: readonly string[]
 ): Promise<GradeSummaryNode[][]> => {
     const programGrades: GradeSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
-
-    if (filter) {
-        if (filterHasProperty('organizationId', filter)) {
-            scope.leftJoinAndSelect('Program.organization', 'Organization')
-        }
-
-        if (filterHasProperty('gradeId', filter)) {
-            scope.leftJoinAndSelect('Program.grades', 'Grade')
-        }
-
-        if (
-            filterHasProperty('ageRangeFrom', filter) ||
-            filterHasProperty('ageRangeTo', filter)
-        ) {
-            scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
-        }
-
-        if (filterHasProperty('subjectId', filter)) {
-            scope.leftJoinAndSelect('Program.subjects', 'Subject')
-        }
-
-        if (filterHasProperty('schoolId', filter)) {
-            scope.leftJoinAndSelect('Program.schools', 'School')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                id: 'Program.id',
-                name: 'Program.name',
-                system: 'Program.system',
-                status: 'Program.status',
-                organizationId: 'Organization.organization_id',
-                gradeId: '',
-                ageRangeFrom: {
-                    operator: 'AND',
-                    aliases: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
-                },
-                ageRangeTo: {
-                    operator: 'AND',
-                    aliases: [
-                        'AgeRange.high_value',
-                        'AgeRange.high_value_unit',
-                    ],
-                },
-                subjectId: 'Subject.id',
-                schoolId: 'School.school_id',
-            })
-        )
-    }
-
-    scope.where('Program.id IN (:...ids)', { ids: programIds })
+        .leftJoinAndSelect('Program.grades', 'Grades')
+        .where('Program.id IN (:...ids)', { ids: programIds })
 
     const programs = await scope.getMany()
     for (const programId of programIds) {
@@ -179,62 +83,12 @@ export const gradesForPrograms = async (
 }
 
 export const subjectsForPrograms = async (
-    programIds: readonly string[],
-    filter?: IEntityFilter
+    programIds: readonly string[]
 ): Promise<SubjectSummaryNode[][]> => {
     const programSubjects: SubjectSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
-
-    if (filter) {
-        if (filterHasProperty('organizationId', filter)) {
-            scope.leftJoinAndSelect('Program.organization', 'Organization')
-        }
-
-        if (filterHasProperty('gradeId', filter)) {
-            scope.leftJoinAndSelect('Program.grades', 'Grade')
-        }
-
-        if (
-            filterHasProperty('ageRangeFrom', filter) ||
-            filterHasProperty('ageRangeTo', filter)
-        ) {
-            scope.leftJoinAndSelect('Program.age_ranges', 'AgeRange')
-        }
-
-        if (filterHasProperty('subjectId', filter)) {
-            scope.leftJoinAndSelect('Program.subjects', 'Subject')
-        }
-
-        if (filterHasProperty('schoolId', filter)) {
-            scope.leftJoinAndSelect('Program.schools', 'School')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                id: 'Program.id',
-                name: 'Program.name',
-                system: 'Program.system',
-                status: 'Program.status',
-                organizationId: 'Organization.organization_id',
-                gradeId: 'Grade.id',
-                ageRangeFrom: {
-                    operator: 'AND',
-                    aliases: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
-                },
-                ageRangeTo: {
-                    operator: 'AND',
-                    aliases: [
-                        'AgeRange.high_value',
-                        'AgeRange.high_value_unit',
-                    ],
-                },
-                subjectId: '',
-                schoolId: 'School.school_id',
-            })
-        )
-    }
-
-    scope.where('Program.id IN (:...ids)', { ids: programIds })
+        .leftJoinAndSelect('Program.subjects', 'Subjects')
+        .where('Program.id IN (:...ids)', { ids: programIds })
 
     const programs = await scope.getMany()
     for (const programId of programIds) {

@@ -134,10 +134,10 @@ export default function getDefault(
                 gradesConnection: (_parent, args, ctx: Context, _info) => {
                     ctx.loaders.gradesConnection = {
                         fromGrade: new Dataloader((keys) =>
-                            fromGradeForGrades(keys, args.filter)
+                            fromGradeForGrades(keys)
                         ),
                         toGrade: new Dataloader((keys) =>
-                            toGradeForGrades(keys, args.filter)
+                            toGradeForGrades(keys)
                         ),
                     }
 

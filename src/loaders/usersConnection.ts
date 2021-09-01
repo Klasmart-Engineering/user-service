@@ -23,42 +23,25 @@ export const orgsForUsers = async (
     // fetch organization memberships for all users
     // and join on required entities
     //
-    const scope = await User.createQueryBuilder(
-        'User'
-    ).where('User.user_id IN (:...ids)', { ids: userIds })
+    const scope = await User.createQueryBuilder('User')
+        .leftJoinAndSelect('User.memberships', 'Memberships')
+        .leftJoinAndSelect('Memberships.organization', 'Organization')
+        .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        scope.leftJoinAndSelect('User.memberships', 'Memberships')
-
-        if (filterHasProperty('organizationId', filter)) {
-            scope.leftJoinAndSelect('Memberships.organization', 'Organization')
-        }
-
         if (filterHasProperty('roleId', filter)) {
-            scope.leftJoinAndSelect('Memberships.roles', 'Roles')
-        }
-
-        if (filterHasProperty('classId', filter)) {
-            scope
-                .leftJoin('User.classesStudying', 'ClassStudying')
-                .leftJoin('User.classesTeaching', 'ClassTeaching')
+            scope.leftJoin('Memberships.roles', 'Roles')
         }
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Memberships.organization_id',
-                schoolId: '', // don't attempt to filter by schoolId
+                schoolId: '',
                 roleId: 'Roles.role_id',
                 organizationUserStatus: 'Memberships.status',
-                userId: "concat(User.user_id, '')",
-                phone: 'User.phone',
-                classId: {
-                    operator: 'OR',
-                    aliases: [
-                        'ClassStudying.class_id',
-                        'ClassTeaching.class_id',
-                    ],
-                },
+                userId: '',
+                phone: '',
+                classId: '',
             })
         )
     }
@@ -99,27 +82,15 @@ export const schoolsForUsers = async (
     // fetch school memberships for all users
     // and join on required entities
     //
-    const scope = await User.createQueryBuilder(
-        'User'
-    ).where('User.user_id IN (:...ids)', { ids: userIds })
+    const scope = await User.createQueryBuilder('User')
+        .leftJoinAndSelect('User.school_memberships', 'Memberships')
+        .leftJoinAndSelect('Memberships.school', 'School')
+        .leftJoinAndSelect('School.organization', 'Organization')
+        .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        scope
-            .leftJoinAndSelect('User.school_memberships', 'Memberships')
-            .leftJoinAndSelect('Memberships.school', 'School')
-
-        if (filterHasProperty('organizationId', filter)) {
-            scope.leftJoinAndSelect('School.organization', 'Organization')
-        }
-
         if (filterHasProperty('roleId', filter)) {
             scope.leftJoinAndSelect('Memberships.roles', 'Roles')
-        }
-
-        if (filterHasProperty('classId', filter)) {
-            scope
-                .leftJoin('User.classesStudying', 'ClassStudying')
-                .leftJoin('User.classesTeaching', 'ClassTeaching')
         }
 
         scope.andWhere(
@@ -128,15 +99,9 @@ export const schoolsForUsers = async (
                 schoolId: 'Memberships.school_id',
                 roleId: 'Roles.role_id',
                 organizationUserStatus: '',
-                userId: "concat(User.user_id, '')",
-                phone: 'User.phone',
-                classId: {
-                    operator: 'OR',
-                    aliases: [
-                        'ClassStudying.class_id',
-                        'ClassTeaching.class_id',
-                    ],
-                },
+                userId: '',
+                phone: '',
+                classId: '',
             })
         )
     }
@@ -177,62 +142,32 @@ export const rolesForUsers = async (
 ): Promise<RoleSummaryNode[][]> => {
     //
     // fetch school & organization membership roles for each user
-    const orgScope = await User.createQueryBuilder(
-        'User'
-    ).where('User.user_id IN (:...ids)', { ids: userIds })
+    const orgScope = await User.createQueryBuilder('User')
+        .leftJoinAndSelect('User.memberships', 'OrgMemberships')
+        .leftJoinAndSelect('OrgMemberships.roles', 'OrgRoles')
+        .where('User.user_id IN (:...ids)', { ids: userIds })
 
-    const schoolScope = await User.createQueryBuilder(
-        'User'
-    ).where('User.user_id IN (:...ids)', { ids: userIds })
+    const schoolScope = await User.createQueryBuilder('User')
+        .leftJoinAndSelect('User.school_memberships', 'SchoolMemberships')
+        .leftJoinAndSelect('SchoolMemberships.roles', 'SchoolRoles')
+        .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        orgScope.leftJoinAndSelect('User.memberships', 'OrgMemberships')
-
-        schoolScope.leftJoinAndSelect(
-            'User.school_memberships',
-            'SchoolMemberships'
-        )
-
-        if (filterHasProperty('organizationId', filter)) {
-            schoolScope
-                .leftJoinAndSelect('SchoolMemberships.school', 'School')
-                .leftJoinAndSelect('School.organization', 'SchoolOrg')
-        }
-
-        if (filterHasProperty('roleId', filter)) {
-            orgScope.leftJoinAndSelect('OrgMemberships.roles', 'OrgRoles')
-            schoolScope.leftJoinAndSelect(
-                'SchoolMemberships.roles',
-                'SchoolRoles'
-            )
-        }
-
-        if (filterHasProperty('classId', filter)) {
-            orgScope
-                .leftJoin('User.classesStudying', 'ClassStudying')
-                .leftJoin('User.classesTeaching', 'ClassTeaching')
-
-            schoolScope
-                .leftJoin('User.classesStudying', 'ClassStudying')
-                .leftJoin('User.classesTeaching', 'ClassTeaching')
-        }
-
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'OrgMemberships.organization_id',
                 schoolId: '',
                 roleId: 'OrgRoles.role_id',
+                phone: '',
                 organizationUserStatus: '',
-                userId: "concat(User.user_id, '')",
-                classId: {
-                    operator: 'OR',
-                    aliases: [
-                        'ClassStudying.class_id',
-                        'ClassTeaching.class_id',
-                    ],
-                },
+                userId: '',
+                classId: '',
             })
         )
+
+        schoolScope
+            .leftJoin('SchoolMemberships.school', 'School')
+            .leftJoin('School.organization', 'SchoolOrg')
 
         schoolScope.andWhere(
             getWhereClauseFromFilter(filter, {
@@ -240,15 +175,9 @@ export const rolesForUsers = async (
                 schoolId: 'SchoolMemberships.school_id',
                 roleId: 'SchoolRoles.role_id',
                 organizationUserStatus: '',
-                userId: "concat(User.user_id, '')",
-                phone: 'User.phone',
-                classId: {
-                    operator: 'OR',
-                    aliases: [
-                        'ClassStudying.class_id',
-                        'ClassTeaching.class_id',
-                    ],
-                },
+                userId: '',
+                phone: '',
+                classId: '',
             })
         )
     }
