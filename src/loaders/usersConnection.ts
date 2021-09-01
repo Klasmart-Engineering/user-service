@@ -44,6 +44,14 @@ export const orgsForUsers = async (
                 .leftJoin('User.classesTeaching', 'ClassTeaching')
         }
 
+        if (filterHasProperty('permissionId', filter)) {
+            if (!filterHasProperty('roleId', filter)) {
+                scope.leftJoinAndSelect('Memberships.roles', 'Roles')
+            }
+
+            scope.innerJoinAndSelect('Roles.permissions', 'Permission')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Memberships.organization_id',
@@ -52,6 +60,7 @@ export const orgsForUsers = async (
                 organizationUserStatus: 'Memberships.status',
                 userId: "concat(User.user_id, '')",
                 phone: 'User.phone',
+                permissionId: 'Permission.permission_id',
                 classId: {
                     operator: 'OR',
                     aliases: [
@@ -122,6 +131,14 @@ export const schoolsForUsers = async (
                 .leftJoin('User.classesTeaching', 'ClassTeaching')
         }
 
+        if (filterHasProperty('permissionId', filter)) {
+            if (!filterHasProperty('roleId', filter)) {
+                scope.leftJoinAndSelect('Memberships.roles', 'Roles')
+            }
+
+            scope.innerJoinAndSelect('Roles.permissions', 'Permission')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Organization.organization_id',
@@ -130,6 +147,7 @@ export const schoolsForUsers = async (
                 organizationUserStatus: '',
                 userId: "concat(User.user_id, '')",
                 phone: 'User.phone',
+                permissionId: 'Permission.permission_id',
                 classId: {
                     operator: 'OR',
                     aliases: [
@@ -217,6 +235,22 @@ export const rolesForUsers = async (
                 .leftJoin('User.classesTeaching', 'ClassTeaching')
         }
 
+        if (filterHasProperty('permissionId', filter)) {
+            if (!filterHasProperty('roleId', filter)) {
+                orgScope.leftJoinAndSelect('OrgMemberships.roles', 'OrgRoles')
+                schoolScope.leftJoinAndSelect(
+                    'SchoolMemberships.roles',
+                    'SchoolRoles'
+                )
+            }
+
+            orgScope.innerJoinAndSelect('OrgRoles.permissions', 'Permission')
+            schoolScope.innerJoinAndSelect(
+                'SchoolRoles.permissions',
+                'Permission'
+            )
+        }
+
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'OrgMemberships.organization_id',
@@ -224,6 +258,7 @@ export const rolesForUsers = async (
                 roleId: 'OrgRoles.role_id',
                 organizationUserStatus: '',
                 userId: "concat(User.user_id, '')",
+                permissionId: 'Permission.permission_id',
                 classId: {
                     operator: 'OR',
                     aliases: [
@@ -241,6 +276,7 @@ export const rolesForUsers = async (
                 roleId: 'SchoolRoles.role_id',
                 organizationUserStatus: '',
                 userId: "concat(User.user_id, '')",
+                permissionId: 'Permission.permission_id',
                 phone: 'User.phone',
                 classId: {
                     operator: 'OR',

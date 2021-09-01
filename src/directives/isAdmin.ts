@@ -131,7 +131,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         )
         if (userOrgs.length > 0) {
             // just filter by org, not school
-            scope.leftJoinAndSelect('User.memberships', 'orgMembership')
+            scope.leftJoin('User.memberships', 'orgMembership')
             scope.andWhere('orgMembership.organization_id IN (:...userOrgs)', {
                 userOrgs,
             })
@@ -146,10 +146,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         )
         if (userOrgSchools.length > 0 && schoolMemberships) {
             // you can view all users in the schools you belong to
-            scope.leftJoinAndSelect(
-                'User.school_memberships',
-                'schoolMembership'
-            )
+            scope.leftJoin('User.school_memberships', 'schoolMembership')
             scope.andWhere('schoolMembership.school_id IN (:...schoolIds)', {
                 schoolIds: schoolMemberships.map(({ school_id }) => school_id),
             })

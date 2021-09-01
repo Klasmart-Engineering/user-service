@@ -75,6 +75,7 @@ const typeDefs = gql`
         avatar: StringFilter
         email: StringFilter
         phone: StringFilter
+        permissionId: StringFilter
 
         # joined columns
         organizationId: UUIDFilter

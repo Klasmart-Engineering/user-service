@@ -359,6 +359,7 @@ export class Model {
         { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
     ) {
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
+
         if (filter) {
             if (filterHasProperty('roleId', filter)) {
                 scope.innerJoinAndSelect(
@@ -366,16 +367,53 @@ export class Model {
                     'RoleMembershipsOrganizationMembership'
                 )
             }
+
             if (filterHasProperty('schoolId', filter)) {
                 scope.leftJoinAndSelect(
                     'User.school_memberships',
                     'SchoolMembership'
                 )
             }
+
             if (filterHasProperty('classId', filter)) {
                 scope.leftJoin('User.classesStudying', 'ClassStudying')
                 scope.leftJoin('User.classesTeaching', 'ClassTeaching')
             }
+
+            if (filterHasProperty('permissionId', filter)) {
+                if (!filterHasProperty('roleId', filter)) {
+                    scope.innerJoin(
+                        'OrgMembership.roles',
+                        'RoleMembershipsOrganizationMembership'
+                    )
+                }
+
+                scope
+                    .innerJoin(
+                        'RoleMembershipsOrganizationMembership.permissions',
+                        'Permission'
+                    )
+                    .groupBy('Permission.permission_name')
+                    .addGroupBy('User.user_id')
+                    .addGroupBy('OrgMembership.user_id')
+                    .addGroupBy('OrgMembership.organization_id')
+                    .having('bool_and(Permission.allow) = :allowed', {
+                        allowed: true,
+                    })
+                    .select([
+                        'User.user_id AS user_id',
+                        'User.given_name AS given_name',
+                        'User.family_name AS family_name',
+                        'User.avatar AS avatar',
+                        'User.status AS status',
+                        'User.email AS email',
+                        'User.phone AS phone',
+                        'User.alternate_email AS email',
+                        'User.alternate_phone AS phone',
+                        "INITCAP(SPLIT_PART(Permission.permission_id, '_', 6)) AS permission",
+                    ])
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     organizationId: 'OrgMembership.organization_id',
@@ -383,6 +421,7 @@ export class Model {
                     userId: "concat(User.user_id, '')",
                     phone: 'User.phone',
                     schoolId: 'SchoolMembership.school_id',
+                    permissionId: 'Permission.permission_id',
                     classId: {
                         operator: 'OR',
                         aliases: [
@@ -394,19 +433,23 @@ export class Model {
             )
         }
 
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'user_id',
-                aliases: {
-                    givenName: 'given_name',
-                    familyName: 'family_name',
+        const data = await paginateData(
+            {
+                direction,
+                directionArgs,
+                scope,
+                sort: {
+                    primaryKey: 'user_id',
+                    aliases: {
+                        givenName: 'given_name',
+                        familyName: 'family_name',
+                    },
+                    sort,
                 },
-                sort,
             },
-        })
+            filter && filterHasProperty('permissionId', filter)
+        )
+
         for (const edge of data.edges) {
             const user = edge.node as User
             const newNode: Partial<UserConnectionNode> = {
