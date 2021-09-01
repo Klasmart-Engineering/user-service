@@ -286,6 +286,12 @@ export default function getDefault(
                         user.user_id
                     )
                 },
+                classesTeaching: (user: User, _args, ctx: Context, info) => {
+                    return ctx.loaders.user?.classesTeaching?.load(user.user_id)
+                },
+                classesStudying: (user: User, _args, ctx: Context, info) => {
+                    return ctx.loaders.user?.classesStudying?.load(user.user_id)
+                },
             },
         },
     }

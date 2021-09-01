@@ -57,7 +57,7 @@ export const classesTeachingForUsers = async (
     const classesTeaching: Class[][] = []
     const scope = Class.createQueryBuilder()
         .innerJoin('Class.teachers', 'User')
-        .andWhere('User.user_id in :user_ids', {
+        .andWhere('User.user_id IN (:...user_ids)', {
             user_ids: userIds,
         })
 
@@ -91,8 +91,8 @@ export const classesStudyingForUsers = async (
 ): Promise<Class[][]> => {
     const classesStudying: Class[][] = []
     const scope = Class.createQueryBuilder()
-        .innerJoin('Class.Studying', 'User')
-        .andWhere('User.user_id in :user_ids', {
+        .innerJoin('Class.students', 'User')
+        .andWhere('User.user_id IN (:...user_ids)', {
             user_ids: userIds,
         })
 
