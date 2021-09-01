@@ -580,8 +580,8 @@ export async function inviteUser(
     school_ids?: string[],
     school_role_ids?: string[],
     headers?: Headers,
-    alternate_email?: string,
-    alternate_phone?: string
+    alternate_email?: string | null,
+    alternate_phone?: string | null
 ) {
     const { mutate } = testClient
     let variables: any

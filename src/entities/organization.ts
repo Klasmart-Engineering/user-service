@@ -666,12 +666,8 @@ export class Organization extends BaseEntity {
             phone = undefined
         }
 
-        if (typeof alternate_email === 'string') {
-            alternate_email = normalizedLowercaseTrimmed(alternate_email)
-        }
-        if (typeof alternate_phone === 'string') {
-            alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
-        }
+        alternate_email = clean.email(alternate_email)
+        alternate_phone = clean.phone(alternate_phone)
 
         if (typeof shortcode === 'string') {
             shortcode = shortcode.toUpperCase()
@@ -1025,8 +1021,12 @@ export class Organization extends BaseEntity {
             user.username = username
         }
 
-        user.alternate_email = clean.email(alternate_email)
-        user.alternate_phone = clean.phone(alternate_phone)
+        if (alternate_email !== undefined) {
+            user.alternate_email = alternate_email
+        }
+        if (alternate_phone !== undefined) {
+            user.alternate_phone = alternate_phone
+        }
 
         if (gender !== undefined) {
             user.gender = gender
@@ -1119,6 +1119,16 @@ export class Organization extends BaseEntity {
         }
         if (!isDOB(date_of_birth)) {
             date_of_birth = undefined
+        }
+
+        alternate_email = clean.email(alternate_email)
+        if (alternate_email !== null && !isEmail(alternate_email)) {
+            alternate_email = undefined
+        }
+
+        alternate_phone = clean.phone(alternate_phone)
+        if (alternate_phone !== null && !isPhone(alternate_phone)) {
+            alternate_phone = undefined
         }
 
         if (typeof shortcode === 'string') {

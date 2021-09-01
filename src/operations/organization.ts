@@ -17,8 +17,8 @@ export interface InviteUserArguments {
     organization_role_ids: string[]
     school_ids?: string[]
     school_role_ids?: string[]
-    alternate_email?: string
-    alternate_phone?: string
+    alternate_email?: string | null
+    alternate_phone?: string | null
 }
 
 export const inviteUserSchema: APISchema<InviteUserArguments> = {
