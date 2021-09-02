@@ -12,6 +12,8 @@ export interface UserRow {
     organization_role_name: string
     school_name?: string
     class_name?: string
+    user_alternate_email?: string
+    user_alternate_phone?: string
 }
 
 export const UserRowUniqueColumns = new Set<keyof UserRow>([

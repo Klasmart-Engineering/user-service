@@ -243,6 +243,18 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         user.gender = row.user_gender
     }
 
+    if (row.user_alternate_email) {
+        user.alternate_email = normalizedLowercaseTrimmed(
+            row.user_alternate_email
+        )
+    }
+
+    if (row.user_alternate_phone) {
+        user.alternate_phone = normalizedLowercaseTrimmed(
+            row.user_alternate_phone
+        )
+    }
+
     if (row.user_shortcode) {
         const userShortcode = await manager.findOne(OrganizationMembership, {
             where: {
