@@ -111,6 +111,8 @@ export const teacherRole = {
         PermissionName.report_my_class_achievments_648,
         PermissionName.report_learning_summary_teacher_650,
         PermissionName.learning_summary_report_653,
+        PermissionName.report_teacher_student_usage_656,
+        PermissionName.student_usage_report_657,
         PermissionName.view_my_organization_profile_10111,
         PermissionName.join_organization_10881,
         PermissionName.leave_organization_10882,

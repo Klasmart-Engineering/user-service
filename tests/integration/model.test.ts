@@ -2021,7 +2021,7 @@ describe('model', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    expect(gqlPermissions?.totalCount).to.eql(448)
+                    expect(gqlPermissions?.totalCount).to.eql(452)
                     expect(gqlPermissions?.edges.length).to.equal(50)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(
@@ -2065,7 +2065,7 @@ describe('model', () => {
                         { authorization: getAdminAuthToken() }
                     )
 
-                    expect(gqlPermissions?.totalCount).to.eql(448)
+                    expect(gqlPermissions?.totalCount).to.eql(452)
                     expect(gqlPermissions?.edges.length).to.equal(3)
 
                     expect(gqlPermissions?.pageInfo.startCursor).to.equal(
