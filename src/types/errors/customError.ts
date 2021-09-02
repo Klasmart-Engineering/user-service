@@ -1,3 +1,5 @@
+import { CSVErrorParams } from '../csv/csvError'
+
 export interface CustomError {
     code: string
     message: string
@@ -5,7 +7,8 @@ export interface CustomError {
 }
 
 export function getCustomErrorMessageVariables(message: string) {
-    return message.match(/(?<={)(.*?)(?=})/g) || []
+    return (message.match(/(?<={)(.*?)(?=})/g) ||
+        []) as (keyof CSVErrorParams)[]
 }
 
 export const customErrors = {
@@ -45,6 +48,15 @@ export const customErrors = {
     duplicate_entity: {
         code: 'ERR_DUPLICATE_ENTITY',
         message: '{entity} {entityName} already exists.',
+    },
+    duplicate_child_entity: {
+        code: 'ERR_DUPLICATE_CHILD_ENTITY',
+        message:
+            '{entity} {entityName} already exists for {parentEntity} {parentName}.',
+    },
+    duplicate_attribute_values: {
+        code: 'ERR_DUPLICATE_ATTRIBUTE_VALUES',
+        message: '{entity} {attribute} must contain unique values.',
     },
     nonexistent_entity: {
         code: 'ERR_NON_EXISTENT_ENTITY',

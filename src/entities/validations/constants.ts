@@ -14,6 +14,7 @@ export const validationConstants = {
     SHORTCODE_MAX_LENGTH: 16,
     GENDER_MIN_LENGTH: 3,
     GENDER_MAX_LENGTH: 16,
+    USERNAME_MAX_LEN: 35,
 }
 
 export default validationConstants

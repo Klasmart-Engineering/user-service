@@ -187,8 +187,10 @@ export async function inviteUserToOrganization(
     family_name: string,
     email: string,
     organization_id: string,
+    gender: string,
     token: string,
-    organization_role_ids?: string[],
+    shortcode: string,
+    organization_role_ids: string[],
     school_role_ids?: string[],
     school_ids?: string[]
 ) {
@@ -205,6 +207,8 @@ export async function inviteUserToOrganization(
                 family_name,
                 email,
                 organization_id,
+                gender,
+                shortcode,
                 organization_role_ids,
                 school_role_ids,
                 school_ids,

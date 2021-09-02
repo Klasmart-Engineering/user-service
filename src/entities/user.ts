@@ -28,7 +28,7 @@ import { School } from './school'
 import { Status } from './status'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
-import { validateDOB, validateEmail, validatePhone } from '../utils/validations'
+import { isDOB, isEmail, isPhone } from '../utils/validations'
 
 @Entity()
 export class User extends BaseEntity {
@@ -283,18 +283,18 @@ export class User extends BaseEntity {
                 this.family_name = family_name
             }
             if (email) {
-                if (!validateEmail(email)) {
+                if (!isEmail(email)) {
                     email = undefined
                 }
             }
             if (phone) {
-                if (!validatePhone(phone)) {
+                if (!isPhone(phone)) {
                     phone = undefined
                 }
             }
             if (date_of_birth) {
                 date_of_birth = padShortDob(date_of_birth)
-                if (!validateDOB(date_of_birth)) {
+                if (!isDOB(date_of_birth)) {
                     date_of_birth = undefined
                 }
             }
@@ -318,11 +318,11 @@ export class User extends BaseEntity {
                 this.avatar = avatar
             }
 
-            if (alternate_email && validateEmail(alternate_email)) {
+            if (alternate_email && isEmail(alternate_email)) {
                 this.alternate_email = alternate_email
             }
 
-            if (alternate_phone && validatePhone(alternate_phone)) {
+            if (alternate_phone && isPhone(alternate_phone)) {
                 this.alternate_phone = alternate_phone
             }
 

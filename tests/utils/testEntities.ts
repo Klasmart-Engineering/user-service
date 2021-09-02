@@ -41,3 +41,15 @@ const billy = {
     email: 'billy@gmail.com',
     avatar: 'billy_avatar',
 } as User
+
+export const validUser = {
+    given_name: 'Joe',
+    family_name: 'Bloggs',
+    email: 'joe.bloggs@gmail.com',
+    phone: '+4412345678910',
+    date_of_birth: '01-2000',
+    username: 'JOE123!',
+    gender: 'Male',
+    alternate_email: 'joe.bloggs@calmid.com',
+    alternate_phone: '+4454321109876',
+}

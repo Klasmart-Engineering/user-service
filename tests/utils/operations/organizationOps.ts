@@ -111,7 +111,7 @@ const UPDATE_ORGANIZATION = `
 `
 
 export const INVITE_USER = `
-    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email: String, $alternate_phone: String) {
+    mutation myMutation($organization_id: ID!, $email:String, $phone: String, $given_name: String!, $family_name: String!, $date_of_birth: String, $username: String, $gender: String!, $shortcode: String, $organization_role_ids: [ID!]!, $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email: String, $alternate_phone: String) {
         organization(organization_id: $organization_id) {
             inviteUser(email: $email, phone:$phone, given_name: $given_name, family_name:$family_name, date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email: $alternate_email, alternate_phone: $alternate_phone){
                 user{
@@ -633,6 +633,7 @@ export async function inviteUser(
         })
 
     const res = await gqlTry(operation)
+
     const result = res.data?.organization.inviteUser as {
         user: User
         membership: OrganizationMembership

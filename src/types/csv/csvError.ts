@@ -1,5 +1,13 @@
 import { ApolloError } from 'apollo-server-errors'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
+import { BaseError, LegacyErrorParams, ErrorParams } from '../errors/baseError'
+
+export interface CSVErrorParams extends ErrorParams, LegacyErrorParams {
+    size?: string
+    fileType?: string
+    fileName?: string
+    columnName?: string
+}
 
 /**
  * The CSV error structure
@@ -20,12 +28,9 @@ import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
  * }
  * ```
  */
-export interface CSVError {
-    code: string
-    message: string
+export interface CSVError extends BaseError, CSVErrorParams {
     row: number
     column: string
-    [params: string]: unknown
 }
 
 /**

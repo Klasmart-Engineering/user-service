@@ -11,6 +11,7 @@ export function addCsvError(
     row: number,
     column: string,
     message: string,
+    // TODO use `CSVErrorParams` here for params typechecking
     params: Record<string, unknown> = {}
 ): void {
     errors.push(buildCsvError(code, row, column, message, params))

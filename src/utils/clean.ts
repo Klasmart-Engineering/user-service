@@ -1,5 +1,5 @@
 import { normalizedLowercaseTrimmed } from '../entities/organization'
-import { validateEmail, validatePhone } from './validations'
+import { isEmail, isPhone } from './validations'
 
 export default {
     contactInfo: function (
@@ -13,10 +13,10 @@ export default {
     },
 
     email: function (value?: string | null) {
-        return this.contactInfo(validateEmail, value)
+        return this.contactInfo(isEmail, value)
     },
 
     phone: function (value?: string | null) {
-        return this.contactInfo(validatePhone, value)
+        return this.contactInfo(isPhone, value)
     },
 }
