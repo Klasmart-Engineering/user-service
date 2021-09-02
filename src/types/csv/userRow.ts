@@ -9,11 +9,11 @@ export interface UserRow {
     user_phone?: string
     user_date_of_birth?: string
     user_gender: string
+    user_alternate_email?: string
+    user_alternate_phone?: string
     organization_role_name: string
     school_name?: string
     class_name?: string
-    user_alternate_email?: string
-    user_alternate_phone?: string
 }
 
 export const UserRowUniqueColumns = new Set<keyof UserRow>([
