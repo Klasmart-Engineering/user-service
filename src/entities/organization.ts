@@ -47,7 +47,7 @@ import {
     APIError,
     APIErrorCollection,
     IAPIError,
-    validateApiCall,
+    validateAPICall,
 } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import {
@@ -664,7 +664,7 @@ export class Organization extends BaseEntity {
         shortcode = clean.shortcode(shortcode)
         date_of_birth = clean.dateOfBirth(date_of_birth)
 
-        const { errors, validData } = validateApiCall(
+        const { errors, validData } = validateAPICall(
             {
                 email,
                 phone,

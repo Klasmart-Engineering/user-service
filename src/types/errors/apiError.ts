@@ -76,7 +76,7 @@ export class APIErrorCollection extends ApolloError {
     public errors: Array<APIError>
 }
 
-export function validateApiCall<APIArguments>(
+export function validateAPICall<APIArguments>(
     data: APIArguments,
     schema: APISchema<APIArguments>,
     metadata: APISchemaMetadata<APIArguments>
