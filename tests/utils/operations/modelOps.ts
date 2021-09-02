@@ -23,6 +23,7 @@ import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionN
 import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -487,6 +488,38 @@ export const CLASSES_CONNECTION = `
                     }
 
                     programs {
+                        id
+                        name
+                        status
+                        system
+                    }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const SUBJECTS_CONNECTION = `
+    query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
+        subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
+
+                    categories {
                         id
                         name
                         status
@@ -1030,4 +1063,29 @@ export async function classesConnection(
 
     const res = await gqlTry(operation)
     return res.data?.classesConnection
+}
+
+export async function subjectsConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<SubjectConnectionNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: SUBJECTS_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.subjectsConnection
 }

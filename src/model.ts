@@ -77,6 +77,7 @@ import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInp
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
+import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 
 export class Model {
@@ -832,6 +833,61 @@ export class Model {
                 id: class_.class_id,
                 name: class_.class_name,
                 status: class_.status,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async subjectsConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Subject>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Subject.organization', 'Organization')
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'Subject.status',
+                    system: 'Subject.system',
+                    organizationId: 'Organization.organization_id',
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                    system: 'system',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const subject = edge.node as Subject
+            const newNode: Partial<SubjectConnectionNode> = {
+                id: subject.id,
+                name: subject.name,
+                status: subject.status,
+                system: subject.system,
                 // other properties have dedicated resolvers that use Dataloader
             }
 

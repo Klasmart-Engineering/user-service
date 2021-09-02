@@ -13,17 +13,20 @@ import { LEAVE_ORGANIZATION } from '../organizationMembershipOps'
 import {
     CREATE_CLASS,
     CREATE_OR_UPDATE_AGE_RANGES,
+    CREATE_OR_UPDATE_CATEGORIES,
     CREATE_OR_UPDATE_GRADES,
     CREATE_OR_UPDATE_PROGRAMS,
     CREATE_OR_UPDATE_SUBJECTS,
     CREATE_SCHOOL,
     INVITE_USER,
 } from '../organizationOps'
+import { DELETE_SUBJECT } from '../subjectOps'
 import { CREATE_ORGANIZATION } from '../userOps'
 
 export interface IProgramDetail {
     name?: string
     age_ranges?: string[]
+    subjects?: string[]
 }
 
 export interface IAgeRangeDetail {
@@ -46,6 +49,13 @@ export interface ISubjectDetail {
     id?: string
     name?: string
     categories?: string[]
+    system?: boolean
+}
+
+export interface ICategoryDetail {
+    id?: string
+    name?: string
+    subcategories?: string[]
     system?: boolean
 }
 
@@ -378,6 +388,41 @@ export async function addSubjectsToClass(
             variables: {
                 id: class_id,
                 subject_ids,
+            },
+        })
+}
+
+export async function createCategories(
+    organization_id: string,
+    categories: ICategoryDetail[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_OR_UPDATE_CATEGORIES,
+            variables: {
+                organization_id,
+                categories,
+            },
+        })
+}
+
+export async function deleteSubject(id: string, token: string) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: DELETE_SUBJECT,
+            variables: {
+                id,
             },
         })
 }

@@ -274,7 +274,7 @@ const LIST_SUBCATEGORIES = `
     }
 `
 
-const CREATE_OR_UPDATE_CATEGORIES = `
+export const CREATE_OR_UPDATE_CATEGORIES = `
     mutation myMutation(
             $organization_id: ID!,
             $categories: [CategoryDetail]!) {
