@@ -42,7 +42,7 @@ import {
     validateShortCode,
 } from '../utils/shortcode'
 import clean from '../utils/clean'
-import { isDOB, isEmail, isPhone } from '../utils/validations'
+import { isEmail, isPhone } from '../utils/validations'
 import validationConstants from './validations/constants'
 import {
     APIError,
@@ -1103,25 +1103,6 @@ export class Organization extends BaseEntity {
         return this.findChildEntitiesById(School, schoolIds, variables)
     }
 
-    private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {
-        const role_repo = getRepository(Role)
-        const roleLookup = async (role_id: string) => {
-            const role = await role_repo.findOneOrFail(role_id)
-            const checkOrganization = await role.organization
-            if (
-                !role.system_role &&
-                (!checkOrganization ||
-                    checkOrganization.organization_id !== this.organization_id)
-            ) {
-                throw new Error(
-                    `Can not assign Organization(${checkOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`
-                )
-            }
-            return role
-        }
-        return roleLookup
-    }
-
     private async findOrCreateUser(
         edit: boolean,
         user_id?: string,
@@ -1233,127 +1214,6 @@ export class Organization extends BaseEntity {
             })
         )
         return [schoolMemberships, oldSchoolMemberships]
-    }
-
-    private async _setMembership(
-        restricted: boolean,
-        edit: boolean,
-        user_id?: string,
-        email?: string,
-        phone?: string,
-        given_name?: string,
-        family_name?: string,
-        date_of_birth?: string,
-        username?: string,
-        gender?: string,
-        shortcode?: string,
-        organization_role_ids: string[] = [],
-        school_ids: string[] = [],
-        school_role_ids: string[] = [],
-        alternate_email?: string | null,
-        alternate_phone?: string | null
-    ) {
-        if (!isEmail(email) && isPhone(email)) {
-            phone = email
-            email = undefined
-        } else if (!isPhone(phone) && isEmail(phone)) {
-            email = phone
-            phone = undefined
-        }
-        if (!(isEmail(email) || isPhone(phone))) {
-            throw 'No valid email or international all digit with leading + sign E.164 phone number provided'
-        }
-        if (!isDOB(date_of_birth)) {
-            date_of_birth = undefined
-        }
-
-        alternate_email = clean.email(alternate_email)
-        if (alternate_email !== null && !isEmail(alternate_email)) {
-            alternate_email = undefined
-        }
-
-        alternate_phone = clean.phone(alternate_phone)
-        if (alternate_phone !== null && !isPhone(alternate_phone)) {
-            alternate_phone = undefined
-        }
-
-        if (typeof shortcode === 'string') {
-            shortcode = shortcode.toUpperCase()
-            if (
-                !validateShortCode(
-                    shortcode,
-                    validationConstants.SHORTCODE_MAX_LENGTH
-                )
-            ) {
-                shortcode = undefined
-            }
-        }
-
-        return getManager().transaction(async (manager) => {
-            console.log(
-                '_setMembership',
-                email,
-                phone,
-                user_id,
-                given_name,
-                family_name,
-                date_of_birth,
-                username,
-                gender,
-                shortcode,
-                organization_role_ids,
-                school_ids,
-                school_role_ids,
-                alternate_email,
-                alternate_phone
-            )
-            const roleLookup = await this.getRoleLookup()
-            const organizationRoles = await Promise.all(
-                organization_role_ids.map((role_id) => roleLookup(role_id))
-            )
-            const schoolRoles = await Promise.all(
-                school_role_ids.map((role_id) => roleLookup(role_id))
-            )
-            const user = await this.findOrCreateUser(
-                edit,
-                user_id,
-                email,
-                phone,
-                given_name,
-                family_name,
-                date_of_birth,
-                username,
-                alternate_email,
-                alternate_phone,
-                gender
-            )
-            const membership = await this.membershipOrganization(
-                user,
-                organizationRoles,
-                shortcode
-            )
-
-            // TODO replace with handled error for UD-328
-            const schoolRepository = getRepository(School)
-            const schools = await Promise.all(
-                school_ids.map(async (school_id) => {
-                    return schoolRepository.findOneOrFail(school_id, {
-                        where: { organization: this.organization_id },
-                    })
-                })
-            )
-            const [
-                schoolMemberships,
-                oldSchoolMemberships,
-            ] = await this.membershipSchools(user, schools, schoolRoles)
-            if (restricted) {
-                await manager.save([user, membership, ...oldSchoolMemberships])
-                return { user, membership, oldSchoolMemberships }
-            }
-            await manager.remove(oldSchoolMemberships)
-            await manager.save([user, membership, ...schoolMemberships])
-            return { user, membership, schoolMemberships }
-        })
     }
 
     public async createRole(
