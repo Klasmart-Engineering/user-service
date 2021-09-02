@@ -104,16 +104,14 @@ const typeDefs = gql`
             alternate_phone: String
         ): MembershipUpdate
         editMembership(
-            user_id: ID
-            email: String
-            phone: String
-            given_name: String
-            family_name: String
+            user_id: ID!
+            given_name: String!
+            family_name: String!
             date_of_birth: String
             username: String
-            gender: String
-            shortcode: String
-            organization_role_ids: [ID!]
+            gender: String!
+            shortcode: String!
+            organization_role_ids: [ID!]!
             school_ids: [ID!]
             school_role_ids: [ID!]
             alternate_email: String

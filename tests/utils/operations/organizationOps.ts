@@ -22,6 +22,8 @@ import {
 import { utils } from 'mocha'
 import { Program } from '../../../src/entities/program'
 import { gql } from 'apollo-server-express'
+import { EditMembershipArguments } from '../../../src/operations/organization'
+import { pickBy } from 'lodash'
 
 export const CREATE_CLASS = `
     mutation myMutation(
@@ -143,11 +145,38 @@ export const INVITE_USER = `
     }
 `
 
-const EDIT_MEMBERSHIP = `
-    mutation myMutation($organization_id: ID!, $user_id: ID, $email:String, $phone: String, $given_name: String, $family_name: String, $date_of_birth: String, $username: String, $gender: String, $shortcode: String, $organization_role_ids: [ID!], $school_ids:[ID!] , $school_role_ids:[ID!], $alternate_email:String, $alternate_phone:String) {
+const EDIT_MEMBERSHIP = gql`
+    mutation myMutation(
+        $organization_id: ID!
+        $user_id: ID!
+        $given_name: String!
+        $family_name: String!
+        $date_of_birth: String
+        $username: String
+        $gender: String!
+        $shortcode: String!
+        $organization_role_ids: [ID!]!
+        $school_ids: [ID!]
+        $school_role_ids: [ID!]
+        $alternate_email: String
+        $alternate_phone: String
+    ) {
         organization(organization_id: $organization_id) {
-            editMembership(user_id: $user_id, email: $email, phone:$phone, given_name: $given_name, family_name:$family_name,  date_of_birth:$date_of_birth, username: $username, gender: $gender, shortcode: $shortcode, organization_role_ids:$organization_role_ids, school_ids:$school_ids, school_role_ids:$school_role_ids, alternate_email:$alternate_email, alternate_phone:$alternate_phone){
-                user{
+            editMembership(
+                user_id: $user_id
+                given_name: $given_name
+                family_name: $family_name
+                date_of_birth: $date_of_birth
+                username: $username
+                gender: $gender
+                shortcode: $shortcode
+                organization_role_ids: $organization_role_ids
+                school_ids: $school_ids
+                school_role_ids: $school_role_ids
+                alternate_email: $alternate_email
+                alternate_phone: $alternate_phone
+            ) {
+                user {
                     user_id
                     email
                     phone
@@ -160,13 +189,13 @@ const EDIT_MEMBERSHIP = `
                     alternate_email
                     alternate_phone
                 }
-                membership{
+                membership {
                     user_id
                     shortcode
                     organization_id
                     join_timestamp
                 }
-                schoolMemberships{
+                schoolMemberships {
                     user_id
                     school_id
                     join_timestamp
@@ -645,76 +674,21 @@ export async function inviteUser(
 export async function editMembership(
     testClient: ApolloServerTestClient,
     organizationId: string,
-    user_id?: string,
-    email?: string,
-    phone?: string,
-    given_name?: string,
-    family_name?: string,
-    date_of_birth?: string,
-    username?: string,
-    gender?: string,
-    shortcode?: string,
-    organization_role_ids?: string[],
-    school_ids?: string[],
-    school_role_ids?: string[],
-    headers?: Headers,
-    cookies?: any,
-    alternate_email?: string | null,
-    alternate_phone?: string | null
+    editMembershipArguments: Partial<EditMembershipArguments>,
+    headers?: Headers
 ) {
     const { mutate } = testClient
-    let variables: any
-    variables = { organization_id: organizationId }
 
-    if (user_id) {
-        variables.user_id = user_id
-    }
-    if (email) {
-        variables.email = email
-    }
-    if (phone) {
-        variables.phone = phone
-    }
-    if (given_name) {
-        variables.given_name = given_name
-    }
-    if (family_name) {
-        variables.family_name = family_name
-    }
-    if (date_of_birth) {
-        variables.date_of_birth = date_of_birth
-    }
-    if (username) {
-        variables.username = username
-    }
-    if (gender) {
-        variables.gender = gender
-    }
-    if (shortcode) {
-        variables.shortcode = shortcode
-    }
-    if (organization_role_ids) {
-        variables.organization_role_ids = organization_role_ids
-    }
-    if (school_ids) {
-        variables.school_ids = school_ids
-    }
-    if (school_role_ids) {
-        variables.school_role_ids = school_role_ids
-    }
-    if (typeof alternate_email !== 'undefined') {
-        variables.alternate_email = alternate_email
-    }
-    if (typeof alternate_phone !== 'undefined') {
-        variables.alternate_phone = alternate_phone
+    const variables = {
+        organization_id: organizationId,
+        ...pickBy(editMembershipArguments, (v) => v !== undefined),
     }
 
     const operation = () =>
         mutate({
             mutation: EDIT_MEMBERSHIP,
-            variables: variables,
-            headers: headers,
-            cookies: cookies,
+            variables,
+            headers,
         })
 
     const res = await gqlTry(operation)

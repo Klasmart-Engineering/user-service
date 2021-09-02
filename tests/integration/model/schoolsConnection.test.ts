@@ -67,25 +67,35 @@ async function addUserRole(
     testClient: ApolloServerTestClient,
     orgId: string,
     user: User,
+    shortcode: string,
     roleId: string,
     schoolIds: string[],
     orgOwnerToken: string
 ): Promise<User> {
+    const {
+        user_id,
+        given_name,
+        family_name,
+        date_of_birth,
+        username,
+        gender,
+    } = user
+
     let gqlresult = await editMembership(
         testClient,
         orgId,
-        user.user_id,
-        user.email,
-        user.phone,
-        user.given_name,
-        user.family_name,
-        user.date_of_birth,
-        user.username,
-        user.gender,
-        undefined,
-        new Array(roleId),
-        schoolIds,
-        [],
+        {
+            user_id,
+            given_name,
+            family_name,
+            date_of_birth,
+            username,
+            gender,
+            shortcode,
+            organization_role_ids: [roleId],
+            school_ids: schoolIds,
+            school_role_ids: [],
+        },
         { authorization: orgOwnerToken }
     )
     return gqlresult.user
@@ -237,6 +247,7 @@ describe('schoolsConnection', () => {
                     testClient,
                     org2.organization_id,
                     user,
+                    generateShortCode(),
                     myRole.role_id,
                     [schools[11].school_id],
                     getAdminAuthToken()

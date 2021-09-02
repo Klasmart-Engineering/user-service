@@ -13,6 +13,7 @@ import {
     EntityManager,
     EntityTarget,
     FindConditions,
+    Not,
     Brackets,
     FindOneOptions,
 } from 'typeorm'
@@ -54,6 +55,9 @@ import {
     inviteUserSchema,
     inviteUserSchemaMetadata,
     InviteUserArguments,
+    EditMembershipArguments,
+    editMembershipSchema,
+    editMembershipSchemaMetadata,
 } from '../operations/organization'
 
 export const normalizedLowercaseTrimmed = (x?: string) =>
@@ -826,8 +830,6 @@ export class Organization extends BaseEntity {
     public async editMembership(
         {
             user_id,
-            email,
-            phone,
             given_name,
             family_name,
             date_of_birth,
@@ -839,8 +841,7 @@ export class Organization extends BaseEntity {
             school_role_ids,
             alternate_email,
             alternate_phone,
-        }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Record<string, any>,
+        }: EditMembershipArguments,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -848,30 +849,22 @@ export class Organization extends BaseEntity {
             this,
             PermissionName.edit_users_40330
         )
-        try {
-            if (
-                info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
-            ) {
-                return null
-            }
-            email = normalizedLowercaseTrimmed(email)
-            phone = normalizedLowercaseTrimmed(phone)
-            if (typeof alternate_email === 'string') {
-                alternate_email = normalizedLowercaseTrimmed(alternate_email)
-            }
-            if (typeof alternate_phone === 'string') {
-                alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
-            }
 
-            date_of_birth = clean.dateOfBirth(date_of_birth)
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
 
-            const result = await this._setMembership(
-                false,
-                true,
+        alternate_email = clean.email(alternate_email)
+        alternate_phone = clean.phone(alternate_phone)
+        shortcode = clean.shortcode(shortcode)
+        date_of_birth = clean.dateOfBirth(date_of_birth)
+
+        const { errors, validData } = validateAPICall(
+            {
                 user_id,
-                email,
-                phone,
                 given_name,
                 family_name,
                 date_of_birth,
@@ -882,12 +875,176 @@ export class Organization extends BaseEntity {
                 school_ids,
                 school_role_ids,
                 alternate_email,
-                alternate_phone
-            )
-            return result
-        } catch (e) {
-            console.error(e)
+                alternate_phone,
+            },
+            editMembershipSchema,
+            editMembershipSchemaMetadata
+        )
+
+        if (validData?.shortcode) {
+            const duplicateShortcode = await getRepository(
+                OrganizationMembership
+            ).findOne({
+                where: {
+                    shortcode,
+                    user_id: Not(user_id),
+                    organization: {
+                        organization_id: this.organization_id,
+                    },
+                },
+            })
+
+            if (duplicateShortcode) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.duplicate_child_entity.code,
+                        message: customErrors.duplicate_child_entity.message,
+                        variables: ['shortcode'],
+                        entity: 'OrganizationMembership',
+                        entityName: shortcode,
+                        parentEntity: 'Organization',
+                        parentName: this.organization_name,
+                    })
+                )
+            }
         }
+
+        let user: User | undefined
+        if (validData?.user_id) {
+            user = await User.findOne(user_id)
+            if (!user) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['user_id'],
+                        entity: 'User',
+                        entityName: user_id,
+                    })
+                )
+            }
+        }
+
+        let membership: OrganizationMembership | undefined
+        if (user) {
+            membership = await OrganizationMembership.findOne({
+                user_id,
+                organization_id: this.organization_id,
+                status: Status.ACTIVE,
+            })
+            if (!membership) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.nonexistent_child.code,
+                        message: customErrors.nonexistent_child.message,
+                        variables: ['user_id', 'organization_id'],
+                        entity: 'User',
+                        entityName: user.full_name(),
+                        parentEntity: 'Organization',
+                        parentName: this.organization_name,
+                    })
+                )
+            }
+        }
+
+        if (user && 'given_name' in validData && 'family_name' in validData) {
+            // If combination of user.email/user.phone and `given_name` and `family_name` exists for
+            // any other User, then throw ERR_DUPLICATE_ENTITY
+            const baseCondition = {
+                given_name,
+                family_name,
+                user_id: Not(user_id),
+            }
+
+            const findConditions: FindConditions<User>[] = []
+            if (user.email) {
+                findConditions.push({ ...baseCondition, email: user.email })
+            }
+            if (user.phone) {
+                findConditions.push({ ...baseCondition, phone: user.phone })
+            }
+            const duplicateUser = await User.findOne({ where: findConditions })
+
+            if (duplicateUser) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.duplicate_entity.code,
+                        message: customErrors.duplicate_entity.message,
+                        variables: ['given_name', 'family_name'],
+                        entity: 'User',
+                        entityName: `${given_name} ${family_name}`,
+                    })
+                )
+            }
+        }
+
+        let organizationRoles: Role[] = []
+        if (validData?.organization_role_ids?.length) {
+            const rolesResult = await this.findRolesById(
+                validData.organization_role_ids,
+                ['organization_role_ids']
+            )
+            organizationRoles = rolesResult.data
+            errors.push(...rolesResult.errors)
+        }
+
+        let schoolRoles: Role[] = []
+        if (validData?.school_role_ids?.length) {
+            const rolesResult = await this.findRolesById(
+                validData.school_role_ids,
+                ['school_role_ids']
+            )
+            schoolRoles = rolesResult.data
+            errors.push(...rolesResult.errors)
+        }
+
+        let schools: School[] = []
+        if (validData?.school_ids?.length) {
+            const schoolsResult = await this.findSchoolsById(
+                validData.school_ids,
+                ['school_ids']
+            )
+            schools = schoolsResult.data
+            errors.push(...schoolsResult.errors)
+        }
+
+        if (errors.length > 0) {
+            throw new APIErrorCollection(errors)
+        }
+
+        return getManager().transaction(async (manager) => {
+            const updatedUser = Object.assign(user, {
+                given_name,
+                family_name,
+                gender,
+                date_of_birth,
+                username,
+                alternate_email,
+                alternate_phone,
+            }) as User
+
+            const updatedMembership = Object.assign(membership, {
+                shortcode: validData.shortcode,
+                roles: Promise.resolve(organizationRoles),
+            }) as OrganizationMembership
+
+            const [
+                schoolMemberships,
+                oldSchoolMemberships,
+            ] = await this.membershipSchools(updatedUser, schools, schoolRoles)
+
+            await manager.remove(oldSchoolMemberships)
+            await manager.save([
+                updatedUser,
+                updatedMembership,
+                ...schoolMemberships,
+            ])
+            return {
+                user: updatedUser,
+                membership: updatedMembership,
+                schoolMemberships,
+            }
+        })
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
