@@ -60,7 +60,8 @@ describe('createEntityFromCsvWithRollBack', () => {
                     connection,
                     file,
                     [processOrganizationFromCSVRow],
-                    adminPermissions
+                    adminPermissions,
+                    undefined
                 )
             expect(fn()).to.be.rejected
 
@@ -92,7 +93,8 @@ describe('createEntityFromCsvWithRollBack', () => {
                 connection,
                 file,
                 [processOrganizationFromCSVRow],
-                adminPermissions
+                adminPermissions,
+                undefined
             )
             organizationCount = await connection.manager
                 .getRepository(Organization)
@@ -124,6 +126,7 @@ describe('createEntityFromCsvWithRollBack', () => {
                 file,
                 [processOrganizationFromCSVRow],
                 adminPermissions,
+                undefined,
                 isDryRun
             )
             organizationCount = await connection.manager

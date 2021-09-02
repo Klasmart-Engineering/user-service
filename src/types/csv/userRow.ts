@@ -1,3 +1,5 @@
+import { HeaderValidation } from './createEntityHeadersCallback'
+
 export interface UserRow {
     organization_name: string
     user_given_name: string
@@ -11,3 +13,35 @@ export interface UserRow {
     school_name?: string
     class_name?: string
 }
+
+export const UserRowUniqueColumns = new Set<keyof UserRow>([
+    'organization_name',
+    'user_given_name',
+    'user_family_name',
+    'user_shortcode',
+    'user_email',
+    'user_phone',
+    'user_date_of_birth',
+    'user_gender',
+    'organization_role_name',
+    'school_name',
+    'class_name',
+])
+
+export const UserRowRequiredColumns = new Set<keyof UserRow>([
+    'organization_name',
+    'user_given_name',
+    'user_family_name',
+    'user_gender',
+    'organization_role_name',
+])
+
+export const UserRowEitherRequiredColumns = [
+    new Set<keyof UserRow>(['user_email', 'user_phone']),
+]
+
+export const UserRowRequirements = new HeaderValidation(
+    UserRowUniqueColumns,
+    UserRowRequiredColumns,
+    UserRowEitherRequiredColumns
+)

@@ -27,7 +27,7 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
 import clean from './utils/clean'
-import { processUserFromCSVRow } from './utils/csv/user'
+import { processUserFromCSVRow, validateUserCSVHeaders } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { processGradeFromCSVRow, setGradeFromToFields } from './utils/csv/grade'
@@ -1081,6 +1081,7 @@ export class Model {
             file,
             [processUserFromCSVRow],
             context.permissions,
+            validateUserCSVHeaders,
             isDryRun
         )
 

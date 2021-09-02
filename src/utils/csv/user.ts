@@ -10,7 +10,7 @@ import { Role } from '../../entities/role'
 import { School } from '../../entities/school'
 import { SchoolMembership } from '../../entities/schoolMembership'
 import { User } from '../../entities/user'
-import { UserRow } from '../../types/csv/userRow'
+import { UserRow, UserRowRequirements } from '../../types/csv/userRow'
 import { generateShortCode } from '../shortcode'
 import { v4 as uuid_v4 } from 'uuid'
 import { addCsvError, validateRow } from '../csv/csvUtils'
@@ -21,6 +21,15 @@ import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
+
+export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
+    headers: (keyof UserRow)[],
+    filename: string,
+    fileErrors: CSVError[]
+) => {
+    fileErrors.push(...UserRowRequirements.validate(headers, filename))
+}
 
 export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     manager: EntityManager,
