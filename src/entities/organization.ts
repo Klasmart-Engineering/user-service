@@ -59,10 +59,10 @@ import {
     editMembershipSchema,
     editMembershipSchemaMetadata,
 } from '../operations/organization'
+import { pickBy } from 'lodash'
 
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
-
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -754,9 +754,8 @@ export class Organization extends BaseEntity {
         }
 
         return getManager().transaction(async (manager) => {
-            const user = await this.findOrCreateUser(
-                existingUser !== undefined,
-                existingUser?.user_id,
+            const user = await this.updateOrCreateUser({
+                user_id: existingUser?.user_id,
                 email,
                 phone,
                 given_name,
@@ -765,8 +764,8 @@ export class Organization extends BaseEntity {
                 username,
                 alternate_email,
                 alternate_phone,
-                gender
-            )
+                gender,
+            })
 
             const membership = await this.membershipOrganization(
                 user,
@@ -1063,25 +1062,23 @@ export class Organization extends BaseEntity {
         return this.findChildEntitiesById(School, schoolIds, variables)
     }
 
-    private async findOrCreateUser(
-        edit: boolean,
-        user_id?: string,
-        email?: string,
-        phone?: string,
-        given_name?: string,
-        family_name?: string,
-        date_of_birth?: string,
-        username?: string,
-        alternate_email?: string | null,
-        alternate_phone?: string | null,
-        gender?: string
-    ): Promise<User> {
+    private async updateOrCreateUser(partialUser: {
+        given_name: string
+        family_name: string
+        gender: string
+        user_id?: string
+        email?: string
+        phone?: string
+        date_of_birth?: string
+        username?: string
+        alternate_email?: string | null
+        alternate_phone?: string | null
+    }): Promise<User> {
         let user: User | undefined
-        if (edit && user_id) {
-            const scope = getRepository(User).createQueryBuilder('user')
-            scope.where('user_id = :user_id', { user_id })
-
-            user = await scope.getOne()
+        // eslint-disable-next-line prefer-const
+        let { user_id, ...rest } = partialUser
+        if (user_id) {
+            user = await User.findOne(user_id)
             if (!user) {
                 user_id = uuid_v4()
                 user = new User() as User
@@ -1092,32 +1089,10 @@ export class Organization extends BaseEntity {
             user = new User()
             user.user_id = user_id
         }
-        user.email = email
-        user.phone = phone
-
-        if (given_name !== undefined) {
-            user.given_name = given_name
-        }
-        if (family_name !== undefined) {
-            user.family_name = family_name
-        }
-        if (date_of_birth !== undefined) {
-            user.date_of_birth = date_of_birth
-        }
-        if (username !== undefined) {
-            user.username = username
-        }
-
-        if (alternate_email !== undefined) {
-            user.alternate_email = alternate_email
-        }
-        if (alternate_phone !== undefined) {
-            user.alternate_phone = alternate_phone
-        }
-
-        if (gender !== undefined) {
-            user.gender = gender
-        }
+        Object.assign(
+            user,
+            pickBy(rest, (v) => v !== undefined)
+        )
         return user
     }
 

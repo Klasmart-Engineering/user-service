@@ -83,6 +83,7 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import {
     createUser as userFactory,
     createAdminUser as adminUserFactory,
+    createUser,
 } from '../factories/user.factory'
 import chaiAsPromised from 'chai-as-promised'
 import { isRequiredArgument } from 'graphql'
@@ -104,6 +105,7 @@ import {
 import { Headers } from 'node-mocks-http'
 import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { fake } from 'sinon'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -235,7 +237,19 @@ describe('organization', () => {
         })
     })
 
-    describe('findOrCreateUser', async () => {
+    describe('updateOrCreateUser', async () => {
+        const allProperties = [
+            'given_name',
+            'family_name',
+            'gender',
+            'email',
+            'phone',
+            'date_of_birth',
+            'username',
+            'alternate_email',
+            'alternate_phone',
+        ]
+
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             organization = await createOrganizationAndValidate(
@@ -244,50 +258,99 @@ describe('organization', () => {
             )
         })
 
-        it('the organization status by default is active', async () => {
-            expect(organization.status).to.eq(Status.ACTIVE)
-        })
-
         it('should assign the old user to the exsting user', async () => {
             let oldUser: User
             let email = user.email ?? ''
-            oldUser = await organization['findOrCreateUser'](
-                true,
-                user.user_id,
+            oldUser = await organization['updateOrCreateUser']({
+                user_id: user.user_id,
                 email,
-                undefined,
-                user.given_name,
-                user.family_name
-            )
+                given_name: user.given_name!,
+                family_name: user.family_name!,
+                gender: user.gender!,
+            })
             expect(oldUser).to.exist
             expect(oldUser.user_id).to.equal(user.user_id)
         })
         it('should assign the new user to a new user with an email', async () => {
             let newUser: User
-            newUser = await organization['findOrCreateUser'](
-                false,
-                undefined,
-                'bob@nowhere.com',
-                undefined,
-                'Bob',
-                'Smith'
-            )
+            newUser = await organization['updateOrCreateUser']({
+                email: 'bob@nowhere.com',
+                given_name: 'Bob',
+                family_name: 'Smith',
+                gender: 'Male',
+            })
             expect(newUser).to.exist
             expect(newUser.email).to.equal('bob@nowhere.com')
         })
 
         it('should assign the new user to a new user with a phone number', async () => {
             let newUser: User
-            newUser = await organization['findOrCreateUser'](
-                false,
-                undefined,
-                undefined,
-                '+44207344141',
-                'Bob',
-                'Smith'
-            )
+            newUser = await organization['updateOrCreateUser']({
+                phone: '+44207344141',
+                given_name: 'Bob',
+                family_name: 'Smith',
+                gender: 'Male',
+            })
             expect(newUser).to.exist
             expect(newUser.phone).to.equal('+44207344141')
+        })
+
+        context('existing user', () => {
+            let oldUser: User
+
+            beforeEach(async () => {
+                oldUser = await createUser({
+                    alternate_email: faker.internet.email(),
+                    alternate_phone: faker.phone.phoneNumber(),
+                }).save()
+            })
+            it('should not clobber User properties if undefined on input', async () => {
+                const updatedInfo = {
+                    given_name: faker.name.firstName(),
+                    family_name: faker.name.lastName(),
+                    gender: 'Female',
+                }
+
+                const newUser = await organization['updateOrCreateUser']({
+                    user_id: oldUser.user_id,
+                    ...updatedInfo,
+                })
+                expect(newUser.user_id).to.equal(oldUser.user_id)
+
+                const changedProperties = Object.keys(updatedInfo)
+                expect(pick(newUser, changedProperties)).to.deep.equal(
+                    updatedInfo
+                )
+
+                const unchangedProperties = allProperties.filter(k => !changedProperties.includes(k))
+                expect(pick(newUser, unchangedProperties)).to.deep.equal(
+                    pick(oldUser, unchangedProperties)
+                )
+            })
+
+            it('should update all defined User properties', async () => {
+                const updatedInfo = {
+                    given_name: faker.name.firstName(),
+                    family_name: faker.name.lastName(),
+                    gender: 'Female',
+                    email: faker.internet.email(),
+                    phone: faker.phone.phoneNumber(),
+                    date_of_birth: '06-1994',
+                    username: faker.internet.userName(),
+                    alternate_email: faker.internet.email(),
+                    alternate_phone: faker.phone.phoneNumber(),
+                }
+
+                const newUser = await organization['updateOrCreateUser']({
+                    user_id: oldUser.user_id,
+                    ...updatedInfo,
+                })
+                expect(newUser.user_id).to.equal(oldUser.user_id)
+
+                expect(pick(newUser, allProperties)).to.deep.equal(
+                    updatedInfo
+                )
+            })
         })
     })
 
