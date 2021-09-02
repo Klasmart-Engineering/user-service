@@ -66,6 +66,7 @@ const typeDefs = gql`
     enum UUIDOperator {
         eq
         neq
+        ex
     }
 
     enum NumberOrDateOperator {

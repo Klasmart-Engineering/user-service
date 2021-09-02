@@ -48,6 +48,8 @@ import {
     getWhereClauseFromFilter,
     filterHasProperty,
     AVOID_NONE_SPECIFIED_BRACKETS,
+    filterHasOperator,
+    getHavingClauseForExclusiveFilter,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { validateDOB, validateEmail, validatePhone } from './utils/validations'
@@ -377,8 +379,12 @@ export class Model {
             PermissionName.attend_live_class_as_a_student_187
         const teacherPermission =
             PermissionName.attend_live_class_as_a_teacher_186
+
         const permissionFilterApplied =
             filter && filterHasProperty('permissionIds', filter)
+        const exclusiveOperatorApplied =
+            filter && filterHasOperator('ex', 'classId', filter)
+        const needsRawData = permissionFilterApplied && exclusiveOperatorApplied
 
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
 
@@ -398,8 +404,42 @@ export class Model {
             }
 
             if (filterHasProperty('classId', filter)) {
-                scope.leftJoin('User.classesStudying', 'ClassStudying')
-                scope.leftJoin('User.classesTeaching', 'ClassTeaching')
+                scope
+                    .leftJoin('User.classesStudying', 'ClassStudying')
+                    .leftJoin('User.classesTeaching', 'ClassTeaching')
+                    .leftJoin(
+                        Class,
+                        'Class',
+                        'ClassStudying.class_id = Class.class_id OR ClassTeaching.class_id = Class.class_id'
+                    )
+
+                if (exclusiveOperatorApplied) {
+                    const {
+                        query,
+                        parameters,
+                    } = getHavingClauseForExclusiveFilter(
+                        filter,
+                        'classId',
+                        'Class.class_id'
+                    )
+
+                    scope
+                        .groupBy('User.user_id')
+                        .addGroupBy('OrgMembership.user_id')
+                        .addGroupBy('OrgMembership.organization_id')
+                        .andHaving(query, parameters)
+                        .select([
+                            'User.user_id AS user_id',
+                            'User.given_name AS given_name',
+                            'User.family_name AS family_name',
+                            'User.avatar AS avatar',
+                            'User.status AS status',
+                            'User.email AS email',
+                            'User.phone AS phone',
+                            'User.alternate_email AS alternate_email',
+                            'User.alternate_phone AS alternate_phone',
+                        ])
+                }
             }
 
             if (filterHasProperty('permissionIds', filter)) {
@@ -419,7 +459,7 @@ export class Model {
                     .addGroupBy('User.user_id')
                     .addGroupBy('OrgMembership.user_id')
                     .addGroupBy('OrgMembership.organization_id')
-                    .having('bool_and(Permission.allow) = :allowed', {
+                    .andHaving('bool_and(Permission.allow) = :allowed', {
                         allowed: true,
                     })
                     .select([
@@ -469,7 +509,7 @@ export class Model {
                     sort,
                 },
             },
-            permissionFilterApplied
+            needsRawData
         )
 
         for (const edge of data.edges) {

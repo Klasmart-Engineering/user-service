@@ -18,8 +18,20 @@ type FilteringOperator =
     | 'contains'
     | 'in'
     | 'nin'
+    | 'ex'
 
-interface IFilter {
+type FilteringWhereOperator =
+    | 'eq'
+    | 'neq'
+    | 'lt'
+    | 'lte'
+    | 'gt'
+    | 'gte'
+    | 'contains'
+    | 'in'
+    | 'nin'
+
+export interface IFilter {
     operator: FilteringOperator
     value: FilteringValue
     caseInsensitive?: boolean
@@ -94,6 +106,12 @@ export function getWhereClauseFromFilter(
 
             // rule: all string contains the empty string
             if (data.operator === 'contains' && data.value === '') {
+                qb.andWhere('true') // avoid returning empty brackets
+                continue
+            }
+
+            // ex operator does not use where it is applied in a having clause
+            if (data.operator === 'ex') {
                 qb.andWhere('true') // avoid returning empty brackets
                 continue
             }
@@ -232,6 +250,25 @@ export function getWhereClauseFromFilter(
     })
 }
 
+export function getHavingClauseForExclusiveFilter(
+    filter: IEntityFilter,
+    filterName: string,
+    columnAlias: string
+) {
+    const classFilter = filter[filterName] as IFilter
+    const uniqueId = uuid_v4()
+    const value = `%${classFilter.value}%`
+    const alias = columnAlias
+        .split('.')
+        .map((part) => `"${part}"`)
+        .join('.')
+
+    const query = `STRING_AGG(${alias}::text, ',') NOT LIKE :${uniqueId} OR STRING_AGG(${alias}::text, ',') IS NULL`
+    const parameters = { [uniqueId]: value }
+
+    return { query, parameters }
+}
+
 // returns true if the specified property is anywhere in the filter schema.
 // used to check for entity relations that require SQL joins.
 export function filterHasProperty(
@@ -251,6 +288,17 @@ export function filterHasProperty(
     }
 
     return hasProperty
+}
+
+// return true if the specified operator is applied in a specfied filter in the filter schema
+// used to check if you are using a certain operator in a certain filter
+export function filterHasOperator(
+    operator: string,
+    filterName: string,
+    filter: IEntityFilter
+) {
+    const selectedFilter = filter[filterName] as IFilter
+    return selectedFilter.operator === operator
 }
 
 function logicalOperationFilter(
@@ -277,8 +325,8 @@ function logicalOperationFilter(
 }
 
 // transaltes a given filter operator to the SQL equivalent
-function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
-    const operators: Record<FilteringOperator, string> = {
+function getSQLOperatorFromFilterOperator(op: FilteringWhereOperator) {
+    const operators: Record<FilteringWhereOperator, string> = {
         eq: '=',
         neq: '!=',
         gt: '>',
@@ -322,7 +370,7 @@ export function processComposedValue(
 
 // changes the operator when it has not to be the received from filter data
 export function setOperatorInComposedValue(
-    operator: FilteringOperator,
+    operator: FilteringWhereOperator,
     alias: string
 ) {
     switch (alias) {
