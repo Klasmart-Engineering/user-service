@@ -17,7 +17,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
 import { OrganizationMembership } from './organizationMembership'
-import { Organization, padShortDob } from './organization'
+import { Organization } from './organization'
 import { Class } from './class'
 import { SchoolMembership } from './schoolMembership'
 import { OrganizationOwnership } from './organizationOwnership'
@@ -29,6 +29,7 @@ import { Status } from './status'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
+import clean from '../utils/clean'
 
 @Entity()
 export class User extends BaseEntity {
@@ -293,7 +294,7 @@ export class User extends BaseEntity {
                 }
             }
             if (date_of_birth) {
-                date_of_birth = padShortDob(date_of_birth)
+                date_of_birth = clean.dateOfBirth(date_of_birth)
                 if (!isDOB(date_of_birth)) {
                     date_of_birth = undefined
                 }

@@ -59,13 +59,6 @@ import {
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 
-export const padShortDob = (dob?: string) => {
-    if (dob && dob.length > 0) {
-        return dob.length < 7 ? '0' + dob : dob
-    } else {
-        return dob
-    }
-}
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -668,12 +661,8 @@ export class Organization extends BaseEntity {
 
         alternate_email = clean.email(alternate_email)
         alternate_phone = clean.phone(alternate_phone)
-
-        if (typeof shortcode === 'string') {
-            shortcode = shortcode.toUpperCase()
-        }
-
-        date_of_birth = padShortDob(date_of_birth)
+        shortcode = clean.shortcode(shortcode)
+        date_of_birth = clean.dateOfBirth(date_of_birth)
 
         const { errors, validData } = validateApiCall(
             {
@@ -875,7 +864,7 @@ export class Organization extends BaseEntity {
                 alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
             }
 
-            date_of_birth = padShortDob(date_of_birth)
+            date_of_birth = clean.dateOfBirth(date_of_birth)
 
             const result = await this._setMembership(
                 false,

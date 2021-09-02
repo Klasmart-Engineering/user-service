@@ -11,7 +11,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
-import { Organization, padShortDob } from './entities/organization'
+import { Organization } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
 import { AgeRange } from './entities/ageRange'
 import CategoriesInitializer from './initializers/categories'
@@ -189,7 +189,7 @@ export class Model {
             }
         }
         if (date_of_birth) {
-            date_of_birth = padShortDob(date_of_birth)
+            date_of_birth = clean.dateOfBirth(date_of_birth)
             if (!isDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
