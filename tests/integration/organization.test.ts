@@ -1760,7 +1760,7 @@ describe('organization', () => {
             async function expectTotalUsersWithEmail(expectedCount: number) {
                 const actualCount = await connection
                     .getRepository(User)
-                    .count({ email: defaultArguments.email })
+                    .count({ email: defaultArguments.email as string | undefined })
 
                 expect(actualCount).to.equal(expectedCount)
             }

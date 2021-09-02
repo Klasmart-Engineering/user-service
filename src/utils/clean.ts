@@ -1,17 +1,35 @@
-import { normalizedLowercaseTrimmed } from '../entities/organization'
+import { isEmail, isPhone } from './validations'
+
+export const normalizedLowercaseTrimmed = (x?: string) =>
+    x?.normalize('NFKC').toLowerCase().trim()
+
+export function unswapEmailAndPhone(
+    email?: string | null,
+    phone?: string | null
+): { email: string | undefined | null; phone: string | undefined | null } {
+    if (email !== null && !isEmail(email) && isPhone(email)) {
+        phone = email
+        email = undefined
+    } else if (phone !== null && !isPhone(phone) && isEmail(phone)) {
+        email = phone
+        phone = undefined
+    }
+
+    return { email, phone }
+}
 
 export default {
-    contactInfo: function (value?: string | null) {
+    contactInfo: function (value: string | null | undefined) {
         if (value === null || value === '') return null
         if (typeof value === 'undefined') return undefined
         return normalizedLowercaseTrimmed(value)
     },
 
-    email: function (value?: string | null) {
+    email: function <V extends string | null | undefined>(value: V) {
         return this.contactInfo(value)
     },
 
-    phone: function (value?: string | null) {
+    phone: function (value: string | null | undefined) {
         return this.contactInfo(value)
     },
     /**

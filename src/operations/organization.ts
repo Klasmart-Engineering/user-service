@@ -6,8 +6,8 @@ import { userValidations } from '../entities/validations/user'
 import { APISchema, APISchemaMetadata } from '../types/api'
 
 export interface InviteUserArguments {
-    email?: string
-    phone?: string
+    email?: string | null
+    phone?: string | null
     given_name: string
     family_name: string
     date_of_birth?: string

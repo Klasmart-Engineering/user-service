@@ -1,10 +1,7 @@
 import { EntityManager, In } from 'typeorm'
 
 import { Class } from '../../entities/class'
-import {
-    normalizedLowercaseTrimmed,
-    Organization,
-} from '../../entities/organization'
+import { Organization } from '../../entities/organization'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { Role } from '../../entities/role'
 import { School } from '../../entities/school'
@@ -21,6 +18,7 @@ import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { normalizedLowercaseTrimmed } from '../../utils/clean'
 
 export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     manager: EntityManager,

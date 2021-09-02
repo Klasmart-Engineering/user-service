@@ -597,8 +597,8 @@ export async function addUserToOrganization(
 export async function inviteUser(
     testClient: ApolloServerTestClient,
     organizationId: string,
-    email?: string,
-    phone?: string,
+    email?: string | null,
+    phone?: string | null,
     given_name?: string,
     family_name?: string,
     date_of_birth?: string,

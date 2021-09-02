@@ -41,8 +41,7 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../utils/shortcode'
-import clean from '../utils/clean'
-import { isEmail, isPhone } from '../utils/validations'
+import clean, { unswapEmailAndPhone } from '../utils/clean'
 import validationConstants from './validations/constants'
 import {
     APIError,
@@ -60,9 +59,6 @@ import {
     editMembershipSchemaMetadata,
 } from '../operations/organization'
 import { pickBy } from 'lodash'
-
-export const normalizedLowercaseTrimmed = (x?: string) =>
-    x?.normalize('NFKC').toLowerCase().trim()
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -557,21 +553,6 @@ export class Organization extends BaseEntity {
         }
     }
 
-    private unswapEmailPhone(
-        email?: string,
-        phone?: string
-    ): { email: string | undefined; phone: string | undefined } {
-        if (!isEmail(email) && isPhone(email)) {
-            phone = email
-            email = undefined
-        } else if (!isPhone(phone) && isEmail(phone)) {
-            email = phone
-            phone = undefined
-        }
-
-        return { email, phone }
-    }
-
     public async inviteUser(
         {
             email,
@@ -610,19 +591,10 @@ export class Organization extends BaseEntity {
             return null
         }
 
-        const unSwapped = this.unswapEmailPhone(email, phone)
+        ;({ email, phone } = unswapEmailAndPhone(email, phone))
 
-        if (unSwapped.email) {
-            email = normalizedLowercaseTrimmed(unSwapped.email)
-        } else {
-            email = undefined
-        }
-        if (unSwapped.phone) {
-            phone = normalizedLowercaseTrimmed(unSwapped.phone)
-        } else {
-            phone = undefined
-        }
-
+        email = clean.email(email)
+        phone = clean.phone(phone)
         alternate_email = clean.email(alternate_email)
         alternate_phone = clean.phone(alternate_phone)
         shortcode = clean.shortcode(shortcode)
@@ -1067,8 +1039,8 @@ export class Organization extends BaseEntity {
         family_name: string
         gender: string
         user_id?: string
-        email?: string
-        phone?: string
+        email?: string | null
+        phone?: string | null
         date_of_birth?: string
         username?: string
         alternate_email?: string | null
