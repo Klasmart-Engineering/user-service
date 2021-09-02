@@ -46,6 +46,11 @@ const typeDefs = gql`
         value: Int!
     }
 
+    input StringArrayFilter {
+        operator: ArrayOperator!
+        value: [String!]
+    }
+
     # Operators and Values Types
     input AgeRangeValue {
         value: Int!
@@ -74,6 +79,11 @@ const typeDefs = gql`
 
     enum BooleanOperator {
         eq
+    }
+
+    enum ArrayOperator {
+        in
+        nin
     }
 `
 export default function getDefault(

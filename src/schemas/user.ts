@@ -75,7 +75,6 @@ const typeDefs = gql`
         avatar: StringFilter
         email: StringFilter
         phone: StringFilter
-        permissionId: StringFilter
 
         # joined columns
         organizationId: UUIDFilter
@@ -83,6 +82,7 @@ const typeDefs = gql`
         schoolId: UUIDFilter
         organizationUserStatus: StringFilter
         classId: UUIDFilter
+        permissionIds: StringArrayFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]

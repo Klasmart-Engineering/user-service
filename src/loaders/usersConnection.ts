@@ -33,7 +33,7 @@ export const orgsForUsers = async (
             scope.leftJoin('Memberships.roles', 'Roles')
         }
 
-        if (filterHasProperty('permissionId', filter)) {
+        if (filterHasProperty('permissionIds', filter)) {
             if (!filterHasProperty('roleId', filter)) {
                 scope.leftJoinAndSelect('Memberships.roles', 'Roles')
             }
@@ -47,7 +47,7 @@ export const orgsForUsers = async (
                 schoolId: '',
                 roleId: 'Roles.role_id',
                 organizationUserStatus: 'Memberships.status',
-                permissionId: 'Permission.permission_id',
+                permissionIds: 'Permission.permission_id',
                 userId: '',
                 phone: '',
                 classId: '',
@@ -102,7 +102,7 @@ export const schoolsForUsers = async (
             scope.leftJoinAndSelect('Memberships.roles', 'Roles')
         }
 
-        if (filterHasProperty('permissionId', filter)) {
+        if (filterHasProperty('permissionIds', filter)) {
             if (!filterHasProperty('roleId', filter)) {
                 scope.leftJoinAndSelect('Memberships.roles', 'Roles')
             }
@@ -115,7 +115,7 @@ export const schoolsForUsers = async (
                 organizationId: 'Organization.organization_id',
                 schoolId: 'Memberships.school_id',
                 roleId: 'Roles.role_id',
-                permissionId: 'Permission.permission_id',
+                permissionIds: 'Permission.permission_id',
                 organizationUserStatus: '',
                 userId: '',
                 phone: '',
@@ -171,7 +171,7 @@ export const rolesForUsers = async (
         .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        if (filterHasProperty('permissionId', filter)) {
+        if (filterHasProperty('permissionIds', filter)) {
             orgScope.innerJoinAndSelect('OrgRoles.permissions', 'Permission')
             schoolScope.innerJoinAndSelect(
                 'SchoolRoles.permissions',
@@ -186,7 +186,7 @@ export const rolesForUsers = async (
                 roleId: 'OrgRoles.role_id',
                 phone: '',
                 organizationUserStatus: '',
-                permissionId: 'Permission.permission_id',
+                permissionIds: 'Permission.permission_id',
                 userId: '',
                 classId: '',
             })
@@ -202,7 +202,7 @@ export const rolesForUsers = async (
                 schoolId: 'SchoolMemberships.school_id',
                 roleId: 'SchoolRoles.role_id',
                 organizationUserStatus: '',
-                permissionId: 'Permission.permission_id',
+                permissionIds: 'Permission.permission_id',
                 userId: '',
                 phone: '',
                 classId: '',

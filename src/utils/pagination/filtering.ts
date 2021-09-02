@@ -8,7 +8,16 @@ export interface IEntityFilter {
     AND?: IEntityFilter[]
 }
 
-type FilteringOperator = 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains'
+type FilteringOperator =
+    | 'eq'
+    | 'neq'
+    | 'lt'
+    | 'lte'
+    | 'gt'
+    | 'gte'
+    | 'contains'
+    | 'in'
+    | 'nin'
 
 interface IFilter {
     operator: FilteringOperator
@@ -27,7 +36,7 @@ interface FilteringPropsParsed {
 }
 
 type ColumnAliasValue = string | IMultipleColumn
-type CommonValue = string | number | boolean
+type CommonValue = string | number | boolean | string[]
 type ComposedValue = Record<string, CommonValue>
 type FilteringValue = CommonValue | ComposedValue
 type ColumnAliases = Record<string, ColumnAliasValue> // use empty string to ignore
@@ -129,7 +138,7 @@ export function getWhereClauseFromFilter(
 
                     // resetting value and operator to work properly with the given compound value
                     currentValue = processComposedValue(
-                        currentValue,
+                        currentValue as ComposedValue,
                         alias
                     ) as CommonValue
 
@@ -277,6 +286,8 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
         lt: '<',
         lte: '<=',
         contains: 'LIKE',
+        in: 'IN',
+        nin: 'NOT IN',
     }
 
     return operators[op]
@@ -332,9 +343,13 @@ function createWhereCondition(
 ) {
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`
-    } else {
-        return `${alias} ${sqlOperator} :${uniqueId}`
     }
+
+    if (sqlOperator === 'IN' || sqlOperator === 'NOT IN') {
+        return `${alias} ${sqlOperator} (:...${uniqueId})`
+    }
+
+    return `${alias} ${sqlOperator} :${uniqueId}`
 }
 
 // parses the given property name for use in SQL

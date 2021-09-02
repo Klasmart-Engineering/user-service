@@ -378,7 +378,7 @@ export class Model {
         const teacherPermission =
             PermissionName.attend_live_class_as_a_teacher_186
         const permissionFilterApplied =
-            filter && filterHasProperty('permissionId', filter)
+            filter && filterHasProperty('permissionIds', filter)
 
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
 
@@ -402,7 +402,7 @@ export class Model {
                 scope.leftJoin('User.classesTeaching', 'ClassTeaching')
             }
 
-            if (filterHasProperty('permissionId', filter)) {
+            if (filterHasProperty('permissionIds', filter)) {
                 if (!filterHasProperty('roleId', filter)) {
                     scope.innerJoin(
                         'OrgMembership.roles',
@@ -415,7 +415,7 @@ export class Model {
                         'RoleMembershipsOrganizationMembership.permissions',
                         'Permission'
                     )
-                    .groupBy('Permission.permission_name')
+                    .groupBy('Permission.permission_id')
                     .addGroupBy('User.user_id')
                     .addGroupBy('OrgMembership.user_id')
                     .addGroupBy('OrgMembership.organization_id')
@@ -430,8 +430,8 @@ export class Model {
                         'User.status AS status',
                         'User.email AS email',
                         'User.phone AS phone',
-                        'User.alternate_email AS email',
-                        'User.alternate_phone AS phone',
+                        'User.alternate_email AS alternate_email',
+                        'User.alternate_phone AS alternate_phone',
                         'Permission.permission_id AS permission_id',
                     ])
             }
@@ -443,7 +443,7 @@ export class Model {
                     userId: "concat(User.user_id, '')",
                     phone: 'User.phone',
                     schoolId: 'SchoolMembership.school_id',
-                    permissionId: 'Permission.permission_id',
+                    permissionIds: 'Permission.permission_id',
                     classId: {
                         operator: 'OR',
                         aliases: [
