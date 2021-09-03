@@ -7,8 +7,13 @@ import {
 import { createTestConnection } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../../utils/testConfig'
 import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
+import {
+    classesConnection,
     getAllOrganizations,
     userConnection,
 } from '../../utils/operations/modelOps'
@@ -16,16 +21,14 @@ import {
     createOrganizationAndValidate,
     addOrganizationToUserAndValidate,
     addSchoolToUser,
+    userToPayload,
 } from '../../utils/operations/userOps'
 import { Model } from '../../../src/model'
 import { User } from '../../../src/entities/user'
 import { Organization } from '../../../src/entities/organization'
 import chaiAsPromised from 'chai-as-promised'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
-import {
-    grantPermission,
-    revokePermission,
-} from '../../utils/operations/roleOps'
+import { grantPermission } from '../../utils/operations/roleOps'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { Role } from '../../../src/entities/role'
 import { School } from '../../../src/entities/school'
@@ -38,9 +41,16 @@ import {
     addStudentToClass,
     addTeacherToClass,
 } from '../../utils/operations/classOps'
-import { AuthenticationError } from 'apollo-server-express'
+import { Class } from '../../../src/entities/class'
+import { pick } from 'lodash'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('isAdmin', () => {
     let connection: Connection
@@ -569,6 +579,220 @@ describe('isAdmin', () => {
                 )
 
                 expect(usersConnection.totalCount).to.eq(11)
+            })
+        })
+    })
+
+    describe('classes', () => {
+        type SimplifiedClassConnectionNode = Pick<
+            ClassConnectionNode,
+            'id' | 'name' | 'status'
+        >
+        let user: User
+        let token: string
+        let organizations: Organization[]
+        let allClasses: SimplifiedClassConnectionNode[]
+        let classesForOrganization: {
+            [key: string]: SimplifiedClassConnectionNode[]
+        }
+
+        const queryVisibleClasses = async (token: string) => {
+            const response = await classesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+            return response.edges
+                .map((edge) => edge.node)
+                .map((node) => pick(node, ['id', 'name', 'status']))
+        }
+
+        const grantPermissionFactory = async ({
+            user,
+            organization,
+            permissions,
+        }: {
+            user: User
+            organization: Organization
+            permissions: PermissionName | PermissionName[]
+        }) => {
+            const role = await createRole(undefined, organization).save()
+            await OrganizationMembership.createQueryBuilder()
+                .relation('roles')
+                .of({
+                    user_id: user.user_id,
+                    organization_id: organization.organization_id,
+                })
+                .add(role)
+            await Role.createQueryBuilder()
+                .relation('permissions')
+                .of(role)
+                .add(permissions)
+        }
+
+        beforeEach(async () => {
+            organizations = await Organization.save([
+                createOrganization(),
+                createOrganization(),
+                createOrganization(),
+            ])
+            allClasses = (
+                await Class.save([
+                    createClass([], organizations[0]),
+                    createClass([], organizations[0]),
+                    createClass([], organizations[1]),
+                    createClass([], organizations[2]),
+                ])
+            ).map((cls) => {
+                return {
+                    id: cls.class_id,
+                    name: cls.class_name,
+                    status: cls.status,
+                }
+            })
+            classesForOrganization = {
+                [organizations[0].organization_id]: allClasses.slice(0, 2),
+                [organizations[1].organization_id]: [allClasses[2]],
+                [organizations[2].organization_id]: [allClasses[3]],
+            }
+        })
+
+        context('admin', () => {
+            beforeEach(async () => {
+                user = await createAdminUser(testClient)
+                token = generateToken(userToPayload(user))
+
+                await createOrganizationMembership({
+                    user,
+                    organization: organizations[0],
+                }).save()
+            })
+
+            it('allows access to all classes across all organizations, regardless of membership and permissions', async () => {
+                const visibleClasses = await queryVisibleClasses(token)
+                expect(visibleClasses).to.deep.equalInAnyOrder(allClasses)
+            })
+        })
+        context('non-admin', () => {
+            let school: School
+            let classAssignedToSchool: SimplifiedClassConnectionNode
+            let organizationWithMembership: Organization
+            beforeEach(async () => {
+                user = await createUser().save()
+                token = generateToken(userToPayload(user))
+
+                organizationWithMembership = organizations[0]
+
+                await createOrganizationMembership({
+                    user,
+                    organization: organizationWithMembership,
+                }).save()
+
+                school = await createSchool(organizationWithMembership).save()
+
+                classAssignedToSchool = allClasses[0]
+
+                await createSchoolMembership({ user, school }).save()
+
+                await School.createQueryBuilder()
+                    .relation('classes')
+                    .of(school)
+                    .add(classAssignedToSchool.id)
+            })
+
+            context('view_classes_20114', () => {
+                beforeEach(async () => {
+                    await grantPermissionFactory({
+                        user,
+                        permissions: PermissionName.view_classes_20114,
+                        organization: organizationWithMembership,
+                    })
+                })
+
+                it('shows all classes in the Organization they belong to', async () => {
+                    const visibleClasses = await queryVisibleClasses(token)
+                    expect(visibleClasses).to.deep.equalInAnyOrder(
+                        classesForOrganization[
+                            organizationWithMembership.organization_id
+                        ]
+                    )
+                })
+            })
+
+            context('view_school_classes_20117', () => {
+                beforeEach(async () => {
+                    await grantPermissionFactory({
+                        user,
+                        permissions: PermissionName.view_school_classes_20117,
+                        organization: organizationWithMembership,
+                    })
+                })
+
+                it('shows all classes in the Schools they belong to', async () => {
+                    const visibleClasses = await queryVisibleClasses(token)
+                    expect(visibleClasses).to.deep.equal([
+                        classAssignedToSchool,
+                    ])
+                })
+            })
+
+            context('view_classes_20114 AND view_school_classes_20117', () => {
+                context('in the same organization', () => {
+                    beforeEach(async () => {
+                        await grantPermissionFactory({
+                            user,
+                            permissions: [
+                                PermissionName.view_classes_20114,
+                                PermissionName.view_school_classes_20117,
+                            ],
+                            organization: organizationWithMembership,
+                        })
+                    })
+                    it('shows all classes in the Organization', async () => {
+                        const visibleClasses = await queryVisibleClasses(token)
+                        expect(visibleClasses).to.deep.equalInAnyOrder(
+                            classesForOrganization[
+                                organizationWithMembership.organization_id
+                            ]
+                        )
+                    })
+                })
+
+                context('in different organizations', () => {
+                    let otherOrganizationWithMembership: Organization
+                    beforeEach(async () => {
+                        otherOrganizationWithMembership = organizations[1]
+                        await createOrganizationMembership({
+                            user,
+                            organization: otherOrganizationWithMembership,
+                        }).save()
+
+                        await grantPermissionFactory({
+                            user,
+                            permissions: [PermissionName.view_classes_20114],
+                            organization: otherOrganizationWithMembership,
+                        })
+
+                        await grantPermissionFactory({
+                            user,
+                            permissions: [
+                                PermissionName.view_school_classes_20117,
+                            ],
+                            organization: organizationWithMembership,
+                        })
+                    })
+
+                    it('shows classes across both organizations', async () => {
+                        const visibleClasses = await queryVisibleClasses(token)
+                        expect(visibleClasses).to.deep.equalInAnyOrder([
+                            classAssignedToSchool,
+                            ...classesForOrganization[
+                                otherOrganizationWithMembership.organization_id
+                            ],
+                        ])
+                    })
+                })
             })
         })
     })
