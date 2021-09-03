@@ -413,13 +413,19 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             scope
                 .leftJoin('Class.schools', 'School')
                 .leftJoin('School.memberships', 'SchoolMembership')
-                .where('Class.organization IN (:...classOrgs)', { classOrgs })
-                .orWhere(
-                    'Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
-                    {
-                        user_id: userId,
-                        schoolOrgs,
-                    }
+                .where(
+                    // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
+                    new Brackets((qb) => {
+                        qb.where('Class.organization IN (:...classOrgs)', {
+                            classOrgs,
+                        }).orWhere(
+                            'Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
+                            {
+                                user_id: userId,
+                                schoolOrgs,
+                            }
+                        )
+                    })
                 )
             return
         }
