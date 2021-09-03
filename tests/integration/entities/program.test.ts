@@ -36,6 +36,7 @@ import { Program } from '../../../src/entities/program'
 import { Subject } from '../../../src/entities/subject'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
+import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
@@ -71,12 +72,15 @@ describe('program', () => {
 
     describe('delete', () => {
         context('when user is not logged in', () => {
-            it('cannot find the program', async () => {
-                const gqlBool = await deleteProgram(testClient, program.id, {
+            it('fails authentication', async () => {
+                const gqlResult = deleteProgram(testClient, program.id, {
                     authorization: undefined,
                 })
 
-                expect(gqlBool).to.be.undefined
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
             })
         })
 

@@ -176,8 +176,6 @@ export class Model {
         date_of_birth,
         username,
     }: Partial<User>) {
-        console.info('Unauthenticated endpoint call newUser')
-
         const newUser = new User()
         if (email) {
             if (!isEmail(email)) {
@@ -223,7 +221,6 @@ export class Model {
         alternate_email,
         alternate_phone,
     }: Partial<User>) {
-        console.info('Unauthenticated endpoint call setUser')
         if (email) {
             if (!isEmail(email)) {
                 email = undefined
@@ -271,8 +268,6 @@ export class Model {
         return user
     }
     public async getUser(user_id: string) {
-        console.info('Unauthenticated endpoint call getUser')
-
         const user = await this.userRepository.findOneOrFail(user_id)
         return user
     }
@@ -321,7 +316,6 @@ export class Model {
         phone,
         shortCode,
     }: Organization) {
-        console.info('Unauthenticated endpoint call setOrganization')
         const organization = await this.organizationRepository.findOneOrFail(
             organization_id
         )
@@ -346,8 +340,6 @@ export class Model {
         return organization
     }
     public async getOrganization(organization_id: string) {
-        console.info('Unauthenticated endpoint call getOrganization')
-
         const organization = await this.organizationRepository.findOne(
             organization_id
         )
@@ -898,8 +890,6 @@ export class Model {
     }
 
     public async getRole({ role_id }: Role) {
-        console.info('Unauthenticated endpoint call getRole')
-
         try {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
@@ -909,8 +899,6 @@ export class Model {
     }
 
     public async getRoles() {
-        console.info('Unauthenticated endpoint call getRoles')
-
         try {
             const roles = await this.roleRepository.find()
             return roles
@@ -920,8 +908,6 @@ export class Model {
     }
 
     public async getClass({ class_id }: Class) {
-        console.info('Unauthenticated endpoint call getClass')
-
         try {
             const _class = await this.classRepository.findOneOrFail({
                 class_id,
@@ -932,8 +918,6 @@ export class Model {
         }
     }
     public async getClasses() {
-        console.info('Unauthenticated endpoint call getClasses')
-
         try {
             const classes = await this.classRepository.find()
             return classes
@@ -943,8 +927,6 @@ export class Model {
     }
 
     public async getSchool({ school_id }: School) {
-        console.info('Unauthenticated endpoint call getSchool')
-
         try {
             const school = await this.schoolRepository.findOneOrFail({
                 school_id,

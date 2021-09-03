@@ -126,9 +126,12 @@ describe('organization', () => {
             phone: '010-1111-2222',
             shortCode: 'SC',
         }
+        let arbitraryUserToken: string
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
+            await createNonAdminUser(testClient)
+            arbitraryUserToken = getNonAdminAuthToken()
             organization = await createOrganizationAndValidate(
                 testClient,
                 user.user_id
@@ -147,7 +150,8 @@ describe('organization', () => {
                 const gqlOrg = await updateOrganization(
                     testClient,
                     organizationId,
-                    mods
+                    mods,
+                    { authorization: arbitraryUserToken }
                 )
 
                 expect(gqlOrg).to.be.null
@@ -7680,6 +7684,7 @@ describe('organization', () => {
 
     describe('getClasses', () => {
         let user: User
+        let userToken: string
         let organization: Organization
         let class1: Class
         let class2: Class
@@ -7690,11 +7695,15 @@ describe('organization', () => {
         let school1Id: string
         let school2Id: string
         let systemRoles: any
+        let arbitraryUserToken: string
 
         beforeEach(async () => {
             systemRoles = await getSystemRoleIds()
             const orgOwner = await createAdminUser(testClient)
+            await createNonAdminUser(testClient)
+            arbitraryUserToken = getNonAdminAuthToken()
             user = await createNonAdminUser(testClient)
+            userToken = getNonAdminAuthToken()
             organization = await createOrganizationAndValidate(
                 testClient,
                 orgOwner.user_id
@@ -7766,7 +7775,7 @@ describe('organization', () => {
                     testClient,
                     organization.organization_id,
                     {
-                        authorization: undefined,
+                        authorization: arbitraryUserToken,
                     }
                 )
 
@@ -7781,13 +7790,17 @@ describe('organization', () => {
                     beforeEach(async () => {
                         const role = await createRole(
                             testClient,
-                            organization.organization_id
+                            organization.organization_id,
+                            getAdminAuthToken()
                         )
                         await addRoleToOrganizationMembership(
                             testClient,
                             user.user_id,
                             organization.organization_id,
-                            role.role_id
+                            role.role_id,
+                            {
+                                authorization: getAdminAuthToken(),
+                            }
                         )
                     })
 
@@ -7795,7 +7808,7 @@ describe('organization', () => {
                         const gqlClasses = await listClasses(
                             testClient,
                             organization.organization_id,
-                            { authorization: getNonAdminAuthToken() }
+                            { authorization: userToken }
                         )
 
                         expect(gqlClasses).to.deep.equal([])
@@ -7813,7 +7826,10 @@ describe('organization', () => {
                         testClient,
                         user.user_id,
                         organization.organization_id,
-                        schoolAdminRoleId
+                        schoolAdminRoleId,
+                        {
+                            authorization: getAdminAuthToken(),
+                        }
                     )
                 })
 
@@ -7821,7 +7837,7 @@ describe('organization', () => {
                     const gqlClasses = await listClasses(
                         testClient,
                         organization.organization_id,
-                        { authorization: getNonAdminAuthToken() }
+                        { authorization: userToken }
                     )
                     expect(gqlClasses.length).to.equal(1)
                     expect(gqlClasses[0].class_id).to.equal(class1.class_id)
@@ -7841,11 +7857,13 @@ describe('organization', () => {
                                     authorization: getAdminAuthToken(),
                                 }
                             )
+
                             await addRoleToOrganizationMembership(
                                 testClient,
                                 user.user_id,
                                 organization.organization_id,
-                                orgAdminRoleId
+                                orgAdminRoleId,
+                                { authorization: getAdminAuthToken() }
                             )
                         })
 
@@ -7853,7 +7871,7 @@ describe('organization', () => {
                             const gqlClasses = await listClasses(
                                 testClient,
                                 organization.organization_id,
-                                { authorization: getNonAdminAuthToken() }
+                                { authorization: userToken }
                             )
 
                             expect(
