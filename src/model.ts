@@ -383,8 +383,10 @@ export class Model {
         const permissionFilterApplied =
             filter && filterHasProperty('permissionIds', filter)
         const exclusiveOperatorApplied =
-            filter && filterHasOperator('ex', 'classId', filter)
-        const needsRawData = permissionFilterApplied && exclusiveOperatorApplied
+            filter &&
+            filterHasProperty('classId', filter) &&
+            filterHasOperator('ex', 'classId', filter)
+        const needsRawData = permissionFilterApplied || exclusiveOperatorApplied
 
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
 
