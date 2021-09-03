@@ -1369,13 +1369,7 @@ describe('model', () => {
 
                 expect(usersConnection?.totalCount).to.eql(5)
                 expect(usersConnection?.edges.length).to.equal(3)
-
-                for (const e of usersConnection?.edges) {
-                    expect(e.node.roles.length).to.equal(2)
-                    for (const r of e.node.roles) {
-                        expect(r.id).to.eq(role2.role_id)
-                    }
-                }
+                // We are filtering on users by roles not what roles the users that we find have
 
                 for (let i = 0; i < 3; i++) {
                     expect(usersConnection?.edges[i].node.id).to.equal(
