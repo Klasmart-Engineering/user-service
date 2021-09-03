@@ -755,11 +755,9 @@ export class Model {
             sort,
         }: IPaginationArgs<Class>
     ) {
+        // Select only the ClassConnectionNode fields
+        scope.select(['Class.class_id', 'Class.class_name', 'Class.status'])
         if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('Class.organization', 'Organization')
-            }
-
             if (
                 filterHasProperty('ageRangeValueFrom', filter) ||
                 filterHasProperty('ageRangeUnitFrom', filter) ||
@@ -767,24 +765,24 @@ export class Model {
                 filterHasProperty('ageRangeUnitTo', filter)
             ) {
                 scope
-                    .leftJoinAndSelect('Class.age_ranges', 'AgeRange')
+                    .innerJoin('Class.age_ranges', 'AgeRange')
                     .where(AVOID_NONE_SPECIFIED_BRACKETS)
             }
 
             if (filterHasProperty('schoolId', filter)) {
-                scope.leftJoinAndSelect('Class.schools', 'School')
+                scope.innerJoin('Class.schools', 'School')
             }
 
             if (filterHasProperty('gradeId', filter)) {
-                scope.leftJoinAndSelect('Class.grades', 'Grade')
+                scope.innerJoin('Class.grades', 'Grade')
             }
 
             if (filterHasProperty('subjectId', filter)) {
-                scope.leftJoinAndSelect('Class.subjects', 'Subject')
+                scope.innerJoin('Class.subjects', 'Subject')
             }
 
             if (filterHasProperty('programId', filter)) {
-                scope.leftJoinAndSelect('Class.programs', 'Program')
+                scope.innerJoin('Class.programs', 'Program')
             }
 
             scope.andWhere(
@@ -792,7 +790,8 @@ export class Model {
                     id: 'Class.class_id',
                     name: 'Class.class_name',
                     status: 'Class.status',
-                    organizationId: 'Organization.organization_id',
+                    // No need to join, use the Foreign Key on the Class entity
+                    organizationId: 'Class.organization',
                     ageRangeValueFrom: 'AgeRange.low_value',
                     ageRangeUnitFrom: 'AgeRange.low_value_unit',
                     ageRangeValueTo: 'AgeRange.high_value',
