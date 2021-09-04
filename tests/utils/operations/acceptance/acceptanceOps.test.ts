@@ -8,6 +8,7 @@ import {
     EDIT_SCHOOLS_IN_CLASS,
     EDIT_STUDENTS_IN_CLASS,
     EDIT_SUBJECTS_CLASS,
+    EDIT_TEACHERS_IN_CLASS,
 } from '../classOps'
 import { LEAVE_ORGANIZATION } from '../organizationMembershipOps'
 import {
@@ -168,6 +169,26 @@ export async function addStudentsToClass(
             variables: {
                 class_id,
                 student_ids,
+            },
+        })
+}
+
+export async function addTeachersToClass(
+    class_id: string,
+    teacher_ids: string[],
+    token: string
+) {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: EDIT_TEACHERS_IN_CLASS,
+            variables: {
+                class_id,
+                teacher_ids,
             },
         })
 }

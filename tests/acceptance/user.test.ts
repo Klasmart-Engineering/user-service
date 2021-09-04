@@ -13,6 +13,7 @@ import {
     createClass,
     createOrg,
     leaveTheOrganization,
+    addTeachersToClass,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
 import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
@@ -27,6 +28,9 @@ import { School } from '../../src/entities/school'
 import { createUser } from '../factories/user.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { Organization } from '../../src/entities/organization'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import RolesInitializer from '../../src/initializers/roles'
+import { getSystemRoleIds } from '../utils/operations/organizationOps'
 
 use(chaiAsPromised)
 
@@ -36,6 +40,8 @@ const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const usersCount = 6
 const classesCount = 2
+const studentPermission = PermissionName.attend_live_class_as_a_student_187
+const teacherPermission = PermissionName.attend_live_class_as_a_teacher_186
 
 let orgId: string
 let userIds: string[]
@@ -67,6 +73,11 @@ describe('acceptance.user', () => {
         userEmails = []
         classIds = []
 
+        await RolesInitializer.run()
+        const systemRoles = await getSystemRoleIds()
+        const teacherRoleId = systemRoles['Teacher']
+        const studentRoleId = systemRoles['Student']
+
         await loadFixtures('users', connection)
         const createOrg1Response = await createOrg(
             user_id,
@@ -79,25 +90,45 @@ describe('acceptance.user', () => {
 
         orgId = createOrg1Data.organization_id
 
+        // Creating Users
         for (let i = 0; i < usersCount; i++) {
+            let roleIds = []
+
+            if (i % 3 < 2) {
+                roleIds.push(teacherRoleId)
+            }
+
+            if (i % 3 > 0) {
+                roleIds.push(studentRoleId)
+            }
+
             const response = await inviteUserToOrganization(
                 `given${i + 1}`,
                 `family${i + 1}`,
                 `user${i + 1}@gmail.com`,
                 orgId,
-                getAdminAuthToken()
+                getAdminAuthToken(),
+                roleIds
             )
+
             const id = response.body.data.organization.inviteUser.user.user_id
             userIds.push(id)
             userEmails.push(`user${i + 1}@gmail.com`)
         }
 
+        // Creating classes and assigning students an teachers
         for (let i = 0; i < classesCount; i++) {
             const uIds = [
                 userIds[i * 3],
                 userIds[i * 3 + 1],
                 userIds[i * 3 + 2],
             ]
+
+            const sharedUserId = i ? userIds[2] : userIds[5]
+
+            const teacherIds = [uIds[0], uIds[1]]
+            const studentIds = [uIds[1], uIds[2], sharedUserId]
+
             const classResponse = await createClass(
                 orgId,
                 `class ${i + 1}`,
@@ -108,7 +139,8 @@ describe('acceptance.user', () => {
                 classResponse.body.data.organization.createClass.class_id
 
             classIds.push(classId)
-            await addStudentsToClass(classId, uIds, getAdminAuthToken())
+            await addStudentsToClass(classId, studentIds, getAdminAuthToken())
+            await addTeachersToClass(classId, teacherIds, getAdminAuthToken())
         }
     })
 
@@ -229,7 +261,7 @@ describe('acceptance.user', () => {
             const usersConnection = response.body.data.usersConnection
 
             expect(response.status).to.eq(200)
-            expect(usersConnection.totalCount).to.equal(3)
+            expect(usersConnection.totalCount).to.equal(4)
         })
 
         it('responds with an error if the filter is wrong', async () => {
@@ -256,7 +288,142 @@ describe('acceptance.user', () => {
             expect(response.status).to.eq(400)
             expect(response.body).to.have.property('errors')
         })
+
+        context('School Roster', () => {
+            it('queries all the school roster users in a class', async () => {
+                const classId = classIds[0]
+                const response = await request
+                    .post('/graphql')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: USERS_CONNECTION,
+                        variables: {
+                            direction: 'FORWARD',
+                            filterArgs: {
+                                // just active users
+                                organizationUserStatus: {
+                                    operator: 'eq',
+                                    value: 'active',
+                                },
+                                // just users involved in the organization
+                                organizationId: {
+                                    operator: 'eq',
+                                    value: orgId,
+                                },
+                                // get teachers and students
+                                permissionIds: {
+                                    operator: 'in',
+                                    value: [
+                                        studentPermission,
+                                        teacherPermission,
+                                    ],
+                                },
+                                // just users that are not involved in the class
+                                classId: {
+                                    operator: 'ex',
+                                    value: classId,
+                                },
+                            },
+                        },
+                    })
+
+                const usersConnection = response.body.data.usersConnection
+
+                expect(response.status).to.eq(200)
+                expect(usersConnection.totalCount).to.equal(4)
+            })
+
+            it('queries just the school roster students in a class', async () => {
+                const classId = classIds[0]
+                const response = await request
+                    .post('/graphql')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: USERS_CONNECTION,
+                        variables: {
+                            direction: 'FORWARD',
+                            filterArgs: {
+                                // just active users
+                                organizationUserStatus: {
+                                    operator: 'eq',
+                                    value: 'active',
+                                },
+                                // just users involved in the organization
+                                organizationId: {
+                                    operator: 'eq',
+                                    value: orgId,
+                                },
+                                // get just students
+                                permissionIds: {
+                                    operator: 'in',
+                                    value: [studentPermission],
+                                },
+                                // just users that are not involved in the class
+                                classId: {
+                                    operator: 'ex',
+                                    value: classId,
+                                },
+                            },
+                        },
+                    })
+
+                const usersConnection = response.body.data.usersConnection
+
+                expect(response.status).to.eq(200)
+                expect(usersConnection.totalCount).to.equal(1)
+            })
+
+            it('queries just the school roster teachers in a class', async () => {
+                const classId = classIds[0]
+                const response = await request
+                    .post('/graphql')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: USERS_CONNECTION,
+                        variables: {
+                            direction: 'FORWARD',
+                            filterArgs: {
+                                // just active users
+                                organizationUserStatus: {
+                                    operator: 'eq',
+                                    value: 'active',
+                                },
+                                // just users involved in the organization
+                                organizationId: {
+                                    operator: 'eq',
+                                    value: orgId,
+                                },
+                                // get just teachers
+                                permissionIds: {
+                                    operator: 'in',
+                                    value: [teacherPermission],
+                                },
+                                // just users that are not involved in the class
+                                classId: {
+                                    operator: 'ex',
+                                    value: classId,
+                                },
+                            },
+                        },
+                    })
+
+                const usersConnection = response.body.data.usersConnection
+
+                expect(response.status).to.eq(200)
+                expect(usersConnection.totalCount).to.equal(3)
+            })
+        })
     })
+
     context('my_users', async () => {
         it('Finds no users if I am not logged in', async () => {
             const response = await request

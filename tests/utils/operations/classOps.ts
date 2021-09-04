@@ -99,7 +99,7 @@ const REMOVE_STUDENT = `
     }
 `
 
-const EDIT_TEACHERS_IN_CLASS = `
+export const EDIT_TEACHERS_IN_CLASS = `
     mutation myEditTeachers(
             $class_id: ID!
             $teacher_ids: [ID!]) {
