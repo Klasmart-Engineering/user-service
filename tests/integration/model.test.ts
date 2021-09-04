@@ -2080,6 +2080,7 @@ describe('model', () => {
             let school: School
             let class1: Class
             let class2: Class
+            let justClass1Users: User[] = []
 
             beforeEach(async () => {
                 await RolesInitializer.run()
@@ -2145,6 +2146,11 @@ describe('model', () => {
                     class1Users.push(usersList[i])
                 }
 
+                justClass1Users = [...class1Users]
+                justClass1Users.pop()
+                justClass1Users.push(orgOwner)
+                justClass1Users.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
                 for (let i = 5; i < 10; i++) {
                     class2Users.push(usersList[i])
                 }
@@ -2156,7 +2162,7 @@ describe('model', () => {
                 await class2.save()
             })
 
-            it('should filter the pagination results on classId in an exclusive way', async () => {
+            it('should filter the pagination results by classId in an exclusive way', async () => {
                 let directionArgs = {
                     count: 10,
                 }
@@ -2182,9 +2188,8 @@ describe('model', () => {
                 expect(usersConnection?.edges.length).to.equal(6)
 
                 for (let i = 0; i < 6; i++) {
-                    console.log(usersConnection?.edges[i].node.id)
                     expect(usersConnection?.edges[i].node.id).to.equal(
-                        usersList[i].user_id
+                        justClass1Users[i].user_id
                     )
                 }
 
