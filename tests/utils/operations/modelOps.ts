@@ -262,6 +262,7 @@ export const USERS_CONNECTION = `
                     id
                     givenName
                     familyName
+                    permissionRole
                     organizations {
                         id
                         status

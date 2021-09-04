@@ -28,6 +28,7 @@ import {
     userConnection,
 } from '../utils/operations/modelOps'
 import {
+    generateToken,
     getAdminAuthToken,
     getAdminAuthWithoutIdToken,
     getNonAdminAuthToken,
@@ -36,8 +37,12 @@ import {
     createOrganizationAndValidate,
     addOrganizationToUserAndValidate,
     addSchoolToUser,
+    userToPayload,
 } from '../utils/operations/userOps'
-import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
+import {
+    addUserToOrganizationAndValidate,
+    getSystemRoleIds,
+} from '../utils/operations/organizationOps'
 import { Model } from '../../src/model'
 import { AgeRange } from '../../src/entities/ageRange'
 import { Grade } from '../../src/entities/grade'
@@ -49,7 +54,7 @@ import chaiAsPromised from 'chai-as-promised'
 import { Program } from '../../src/entities/program'
 import { createProgram } from '../factories/program.factory'
 import { Role } from '../../src/entities/role'
-import { before } from 'mocha'
+import { before, beforeEach } from 'mocha'
 import { School } from '../../src/entities/school'
 import RolesInitializer from '../../src/initializers/roles'
 import {
@@ -876,6 +881,7 @@ describe('model', () => {
             }
             usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
         })
+
         context('seek forward', () => {
             it('should get the next few records according to pagesize and startcursor', async () => {
                 let directionArgs = {
@@ -1370,6 +1376,152 @@ describe('model', () => {
                 expect(usersConnection?.pageInfo.endCursor).to.equal(
                     convertDataToCursor({ user_id: usersList[7].user_id })
                 )
+                expect(usersConnection?.pageInfo.hasNextPage).to.be.true
+                expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
+            })
+        })
+
+        context('permissions filter', () => {
+            let org: Organization
+            let school1: School
+            let studentRole: Role
+            let teacherRole: Role
+            const studentPermission =
+                PermissionName.attend_live_class_as_a_student_187
+            const teacherPermission =
+                PermissionName.attend_live_class_as_a_teacher_186
+
+            beforeEach(async () => {
+                await RolesInitializer.run()
+
+                //org used to filter
+                org = createOrganization()
+                await connection.manager.save(org)
+
+                studentRole = await connection.manager.findOneOrFail(Role, {
+                    where: { role_name: 'Student', system_role: true },
+                })
+
+                teacherRole = await connection.manager.findOneOrFail(Role, {
+                    where: { role_name: 'Teacher', system_role: true },
+                })
+
+                school1 = createSchool(org)
+                await connection.manager.save(school1)
+
+                usersList = []
+
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                // add 5 users to student role and 5 users to teacher role
+                // add 6th user to both roles
+                for (let i = 0; i <= 5; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        studentRole.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        studentRole.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+
+                for (let i = 5; i < usersList.length; i++) {
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        org.organization_id,
+                        teacherRole.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addSchoolToUser(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    await addRoleToSchoolMembership(
+                        testClient,
+                        usersList[i].user_id,
+                        school1.school_id,
+                        teacherRole.role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
+                }
+            })
+
+            it('should filter the pagination results on permission IDs', async () => {
+                let directionArgs = {
+                    count: 3,
+                }
+
+                const filter: IEntityFilter = {
+                    permissionIds: {
+                        operator: 'in',
+                        value: [studentPermission, teacherPermission],
+                    },
+                }
+
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    { authorization: getAdminAuthToken() },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(11)
+                expect(usersConnection?.edges.length).to.equal(3)
+
+                for (const e of usersConnection?.edges) {
+                    expect(e.node.permissionRole).to.eq('Student')
+                }
+
+                for (let i = 0; i < 3; i++) {
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[i].user_id
+                    )
+                }
+
+                expect(usersConnection?.pageInfo.startCursor).to.equal(
+                    convertDataToCursor({ user_id: usersList[0].user_id })
+                )
+
+                expect(usersConnection?.pageInfo.endCursor).to.equal(
+                    convertDataToCursor({ user_id: usersList[2].user_id })
+                )
+
                 expect(usersConnection?.pageInfo.hasNextPage).to.be.true
                 expect(usersConnection?.pageInfo.hasPreviousPage).to.be.false
             })
@@ -1908,6 +2060,139 @@ describe('model', () => {
                     }) || []
 
                 expect(userIds).to.deep.equalInAnyOrder(classUserIds)
+            })
+        })
+
+        context('exclusive class filter', () => {
+            let orgOwner: User
+            let org: Organization
+            let school: School
+            let class1: Class
+            let class2: Class
+
+            beforeEach(async () => {
+                await RolesInitializer.run()
+                const systemRoles = await getSystemRoleIds()
+                const orgAdminRoleId = systemRoles['Organization Admin']
+
+                orgOwner = await createUser()
+                await connection.manager.save(orgOwner)
+
+                org = createOrganization(orgOwner)
+                await connection.manager.save(org)
+
+                school = createSchool(org)
+                await connection.manager.save(school)
+
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    orgOwner.user_id,
+                    org.organization_id,
+                    getAdminAuthToken()
+                )
+
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    orgOwner.user_id,
+                    org.organization_id,
+                    orgAdminRoleId,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                class1 = createClass([school])
+                class2 = createClass([school])
+
+                await connection.manager.save(class1)
+                await connection.manager.save(class2)
+
+                usersList = []
+
+                // create 10 users
+                for (let i = 0; i < 10; i++) {
+                    usersList.push(createUser())
+                }
+
+                //sort users by userId
+                await connection.manager.save(usersList)
+                usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                for (const user of usersList) {
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        org.organization_id,
+                        getAdminAuthToken()
+                    )
+                }
+
+                const class1Users = []
+                const class2Users = []
+
+                // add half of users to one class and other half to different class
+                // also add 5th user to both classes
+                for (let i = 0; i <= 5; i++) {
+                    class1Users.push(usersList[i])
+                }
+
+                for (let i = 5; i < 10; i++) {
+                    class2Users.push(usersList[i])
+                }
+
+                class1.students = Promise.resolve(class1Users)
+                await class1.save()
+
+                class2.students = Promise.resolve(class2Users)
+                await class2.save()
+            })
+
+            it('should filter the pagination results on classId in an exclusive way', async () => {
+                let directionArgs = {
+                    count: 10,
+                }
+
+                const filter: IEntityFilter = {
+                    classId: {
+                        operator: 'ex',
+                        value: class2.class_id,
+                    },
+                }
+
+                const usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    directionArgs,
+                    {
+                        authorization: generateToken(userToPayload(orgOwner)),
+                    },
+                    filter
+                )
+
+                expect(usersConnection?.totalCount).to.eql(6)
+                expect(usersConnection?.edges.length).to.equal(6)
+
+                for (let i = 0; i < 6; i++) {
+                    console.log(usersConnection?.edges[i].node.id)
+                    expect(usersConnection?.edges[i].node.id).to.equal(
+                        usersList[i].user_id
+                    )
+                }
+
+                const userIds = usersConnection?.edges.map((edge) => {
+                    return edge.node.id
+                })
+
+                const DBClass = await connection.manager.findOne(Class, {
+                    where: { class_id: class2.class_id },
+                })
+
+                const classUserIds =
+                    (await DBClass?.students)?.map((student) => {
+                        return student.user_id
+                    }) || []
+
+                userIds.forEach((id) => {
+                    expect(classUserIds).to.not.include(id)
+                })
             })
         })
 
