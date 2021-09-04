@@ -98,23 +98,17 @@ export const schoolsForUsers = async (
         .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        if (filterHasProperty('roleId', filter)) {
-            scope.leftJoinAndSelect('Memberships.roles', 'Roles')
-        }
-
         if (filterHasProperty('permissionIds', filter)) {
-            if (!filterHasProperty('roleId', filter)) {
-                scope.leftJoinAndSelect('Memberships.roles', 'Roles')
-            }
-
-            scope.innerJoinAndSelect('Roles.permissions', 'Permission')
+            scope
+                .leftJoinAndSelect('Memberships.roles', 'Roles')
+                .innerJoinAndSelect('Roles.permissions', 'Permission')
         }
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Organization.organization_id',
                 schoolId: 'Memberships.school_id',
-                roleId: 'Roles.role_id',
+                roleId: '',
                 permissionIds: 'Permission.permission_id',
                 organizationUserStatus: '',
                 userId: '',
