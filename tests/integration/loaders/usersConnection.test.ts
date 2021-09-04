@@ -323,7 +323,7 @@ describe('usersConnection loaders', async () => {
                 expect(roles.length).to.equal(1) // the org role
             }
         })
-        it('filters roles by roleId', async () => {
+        it('does not filter roles by roleId', async () => {
             const filter: IEntityFilter = {
                 roleId: {
                     operator: 'neq',
@@ -332,7 +332,7 @@ describe('usersConnection loaders', async () => {
             }
             const userRoles = await rolesForUsers(userIds, filter)
             for (const roles of userRoles) {
-                expect(roles.length).to.equal(0)
+                expect(roles.length).to.equal(2)
             }
         })
     })

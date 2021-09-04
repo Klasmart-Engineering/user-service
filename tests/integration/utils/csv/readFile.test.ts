@@ -22,6 +22,7 @@ import { CreateEntityRowCallback } from '../../../../src/types/csv/createEntityR
 import { processOrganizationFromCSVRow } from '../../../../src/utils/csv/organization'
 import { CSVError } from '../../../../src/types/csv/csvError'
 import { processUserFromCSVRow } from '../../../../src/utils/csv/user'
+import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 
 use(chaiAsPromised)
 
@@ -108,6 +109,87 @@ describe('read file', () => {
                 expect(errors[1].row).to.eq(2)
                 expect(errors[0].code).to.eq('ERR_NON_EXISTENT_ENTITY')
                 expect(errors[1].code).to.eq('ERR_NON_EXISTENT_ENTITY')
+            }
+        })
+    })
+
+    context('when file header but no rows', () => {
+        const filename = 'onlyHeader.csv'
+        const mimetype = 'text/csv'
+        const encoding = '7bit'
+        const dummyFn: CreateEntityRowCallback = async (
+            manager: EntityManager,
+            row: any,
+            rowCount: number
+        ) => {
+            return []
+        }
+        it('should throw an error', async () => {
+            const upload = {
+                filename: filename,
+                mimetype: mimetype,
+                encoding: encoding,
+                createReadStream: () => {
+                    return fs.createReadStream(
+                        resolve(`tests/fixtures/onlyHeader.csv`)
+                    )
+                },
+            } as Upload
+
+            try {
+                await readCSVFile(
+                    connection.manager,
+                    upload,
+                    [dummyFn],
+                    adminPermissions
+                )
+
+                expect.fail(`Function incorrectly resolved.`)
+            } catch (e) {
+                console.log(e)
+                expect(e)
+                    .to.have.property('message')
+                    .equal(`The ${filename} file is empty.`)
+            }
+        })
+    })
+
+    context('when incorrect file type', () => {
+        const filename = 'example.txt'
+        const mimetype = 'text/plain'
+        const encoding = '7bit'
+        const dummyFn: CreateEntityRowCallback = async (
+            manager: EntityManager,
+            row: any,
+            rowCount: number
+        ) => {
+            return []
+        }
+        it('should throw an error', async () => {
+            const upload = {
+                filename: filename,
+                mimetype: mimetype,
+                encoding: encoding,
+                createReadStream: () => {
+                    return fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+                },
+            } as Upload
+
+            try {
+                await readCSVFile(
+                    connection.manager,
+                    upload,
+                    [dummyFn],
+                    adminPermissions
+                )
+
+                expect.fail(`Function incorrectly resolved.`)
+            } catch (e) {
+                expect(e)
+                    .to.have.property('message')
+                    .equal('File must be in CSV format.')
             }
         })
     })

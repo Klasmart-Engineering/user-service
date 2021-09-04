@@ -142,6 +142,8 @@ export const schoolAdminRole = {
         PermissionName.report_schools_class_achievements_647,
         PermissionName.report_learning_summary_school_651,
         PermissionName.learning_summary_report_653,
+        PermissionName.report_school_student_usage_655,
+        PermissionName.student_usage_report_657,
         PermissionName.report_settings_680,
         PermissionName.view_my_organization_profile_10111,
         PermissionName.join_organization_10881,

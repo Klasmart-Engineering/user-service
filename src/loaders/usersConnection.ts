@@ -183,7 +183,7 @@ export const rolesForUsers = async (
             getWhereClauseFromFilter(filter, {
                 organizationId: 'OrgMemberships.organization_id',
                 schoolId: '',
-                roleId: 'OrgRoles.role_id',
+                roleId: '',
                 phone: '',
                 organizationUserStatus: '',
                 permissionIds: 'Permission.permission_id',
@@ -200,7 +200,7 @@ export const rolesForUsers = async (
             getWhereClauseFromFilter(filter, {
                 organizationId: 'SchoolOrg.organization_id',
                 schoolId: 'SchoolMemberships.school_id',
-                roleId: 'SchoolRoles.role_id',
+                roleId: '',
                 organizationUserStatus: '',
                 permissionIds: 'Permission.permission_id',
                 userId: '',

@@ -1,11 +1,7 @@
 import { expect } from 'chai'
-import {
-    validateDOB,
-    validateEmail,
-    validatePhone,
-} from '../../../src/utils/validations'
+import { isDOB, isEmail, isPhone } from '../../../src/utils/validations'
 
-describe('validateEmail', () => {
+describe('isEmail', () => {
     it('is a valid email', async () => {
         ;[
             'email@example.com',
@@ -22,7 +18,7 @@ describe('validateEmail', () => {
             'email@example.co.jp',
             'firstname-lastname@example.com',
         ].every(function (address) {
-            const res = validateEmail(address)
+            const res = isEmail(address)
             expect(res).to.equal(true)
             return res
         })
@@ -45,14 +41,14 @@ describe('validateEmail', () => {
             'Abc..123@example.com]',
             '”(),:;<>[\\]@example.com',
         ].forEach(function (address) {
-            const res = !validateEmail(address)
+            const res = !isEmail(address)
             expect(res).to.equal(true)
             return res
         })
     })
 })
 
-describe('validatePhone', () => {
+describe('isPhone', () => {
     it('is a valid phone', async () => {
         ;[
             '+61291920995', //Australia Test line
@@ -66,7 +62,7 @@ describe('validatePhone', () => {
             '+12136210002', //Milliwatt test tone
             '+19142329901', //Pleasantville DMS 100
         ].every(function (phone) {
-            const res = validatePhone(phone)
+            const res = isPhone(phone)
             expect(res).to.equal(true)
             return res
         })
@@ -74,17 +70,17 @@ describe('validatePhone', () => {
 
     it('is an invalid phone', async () => {
         ;['02077325632', '+44(0)20-7732 5637'].every(function (phone) {
-            const res = !validatePhone(phone)
+            const res = !isPhone(phone)
             expect(res).to.equal(true)
             return res
         })
     })
 })
 
-describe('validateDOB', () => {
+describe('isDOB', () => {
     it('is a valid DOB', async () => {
         ;['01-2000', '02-1996', '10-1971'].every(function (dob) {
-            const res = validateDOB(dob)
+            const res = isDOB(dob)
             expect(res).to.equal(true)
             return res
         })
@@ -94,7 +90,7 @@ describe('validateDOB', () => {
         ;['1-2000', '01-01-2000', '01/2000', 'January, 2000'].every(function (
             dob
         ) {
-            const res = !validateDOB(dob)
+            const res = !isDOB(dob)
             expect(res).to.equal(true)
             return res
         })

@@ -194,6 +194,180 @@ describe('sorting', () => {
         })
     })
 
+    context('booleans', () => {
+        const orderedBooleans = [false, false, false, true, true, true]
+        const orderedSBooleansReversed = [...orderedBooleans].reverse()
+        const totalUsers = orderedBooleans.length
+        const fetchCount = 10
+        let usersList = []
+
+        let args!: IPaginateData
+        let index = 0
+        let hasNextPage = true
+        let hasPreviousPage = true
+
+        beforeEach(async () => {
+            usersList = []
+            index = 0
+            hasNextPage = true
+            hasPreviousPage = true
+
+            for (let i = 0; i < totalUsers; i++) {
+                const user = createUser()
+                user.primary = orderedBooleans[i]
+                usersList.push(user)
+            }
+
+            await connection.manager.save(usersList)
+
+            args = {
+                direction: 'FORWARD',
+                directionArgs: {
+                    count: fetchCount,
+                },
+                scope: createQueryBuilder('user'),
+                sort: {
+                    primaryKey: 'user_id',
+                    aliases: {
+                        primary: 'primary',
+                    },
+                    sort: {
+                        field: 'primary',
+                        order: 'ASC',
+                    },
+                },
+            }
+        })
+
+        context('forwards pagination', () => {
+            beforeEach(async () => {
+                args.direction = 'FORWARD'
+            })
+
+            it('sorts ascending', async () => {
+                args.sort!.sort!.order = 'ASC'
+
+                while (hasNextPage) {
+                    const data = await paginateData<User>(args)
+                    const unseenUsers = totalUsers - index
+
+                    expect(data.totalCount).to.eq(totalUsers)
+                    expect(data.edges.length).to.eq(
+                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                    )
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        expect(data.edges[i].node.primary).to.eq(
+                            orderedBooleans[index]
+                        )
+
+                        index++
+                    }
+
+                    hasNextPage = data.pageInfo.hasNextPage
+                    args.directionArgs!.cursor = data.pageInfo.endCursor
+                    args.scope = createQueryBuilder('user')
+                }
+            })
+
+            it('sorts descending', async () => {
+                args.sort!.sort!.order = 'DESC'
+
+                while (hasNextPage) {
+                    const data = await paginateData<User>(args)
+                    const unseenUsers = totalUsers - index
+
+                    expect(data.totalCount).to.eq(totalUsers)
+                    expect(data.edges.length).to.eq(
+                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                    )
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        expect(data.edges[i].node.primary).to.eq(
+                            orderedSBooleansReversed[index]
+                        )
+
+                        index++
+                    }
+
+                    hasNextPage = data.pageInfo.hasNextPage
+                    args.directionArgs!.cursor = data.pageInfo.endCursor
+                    args.scope = createQueryBuilder('user')
+                }
+            })
+        })
+
+        context('backwards pagination', () => {
+            beforeEach(async () => {
+                args.direction = 'BACKWARD'
+            })
+
+            it('sorts ascending', async () => {
+                args.sort!.sort!.order = 'ASC'
+
+                while (hasPreviousPage) {
+                    const data = await paginateData<User>(args)
+                    expect(data.totalCount).to.eq(totalUsers)
+
+                    const unseenUsers = totalUsers - index
+                    expect(data.edges.length).to.eq(
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
+                    )
+
+                    data.edges.reverse()
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        expect(data.edges[i].node.primary).to.eq(
+                            orderedSBooleansReversed[index]
+                        )
+
+                        index++
+                    }
+
+                    hasPreviousPage = data.pageInfo.hasPreviousPage
+                    args.directionArgs!.cursor = data.pageInfo.startCursor
+                    args.scope = createQueryBuilder('user')
+                }
+            })
+
+            it('sorts descending', async () => {
+                args.sort!.sort!.order = 'DESC'
+
+                while (hasPreviousPage) {
+                    const data = await paginateData<User>(args)
+                    expect(data.totalCount).to.eq(totalUsers)
+
+                    const unseenUsers = totalUsers - index
+                    expect(data.edges.length).to.eq(
+                        unseenUsers < fetchCount
+                            ? unseenUsers
+                            : unseenUsers % fetchCount
+                            ? unseenUsers % fetchCount
+                            : fetchCount
+                    )
+
+                    data.edges.reverse()
+
+                    for (let i = 0; i < data.edges.length; i++) {
+                        expect(data.edges[i].node.primary).to.eq(
+                            orderedBooleans[index]
+                        )
+
+                        index++
+                    }
+
+                    hasPreviousPage = data.pageInfo.hasPreviousPage
+                    args.directionArgs!.cursor = data.pageInfo.startCursor
+                    args.scope = createQueryBuilder('user')
+                }
+            })
+        })
+    })
+
     context('secondary sorting', () => {
         let args!: IPaginateData
 

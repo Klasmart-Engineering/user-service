@@ -9,7 +9,6 @@ import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addStudentsToClass,
-    inviteUserToOrganization,
     createClass,
     createOrg,
     leaveTheOrganization,
@@ -31,6 +30,10 @@ import { Organization } from '../../src/entities/organization'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import RolesInitializer from '../../src/initializers/roles'
 import { getSystemRoleIds } from '../utils/operations/organizationOps'
+import { INVITE_USER } from '../utils/operations/organizationOps'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { Role } from '../../src/entities/role'
 
 use(chaiAsPromised)
 
@@ -69,14 +72,16 @@ describe('acceptance.user', () => {
     })
 
     beforeEach(async () => {
-        userIds = []
-        userEmails = []
         classIds = []
 
         await RolesInitializer.run()
-        const systemRoles = await getSystemRoleIds()
-        const teacherRoleId = systemRoles['Teacher']
-        const studentRoleId = systemRoles['Student']
+        const teacherRole = await connection.manager.findOneOrFail(Role, {
+            where: { role_name: 'Teacher', system_role: true },
+        })
+
+        const studentRole = await connection.manager.findOneOrFail(Role, {
+            where: { role_name: 'Student', system_role: true },
+        })
 
         await loadFixtures('users', connection)
         const createOrg1Response = await createOrg(
@@ -90,31 +95,33 @@ describe('acceptance.user', () => {
 
         orgId = createOrg1Data.organization_id
 
-        // Creating Users
-        for (let i = 0; i < usersCount; i++) {
-            let roleIds = []
+        const organization = await Organization.findOneOrFail(orgId)
 
-            if (i % 3 < 2) {
-                roleIds.push(teacherRoleId)
-            }
+        const users = await User.save(
+            Array(usersCount).fill(null).map(createUser)
+        )
 
-            if (i % 3 > 0) {
-                roleIds.push(studentRoleId)
-            }
+        await OrganizationMembership.save(
+            users.map((user, i) => {
+                const roles = []
+                if (i % 3 < 2) {
+                    roles.push(teacherRole)
+                }
 
-            const response = await inviteUserToOrganization(
-                `given${i + 1}`,
-                `family${i + 1}`,
-                `user${i + 1}@gmail.com`,
-                orgId,
-                getAdminAuthToken(),
-                roleIds
-            )
+                if (i % 3 > 0) {
+                    roles.push(studentRole)
+                }
 
-            const id = response.body.data.organization.inviteUser.user.user_id
-            userIds.push(id)
-            userEmails.push(`user${i + 1}@gmail.com`)
-        }
+                return createOrganizationMembership({
+                    user,
+                    organization,
+                    roles,
+                })
+            })
+        )
+
+        userIds = users.map(({ user_id }) => user_id)
+        userEmails = users.map(({ email }) => email ?? '')
 
         // Creating classes and assigning students an teachers
         for (let i = 0; i < classesCount; i++) {
@@ -436,8 +443,11 @@ describe('acceptance.user', () => {
                     query: MY_USERS,
                 })
 
-            expect(response.status).to.eq(200)
-            expect(response.body.data.my_users.length).to.equal(0)
+            expect(response.status).to.eq(400)
+            expect(response.body.errors.length).to.equal(1)
+            expect(response.body.errors[0]['message']).to.equal(
+                'Context creation failed: No authentication token'
+            )
         })
 
         it('Finds one user with active membership ', async () => {

@@ -91,13 +91,13 @@ const typeDefs = gql`
         inviteUser(
             email: String
             phone: String
-            given_name: String
-            family_name: String
+            given_name: String!
+            family_name: String!
             date_of_birth: String
             username: String
-            gender: String
+            gender: String!
             shortcode: String
-            organization_role_ids: [ID!]
+            organization_role_ids: [ID!]!
             school_ids: [ID!]
             school_role_ids: [ID!]
             alternate_email: String

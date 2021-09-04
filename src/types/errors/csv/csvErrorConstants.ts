@@ -6,7 +6,14 @@ export default {
     MSG_ERR_CSV_AT_ROW: 'On row number {row}',
 
     ERR_CSV_EMPTY_FILE: 'ERR_CSV_EMPTY_FILE',
-    MSG_ERR_CSV_EMPTY_FILE: '{filename} is empty.',
+    MSG_ERR_CSV_EMPTY_FILE: 'The {filename} file is empty.',
+
+    ERR_CSV_FILE_FORMAT: 'ERR_CSV_FILE_FORMAT',
+    MSG_ERR_CSV_FILE_FORMAT: 'File must be in .csv format.',
+
+    ERR_FILE_EXCEEDS_MAX_FILE_SIZE: 'ERR_FILE_EXCEEDS_MAX_FILE_SIZE',
+    MSG_ERR_FILE_EXCEEDS_MAX_FILE_SIZE:
+        'File size exceeds max file size ({max}KB)',
 
     ERR_CSV_BAD_INPUT: 'ERR_CSV_BAD_INPUT',
 

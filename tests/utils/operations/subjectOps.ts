@@ -20,7 +20,7 @@ const DESCRIBE_SUBJECT = `
     }
 `
 
-const DELETE_SUBJECT = `
+export const DELETE_SUBJECT = `
     mutation deleteSubject($id: ID!) {
         subject(id: $id) {
             delete

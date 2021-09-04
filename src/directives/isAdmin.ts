@@ -405,40 +405,45 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             [PermissionName.view_school_classes_20117]
         )
 
-        // can watch all the classes that belongs to its organization
-        if (classOrgs.length) {
-            scope
-                .leftJoinAndSelect(
-                    OrganizationMembership,
-                    'OrganizationMembership',
-                    'OrganizationMembership.organization = Class.organization'
-                )
-                .where(
-                    'OrganizationMembership.organization_id IN (:...classOrgs) AND OrganizationMembership.user_id = :d_user_id',
-                    {
-                        classOrgs,
-                        d_user_id: userId,
-                    }
-                )
-        }
-
-        // can watch just the classes that belongs to its schools
-        if (schoolOrgs.length) {
+        //
+        if (classOrgs.length && schoolOrgs.length) {
             scope
                 .leftJoin('Class.schools', 'School')
-                .leftJoinAndSelect('School.memberships', 'SchoolMembership')
-                .orWhere(
-                    'School.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
-                    {
-                        schoolOrgs,
-                        user_id: userId,
-                    }
+                .leftJoin('School.memberships', 'SchoolMembership')
+                .where(
+                    // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
+                    new Brackets((qb) => {
+                        qb.where('Class.organization IN (:...classOrgs)', {
+                            classOrgs,
+                        }).orWhere(
+                            'Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
+                            {
+                                user_id: userId,
+                                schoolOrgs,
+                            }
+                        )
+                    })
                 )
+            return
         }
 
-        if (!classOrgs.length && !schoolOrgs.length) {
-            // user has not permissions, can see anything
-            scope.where('false')
+        if (classOrgs.length) {
+            scope.where('Class.organization IN (:...classOrgs)', { classOrgs })
+            return
         }
+        if (schoolOrgs.length) {
+            scope
+                .innerJoin('Class.schools', 'School')
+                .innerJoin(
+                    'School.memberships',
+                    'SchoolMembership',
+                    'SchoolMembership.user_id = :user_id',
+                    { user_id: userId }
+                )
+                .where('Class.organization IN (:...schoolOrgs)', { schoolOrgs })
+            return
+        }
+
+        scope.where('false')
     }
 }

@@ -10,6 +10,7 @@ services:
             - DATABASE_URL=postgres://postgres:kidsloop@postgres1:5432/postgres1
             - STORAGE_BUCKET=kidsloop-alpha-account-asset-objects
             - STORAGE_PROVIDER=amazon
+            - NODE_ENV=development
             - FORCE_LOCAL_STORAGE=true
             - STORAGE_ENDPOINT=http://localstack1:4566
             - STORAGE_ACCESS_KEY_ID=""

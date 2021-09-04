@@ -30,6 +30,7 @@ import { ImageMimeType } from '../../src/types/imageMimeTypes'
 import { Status } from '../../src/entities/status'
 import { BrandingImageTag } from '../../src/types/graphQL/brandingImageTag'
 import { Organization } from '../../src/entities/organization'
+import { getNonAdminAuthToken } from '../utils/testConfig'
 
 use(chaiAsPromised)
 
@@ -57,6 +58,7 @@ describe('model.branding', () => {
 
     let organization: Organization
     let organizationId: string
+    let arbitraryUserToken: string
 
     beforeEach(async () => {
         const user = await createAdminUser(testClient)
@@ -66,6 +68,8 @@ describe('model.branding', () => {
             'Some fabulous organization'
         )
         organizationId = organization.organization_id
+        await createNonAdminUser(testClient)
+        arbitraryUserToken = getNonAdminAuthToken()
     })
 
     describe('setBranding', () => {
@@ -86,7 +90,8 @@ describe('model.branding', () => {
                         filename,
                         mimetype,
                         encoding,
-                        primaryColor
+                        primaryColor,
+                        { authorization: arbitraryUserToken }
                     )
                     expect(branding).to.exist
                     expect(branding.primaryColor).to.equal(primaryColor)
@@ -112,7 +117,8 @@ describe('model.branding', () => {
                         filename,
                         'application/pdf' as ImageMimeType,
                         encoding,
-                        primaryColor
+                        primaryColor,
+                        { authorization: arbitraryUserToken }
                     )
                 } catch (e) {
                     expect(e).to.exist
@@ -139,7 +145,8 @@ describe('model.branding', () => {
                         filename,
                         mimetype,
                         encoding,
-                        primaryColor
+                        primaryColor,
+                        { authorization: arbitraryUserToken }
                     )
                 } catch (e) {
                     expect(e).to.exist
@@ -159,7 +166,8 @@ describe('model.branding', () => {
                         setBrandingWithoutImage(
                             testClient,
                             organizationId,
-                            primaryColor
+                            primaryColor,
+                            { authorization: arbitraryUserToken }
                         )
 
                     const organizationBranding = await Branding.findOne({
@@ -188,7 +196,8 @@ describe('model.branding', () => {
                         filename,
                         mimetype,
                         encoding,
-                        primaryColor
+                        primaryColor,
+                        { authorization: arbitraryUserToken }
                     )
 
                     const newColor = '#b22222'
@@ -202,7 +211,8 @@ describe('model.branding', () => {
                         filenameToUpdate,
                         mimetype,
                         encoding,
-                        newColor
+                        newColor,
+                        { authorization: arbitraryUserToken }
                     )
 
                     expect(branding.primaryColor).to.equal(newColor)
@@ -239,7 +249,8 @@ describe('model.branding', () => {
                             filename,
                             mimetype,
                             encoding,
-                            primaryColor
+                            primaryColor,
+                            { authorization: arbitraryUserToken }
                         )
 
                         const newImage = fs.createReadStream(
@@ -251,7 +262,8 @@ describe('model.branding', () => {
                             newImage,
                             filenameToUpdate,
                             mimetype,
-                            encoding
+                            encoding,
+                            { authorization: arbitraryUserToken }
                         )
                         expect(branding.iconImageURL).to.exist
 
@@ -292,14 +304,16 @@ describe('model.branding', () => {
                             filename,
                             mimetype,
                             encoding,
-                            primaryColor
+                            primaryColor,
+                            { authorization: arbitraryUserToken }
                         )
 
                         const newColor = '#b22222'
                         const branding = await setBrandingWithoutImage(
                             testClient,
                             organizationId,
-                            newColor
+                            newColor,
+                            { authorization: arbitraryUserToken }
                         )
 
                         expect(branding.primaryColor).to.equal(newColor)
@@ -340,14 +354,20 @@ describe('model.branding', () => {
                     filename,
                     mimetype,
                     encoding,
-                    primaryColor
+                    primaryColor,
+                    { authorization: arbitraryUserToken }
                 )
             })
 
             it('should throw an error', async () => {
                 const type = BrandingImageTag.ICON
                 const func = () =>
-                    deleteBrandingImageQuery(testClient, organizationId, type)
+                    deleteBrandingImageQuery(
+                        testClient,
+                        organizationId,
+                        type,
+                        arbitraryUserToken
+                    )
 
                 const branding = await Branding.findOne({
                     where: {
@@ -380,7 +400,8 @@ describe('model.branding', () => {
                     filename,
                     mimetype,
                     encoding,
-                    primaryColor
+                    primaryColor,
+                    { authorization: arbitraryUserToken }
                 )
             })
 
@@ -391,7 +412,8 @@ describe('model.branding', () => {
                     deleteBrandingImageQuery(
                         testClient,
                         organizationId,
-                        wrongType
+                        wrongType,
+                        arbitraryUserToken
                     )
 
                 const branding = await Branding.findOne({
@@ -425,7 +447,8 @@ describe('model.branding', () => {
                     filename,
                     mimetype,
                     encoding,
-                    primaryColor
+                    primaryColor,
+                    { authorization: arbitraryUserToken }
                 )
             })
 
@@ -433,7 +456,12 @@ describe('model.branding', () => {
                 const type = BrandingImageTag.ICON
                 const wrongId = 'n0t-4n-1d'
                 const func = () =>
-                    deleteBrandingImageQuery(testClient, wrongId, type)
+                    deleteBrandingImageQuery(
+                        testClient,
+                        wrongId,
+                        type,
+                        arbitraryUserToken
+                    )
 
                 const branding = await Branding.findOne({
                     where: {
@@ -468,7 +496,8 @@ describe('model.branding', () => {
                         filename,
                         mimetype,
                         encoding,
-                        primaryColor
+                        primaryColor,
+                        { authorization: arbitraryUserToken }
                     )
                 })
 
@@ -480,7 +509,8 @@ describe('model.branding', () => {
                         deleteBrandingImageQuery(
                             testClient,
                             noneExistingId,
-                            type
+                            type,
+                            arbitraryUserToken
                         )
 
                     const branding = await Branding.findOne({
@@ -509,7 +539,8 @@ describe('model.branding', () => {
                     deleteBrandingImageMutation(
                         testClient,
                         organizationId,
-                        type
+                        type,
+                        arbitraryUserToken
                     )
 
                 const branding = await Branding.findOne({
@@ -538,7 +569,8 @@ describe('model.branding', () => {
                     deleteBrandingImageMutation(
                         testClient,
                         organizationId,
-                        type
+                        type,
+                        arbitraryUserToken
                     )
 
                 const branding = await Branding.findOne({
@@ -571,7 +603,8 @@ describe('model.branding', () => {
                     filename,
                     mimetype,
                     encoding,
-                    primaryColor
+                    primaryColor,
+                    { authorization: arbitraryUserToken }
                 )
             })
 
@@ -580,7 +613,8 @@ describe('model.branding', () => {
                 const result = await deleteBrandingImageMutation(
                     testClient,
                     organizationId,
-                    type
+                    type,
+                    arbitraryUserToken
                 )
 
                 const branding = await Branding.findOne({
@@ -605,6 +639,7 @@ describe('model.branding', () => {
     describe('deleteBrandingColor', () => {
         let branding: Branding | undefined
         const primaryColor = '#cd657b'
+
         it('removes any set colour while leaving other properties unchanged', async () => {
             const iconImage = fs.createReadStream(
                 resolve(`tests/fixtures/${filename}`)
@@ -616,7 +651,8 @@ describe('model.branding', () => {
                 filename,
                 mimetype,
                 encoding,
-                primaryColor
+                primaryColor,
+                { authorization: arbitraryUserToken }
             )
             branding = await Branding.findOne({
                 relations: ['images'],
@@ -628,7 +664,11 @@ describe('model.branding', () => {
             expect(branding?.primaryColor).to.eq(primaryColor)
             expect(branding?.images?.length).to.eq(1)
 
-            await deleteBrandingColorMutation(testClient, organizationId)
+            await deleteBrandingColorMutation(
+                testClient,
+                organizationId,
+                arbitraryUserToken
+            )
 
             branding = await Branding.findOne({
                 relations: ['images'],
@@ -644,7 +684,11 @@ describe('model.branding', () => {
         context('when organization has not branding', () => {
             it('should throw an error', async () => {
                 const func = () =>
-                    deleteBrandingColorMutation(testClient, organizationId)
+                    deleteBrandingColorMutation(
+                        testClient,
+                        organizationId,
+                        arbitraryUserToken
+                    )
 
                 expect(func()).to.be.rejected
             })

@@ -28,7 +28,8 @@ export async function uploadAgeRanges(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string
+    encoding: string,
+    authToken: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -40,6 +41,7 @@ export async function uploadAgeRanges(
         mutate({
             mutation: UPLOAD_AGE_RANGES_MUTATION,
             variables: variables,
+            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)
@@ -51,7 +53,8 @@ export async function queryUploadAgeRanges(
     file: ReadStream,
     filename: string,
     mimetype: string,
-    encoding: string
+    encoding: string,
+    authToken: string
 ) {
     const variables = {
         file: fileMockInput(file, filename, mimetype, encoding),
@@ -63,6 +66,7 @@ export async function queryUploadAgeRanges(
         query({
             query: UPLOAD_AGE_RANGES_QUERY,
             variables: variables,
+            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)

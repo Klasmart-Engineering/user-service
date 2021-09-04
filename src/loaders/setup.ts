@@ -14,8 +14,8 @@ import {
     brandingForOrganizations,
     organizationForMemberships,
 } from './organization'
+import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationMembershipLoaders } from './organizationMembership'
-
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 
 export interface IDataLoaders {
@@ -23,6 +23,7 @@ export interface IDataLoaders {
     programsConnection?: IProgramsConnectionLoaders
     gradesConnection?: IGradesConnectionLoaders
     classesConnection?: IClassesConnectionLoaders
+    subjectsConnection?: ISubjectsConnectionLoaders
     user: IUsersLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders

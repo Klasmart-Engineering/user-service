@@ -58,10 +58,6 @@ export class OrganizationMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call schoolMemberships by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (permission_name === undefined) {
                 return await getRepository(SchoolMembership)
@@ -142,10 +138,6 @@ export class OrganizationMembership extends BaseEntity {
     }
 
     public async classesTeaching(context: Context, info: GraphQLResolveInfo) {
-        console.info(
-            `Unauthenticated endpoint call classesTeaching by ${context.permissions?.getUserId()}`
-        )
-
         try {
             return await getRepository(Class)
                 .createQueryBuilder()
@@ -182,10 +174,6 @@ export class OrganizationMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call organizationMembership addRole by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -218,10 +206,6 @@ export class OrganizationMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call organizationMembership addRoles by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -264,10 +248,6 @@ export class OrganizationMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call organizationMembership removeRole by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||
@@ -295,10 +275,6 @@ export class OrganizationMembership extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call organizationMembership leave by ${context.permissions?.getUserId()}`
-        )
-
         try {
             if (
                 info.operation.operation !== 'mutation' ||

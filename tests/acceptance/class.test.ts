@@ -187,7 +187,9 @@ describe('acceptance.class', () => {
             'admin',
             'school.admin@gmail.com',
             org1Id,
+            'Male',
             getAdminAuthToken(),
+            'SHORTY2',
             [schoolAdminRoleId],
             [schoolAdminRoleId],
             [schoolIds[0]]
@@ -207,9 +209,11 @@ describe('acceptance.class', () => {
             'member',
             'org.member@gmail.com',
             org1Id,
-            getAdminAuthToken()
+            'Male',
+            getAdminAuthToken(),
+            'SHORTY1',
+            [schoolAdminRoleId]
         )
-
         const createOrgMemberData =
             createOrgMemberResponse.body.data.organization.inviteUser
 

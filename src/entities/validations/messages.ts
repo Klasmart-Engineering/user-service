@@ -55,7 +55,8 @@ export function getCustomConstraintDetails(
 
         case 'any.required':
         case 'string.base':
-        case 'string.empty': {
+        case 'string.empty':
+        case 'array.includesRequiredUnknowns': {
             return {
                 code: customErrors.missing_required_entity_attribute.code,
                 message: customErrors.missing_required_entity_attribute.message,
@@ -118,6 +119,21 @@ export function getCustomConstraintDetails(
                 }
             }
         }
+
+        case 'string.guid': {
+            return {
+                code: customErrors.invalid_uuid.code,
+                message: customErrors.invalid_uuid.message,
+            }
+        }
+
+        case 'array.unique': {
+            return {
+                code: customErrors.duplicate_attribute_values.code,
+                message: customErrors.duplicate_attribute_values.message,
+            }
+        }
+
         default: {
             console.error(
                 `Missing custom message for joi constraint ${constraintType}`

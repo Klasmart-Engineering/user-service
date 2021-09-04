@@ -27,7 +27,7 @@ import { School } from './entities/school'
 import { Permission } from './entities/permission'
 import { v4 as uuid_v4 } from 'uuid'
 import clean from './utils/clean'
-import { processUserFromCSVRow } from './utils/csv/user'
+import { processUserFromCSVRow, validateUserCSVHeaders } from './utils/csv/user'
 import { processClassFromCSVRow } from './utils/csv/class'
 import { createEntityFromCsvWithRollBack } from './utils/csv/importEntity'
 import { processGradeFromCSVRow, setGradeFromToFields } from './utils/csv/grade'
@@ -52,7 +52,7 @@ import {
     getHavingClauseForExclusiveFilter,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
-import { validateDOB, validateEmail, validatePhone } from './utils/validations'
+import { isDOB, isEmail, isPhone } from './utils/validations'
 import { ISchoolsConnectionNode } from './types/graphQL/schoolsConnectionNode'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
@@ -79,6 +79,7 @@ import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInp
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
+import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { UserWithPermissionId } from './types/graphQL/userWithPermissionId'
 import { PermissionName } from './permissions/permissionNames'
@@ -179,22 +180,20 @@ export class Model {
         date_of_birth,
         username,
     }: Partial<User>) {
-        console.info('Unauthenticated endpoint call newUser')
-
         const newUser = new User()
         if (email) {
-            if (!validateEmail(email)) {
+            if (!isEmail(email)) {
                 email = undefined
             }
         }
         if (phone) {
-            if (!validatePhone(phone)) {
+            if (!isPhone(phone)) {
                 phone = undefined
             }
         }
         if (date_of_birth) {
             date_of_birth = padShortDob(date_of_birth)
-            if (!validateDOB(date_of_birth)) {
+            if (!isDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
         }
@@ -226,19 +225,18 @@ export class Model {
         alternate_email,
         alternate_phone,
     }: Partial<User>) {
-        console.info('Unauthenticated endpoint call setUser')
         if (email) {
-            if (!validateEmail(email)) {
+            if (!isEmail(email)) {
                 email = undefined
             }
         }
         if (phone) {
-            if (!validatePhone(phone)) {
+            if (!isPhone(phone)) {
                 phone = undefined
             }
         }
         if (date_of_birth) {
-            if (!validateDOB(date_of_birth)) {
+            if (!isDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
         }
@@ -274,8 +272,6 @@ export class Model {
         return user
     }
     public async getUser(user_id: string) {
-        console.info('Unauthenticated endpoint call getUser')
-
         const user = await this.userRepository.findOneOrFail(user_id)
         return user
     }
@@ -324,7 +320,6 @@ export class Model {
         phone,
         shortCode,
     }: Organization) {
-        console.info('Unauthenticated endpoint call setOrganization')
         const organization = await this.organizationRepository.findOneOrFail(
             organization_id
         )
@@ -349,8 +344,6 @@ export class Model {
         return organization
     }
     public async getOrganization(organization_id: string) {
-        console.info('Unauthenticated endpoint call getOrganization')
-
         const organization = await this.organizationRepository.findOne(
             organization_id
         )
@@ -870,11 +863,9 @@ export class Model {
             sort,
         }: IPaginationArgs<Class>
     ) {
+        // Select only the ClassConnectionNode fields
+        scope.select(['Class.class_id', 'Class.class_name', 'Class.status'])
         if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('Class.organization', 'Organization')
-            }
-
             if (
                 filterHasProperty('ageRangeValueFrom', filter) ||
                 filterHasProperty('ageRangeUnitFrom', filter) ||
@@ -882,24 +873,24 @@ export class Model {
                 filterHasProperty('ageRangeUnitTo', filter)
             ) {
                 scope
-                    .leftJoinAndSelect('Class.age_ranges', 'AgeRange')
+                    .innerJoin('Class.age_ranges', 'AgeRange')
                     .where(AVOID_NONE_SPECIFIED_BRACKETS)
             }
 
             if (filterHasProperty('schoolId', filter)) {
-                scope.leftJoinAndSelect('Class.schools', 'School')
+                scope.innerJoin('Class.schools', 'School')
             }
 
             if (filterHasProperty('gradeId', filter)) {
-                scope.leftJoinAndSelect('Class.grades', 'Grade')
+                scope.innerJoin('Class.grades', 'Grade')
             }
 
             if (filterHasProperty('subjectId', filter)) {
-                scope.leftJoinAndSelect('Class.subjects', 'Subject')
+                scope.innerJoin('Class.subjects', 'Subject')
             }
 
             if (filterHasProperty('programId', filter)) {
-                scope.leftJoinAndSelect('Class.programs', 'Program')
+                scope.innerJoin('Class.programs', 'Program')
             }
 
             scope.andWhere(
@@ -907,7 +898,8 @@ export class Model {
                     id: 'Class.class_id',
                     name: 'Class.class_name',
                     status: 'Class.status',
-                    organizationId: 'Organization.organization_id',
+                    // No need to join, use the Foreign Key on the Class entity
+                    organizationId: 'Class.organization',
                     ageRangeValueFrom: 'AgeRange.low_value',
                     ageRangeUnitFrom: 'AgeRange.low_value_unit',
                     ageRangeValueTo: 'AgeRange.high_value',
@@ -949,9 +941,62 @@ export class Model {
         return data
     }
 
-    public async getRole({ role_id }: Role) {
-        console.info('Unauthenticated endpoint call getRole')
+    public async subjectsConnection(
+        _context: Context,
+        {
+            direction,
+            directionArgs,
+            scope,
+            filter,
+            sort,
+        }: IPaginationArgs<Subject>
+    ) {
+        if (filter) {
+            if (filterHasProperty('organizationId', filter)) {
+                scope.leftJoinAndSelect('Subject.organization', 'Organization')
+            }
 
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    status: 'Subject.status',
+                    system: 'Subject.system',
+                    organizationId: 'Organization.organization_id',
+                })
+            )
+        }
+
+        const data = await paginateData({
+            direction,
+            directionArgs,
+            scope,
+            sort: {
+                primaryKey: 'id',
+                aliases: {
+                    id: 'id',
+                    name: 'name',
+                    system: 'system',
+                },
+                sort,
+            },
+        })
+
+        for (const edge of data.edges) {
+            const subject = edge.node as Subject
+            const newNode: Partial<SubjectConnectionNode> = {
+                id: subject.id,
+                name: subject.name,
+                status: subject.status,
+                system: subject.system,
+                // other properties have dedicated resolvers that use Dataloader
+            }
+
+            edge.node = newNode
+        }
+
+        return data
+    }
+
+    public async getRole({ role_id }: Role) {
         try {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
@@ -961,8 +1006,6 @@ export class Model {
     }
 
     public async getRoles() {
-        console.info('Unauthenticated endpoint call getRoles')
-
         try {
             const roles = await this.roleRepository.find()
             return roles
@@ -972,8 +1015,6 @@ export class Model {
     }
 
     public async getClass({ class_id }: Class) {
-        console.info('Unauthenticated endpoint call getClass')
-
         try {
             const _class = await this.classRepository.findOneOrFail({
                 class_id,
@@ -984,8 +1025,6 @@ export class Model {
         }
     }
     public async getClasses() {
-        console.info('Unauthenticated endpoint call getClasses')
-
         try {
             const classes = await this.classRepository.find()
             return classes
@@ -995,8 +1034,6 @@ export class Model {
     }
 
     public async getSchool({ school_id }: School) {
-        console.info('Unauthenticated endpoint call getSchool')
-
         try {
             const school = await this.schoolRepository.findOneOrFail({
                 school_id,
@@ -1133,6 +1170,7 @@ export class Model {
             file,
             [processUserFromCSVRow],
             context.permissions,
+            validateUserCSVHeaders,
             isDryRun
         )
 

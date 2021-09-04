@@ -54,10 +54,6 @@ export class School extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        console.info(
-            `Unauthenticated endpoint call school membership by ${context.permissions?.getUserId()}`
-        )
-
         try {
             const membership = await getRepository(
                 SchoolMembership
