@@ -1,0 +1,5 @@
+organization_name,user_given_name,user_family_name,user_shortcode,user_email,user_phone,user_date_of_birth,user_gender,organization_role_name,school_name,class_name,user_alternate_email,user_alternate_phone
+Apollo 1 Org,One,Test,,test@test.com,,03-2019,Male,Teacher,School I,Class I,apple,
+Apollo 1 Org,One,Test,,test@test.com,,03-2019,Male,School Admin,,,,
+Apollo 1 Org,Three,Test,,test@test.com,,05-2018,Female,Teacher,,,,pear
+Apollo 1 Org,Three,Test,,test@test.com,,06-2018,Female,Teacher,,,,

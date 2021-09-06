@@ -1068,6 +1068,105 @@ describe('model.csv', () => {
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
             })
+            it('should throw errors when the alternate contact info is wrong', async () => {
+                const filename = 'users_with_bad_alternative_contacts.csv'
+                file = fs.createReadStream(
+                    resolve(`tests/fixtures/${filename}`)
+                )
+
+                const organization = createOrganization()
+                organization.organization_name = 'Apollo 1 Org'
+                await connection.manager.save(organization)
+                const school = createSchool(organization)
+                school.school_name = 'School I'
+                await connection.manager.save(school)
+                const role = createRole('Teacher', organization)
+                await connection.manager.save(role)
+                const anotherRole = createRole('School Admin', organization)
+                await connection.manager.save(anotherRole)
+                const cls = createClass([school], organization)
+                cls.class_name = 'Class I'
+                await connection.manager.save(cls)
+                const adminUser = await createAdminUser(testClient)
+
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    adminUser.user_id,
+                    organization.organization_id,
+                    getAdminAuthToken()
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    adminUser.user_id,
+                    organization.organization_id,
+                    role.role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    PermissionName.upload_users_40880,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                const expectedCSVError1 = buildCsvError(
+                    customErrors.invalid_email.code,
+                    1,
+                    'user_alternate_email',
+                    customErrors.invalid_email.message,
+                    {
+                        attribute: 'Alternate email',
+                        entity: 'User',
+                        key: 'user_alternate_email',
+                        label: 'user_alternate_email',
+                        regex: {},
+                        name: 'email',
+                        value: 'apple',
+                    }
+                )
+                const expectedCsvError2 = buildCsvError(
+                    customErrors.invalid_phone.code,
+                    3,
+                    'user_alternate_phone',
+                    customErrors.invalid_phone.message,
+                    {
+                        attribute: 'Alternate phone',
+                        entity: 'User',
+                        key: 'user_alternate_phone',
+                        label: 'user_alternate_phone',
+                        regex: {},
+                        name: 'phone',
+                        value: 'pear',
+                    }
+                )
+
+                try {
+                    await uploadUsers(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding,
+                        false,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    expect.fail(`Function incorrectly resolved.`)
+                } catch (e) {
+                    expect(e)
+                        .to.have.property('message')
+                        .equal(customErrors.csv_bad_input.message)
+                    expect(e).to.have.property('errors').to.have.length(2)
+                    expect(e)
+                        .to.have.property('errors')
+                        .to.have.deep.members([
+                            expectedCSVError1,
+                            expectedCsvError2,
+                        ])
+                }
+                const usersCount = await User.count()
+                expect(usersCount).eq(2)
+            })
         })
 
         context('when file data is correct', () => {
@@ -1168,6 +1267,49 @@ describe('model.csv', () => {
                     where: { email: 'test@test.com' },
                 })
                 expect(usersCount).eq(0)
+            })
+            context('when file data data has alternate contact info', () => {
+                const filename = 'users_example_with_alternative_contacts.csv'
+                it('should create the users with alternate contact info', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const result = await uploadUsers(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding,
+                        false,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    expect(result.filename).eq(filename)
+                    expect(result.mimetype).eq(mimetype)
+                    expect(result.encoding).eq(encoding)
+
+                    const usersCount = await User.count({
+                        where: { email: 'test@test.com' },
+                    })
+                    expect(usersCount).eq(2)
+                    const dbUser = await User.findOne({
+                        where: {
+                            email: 'test@test.com',
+                            given_name: 'One',
+                        },
+                    })
+                    expect(dbUser).to.exist
+                    expect(dbUser?.alternate_email).to.equal('testa@test.com')
+                    const dbUser2 = await User.findOne({
+                        where: {
+                            email: 'test@test.com',
+                            given_name: 'Three',
+                        },
+                    })
+                    expect(dbUser2).to.exist
+                    expect(dbUser2?.alternate_phone).to.equal('+4444444444444')
+                })
             })
         })
     })
