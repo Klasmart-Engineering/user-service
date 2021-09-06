@@ -97,7 +97,7 @@ export const schoolsForUsers = async (
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Organization.organization_id',
                 schoolId: 'Memberships.school_id',
-                roleId: 'Roles.role_id',
+                roleId: '',
                 organizationUserStatus: '',
                 userId: '',
                 phone: '',
