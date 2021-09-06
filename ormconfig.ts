@@ -13,6 +13,7 @@ const config: ConnectionOptions = {
         'postgres://postgres:kidsloop@localhost/postgres',
     entities: ['src/entities/*.ts'],
     migrations: ['migrations/*.js'],
+    cache: true,
     cli: {
         migrationsDir: 'migrations',
     },

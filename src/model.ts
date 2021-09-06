@@ -86,6 +86,7 @@ export class Model {
             const connection = await createConnection({
                 name: 'default',
                 type: 'postgres',
+                cache: true,
                 synchronize: false,
                 logging: Boolean(process.env.DATABASE_LOGGING),
                 entities: ['src/entities/*.ts'],
