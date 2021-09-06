@@ -201,6 +201,7 @@ export class UserPermissions {
                         .having('bool_and(Permission.allow) = :allowed', {
                             allowed: true,
                         })
+                        .cache(true)
                         .getRawMany()
 
                     for (const {
@@ -262,6 +263,7 @@ export class UserPermissions {
                             .having('bool_and(Permission.allow) = :allowed', {
                                 allowed: true,
                             })
+                            .cache(true)
                             .getRawMany()
 
                         for (const {
