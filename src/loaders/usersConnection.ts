@@ -89,10 +89,6 @@ export const schoolsForUsers = async (
         .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        if (filterHasProperty('roleId', filter)) {
-            scope.leftJoinAndSelect('Memberships.roles', 'Roles')
-        }
-
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Organization.organization_id',
