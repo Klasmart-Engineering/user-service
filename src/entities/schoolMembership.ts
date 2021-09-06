@@ -9,6 +9,7 @@ import {
     getRepository,
     getManager,
     EntityManager,
+    JoinColumn,
 } from 'typeorm'
 import { User } from './user'
 import { Role } from './role'
@@ -19,10 +20,10 @@ import { Context } from 'mocha'
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
-    @PrimaryColumn()
+    @PrimaryColumn('uuid')
     public user_id!: string
 
-    @PrimaryColumn()
+    @PrimaryColumn('uuid')
     public school_id!: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
@@ -32,9 +33,11 @@ export class SchoolMembership extends BaseEntity {
     public join_timestamp?: Date
 
     @ManyToOne(() => User, (user) => user.school_memberships)
+    @JoinColumn({ name: 'user_id', referencedColumnName: 'user_id' })
     public user?: Promise<User>
 
     @ManyToOne(() => School, (school) => school.memberships)
+    @JoinColumn({ name: 'school_id', referencedColumnName: 'school_id' })
     public school?: Promise<School>
 
     @ManyToMany(() => Role, (role) => role.schoolMemberships)

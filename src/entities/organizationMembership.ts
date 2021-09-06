@@ -9,6 +9,7 @@ import {
     getRepository,
     getManager,
     EntityManager,
+    JoinColumn,
 } from 'typeorm'
 import { User } from './user'
 import { Organization } from './organization'
@@ -23,10 +24,10 @@ import validationConstants from './validations/constants'
 
 @Entity()
 export class OrganizationMembership extends BaseEntity {
-    @PrimaryColumn()
+    @PrimaryColumn('uuid')
     public user_id!: string
 
-    @PrimaryColumn()
+    @PrimaryColumn('uuid')
     public organization_id!: string
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
@@ -42,9 +43,14 @@ export class OrganizationMembership extends BaseEntity {
     public shortcode!: string
 
     @ManyToOne(() => User, (user) => user.memberships)
+    @JoinColumn({ name: 'user_id', referencedColumnName: 'user_id' })
     public user?: Promise<User>
 
     @ManyToOne(() => Organization, (organization) => organization.memberships)
+    @JoinColumn({
+        name: 'organization_id',
+        referencedColumnName: 'organization_id',
+    })
     public organization?: Promise<Organization>
 
     @ManyToMany(() => Role, (role) => role.memberships)
