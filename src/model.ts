@@ -107,6 +107,9 @@ export class Model {
                 },
             })
 
+            // always clear the cache on startup
+            await connection.queryResultCache?.clear()
+
             await runMigrations(connection)
 
             const model = new Model(connection)
