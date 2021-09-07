@@ -33,21 +33,13 @@ export const orgsForUsers = async (
             scope.leftJoin('Memberships.roles', 'Roles')
         }
 
-        if (filterHasProperty('permissionIds', filter)) {
-            if (!filterHasProperty('roleId', filter)) {
-                scope.leftJoinAndSelect('Memberships.roles', 'Roles')
-            }
-
-            scope.innerJoinAndSelect('Roles.permissions', 'Permission')
-        }
-
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Memberships.organization_id',
                 schoolId: '',
                 roleId: 'Roles.role_id',
                 organizationUserStatus: 'Memberships.status',
-                permissionIds: 'Permission.permission_id',
+                permissionIds: '',
                 userId: '',
                 phone: '',
                 classId: '',
@@ -98,18 +90,12 @@ export const schoolsForUsers = async (
         .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        if (filterHasProperty('permissionIds', filter)) {
-            scope
-                .leftJoinAndSelect('Memberships.roles', 'Roles')
-                .innerJoinAndSelect('Roles.permissions', 'Permission')
-        }
-
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Organization.organization_id',
                 schoolId: 'Memberships.school_id',
                 roleId: '',
-                permissionIds: 'Permission.permission_id',
+                permissionIds: '',
                 organizationUserStatus: '',
                 userId: '',
                 phone: '',
@@ -165,14 +151,6 @@ export const rolesForUsers = async (
         .where('User.user_id IN (:...ids)', { ids: userIds })
 
     if (filter) {
-        if (filterHasProperty('permissionIds', filter)) {
-            orgScope.innerJoinAndSelect('OrgRoles.permissions', 'Permission')
-            schoolScope.innerJoinAndSelect(
-                'SchoolRoles.permissions',
-                'Permission'
-            )
-        }
-
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'OrgMemberships.organization_id',
@@ -180,7 +158,7 @@ export const rolesForUsers = async (
                 roleId: '',
                 phone: '',
                 organizationUserStatus: '',
-                permissionIds: 'Permission.permission_id',
+                permissionIds: '',
                 userId: '',
                 classId: '',
             })
@@ -196,7 +174,7 @@ export const rolesForUsers = async (
                 schoolId: 'SchoolMemberships.school_id',
                 roleId: '',
                 organizationUserStatus: '',
-                permissionIds: 'Permission.permission_id',
+                permissionIds: '',
                 userId: '',
                 phone: '',
                 classId: '',
