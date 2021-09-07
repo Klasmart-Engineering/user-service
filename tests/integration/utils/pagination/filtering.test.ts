@@ -6,15 +6,59 @@ import { User } from '../../../../src/entities/user'
 import {
     IEntityFilter,
     getWhereClauseFromFilter,
+    getHavingClauseForExclusiveFilter,
 } from '../../../../src/utils/pagination/filtering'
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
 import { Program } from '../../../../src/entities/program'
+import { Class } from '../../../../src/entities/class'
+import { Organization } from '../../../../src/entities/organization'
+import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
+import { Role } from '../../../../src/entities/role'
+import { PermissionName } from '../../../../src/permissions/permissionNames'
+import { Permission } from '../../../../src/entities/permission'
 
 use(chaiAsPromised)
 
+const org = {
+    organization_id: '622da328-4372-48fe-a31f-97c69bd23358',
+    organization_name: 'Organization One',
+}
+
+const classesData = [
+    {
+        class_id: 'db5604ab-9a89-4cf1-809f-2417061ca26c',
+        class_name: '1 A',
+    },
+    {
+        class_id: '0feee957-6b60-45d3-b2fe-02d37b4a3e86',
+        class_name: '1 B',
+    },
+]
+
+function getOrganization() {
+    const org = new Organization()
+    org.organization_id = org.organization_id
+    org.organization_name = org.organization_name
+
+    return org
+}
+
+function getClasses() {
+    const classes: Class[] = []
+    for (const c of classesData) {
+        const class_ = new Class()
+        class_.class_id = c.class_id
+        class_.class_name = c.class_name
+
+        classes.push(class_)
+    }
+
+    return classes
+}
+
 // don't use faker, as we need this to be deterministic for these tests
-function getUsers() {
+async function getUsers() {
     const userData = [
         {
             user_id: '07d15ab3-67e2-4933-b933-3d3a3d40887f',
@@ -26,6 +70,7 @@ function getUsers() {
             gender: 'male',
             primary: true,
             deleted_at: new Date(2020, 0, 1),
+            classes: [classesData[0], classesData[1]],
         },
         {
             user_id: '122e3d10-43ed-4bac-8d7a-f0d6fde115b9',
@@ -37,11 +82,16 @@ function getUsers() {
             gender: 'female',
             primary: false,
             deleted_at: new Date(2000, 0, 1),
+            classes: [classesData[0]],
         },
     ]
 
     const users: User[] = []
     for (const u of userData) {
+        const classes = await getRepository(Class).findByIds(
+            u.classes.map((c) => c.class_id)
+        )
+
         const user = new User()
         user.user_id = u.user_id
         user.given_name = u.given_name
@@ -52,10 +102,32 @@ function getUsers() {
         user.gender = u.gender
         user.primary = u.primary
         user.deleted_at = u.deleted_at
+        user.classesStudying = Promise.resolve(classes)
         users.push(user)
     }
 
     return users
+}
+
+async function getMemberships() {
+    const users = await getRepository(User).find()
+    const organizations = await getRepository(Organization).findByIds([
+        org.organization_id,
+    ])
+
+    const memberships: OrganizationMembership[] = []
+
+    for (const u of users) {
+        const membership = new OrganizationMembership()
+        membership.user = Promise.resolve(u)
+        membership.user_id = u.user_id
+        membership.organization = Promise.resolve(organizations[0])
+        membership.organization_id = org.organization_id
+
+        memberships.push(membership)
+    }
+
+    return memberships
 }
 
 const ageRangeData = [
@@ -108,6 +180,42 @@ const ageRangeData = [
         high_value_unit: AgeRangeUnit.YEAR,
     },
 ]
+
+const rolesData = [
+    {
+        role_id: '6cbea360-550c-41d7-b1bf-53b261a30b7b',
+        role_name: 'Custom Student',
+        permissions: [PermissionName.attend_live_class_as_a_student_187],
+    },
+    {
+        role_id: '3b7abed9-5d8f-4e06-9a4e-7c8888ecc66d',
+        role_name: 'Custom Teacher',
+        permissions: [PermissionName.attend_live_class_as_a_teacher_186],
+    },
+]
+
+async function getRoles() {
+    const roles: Role[] = []
+    const organizations = await getRepository(Organization).findByIds([
+        org.organization_id,
+    ])
+
+    for (const r of rolesData) {
+        const permissions = await getRepository(Permission).findByIds(
+            r.permissions
+        )
+
+        const role = new Role()
+        role.role_id = r.role_id
+        role.role_name = r.role_name
+        role.permissions = Promise.resolve(permissions)
+        role.organization = Promise.resolve(organizations[0])
+
+        roles.push(role)
+    }
+
+    return roles
+}
 
 function getAgeRanges() {
     const ageRanges: AgeRange[] = []
@@ -181,7 +289,33 @@ describe('filtering', () => {
     })
 
     beforeEach(async () => {
-        await connection.manager.save(getUsers())
+        await connection.manager.save(getOrganization())
+        await connection.manager.save(getClasses())
+        await connection.manager.save(await getRoles())
+        await connection.manager.save(await getUsers())
+        await connection.manager.save(await getMemberships())
+
+        // Getting memberships
+        const memberships = await getRepository(OrganizationMembership).find()
+
+        // Getting student and teacher custom roles
+        const studentRole = await getRepository(Role).find({
+            where: { role_name: 'Custom Student', system_role: false },
+        })
+
+        const teacherRole = await getRepository(Role).find({
+            where: { role_name: 'Custom Teacher', system_role: false },
+        })
+
+        // Assign role to memberships
+        for (let i = 0; i < memberships.length; i++) {
+            const role = i ? studentRole : teacherRole
+            memberships[i].roles = Promise.resolve(role)
+        }
+
+        // Saving changes
+        await connection.manager.save(memberships)
+
         scope = getRepository(User).createQueryBuilder()
 
         await connection.manager.save(getAgeRanges())
@@ -408,6 +542,39 @@ describe('filtering', () => {
                     userId: "concat(User.user_id, '')",
                 })
             )
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(1)
+        })
+
+        it('supports uuid.ex', async () => {
+            const filter: IEntityFilter = {
+                classId: {
+                    operator: 'ex',
+                    value: classesData[1].class_id,
+                },
+            }
+
+            const { query, parameters } = getHavingClauseForExclusiveFilter(
+                filter,
+                'classId',
+                'Class.class_id'
+            )
+
+            scope
+                .leftJoinAndSelect('User.memberships', 'OrgMembership')
+                .leftJoin('User.classesStudying', 'ClassStudying')
+                .leftJoin('User.classesTeaching', 'ClassTeaching')
+                .leftJoin(
+                    Class,
+                    'Class',
+                    'ClassStudying.class_id = Class.class_id OR ClassTeaching.class_id = Class.class_id'
+                )
+                .groupBy('User.user_id')
+                .addGroupBy('OrgMembership.user_id')
+                .addGroupBy('OrgMembership.organization_id')
+                .andHaving(query, parameters)
+
             const data = await scope.getMany()
 
             expect(data.length).to.equal(1)
@@ -646,6 +813,84 @@ describe('filtering', () => {
 
             const fn = async () => await programScope.getMany()
             await expect(fn()).to.be.rejected
+        })
+    })
+
+    context('stringArrays', () => {
+        it('supports stringArray.in', async () => {
+            const filter: IEntityFilter = {
+                permissionIds: {
+                    operator: 'in',
+                    value: [
+                        PermissionName.attend_live_class_as_a_teacher_186,
+                        PermissionName.attend_live_class_as_a_student_187,
+                    ],
+                },
+            }
+
+            scope
+                .leftJoinAndSelect('User.memberships', 'OrgMembership')
+                .innerJoin(
+                    'OrgMembership.roles',
+                    'RoleMembershipsOrganizationMembership'
+                )
+                .innerJoin(
+                    'RoleMembershipsOrganizationMembership.permissions',
+                    'Permission'
+                )
+                .groupBy('Permission.permission_id')
+                .addGroupBy('User.user_id')
+                .addGroupBy('OrgMembership.user_id')
+                .addGroupBy('OrgMembership.organization_id')
+                .andHaving('bool_and(Permission.allow) = :allowed', {
+                    allowed: true,
+                })
+                .andWhere(
+                    getWhereClauseFromFilter(filter, {
+                        permissionIds: 'Permission.permission_id',
+                    })
+                )
+
+            const data = await scope.getRawMany()
+            expect(data.length).to.equal(2)
+        })
+
+        it('supports stringArray.nin', async () => {
+            const filter: IEntityFilter = {
+                permissionIds: {
+                    operator: 'nin',
+                    value: [
+                        PermissionName.attend_live_class_as_a_teacher_186,
+                        PermissionName.attend_live_class_as_a_student_187,
+                    ],
+                },
+            }
+
+            scope
+                .leftJoin('User.memberships', 'OrgMembership')
+                .innerJoin(
+                    'OrgMembership.roles',
+                    'RoleMembershipsOrganizationMembership'
+                )
+                .innerJoin(
+                    'RoleMembershipsOrganizationMembership.permissions',
+                    'Permission'
+                )
+                .groupBy('Permission.permission_id')
+                .addGroupBy('User.user_id')
+                .addGroupBy('OrgMembership.user_id')
+                .addGroupBy('OrgMembership.organization_id')
+                .andHaving('bool_and(Permission.allow) = :allowed', {
+                    allowed: true,
+                })
+                .andWhere(
+                    getWhereClauseFromFilter(filter, {
+                        permissionIds: 'Permission.permission_id',
+                    })
+                )
+
+            const data = await scope.getRawMany()
+            expect(data.length).to.equal(0)
         })
     })
 })
