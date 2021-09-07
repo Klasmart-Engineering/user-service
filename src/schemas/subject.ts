@@ -40,6 +40,9 @@ const typeDefs = gql`
     }
 
     input SubjectFilter {
+        # table columns
+        id: UUIDFilter
+        name: StringFilter
         status: StringFilter
         system: BooleanFilter
 

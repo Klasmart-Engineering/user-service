@@ -37,7 +37,7 @@ import { createAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 
-describe('subcategoriesConnection', () => {
+describe('subjectsConnection', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let admin: User
@@ -142,6 +142,7 @@ describe('subcategoriesConnection', () => {
                 org1Categories[index + 1],
             ])
 
+            subject.name = `Subject ${i + 1}`
             org1Subjects.push(subject)
         }
 
@@ -150,10 +151,10 @@ describe('subcategoriesConnection', () => {
             const index = i * (categoriesCount / subjectsCount)
             let subject = await createSubject(org2, [
                 org2Categories[index],
-
                 org2Categories[index + 1],
             ])
 
+            subject.name = `Subject ${i + 1}`
             org2Subjects.push(subject)
         }
 
@@ -460,6 +461,67 @@ describe('subcategoriesConnection', () => {
 
             subjects.forEach((subject) => {
                 expect(subject.node.system).to.eq(filterSystem)
+            })
+        })
+
+        it('supports filtering by subject id', async () => {
+            const subjectId = org1Subjects[0].id
+            const filter: IEntityFilter = {
+                id: {
+                    operator: 'eq',
+                    value: subjectId,
+                },
+            }
+
+            const result = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(1)
+
+            expect(result.pageInfo.hasNextPage).to.be.false
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+
+            expect(result.edges.length).eq(1)
+
+            const subjects = result.edges
+            subjects.forEach((subject) => {
+                expect(subject.node.id).to.eq(subjectId)
+            })
+        })
+
+        it('supports filtering by subject name', async () => {
+            const search = '2'
+            const filter: IEntityFilter = {
+                name: {
+                    operator: 'contains',
+                    value: search,
+                },
+            }
+
+            const result = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            expect(result.totalCount).to.eq(2)
+
+            expect(result.pageInfo.hasNextPage).to.be.false
+            expect(result.pageInfo.hasPreviousPage).to.be.false
+
+            expect(result.edges.length).eq(2)
+
+            const subjects = result.edges
+
+            subjects.forEach((subject) => {
+                expect(subject.node.name).includes(search)
             })
         })
     })
