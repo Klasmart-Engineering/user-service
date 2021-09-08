@@ -108,9 +108,11 @@ context('User loaders', () => {
     context('usersByIds', () => {
         let users: User[]
 
-        function extractUserData(user: User | undefined) {
-            if (user === undefined) return undefined
-            return pick(user, [
+        function extractUserOrErrorData(userOrError: User | Error) {
+            if (userOrError instanceof Error) {
+                return pick(userOrError, ['message'])
+            }
+            return pick(userOrError, [
                 'user_id',
                 'given_name',
                 'family_name',
@@ -135,10 +137,15 @@ context('User loaders', () => {
                     users[1].user_id,
                     faker.random.uuid(),
                 ])
-            ).map(extractUserData)
+            ).map(extractUserOrErrorData)
 
             expect(loadedUsers).to.deep.equal(
-                [users[0], undefined, users[1], undefined].map(extractUserData)
+                [
+                    users[0],
+                    Error("User doesn't exist"),
+                    users[1],
+                    Error("User doesn't exist"),
+                ].map(extractUserOrErrorData)
             )
         })
 
@@ -146,11 +153,11 @@ context('User loaders', () => {
             // DB by default would return in A-Z `id` order, test the reverse
             const sortedUsers = users
                 .sort((a, b) => -a.user_id.localeCompare(b.user_id))
-                .map(extractUserData)
+                .map(extractUserOrErrorData) as User[]
 
             const loadedUsers = (
-                await usersByIds(sortedUsers.map((u) => u!.user_id))
-            ).map(extractUserData)
+                await usersByIds(sortedUsers.map((u) => u.user_id))
+            ).map(extractUserOrErrorData)
 
             expect(loadedUsers).to.deep.equal(sortedUsers)
         })

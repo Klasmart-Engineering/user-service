@@ -4,6 +4,7 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 
 export interface IUsersLoaders {
+    user: DataLoader<string, User | Error>
     orgMemberships: DataLoader<string, OrganizationMembership[]>
     schoolMemberships: DataLoader<string, SchoolMembership[]>
 }
@@ -50,10 +51,13 @@ export const schoolMembershipsForUsers = async (
 
 export async function usersByIds(
     userIds: readonly string[]
-): Promise<(User | undefined)[]> {
+): Promise<(User | Error)[]> {
     const data = await User.findByIds(userIds as string[])
 
     const map = new Map(data.map((user) => [user.user_id, user]))
 
-    return userIds.map((id) => map.get(id))
+    return userIds.map(
+        // TODO: convert to APIError once hotfix branch is aligned to master
+        (id) => map.get(id) ?? Error("User doesn't exist")
+    )
 }

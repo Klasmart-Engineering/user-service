@@ -233,9 +233,7 @@ export default function getDefault(
                     ctx: Context,
                     _info
                 ) => {
-                    return ctx.loaders.organizationMembership.user.load(
-                        membership.user_id
-                    )
+                    return ctx.loaders.user.user.load(membership.user_id)
                 },
             },
         },
