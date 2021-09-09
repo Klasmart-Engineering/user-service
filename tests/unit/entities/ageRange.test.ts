@@ -86,7 +86,7 @@ describe('AgeRange', () => {
         })
 
         context(
-            'when the age range already exists with the same org, high and low values',
+            'when the age range already exists with the same org, high/low values and units',
             () => {
                 beforeEach(async () => {
                     await manager.save(org)
@@ -95,6 +95,8 @@ describe('AgeRange', () => {
 
                 it('raises an error', async () => {
                     const newAgeRange = createAgeRange(org)
+                    newAgeRange.high_value_unit = ageRange.high_value_unit
+                    newAgeRange.low_value_unit = ageRange.low_value_unit
                     newAgeRange.high_value = ageRange.high_value
                     newAgeRange.low_value = ageRange.low_value
                     await expect(manager.save(newAgeRange)).to.be.rejected
