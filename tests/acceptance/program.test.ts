@@ -125,6 +125,52 @@ describe('acceptance.program', () => {
     })
 
     context('programsConnection', () => {
+        context('using explict count', async () => {
+            async function makeQuery(pageSize: any) {
+                return await request
+                    .post('/graphql')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: PROGRAMS_CONNECTION,
+                        variables: {
+                            direction: 'FORWARD',
+                            directionArgs: {
+                                count: pageSize,
+                            },
+                        },
+                    })
+            }
+
+            it('passes validation', async () => {
+                const pageSize = 5
+
+                const response = await makeQuery(pageSize)
+
+                expect(response.status).to.eq(200)
+                const programsConnection = response.body.data.programsConnection
+                expect(programsConnection.edges.length).to.equal(pageSize)
+            })
+
+            it('fails validation', async () => {
+                const pageSize = 'not_a_number'
+
+                const response = await makeQuery(pageSize)
+
+                expect(response.status).to.eq(400)
+                expect(response.body.errors.length).to.equal(1)
+                const message = response.body.errors[0].message
+                expect(message)
+                    .to.be.a('string')
+                    .and.satisfy((msg: string) =>
+                        msg.startsWith(
+                            'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
+                        )
+                    )
+            })
+        })
         it('queries paginated programs without filter', async () => {
             const response = await request
                 .post('/graphql')
