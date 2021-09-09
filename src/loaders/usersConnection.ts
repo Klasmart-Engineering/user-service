@@ -92,7 +92,7 @@ export const schoolsForUsers = async (
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'Organization.organization_id',
-                schoolId: 'Memberships.school_id',
+                schoolId: '',
                 roleId: '',
                 organizationUserStatus: '',
                 userId: '',

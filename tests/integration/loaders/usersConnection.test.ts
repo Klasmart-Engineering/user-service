@@ -216,7 +216,7 @@ describe('usersConnection loaders', async () => {
                 expect(school.length).to.equal(0)
             }
         })
-        it('filters school by schoolId', async () => {
+        it('does not filter school by schoolId', async () => {
             const filter: IEntityFilter = {
                 schoolId: {
                     operator: 'neq',
@@ -225,7 +225,7 @@ describe('usersConnection loaders', async () => {
             }
             const userSchools = await schoolsForUsers(userIds, filter)
             for (const school of userSchools) {
-                expect(school.length).to.equal(0)
+                expect(school.length).to.equal(1)
             }
         })
         it('does not filter school by roleId', async () => {
