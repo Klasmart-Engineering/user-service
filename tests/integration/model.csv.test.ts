@@ -93,6 +93,8 @@ import { addOrganizationToUserAndValidate } from '../utils/operations/userOps'
 import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
 import { grantPermission } from '../utils/operations/roleOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
+import { Permission } from '../../src/entities/permission'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
 
@@ -1080,34 +1082,29 @@ describe('model.csv', () => {
                 const school = createSchool(organization)
                 school.school_name = 'School I'
                 await connection.manager.save(school)
+
+                const perm = new Permission()
+                perm.permission_name = PermissionName.upload_users_40880
+
                 const role = createRole('Teacher', organization)
-                await connection.manager.save(role)
+                role.permissions = Promise.resolve([perm])
+                await role.save()
+
                 const anotherRole = createRole('School Admin', organization)
-                await connection.manager.save(anotherRole)
+                anotherRole.permissions = Promise.resolve([perm])
+                await anotherRole.save()
+
                 const cls = createClass([school], organization)
                 cls.class_name = 'Class I'
                 await connection.manager.save(cls)
                 const adminUser = await createAdminUser(testClient)
 
-                await addOrganizationToUserAndValidate(
-                    testClient,
-                    adminUser.user_id,
-                    organization.organization_id,
-                    getAdminAuthToken()
-                )
-                await addRoleToOrganizationMembership(
-                    testClient,
-                    adminUser.user_id,
-                    organization.organization_id,
-                    role.role_id,
-                    { authorization: getAdminAuthToken() }
-                )
-                await grantPermission(
-                    testClient,
-                    role.role_id,
-                    PermissionName.upload_users_40880,
-                    { authorization: getAdminAuthToken() }
-                )
+                const membership = createOrganizationMembership({
+                    user: adminUser,
+                    organization,
+                })
+                membership.roles = Promise.resolve([role])
+                await membership.save()
 
                 const expectedCSVError1 = buildCsvError(
                     customErrors.invalid_email.code,
@@ -1182,35 +1179,29 @@ describe('model.csv', () => {
                 school = createSchool(organization)
                 school.school_name = 'School I'
                 await connection.manager.save(school)
+
+                const perm = new Permission()
+                perm.permission_name = PermissionName.upload_users_40880
+
                 role = createRole('Teacher', organization)
-                await connection.manager.save(role)
+                role.permissions = Promise.resolve([perm])
+                await role.save()
+
                 const anotherRole = createRole('School Admin', organization)
-                await connection.manager.save(anotherRole)
+                anotherRole.permissions = Promise.resolve([perm])
+                await anotherRole.save()
+
                 cls = createClass([school], organization)
                 cls.class_name = 'Class I'
                 await connection.manager.save(cls)
-
                 const adminUser = await createAdminUser(testClient)
 
-                await addOrganizationToUserAndValidate(
-                    testClient,
-                    adminUser.user_id,
-                    organization.organization_id,
-                    getAdminAuthToken()
-                )
-                await addRoleToOrganizationMembership(
-                    testClient,
-                    adminUser.user_id,
-                    organization.organization_id,
-                    role.role_id,
-                    { authorization: getAdminAuthToken() }
-                )
-                await grantPermission(
-                    testClient,
-                    role.role_id,
-                    PermissionName.upload_users_40880,
-                    { authorization: getAdminAuthToken() }
-                )
+                const membership = createOrganizationMembership({
+                    user: adminUser,
+                    organization,
+                })
+                membership.roles = Promise.resolve([role])
+                await membership.save()
             })
 
             it('should create the user', async () => {
@@ -1284,10 +1275,6 @@ describe('model.csv', () => {
                         false,
                         { authorization: getAdminAuthToken() }
                     )
-
-                    expect(result.filename).eq(filename)
-                    expect(result.mimetype).eq(mimetype)
-                    expect(result.encoding).eq(encoding)
 
                     const usersCount = await User.count({
                         where: { email: 'test@test.com' },
