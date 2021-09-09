@@ -1078,10 +1078,10 @@ describe('model.csv', () => {
 
                 const organization = createOrganization()
                 organization.organization_name = 'Apollo 1 Org'
-                await connection.manager.save(organization)
+                await organization.save()
                 const school = createSchool(organization)
                 school.school_name = 'School I'
-                await connection.manager.save(school)
+                await school.save()
 
                 const perm = new Permission()
                 perm.permission_name = PermissionName.upload_users_40880
