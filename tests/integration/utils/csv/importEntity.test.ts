@@ -55,7 +55,7 @@ describe('createEntityFromCsvWithRollBack', () => {
         })
 
         it('does not create any entities', async () => {
-            const fn = () =>
+            await expect(
                 createEntityFromCsvWithRollBack(
                     connection,
                     file,
@@ -63,7 +63,7 @@ describe('createEntityFromCsvWithRollBack', () => {
                     adminPermissions,
                     undefined
                 )
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             organizationCount = await connection.manager
                 .getRepository(Organization)

@@ -936,16 +936,15 @@ describe('classesConnection', () => {
                 },
             }
 
-            const fn = async () =>
-                await classesConnection(
+            await expect(
+                classesConnection(
                     testClient,
                     'FORWARD',
                     { count: 10 },
                     { authorization: getAdminAuthToken() },
                     filter
                 )
-
-            await expect(fn()).to.be.rejected
+            ).to.be.rejected
         })
 
         it("filters by age range value/unit from avoiding 'None Specified'", async () => {

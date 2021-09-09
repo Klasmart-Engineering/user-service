@@ -463,7 +463,7 @@ describe('school', () => {
 
         context('when user does not have the edit school permission', () => {
             it('should throw a permission exception, and not update the database entry', async () => {
-                const fn = () =>
+                await expect(
                     updateSchool(
                         testClient,
                         schoolId,
@@ -471,7 +471,7 @@ describe('school', () => {
                         undefined,
                         { authorization: getNonAdminAuthToken() }
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbSchool = await School.findOneOrFail({
                     where: { school_id: schoolId },
@@ -739,11 +739,11 @@ describe('school', () => {
                     { authorization: getAdminAuthToken() }
                 )
 
-                const fn = () =>
+                await expect(
                     addUserToSchool(testClient, idOfUserToBeAdded, schoolId, {
                         authorization: getNonAdminAuthToken(),
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbMembership = await SchoolMembership.findOne({
                     where: { user_id: idOfUserToBeAdded, school_id: schoolId },
@@ -789,11 +789,11 @@ describe('school', () => {
 
         context('when not authenticated', () => {
             it('should throw a permission exception, and not delete the database entry', async () => {
-                const fn = () =>
+                await expect(
                     deleteSchool(testClient, school.school_id, {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbSchool = await School.findOneOrFail(school.school_id)
                 expect(dbSchool.status).to.eq(Status.ACTIVE)
@@ -819,11 +819,11 @@ describe('school', () => {
                     })
 
                     it('should throw a permission exception, and not delete the database entry', async () => {
-                        const fn = () =>
+                        await expect(
                             deleteSchool(testClient, school.school_id, {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbSchool = await School.findOneOrFail(
                             school.school_id
@@ -980,24 +980,22 @@ describe('school', () => {
 
         context('when not authenticated', () => {
             it('fails to list programs in the school', async () => {
-                const fn = () =>
+                await expect(
                     listPrograms(testClient, school.school_id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
             })
         })
 
         context('when authenticated', () => {
             context('and the user does not have view class permissions', () => {
                 it('fails to list programs in the school', async () => {
-                    const fn = () =>
+                    await expect(
                         listPrograms(testClient, school.school_id, {
                             authorization: getNonAdminAuthToken(),
                         })
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
 
@@ -1079,11 +1077,11 @@ describe('school', () => {
 
         context('when not authenticated', () => {
             it('throws a permission error', async () => {
-                const fn = () =>
+                await expect(
                     editPrograms(testClient, school.school_id, [program.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbPrograms = (await school.programs) || []
                 expect(dbPrograms).to.be.empty
@@ -1107,14 +1105,14 @@ describe('school', () => {
                 'and the user does not have edit school permissions',
                 () => {
                     it('throws a permission error', async () => {
-                        const fn = () =>
+                        await expect(
                             editPrograms(
                                 testClient,
                                 school.school_id,
                                 [program.id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbPrograms = (await school.programs) || []
                         expect(dbPrograms).to.be.empty

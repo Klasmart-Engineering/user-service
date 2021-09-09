@@ -55,9 +55,7 @@ describe('Subject', () => {
             })
 
             it('raises an error', async () => {
-                const fn = () => manager.save(subject)
-
-                expect(fn()).to.be.rejected
+                await expect(manager.save(subject)).to.be.rejected
             })
         })
 

@@ -254,7 +254,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -262,8 +262,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -276,7 +275,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -284,8 +283,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -298,7 +296,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -306,8 +304,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -320,7 +317,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -328,8 +325,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
     })
@@ -342,7 +338,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -350,8 +346,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -364,7 +359,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -372,8 +367,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -386,7 +380,7 @@ describe('processClassFromCSVRow', () => {
             school_name: 'some-school',
             program_name: progName,
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -394,8 +388,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -408,7 +401,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: 'some-prog',
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -416,8 +409,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)
@@ -430,7 +422,7 @@ describe('processClassFromCSVRow', () => {
             school_name: school1Name,
             program_name: 'some-prog',
         }
-        const fn = () =>
+        await expect(
             processClassFromCSVRow(
                 connection.manager,
                 row,
@@ -438,8 +430,7 @@ describe('processClassFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
 
         const dbClass = await Class.find()
         expect(dbClass.length).to.equal(1)

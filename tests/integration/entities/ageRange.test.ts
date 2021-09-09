@@ -210,7 +210,7 @@ describe('ageRange', () => {
                                 'and does not have delete age range permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteAgeRange(
                                                 testClient,
                                                 ageRange.id,
@@ -218,8 +218,7 @@ describe('ageRange', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbAgeRange = await AgeRange.findOneOrFail(
                                             ageRange.id
                                         )
@@ -254,7 +253,7 @@ describe('ageRange', () => {
                                     })
 
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteAgeRange(
                                                 testClient,
                                                 ageRange.id,
@@ -262,8 +261,7 @@ describe('ageRange', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbAgeRange = await AgeRange.findOneOrFail(
                                             ageRange.id
                                         )
@@ -280,7 +278,7 @@ describe('ageRange', () => {
                                 'and does not have delete age range permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteAgeRange(
                                                 testClient,
                                                 ageRange.id,
@@ -288,8 +286,7 @@ describe('ageRange', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbAgeRange = await AgeRange.findOneOrFail(
                                             ageRange.id
                                         )

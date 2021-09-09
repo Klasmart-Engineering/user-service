@@ -219,11 +219,11 @@ describe('organization', () => {
             })
 
             it('should throw a permission exception and not mutate the database entry', async () => {
-                const fn = () =>
+                await expect(
                     updateOrganization(testClient, organizationId, mods, {
                         authorization: authTokenOfUserMakingMod,
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbOrg = await Organization.findOneOrFail(organizationId)
                 expect(dbOrg).to.not.include(mods)
             })
@@ -414,7 +414,7 @@ describe('organization', () => {
 
             context('and the shortcode is not valid', () => {
                 it('fails to create a class', async () => {
-                    const fn = () =>
+                    await expect(
                         createClass(
                             testClient,
                             organizationId,
@@ -422,7 +422,7 @@ describe('organization', () => {
                             'very horrid',
                             { authorization: getAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
         })
@@ -667,7 +667,7 @@ describe('organization', () => {
 
             context('and the shortcode is not valid', () => {
                 it('fails to create the school', async () => {
-                    const fn = () =>
+                    await expect(
                         createSchool(
                             testClient,
                             organizationId,
@@ -675,7 +675,7 @@ describe('organization', () => {
                             'myverywrong1',
                             { authorization: getAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
         })
@@ -3129,7 +3129,7 @@ describe('organization', () => {
                     } as User
                     bob = await createUserAndValidate(testClient, bob)
 
-                    const fn = () =>
+                    await expect(
                         editMembership(
                             testClient,
                             organizationId,
@@ -3147,8 +3147,7 @@ describe('organization', () => {
                             new Array(roleId),
                             { authorization: idLessToken }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             }
         )
@@ -3300,13 +3299,13 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to delete the organization', async () => {
-                const fn = () =>
+                await expect(
                     deleteOrganization(
                         testClient,
                         organization.organization_id,
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbOrganization = await Organization.findOneOrFail(
                     organization.organization_id
                 )
@@ -3333,13 +3332,13 @@ describe('organization', () => {
                     })
 
                     it('fails to delete the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             deleteOrganization(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbOrganization = await Organization.findOneOrFail(
                             organization.organization_id
                         )
@@ -3514,15 +3513,14 @@ describe('organization', () => {
         context('when not authenticated', () => {
             context('and it tries to create new age ranges', () => {
                 it('fails to create age ranges in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrUpdateAgeRanges(
                             testClient,
                             organization.organization_id,
                             [ageRangeInfo(ageRange)],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbAgeRanges = await AgeRange.find({
                         where: {
                             organization: {
@@ -3554,15 +3552,14 @@ describe('organization', () => {
                     })
 
                     it('fails to update age ranges in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             createOrUpdateAgeRanges(
                                 testClient,
                                 organization.organization_id,
                                 [newAgeRange],
                                 { authorization: undefined }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbAgeRanges = await AgeRange.find({
                             where: {
                                 organization: {
@@ -3600,15 +3597,14 @@ describe('organization', () => {
 
                     context('and it tries to create new age ranges', () => {
                         it('fails to create age ranges in the organization', async () => {
-                            const fn = () =>
+                            await expect(
                                 createOrUpdateAgeRanges(
                                     testClient,
                                     organization.organization_id,
                                     [ageRangeInfo(ageRange)],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbAgeRanges = await AgeRange.find({
                                 where: {
                                     organization: {
@@ -3662,7 +3658,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update age ranges in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateAgeRanges(
                                         testClient,
                                         organization.organization_id,
@@ -3671,8 +3667,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
                                         organization: {
@@ -3815,7 +3810,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update age ranges in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateAgeRanges(
                                         testClient,
                                         organization.organization_id,
@@ -3824,8 +3819,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbAgeRanges = await AgeRange.find({
                                     where: {
                                         organization: {
@@ -4007,12 +4001,11 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to list age ranges in the organization', async () => {
-                const fn = () =>
+                await expect(
                     listAgeRanges(testClient, organization.organization_id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbAgeRanges = await AgeRange.find({
                     where: {
                         organization: {
@@ -4042,14 +4035,13 @@ describe('organization', () => {
                     })
 
                     it('fails to list age ranges in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listAgeRanges(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbAgeRanges = await AgeRange.find({
                             where: {
                                 organization: {
@@ -4162,15 +4154,14 @@ describe('organization', () => {
                 it('fails to create grades in the organization', async () => {
                     const gradeDetails = await gradeInfo(grade)
 
-                    const fn = () =>
+                    await expect(
                         createOrUpdateGrades(
                             testClient,
                             organization.organization_id,
                             [gradeDetails],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbGrades = await Grade.find({
                         where: {
                             organization: {
@@ -4208,15 +4199,14 @@ describe('organization', () => {
                 })
 
                 it('fails to update grades in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrUpdateGrades(
                             testClient,
                             organization.organization_id,
                             [newGrade],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbGrades = await Grade.find({
                         where: {
                             organization: {
@@ -4257,15 +4247,14 @@ describe('organization', () => {
                         it('fails to create grades in the organization', async () => {
                             const gradeDetails = await gradeInfo(grade)
 
-                            const fn = () =>
+                            await expect(
                                 createOrUpdateGrades(
                                     testClient,
                                     organization.organization_id,
                                     [gradeDetails],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbGrades = await Grade.find({
                                 where: {
                                     organization: {
@@ -4327,7 +4316,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update grades in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateGrades(
                                         testClient,
                                         organization.organization_id,
@@ -4336,8 +4325,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbGrades = await Grade.find({
                                     where: {
                                         organization: {
@@ -4499,7 +4487,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update age ranges in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateGrades(
                                         testClient,
                                         organization.organization_id,
@@ -4508,8 +4496,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbGrades = await Grade.find({
                                     where: {
                                         organization: {
@@ -4737,12 +4724,11 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to list grades in the organization', async () => {
-                const fn = () =>
+                await expect(
                     listGrades(testClient, organization.organization_id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbGrades = await Grade.find({
                     where: {
                         organization: {
@@ -4777,12 +4763,11 @@ describe('organization', () => {
                 })
 
                 it('fails to list grades in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         listGrades(testClient, organization.organization_id, {
                             authorization: getNonAdminAuthToken(),
                         })
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbGrades = await Grade.find({
                         where: {
                             organization: {
@@ -4846,7 +4831,7 @@ describe('organization', () => {
                         }
                     })
                     it('fails to list grades in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listGrades(
                                 testClient,
                                 organization.organization_id,
@@ -4854,8 +4839,7 @@ describe('organization', () => {
                                     authorization: getNonAdminAuthToken(),
                                 }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbGrades = await Grade.find({
                             where: {
                                 organization: {
@@ -4911,15 +4895,14 @@ describe('organization', () => {
         context('when not authenticated', () => {
             context('and it tries to create new subcategories', () => {
                 it('fails to create subcstegories in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrUpdateSubcategories(
                             testClient,
                             organization.organization_id,
                             [subcategoryInfo(subcategory)],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbSubcategories = await Subcategory.find({
                         where: {
                             organization: {
@@ -4949,15 +4932,14 @@ describe('organization', () => {
                     })
 
                     it('fails to update subcategories in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             createOrUpdateSubcategories(
                                 testClient,
                                 organization.organization_id,
                                 [subcategoryInfo(newSubcategory)],
                                 { authorization: undefined }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbSubcategories = await Subcategory.find({
                             where: {
                                 organization: {
@@ -4995,15 +4977,14 @@ describe('organization', () => {
 
                     context('and it tries to create new subcategories', () => {
                         it('fails to create subcstegories in the organization', async () => {
-                            const fn = () =>
+                            await expect(
                                 createOrUpdateSubcategories(
                                     testClient,
                                     organization.organization_id,
                                     [subcategoryInfo(subcategory)],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbSubcategories = await Subcategory.find({
                                 where: {
                                     organization: {
@@ -5055,7 +5036,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update subcategories in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateSubcategories(
                                         testClient,
                                         organization.organization_id,
@@ -5064,8 +5045,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
                                         organization: {
@@ -5206,7 +5186,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update subcategories in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateSubcategories(
                                         testClient,
                                         organization.organization_id,
@@ -5215,8 +5195,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbSubcategories = await Subcategory.find({
                                     where: {
                                         organization: {
@@ -5395,14 +5374,13 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to list subcategories in the organization', async () => {
-                const fn = () =>
+                await expect(
                     listSubcategories(
                         testClient,
                         organization.organization_id,
                         { authorization: undefined }
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbSubcategories = await Subcategory.find({
                     where: {
                         organization: {
@@ -5432,14 +5410,13 @@ describe('organization', () => {
                     })
 
                     it('fails to list subcategories in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listSubcategories(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbSubcategories = await Subcategory.find({
                             where: {
                                 organization: {
@@ -5502,14 +5479,13 @@ describe('organization', () => {
                         }
                     })
                     it('fails to list subcategories in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listSubcategories(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbSubcategories = await Subcategory.find({
                             where: {
                                 organization: {
@@ -5571,15 +5547,14 @@ describe('organization', () => {
         context('when not authenticated', () => {
             context('and it tries to create new categories', () => {
                 it('fails to create subcstegories in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrUpdateCategories(
                             testClient,
                             organization.organization_id,
                             [categoryDetails],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbCategories = await Category.find({
                         where: {
                             organization: {
@@ -5609,15 +5584,14 @@ describe('organization', () => {
                     })
 
                     it('fails to update categories in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             createOrUpdateCategories(
                                 testClient,
                                 organization.organization_id,
                                 [categoryInfo(newCategory)],
                                 { authorization: undefined }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbCategories = await Category.find({
                             where: {
                                 organization: {
@@ -5656,15 +5630,14 @@ describe('organization', () => {
 
                     context('and it tries to create new categories', () => {
                         it('fails to create subcstegories in the organization', async () => {
-                            const fn = () =>
+                            await expect(
                                 createOrUpdateCategories(
                                     testClient,
                                     organization.organization_id,
                                     [categoryDetails],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbCategories = await Category.find({
                                 where: {
                                     organization: {
@@ -5716,7 +5689,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update categories in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateCategories(
                                         testClient,
                                         organization.organization_id,
@@ -5725,8 +5698,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbCategories = await Category.find({
                                     where: {
                                         organization: {
@@ -5909,7 +5881,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update categories in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateCategories(
                                         testClient,
                                         organization.organization_id,
@@ -5918,8 +5890,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbCategories = await Category.find({
                                     where: {
                                         organization: {
@@ -6128,12 +6099,11 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to list categories in the organization', async () => {
-                const fn = () =>
+                await expect(
                     listCategories(testClient, organization.organization_id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbCategories = await Category.find({
                     where: {
                         organization: {
@@ -6163,14 +6133,13 @@ describe('organization', () => {
                     })
 
                     it('fails to list categories in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listCategories(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbCategories = await Category.find({
                             where: {
                                 organization: {
@@ -6278,15 +6247,14 @@ describe('organization', () => {
         context('when not authenticated', () => {
             context('and it tries to create new categories', () => {
                 it('fails to create subcstegories in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrUpdateSubjects(
                             testClient,
                             organization.organization_id,
                             [subjectDetails],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbSubjects = await Subject.find({
                         where: {
                             organization: {
@@ -6316,15 +6284,14 @@ describe('organization', () => {
                     })
 
                     it('fails to update categories in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             createOrUpdateSubjects(
                                 testClient,
                                 organization.organization_id,
                                 [subjectInfo(newSubject)],
                                 { authorization: undefined }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbSubjects = await Subject.find({
                             where: {
                                 organization: {
@@ -6363,15 +6330,14 @@ describe('organization', () => {
 
                     context('and it tries to create new categories', () => {
                         it('fails to create subcstegories in the organization', async () => {
-                            const fn = () =>
+                            await expect(
                                 createOrUpdateSubjects(
                                     testClient,
                                     organization.organization_id,
                                     [subjectDetails],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbSubjects = await Subject.find({
                                 where: {
                                     organization: {
@@ -6423,7 +6389,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update categories in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateSubjects(
                                         testClient,
                                         organization.organization_id,
@@ -6432,8 +6398,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbSubjects = await Subject.find({
                                     where: {
                                         organization: {
@@ -6622,7 +6587,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update categories in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdateSubjects(
                                         testClient,
                                         organization.organization_id,
@@ -6631,8 +6596,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbSubjects = await Subject.find({
                                     where: {
                                         organization: {
@@ -6841,12 +6805,11 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to list subjects in the organization', async () => {
-                const fn = () =>
+                await expect(
                     listSubjects(testClient, organization.organization_id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbSubjects = await Subject.find({
                     where: {
                         organization: {
@@ -6876,14 +6839,13 @@ describe('organization', () => {
                     })
 
                     it('fails to list subjects in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listSubjects(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbSubjects = await Subject.find({
                             where: {
                                 organization: {
@@ -7002,15 +6964,14 @@ describe('organization', () => {
         context('when not authenticated', () => {
             context('and it tries to create new programs', () => {
                 it('fails to create programs in the organization', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrUpdatePrograms(
                             testClient,
                             organization.organization_id,
                             [programDetails],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbPrograms = await Program.find({
                         where: {
                             organization: {
@@ -7040,15 +7001,14 @@ describe('organization', () => {
                     })
 
                     it('fails to update programs in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             createOrUpdatePrograms(
                                 testClient,
                                 organization.organization_id,
                                 [programInfo(newProgram)],
                                 { authorization: undefined }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbPrograms = await Program.find({
                             where: {
                                 organization: {
@@ -7087,15 +7047,14 @@ describe('organization', () => {
 
                     context('and it tries to create new programs', () => {
                         it('fails to create programs in the organization', async () => {
-                            const fn = () =>
+                            await expect(
                                 createOrUpdatePrograms(
                                     testClient,
                                     organization.organization_id,
                                     [programDetails],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbPrograms = await Program.find({
                                 where: {
                                     organization: {
@@ -7147,7 +7106,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update programs in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdatePrograms(
                                         testClient,
                                         organization.organization_id,
@@ -7156,8 +7115,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbPrograms = await Program.find({
                                     where: {
                                         organization: {
@@ -7342,7 +7300,7 @@ describe('organization', () => {
                             })
 
                             it('fails to update programs in the organization', async () => {
-                                const fn = () =>
+                                await expect(
                                     createOrUpdatePrograms(
                                         testClient,
                                         organization.organization_id,
@@ -7351,8 +7309,7 @@ describe('organization', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
                                 const dbPrograms = await Program.find({
                                     where: {
                                         organization: {
@@ -7553,12 +7510,11 @@ describe('organization', () => {
 
         context('when not authenticated', () => {
             it('fails to list programs in the organization', async () => {
-                const fn = () =>
+                await expect(
                     listPrograms(testClient, organization.organization_id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const dbprograms = await Program.find({
                     where: {
                         organization: {
@@ -7591,14 +7547,13 @@ describe('organization', () => {
                     })
 
                     it('fails to list programs in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listPrograms(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbprograms = await Program.find({
                             where: {
                                 organization: {
@@ -7656,14 +7611,13 @@ describe('organization', () => {
                         }
                     })
                     it('fails to list programs in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             listPrograms(
                                 testClient,
                                 organization.organization_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                         const dbprograms = await Program.find({
                             where: {
                                 organization: {

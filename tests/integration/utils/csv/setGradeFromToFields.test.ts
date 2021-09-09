@@ -61,7 +61,7 @@ describe('processGradeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 setGradeFromToFields(
                     connection.manager,
                     row,
@@ -69,8 +69,7 @@ describe('processGradeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -89,7 +88,7 @@ describe('processGradeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 setGradeFromToFields(
                     connection.manager,
                     row,
@@ -97,8 +96,7 @@ describe('processGradeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -120,7 +118,7 @@ describe('processGradeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 setGradeFromToFields(
                     connection.manager,
                     row,
@@ -128,8 +126,7 @@ describe('processGradeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -163,7 +160,7 @@ describe('processGradeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 setGradeFromToFields(
                     connection.manager,
                     row,
@@ -171,8 +168,7 @@ describe('processGradeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -210,7 +206,7 @@ describe('processGradeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 setGradeFromToFields(
                     connection.manager,
                     row,
@@ -218,8 +214,7 @@ describe('processGradeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const grade = await Grade.findOne({
                 where: {
                     system: false,

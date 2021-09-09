@@ -126,13 +126,13 @@ describe('role', () => {
 
             context('and the user is not an admin', () => {
                 it('raises a permission exception', async () => {
-                    const fn = () =>
+                    await expect(
                         updateRole(
                             testClient,
                             { roleId, newRoleName, roleDescription },
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
 
                     const dbRole = await Role.findOneOrFail({
                         where: { role_id: roleId },
@@ -198,13 +198,13 @@ describe('role', () => {
                 "and the user does not have the 'edit groups' permission within the organization",
                 () => {
                     it('should throw a permission exception, and not update the database entry', async () => {
-                        const fn = () =>
+                        await expect(
                             updateRole(
                                 testClient,
                                 { roleId, newRoleName, roleDescription },
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbRole = await Role.findOneOrFail({
                             where: { role_id: roleId },
@@ -293,14 +293,14 @@ describe('role', () => {
                 "when user does not have the 'view role permissions' permission within the organization",
                 () => {
                     it('should throw a permission exception', async () => {
-                        const fn = () =>
+                        await expect(
                             getPermissionViaRole(
                                 testClient,
                                 roleId,
                                 nameOfPermissionToGet,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                     })
                 }
             )
@@ -339,14 +339,14 @@ describe('role', () => {
                 "when user does not have the 'view role permissions' permission within the organization",
                 () => {
                     it('should throw a permission exception', async () => {
-                        const fn = () =>
+                        await expect(
                             getPermissionViaRole(
                                 testClient,
                                 roleId,
                                 nameOfPermissionToGet,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                     })
                 }
             )
@@ -401,14 +401,14 @@ describe('role', () => {
 
             context('and the user is not an admin', () => {
                 it('raises a permission exception', async () => {
-                    const fn = () =>
+                    await expect(
                         grantPermission(
                             testClient,
                             roleId,
                             nameOfPermissionToGrant,
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
 
                     const dbPermission = await Permission.findOne({
                         where: { permission_name: nameOfPermissionToGrant },
@@ -525,7 +525,7 @@ describe('role', () => {
                                 })
 
                                 it('should throw a permission exception, and not create a database entry', async () => {
-                                    const fn = () =>
+                                    await expect(
                                         grantPermission(
                                             testClient,
                                             roleId,
@@ -534,7 +534,7 @@ describe('role', () => {
                                                 authorization: getAdminAuthToken(),
                                             }
                                         )
-                                    expect(fn()).to.be.rejected
+                                    ).to.be.rejected
 
                                     const dbPermission = await Permission.findOneOrFail(
                                         {
@@ -550,14 +550,14 @@ describe('role', () => {
 
                         context('and permission entry does not exist', () => {
                             it('should throw a permission exception, and not create a database entry', async () => {
-                                const fn = () =>
+                                await expect(
                                     grantPermission(
                                         testClient,
                                         roleId,
                                         nameOfPermissionToGrant,
                                         { authorization: getAdminAuthToken() }
                                     )
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
 
                                 const dbPermission = await Permission.findOne({
                                     where: {
@@ -680,7 +680,7 @@ describe('role', () => {
                             })
 
                             it('should throw a permission exception, and not create a database entry', async () => {
-                                const fn = () =>
+                                await expect(
                                     grantPermission(
                                         testClient,
                                         roleId,
@@ -689,7 +689,7 @@ describe('role', () => {
                                             authorization: getNonAdminAuthToken(),
                                         }
                                     )
-                                expect(fn()).to.be.rejected
+                                ).to.be.rejected
 
                                 const dbPermission = await Permission.findOneOrFail(
                                     {
@@ -705,14 +705,14 @@ describe('role', () => {
 
                     context('and permission entry does not exist', () => {
                         it('should throw a permission exception, and not create a database entry', async () => {
-                            const fn = () =>
+                            await expect(
                                 grantPermission(
                                     testClient,
                                     roleId,
                                     nameOfPermissionToGrant,
                                     { authorization: getNonAdminAuthToken() }
                                 )
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
 
                             const dbPermission = await Permission.findOne({
                                 where: {
@@ -768,15 +768,14 @@ describe('role', () => {
 
             context('and the user is not an admin', () => {
                 it('raises a permission exception', async () => {
-                    const fn = () =>
+                    await expect(
                         editPermissions(
                             testClient,
                             roleId,
                             [nameOfPermission],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbRole = await Role.findOneOrFail(roleId)
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
@@ -805,15 +804,14 @@ describe('role', () => {
                         })
 
                         it('throws a permission exception and not mutate the database entries', async () => {
-                            const fn = () =>
+                            await expect(
                                 editPermissions(
                                     testClient,
                                     roleId,
                                     [nameOfPermission],
                                     { authorization: getAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbRole = await Role.findOneOrFail(roleId)
                             const dbPermissions =
                                 (await dbRole.permissions) || []
@@ -900,15 +898,14 @@ describe('role', () => {
                 })
 
                 it('throws a permission exception and not mutate the database entries', async () => {
-                    const fn = () =>
+                    await expect(
                         editPermissions(
                             testClient,
                             roleId,
                             [nameOfPermission],
                             { authorization: undefined }
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                     const dbRole = await Role.findOneOrFail(roleId)
                     const dbPermissions = (await dbRole.permissions) || []
                     expect(dbPermissions).to.be.empty
@@ -937,15 +934,14 @@ describe('role', () => {
                         })
 
                         it('throws a permission exception and not mutate the database entries', async () => {
-                            const fn = () =>
+                            await expect(
                                 editPermissions(
                                     testClient,
                                     roleId,
                                     [nameOfPermission],
                                     { authorization: getNonAdminAuthToken() }
                                 )
-
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
                             const dbRole = await Role.findOneOrFail(roleId)
                             const dbPermissions =
                                 (await dbRole.permissions) || []
@@ -1074,14 +1070,14 @@ describe('role', () => {
 
             context('and the user is not an admin', () => {
                 it('raises a permission exception', async () => {
-                    const fn = () =>
+                    await expect(
                         revokePermission(
                             testClient,
                             roleId,
                             nameOfPermissionToRevoke,
                             { authorization: getNonAdminAuthToken() }
                         )
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
 
                     const dbPermission = await Permission.findOneOrFail({
                         where: { permission_name: nameOfPermissionToRevoke },
@@ -1130,14 +1126,14 @@ describe('role', () => {
                     "when user does not have the 'edit role permissions' permission within the organization",
                     () => {
                         it('should throw a permission exception and not delete/modify the database entry', async () => {
-                            const fn = () =>
+                            await expect(
                                 revokePermission(
                                     testClient,
                                     roleId,
                                     nameOfPermissionToRevoke,
                                     { authorization: getAdminAuthToken() }
                                 )
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
 
                             const dbPermission = await Permission.findOneOrFail(
                                 {
@@ -1193,14 +1189,14 @@ describe('role', () => {
                 "when user does not have the 'edit role permissions' permission within the organization",
                 () => {
                     it('should throw a permission exception and not delete/modify the database entry', async () => {
-                        const fn = () =>
+                        await expect(
                             revokePermission(
                                 testClient,
                                 roleId,
                                 nameOfPermissionToRevoke,
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbPermission = await Permission.findOneOrFail({
                             where: {
@@ -1257,11 +1253,11 @@ describe('role', () => {
 
             context('and the user is not an admin', () => {
                 it('raises a permission exception', async () => {
-                    const fn = () =>
+                    await expect(
                         deleteRole(testClient, roleId, {
                             authorization: getNonAdminAuthToken(),
                         })
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
 
                     const dbRole = await Role.findOneOrFail(roleId)
                     expect(dbRole.status).to.eq(Status.ACTIVE)
@@ -1274,11 +1270,11 @@ describe('role', () => {
                     'and the user does not have delete role permissions',
                     () => {
                         it('throws a permission exception, and not delete the database entry', async () => {
-                            const fn = () =>
+                            await expect(
                                 deleteRole(testClient, roleId, {
                                     authorization: getAdminAuthToken(),
                                 })
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
 
                             const dbRole = await Role.findOneOrFail(roleId)
                             expect(dbRole.status).to.eq(Status.ACTIVE)
@@ -1337,11 +1333,11 @@ describe('role', () => {
         context('when is not a system role', () => {
             context('when not authenticated', () => {
                 it('throws a permission exception, and not delete the database entry', async () => {
-                    const fn = () =>
+                    await expect(
                         deleteRole(testClient, roleId, {
                             authorization: undefined,
                         })
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
 
                     const dbRole = await Role.findOneOrFail(roleId)
                     expect(dbRole.status).to.eq(Status.ACTIVE)
@@ -1354,11 +1350,11 @@ describe('role', () => {
                     'and the user does not have delete role permissions',
                     () => {
                         it('throws a permission exception, and not delete the database entry', async () => {
-                            const fn = () =>
+                            await expect(
                                 deleteRole(testClient, roleId, {
                                     authorization: getNonAdminAuthToken(),
                                 })
-                            expect(fn()).to.be.rejected
+                            ).to.be.rejected
 
                             const dbRole = await Role.findOneOrFail(roleId)
                             expect(dbRole.status).to.eq(Status.ACTIVE)

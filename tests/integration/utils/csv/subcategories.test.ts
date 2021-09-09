@@ -70,7 +70,7 @@ describe('processSubCategoriesFromCSVRow', () => {
 
     it('should throw an error (missing org/sub category) and rollback when all transactions', async () => {
         row = { organization_name: '', subcategory_name: 'sc1' }
-        const fn = () =>
+        await expect(
             processSubCategoriesFromCSVRow(
                 connection.manager,
                 row,
@@ -78,15 +78,14 @@ describe('processSubCategoriesFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
         const dbSubCategories = await Subcategory.find()
         expect(dbSubCategories.length).to.equal(0)
     })
 
     it('should throw an error missing sub category and rollback when all transactions', async () => {
         row = { organization_name: 'test', subcategory_name: '' }
-        const fn = () =>
+        await expect(
             processSubCategoriesFromCSVRow(
                 connection.manager,
                 row,
@@ -94,8 +93,7 @@ describe('processSubCategoriesFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-
-        expect(fn()).to.be.rejected
+        ).to.be.rejected
         const dbSubCategories = await Subcategory.find()
         expect(dbSubCategories.length).to.equal(0)
     })

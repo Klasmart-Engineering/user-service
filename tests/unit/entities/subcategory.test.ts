@@ -57,9 +57,7 @@ describe('Subcategory', () => {
             })
 
             it('raises an error', async () => {
-                const fn = () => manager.save(subcategory)
-
-                expect(fn()).to.be.rejected
+                await expect(manager.save(subcategory)).to.be.rejected
             })
         })
 

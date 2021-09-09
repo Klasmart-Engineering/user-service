@@ -62,7 +62,7 @@ describe('processOrganizationFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processOrganizationFromCSVRow(
                     connection.manager,
                     row,
@@ -70,8 +70,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -86,7 +85,7 @@ describe('processOrganizationFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processOrganizationFromCSVRow(
                     connection.manager,
                     row,
@@ -94,8 +93,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -110,7 +108,7 @@ describe('processOrganizationFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processOrganizationFromCSVRow(
                     connection.manager,
                     row,
@@ -118,8 +116,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -142,7 +139,7 @@ describe('processOrganizationFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processOrganizationFromCSVRow(
                     connection.manager,
                     row,
@@ -150,8 +147,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -172,7 +168,7 @@ describe('processOrganizationFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processOrganizationFromCSVRow(
                     connection.manager,
                     row,
@@ -180,8 +176,7 @@ describe('processOrganizationFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })

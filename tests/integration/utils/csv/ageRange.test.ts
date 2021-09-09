@@ -67,7 +67,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -75,8 +75,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -101,7 +100,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -109,8 +108,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -135,7 +133,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -143,8 +141,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -169,7 +166,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -177,8 +174,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -203,7 +199,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -211,8 +207,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -237,7 +232,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -245,8 +240,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -278,7 +272,7 @@ describe('processAgeRangeFromCSVRow', () => {
             })
 
             it('throws an error', async () => {
-                const fn = () =>
+                await expect(
                     processAgeRangeFromCSVRow(
                         connection.manager,
                         row,
@@ -286,8 +280,7 @@ describe('processAgeRangeFromCSVRow', () => {
                         fileErrors,
                         adminPermissions
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const ageRange = await AgeRange.findOne({
                     where: {
@@ -313,7 +306,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -321,8 +314,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -347,7 +339,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -355,8 +347,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -388,7 +379,7 @@ describe('processAgeRangeFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processAgeRangeFromCSVRow(
                     connection.manager,
                     row,
@@ -396,8 +387,7 @@ describe('processAgeRangeFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
 
             const ageRange = await AgeRange.findOne({
                 where: {

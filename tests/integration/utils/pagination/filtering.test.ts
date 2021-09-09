@@ -644,8 +644,7 @@ describe('filtering', () => {
                 })
             )
 
-            const fn = async () => await programScope.getMany()
-            await expect(fn()).to.be.rejected
+            await expect(programScope.getMany()).to.be.rejected
         })
     })
 })

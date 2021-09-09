@@ -506,15 +506,14 @@ describe('user', () => {
 
             context('and the shortcode is not valid', () => {
                 it('should fail to create an organization with a bad short code', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrganization(
                             testClient,
                             user.user_id,
                             'A name',
                             'very wrong'
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
         })
@@ -543,10 +542,9 @@ describe('user', () => {
             })
 
             it('does not create another organisation', async () => {
-                const fn = () =>
+                await expect(
                     createOrganization(testClient, user.user_id, 'Another Org')
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
             })
         })
     })

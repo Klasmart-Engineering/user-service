@@ -214,7 +214,7 @@ describe('Category', () => {
                                 'and does not have delete category permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteCategory(
                                                 testClient,
                                                 category.id,
@@ -222,7 +222,7 @@ describe('Category', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbCategory = await Category.findOneOrFail(
                                             category.id
                                         )
@@ -256,7 +256,7 @@ describe('Category', () => {
                                     })
 
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteCategory(
                                                 testClient,
                                                 category.id,
@@ -264,7 +264,7 @@ describe('Category', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbCategory = await Category.findOneOrFail(
                                             category.id
                                         )
@@ -280,7 +280,7 @@ describe('Category', () => {
                                 'and does not have delete category permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteCategory(
                                                 testClient,
                                                 category.id,
@@ -288,7 +288,7 @@ describe('Category', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbCategory = await Category.findOneOrFail(
                                             category.id
                                         )
@@ -479,14 +479,14 @@ describe('Category', () => {
 
         context('when not authenticated', () => {
             it('throws a permission error', async () => {
-                const fn = () =>
+                await expect(
                     editSubcategories(
                         testClient,
                         category.id,
                         [subcategory.id],
                         { authorization: undefined }
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbSubcategories = (await category.subcategories) || []
                 expect(dbSubcategories).to.be.empty
@@ -510,14 +510,14 @@ describe('Category', () => {
                 'and the user does not have edit category permissions',
                 () => {
                     it('throws a permission error', async () => {
-                        const fn = () =>
+                        await expect(
                             editSubcategories(
                                 testClient,
                                 category.id,
                                 [subcategory.id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbSubcategories =
                             (await category.subcategories) || []

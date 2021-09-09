@@ -97,12 +97,11 @@ describe('Subject', () => {
 
         context('when not authenticated', () => {
             it('fails to list subjects in the organization', async () => {
-                const fn = () =>
+                await expect(
                     describeSubject(testClient, subject.id, {
                         authorization: undefined,
                     })
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
             })
         })
 
@@ -124,12 +123,11 @@ describe('Subject', () => {
                     })
 
                     it('fails to list subjects in the organization', async () => {
-                        const fn = () =>
+                        await expect(
                             describeSubject(testClient, subject.id, {
                                 authorization: getNonAdminAuthToken(),
                             })
-
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
                     })
                 }
             )
@@ -344,7 +342,7 @@ describe('Subject', () => {
                                 'and does not have delete subject permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteSubject(
                                                 testClient,
                                                 subject.id,
@@ -352,7 +350,7 @@ describe('Subject', () => {
                                                     authorization: otherUserToken,
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbSubject = await Subject.findOneOrFail(
                                             subject.id
                                         )
@@ -386,7 +384,7 @@ describe('Subject', () => {
                                     })
 
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteSubject(
                                                 testClient,
                                                 subject.id,
@@ -394,7 +392,7 @@ describe('Subject', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbSubject = await Subject.findOneOrFail(
                                             subject.id
                                         )
@@ -410,7 +408,7 @@ describe('Subject', () => {
                                 'and does not have delete subject permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteSubject(
                                                 testClient,
                                                 subject.id,
@@ -418,7 +416,7 @@ describe('Subject', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbSubject = await Subject.findOneOrFail(
                                             subject.id
                                         )

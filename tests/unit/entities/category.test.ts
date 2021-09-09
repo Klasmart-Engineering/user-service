@@ -55,9 +55,7 @@ describe('Category', () => {
             })
 
             it('raises an error', async () => {
-                const fn = () => manager.save(category)
-
-                expect(fn()).to.be.rejected
+                await expect(manager.save(category)).to.be.rejected
             })
         })
 

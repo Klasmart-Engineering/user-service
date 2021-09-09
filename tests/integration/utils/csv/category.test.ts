@@ -70,7 +70,7 @@ describe('processCategoryFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processCategoryFromCSVRow(
                     connection.manager,
                     row,
@@ -78,8 +78,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -99,7 +98,7 @@ describe('processCategoryFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processCategoryFromCSVRow(
                     connection.manager,
                     row,
@@ -107,8 +106,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -128,7 +126,7 @@ describe('processCategoryFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processCategoryFromCSVRow(
                     connection.manager,
                     row,
@@ -136,8 +134,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -157,7 +154,7 @@ describe('processCategoryFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processCategoryFromCSVRow(
                     connection.manager,
                     row,
@@ -165,8 +162,7 @@ describe('processCategoryFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -195,7 +191,7 @@ describe('processCategoryFromCSVRow', () => {
             })
 
             it('throws an error', async () => {
-                const fn = () =>
+                await expect(
                     processCategoryFromCSVRow(
                         connection.manager,
                         row,
@@ -203,8 +199,7 @@ describe('processCategoryFromCSVRow', () => {
                         fileErrors,
                         adminPermissions
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const category = await Category.findOne({
                     where: {
                         name: row.category_name,

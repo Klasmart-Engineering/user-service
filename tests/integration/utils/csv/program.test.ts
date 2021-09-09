@@ -116,7 +116,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -124,8 +124,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -145,7 +144,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -153,8 +152,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -174,7 +172,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -182,8 +180,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -203,7 +200,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -211,8 +208,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -232,7 +228,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -240,8 +236,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -268,7 +263,7 @@ describe('processProgramFromCSVRow', () => {
             })
 
             it('throws an error', async () => {
-                const fn = () =>
+                await expect(
                     processProgramFromCSVRow(
                         connection.manager,
                         row,
@@ -276,8 +271,7 @@ describe('processProgramFromCSVRow', () => {
                         fileErrors,
                         adminPermissions
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
@@ -298,7 +292,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -306,8 +300,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -327,7 +320,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -335,8 +328,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -356,7 +348,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -364,8 +356,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -385,7 +376,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -393,8 +384,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -414,7 +404,7 @@ describe('processProgramFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
+            await expect(
                 processProgramFromCSVRow(
                     connection.manager,
                     row,
@@ -422,8 +412,7 @@ describe('processProgramFromCSVRow', () => {
                     fileErrors,
                     adminPermissions
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -452,7 +441,7 @@ describe('processProgramFromCSVRow', () => {
             })
 
             it('throws an error', async () => {
-                const fn = () =>
+                await expect(
                     processProgramFromCSVRow(
                         connection.manager,
                         row,
@@ -460,8 +449,7 @@ describe('processProgramFromCSVRow', () => {
                         fileErrors,
                         adminPermissions
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
@@ -491,7 +479,7 @@ describe('processProgramFromCSVRow', () => {
             })
 
             it('throws an error', async () => {
-                const fn = () =>
+                await expect(
                     processProgramFromCSVRow(
                         connection.manager,
                         row,
@@ -499,8 +487,7 @@ describe('processProgramFromCSVRow', () => {
                         fileErrors,
                         adminPermissions
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
@@ -530,7 +517,7 @@ describe('processProgramFromCSVRow', () => {
             })
 
             it('throws an error', async () => {
-                const fn = () =>
+                await expect(
                     processProgramFromCSVRow(
                         connection.manager,
                         row,
@@ -538,8 +525,7 @@ describe('processProgramFromCSVRow', () => {
                         fileErrors,
                         adminPermissions
                     )
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
