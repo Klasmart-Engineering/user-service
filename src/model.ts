@@ -79,6 +79,7 @@ import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
 import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
+import { scopeHasJoin } from './utils/typeorm'
 
 export class Model {
     public static async create() {
@@ -780,7 +781,11 @@ export class Model {
                     .where(AVOID_NONE_SPECIFIED_BRACKETS)
             }
 
-            if (filterHasProperty('schoolId', filter)) {
+            if (
+                filterHasProperty('schoolId', filter) &&
+                // nonAdminClassScope may have already joined on Schools
+                !scopeHasJoin(scope, School)
+            ) {
                 scope.innerJoin('Class.schools', 'School')
             }
 
