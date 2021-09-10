@@ -864,6 +864,10 @@ export class Model {
                 scope.leftJoinAndSelect('Subject.organization', 'Organization')
             }
 
+            if (filterHasProperty('categoryId', filter)) {
+                scope.innerJoin('Subject.categories', 'Category')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     id: 'Subject.id',
@@ -871,6 +875,7 @@ export class Model {
                     status: 'Subject.status',
                     system: 'Subject.system',
                     organizationId: 'Organization.organization_id',
+                    categoryId: 'Category.id',
                 })
             )
         }

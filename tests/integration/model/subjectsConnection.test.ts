@@ -524,5 +524,29 @@ describe('subjectsConnection', () => {
                 expect(subject.node.name).includes(search)
             })
         })
+
+        it('supports filtering by category ID', async () => {
+            const categoryId = categories[0].id
+            const filter: IEntityFilter = {
+                id: {
+                    operator: 'eq',
+                    value: categoryId,
+                },
+            }
+
+            const result = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+
+            const categoryIds = result.edges.map((edge) => {
+                return edge.node.categories?.map((category) => category.id)
+            })
+
+            categoryIds.every((ids) => ids?.includes(categoryId))
+        })
     })
 })

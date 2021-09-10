@@ -323,5 +323,32 @@ describe('acceptance.subject', () => {
             expect(response.status).to.eq(200)
             expect(subjectsConnection.totalCount).to.equal(1)
         })
+
+        it('queries paginated subjects filtering by categories', async () => {
+            const categoryId = categoryIds[0]
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBJECTS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            categoryId: {
+                                operator: 'eq',
+                                value: categoryId,
+                            },
+                        },
+                    },
+                })
+
+            const subjectsConnection = response.body.data.subjectsConnection
+
+            expect(response.status).to.eq(200)
+            expect(subjectsConnection.totalCount).to.be.gte(1)
+        })
     })
 })
