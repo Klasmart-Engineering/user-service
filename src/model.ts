@@ -428,8 +428,6 @@ export class Model {
 
                     scope
                         .groupBy('User.user_id')
-                        .addGroupBy('OrgMembership.user_id')
-                        .addGroupBy('OrgMembership.organization_id')
                         .andHaving(query, parameters)
                         .select([
                             'User.user_id AS user_id',
@@ -460,8 +458,6 @@ export class Model {
                     )
                     .groupBy('Permission.permission_id')
                     .addGroupBy('User.user_id')
-                    .addGroupBy('OrgMembership.user_id')
-                    .addGroupBy('OrgMembership.organization_id')
                     .andHaving('bool_and(Permission.allow) = :allowed', {
                         allowed: true,
                     })
