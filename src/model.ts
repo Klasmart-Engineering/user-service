@@ -396,17 +396,14 @@ export class Model {
 
         if (filter) {
             if (filterHasProperty('roleId', filter)) {
-                scope.innerJoinAndSelect(
+                scope.innerJoin(
                     'OrgMembership.roles',
                     'RoleMembershipsOrganizationMembership'
                 )
             }
 
             if (filterHasProperty('schoolId', filter)) {
-                scope.leftJoinAndSelect(
-                    'User.school_memberships',
-                    'SchoolMembership'
-                )
+                scope.leftJoin('User.school_memberships', 'SchoolMembership')
             }
 
             if (filterHasProperty('classId', filter)) {
