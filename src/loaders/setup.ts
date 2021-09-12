@@ -15,7 +15,6 @@ import {
     organizationForMemberships,
 } from './organization'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
-import { IOrganizationMembershipLoaders } from './organizationMembership'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 
 export interface IDataLoaders {
@@ -27,12 +26,12 @@ export interface IDataLoaders {
     user: IUsersLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
-    organizationMembership: IOrganizationMembershipLoaders
 }
 
 export function createDefaultDataLoaders(): IDataLoaders {
     return {
         user: {
+            user: new Dataloader(usersByIds),
             orgMemberships: new Dataloader((keys) =>
                 orgMembershipsForUsers(keys)
             ),
@@ -52,9 +51,6 @@ export function createDefaultDataLoaders(): IDataLoaders {
                 organizationsForSchools(keys)
             ),
             schoolById: new Dataloader((keys) => schoolsByIds(keys)),
-        },
-        organizationMembership: {
-            user: new Dataloader((keys) => usersByIds(keys)),
         },
     }
 }

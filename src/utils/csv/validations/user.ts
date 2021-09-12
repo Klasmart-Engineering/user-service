@@ -60,6 +60,16 @@ export const userRowValidation: CsvRowValidationSchema<UserRow> = {
         attribute: 'Gender',
         validation: userValidations.gender.required(),
     },
+    user_alternate_email: {
+        entity: 'User',
+        attribute: 'Alternate email',
+        validation: sharedValidations.email.allow('', null).optional(),
+    },
+    user_alternate_phone: {
+        entity: 'User',
+        attribute: 'Alternate phone',
+        validation: sharedValidations.phone.allow('', null).optional(),
+    },
     organization_role_name: {
         entity: 'Organization',
         attribute: 'Role',

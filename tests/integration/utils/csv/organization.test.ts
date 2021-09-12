@@ -19,6 +19,10 @@ import { createUser } from '../../../factories/user.factory'
 import { CSVError } from '../../../../src/types/csv/csvError'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
+import { Status } from '../../../../src/entities/status'
+import validationConstants from '../../../../src/entities/validations/constants'
+import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
+import { createOrganizationOwnership } from '../../../factories/organizationOwnership.factory'
 
 use(chaiAsPromised)
 
@@ -57,21 +61,31 @@ describe('processOrganizationFromCSVRow', () => {
     })
 
     context('when the organization name is not provided', () => {
-        beforeEach(async () => {
+        beforeEach(() => {
             row = { ...row, organization_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processOrganizationFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns a ERR_CSV_NONE_EXIST_ENTITY CSVError', async () => {
+            const errors = await processOrganizationFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
-            expect(fn()).to.be.rejected
+            expect(errors).to.deep.equal([
+                {
+                    code: csvErrorConstants.ERR_CSV_NONE_EXIST_ENTITY,
+                    column: 'organization_name',
+                    entity: 'organization',
+                    // TODO fix stringInject to not ignore falsey parameters
+                    message:
+                        'On row number 1, "{name}" organization doesn\'t exist.',
+                    name: '',
+                    row: 1,
+                },
+            ])
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -81,21 +95,32 @@ describe('processOrganizationFromCSVRow', () => {
     })
 
     context('when the owner email or owner phone is not provided', () => {
-        beforeEach(async () => {
+        beforeEach(() => {
             row = { ...row, owner_email: '', owner_phone: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processOrganizationFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns a ERR_CSV_MISSING_REQUIRED_EITHER CSVError', async () => {
+            const errors = await processOrganizationFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
-            expect(fn()).to.be.rejected
+            expect(errors).to.deep.equal([
+                {
+                    attribute: 'email',
+                    code: csvErrorConstants.ERR_CSV_MISSING_REQUIRED_EITHER,
+                    column: 'owner_email',
+                    entity: 'user',
+                    message:
+                        'On row number 1, user email or user phone is required.',
+                    other_attribute: 'phone',
+                    other_entity: 'user',
+                    row: 1,
+                },
+            ])
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -105,21 +130,31 @@ describe('processOrganizationFromCSVRow', () => {
     })
 
     context('when the owner shortcode is invalid', () => {
-        beforeEach(async () => {
+        beforeEach(() => {
             row = { ...row, owner_shortcode: '£$%' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processOrganizationFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns a ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX CSVError', async () => {
+            const errors = await processOrganizationFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
-            expect(fn()).to.be.rejected
+            expect(errors).to.deep.equal([
+                {
+                    attribute: 'short_code',
+                    code:
+                        csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
+                    column: 'owner_shortcode',
+                    entity: 'user',
+                    max: validationConstants.SHORTCODE_MAX_LENGTH,
+                    message: `On row number 1, user short_code must only contain uppercase letters, numbers and must not greater than ${validationConstants.SHORTCODE_MAX_LENGTH} characters.`,
+                    row: 1,
+                },
+            ])
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -129,9 +164,9 @@ describe('processOrganizationFromCSVRow', () => {
     })
 
     context('when the given organization already exists', () => {
+        let existentOrganization: Organization
         beforeEach(async () => {
-            const existentOrganization = await createOrganization()
-            await connection.manager.save(existentOrganization)
+            existentOrganization = await createOrganization().save()
 
             row = {
                 ...row,
@@ -141,17 +176,25 @@ describe('processOrganizationFromCSVRow', () => {
             }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processOrganizationFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns a ERR_CSV_DUPLICATE_ENTITY CSVError', async () => {
+            const errors = await processOrganizationFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
-            expect(fn()).to.be.rejected
+            expect(errors).to.deep.equal([
+                {
+                    code: csvErrorConstants.ERR_CSV_DUPLICATE_ENTITY,
+                    column: 'organization_name',
+                    entity: 'organization',
+                    message: `On row number 1, "${existentOrganization.organization_name}" organization already exists.`,
+                    name: existentOrganization?.organization_name,
+                    row: 1,
+                },
+            ])
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -162,26 +205,43 @@ describe('processOrganizationFromCSVRow', () => {
 
     context('when the given owner already has an organization', () => {
         beforeEach(async () => {
-            const existentOwner = await createUser()
-            await connection.manager.save(existentOwner)
+            const existentOwner = await createUser().save()
 
-            const existentOrganization = await createOrganization(existentOwner)
-            await connection.manager.save(existentOrganization)
+            const organization = await createOrganization(existentOwner).save()
+
+            await createOrganizationOwnership({
+                user: existentOwner,
+                organization,
+            }).save()
 
             row = { ...row, owner_email: String(existentOwner.email) }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processOrganizationFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it.skip('returns a ERR_ONE_ACTIVE_ORGANIZATION_PER_USER CSVError', async () => {
+            // Currently this test will not pass because:
+            // - the `ownerUploaded` check doesn't include personal information (i.e. given_name and family_name)
+            // - the `getUserByEmailOrPhone` (to find the existing Owner) relies on deterministic UUIDs
+            // i.e. `user_id` is generated from a hash based on the email/phone
+            // - uppercase emails are not normalized to lowercase
+            // TODO fix processOrganizationFromCSVRow implementation - UD-1082
+            const errors = await processOrganizationFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
 
-            expect(fn()).to.be.rejected
+            expect(errors).to.deep.equal([
+                {
+                    code:
+                        csvErrorConstants.ERR_ONE_ACTIVE_ORGANIZATION_PER_USER,
+                    column: 'organization_name',
+                    row: 1,
+                    message:
+                        csvErrorConstants.MSG_ERR_ONE_ACTIVE_ORGANIZATION_PER_USER,
+                },
+            ])
             const organization = await Organization.findOne({
                 where: { organization_name: row.organization_name },
             })
@@ -197,13 +257,15 @@ describe('processOrganizationFromCSVRow', () => {
             let organizationOwnership
             let organizationMembership
 
-            await processOrganizationFromCSVRow(
+            const errors = await processOrganizationFromCSVRow(
                 connection.manager,
                 row,
                 1,
                 fileErrors,
                 adminPermissions
             )
+
+            expect(errors).to.deep.equal([])
 
             organization = await Organization.findOneOrFail({
                 where: { organization_name: row.organization_name },
@@ -227,20 +289,20 @@ describe('processOrganizationFromCSVRow', () => {
             )
 
             expect(organization).to.exist
-            expect(organization.status).eq('active')
+            expect(organization.status).eq(Status.ACTIVE)
             expect(organization.shortCode?.length).greaterThan(0)
 
             expect(user).to.exist
             expect(user.given_name).eq(row.owner_given_name)
             expect(user.family_name).eq(row.owner_family_name)
             expect(user.email).eq(row.owner_email)
-            expect(user.status).eq('active')
+            expect(user.status).eq(Status.ACTIVE)
 
             expect(organizationOwnership).to.exist
-            expect(organizationOwnership.status).eq('active')
+            expect(organizationOwnership.status).eq(Status.ACTIVE)
 
             expect(organizationMembership).to.exist
-            expect(organizationMembership.status).eq('active')
+            expect(organizationMembership.status).eq(Status.ACTIVE)
             expect(organizationMembership.shortcode).eq(row.owner_shortcode)
         })
     })

@@ -6,13 +6,16 @@ import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 import { Class } from '../../../src/entities/class'
 import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
+import { Permission } from '../../../src/entities/permission'
 import { Program } from '../../../src/entities/program'
 import { School } from '../../../src/entities/school'
+import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { Status } from '../../../src/entities/status'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
 import AgeRangesInitializer from '../../../src/initializers/ageRanges'
 import { Model } from '../../../src/model'
+import { PermissionName } from '../../../src/permissions/permissionNames'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { SchoolSimplifiedSummaryNode } from '../../../src/types/graphQL/schoolSimplifiedSummaryNode'
 import { createServer } from '../../../src/utils/createServer'
@@ -21,8 +24,11 @@ import { createAgeRange } from '../../factories/ageRange.factory'
 import { createClass } from '../../factories/class.factory'
 import { createGrade } from '../../factories/grade.factory'
 import { createOrganization } from '../../factories/organization.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createProgram } from '../../factories/program.factory'
+import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { createUser } from '../../factories/user.factory'
 import {
@@ -817,31 +823,95 @@ describe('classesConnection', () => {
             ageRangesValues.every((values) => values?.includes(value))
         })
 
-        it('supports filtering by school ID', async () => {
-            const schoolId = org3Schools[0].school_id
+        context('school ID', () => {
+            async function testSchoolFilter(token: string) {
+                const schoolId = org3Schools[0].school_id
 
-            const filter: IEntityFilter = {
-                schoolId: {
-                    operator: 'eq',
-                    value: schoolId,
-                },
+                const filter: IEntityFilter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: schoolId,
+                    },
+                }
+
+                const result = await classesConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 10 },
+                    { authorization: token },
+                    filter
+                )
+
+                expect(result.totalCount).to.eq(classesCount / schoolsCount)
+
+                const schoolIds = result.edges.map((edge) => {
+                    return edge.node.schools?.map((school) => school.id)
+                })
+
+                schoolIds.every((ids) => ids?.includes(schoolId))
             }
 
-            const result = await classesConnection(
-                testClient,
-                'FORWARD',
-                { count: 10 },
-                { authorization: getAdminAuthToken() },
-                filter
-            )
-
-            expect(result.totalCount).to.eq(classesCount / schoolsCount)
-
-            const schoolIds = result.edges.map((edge) => {
-                return edge.node.schools?.map((school) => school.id)
+            context('with admin scope', () => {
+                it('supports filtering', async () => {
+                    return testSchoolFilter(getAdminAuthToken())
+                })
             })
 
-            schoolIds.every((ids) => ids?.includes(schoolId))
+            context('with non-admin scope', () => {
+                async function createUserInOrganizationWithPermissions({
+                    organization,
+                    permissions,
+                }: {
+                    organization: Organization
+                    permissions: PermissionName | PermissionName[]
+                }) {
+                    const user = await createUser().save()
+                    const membership = createOrganizationMembership({
+                        user,
+                        organization,
+                    })
+                    const role = createRole(undefined, organization)
+                    const _permissions = !Array.isArray(permissions)
+                        ? [permissions]
+                        : permissions
+                    role.permissions = Promise.resolve(
+                        _permissions.map((name) => {
+                            const perm = new Permission()
+                            perm.permission_name = name
+                            return perm
+                        })
+                    )
+                    await role.save()
+                    membership.roles = Promise.resolve([role])
+                    await membership.save()
+                    return user
+                }
+
+                it('supports filtering with view_school_classes_20117 Permission', async () => {
+                    const user = await createUserInOrganizationWithPermissions({
+                        organization: org3,
+                        permissions: PermissionName.view_school_classes_20117,
+                    })
+                    await SchoolMembership.save(
+                        org3Schools
+                            .slice(0, 2)
+                            .map((school) =>
+                                createSchoolMembership({ user, school })
+                            )
+                    )
+
+                    return testSchoolFilter(generateToken(userToPayload(user)))
+                })
+
+                it('supports filtering with view_classes_20114 Permission', async () => {
+                    const user = await createUserInOrganizationWithPermissions({
+                        organization: org3,
+                        permissions: PermissionName.view_classes_20114,
+                    })
+
+                    return testSchoolFilter(generateToken(userToPayload(user)))
+                })
+            })
         })
 
         it('supports filtering by grade ID', async () => {

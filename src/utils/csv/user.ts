@@ -1,10 +1,7 @@
 import { EntityManager, In } from 'typeorm'
 
 import { Class } from '../../entities/class'
-import {
-    normalizedLowercaseTrimmed,
-    Organization,
-} from '../../entities/organization'
+import { Organization } from '../../entities/organization'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { Role } from '../../entities/role'
 import { School } from '../../entities/school'
@@ -22,6 +19,7 @@ import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
+import clean from '../clean'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],
@@ -192,8 +190,8 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
     }
 
     const rawEmail = row.user_email
-    row.user_email = normalizedLowercaseTrimmed(row.user_email)
-    row.user_phone = normalizedLowercaseTrimmed(row.user_phone)
+    row.user_email = clean.email(row.user_email) || undefined
+    row.user_phone = clean.phone(row.user_phone) || undefined
     row.user_gender = row.user_gender?.toLowerCase()
 
     const personalInfo = {
@@ -208,7 +206,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                 // only need to do this because we were previously saving the raw
                 // value instead of the normalized value.
                 // this could be removed if a DB migration was run to normalize all email values.
-                email: In([rawEmail, normalizedLowercaseTrimmed(rawEmail)]),
+                email: In([rawEmail, clean.email(rawEmail)]),
                 ...personalInfo,
             },
             { phone: row.user_phone, ...personalInfo },
@@ -243,6 +241,14 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
     if (row.user_gender) {
         user.gender = row.user_gender
+    }
+
+    if (row.user_alternate_email) {
+        user.alternate_email = clean.email(row.user_alternate_email)
+    }
+
+    if (row.user_alternate_phone) {
+        user.alternate_phone = clean.phone(row.user_alternate_phone)
     }
 
     if (row.user_shortcode) {

@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, Like } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -81,6 +81,7 @@ import { convertDataToCursor } from '../../src/utils/pagination/paginate'
 import { Class } from '../../src/entities/class'
 import { createClass } from '../factories/class.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1208,8 +1209,9 @@ describe('model', () => {
                 expect(usersConnection?.edges.length).to.equal(3)
 
                 //user belonging to more than one returned
+                //FE needs all a users schools even if they are not in the filter
                 expect(usersConnection?.edges[0].node.schools.length).to.equal(
-                    1
+                    2
                 )
                 expect(usersConnection?.edges[0].node.id).to.equal(
                     usersList[5].user_id
@@ -1832,12 +1834,6 @@ describe('model', () => {
         context('phoneFilter', () => {
             beforeEach(async () => {
                 usersList = []
-                roleList = []
-
-                // create an org
-                let org: Organization
-                org = createOrganization()
-                await connection.manager.save(org)
 
                 // create 5 users
                 for (let i = 0; i < 5; i++) {
@@ -1846,24 +1842,22 @@ describe('model', () => {
                     usersList.push(user)
                 }
 
-                //sort users by userId
                 await connection.manager.save(usersList)
 
-                // add organizations and schools to users
-                for (const user of usersList) {
-                    await addOrganizationToUserAndValidate(
-                        testClient,
-                        user.user_id,
-                        org.organization_id,
-                        getAdminAuthToken()
-                    )
-                }
+                //sort users by userId
                 usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
+
+                // This test would occasionally fail if Users in the outer scope were created with
+                // a phone containing '123' (from faker.phone.phoneNumber() in createUser)
+                await User.update(
+                    { phone: Like('%123%') },
+                    { phone: '+44999111' }
+                )
+
                 // add phone number to 2 users
                 usersList[0].phone = '123456789'
                 usersList[1].phone = '456789123'
-                await connection.manager.save(usersList[0])
-                await connection.manager.save(usersList[1])
+                await connection.manager.save(usersList.slice(0, 2))
             })
             it('should filter on phone', async () => {
                 const filter: IEntityFilter = {

@@ -48,6 +48,7 @@ const typeDefs = gql`
 
         # joined columns
         organizationId: UUIDFilter
+        categoryId: UUIDFilter
 
         AND: [SubjectFilter]
         OR: [SubjectFilter]

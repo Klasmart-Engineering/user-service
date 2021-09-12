@@ -23,16 +23,15 @@ import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createOrganization } from '../../factories/organization.factory'
 import { generateShortCode } from '../../../src/utils/shortcode'
 import { Status } from '../../../src/entities/status'
+import { createRole as roleFactory } from '../../factories/role.factory'
+import { createUser as userFactory } from '../../factories/user.factory'
 import { createSchool } from '../../factories/school.factory'
-import {
-    createRole,
-    editMembership,
-    getSystemRoleIds,
-    inviteUser,
-} from '../../utils/operations/organizationOps'
+import { createRole, inviteUser } from '../../utils/operations/organizationOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import { grantPermission } from '../../utils/operations/roleOps'
 import { PermissionName } from '../../../src/permissions/permissionNames'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 
 use(chaiAsPromised)
 
@@ -54,34 +53,6 @@ async function createUserInRole(
         '02-1974',
         faker.name.firstName(),
         faker.random.arrayElement(gender),
-        undefined,
-        new Array(roleId),
-        schoolIds,
-        [],
-        { authorization: orgOwnerToken }
-    )
-    return gqlresult.user
-}
-
-async function addUserRole(
-    testClient: ApolloServerTestClient,
-    orgId: string,
-    user: User,
-    roleId: string,
-    schoolIds: string[],
-    orgOwnerToken: string
-): Promise<User> {
-    let gqlresult = await editMembership(
-        testClient,
-        orgId,
-        user.user_id,
-        user.email,
-        user.phone,
-        user.given_name,
-        user.family_name,
-        user.date_of_birth,
-        user.username,
-        user.gender,
         undefined,
         new Array(roleId),
         schoolIds,
@@ -206,42 +177,38 @@ describe('schoolsConnection', () => {
             let userToken: string
 
             beforeEach(async () => {
-                const orgRole = await createRole(
-                    testClient,
-                    org1.organization_id
-                )
-                await grantPermission(
-                    testClient,
-                    orgRole.role_id,
-                    PermissionName.view_school_20110,
-                    { authorization: getAdminAuthToken() }
-                )
-                const myRole = await createRole(
-                    testClient,
-                    org2.organization_id
-                )
-                await grantPermission(
-                    testClient,
-                    myRole.role_id,
-                    PermissionName.view_my_school_20119,
-                    { authorization: getAdminAuthToken() }
-                )
-                let user = await createUserInRole(
-                    testClient,
-                    org1.organization_id,
-                    orgRole.role_id,
-                    [],
-                    getAdminAuthToken()
-                )
-                await addUserRole(
-                    testClient,
-                    org2.organization_id,
-                    user,
-                    myRole.role_id,
-                    [schools[11].school_id],
-                    getAdminAuthToken()
-                )
+                const user = await userFactory().save()
                 userToken = generateToken(userToPayload(user))
+                await Promise.all(
+                    [
+                        {
+                            organization: org1,
+                            permission: PermissionName.view_school_20110,
+                        },
+                        {
+                            organization: org2,
+                            permission: PermissionName.view_my_school_20119,
+                        },
+                    ].map(async ({ organization, permission }) => {
+                        const role = await roleFactory(
+                            undefined,
+                            organization,
+                            {
+                                permissions: [permission],
+                            }
+                        ).save()
+                        await createOrganizationMembership({
+                            user,
+                            organization,
+                            roles: [role],
+                        }).save()
+                    })
+                )
+
+                await createSchoolMembership({
+                    user,
+                    school: schools[11],
+                }).save()
             })
             it('returns all the schools in one organization and the school that the user is associated with in the other organization', async () => {
                 const result = await schoolsConnection(

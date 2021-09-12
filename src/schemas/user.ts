@@ -274,8 +274,8 @@ export default function getDefault(
                     return model.usersConnection(ctx, args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
-                user: (_parent, { user_id }, _context, _info) =>
-                    model.getUser(user_id),
+                user: (_parent, { user_id }, ctx: Context, _info) =>
+                    ctx.loaders.user.user.load(user_id),
                 my_users: (_parent, _args, ctx, info) =>
                     model.myUsers({}, ctx, info),
             },

@@ -11,7 +11,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { User } from './entities/user'
 import { OrganizationMembership } from './entities/organizationMembership'
 import { SchoolMembership } from './entities/schoolMembership'
-import { Organization, padShortDob } from './entities/organization'
+import { Organization } from './entities/organization'
 import AgeRangesInitializer from './initializers/ageRanges'
 import { AgeRange } from './entities/ageRange'
 import CategoriesInitializer from './initializers/categories'
@@ -82,6 +82,7 @@ import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { UserWithPermissionId } from './types/graphQL/userWithPermissionId'
 import { PermissionName } from './permissions/permissionNames'
+import { scopeHasJoin } from './utils/typeorm'
 
 export class Model {
     public static async create() {
@@ -202,7 +203,7 @@ export class Model {
             }
         }
         if (date_of_birth) {
-            date_of_birth = padShortDob(date_of_birth)
+            date_of_birth = clean.dateOfBirth(date_of_birth)
             if (!isDOB(date_of_birth)) {
                 date_of_birth = undefined
             }
@@ -866,7 +867,11 @@ export class Model {
                     .where(AVOID_NONE_SPECIFIED_BRACKETS)
             }
 
-            if (filterHasProperty('schoolId', filter)) {
+            if (
+                filterHasProperty('schoolId', filter) &&
+                // nonAdminClassScope may have already joined on Schools
+                !scopeHasJoin(scope, School)
+            ) {
                 scope.innerJoin('Class.schools', 'School')
             }
 
@@ -945,6 +950,10 @@ export class Model {
                 scope.leftJoinAndSelect('Subject.organization', 'Organization')
             }
 
+            if (filterHasProperty('categoryId', filter)) {
+                scope.innerJoin('Subject.categories', 'Category')
+            }
+
             scope.andWhere(
                 getWhereClauseFromFilter(filter, {
                     id: 'Subject.id',
@@ -952,6 +961,7 @@ export class Model {
                     status: 'Subject.status',
                     system: 'Subject.system',
                     organizationId: 'Organization.organization_id',
+                    categoryId: 'Category.id',
                 })
             )
         }
