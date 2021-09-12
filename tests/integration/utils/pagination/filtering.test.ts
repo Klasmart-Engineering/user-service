@@ -1,12 +1,16 @@
 import chaiAsPromised from 'chai-as-promised'
-import { Connection, getRepository, SelectQueryBuilder } from 'typeorm'
+import {
+    Connection,
+    getManager,
+    getRepository,
+    SelectQueryBuilder,
+} from 'typeorm'
 import { expect, use } from 'chai'
 import { createTestConnection } from '../../../utils/testConnection'
 import { User } from '../../../../src/entities/user'
 import {
     IEntityFilter,
     getWhereClauseFromFilter,
-    getHavingClauseForExclusiveFilter,
 } from '../../../../src/utils/pagination/filtering'
 import { AgeRange } from '../../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../../src/entities/ageRangeUnit'
@@ -555,25 +559,34 @@ describe('filtering', () => {
                 },
             }
 
-            const { query, parameters } = getHavingClauseForExclusiveFilter(
-                filter,
-                'classId',
-                'Class.class_id'
-            )
-
-            scope
-                .leftJoinAndSelect('User.memberships', 'OrgMembership')
+            const subqueryStudent = await getManager()
+                .createQueryBuilder(User, 'User')
+                .select('User.user_id')
                 .leftJoin('User.classesStudying', 'ClassStudying')
+
+            const subqueryTeacher = await getManager()
+                .createQueryBuilder(User, 'User')
+                .select('User.user_id')
                 .leftJoin('User.classesTeaching', 'ClassTeaching')
-                .leftJoin(
-                    Class,
-                    'Class',
-                    'ClassStudying.class_id = Class.class_id OR ClassTeaching.class_id = Class.class_id'
-                )
-                .groupBy('User.user_id')
-                .addGroupBy('OrgMembership.user_id')
-                .addGroupBy('OrgMembership.organization_id')
-                .andHaving(query, parameters)
+
+            const subqueries = {
+                ['ClassTeaching.class_id']: subqueryTeacher.getQuery(),
+                ['ClassStudying.class_id']: subqueryStudent.getQuery(),
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    classId: {
+                        operator: 'AND',
+                        primaryKey: 'User.user_id',
+                        aliases: [
+                            'ClassStudying.class_id',
+                            'ClassTeaching.class_id',
+                        ],
+                        subqueries,
+                    },
+                })
+            )
 
             const data = await scope.getMany()
 

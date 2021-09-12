@@ -174,11 +174,9 @@ export function getWhereClauseFromFilter(
                 )
 
                 const value = parseValueForSQLOperator(sqlOperator, data.value)
-
-                const {
-                    primaryKey,
-                    subqueries,
-                } = columnAliasValue as IMultipleColumn
+                const columnAlias = columnAliasValue as IMultipleColumn
+                const primaryKey = columnAlias?.primaryKey
+                const subqueries = columnAlias?.subqueries
 
                 // adding main condition for this filter
                 qb.andWhere(

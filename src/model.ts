@@ -422,6 +422,10 @@ export class Model {
                         ['ClassTeaching.class_id']: subqueryTeacher.getQuery(),
                         ['ClassStudying.class_id']: subqueryStudent.getQuery(),
                     }
+                } else {
+                    scope
+                        .leftJoin('User.classesStudying', 'ClassStudying')
+                        .leftJoin('User.classesTeaching', 'ClassTeaching')
                 }
             }
 
