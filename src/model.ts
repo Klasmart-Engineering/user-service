@@ -49,7 +49,6 @@ import {
     filterHasProperty,
     AVOID_NONE_SPECIFIED_BRACKETS,
     filterHasOperator,
-    getHavingClauseForExclusiveFilter,
 } from './utils/pagination/filtering'
 import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { isDOB, isEmail, isPhone } from './utils/validations'
@@ -379,6 +378,7 @@ export class Model {
         context: Context,
         { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
     ) {
+        let subqueries = {}
         const studentPermission =
             PermissionName.attend_live_class_as_a_student_187
         const teacherPermission =
@@ -390,7 +390,6 @@ export class Model {
             filter &&
             filterHasProperty('classId', filter) &&
             filterHasOperator('ex', 'classId', filter)
-        const needsRawData = permissionFilterApplied || exclusiveOperatorApplied
 
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
 
@@ -407,39 +406,21 @@ export class Model {
             }
 
             if (filterHasProperty('classId', filter)) {
-                scope
-                    .leftJoin('User.classesStudying', 'ClassStudying')
-                    .leftJoin('User.classesTeaching', 'ClassTeaching')
-                    .leftJoin(
-                        Class,
-                        'Class',
-                        'ClassStudying.class_id = Class.class_id OR ClassTeaching.class_id = Class.class_id'
-                    )
-
                 if (exclusiveOperatorApplied) {
-                    const {
-                        query,
-                        parameters,
-                    } = getHavingClauseForExclusiveFilter(
-                        filter,
-                        'classId',
-                        'Class.class_id'
-                    )
+                    const subqueryStudent = await getManager()
+                        .createQueryBuilder(User, 'User')
+                        .select('User.user_id')
+                        .leftJoin('User.classesStudying', 'ClassStudying')
 
-                    scope
-                        .groupBy('User.user_id')
-                        .andHaving(query, parameters)
-                        .select([
-                            'User.user_id AS user_id',
-                            'User.given_name AS given_name',
-                            'User.family_name AS family_name',
-                            'User.avatar AS avatar',
-                            'User.status AS status',
-                            'User.email AS email',
-                            'User.phone AS phone',
-                            'User.alternate_email AS alternate_email',
-                            'User.alternate_phone AS alternate_phone',
-                        ])
+                    const subqueryTeacher = await getManager()
+                        .createQueryBuilder(User, 'User')
+                        .select('User.user_id')
+                        .leftJoin('User.classesTeaching', 'ClassTeaching')
+
+                    subqueries = {
+                        ['ClassTeaching.class_id']: subqueryTeacher.getQuery(),
+                        ['ClassStudying.class_id']: subqueryStudent.getQuery(),
+                    }
                 }
             }
 
@@ -484,11 +465,15 @@ export class Model {
                     schoolId: 'SchoolMembership.school_id',
                     permissionIds: 'Permission.permission_id',
                     classId: {
-                        operator: 'OR',
+                        operator: exclusiveOperatorApplied ? 'AND' : 'OR',
+                        primaryKey: exclusiveOperatorApplied
+                            ? 'User.user_id'
+                            : undefined,
                         aliases: [
                             'ClassStudying.class_id',
                             'ClassTeaching.class_id',
                         ],
+                        subqueries,
                     },
                 })
             )
@@ -508,7 +493,7 @@ export class Model {
                     sort,
                 },
             },
-            needsRawData
+            permissionFilterApplied
         )
 
         for (const edge of data.edges) {

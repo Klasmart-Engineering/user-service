@@ -20,17 +20,6 @@ type FilteringOperator =
     | 'nin'
     | 'ex'
 
-type FilteringWhereOperator =
-    | 'eq'
-    | 'neq'
-    | 'lt'
-    | 'lte'
-    | 'gt'
-    | 'gte'
-    | 'contains'
-    | 'in'
-    | 'nin'
-
 export interface IFilter {
     operator: FilteringOperator
     value: FilteringValue
@@ -40,11 +29,8 @@ export interface IFilter {
 interface IMultipleColumn {
     aliases: string[]
     operator: 'AND' | 'OR'
-}
-
-interface FilteringPropsParsed {
-    sqlOperator: string
-    value: CommonValue
+    primaryKey?: string
+    subqueries?: Record<string, string>
 }
 
 type ColumnAliasValue = string | IMultipleColumn
@@ -106,12 +92,6 @@ export function getWhereClauseFromFilter(
 
             // rule: all string contains the empty string
             if (data.operator === 'contains' && data.value === '') {
-                qb.andWhere('true') // avoid returning empty brackets
-                continue
-            }
-
-            // ex operator does not use where it is applied in a having clause
-            if (data.operator === 'ex') {
                 qb.andWhere('true') // avoid returning empty brackets
                 continue
             }
@@ -195,16 +175,27 @@ export function getWhereClauseFromFilter(
 
                 const value = parseValueForSQLOperator(sqlOperator, data.value)
 
+                const {
+                    primaryKey,
+                    subqueries,
+                } = columnAliasValue as IMultipleColumn
+
                 // adding main condition for this filter
                 qb.andWhere(
                     new Brackets((queryBuilder) => {
+                        let subquery = subqueries
+                            ? subqueries[aliases[0]]
+                            : undefined
+
                         // adding the first condition inside main condition
                         let uniqueId = uuid_v4()
                         let whereCondition = createWhereCondition(
                             !!data.caseInsensitive,
                             aliases[0],
                             sqlOperator,
-                            uniqueId
+                            uniqueId,
+                            primaryKey,
+                            subquery
                         )
 
                         queryBuilder.where(whereCondition, {
@@ -214,12 +205,17 @@ export function getWhereClauseFromFilter(
                         for (let i = 1; i < aliases.length; i += 1) {
                             const operator = (columnAliasValue as IMultipleColumn)
                                 .operator
+                            subquery = subqueries
+                                ? subqueries[aliases[i]]
+                                : undefined
                             uniqueId = uuid_v4()
                             whereCondition = createWhereCondition(
                                 !!data.caseInsensitive,
                                 aliases[i],
                                 sqlOperator,
-                                uniqueId
+                                uniqueId,
+                                primaryKey,
+                                subquery
                             )
 
                             if (operator === 'AND') {
@@ -248,25 +244,6 @@ export function getWhereClauseFromFilter(
             )
         }
     })
-}
-
-export function getHavingClauseForExclusiveFilter(
-    filter: IEntityFilter,
-    filterName: string,
-    columnAlias: string
-) {
-    const classFilter = filter[filterName] as IFilter
-    const uniqueId = uuid_v4()
-    const value = `%${classFilter.value}%`
-    const alias = columnAlias
-        .split('.')
-        .map((part) => `"${part}"`)
-        .join('.')
-
-    const query = `STRING_AGG(${alias}::text, ',') NOT LIKE :${uniqueId} OR STRING_AGG(${alias}::text, ',') IS NULL`
-    const parameters = { [uniqueId]: value }
-
-    return { query, parameters }
 }
 
 // returns true if the specified property is anywhere in the filter schema.
@@ -325,8 +302,8 @@ function logicalOperationFilter(
 }
 
 // transaltes a given filter operator to the SQL equivalent
-function getSQLOperatorFromFilterOperator(op: FilteringWhereOperator) {
-    const operators: Record<FilteringWhereOperator, string> = {
+function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
+    const operators: Record<FilteringOperator, string> = {
         eq: '=',
         neq: '!=',
         gt: '>',
@@ -336,6 +313,7 @@ function getSQLOperatorFromFilterOperator(op: FilteringWhereOperator) {
         contains: 'LIKE',
         in: 'IN',
         nin: 'NOT IN',
+        ex: '=',
     }
 
     return operators[op]
@@ -370,7 +348,7 @@ export function processComposedValue(
 
 // changes the operator when it has not to be the received from filter data
 export function setOperatorInComposedValue(
-    operator: FilteringWhereOperator,
+    operator: FilteringOperator,
     alias: string
 ) {
     switch (alias) {
@@ -387,7 +365,9 @@ function createWhereCondition(
     caseInsensitive: boolean,
     alias: string,
     sqlOperator: string,
-    uniqueId: string
+    uniqueId: string,
+    primaryKey?: string,
+    subquery?: string
 ) {
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`
@@ -395,6 +375,15 @@ function createWhereCondition(
 
     if (sqlOperator === 'IN' || sqlOperator === 'NOT IN') {
         return `${alias} ${sqlOperator} (:...${uniqueId})`
+    }
+
+    if (sqlOperator === '=' && primaryKey && subquery) {
+        alias = alias
+            .split('.')
+            .map((a) => `"${a}"`)
+            .join('.')
+
+        return `${primaryKey} NOT IN (${subquery} WHERE ${alias} ${sqlOperator} :${uniqueId})`
     }
 
     return `${alias} ${sqlOperator} :${uniqueId}`
