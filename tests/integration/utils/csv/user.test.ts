@@ -1000,7 +1000,7 @@ describe('processUserFromCSVRow', async () => {
         let err: CSVError
         let rowErrors: CSVError[]
         afterEach(() => {
-            expect(rowErrors.length).to.eq(1)
+            expect(rowErrors.length).to.be.gte(1)
             expect(err.column).to.eq('school_name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist
@@ -1025,6 +1025,29 @@ describe('processUserFromCSVRow', async () => {
         it('errors when doesnt exist', async () => {
             row.school_name = 'Non existing school'
             row.class_name = undefined
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+
+            err = rowErrors[0]
+            expect(err.code).to.eq(customErrors.nonexistent_child.code)
+            expect(err.entity).to.eq('School')
+            expect(err.entityName).to.eq(row.school_name)
+            expect(err.parentEntity).to.eq('Organization')
+            expect(err.parentName).to.eq(row.organization_name)
+        })
+
+        it('errors when school is in wrong organization', async () => {
+            const wrongOrganization = createOrganization()
+            await connection.manager.save(wrongOrganization)
+            const wrongSchool = createSchool(wrongOrganization)
+            await connection.manager.save(wrongSchool)
+
+            row.school_name = wrongSchool.school_name
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
