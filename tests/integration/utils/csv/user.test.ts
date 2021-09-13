@@ -1239,7 +1239,7 @@ describe('processUserFromCSVRow', async () => {
             expect(schoolRoles).to.deep.eq([])
         })
 
-        it('creates the user and its respective links if class is not in a school', async () => {
+        it('creates the user if class is not in a school', async () => {
             row.school_name = undefined
             const cls2 = createClass([], organization)
             await connection.manager.save(cls2)
@@ -1257,19 +1257,6 @@ describe('processUserFromCSVRow', async () => {
             })
 
             expect(dbUser.user_id).to.not.be.empty
-            expect(dbUser.email).to.eq(row.user_email)
-            expect(dbUser.phone).to.be.null
-            expect(dbUser.given_name).to.eq(row.user_given_name)
-            expect(dbUser.family_name).to.eq(row.user_family_name)
-            expect(dbUser.date_of_birth).to.eq(row.user_date_of_birth)
-            expect(dbUser.gender).to.eq(row.user_gender)
-
-            const orgMembership = await OrganizationMembership.findOneOrFail({
-                where: { user: dbUser, organization: organization },
-            })
-            expect(orgMembership.shortcode).to.eq(row.user_shortcode)
-            const orgRoles = (await orgMembership.roles) || []
-            expect(orgRoles.map(roleInfo)).to.deep.eq([role].map(roleInfo))
         })
 
         it('it does not update SchoolMembership.roles based on `school_role_name` column', async () => {
