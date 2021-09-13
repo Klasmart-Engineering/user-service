@@ -164,11 +164,16 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             },
         })
 
-        const classIsAssignedToSchool = (await cls?.schools)?.find(
-            (s) => s.school_id === school?.school_id
-        )
-
-        if (!cls || !school || !classIsAssignedToSchool) {
+        const class_schools = (await cls?.schools) || []
+        const classIsAssignedToSchool =
+            class_schools.length > 0
+                ? class_schools?.find((s) => s.school_id === school?.school_id)
+                : false
+        if (
+            !cls ||
+            (school && !classIsAssignedToSchool) ||
+            (cls && !school && class_schools.length > 0)
+        ) {
             addCsvError(
                 rowErrors,
                 customErrors.nonexistent_child.code,
@@ -179,7 +184,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     entity: 'Class',
                     entityName: row.class_name,
                     parentEntity: 'School',
-                    parentName: row.school_name,
+                    parentName: row.school_name || '',
                 }
             )
         }
@@ -331,28 +336,27 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.user = Promise.resolve(user)
             await manager.save(schoolMembership)
         }
+    }
+    if (organizationRole && cls) {
+        const roleName = organizationRole?.role_name
 
-        if (organizationRole && cls) {
-            const roleName = organizationRole?.role_name
+        if (roleName?.includes('Student')) {
+            const students = (await cls.students) || []
 
-            if (roleName?.includes('Student')) {
-                const students = (await cls.students) || []
-
-                if (!students.includes(user)) {
-                    students.push(user)
-                    cls.students = Promise.resolve(students)
-                }
-            } else if (roleName?.includes('Teacher')) {
-                const teachers = (await cls.teachers) || []
-
-                if (!teachers.includes(user)) {
-                    teachers.push(user)
-                    cls.teachers = Promise.resolve(teachers)
-                }
+            if (!students.includes(user)) {
+                students.push(user)
+                cls.students = Promise.resolve(students)
             }
+        } else if (roleName?.includes('Teacher')) {
+            const teachers = (await cls.teachers) || []
 
-            await manager.save(cls)
+            if (!teachers.includes(user)) {
+                teachers.push(user)
+                cls.teachers = Promise.resolve(teachers)
+            }
         }
+
+        await manager.save(cls)
     }
 
     return rowErrors
