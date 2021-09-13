@@ -126,7 +126,7 @@ context('User loaders', () => {
         }
 
         beforeEach(async () => {
-            users = await User.save(Array(3).fill(null).map(createUser))
+            users = await User.save(Array(3).fill(undefined).map(createUser))
         })
 
         it('always returns an array of equal length', async () => {

@@ -82,7 +82,7 @@ describe('acceptance.user', () => {
         const organization = await Organization.findOneOrFail(orgId)
 
         const users = await User.save(
-            Array(usersCount).fill(null).map(createUser)
+            Array(usersCount).fill(undefined).map(createUser)
         )
 
         await OrganizationMembership.save(

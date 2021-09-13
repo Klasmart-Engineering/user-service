@@ -4,6 +4,8 @@ import { sharedValidations } from './shared'
 import { REGEX } from './regex'
 
 export const userValidations = {
+    user_id: Joi.string().uuid(),
+
     given_name: sharedValidations.alphanum_with_special_characters
         .required()
         .max(validationConstants.USER_GIVEN_NAME_MAX_LENGTH),

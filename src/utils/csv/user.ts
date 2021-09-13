@@ -1,10 +1,7 @@
 import { EntityManager, In } from 'typeorm'
 
 import { Class } from '../../entities/class'
-import {
-    normalizedLowercaseTrimmed,
-    Organization,
-} from '../../entities/organization'
+import { Organization } from '../../entities/organization'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { Role } from '../../entities/role'
 import { School } from '../../entities/school'
@@ -22,6 +19,7 @@ import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
+import { normalizedLowercaseTrimmed } from '../../utils/clean'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],

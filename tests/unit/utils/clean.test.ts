@@ -6,8 +6,9 @@ describe('email', () => {
         expect(clean.email('')).to.be.null
     })
 
-    it('if invalid is replaced with undefined', () => {
-        expect(clean.email('not-an-email')).to.be.undefined
+    it('if invalid is unchanged', () => {
+        const input = 'not-an-email'
+        expect(clean.email(input)).to.equal(input)
     })
 
     it('preserves null', () => {
@@ -28,8 +29,9 @@ describe('phone', () => {
         expect(clean.phone('')).to.be.null
     })
 
-    it('if invalid is replaced with undefined', () => {
-        expect(clean.phone('not-a-phone-number')).to.be.undefined
+    it('if invalid is unchanged', () => {
+        const input = 'not-a-phone-number'
+        expect(clean.phone(input)).to.equal(input)
     })
 
     it('preserves null', () => {

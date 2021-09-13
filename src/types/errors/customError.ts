@@ -1,5 +1,28 @@
 import { CSVErrorParams } from '../csv/csvError'
 
+export const genericErrorCodes = [
+    'duplicate_entity',
+    'duplicate_child_entity',
+    'duplicate_attribute_values',
+    'nonexistent_entity',
+    'nonexistent_child',
+    'missing_required_entity_attribute',
+    'missing_required_either',
+    'invalid_max_length',
+    'invalid_min_length',
+    'invalid_alphanumeric_special',
+    'invalid_alpha',
+    'invalid_alphanumeric',
+    'invalid_email',
+    'invalid_phone',
+    'invalid_date',
+    'invalid_uuid',
+    'unauthorized',
+    'invalid_format',
+] as const
+
+export type GenericErrorCode = typeof genericErrorCodes[number]
+
 export interface CustomError {
     code: string
     message: string

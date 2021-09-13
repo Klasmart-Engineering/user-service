@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import faker from 'faker'
-import { Connection, getRepository } from 'typeorm'
+import { Connection, createQueryBuilder, getRepository } from 'typeorm'
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
 import { Model } from '../../src/model'
 import { createTestConnection } from '../utils/testConnection'
@@ -79,6 +79,12 @@ import { createOrganization } from '../factories/organization.factory'
 import { createRole as roleFactory } from '../factories/role.factory'
 import { createSchool as schoolFactory } from '../factories/school.factory'
 import { createSubject } from '../factories/subject.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import {
+    createUser as userFactory,
+    createAdminUser as adminUserFactory,
+    createUser,
+} from '../factories/user.factory'
 import chaiAsPromised from 'chai-as-promised'
 import { isRequiredArgument } from 'graphql'
 import { Program } from '../../src/entities/program'
@@ -89,12 +95,17 @@ import { studentRole } from '../../src/permissions/student'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
-import { AnyKindOfDictionary } from 'lodash'
+import { pick } from 'lodash'
 import { validationConstants } from '../../src/entities/validations/constants'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { InviteUserArguments } from '../../src/operations/organization'
+import {
+    EditMembershipArguments,
+    InviteUserArguments,
+} from '../../src/operations/organization'
 import { Headers } from 'node-mocks-http'
-import { expectToBeAPIErrorCollection } from '../utils/apiError'
+import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { fake } from 'sinon'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -230,7 +241,19 @@ describe('organization', () => {
         })
     })
 
-    describe('findOrCreateUser', async () => {
+    describe('updateOrCreateUser', async () => {
+        const allProperties = [
+            'given_name',
+            'family_name',
+            'gender',
+            'email',
+            'phone',
+            'date_of_birth',
+            'username',
+            'alternate_email',
+            'alternate_phone',
+        ]
+
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             organization = await createOrganizationAndValidate(
@@ -239,50 +262,99 @@ describe('organization', () => {
             )
         })
 
-        it('the organization status by default is active', async () => {
-            expect(organization.status).to.eq(Status.ACTIVE)
-        })
-
         it('should assign the old user to the exsting user', async () => {
             let oldUser: User
             let email = user.email ?? ''
-            oldUser = await organization['findOrCreateUser'](
-                true,
-                user.user_id,
+            oldUser = await organization['updateOrCreateUser']({
+                user_id: user.user_id,
                 email,
-                undefined,
-                user.given_name,
-                user.family_name
-            )
+                given_name: user.given_name!,
+                family_name: user.family_name!,
+                gender: user.gender!,
+            })
             expect(oldUser).to.exist
             expect(oldUser.user_id).to.equal(user.user_id)
         })
         it('should assign the new user to a new user with an email', async () => {
             let newUser: User
-            newUser = await organization['findOrCreateUser'](
-                false,
-                undefined,
-                'bob@nowhere.com',
-                undefined,
-                'Bob',
-                'Smith'
-            )
+            newUser = await organization['updateOrCreateUser']({
+                email: 'bob@nowhere.com',
+                given_name: 'Bob',
+                family_name: 'Smith',
+                gender: 'Male',
+            })
             expect(newUser).to.exist
             expect(newUser.email).to.equal('bob@nowhere.com')
         })
 
         it('should assign the new user to a new user with a phone number', async () => {
             let newUser: User
-            newUser = await organization['findOrCreateUser'](
-                false,
-                undefined,
-                undefined,
-                '+44207344141',
-                'Bob',
-                'Smith'
-            )
+            newUser = await organization['updateOrCreateUser']({
+                phone: '+44207344141',
+                given_name: 'Bob',
+                family_name: 'Smith',
+                gender: 'Male',
+            })
             expect(newUser).to.exist
             expect(newUser.phone).to.equal('+44207344141')
+        })
+
+        context('existing user', () => {
+            let oldUser: User
+
+            beforeEach(async () => {
+                oldUser = await createUser({
+                    alternate_email: faker.internet.email(),
+                    alternate_phone: faker.phone.phoneNumber(),
+                }).save()
+            })
+            it('should not clobber User properties if undefined on input', async () => {
+                const updatedInfo = {
+                    given_name: faker.name.firstName(),
+                    family_name: faker.name.lastName(),
+                    gender: 'Female',
+                }
+
+                const newUser = await organization['updateOrCreateUser']({
+                    user_id: oldUser.user_id,
+                    ...updatedInfo,
+                })
+                expect(newUser.user_id).to.equal(oldUser.user_id)
+
+                const changedProperties = Object.keys(updatedInfo)
+                expect(pick(newUser, changedProperties)).to.deep.equal(
+                    updatedInfo
+                )
+
+                const unchangedProperties = allProperties.filter(
+                    (k) => !changedProperties.includes(k)
+                )
+                expect(pick(newUser, unchangedProperties)).to.deep.equal(
+                    pick(oldUser, unchangedProperties)
+                )
+            })
+
+            it('should update all defined User properties', async () => {
+                const updatedInfo = {
+                    given_name: faker.name.firstName(),
+                    family_name: faker.name.lastName(),
+                    gender: 'Female',
+                    email: faker.internet.email(),
+                    phone: faker.phone.phoneNumber(),
+                    date_of_birth: '06-1994',
+                    username: faker.internet.userName(),
+                    alternate_email: faker.internet.email(),
+                    alternate_phone: faker.phone.phoneNumber(),
+                }
+
+                const newUser = await organization['updateOrCreateUser']({
+                    user_id: oldUser.user_id,
+                    ...updatedInfo,
+                })
+                expect(newUser.user_id).to.equal(oldUser.user_id)
+
+                expect(pick(newUser, allProperties)).to.deep.equal(updatedInfo)
+            })
         })
     })
 
@@ -923,522 +995,520 @@ describe('organization', () => {
         })
     })
 
-    describe('_setMembership', async () => {
-        context(
-            'We have an email, given_name, family_name, organization_role_ids, school_ids and school_role_ids',
-            () => {
-                let userId: string
-                let organizationId: string
-                let schoolId: string
-                let roleId: string
-
-                beforeEach(async () => {
-                    user = await createAdminUser(testClient)
-                    userId = user.user_id
-                    organization = await createOrganizationAndValidate(
-                        testClient,
-                        user.user_id
+    function commonMembershipTests(
+        api: (
+            args?: Partial<EditMembershipArguments> &
+                Partial<InviteUserArguments>,
+            organization_id?: string,
+            headers?: Headers
+        ) => Promise<{ user: User; membership: OrganizationMembership }>
+    ) {
+        const findSchoolMembership = async (primaryKey: {
+            user_id: string
+            school_id: string
+        }) => {
+            return connection
+                .getRepository(SchoolMembership)
+                .findOneOrFail(primaryKey, { relations: ['roles'] })
+        }
+        return context('common membership tests', () => {
+            context('given_name', () => {
+                it('is required by the schema', async () => {
+                    return expect(
+                        api({
+                            given_name: undefined,
+                        })
+                    ).to.be.rejectedWith(
+                        'Variable "$given_name" of required type "String!" was not provided.'
                     )
-                    organizationId = organization.organization_id
-                    role = await Role.findOneOrFail({
-                        where: { role_name: 'Student' },
+                })
+            })
+            context('family_name', () => {
+                it('is required by the schema', async () => {
+                    return expect(
+                        api({
+                            family_name: undefined,
+                        })
+                    ).to.be.rejectedWith(
+                        'Variable "$family_name" of required type "String!" was not provided.'
+                    )
+                })
+            })
+            context('gender', () => {
+                it('is required by the schema', async () => {
+                    return expect(
+                        api({
+                            gender: undefined,
+                        })
+                    ).to.be.rejectedWith(
+                        'Variable "$gender" of required type "String!" was not provided.'
+                    )
+                })
+            })
+            context('date_of_birth', () => {
+                it('is set on the user', async () => {
+                    const date_of_birth = '12-2005'
+
+                    const { user } = await api({
+                        date_of_birth,
                     })
-                    roleId = role.role_id
-                    schoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 1',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    ).school_id
+
+                    expect(user.date_of_birth).to.equal(date_of_birth)
                 })
 
-                it('should create the user, make the user a member of the organization and set the school in the schools membership for the user', async () => {
-                    let object = await organization['_setMembership'](
-                        false,
-                        false,
-                        undefined,
-                        undefined,
-                        '+44207344141',
-                        'Bob',
-                        'Smith',
-                        undefined,
-                        'Bunter',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId)
-                    )
+                it('is padded if too short', async () => {
+                    const { user } = await api({
+                        date_of_birth: '6-1994',
+                    })
 
-                    let newUser = object.user
-                    let membership = object.membership
-                    let schoolmemberships = object.schoolMemberships
-
-                    expect(newUser).to.exist
-                    expect(newUser.phone).to.equal('+44207344141')
-                    expect(newUser.gender).to.equal('Male')
-                    expect(schoolmemberships).to.exist
-                    if (schoolmemberships) {
-                        expect(schoolmemberships.length).to.equal(1)
-                        expect(schoolmemberships[0].user_id).to.equal(
-                            newUser.user_id
-                        )
-                        expect(schoolmemberships[0].school_id).to.equal(
-                            schoolId
-                        )
-                    }
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
+                    expect(user.date_of_birth).to.equal('06-1994')
                 })
-                it('should create the user, make the user a member of the organization and set the school in the schools membership for the user', async () => {
-                    let object = await organization['_setMembership'](
-                        false,
-                        false,
-                        undefined,
-                        'bob@nowhere.com',
-                        undefined,
-                        'Bob',
-                        'Smith',
-                        undefined,
-                        'Bunter',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId)
-                    )
+            })
+            context('shortcode', () => {
+                it('if provided is saved to the OrganizationMembership', async () => {
+                    const shortcode = 'RANGER13'
+                    const { membership } = await api({
+                        shortcode,
+                    })
 
-                    let newUser = object.user
-                    let membership = object.membership
-                    let schoolmemberships = object.schoolMemberships
-
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.equal('bob@nowhere.com')
-                    expect(newUser.gender).to.equal('Male')
-
-                    expect(schoolmemberships).to.exist
-                    if (schoolmemberships) {
-                        expect(schoolmemberships.length).to.equal(1)
-                        expect(schoolmemberships[0].user_id).to.equal(
-                            newUser.user_id
-                        )
-                        expect(schoolmemberships[0].school_id).to.equal(
-                            schoolId
-                        )
-                    }
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
+                    expect(membership.shortcode).to.equal(shortcode)
                 })
-                it('should find the user, make the user a member of the organization and set the school in the schools membership for the user', async () => {
-                    let email = user.email ?? 'anyone@email.com'
-                    let given = user.given_name ?? 'anyone'
-                    let family = user.family_name ?? 'at_all'
-                    let object = await organization['_setMembership'](
-                        false,
-                        true,
-                        user.user_id,
-                        email,
-                        undefined,
-                        given,
-                        family,
-                        undefined,
-                        user.username,
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId)
+
+                it('is normalized to uppercase', async () => {
+                    const shortcode = 'lower1'
+                    const { membership } = await api({
+                        shortcode,
+                    })
+
+                    expect(membership.shortcode).to.equal(
+                        shortcode.toUpperCase()
                     )
-
-                    let newUser = object.user
-                    let membership = object.membership
-                    let schoolmemberships = object.schoolMemberships
-
-                    expect(newUser).to.exist
-                    expect(newUser.user_id).to.equal(user.user_id)
-                    expect(newUser.gender).to.equal('Male')
-
-                    expect(schoolmemberships).to.exist
-                    if (schoolmemberships) {
-                        expect(schoolmemberships.length).to.equal(1)
-                        expect(schoolmemberships[0].user_id).to.equal(
-                            newUser.user_id
-                        )
-                        expect(schoolmemberships[0].school_id).to.equal(
-                            schoolId
-                        )
-                    }
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
                 })
-            }
-        )
-        context(
-            'We have an email, given_name, family_name, organization_role_ids, school_ids and school_role_ids and the user already is another school member',
-            () => {
-                let userId: string
-                let organizationId: string
-                let schoolId: string
-                let oldSchoolId: string
-                let roleId: string
-                beforeEach(async () => {
-                    user = await createAdminUser(testClient)
-                    userId = user.user_id
-                    organization = await createOrganizationAndValidate(
-                        testClient,
-                        user.user_id
-                    )
-                    organizationId = organization.organization_id
-                    role = await createRole(
-                        testClient,
-                        organization.organization_id,
-                        'student'
-                    )
-                    roleId = role.role_id
-                    oldSchoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 1',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
+
+                it('throws an APIError if not alphanumeric', async () => {
+                    return expect(
+                        api({
+                            shortcode: 'not_alphanumeric',
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.invalid_alphanumeric(
+                            e,
+                            {
+                                entity: 'OrganizationMembership',
+                                attribute: 'shortcode',
+                            },
+                            ['shortcode']
                         )
-                    ).school_id
-                    schoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 2',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    ).school_id
-                    await addUserToSchool(testClient, userId, oldSchoolId, {
-                        authorization: getAdminAuthToken(),
                     })
                 })
-                it('should find the user, make the user a member of the organization and set the school in the schools membership for the user', async () => {
-                    let email = user.email
-                    let given = user.given_name
-                    let family = user.family_name
-                    let object = await organization['_setMembership'](
-                        false,
-                        true,
-                        user.user_id,
-                        email,
-                        undefined,
-                        given,
-                        family,
-                        undefined,
-                        user.username,
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId)
-                    )
+            })
 
-                    let newUser = object.user
-                    let membership = object.membership
-                    let schoolmemberships = object.schoolMemberships
-
-                    expect(newUser).to.exist
-                    expect(newUser.user_id).to.equal(user.user_id)
-                    expect(newUser.gender).to.equal('Male')
-
-                    expect(schoolmemberships).to.exist
-                    if (schoolmemberships) {
-                        expect(schoolmemberships.length).to.equal(1)
-                        expect(schoolmemberships[0].user_id).to.equal(
-                            newUser.user_id
+            context('organization_role_ids', () => {
+                const findOrganizationMembership = async (user_id: string) => {
+                    return connection
+                        .getRepository(OrganizationMembership)
+                        .findOneOrFail(
+                            {
+                                user_id,
+                                organization_id: organization.organization_id,
+                            },
+                            { relations: ['roles'] }
                         )
-                        expect(schoolmemberships[0].school_id).to.equal(
-                            schoolId
-                        )
-                    }
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                    expect(membership.shortcode).to.match(shortcode_re)
-                    expect(membership.shortcode.length).to.equal(
-                        validationConstants.SHORTCODE_MAX_LENGTH
+                }
+
+                it('is required by the schema', async () => {
+                    return expect(
+                        api({
+                            organization_role_ids: undefined,
+                        })
+                    ).to.be.rejectedWith(
+                        'Variable "$organization_role_ids" of required type "[ID!]!" was not provided.'
                     )
-
-                    const gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(
-                        testClient,
-                        userId,
-                        organizationId
-                    )
-                    expect(gqlSchoolMemberships).to.have.lengthOf(1)
-                    expect(gqlSchoolMemberships[0].school_id).to.equal(schoolId)
-                })
-                it(' should find the user, make the user a member of the organization', async () => {
-                    let email = user.email
-                    let given = user.given_name
-                    let family = user.family_name
-                    let object = await organization['_setMembership'](
-                        false,
-                        true,
-                        user.user_id,
-                        email,
-                        undefined,
-                        given,
-                        family,
-                        undefined,
-                        undefined,
-                        'Male',
-                        'FLAFEL3',
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId)
-                    )
-
-                    let newUser = object.user
-                    let membership = object.membership
-                    let schoolmemberships = object.schoolMemberships
-
-                    expect(newUser).to.exist
-                    expect(newUser.user_id).to.equal(user.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    if (schoolmemberships) {
-                        expect(schoolmemberships.length).to.equal(1)
-                        expect(schoolmemberships[0].user_id).to.equal(
-                            newUser.user_id
-                        )
-                        expect(schoolmemberships[0].school_id).to.equal(
-                            schoolId
-                        )
-                    }
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                    expect(membership.shortcode).to.match(shortcode_re)
-                    expect(membership.shortcode).to.equal('FLAFEL3')
                 })
 
-                context(
-                    'We find the user, make the user a member of the organization',
-                    () => {
-                        it('should set the school in the schools membership for the user', async () => {
-                            let email = user.email
-                            let given = user.given_name
-                            let family = user.family_name
-                            let object = await organization['_setMembership'](
-                                false,
-                                true,
-                                user.user_id,
-                                email,
-                                undefined,
-                                given,
-                                family,
-                                undefined,
-                                undefined,
-                                'Male',
-                                undefined,
-                                new Array(roleId),
-                                Array(schoolId),
-                                new Array(roleId)
-                            )
-
-                            let newUser = object.user
-                            let membership = object.membership
-                            let schoolmemberships = object.schoolMemberships
-
-                            expect(newUser).to.exist
-                            expect(newUser.user_id).to.equal(user.user_id)
-
-                            expect(schoolmemberships).to.exist
-                            if (schoolmemberships) {
-                                expect(schoolmemberships.length).to.equal(1)
-                                expect(schoolmemberships[0].user_id).to.equal(
-                                    newUser.user_id
-                                )
-                                expect(schoolmemberships[0].school_id).to.equal(
-                                    schoolId
-                                )
-                            }
-                            expect(membership).to.exist
-                            expect(membership.organization_id).to.equal(
-                                organizationId
-                            )
-                            expect(membership.user_id).to.equal(newUser.user_id)
-                            expect(membership.shortcode).to.match(shortcode_re)
-                            expect(membership.shortcode.length).to.equal(
-                                validationConstants.SHORTCODE_MAX_LENGTH
-                            )
-
-                            const gqlSchoolMemberships = await getSchoolMembershipsForOrganizationMembership(
-                                testClient,
-                                userId,
-                                organizationId
-                            )
-                            expect(gqlSchoolMemberships).to.have.lengthOf(1)
-                            expect(gqlSchoolMemberships[0].school_id).to.equal(
-                                schoolId
-                            )
+                it('if is an empty array, throws ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE', async () => {
+                    return expect(
+                        api({
+                            organization_role_ids: [],
                         })
-
-                        it(' it should set a custom shortcode', async () => {
-                            let email = user.email
-                            let given = user.given_name
-                            let family = user.family_name
-                            let object = await organization['_setMembership'](
-                                false,
-                                false,
-                                undefined,
-                                email,
-                                undefined,
-                                given,
-                                family,
-                                undefined,
-                                'Bunter',
-                                'Male',
-                                'FLAFEL3',
-                                new Array(roleId),
-                                Array(schoolId),
-                                new Array(roleId)
-                            )
-
-                            let membership = object.membership
-
-                            expect(membership).to.exist
-                            expect(membership.shortcode).to.match(shortcode_re)
-                            expect(membership.shortcode).to.equal('FLAFEL3')
-                        })
-                        it(' it should fail to set a custom shortcode', async () => {
-                            let email = user.email
-                            let given = user.given_name
-                            let family = user.family_name
-                            let object = await organization['_setMembership'](
-                                false,
-                                false,
-                                undefined,
-                                email,
-                                undefined,
-                                given,
-                                family,
-                                undefined,
-                                'Bunter',
-                                'Male',
-                                'polkadot 45',
-                                new Array(roleId),
-                                Array(schoolId),
-                                new Array(roleId)
-                            )
-
-                            let membership = object.membership
-
-                            expect(membership).to.exist
-                            expect(membership.organization_id).to.equal(
-                                organizationId
-                            )
-                            expect(membership.shortcode).to.match(shortcode_re)
-                            expect(membership.shortcode).to.not.equal(
-                                'polkadot 45'
-                            )
-                        })
-                        it(' it should uppercase a custom shortcode', async () => {
-                            let email = user.email
-                            let given = user.given_name
-                            let family = user.family_name
-                            let object = await organization['_setMembership'](
-                                false,
-                                false,
-                                undefined,
-                                email,
-                                undefined,
-                                given,
-                                family,
-                                undefined,
-                                'Bunter',
-                                'Male',
-                                'polkadot45',
-                                new Array(roleId),
-                                Array(schoolId),
-                                new Array(roleId)
-                            )
-
-                            let membership = object.membership
-
-                            expect(membership).to.exist
-                            expect(membership.organization_id).to.equal(
-                                organizationId
-                            )
-                            expect(membership.shortcode).to.match(shortcode_re)
-                            expect(membership.shortcode).to.not.equal(
-                                'polkadot45'
-                            )
-                            expect(membership.shortcode).to.equal(
-                                'polkadot45'.toUpperCase()
-                            )
-                        })
-                    }
-                )
-                it('should attempt to assign a role for one organizion to another and not succeed', async () => {
-                    let user2 = await createNonAdminUser(testClient)
-                    let userId2 = user2.user_id
-                    let organization2 = await createOrganizationAndValidate(
-                        testClient,
-                        userId2,
-                        'otherOrgName',
-                        undefined,
-                        getNonAdminAuthToken()
-                    )
-                    let organizationId2 = organization2.organization_id
-                    role = await createRole(
-                        testClient,
-                        organization.organization_id,
-                        'student'
-                    )
-                    roleId = role.role_id
-                    let role2 = await createRole(
-                        testClient,
-                        organizationId2,
-                        'student',
-                        'student role',
-                        getNonAdminAuthToken()
-                    )
-                    let role2id = role2.role_id
-                    let email = user.email
-                    let given = user.given_name
-                    let family = user.family_name
-                    try {
-                        let object = await organization['_setMembership'](
-                            false,
-                            false,
-                            undefined,
-                            email,
-                            undefined,
-                            given,
-                            family,
-                            undefined,
-                            'Bunter',
-                            'Male',
-                            undefined,
-                            [roleId, role2id],
-                            Array(schoolId),
-                            new Array(roleId)
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.missing_required_entity_attribute(
+                            e,
+                            {
+                                entity: 'OrganizationMembership',
+                                attribute: 'roles',
+                            },
+                            ['organization_role_ids']
                         )
-                        expect(false).true
-                    } catch (e) {
-                        expect(e).to.exist
-                    }
+                    })
                 })
-            }
-        )
-    })
+
+                it('tolerates duplicate IDs', async () => {
+                    const { user } = await api({
+                        organization_role_ids: [role.role_id, role.role_id],
+                    })
+
+                    const membership = await findOrganizationMembership(
+                        user.user_id
+                    )
+
+                    expect(
+                        (await membership?.roles)?.map((role) => role.role_id)
+                    ).to.deep.equal([role.role_id])
+                })
+
+                it('accepts system Roles', async () => {
+                    const systemRole = await connection
+                        .getRepository(Role)
+                        .findOneOrFail({ system_role: true })
+
+                    const { user } = await api({
+                        organization_role_ids: [systemRole.role_id],
+                    })
+
+                    const membership = await findOrganizationMembership(
+                        user.user_id
+                    )
+
+                    expect(
+                        (await membership?.roles)?.map((role) => role.role_id)
+                    ).to.deep.equal([systemRole.role_id])
+                })
+
+                it('accepts custom Roles', async () => {
+                    const customRole = await roleFactory(
+                        'Custom',
+                        organization
+                    ).save()
+
+                    const { user } = await api({
+                        organization_role_ids: [customRole.role_id],
+                    })
+
+                    const membership = await findOrganizationMembership(
+                        user.user_id
+                    )
+
+                    expect(
+                        (await membership?.roles)?.map((role) => role.role_id)
+                    ).to.deep.equal([customRole.role_id])
+                })
+
+                it("returns an APIError if the Role doesn't exist", async () => {
+                    const nonexistentRoleId = faker.random.uuid()
+                    return expect(
+                        api({
+                            organization_role_ids: [nonexistentRoleId],
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.nonexistent_child(
+                            e,
+                            {
+                                entity: 'Role',
+                                entityName: nonexistentRoleId,
+                                parentEntity: 'Organization',
+                                parentName: organization.organization_name!,
+                            },
+                            ['organization_role_ids']
+                        )
+                    })
+                })
+
+                it("returns an APIError if the Role doesn't exist on this Organization", async () => {
+                    const otherOrg = await createOrganization().save()
+
+                    const otherRole = await roleFactory(
+                        'New Custom Role',
+                        otherOrg
+                    ).save()
+                    return expect(
+                        api({
+                            organization_role_ids: [otherRole.role_id],
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.nonexistent_child(
+                            e,
+                            {
+                                entity: 'Role',
+                                entityName: otherRole.role_id,
+                                parentEntity: 'Organization',
+                                parentName: organization.organization_name!,
+                            },
+                            ['organization_role_ids']
+                        )
+                    })
+                })
+            })
+            context('school_role_ids', () => {
+                let school: School
+                beforeEach(async () => {
+                    school = await schoolFactory(organization).save()
+                })
+
+                it('has no effect if not provided with school_ids', async () => {
+                    const { user } = await api({
+                        school_role_ids: [role.role_id],
+                    })
+
+                    expect(user).to.exist
+                    return expect(
+                        findSchoolMembership({
+                            user_id: user.user_id,
+                            school_id: school.school_id,
+                        })
+                    ).to.be.rejectedWith(EntityNotFoundError)
+                })
+
+                it('tolerates duplicate IDs', async () => {
+                    const { user } = await api({
+                        school_role_ids: [role.role_id, role.role_id],
+                        school_ids: [school.school_id],
+                    })
+
+                    const membership = await findSchoolMembership({
+                        user_id: user.user_id,
+                        school_id: school.school_id,
+                    })
+
+                    expect(
+                        (await membership?.roles)?.map((role) => role.role_id)
+                    ).to.deep.equal([role.role_id])
+                })
+
+                it('accepts system Roles', async () => {
+                    const systemRole = await connection
+                        .getRepository(Role)
+                        .findOneOrFail({ system_role: true })
+                    const { user } = await api({
+                        school_role_ids: [systemRole.role_id],
+                        school_ids: [school.school_id],
+                    })
+
+                    const membership = await findSchoolMembership({
+                        user_id: user.user_id,
+                        school_id: school.school_id,
+                    })
+
+                    expect(await membership?.roles).to.deep.equal([systemRole])
+                })
+
+                it('accepts custom Roles', async () => {
+                    const customRole = await roleFactory(
+                        'Custom',
+                        organization
+                    ).save()
+                    const { user } = await api({
+                        school_role_ids: [customRole.role_id],
+                        school_ids: [school.school_id],
+                    })
+
+                    const membership = await findSchoolMembership({
+                        user_id: user.user_id,
+                        school_id: school.school_id,
+                    })
+
+                    expect(
+                        (await membership?.roles)?.map(
+                            (role) => (role as Role).role_id
+                        )
+                    ).to.deep.equal([customRole.role_id])
+                })
+
+                it("returns an APIError if the Role doesn't exist", async () => {
+                    const nonexistentRoleId = faker.random.uuid()
+                    return expect(
+                        api({
+                            school_role_ids: [nonexistentRoleId],
+                            school_ids: [school.school_id],
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.nonexistent_child(
+                            e,
+                            {
+                                entity: 'Role',
+                                entityName: nonexistentRoleId,
+                                parentEntity: 'Organization',
+                                parentName: organization.organization_name!,
+                            },
+                            ['school_role_ids']
+                        )
+                    })
+                })
+
+                it("returns an APIError if the Role doesn't exist on this Organization", async () => {
+                    const otherOrg = await createOrganization().save()
+
+                    const otherRole = await roleFactory(
+                        'New Custom Role',
+                        otherOrg
+                    ).save()
+                    return expect(
+                        api({
+                            school_role_ids: [otherRole.role_id],
+                            school_ids: [school.school_id],
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.nonexistent_child(
+                            e,
+                            {
+                                entity: 'Role',
+                                entityName: otherRole.role_id,
+                                parentEntity: 'Organization',
+                                parentName: organization.organization_name!,
+                            },
+                            ['school_role_ids']
+                        )
+                    })
+                })
+            })
+            context('school_ids', () => {
+                let school: School
+
+                beforeEach(async () => {
+                    school = await schoolFactory(organization).save()
+                })
+
+                it('creates an active SchoolMembership for each school', async () => {
+                    const otherSchool = await schoolFactory(organization).save()
+
+                    const { user } = await api({
+                        school_ids: [school.school_id, otherSchool.school_id],
+                    })
+
+                    const memberships = await Promise.all([
+                        findSchoolMembership({
+                            user_id: user.user_id,
+                            school_id: school.school_id,
+                        }),
+                        findSchoolMembership({
+                            user_id: user.user_id,
+                            school_id: otherSchool.school_id,
+                        }),
+                    ])
+
+                    memberships.forEach((membership) => {
+                        expect(membership.status).to.equal(Status.ACTIVE)
+                        expect(membership.deleted_at).to.be.null
+                    })
+                })
+            })
+
+            context('alternate_email', () => {
+                it('if invalid throws an ERR_INVALID_EMAIL APIError', async () => {
+                    return expect(
+                        api({
+                            alternate_email: 'not-a-valid-email',
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.invalid_email(
+                            e,
+                            {
+                                entity: 'User',
+                                attribute: 'alternate_email',
+                            },
+                            ['alternate_email']
+                        )
+                    })
+                })
+
+                it('is normalized', async () => {
+                    const alternate_email = 'cafe\u0301@gmail.com'
+
+                    const { user } = await api({
+                        alternate_email,
+                    })
+
+                    expect(user.alternate_email).to.equal('caf\u00E9@gmail.com')
+                })
+
+                it('is trimmed', async () => {
+                    const alternate_email = `${faker.internet
+                        .email()
+                        .toLowerCase()}  `
+
+                    const { user } = await api({
+                        alternate_email,
+                    })
+
+                    expect(user.alternate_email).to.equal(
+                        alternate_email.trim()
+                    )
+                })
+
+                it('is lowercased', async () => {
+                    const alternate_email = faker.internet.email()
+
+                    const { user } = await api({
+                        alternate_email: alternate_email.toUpperCase(),
+                    })
+
+                    expect(user.alternate_email).to.equal(
+                        alternate_email.toLowerCase()
+                    )
+                })
+
+                it('if valid is saved to the User entity', async () => {
+                    const alternate_email = faker.internet.email().toLowerCase()
+                    const { user } = await api({
+                        alternate_email,
+                    })
+
+                    expect(user.alternate_email).to.equal(alternate_email)
+                })
+                ;[null, ''].forEach((alternate_email) => {
+                    it(`if ${alternate_email}, is normalised to null`, async () => {
+                        const { user } = await api({
+                            alternate_email,
+                        })
+
+                        expect(user.alternate_email).to.be.null
+                    })
+                })
+            })
+            context('alternate_phone', () => {
+                it('if invalid throws an ERR_INVALID_PHONE APIError', async () => {
+                    return expect(
+                        api({
+                            alternate_phone: 'not-a-valid-phone',
+                        })
+                    ).to.be.rejected.then((e) => {
+                        expectAPIError.invalid_phone(
+                            e,
+                            {
+                                entity: 'User',
+                                attribute: 'alternate_phone',
+                            },
+                            ['alternate_phone']
+                        )
+                    })
+                })
+
+                it('if valid is saved to the User entity', async () => {
+                    const alternate_phone = faker.phone.phoneNumber(
+                        '+44#######'
+                    )
+                    const { user } = await api({
+                        alternate_phone,
+                    })
+
+                    expect(user.alternate_phone).to.equal(alternate_phone)
+                })
+                ;[null, ''].forEach((alternate_phone) => {
+                    it(`if ${alternate_phone}, is normalised to null`, async () => {
+                        const { user } = await api({
+                            alternate_phone,
+                        })
+
+                        expect(user.alternate_phone).to.be.null
+                    })
+                })
+            })
+        })
+    }
 
     describe('inviteUser', () => {
         let userId: string
         let organizationId: string
-        let schoolId: string
         let oldSchoolId: string
         let roleId: string
         let adminToken: string
@@ -1473,19 +1543,6 @@ describe('organization', () => {
             )
         }
 
-        const findSchoolMembership = async (
-            user_id: string,
-            school_id = schoolId
-        ) => {
-            return connection.getRepository(SchoolMembership).findOneOrFail(
-                {
-                    user_id,
-                    school_id,
-                },
-                { relations: ['roles'] }
-            )
-        }
-
         beforeEach(async () => {
             user = await createAdminUser(testClient)
             adminToken = generateToken(userToPayload(user))
@@ -1505,15 +1562,6 @@ describe('organization', () => {
                     testClient,
                     organizationId,
                     'school 1',
-                    undefined,
-                    { authorization: adminToken }
-                )
-            ).school_id
-            schoolId = (
-                await createSchool(
-                    testClient,
-                    organizationId,
-                    'school 2',
                     undefined,
                     { authorization: adminToken }
                 )
@@ -1592,26 +1640,6 @@ describe('organization', () => {
             })
 
             context('shortcode', () => {
-                it('is saved to the new OrganizationMembership if explicitly provided', async () => {
-                    const shortcode = 'RANGER13'
-                    const { membership } = await inviteUserWithDefaults({
-                        shortcode,
-                    })
-
-                    expect(membership.shortcode).to.equal(shortcode)
-                })
-
-                it('is normalized to uppercase', async () => {
-                    const shortcode = 'lower1'
-                    const { membership } = await inviteUserWithDefaults({
-                        shortcode,
-                    })
-
-                    expect(membership.shortcode).to.equal(
-                        shortcode.toUpperCase()
-                    )
-                })
-
                 it('defaults to an autogenerated shortcode', async () => {
                     const { membership } = await inviteUserWithDefaults({
                         shortcode: undefined,
@@ -1620,280 +1648,9 @@ describe('organization', () => {
                     expect(membership.shortcode).to.be.a('string')
                     expect(membership.shortcode).to.match(shortcode_re)
                 })
-
-                it('throws an APIError if not alphanumeric', async () => {
-                    return expect(
-                        inviteUserWithDefaults({
-                            shortcode: 'not_alphanumeric',
-                        })
-                    ).to.be.rejected.then((e) => {
-                        expectToBeAPIErrorCollection(e, [
-                            {
-                                code: 'ERR_INVALID_ALPHANUMERIC',
-                                message:
-                                    'OrganizationMembership shortcode must only contain letters and numbers.',
-                                variables: ['shortcode'],
-                                entity: 'OrganizationMembership',
-                                attribute: 'shortcode',
-                            },
-                        ])
-                    })
-                })
             })
 
-            context('school_role_ids', () => {
-                it('has no effect if not provided with school_ids', async () => {
-                    const { user } = await inviteUserWithDefaults({
-                        school_role_ids: [role.role_id],
-                    })
-
-                    expect(user).to.exist
-                    return expect(
-                        findSchoolMembership(user.user_id)
-                    ).to.be.rejectedWith(EntityNotFoundError)
-                })
-
-                it('tolerates duplicate IDs', async () => {
-                    const { user } = await inviteUserWithDefaults({
-                        school_role_ids: [role.role_id, role.role_id],
-                        school_ids: [schoolId],
-                    })
-
-                    const membership = await findSchoolMembership(user.user_id)
-
-                    expect(await membership?.roles).to.deep.equal([role])
-                })
-
-                it('accepts system Roles', async () => {
-                    const systemRole = await connection
-                        .getRepository(Role)
-                        .findOneOrFail({ system_role: true })
-                    const { user } = await inviteUserWithDefaults({
-                        school_role_ids: [systemRole.role_id],
-                        school_ids: [schoolId],
-                    })
-
-                    const membership = await findSchoolMembership(user.user_id)
-
-                    expect(await membership?.roles).to.deep.equal([systemRole])
-                })
-
-                it('accepts custom Roles', async () => {
-                    const customRole = await roleFactory(
-                        'Custom',
-                        organization
-                    ).save()
-                    const { user } = await inviteUserWithDefaults({
-                        school_role_ids: [customRole.role_id],
-                        school_ids: [schoolId],
-                    })
-
-                    const membership = await findSchoolMembership(user.user_id)
-
-                    expect(
-                        (await membership?.roles)?.map(
-                            (role) => (role as Role).role_id
-                        )
-                    ).to.deep.equal([customRole.role_id])
-                })
-
-                it("returns an APIError if the Role doesn't exist", async () => {
-                    const nonexistentRoleId = faker.random.uuid()
-                    return expect(
-                        inviteUserWithDefaults({
-                            school_role_ids: [nonexistentRoleId],
-                            school_ids: [schoolId],
-                        })
-                    ).to.be.rejected.then((e) => {
-                        expectToBeAPIErrorCollection(e, [
-                            {
-                                code: 'ERR_NON_EXISTENT_CHILD_ENTITY',
-                                message: `Role ${nonexistentRoleId} doesn't exist for Organization ${organization.organization_name}.`,
-                                variables: ['school_role_ids'],
-                                entity: 'Role',
-                                entityName: nonexistentRoleId,
-                                parentEntity: 'Organization',
-                                parentName: organization.organization_name,
-                            },
-                        ])
-                    })
-                })
-
-                it("returns an APIError if the Role doesn't exist on this Organization", async () => {
-                    const otherOrg = await createOrganization().save()
-
-                    const otherRole = await roleFactory(
-                        'New Custom Role',
-                        otherOrg
-                    ).save()
-                    return expect(
-                        inviteUserWithDefaults({
-                            school_role_ids: [otherRole.role_id],
-                            school_ids: [schoolId],
-                        })
-                    ).to.be.rejected.then((e) => {
-                        expectToBeAPIErrorCollection(e, [
-                            {
-                                code: 'ERR_NON_EXISTENT_CHILD_ENTITY',
-                                message: `Role ${otherRole.role_id} doesn't exist for Organization ${organization.organization_name}.`,
-                                variables: ['school_role_ids'],
-                                entity: 'Role',
-                                entityName: otherRole.role_id,
-                                parentEntity: 'Organization',
-                                parentName: organization.organization_name,
-                            },
-                        ])
-                    })
-                })
-            })
-
-            context('school_ids', () => {
-                it('creates an active SchoolMembership for each school', async () => {
-                    const otherSchool = await schoolFactory(organization).save()
-
-                    const { user } = await inviteUserWithDefaults({
-                        school_ids: [schoolId, otherSchool.school_id],
-                    })
-
-                    const memberships = await Promise.all([
-                        findSchoolMembership(user.user_id),
-                        findSchoolMembership(
-                            user.user_id,
-                            otherSchool.school_id
-                        ),
-                    ])
-
-                    memberships.forEach((membership) => {
-                        expect(membership.status).to.equal(Status.ACTIVE)
-                        expect(membership.deleted_at).to.be.null
-                    })
-                })
-            })
-
-            context('organization_role_ids', () => {
-                const findOrganizationMembership = async (user_id: string) => {
-                    return connection
-                        .getRepository(OrganizationMembership)
-                        .findOneOrFail(
-                            {
-                                user_id,
-                                organization_id: organizationId,
-                            },
-                            { relations: ['roles'] }
-                        )
-                }
-
-                it('tolerates duplicate IDs', async () => {
-                    const { user } = await inviteUserWithDefaults({
-                        organization_role_ids: [role.role_id, role.role_id],
-                    })
-
-                    const membership = await findOrganizationMembership(
-                        user.user_id
-                    )
-
-                    expect(await membership?.roles).to.deep.equal([role])
-                })
-
-                it('accepts system Roles', async () => {
-                    const systemRole = await connection
-                        .getRepository(Role)
-                        .findOneOrFail({ system_role: true })
-
-                    const { user } = await inviteUserWithDefaults({
-                        organization_role_ids: [systemRole.role_id],
-                    })
-
-                    const membership = await findOrganizationMembership(
-                        user.user_id
-                    )
-
-                    expect(await membership?.roles).to.deep.equal([systemRole])
-                })
-
-                it('accepts custom Roles', async () => {
-                    const customRole = await roleFactory(
-                        'Custom',
-                        organization
-                    ).save()
-
-                    const { user } = await inviteUserWithDefaults({
-                        organization_role_ids: [customRole.role_id],
-                    })
-
-                    const membership = await findOrganizationMembership(
-                        user.user_id
-                    )
-
-                    expect(
-                        (await membership?.roles)?.map(
-                            (role) => (role as Role).role_id
-                        )
-                    ).to.deep.equal([customRole.role_id])
-                })
-
-                it("returns an APIError if the Role doesn't exist", async () => {
-                    const nonexistentRoleId = faker.random.uuid()
-                    return expect(
-                        inviteUserWithDefaults({
-                            organization_role_ids: [nonexistentRoleId],
-                        })
-                    ).to.be.rejected.then((e) => {
-                        expectToBeAPIErrorCollection(e, [
-                            {
-                                code: 'ERR_NON_EXISTENT_CHILD_ENTITY',
-                                message: `Role ${nonexistentRoleId} doesn't exist for Organization ${organization.organization_name}.`,
-                                variables: ['organization_role_ids'],
-                                entity: 'Role',
-                                entityName: nonexistentRoleId,
-                                parentEntity: 'Organization',
-                                parentName: organization.organization_name,
-                            },
-                        ])
-                    })
-                })
-
-                it("returns an APIError if the Role doesn't exist on this Organization", async () => {
-                    const otherOrg = await createOrganization().save()
-
-                    const otherRole = await roleFactory(
-                        'New Custom Role',
-                        otherOrg
-                    ).save()
-                    return expect(
-                        inviteUserWithDefaults({
-                            organization_role_ids: [otherRole.role_id],
-                        })
-                    ).to.be.rejected.then((e) => {
-                        expectToBeAPIErrorCollection(e, [
-                            {
-                                code: 'ERR_NON_EXISTENT_CHILD_ENTITY',
-                                message: `Role ${otherRole.role_id} doesn't exist for Organization ${organization.organization_name}.`,
-                                variables: ['organization_role_ids'],
-                                entity: 'Role',
-                                entityName: otherRole.role_id,
-                                parentEntity: 'Organization',
-                                parentName: organization.organization_name,
-                            },
-                        ])
-                    })
-                })
-            })
-
-            context('alternate_email/phone', () => {
-                it('sets on the User if provided', async () => {
-                    const alternate_email = 'some@email.com'
-                    const alternate_phone = '+123456789'
-                    const { user } = await inviteUserWithDefaults({
-                        alternate_email,
-                        alternate_phone,
-                    })
-
-                    expect(user).to.exist
-                    expect(user?.alternate_email).to.equal(alternate_email)
-                    expect(user?.alternate_phone).to.equal(alternate_phone)
-                })
-            })
+            commonMembershipTests(inviteUserWithDefaults)
 
             context('required fields', () => {
                 it('creates the User when only the required fields are provided', async () => {
@@ -1913,54 +1670,22 @@ describe('organization', () => {
                     expect(user?.email).to.equal(defaultArguments.email)
                 })
 
-                it('fails to create the User when any required field on the schema level is missing (given_name, family_name, gender, organization_role_ids)', async () => {
-                    return expect(
-                        inviteUserWithDefaults({
-                            given_name: undefined,
-                            family_name: undefined,
-                            gender: undefined,
-                            organization_role_ids: undefined,
-                        })
-                    ).to.be.rejected.then((e) => {
-                        expect(e)
-                            .to.have.property('message')
-                            .that.equals(
-                                [
-                                    'Variable "$given_name" of required type "String!" was not provided.',
-                                    'Variable "$family_name" of required type "String!" was not provided.',
-                                    'Variable "$gender" of required type "String!" was not provided.',
-                                    'Variable "$organization_role_ids" of required type "[ID!]!" was not provided.',
-                                ].join('\n')
-                            )
-                    })
-                })
-
-                it('fails to create the User when server-side static validation fails (either of email/phone)', async () => {
+                it('if email AND phone is missing throws ERR_MISSING_REQUIRED_EITHER', async () => {
                     return expect(
                         inviteUserWithDefaults({
                             email: undefined,
                             phone: undefined,
-                            organization_role_ids: [],
                         })
                     ).to.be.rejected.then((e) => {
-                        expectToBeAPIErrorCollection(e, [
+                        expectAPIError.missing_required_either(
+                            e,
                             {
-                                code: 'ERR_MISSING_REQUIRED_EITHER',
-                                message: 'User email/Phone is required.',
-                                variables: ['email'],
                                 entity: 'User',
                                 attribute: 'email',
                                 otherAttribute: 'Phone',
                             },
-                            {
-                                code: 'ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE',
-                                message:
-                                    'OrganizationMembership roles is required.',
-                                variables: ['organization_role_ids'],
-                                entity: 'OrganizationMembership',
-                                attribute: 'roles',
-                            },
-                        ])
+                            ['email']
+                        )
                     })
                 })
             })
@@ -2037,9 +1762,9 @@ describe('organization', () => {
             })
 
             async function expectTotalUsersWithEmail(expectedCount: number) {
-                const actualCount = await connection
-                    .getRepository(User)
-                    .count({ email: defaultArguments.email })
+                const actualCount = await connection.getRepository(User).count({
+                    email: defaultArguments.email as string | undefined,
+                })
 
                 expect(actualCount).to.equal(expectedCount)
             }
@@ -2270,1003 +1995,340 @@ describe('organization', () => {
             })
         })
     })
-    describe('editMemberships', async () => {
-        context(
-            'We have an email or phone, given_name, family_name, organization_role_ids, school_ids and school_role_ids',
-            () => {
-                let userId: string
-                let organizationId: string
-                let schoolId: string
-                let oldSchoolId: string
-                let roleId: string
-                let otherUserId: string
-                let otherUser: User
+    describe('editMembership', async () => {
+        let defaultArguments: EditMembershipArguments
+        let existingUser: User
+        let existingMembership: OrganizationMembership
+        let token: string
 
-                beforeEach(async () => {
-                    user = await createAdminUser(testClient)
-                    userId = user.user_id
-                    otherUser = await createNonAdminUser(testClient)
-                    otherUserId = otherUser.user_id
-                    organization = await createOrganizationAndValidate(
-                        testClient,
-                        user.user_id
+        beforeEach(async () => {
+            organization = await createOrganization().save()
+
+            existingUser = await userFactory({
+                alternate_email: faker.internet.email(),
+                alternate_phone: faker.phone.phoneNumber('+44#######'),
+            }).save()
+
+            token = generateToken(userToPayload(existingUser))
+
+            existingMembership = await createOrganizationMembership({
+                user: existingUser,
+                organization,
+            }).save()
+
+            role = await roleFactory(undefined, organization).save()
+
+            createQueryBuilder(Role)
+                .relation('permissions')
+                .of(role)
+                .add(PermissionName.edit_users_40330)
+
+            createQueryBuilder(OrganizationMembership)
+                .relation('roles')
+                .of(existingMembership)
+                .add(role)
+
+            const studentRole = await Role.findOneOrFail({
+                role_name: 'Student',
+                system_role: true,
+            })
+
+            defaultArguments = {
+                user_id: existingUser.user_id,
+                given_name: validUser.given_name,
+                family_name: validUser.family_name,
+                gender: validUser.gender,
+                organization_role_ids: [studentRole.role_id],
+                shortcode: 'SH0RTC0D3',
+            }
+        })
+
+        async function editMembershipWithDefaults(
+            overrideArguments?: Partial<EditMembershipArguments>,
+            organization_id?: string,
+            headers?: Headers
+        ) {
+            const args = {
+                ...defaultArguments,
+                ...overrideArguments,
+            }
+            return editMembership(
+                testClient,
+                organization_id ?? organization.organization_id,
+                args,
+                headers ?? { authorization: token }
+            )
+        }
+
+        async function expectNoChange() {
+            const userKeys = [
+                'user_id',
+                'given_name',
+                'family_name',
+                'email',
+                'phone',
+                'username',
+                'date_of_birth',
+                'gender',
+            ] as (keyof User)[]
+            const originalUserState = pick(existingUser, userKeys)
+            const membershipKeys = [
+                'user_id',
+                'organization_id',
+                'shortcode',
+                'join_timestamp',
+                'status',
+            ] as (keyof OrganizationMembership)[]
+            const originalMembershipState = pick(
+                existingMembership,
+                membershipKeys
+            )
+
+            await existingUser.reload()
+            await existingMembership.reload()
+
+            expect(pick(existingUser, userKeys)).to.deep.equal(
+                originalUserState
+            )
+            expect(pick(existingMembership, membershipKeys)).to.deep.equal(
+                originalMembershipState
+            )
+        }
+
+        commonMembershipTests(editMembershipWithDefaults)
+
+        context('authentication', async () => {
+            it("if the User doesn't have `edit_users_40330`permission throws an error", async () => {
+                await createQueryBuilder(Role)
+                    .relation('permissions')
+                    .of(role)
+                    .remove(PermissionName.edit_users_40330)
+
+                return expect(editMembershipWithDefaults())
+                    .to.be.rejectedWith(
+                        `User(${existingUser.user_id}) does not have Permission(edit_users_40330) in Organization(${organization.organization_id})`
                     )
-                    organizationId = organization.organization_id
-                    role = await createRole(
-                        testClient,
-                        organization.organization_id,
-                        'student'
-                    )
-                    roleId = role.role_id
-                    oldSchoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 1',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    ).school_id
-                    schoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 2',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    ).school_id
-                    await addUserToSchool(testClient, userId, oldSchoolId, {
-                        authorization: getAdminAuthToken(),
+                    .then(async () => {
+                        await expectNoChange()
                     })
+            })
+        })
+        context('organization', async () => {
+            it('if the Organization is inactive makes no update and returns null', async () => {
+                await Organization.update(organization.organization_id, {
+                    status: Status.INACTIVE,
                 })
 
-                it('edits user when email provided', async () => {
-                    let email = 'bob@nowhere.com'
-                    let phone = undefined
-                    let given = 'Bob'
-                    let family = 'Smith'
+                const result = await editMembershipWithDefaults()
 
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        email: email,
-                    } as User
+                expect(result).to.be.null
 
-                    bob = await createUserAndValidate(testClient, bob)
-
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        phone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.equal(email)
-                    expect(newUser.user_id).to.equal(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                    expect(membership.shortcode).to.match(shortcode_re)
-                    expect(membership.shortcode.length).to.equal(
-                        validationConstants.SHORTCODE_MAX_LENGTH
+                await expectNoChange()
+            })
+        })
+        context('user_id', () => {
+            it("if the `user_id` doesn't exist throws ERR_NONEXISTENT_ENTITY APIError", async () => {
+                const user_id = faker.random.uuid()
+                return expect(
+                    editMembershipWithDefaults({ user_id })
+                ).to.be.rejected.then((e) => {
+                    expectAPIError.nonexistent_entity(
+                        e,
+                        {
+                            entity: 'User',
+                            entityName: user_id,
+                        },
+                        ['user_id']
                     )
                 })
+            })
 
-                it('edits user when email provided as phone', async () => {
-                    let email = undefined
-                    let phone = 'bob.dylan@nowhere.com'
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        email: phone,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        phone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.eq(phone)
-                    expect(newUser.phone).to.be.null
-                    expect(newUser.user_id).to.eq(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                })
-
-                it('edits user when email provided', async () => {
-                    let email = 'bob@nowhere.com'
-                    let phone = undefined
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        email: email,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        phone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.equal(email)
-                    expect(newUser.user_id).to.eq(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                })
-
-                it('edits user when phone provided', async () => {
-                    let email = undefined
-                    let phone = '+44207344141'
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        phone: phone,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        phone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.phone).to.equal(phone)
-                    expect(newUser.user_id).to.eq(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                })
-
-                it('edits user when phone provided as email', async () => {
-                    let email = '+44207344141'
-                    let phone = undefined
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        phone: email,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        phone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.be.null
-                    expect(newUser.phone).to.eq(email)
-                    expect(newUser.user_id).to.eq(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                })
-
-                context('alternate_email and alternate_password', () => {
-                    const email = 'bob@nowhere.com'
-                    let bob: User
-
-                    beforeEach(async () => {
-                        bob = {
-                            given_name: 'Bob',
-                            family_name: 'Smith',
-                            email: email,
-                        } as User
-                        bob = await createUserAndValidate(testClient, bob)
-                    })
-
-                    it('saves alternates if valid', async () => {
-                        let alternate_email = 'a@a.com'
-                        let alternate_phone = '+123456789'
-
-                        let gqlresult = await editMembership(
-                            testClient,
-                            organizationId,
-                            bob.user_id,
-                            email,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: getAdminAuthToken() },
-                            undefined,
-                            alternate_email,
-                            alternate_phone
-                        )
-                        let newUser = gqlresult.user
-                        expect(newUser).to.exist
-                        expect(newUser.email).to.equal(email)
-                        expect(newUser.user_id).to.eq(bob.user_id)
-                        expect(newUser.alternate_email).to.equal(
-                            alternate_email
-                        )
-                        expect(newUser.alternate_phone).to.equal(
-                            alternate_phone
-                        )
-                    })
-
-                    it("doesn't save alternates if invalid", async () => {
-                        let alternate_email = 'not-an-email'
-                        let alternate_phone = 'not-a-phone-number'
-
-                        let gqlresult = await editMembership(
-                            testClient,
-                            organizationId,
-                            bob.user_id,
-                            email,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: getAdminAuthToken() },
-                            undefined,
-                            alternate_email,
-                            alternate_phone
-                        )
-                        let newUser = gqlresult.user
-                        expect(newUser).to.exist
-                        expect(newUser.email).to.equal(email)
-                        expect(newUser.user_id).to.eq(bob.user_id)
-                        expect(newUser.alternate_email).to.be.null
-                        expect(newUser.alternate_phone).to.be.null
-                    })
-
-                    it('overwrites existing alternates if new ones are valid', async () => {
-                        let alternate_email = 'a@a.com'
-                        let alternate_phone = '+123456789'
-
-                        await connection
-                            .getRepository(User)
-                            .update(bob.user_id, {
-                                alternate_email: faker.internet.email(),
-                                alternate_phone: faker.phone.phoneNumber(),
-                            })
-
-                        let gqlresult = await editMembership(
-                            testClient,
-                            organizationId,
-                            bob.user_id,
-                            email,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: getAdminAuthToken() },
-                            undefined,
-                            alternate_email,
-                            alternate_phone
-                        )
-                        let newUser = gqlresult.user
-                        expect(newUser).to.exist
-                        expect(newUser.email).to.equal(email)
-                        expect(newUser.user_id).to.eq(bob.user_id)
-                        expect(newUser.alternate_email).to.equal(
-                            alternate_email
-                        )
-                        expect(newUser.alternate_phone).to.equal(
-                            alternate_phone
-                        )
-                    })
-
-                    it('overwrites alternates with NULL if specified', async () => {
-                        let alternate_email = 'a@a.com'
-                        let alternate_phone = '+123456789'
-
-                        await connection
-                            .getRepository(User)
-                            .update(bob.user_id, {
-                                alternate_email,
-                                alternate_phone,
-                            })
-
-                        let gqlresult = await editMembership(
-                            testClient,
-                            organizationId,
-                            bob.user_id,
-                            email,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: getAdminAuthToken() },
-                            undefined,
-                            null,
-                            null
-                        )
-                        let newUser = gqlresult.user
-                        expect(newUser).to.exist
-                        expect(newUser.email).to.equal(email)
-                        expect(newUser.user_id).to.eq(bob.user_id)
-                        expect(newUser.alternate_email).to.be.null
-                        expect(newUser.alternate_phone).to.be.null
-                    })
-
-                    it('normalises empty string alternates to NULL', async () => {
-                        let alternate_email = 'a@a.com'
-                        let alternate_phone = '+123456789'
-
-                        await connection
-                            .getRepository(User)
-                            .update(bob.user_id, {
-                                alternate_email,
-                                alternate_phone,
-                            })
-
-                        let gqlresult = await editMembership(
-                            testClient,
-                            organizationId,
-                            bob.user_id,
-                            email,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: getAdminAuthToken() },
-                            undefined,
-                            '',
-                            ''
-                        )
-                        let newUser = gqlresult.user
-                        expect(newUser).to.exist
-                        expect(newUser.email).to.equal(email)
-                        expect(newUser.user_id).to.eq(bob.user_id)
-                        expect(newUser.alternate_email).to.be.null
-                        expect(newUser.alternate_phone).to.be.null
-                    })
-                })
-
-                it('edits user and lets them change email', async () => {
-                    let email = 'bob@nowhere.com'
-                    let phone = undefined
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        email: email,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-                    const newEmail = 'bob@somewhere.com'
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        newEmail,
-                        phone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.email).to.equal(newEmail)
-                    expect(newUser.user_id).to.eq(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                })
-
-                it('edits user and lets them change the phone', async () => {
-                    let email = undefined
-                    let phone = '+44207344141'
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        phone: phone,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
-                    const newPhone = '+44207344142'
-                    let gqlresult = await editMembership(
-                        testClient,
-                        organizationId,
-                        bob.user_id,
-                        email,
-                        newPhone,
-                        given,
-                        family,
-                        undefined,
-                        'Buster',
-                        'Male',
-                        undefined,
-                        new Array(roleId),
-                        Array(schoolId),
-                        new Array(roleId),
-                        { authorization: getAdminAuthToken() }
-                    )
-                    let newUser = gqlresult.user
-                    let membership = gqlresult.membership
-                    let schoolmemberships = gqlresult.schoolMemberships
-                    expect(newUser).to.exist
-                    expect(newUser.phone).to.equal(newPhone)
-                    expect(newUser.user_id).to.eq(bob.user_id)
-
-                    expect(schoolmemberships).to.exist
-                    expect(schoolmemberships.length).to.equal(1)
-                    expect(schoolmemberships[0].user_id).to.equal(
-                        newUser.user_id
-                    )
-                    expect(schoolmemberships[0].school_id).to.equal(schoolId)
-
-                    expect(membership).to.exist
-                    expect(membership.organization_id).to.equal(organizationId)
-                    expect(membership.user_id).to.equal(newUser.user_id)
-                })
-
-                context(
-                    'the user is a member of a school belonging to another organization',
-                    () => {
-                        let organization2: Organization
-                        let organization2Id: string
-                        let org2SchoolId: string
-                        let dbSchoolMemberships: SchoolMembership[] | undefined
-                        let email = 'bob@nowhere.com'
-                        let phone: string | undefined = undefined
-                        let given = 'Bob'
-                        let family = 'Smith'
-
-                        let bob = {
-                            given_name: given,
-                            family_name: family,
-                            email: email,
-                        } as User
-
-                        beforeEach(async () => {
-                            bob = await createUserAndValidate(testClient, bob)
-                            otherUserId = otherUser.user_id
-
-                            await addUserToOrganizationAndValidate(
-                                testClient,
-                                bob.user_id,
-                                organizationId,
-                                { authorization: getAdminAuthToken() }
-                            )
-                            await addUserToSchool(
-                                testClient,
-                                bob.user_id,
-                                oldSchoolId,
-                                {
-                                    authorization: getAdminAuthToken(),
-                                }
-                            )
-
-                            organization2 = await createOrganizationAndValidate(
-                                testClient,
-                                otherUserId,
-                                'Second Org',
-                                undefined,
-                                getNonAdminAuthToken()
-                            )
-                            organization2Id = organization2.organization_id
-
-                            await addUserToOrganizationAndValidate(
-                                testClient,
-                                bob.user_id,
-                                organization2Id,
-                                { authorization: getNonAdminAuthToken() }
-                            )
-
-                            await addUserToSchool(
-                                testClient,
-                                bob.user_id,
-                                oldSchoolId,
-                                {
-                                    authorization: getAdminAuthToken(),
-                                }
-                            )
-
-                            org2SchoolId = (
-                                await createSchool(
-                                    testClient,
-                                    organization2Id,
-                                    'other school',
-                                    undefined,
-                                    { authorization: getNonAdminAuthToken() }
-                                )
-                            ).school_id
-
-                            await addUserToSchool(
-                                testClient,
-                                bob.user_id,
-                                org2SchoolId,
-                                {
-                                    authorization: getNonAdminAuthToken(),
-                                }
-                            )
-
-                            dbSchoolMemberships = await getSchoolMemberships(
-                                organization2Id,
-                                bob.user_id
-                            )
-                        })
-                        it('edits membership on the organization1 without affecting schools for organization2', async () => {
-                            let gqlresult = await editMembership(
-                                testClient,
-                                organizationId,
-                                bob.user_id,
-                                email,
-                                phone,
-                                given,
-                                family,
-                                undefined,
-                                'Buster',
-                                'Male',
-                                undefined,
-                                new Array(roleId),
-                                Array(schoolId),
-                                new Array(roleId),
-                                { authorization: getAdminAuthToken() }
-                            )
-
-                            const dbSchoolMemberships2 = await getSchoolMemberships(
-                                organization2Id,
-                                bob.user_id
-                            )
-
-                            expect(dbSchoolMemberships2.length).to.equal(
-                                dbSchoolMemberships?.length
-                            )
-                        })
-                    }
+            it('if the `user_id` exists, but has no membership for the chosen Organization, throws ERR_NONEXISTENT_CHILD_ENTITY APIError', async () => {
+                // We need to create another user belonging to this Organization, so we can get past the permission checks
+                await OrganizationMembership.delete(
+                    OrganizationMembership.getId(existingMembership)
                 )
+                const adminUser = await adminUserFactory().save()
 
-                context('and the organization is marked as inactive', () => {
-                    beforeEach(async () => {
-                        await deleteOrganization(
-                            testClient,
-                            organization.organization_id,
-                            { authorization: getAdminAuthToken() }
-                        )
+                return expect(
+                    editMembershipWithDefaults(undefined, undefined, {
+                        authorization: generateToken(userToPayload(adminUser)),
                     })
-
-                    it('fails to edit membership on the organization', async () => {
-                        let email = undefined
-                        let phone = '+44207344141'
-                        let given = 'Bob'
-                        let family = 'Smith'
-                        let bob = {
-                            given_name: given,
-                            family_name: family,
-                            phone: phone,
-                        } as User
-                        bob = await createUserAndValidate(testClient, bob)
-                        let gqlresult = await editMembership(
-                            testClient,
-                            organizationId,
-                            undefined,
-                            email,
-                            phone,
-                            given,
-                            family,
-                            undefined,
-                            'Buster',
-                            'Male',
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: getAdminAuthToken() }
-                        )
-                        expect(gqlresult).to.be.null
-                    })
+                ).to.be.rejected.then(async (e) => {
+                    expectAPIError.nonexistent_child(
+                        e,
+                        {
+                            entity: 'User',
+                            entityName: existingUser.full_name(),
+                            parentEntity: 'Organization',
+                            parentName: organization.organization_name!,
+                        },
+                        ['user_id', 'organization_id']
+                    )
                 })
-            }
-        )
+            })
 
-        context(
-            'The user_id is in a cookie and not the token of a user with the correct permissions',
-            async () => {
-                let userId: string
-                let organizationId: string
-                let schoolId: string
-                let oldSchoolId: string
-                let roleId: string
-                let editorRoleId: string
-                let otherUserId: string
-                let otherUser: User
-                let idLessToken: string
-
-                beforeEach(async () => {
-                    user = await createAdminUser(testClient)
-                    userId = user.user_id
-                    otherUser = await createNonAdminUser(testClient)
-                    otherUserId = otherUser.user_id
-                    organization = await createOrganizationAndValidate(
-                        testClient,
-                        user.user_id
-                    )
-                    organizationId = organization.organization_id
-                    role = await createRole(
-                        testClient,
-                        organization.organization_id,
-                        'student'
-                    )
-                    roleId = role.role_id
-                    const editorRole = await createRole(
-                        testClient,
-                        organization.organization_id,
-                        'editor'
-                    )
-                    editorRoleId = editorRole.role_id
-                    await addUserToOrganizationAndValidate(
-                        testClient,
-                        otherUserId,
-                        organizationId,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    await addRoleToOrganizationMembership(
-                        testClient,
-                        userId,
-                        organizationId,
-                        roleId,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    await grantPermission(
-                        testClient,
-                        editorRoleId,
-                        PermissionName.edit_users_40330,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    await addRoleToOrganizationMembership(
-                        testClient,
-                        otherUserId,
-                        organizationId,
-                        editorRoleId,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    oldSchoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 1',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    ).school_id
-                    schoolId = (
-                        await createSchool(
-                            testClient,
-                            organizationId,
-                            'school 2',
-                            undefined,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    ).school_id
-                    await addUserToSchool(testClient, userId, oldSchoolId, {
-                        authorization: getAdminAuthToken(),
+            it('is required by the schema', async () => {
+                return expect(
+                    editMembershipWithDefaults({
+                        user_id: undefined,
                     })
-                    const idLess = {
-                        email: otherUser.email,
-                        given_name: otherUser.given_name,
-                        family_name: otherUser.family_name,
-                        date_of_birth: otherUser.date_of_birth,
-                    } as User
-                    idLessToken = generateToken(userToPayload(idLess))
+                )
+                    .to.be.rejectedWith(
+                        'Variable "$user_id" of required type "ID!" was not provided.'
+                    )
+                    .then(async () => {
+                        await expectNoChange()
+                    })
+            })
+        })
+        context('organization_role_ids', () => {
+            it('removes any old Roles', async () => {
+                const oldRole = await roleFactory(
+                    undefined,
+                    organization
+                ).save()
+
+                await OrganizationMembership.createQueryBuilder()
+                    .relation('roles')
+                    .of(existingMembership)
+                    .add(oldRole)
+
+                await editMembershipWithDefaults({
+                    organization_role_ids: [role.role_id],
                 })
 
-                it('fails to edits user when no cookie provided', async () => {
-                    let email = 'bob@nowhere.com'
-                    let phone: string | undefined = undefined
-                    let given = 'Bob'
-                    let family = 'Smith'
-                    let bob = {
-                        given_name: given,
-                        family_name: family,
-                        email: email,
-                    } as User
-                    bob = await createUserAndValidate(testClient, bob)
+                await existingMembership.reload()
 
-                    const fn = () =>
-                        editMembership(
-                            testClient,
-                            organizationId,
-                            bob.user_id,
-                            email,
-                            phone,
-                            given,
-                            family,
-                            undefined,
-                            'Buster',
-                            'Male',
-                            undefined,
-                            new Array(roleId),
-                            Array(schoolId),
-                            new Array(roleId),
-                            { authorization: idLessToken }
-                        )
-
-                    expect(fn()).to.be.rejected
-                })
-            }
-        )
-        context('We create two users with the same email address', () => {
-            let userId: string
-            let organizationId: string
-            let schoolId: string
-            let roleId: string
-            let otherUserId: string
-            let createdUser1Id: string
-            let createdUser2Id: string
-            let email: string
+                expect(
+                    (await existingMembership.roles)?.map(
+                        (role) => role.role_id
+                    )
+                ).to.deep.equal([role.role_id])
+            })
+        })
+        context('school_ids', () => {
+            let school: School
 
             beforeEach(async () => {
-                user = await createAdminUser(testClient)
-                otherUserId = (await createNonAdminUser(testClient)).user_id
-                userId = user.user_id
-                let organization1 = await createOrganizationAndValidate(
-                    testClient,
-                    user.user_id
-                )
-                let organization1Id = organization1.organization_id
-                role = await Role.findOneOrFail({
-                    where: { role_name: 'Student' },
-                })
-                roleId = role.role_id
-                let school1Id = (
-                    await createSchool(
-                        testClient,
-                        organization1Id,
-                        'school 1',
-                        undefined,
-                        { authorization: getAdminAuthToken() }
-                    )
-                ).school_id
-                organization = await createOrganizationAndValidate(
-                    testClient,
-                    otherUserId,
-                    'other Org',
-                    'OTHERORG',
-                    getNonAdminAuthToken()
-                )
-                organizationId = organization.organization_id
-                schoolId = (
-                    await createSchool(
-                        testClient,
-                        organizationId,
-                        'school 2',
-                        undefined,
-                        { authorization: getNonAdminAuthToken() }
-                    )
-                ).school_id
-
-                email = 'bob@nowhere.com'
-                let phone = undefined
-                let given = 'Bob'
-                let given2 = 'Billy'
-                let family = 'Smith'
-                let dateOfBirth = '02-1978'
-                let gqlresult = await inviteUser(
-                    testClient,
-                    organization1Id,
-                    email,
-                    phone,
-                    given,
-                    family,
-                    dateOfBirth,
-                    'Bunter',
-                    'Male',
-                    undefined,
-                    new Array(roleId),
-                    Array(school1Id),
-                    new Array(roleId),
-                    { authorization: getAdminAuthToken() }
-                )
-                let createdUser = gqlresult?.user
-                createdUser1Id = createdUser.user_id
-                gqlresult = await inviteUser(
-                    testClient,
-                    organization1Id,
-                    email,
-                    phone,
-                    given2,
-                    family,
-                    dateOfBirth,
-                    'Bunty',
-                    'Female',
-                    undefined,
-                    new Array(roleId),
-                    Array(school1Id),
-                    new Array(roleId),
-                    { authorization: getAdminAuthToken() }
-                )
-                createdUser = gqlresult?.user
-                createdUser2Id = createdUser.user_id
+                school = await schoolFactory(organization).save()
             })
-            it('joins the correct user to another organization', async () => {
-                let gqlresult = await editMembership(
-                    testClient,
-                    organizationId,
-                    createdUser2Id,
-                    email,
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    new Array(roleId),
-                    Array(schoolId),
-                    new Array(roleId),
-                    { authorization: getAdminAuthToken() }
+
+            it('removes any old SchoolMemberships', async () => {
+                const otherSchool = await schoolFactory(organization).save()
+                await createSchoolMembership({
+                    user: existingUser,
+                    school: otherSchool,
+                }).save()
+
+                await editMembershipWithDefaults({
+                    school_ids: [school.school_id],
+                })
+
+                expect(
+                    (
+                        await SchoolMembership.find({
+                            user_id: existingUser.user_id,
+                        })
+                    ).map((membership) => membership.school_id)
+                ).to.deep.equal([school.school_id])
+            })
+
+            it('does not clobber SchoolMemberships for another Organization', async () => {
+                const otherOrganization = await createOrganization().save()
+                await createOrganizationMembership({
+                    user: existingUser,
+                    organization: otherOrganization,
+                }).save()
+                const otherSchool = await schoolFactory(
+                    otherOrganization
+                ).save()
+                await createSchoolMembership({
+                    user: existingUser,
+                    school: otherSchool,
+                }).save()
+
+                await editMembershipWithDefaults({
+                    school_ids: [school.school_id],
+                })
+
+                const memberships = await SchoolMembership.find({
+                    where: {
+                        user_id: existingUser.user_id,
+                        status: Status.ACTIVE,
+                    },
+                })
+                expect(
+                    memberships.map((membership) => membership.school_id)
+                ).to.deep.equalInAnyOrder([
+                    school.school_id,
+                    otherSchool.school_id,
+                ])
+            })
+        })
+        context('shortcode', () => {
+            it('is required by the schema', async () => {
+                return expect(
+                    editMembershipWithDefaults({ shortcode: undefined })
                 )
-                let newUser = gqlresult.user
-                expect(newUser.user_id).to.eq(createdUser2Id)
-                expect(newUser.username).to.eq('Bunty')
-                expect(newUser.user_id).to.not.eq(createdUser1Id)
+                    .to.be.rejectedWith(
+                        'Variable "$shortcode" of required type "String!" was not provided.'
+                    )
+                    .then(async () => {
+                        await expectNoChange()
+                    })
+            })
+            it('if empty string throws an ERR_INVALID_REQUIRED_ATTRIBUTE APIError', async () => {
+                return expect(
+                    editMembershipWithDefaults({ shortcode: '' })
+                ).to.be.rejected.then((e) => {
+                    expectAPIError.missing_required_entity_attribute(
+                        e,
+                        {
+                            entity: 'OrganizationMembership',
+                            attribute: 'shortcode',
+                        },
+                        ['shortcode']
+                    )
+                })
+            })
+        })
+        context('alternate_email', () => {
+            it('if undefined does not overwrite the existing alternate_email', async () => {
+                const existingAlternateEmail = existingUser.alternate_email
+
+                expect(existingAlternateEmail)
+                    .to.be.a('string')
+                    .and.not.to.equal('')
+
+                await editMembershipWithDefaults({
+                    alternate_email: undefined,
+                })
+
+                await existingUser.reload()
+
+                expect(existingUser.alternate_email).to.equal(
+                    existingAlternateEmail
+                )
+            })
+        })
+        context('alternate_phone', () => {
+            it('if undefined does not overwrite the existing alternate_phone', async () => {
+                const existingAlternatePhone = existingUser.alternate_phone
+
+                expect(existingAlternatePhone)
+                    .to.be.a('string')
+                    .and.not.to.equal('')
+
+                await editMembershipWithDefaults({
+                    alternate_phone: undefined,
+                })
+
+                await existingUser.reload()
+
+                expect(existingUser.alternate_phone).to.equal(
+                    existingAlternatePhone
+                )
             })
         })
     })
