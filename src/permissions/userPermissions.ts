@@ -358,7 +358,13 @@ export class UserPermissions {
         return `${PERMISSION_CACHE_KEY}_${this.getUserId()}`
     }
 
-    public async clearCache() {
-        await getConnection().queryResultCache?.remove([this.uniqueCacheKey])
+    public async clearCache(allUsers = false) {
+        if (allUsers) {
+            await getConnection().queryResultCache?.clear()
+        } else {
+            await getConnection().queryResultCache?.remove([
+                this.uniqueCacheKey,
+            ])
+        }
     }
 }
