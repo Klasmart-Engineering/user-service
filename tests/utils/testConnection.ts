@@ -4,10 +4,18 @@ import {
     createConnection,
     QueryRunner,
 } from 'typeorm'
+import { LoggerOptions } from 'typeorm/logger/LoggerOptions'
 
 class QueryMetricsLogger extends AdvancedConsoleLogger {
     private counter = 0
     private wasReset = false
+
+    // LoggerOptions must be passed directly to QueryMetricsLogger
+    // passing them via createConnection({logging: ...}) does not work with custom loggers
+    // because they must already be instantiated before createConnection is called
+    constructor(options?: LoggerOptions) {
+        super(options)
+    }
 
     logQuery(
         query: string,
