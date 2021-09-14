@@ -9,6 +9,7 @@ import { gqlTry } from '../gqlTry'
 import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { Subject } from '../../../src/entities/subject'
+import { string } from 'joi'
 
 export const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
@@ -570,6 +571,27 @@ export async function getUserSchoolMembershipsWithPermission(
     return gqlMemberships
 }
 
+export type MergeUserResponse = {
+    user_id: string
+    given_name: string
+    family_name: string
+    avatar: string
+    memberships: {
+        user_id: string
+        organization_id: string
+    }[]
+    school_memberships: {
+        user_id: string
+        school_id: string
+    }[]
+    classesStudying: {
+        class_id: string
+    }[]
+    classesTeaching: {
+        class_id: string
+    }[]
+} | null
+
 export async function mergeUser(
     testClient: ApolloServerTestClient,
     userId: string,
@@ -579,7 +601,6 @@ export async function mergeUser(
     const { mutate } = testClient
 
     headers = headers ?? { authorization: getAdminAuthToken() }
-    console.log('userId:', userId, 'otherId:', otherId)
     const operation = () =>
         mutate({
             mutation: MERGE_USER,
@@ -588,7 +609,7 @@ export async function mergeUser(
         })
 
     const res = await gqlTry(operation)
-    const gqlUser = res.data?.user.merge as User
+    const gqlUser = res.data?.user.merge as MergeUserResponse
     return gqlUser
 }
 

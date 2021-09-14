@@ -22,6 +22,7 @@ import {
     updateUserEmail,
     getSubjectsTeaching,
     addSchoolToUser,
+    MergeUserResponse,
 } from '../utils/operations/userOps'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import {
@@ -70,8 +71,11 @@ import {
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { expectIsNonNullable } from '../utils/assertions'
 
 use(chaiAsPromised)
+use(deepEqualInAnyOrder)
 
 describe('user', () => {
     let connection: Connection
@@ -874,174 +878,169 @@ describe('user', () => {
                 roles: [role],
             }).save()
         })
+
+        const expectMergedOrgMemberships = (
+            memberships: Pick<
+                OrganizationMembership,
+                'user_id' | 'organization_id'
+            >[],
+            organizations: Organization[]
+        ) => {
+            expect(memberships).to.exist
+            expect(memberships).to.have.length(organizations.length)
+            expect(memberships.map((m) => m.user_id)).to.deep.equal(
+                Array.from({ length: organizations.length }).fill(
+                    oldUser.user_id
+                )
+            )
+            expect(
+                memberships.map((m) => m.organization_id)
+            ).to.deep.equalInAnyOrder(
+                organizations.map((o) => o.organization_id)
+            )
+        }
+
+        const expectMergedSchoolMemberships = (
+            schoolMemberships: Pick<
+                SchoolMembership,
+                'school_id' | 'user_id'
+            >[],
+            schools: School[]
+        ) => {
+            expect(schoolMemberships).to.exist
+            expect(schoolMemberships).to.have.length(schools.length)
+            expect(schoolMemberships.map((m) => m.user_id)).to.deep.equal(
+                Array.from({ length: schools.length }).fill(oldUser.user_id)
+            )
+            expect(
+                schoolMemberships.map((m) => m.school_id)
+            ).to.deep.equalInAnyOrder(schools.map((s) => s.school_id))
+        }
+
+        const expectMergedClassesStudying = (
+            classesStudying: Pick<Class, 'class_id'>[],
+            classes: Class[]
+        ) => {
+            expect(classesStudying).to.exist
+            expect(classesStudying).to.have.length(classes.length)
+            expect(
+                classesStudying.map((c) => c.class_id)
+            ).to.deep.equalInAnyOrder(classes.map((c) => c.class_id))
+        }
+
+        /**
+         * Expect the GraphQL response to contain the merged User
+         */
+        const expectMergeResponse = ({
+            response,
+            schools,
+            organizations,
+            classesStudying,
+        }: {
+            response: MergeUserResponse
+            schools: School[]
+            organizations: Organization[]
+            classesStudying: Class[]
+        }) => {
+            expectIsNonNullable(response)
+            expect(response.user_id).to.equal(oldUser.user_id)
+
+            expectMergedOrgMemberships(response.memberships, organizations)
+            expectMergedSchoolMemberships(response.school_memberships, schools)
+            expectMergedClassesStudying(
+                response.classesStudying,
+                classesStudying
+            )
+        }
+
+        /**
+         * Expect the User in the database to have been merged
+         */
+        const expectMergedUser = async ({
+            organizations,
+            schools,
+            classesStudying,
+        }: {
+            schools: School[]
+            organizations: Organization[]
+            classesStudying: Class[]
+        }) => {
+            const dbOldUser = await User.findOneOrFail({
+                where: { user_id: oldUser.user_id },
+            })
+
+            const newOrganizationMemberships = await dbOldUser.memberships
+            expectIsNonNullable(newOrganizationMemberships)
+            expectMergedOrgMemberships(
+                newOrganizationMemberships,
+                organizations
+            )
+
+            const newSchoolMemberships = await dbOldUser.school_memberships
+            expectIsNonNullable(newSchoolMemberships)
+            expectMergedSchoolMemberships(newSchoolMemberships, schools)
+
+            const newClassesStudying = await dbOldUser.classesStudying
+            expectIsNonNullable(newClassesStudying)
+            expectMergedClassesStudying(newClassesStudying, classesStudying)
+        }
+
+        const expectDeletedNewUser = async () =>
+            expect(
+                await User.findOne({
+                    where: { user_id: newUser.user_id },
+                })
+            ).to.be.undefined
+
         it('should merge one user into another deleting the source user', async () => {
-            // Merging newUser into oldUser
-            let gqlUser = await mergeUser(
+            const gqlUser = await mergeUser(
                 testClient,
                 oldUser.user_id,
                 newUser.user_id,
                 { authorization: getAdminAuthToken() }
             )
-            // OldUser should have taken on newUser's memberships
-            expect(gqlUser).to.exist
-            expect(gqlUser.user_id).to.equal(oldUser.user_id)
-            let newMemberships = await gqlUser.memberships
-            expect(newMemberships).to.exist
-            if (newMemberships !== undefined) {
-                expect(newMemberships.length).to.equal(1)
-                expect(newMemberships[0].organization_id).to.equal(
-                    organization.organization_id
-                )
-                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
-            }
-            let newSchoolMemberships = await gqlUser.school_memberships
-            expect(newSchoolMemberships).to.exist
-            if (newSchoolMemberships !== undefined) {
-                expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(
-                    school.school_id
-                )
-                expect(newSchoolMemberships[0].user_id).to.equal(
-                    oldUser.user_id
-                )
-            }
-            // The same for the db object
-            let dbOldUser = await User.findOneOrFail({
-                where: { user_id: oldUser.user_id },
+
+            expectMergeResponse({
+                response: gqlUser,
+                schools: [school],
+                organizations: [organization],
+                classesStudying: [],
             })
-            expect(dbOldUser).to.exist
-            newMemberships = await dbOldUser.memberships
-            expect(newMemberships).to.exist
-            if (newMemberships !== undefined) {
-                expect(newMemberships.length).to.equal(1)
-                expect(newMemberships[0].organization_id).to.equal(
-                    organization.organization_id
-                )
-                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
-            }
-            newSchoolMemberships = await dbOldUser.school_memberships
-            expect(newSchoolMemberships).to.exist
-            if (newSchoolMemberships !== undefined) {
-                expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(
-                    school.school_id
-                )
-                expect(newSchoolMemberships[0].user_id).to.equal(
-                    oldUser.user_id
-                )
-            }
-            // newUser has been deleted
-            let dbNewUser = await User.findOne({
-                where: { user_id: newUser.user_id },
+
+            await expectMergedUser({
+                schools: [school],
+                organizations: [organization],
+                classesStudying: [],
             })
-            expect(dbNewUser).to.not.exist
+
+            await expectDeletedNewUser()
         })
         it('should merge one user into another including classes deleting the source user', async () => {
             const cls = classFactory([], organization)
             cls.students = Promise.resolve([newUser])
             await cls.save()
 
-            // Merging newUser into oldUser
             let gqlUser = await mergeUser(
                 testClient,
                 oldUser.user_id,
                 newUser.user_id,
                 { authorization: getAdminAuthToken() }
             )
-            // OldUser should have taken on newUser's memberships
-            expect(gqlUser).to.exist
-            expect(gqlUser.user_id).to.equal(oldUser.user_id)
-            let newMemberships = await gqlUser.memberships
-            expect(newMemberships).to.exist
-            if (newMemberships !== undefined) {
-                expect(newMemberships.length).to.equal(1)
-                expect(newMemberships[0].organization_id).to.equal(
-                    organization.organization_id
-                )
-                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
-            }
-            let newSchoolMemberships = await gqlUser.school_memberships
-            expect(newSchoolMemberships).to.exist
-            if (newSchoolMemberships !== undefined) {
-                expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(
-                    school.school_id
-                )
-                expect(newSchoolMemberships[0].user_id).to.equal(
-                    oldUser.user_id
-                )
-            }
-            let classesStudying = await gqlUser.classesStudying
-            expect(classesStudying).to.exist
-            if (classesStudying !== undefined) {
-                expect(classesStudying.length).to.equal(1)
-                expect(classesStudying[0].class_id == cls.class_id)
-            }
-            // The same for the db object
-            let dbOldUser = await User.findOneOrFail({
-                where: { user_id: oldUser.user_id },
-            })
-            expect(dbOldUser).to.exist
-            newMemberships = await dbOldUser.memberships
-            expect(newMemberships).to.exist
-            if (newMemberships !== undefined) {
-                expect(newMemberships.length).to.equal(1)
-                expect(newMemberships[0].organization_id).to.equal(
-                    organization.organization_id
-                )
-                expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
-            }
-            newSchoolMemberships = await dbOldUser.school_memberships
-            expect(newSchoolMemberships).to.exist
-            if (newSchoolMemberships !== undefined) {
-                expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(
-                    school.school_id
-                )
-                expect(newSchoolMemberships[0].user_id).to.equal(
-                    oldUser.user_id
-                )
-            }
 
-            classesStudying = await dbOldUser.classesStudying
-            expect(classesStudying).to.exist
-            if (classesStudying !== undefined) {
-                expect(classesStudying.length).to.equal(1)
-                expect(classesStudying[0].class_id == cls.class_id)
+            expectMergeResponse({
+                response: gqlUser,
+                schools: [school],
+                organizations: [organization],
+                classesStudying: [cls],
+            })
 
-                let studying = classesStudying[0]
-                let students = await studying.students
-                expect(students).to.exist
-                if (students != undefined) {
-                    students.forEach(function (student) {
-                        expect(student.user_id).to.not.equal(newUser.user_id)
-                    })
-                }
-            }
-            // newUser has been deleted
-            let dbNewUser = await User.findOne({
-                where: { user_id: newUser.user_id },
+            await expectMergedUser({
+                schools: [school],
+                organizations: [organization],
+                classesStudying: [cls],
             })
-            expect(dbNewUser).to.not.exist
-            // deleted newUser is not a student of the class but oldUser is
-            let dbClass = await Class.findOne({
-                where: { class_id: cls.class_id },
-            })
-            expect(dbClass).to.exist
-            if (dbClass !== undefined) {
-                let students = await dbClass.students
-                expect(students).to.exist
-                if (students !== undefined) {
-                    let found = false
-                    for (const student of students) {
-                        expect(student.user_id).to.not.equal(newUser.user_id)
-                        if (student.user_id === oldUser.user_id) {
-                            found = true
-                        }
-                    }
-                    expect(found)
-                }
-            }
+
+            await expectDeletedNewUser()
         })
     })
     describe('subjectsTeaching', () => {
