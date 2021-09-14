@@ -93,6 +93,8 @@ import { addOrganizationToUserAndValidate } from '../utils/operations/userOps'
 import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
 import { grantPermission } from '../utils/operations/roleOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
+import { Permission } from '../../src/entities/permission'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
 
@@ -1083,35 +1085,29 @@ describe('model.csv', () => {
                 school = createSchool(organization)
                 school.school_name = 'School I'
                 await connection.manager.save(school)
+
+                const perm = new Permission()
+                perm.permission_name = PermissionName.upload_users_40880
+
                 role = createRole('Teacher', organization)
-                await connection.manager.save(role)
+                role.permissions = Promise.resolve([perm])
+                await role.save()
+
                 const anotherRole = createRole('School Admin', organization)
-                await connection.manager.save(anotherRole)
+                anotherRole.permissions = Promise.resolve([perm])
+                await anotherRole.save()
+
                 cls = createClass([school], organization)
                 cls.class_name = 'Class I'
                 await connection.manager.save(cls)
-
                 const adminUser = await createAdminUser(testClient)
 
-                await addOrganizationToUserAndValidate(
-                    testClient,
-                    adminUser.user_id,
-                    organization.organization_id,
-                    getAdminAuthToken()
-                )
-                await addRoleToOrganizationMembership(
-                    testClient,
-                    adminUser.user_id,
-                    organization.organization_id,
-                    role.role_id,
-                    { authorization: getAdminAuthToken() }
-                )
-                await grantPermission(
-                    testClient,
-                    role.role_id,
-                    PermissionName.upload_users_40880,
-                    { authorization: getAdminAuthToken() }
-                )
+                const membership = createOrganizationMembership({
+                    user: adminUser,
+                    organization,
+                })
+                membership.roles = Promise.resolve([role])
+                await membership.save()
             })
 
             it('should create the user', async () => {
@@ -1168,6 +1164,45 @@ describe('model.csv', () => {
                     where: { email: 'test@test.com' },
                 })
                 expect(usersCount).eq(0)
+            })
+            context('when file data data has alternate contact info', () => {
+                const filename = 'users_example_with_alternative_contacts.csv'
+                it('should create the users with alternate contact info', async () => {
+                    file = fs.createReadStream(
+                        resolve(`tests/fixtures/${filename}`)
+                    )
+
+                    const result = await uploadUsers(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding,
+                        false,
+                        { authorization: getAdminAuthToken() }
+                    )
+
+                    const usersCount = await User.count({
+                        where: { email: 'test@test.com' },
+                    })
+                    expect(usersCount).eq(2)
+                    const dbUser = await User.findOne({
+                        where: {
+                            email: 'test@test.com',
+                            given_name: 'One',
+                        },
+                    })
+                    expect(dbUser).to.exist
+                    expect(dbUser?.alternate_email).to.equal('testa@test.com')
+                    const dbUser2 = await User.findOne({
+                        where: {
+                            email: 'test@test.com',
+                            given_name: 'Three',
+                        },
+                    })
+                    expect(dbUser2).to.exist
+                    expect(dbUser2?.alternate_phone).to.equal('+4444444444444')
+                })
             })
         })
     })

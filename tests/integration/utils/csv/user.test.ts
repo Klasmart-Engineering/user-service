@@ -107,6 +107,8 @@ describe('processUserFromCSVRow', async () => {
             user_email: user.email || '',
             user_date_of_birth: user.date_of_birth || '',
             user_gender: user.gender || '',
+            user_alternate_email: user.alternate_email || '',
+            user_alternate_phone: user.alternate_phone || '',
             organization_role_name: role.role_name || '',
             school_name: school.school_name || '',
             class_name: cls.class_name || '',
@@ -729,6 +731,106 @@ describe('processUserFromCSVRow', async () => {
                 expect(err.column).to.eq('user_phone')
                 expect(err.entity).to.eq('User')
                 expect(err.attribute).to.eq('Phone')
+                expect(err.code).to.eq(customErrors.invalid_phone.code)
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
+            }
+        })
+    })
+
+    context('alternate_email', () => {
+        let rowErrors: CSVError[]
+        let err: CSVError
+        afterEach(() => {
+            if (err) {
+                expect(err.column).to.eq('user_alternate_email')
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('Alternate email')
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
+            }
+        })
+        it('errors when too long', async () => {
+            row.user_alternate_email =
+                'a'.repeat(constants.EMAIL_MAX_LENGTH + 1) + '@x.com'
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+            err = rowErrors[0]
+            expect(rowErrors.length).to.eq(1)
+            expect(err.code).to.eq(customErrors.invalid_max_length.code)
+            expect(err.max).to.eq(constants.EMAIL_MAX_LENGTH)
+        })
+        it('errors when invalid', async () => {
+            for (const email of [
+                'no.at.symbol.com',
+                'with space@gmail.com',
+                'ih@vetwo@symbols.com',
+            ]) {
+                rowErrors = []
+                row.user_alternate_email = email
+                rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions
+                )
+                err = rowErrors[0]
+                expect(rowErrors.length).to.eq(1)
+                expect(err.code).to.eq(customErrors.invalid_email.code)
+                for (const v of getCustomErrorMessageVariables(err.message)) {
+                    expect(err[v]).to.exist
+                }
+            }
+        })
+        it('is preprocessed before saving', async () => {
+            const unprocessedEmail = 'ABC@gmail.com'
+            const processedEmail = normalizedLowercaseTrimmed(unprocessedEmail)
+            row.user_alternate_email = unprocessedEmail
+
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+            expect(rowErrors.length).to.eq(0)
+
+            const dbUser = await User.findOneOrFail({
+                where: { alternate_email: processedEmail },
+            })
+            expect(dbUser.alternate_email).to.eq(processedEmail)
+        })
+    })
+
+    context('user alternate phone', () => {
+        it('errors when invalid', async () => {
+            for (const phone of [
+                '1',
+                'ph0n3numb3r',
+                '+521234567891011121314151617181920',
+            ]) {
+                row.user_alternate_phone = phone
+                const rowErrors = await processUserFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    [],
+                    adminPermissions
+                )
+                const err = rowErrors[0]
+                expect(rowErrors.length).to.eq(1)
+                expect(err.column).to.eq('user_alternate_phone')
+                expect(err.entity).to.eq('User')
+                expect(err.attribute).to.eq('Alternate phone')
                 expect(err.code).to.eq(customErrors.invalid_phone.code)
                 for (const v of getCustomErrorMessageVariables(err.message)) {
                     expect(err[v]).to.exist
