@@ -1,19 +1,17 @@
-import { getRepository, getConnection } from 'typeorm'
+import { getRepository } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { User } from '../entities/user'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
+import { Cache, PERMISSION_CACHE_DURATION_MS } from '../utils/cache'
 
 export interface PermissionContext {
     school_ids?: string[]
     organization_id?: string
     user_id?: string
 }
-
-export const PERMISSION_CACHE_KEY = 'user_permissions_cache'
-export const PERMISSION_CACHE_DURATION_MS = 10000 // 10s
 
 export class UserPermissions {
     static ADMIN_EMAILS = [
@@ -205,7 +203,9 @@ export class UserPermissions {
                             allowed: true,
                         })
                         .cache(
-                            this.uniqueCacheKey,
+                            Cache.getUniquePermissionCacheKey(
+                                this.user_id || ''
+                            ),
                             PERMISSION_CACHE_DURATION_MS
                         )
                         .getRawMany()
@@ -270,7 +270,9 @@ export class UserPermissions {
                                 allowed: true,
                             })
                             .cache(
-                                this.uniqueCacheKey,
+                                Cache.getUniquePermissionCacheKey(
+                                    this.user_id || ''
+                                ),
                                 PERMISSION_CACHE_DURATION_MS
                             )
                             .getRawMany()
@@ -352,19 +354,5 @@ export class UserPermissions {
         }
 
         return schoolIds
-    }
-
-    private get uniqueCacheKey() {
-        return `${PERMISSION_CACHE_KEY}_${this.getUserId()}`
-    }
-
-    public async clearCache(allUsers = false) {
-        if (allUsers) {
-            await getConnection().queryResultCache?.clear()
-        } else {
-            await getConnection().queryResultCache?.remove([
-                this.uniqueCacheKey,
-            ])
-        }
     }
 }

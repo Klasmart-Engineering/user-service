@@ -18,6 +18,7 @@ import { Status } from './status'
 import { PermissionContext } from '../permissions/userPermissions'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
+import { Cache } from '../utils/cache'
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
@@ -83,7 +84,7 @@ export class SchoolMembership extends BaseEntity {
             role.schoolMemberships = Promise.resolve(memberships)
             await role.save()
 
-            await context.permissions.clearCache()
+            await Cache.clearPermissionCache(this.user_id)
             return role
         } catch (e) {
             console.error(e)
@@ -117,7 +118,7 @@ export class SchoolMembership extends BaseEntity {
             })
             const roles = await Promise.all(rolePromises)
             await getManager().save(roles)
-            await context.permissions.clearCache()
+            await Cache.clearPermissionCache(this.user_id)
             return roles
         } catch (e) {
             console.error(e)
@@ -143,7 +144,7 @@ export class SchoolMembership extends BaseEntity {
                     (membership) => membership.user_id !== this.user_id
                 )
                 role.schoolMemberships = Promise.resolve(newMemberships)
-                await context.permissions.clearCache()
+                await Cache.clearPermissionCache(this.user_id)
                 await role.save()
             }
             return this

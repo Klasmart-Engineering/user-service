@@ -20,6 +20,7 @@ import { Status } from './status'
 import { Class } from './class'
 import { PermissionName } from '../permissions/permissionNames'
 import validationConstants from './validations/constants'
+import { Cache } from '../utils/cache'
 
 @Entity()
 export class OrganizationMembership extends BaseEntity {
@@ -195,7 +196,7 @@ export class OrganizationMembership extends BaseEntity {
             memberships.push(this)
             role.memberships = Promise.resolve(memberships)
             await role.save()
-            await context.permissions.clearCache()
+            await Cache.clearPermissionCache(this.user_id)
             return role
         } catch (e) {
             console.error(e)
@@ -238,7 +239,7 @@ export class OrganizationMembership extends BaseEntity {
             })
             const roles = await Promise.all(rolePromises)
             await getManager().save(roles)
-            await context.permissions.clearCache()
+            await Cache.clearPermissionCache(this.user_id)
             return roles
         } catch (e) {
             console.error(e)
@@ -267,7 +268,7 @@ export class OrganizationMembership extends BaseEntity {
                 role.memberships = Promise.resolve(newMemberships)
                 await role.save()
             }
-            await context.permissions.clearCache()
+            await Cache.clearPermissionCache(this.user_id)
             return this
         } catch (e) {
             console.error(e)

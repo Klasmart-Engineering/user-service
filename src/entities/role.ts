@@ -18,6 +18,7 @@ import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
+import { Cache } from '../utils/cache'
 
 @Entity()
 export class Role extends BaseEntity {
@@ -155,7 +156,7 @@ export class Role extends BaseEntity {
             permission.allow = true
 
             await permission.save()
-            await context.permissions.clearCache(true)
+            await Cache.clearAll()
             return permission
         } catch (e) {
             console.error(e)
@@ -195,7 +196,7 @@ export class Role extends BaseEntity {
             permission.roles = Promise.resolve(roles)
 
             await permission.save()
-            await context.permissions.clearCache(true)
+            await Cache.clearAll()
             return true
         } catch (e) {
             console.error(e)
@@ -227,7 +228,7 @@ export class Role extends BaseEntity {
 
             permission.allow = false
             await permission.save()
-            await context.permissions.clearCache(true)
+            await Cache.clearAll()
             return permission
         } catch (e) {
             console.error(e)
@@ -272,7 +273,7 @@ export class Role extends BaseEntity {
                 this.permissions = Promise.resolve(permissionEntities)
                 await manager.save(this)
             })
-            await context.permissions.clearCache(true)
+            await Cache.clearAll()
             return permissionEntities
         } catch (e) {
             console.error(e)
@@ -307,7 +308,7 @@ export class Role extends BaseEntity {
             await getManager().transaction(async (manager) => {
                 await this.inactivate(manager)
             })
-            await context.permissions.clearCache(true)
+            await Cache.clearAll()
             return true
         } catch (e) {
             console.error(e)
