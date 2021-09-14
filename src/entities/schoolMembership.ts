@@ -15,7 +15,9 @@ import { Role } from './role'
 import { GraphQLResolveInfo } from 'graphql'
 import { School } from './school'
 import { Status } from './status'
-import { Context } from 'mocha'
+import { PermissionContext } from '../permissions/userPermissions'
+import { Context } from '../main'
+import { PermissionName } from '../permissions/permissionNames'
 
 @Entity()
 export class SchoolMembership extends BaseEntity {
@@ -51,7 +53,7 @@ export class SchoolMembership extends BaseEntity {
         const school = await this.school
         const schoolOrg = await school?.organization
 
-        const permisionContext = {
+        const permisionContext: PermissionContext = {
             organization_id: schoolOrg?.organization_id,
             school_ids: [this.school_id],
             user_id: this.user_id,
@@ -59,7 +61,7 @@ export class SchoolMembership extends BaseEntity {
 
         return await context.permissions.allowed(
             permisionContext,
-            permission_name
+            permission_name as PermissionName
         )
     }
 
@@ -80,6 +82,8 @@ export class SchoolMembership extends BaseEntity {
             memberships.push(this)
             role.schoolMemberships = Promise.resolve(memberships)
             await role.save()
+
+            await context.permissions.clearCache()
             return role
         } catch (e) {
             console.error(e)
@@ -113,6 +117,7 @@ export class SchoolMembership extends BaseEntity {
             })
             const roles = await Promise.all(rolePromises)
             await getManager().save(roles)
+            await context.permissions.clearCache()
             return roles
         } catch (e) {
             console.error(e)
@@ -138,6 +143,7 @@ export class SchoolMembership extends BaseEntity {
                     (membership) => membership.user_id !== this.user_id
                 )
                 role.schoolMemberships = Promise.resolve(newMemberships)
+                await context.permissions.clearCache()
                 await role.save()
             }
             return this

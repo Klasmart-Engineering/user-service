@@ -1,4 +1,4 @@
-import { getRepository } from 'typeorm'
+import { getRepository, getConnection } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { User } from '../entities/user'
 import { SchoolMembership } from '../entities/schoolMembership'
@@ -6,11 +6,14 @@ import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
 
-interface PermissionContext {
+export interface PermissionContext {
     school_ids?: string[]
     organization_id?: string
     user_id?: string
 }
+
+export const PERMISSION_CACHE_KEY = 'user_permissions_cache'
+export const PERMISSION_CACHE_DURATION_MS = 10000 // 10s
 
 export class UserPermissions {
     static ADMIN_EMAILS = [
@@ -201,7 +204,10 @@ export class UserPermissions {
                         .having('bool_and(Permission.allow) = :allowed', {
                             allowed: true,
                         })
-                        .cache(true)
+                        .cache(
+                            this.uniqueCacheKey,
+                            PERMISSION_CACHE_DURATION_MS
+                        )
                         .getRawMany()
 
                     for (const {
@@ -263,7 +269,10 @@ export class UserPermissions {
                             .having('bool_and(Permission.allow) = :allowed', {
                                 allowed: true,
                             })
-                            .cache(true)
+                            .cache(
+                                this.uniqueCacheKey,
+                                PERMISSION_CACHE_DURATION_MS
+                            )
                             .getRawMany()
 
                         for (const {
@@ -343,5 +352,13 @@ export class UserPermissions {
         }
 
         return schoolIds
+    }
+
+    private get uniqueCacheKey() {
+        return `${PERMISSION_CACHE_KEY}_${this.getUserId()}`
+    }
+
+    public async clearCache() {
+        await getConnection().queryResultCache?.remove([this.uniqueCacheKey])
     }
 }

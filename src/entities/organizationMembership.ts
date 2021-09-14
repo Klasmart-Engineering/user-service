@@ -195,6 +195,7 @@ export class OrganizationMembership extends BaseEntity {
             memberships.push(this)
             role.memberships = Promise.resolve(memberships)
             await role.save()
+            await context.permissions.clearCache()
             return role
         } catch (e) {
             console.error(e)
@@ -237,6 +238,7 @@ export class OrganizationMembership extends BaseEntity {
             })
             const roles = await Promise.all(rolePromises)
             await getManager().save(roles)
+            await context.permissions.clearCache()
             return roles
         } catch (e) {
             console.error(e)
@@ -265,6 +267,7 @@ export class OrganizationMembership extends BaseEntity {
                 role.memberships = Promise.resolve(newMemberships)
                 await role.save()
             }
+            await context.permissions.clearCache()
             return this
         } catch (e) {
             console.error(e)
