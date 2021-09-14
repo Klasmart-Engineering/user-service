@@ -203,9 +203,7 @@ export class UserPermissions {
                             allowed: true,
                         })
                         .cache(
-                            Cache.getUniquePermissionCacheKey(
-                                this.user_id || ''
-                            ),
+                            Cache.permissionCacheKeyForUser(this.user_id || ''),
                             PERMISSION_CACHE_DURATION_MS
                         )
                         .getRawMany()
@@ -270,7 +268,7 @@ export class UserPermissions {
                                 allowed: true,
                             })
                             .cache(
-                                Cache.getUniquePermissionCacheKey(
+                                Cache.permissionCacheKeyForUser(
                                     this.user_id || ''
                                 ),
                                 PERMISSION_CACHE_DURATION_MS

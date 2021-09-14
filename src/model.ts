@@ -80,6 +80,7 @@ import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
 import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
+import { Cache } from './utils/cache'
 
 export class Model {
     public static async create() {
@@ -109,7 +110,7 @@ export class Model {
             })
 
             // always clear the cache on startup
-            await connection.queryResultCache?.clear()
+            await Cache.clearAll()
 
             await runMigrations(connection)
 

@@ -10,11 +10,11 @@ export class Cache {
 
     public static async clearPermissionCache(userId: string) {
         await getConnection().queryResultCache?.remove([
-            Cache.getUniquePermissionCacheKey(userId),
+            Cache.permissionCacheKeyForUser(userId),
         ])
     }
 
-    public static getUniquePermissionCacheKey(userId: string): string {
+    public static permissionCacheKeyForUser(userId: string): string {
         return `${PERMISSION_CACHE_KEY}_${userId}`
     }
 }
