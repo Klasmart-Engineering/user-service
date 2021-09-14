@@ -5,17 +5,7 @@ import {
 } from '../../utils/testConnection'
 import { expect } from 'chai'
 import { InitialState1628677180503 } from '../../../migrations/1628677180503-InitialState'
-
-async function getDatabaseTables(connection: Connection) {
-    const tables = (await connection.createQueryRunner().query(`
-        SELECT table_name
-            FROM information_schema.tables
-        WHERE table_schema='public'
-            AND table_type='BASE TABLE';
-    `)) as { table_name: string }[]
-
-    return tables.map((table) => table.table_name)
-}
+import { getDatabaseTables } from '../../utils/migrations'
 
 const expectedTables: string[] = [
     'attendance',
