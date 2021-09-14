@@ -2,8 +2,11 @@ import faker from 'faker'
 import { User } from '../../../src/entities/user'
 import { createUser } from '../../factories/user.factory'
 import { createOrganization } from '../../factories/organization.factory'
-import { Connection, getRepository } from 'typeorm'
-import { createTestConnection } from '../../utils/testConnection'
+import { getRepository } from 'typeorm'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import {
     orgsForUsers,
     schoolsForUsers,
@@ -23,7 +26,7 @@ import { createOrganizationMembership } from '../../factories/organizationMember
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 
 describe('usersConnection loaders', async () => {
-    let connection: Connection
+    let connection: TestConnection
 
     let usersList: User[] = []
     let userIds: string[]
@@ -167,6 +170,11 @@ describe('usersConnection loaders', async () => {
                 userOrgs.forEach((orgs) => expect(orgs).to.have.length(1))
             })
         )
+        it('makes the expected number of queries to the database', async () => {
+            connection.logger.reset()
+            await orgsForUsers(userIds)
+            expect(connection.logger.count).to.be.eq(1)
+        })
     })
 
     context('schoolsForUsers', () => {
@@ -279,6 +287,11 @@ describe('usersConnection loaders', async () => {
                 )
             })
         )
+        it('makes the expected number of queries to the database', async () => {
+            connection.logger.reset()
+            await schoolsForUsers(userIds)
+            expect(connection.logger.count).to.be.eq(1)
+        })
     })
 
     context('rolesForUsers', () => {
@@ -408,5 +421,11 @@ describe('usersConnection loaders', async () => {
                 )
             })
         )
+        it('makes the expected number of queries to the database', async () => {
+            connection.logger.reset()
+            await rolesForUsers(userIds)
+            // one for the organization roles, one for the schools
+            expect(connection.logger.count).to.be.eq(2)
+        })
     })
 })
