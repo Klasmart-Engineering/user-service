@@ -1000,7 +1000,7 @@ describe('processUserFromCSVRow', async () => {
         let err: CSVError
         let rowErrors: CSVError[]
         afterEach(() => {
-            expect(rowErrors.length).to.be.gte(1)
+            expect(rowErrors.length).to.eq(1)
             expect(err.column).to.eq('school_name')
             for (const v of getCustomErrorMessageVariables(err.message)) {
                 expect(err[v]).to.exist

@@ -152,6 +152,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     parentName: row.organization_name,
                 }
             )
+            return rowErrors
         }
     }
 
