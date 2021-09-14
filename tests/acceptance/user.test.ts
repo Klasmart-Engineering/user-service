@@ -82,7 +82,7 @@ describe('acceptance.user', () => {
         const organization = await Organization.findOneOrFail(orgId)
 
         const users = await User.save(
-            Array(usersCount).fill(null).map(createUser)
+            Array(usersCount).fill(undefined).map(createUser)
         )
 
         await OrganizationMembership.save(
@@ -187,6 +187,52 @@ describe('acceptance.user', () => {
     })
 
     context('usersConnection', () => {
+        context('using explict count', async () => {
+            async function makeQuery(pageSize: any) {
+                return await request
+                    .post('/graphql')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: USERS_CONNECTION,
+                        variables: {
+                            direction: 'FORWARD',
+                            directionArgs: {
+                                count: pageSize,
+                            },
+                        },
+                    })
+            }
+
+            it('passes validation', async () => {
+                const pageSize = 5
+
+                const response = await makeQuery(pageSize)
+
+                expect(response.status).to.eq(200)
+                const usersConnection = response.body.data.usersConnection
+                expect(usersConnection.edges.length).to.equal(pageSize)
+            })
+
+            it('fails validation', async () => {
+                const pageSize = 'not_a_number'
+
+                const response = await makeQuery(pageSize)
+
+                expect(response.status).to.eq(400)
+                expect(response.body.errors.length).to.equal(1)
+                const message = response.body.errors[0].message
+                expect(message)
+                    .to.be.a('string')
+                    .and.satisfy((msg: string) =>
+                        msg.startsWith(
+                            'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
+                        )
+                    )
+            })
+        })
         it('queries paginated users without filter', async () => {
             const response = await request
                 .post('/graphql')

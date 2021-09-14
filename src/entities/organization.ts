@@ -13,6 +13,9 @@ import {
     EntityManager,
     EntityTarget,
     FindConditions,
+    Not,
+    Brackets,
+    FindOneOptions,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -38,32 +41,24 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../utils/shortcode'
-import clean from '../utils/clean'
-import { isDOB, isEmail, isPhone } from '../utils/validations'
+import clean, { unswapEmailAndPhone } from '../utils/clean'
 import validationConstants from './validations/constants'
 import {
     APIError,
     APIErrorCollection,
     IAPIError,
-    validateApiCall,
+    validateAPICall,
 } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import {
     inviteUserSchema,
     inviteUserSchemaMetadata,
     InviteUserArguments,
+    EditMembershipArguments,
+    editMembershipSchema,
+    editMembershipSchemaMetadata,
 } from '../operations/organization'
-
-export const normalizedLowercaseTrimmed = (x?: string) =>
-    x?.normalize('NFKC').toLowerCase().trim()
-
-export const padShortDob = (dob?: string) => {
-    if (dob && dob.length > 0) {
-        return dob.length < 7 ? '0' + dob : dob
-    } else {
-        return dob
-    }
-}
+import { pickBy } from 'lodash'
 
 @Entity()
 export class Organization extends BaseEntity {
@@ -550,61 +545,6 @@ export class Organization extends BaseEntity {
         }
     }
 
-    private async createUser(
-        email?: string,
-        phone?: string,
-        given_name?: string,
-        family_name?: string,
-        date_of_birth?: string,
-        username?: string,
-        alternate_email?: string | null,
-        alternate_phone?: string | null,
-        gender?: string
-    ): Promise<User> {
-        const user_id = uuid_v4()
-        const user = new User()
-        user.user_id = user_id
-
-        user.email = email
-        user.phone = phone
-
-        if (given_name !== undefined) {
-            user.given_name = given_name
-        }
-        if (family_name !== undefined) {
-            user.family_name = family_name
-        }
-        if (date_of_birth !== undefined) {
-            user.date_of_birth = date_of_birth
-        }
-        if (username !== undefined) {
-            user.username = username
-        }
-
-        user.alternate_email = alternate_email
-        user.alternate_phone = alternate_phone
-
-        if (gender !== undefined) {
-            user.gender = gender
-        }
-        return user
-    }
-
-    private unswapEmailPhone(
-        email?: string,
-        phone?: string
-    ): { email: string | undefined; phone: string | undefined } {
-        if (!isEmail(email) && isPhone(email)) {
-            phone = email
-            email = undefined
-        } else if (!isPhone(phone) && isEmail(phone)) {
-            email = phone
-            phone = undefined
-        }
-
-        return { email, phone }
-    }
-
     public async inviteUser(
         {
             email,
@@ -643,33 +583,16 @@ export class Organization extends BaseEntity {
             return null
         }
 
-        const unSwapped = this.unswapEmailPhone(email, phone)
+        const unswapped = unswapEmailAndPhone(email, phone)
 
-        if (unSwapped.email) {
-            email = normalizedLowercaseTrimmed(unSwapped.email)
-        } else {
-            email = undefined
-        }
-        if (unSwapped.phone) {
-            phone = normalizedLowercaseTrimmed(unSwapped.phone)
-        } else {
-            phone = undefined
-        }
+        email = clean.email(unswapped.email)
+        phone = clean.phone(unswapped.phone)
+        alternate_email = clean.email(alternate_email)
+        alternate_phone = clean.phone(alternate_phone)
+        shortcode = clean.shortcode(shortcode)
+        date_of_birth = clean.dateOfBirth(date_of_birth)
 
-        if (typeof alternate_email === 'string') {
-            alternate_email = normalizedLowercaseTrimmed(alternate_email)
-        }
-        if (typeof alternate_phone === 'string') {
-            alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
-        }
-
-        if (typeof shortcode === 'string') {
-            shortcode = shortcode.toUpperCase()
-        }
-
-        date_of_birth = padShortDob(date_of_birth)
-
-        const { errors, validData } = validateApiCall(
+        const { errors, validData } = validateAPICall(
             {
                 email,
                 phone,
@@ -795,9 +718,8 @@ export class Organization extends BaseEntity {
         }
 
         return getManager().transaction(async (manager) => {
-            const user = await this.findOrCreateUser(
-                existingUser !== undefined,
-                existingUser?.user_id,
+            const user = await this.updateOrCreateUser({
+                user_id: existingUser?.user_id,
                 email,
                 phone,
                 given_name,
@@ -806,8 +728,8 @@ export class Organization extends BaseEntity {
                 username,
                 alternate_email,
                 alternate_phone,
-                gender
-            )
+                gender,
+            })
 
             const membership = await this.membershipOrganization(
                 user,
@@ -831,8 +753,6 @@ export class Organization extends BaseEntity {
     public async editMembership(
         {
             user_id,
-            email,
-            phone,
             given_name,
             family_name,
             date_of_birth,
@@ -844,8 +764,7 @@ export class Organization extends BaseEntity {
             school_role_ids,
             alternate_email,
             alternate_phone,
-        }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Record<string, any>,
+        }: EditMembershipArguments,
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -853,30 +772,22 @@ export class Organization extends BaseEntity {
             this,
             PermissionName.edit_users_40330
         )
-        try {
-            if (
-                info.operation.operation !== 'mutation' ||
-                this.status == Status.INACTIVE
-            ) {
-                return null
-            }
-            email = normalizedLowercaseTrimmed(email)
-            phone = normalizedLowercaseTrimmed(phone)
-            if (typeof alternate_email === 'string') {
-                alternate_email = normalizedLowercaseTrimmed(alternate_email)
-            }
-            if (typeof alternate_phone === 'string') {
-                alternate_phone = normalizedLowercaseTrimmed(alternate_phone)
-            }
 
-            date_of_birth = padShortDob(date_of_birth)
+        if (
+            info.operation.operation !== 'mutation' ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
 
-            const result = await this._setMembership(
-                false,
-                true,
+        alternate_email = clean.email(alternate_email)
+        alternate_phone = clean.phone(alternate_phone)
+        shortcode = clean.shortcode(shortcode)
+        date_of_birth = clean.dateOfBirth(date_of_birth)
+
+        const { errors, validData } = validateAPICall(
+            {
                 user_id,
-                email,
-                phone,
                 given_name,
                 family_name,
                 date_of_birth,
@@ -887,25 +798,189 @@ export class Organization extends BaseEntity {
                 school_ids,
                 school_role_ids,
                 alternate_email,
-                alternate_phone
-            )
-            return result
-        } catch (e) {
-            console.error(e)
+                alternate_phone,
+            },
+            editMembershipSchema,
+            editMembershipSchemaMetadata
+        )
+
+        if (validData?.shortcode) {
+            const duplicateShortcode = await getRepository(
+                OrganizationMembership
+            ).findOne({
+                where: {
+                    shortcode,
+                    user_id: Not(user_id),
+                    organization: {
+                        organization_id: this.organization_id,
+                    },
+                },
+            })
+
+            if (duplicateShortcode) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.duplicate_child_entity.code,
+                        message: customErrors.duplicate_child_entity.message,
+                        variables: ['shortcode'],
+                        entity: 'OrganizationMembership',
+                        entityName: shortcode,
+                        parentEntity: 'Organization',
+                        parentName: this.organization_name,
+                    })
+                )
+            }
         }
+
+        let user: User | undefined
+        if (validData?.user_id) {
+            user = await User.findOne(user_id)
+            if (!user) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['user_id'],
+                        entity: 'User',
+                        entityName: user_id,
+                    })
+                )
+            }
+        }
+
+        let membership: OrganizationMembership | undefined
+        if (user) {
+            membership = await OrganizationMembership.findOne({
+                user_id,
+                organization_id: this.organization_id,
+                status: Status.ACTIVE,
+            })
+            if (!membership) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.nonexistent_child.code,
+                        message: customErrors.nonexistent_child.message,
+                        variables: ['user_id', 'organization_id'],
+                        entity: 'User',
+                        entityName: user.full_name(),
+                        parentEntity: 'Organization',
+                        parentName: this.organization_name,
+                    })
+                )
+            }
+        }
+
+        if (user && 'given_name' in validData && 'family_name' in validData) {
+            // If combination of user.email/user.phone and `given_name` and `family_name` exists for
+            // any other User, then throw ERR_DUPLICATE_ENTITY
+            const baseCondition = {
+                given_name,
+                family_name,
+                user_id: Not(user_id),
+            }
+
+            const findConditions: FindConditions<User>[] = []
+            if (user.email) {
+                findConditions.push({ ...baseCondition, email: user.email })
+            }
+            if (user.phone) {
+                findConditions.push({ ...baseCondition, phone: user.phone })
+            }
+            const duplicateUser = await User.findOne({ where: findConditions })
+
+            if (duplicateUser) {
+                errors.push(
+                    new APIError({
+                        code: customErrors.duplicate_entity.code,
+                        message: customErrors.duplicate_entity.message,
+                        variables: ['given_name', 'family_name'],
+                        entity: 'User',
+                        entityName: `${given_name} ${family_name}`,
+                    })
+                )
+            }
+        }
+
+        let organizationRoles: Role[] = []
+        if (validData?.organization_role_ids?.length) {
+            const rolesResult = await this.findRolesById(
+                validData.organization_role_ids,
+                ['organization_role_ids']
+            )
+            organizationRoles = rolesResult.data
+            errors.push(...rolesResult.errors)
+        }
+
+        let schoolRoles: Role[] = []
+        if (validData?.school_role_ids?.length) {
+            const rolesResult = await this.findRolesById(
+                validData.school_role_ids,
+                ['school_role_ids']
+            )
+            schoolRoles = rolesResult.data
+            errors.push(...rolesResult.errors)
+        }
+
+        let schools: School[] = []
+        if (validData?.school_ids?.length) {
+            const schoolsResult = await this.findSchoolsById(
+                validData.school_ids,
+                ['school_ids']
+            )
+            schools = schoolsResult.data
+            errors.push(...schoolsResult.errors)
+        }
+
+        if (errors.length > 0) {
+            throw new APIErrorCollection(errors)
+        }
+
+        return getManager().transaction(async (manager) => {
+            const updatedUser = Object.assign(user, {
+                given_name,
+                family_name,
+                gender,
+                date_of_birth,
+                username,
+                alternate_email,
+                alternate_phone,
+            }) as User
+
+            const updatedMembership = Object.assign(membership, {
+                shortcode: validData.shortcode,
+                roles: Promise.resolve(organizationRoles),
+            }) as OrganizationMembership
+
+            const [
+                schoolMemberships,
+                oldSchoolMemberships,
+            ] = await this.membershipSchools(updatedUser, schools, schoolRoles)
+
+            await manager.remove(oldSchoolMemberships)
+            await manager.save([
+                updatedUser,
+                updatedMembership,
+                ...schoolMemberships,
+            ])
+            return {
+                user: updatedUser,
+                membership: updatedMembership,
+                schoolMemberships,
+            }
+        })
     }
 
     private async findChildEntitiesById<EntityClass extends BaseEntity>(
         entity: EntityTarget<EntityClass>,
         ids: string[],
         variables: IAPIError['variables'],
-        orWhere?: FindConditions<EntityClass>
+        customCondition?: FindOneOptions<EntityClass>['where']
     ): Promise<{ data: EntityClass[]; errors: APIError[] }> {
         const uniqueIds = [...new Set(ids)]
         const repository = getRepository(entity)
-        const baseCondition = { organization: this.organization_id }
-        const records = await repository.findByIds(uniqueIds, {
-            where: orWhere ? [baseCondition, orWhere] : baseCondition,
+        const defaultCondition = { organization: this.organization_id }
+        const records = await repository.findByIds(ids, {
+            where: customCondition ?? defaultCondition,
         })
         const found = new Set(records.map((record) => repository.getId(record)))
         const errors = uniqueIds
@@ -929,10 +1004,19 @@ export class Organization extends BaseEntity {
         roleIds: string[],
         variables: IAPIError['variables']
     ) {
-        // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
-        return this.findChildEntitiesById(Role, roleIds, variables, {
-            system_role: true,
-        })
+        return this.findChildEntitiesById(
+            Role,
+            roleIds,
+            variables,
+            // A valid Role for this Organization could be a system_role, or a custom Role on this Organization
+            new Brackets((qb) =>
+                qb
+                    .where('Role.organization = :organization_id', {
+                        organization_id: this.organization_id,
+                    })
+                    .orWhere('Role.system_role IS TRUE')
+            )
+        )
     }
 
     private async findSchoolsById(
@@ -942,44 +1026,23 @@ export class Organization extends BaseEntity {
         return this.findChildEntitiesById(School, schoolIds, variables)
     }
 
-    private async getRoleLookup(): Promise<(roleId: string) => Promise<Role>> {
-        const role_repo = getRepository(Role)
-        const roleLookup = async (role_id: string) => {
-            const role = await role_repo.findOneOrFail(role_id)
-            const checkOrganization = await role.organization
-            if (
-                !role.system_role &&
-                (!checkOrganization ||
-                    checkOrganization.organization_id !== this.organization_id)
-            ) {
-                throw new Error(
-                    `Can not assign Organization(${checkOrganization?.organization_id}).Role(${role_id}) to membership in Organization(${this.organization_id})`
-                )
-            }
-            return role
-        }
-        return roleLookup
-    }
-
-    private async findOrCreateUser(
-        edit: boolean,
-        user_id?: string,
-        email?: string,
-        phone?: string,
-        given_name?: string,
-        family_name?: string,
-        date_of_birth?: string,
-        username?: string,
-        alternate_email?: string | null,
-        alternate_phone?: string | null,
-        gender?: string
-    ): Promise<User> {
+    private async updateOrCreateUser(partialUser: {
+        given_name: string
+        family_name: string
+        gender: string
+        user_id?: string
+        email?: string | null
+        phone?: string | null
+        date_of_birth?: string
+        username?: string
+        alternate_email?: string | null
+        alternate_phone?: string | null
+    }): Promise<User> {
         let user: User | undefined
-        if (edit && user_id) {
-            const scope = getRepository(User).createQueryBuilder('user')
-            scope.where('user_id = :user_id', { user_id })
-
-            user = await scope.getOne()
+        // eslint-disable-next-line prefer-const
+        let { user_id, ...rest } = partialUser
+        if (user_id) {
+            user = await User.findOne(user_id)
             if (!user) {
                 user_id = uuid_v4()
                 user = new User() as User
@@ -990,28 +1053,10 @@ export class Organization extends BaseEntity {
             user = new User()
             user.user_id = user_id
         }
-        user.email = email
-        user.phone = phone
-
-        if (given_name !== undefined) {
-            user.given_name = given_name
-        }
-        if (family_name !== undefined) {
-            user.family_name = family_name
-        }
-        if (date_of_birth !== undefined) {
-            user.date_of_birth = date_of_birth
-        }
-        if (username !== undefined) {
-            user.username = username
-        }
-
-        user.alternate_email = clean.email(alternate_email)
-        user.alternate_phone = clean.phone(alternate_phone)
-
-        if (gender !== undefined) {
-            user.gender = gender
-        }
+        Object.assign(
+            user,
+            pickBy(rest, (v) => v !== undefined)
+        )
         return user
     }
 
@@ -1068,117 +1113,6 @@ export class Organization extends BaseEntity {
             })
         )
         return [schoolMemberships, oldSchoolMemberships]
-    }
-
-    private async _setMembership(
-        restricted: boolean,
-        edit: boolean,
-        user_id?: string,
-        email?: string,
-        phone?: string,
-        given_name?: string,
-        family_name?: string,
-        date_of_birth?: string,
-        username?: string,
-        gender?: string,
-        shortcode?: string,
-        organization_role_ids: string[] = [],
-        school_ids: string[] = [],
-        school_role_ids: string[] = [],
-        alternate_email?: string | null,
-        alternate_phone?: string | null
-    ) {
-        if (!isEmail(email) && isPhone(email)) {
-            phone = email
-            email = undefined
-        } else if (!isPhone(phone) && isEmail(phone)) {
-            email = phone
-            phone = undefined
-        }
-        if (!(isEmail(email) || isPhone(phone))) {
-            throw 'No valid email or international all digit with leading + sign E.164 phone number provided'
-        }
-        if (!isDOB(date_of_birth)) {
-            date_of_birth = undefined
-        }
-
-        if (typeof shortcode === 'string') {
-            shortcode = shortcode.toUpperCase()
-            if (
-                !validateShortCode(
-                    shortcode,
-                    validationConstants.SHORTCODE_MAX_LENGTH
-                )
-            ) {
-                shortcode = undefined
-            }
-        }
-
-        return getManager().transaction(async (manager) => {
-            console.log(
-                '_setMembership',
-                email,
-                phone,
-                user_id,
-                given_name,
-                family_name,
-                date_of_birth,
-                username,
-                gender,
-                shortcode,
-                organization_role_ids,
-                school_ids,
-                school_role_ids,
-                alternate_email,
-                alternate_phone
-            )
-            const roleLookup = await this.getRoleLookup()
-            const organizationRoles = await Promise.all(
-                organization_role_ids.map((role_id) => roleLookup(role_id))
-            )
-            const schoolRoles = await Promise.all(
-                school_role_ids.map((role_id) => roleLookup(role_id))
-            )
-            const user = await this.findOrCreateUser(
-                edit,
-                user_id,
-                email,
-                phone,
-                given_name,
-                family_name,
-                date_of_birth,
-                username,
-                alternate_email,
-                alternate_phone,
-                gender
-            )
-            const membership = await this.membershipOrganization(
-                user,
-                organizationRoles,
-                shortcode
-            )
-
-            // TODO replace with handled error for UD-328
-            const schoolRepository = getRepository(School)
-            const schools = await Promise.all(
-                school_ids.map(async (school_id) => {
-                    return schoolRepository.findOneOrFail(school_id, {
-                        where: { organization: this.organization_id },
-                    })
-                })
-            )
-            const [
-                schoolMemberships,
-                oldSchoolMemberships,
-            ] = await this.membershipSchools(user, schools, schoolRoles)
-            if (restricted) {
-                await manager.save([user, membership, ...oldSchoolMemberships])
-                return { user, membership, oldSchoolMemberships }
-            }
-            await manager.remove(oldSchoolMemberships)
-            await manager.save([user, membership, ...schoolMemberships])
-            return { user, membership, schoolMemberships }
-        })
     }
 
     public async createRole(

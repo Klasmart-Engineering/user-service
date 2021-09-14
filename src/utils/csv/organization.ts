@@ -3,10 +3,7 @@ import { v4 as uuid_v4 } from 'uuid'
 import { accountUUID, User } from '../../entities/user'
 import { OrganizationRow } from '../../types/csv/organizationRow'
 import { generateShortCode, validateShortCode } from '../shortcode'
-import {
-    normalizedLowercaseTrimmed,
-    Organization,
-} from '../../entities/organization'
+import { Organization } from '../../entities/organization'
 import { OrganizationMembership } from '../../entities/organizationMembership'
 import { OrganizationOwnership } from '../../entities/organizationOwnership'
 import { Role } from '../../entities/role'
@@ -17,6 +14,7 @@ import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
 import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { normalizedLowercaseTrimmed } from '../../utils/clean'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,

@@ -58,7 +58,18 @@ import { Class } from '../../src/entities/class'
 import chaiAsPromised from 'chai-as-promised'
 import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
 import { Subject } from '../../src/entities/subject'
+import { createClass as classFactory } from '../factories/class.factory'
 import { createSubject } from '../factories/subject.factory'
+import { createOrganization as organizationFactory } from '../factories/organization.factory'
+import { createSchool as schoolFactory } from '../factories/school.factory'
+import { createRole as roleFactory } from '../factories/role.factory'
+import {
+    createUser,
+    createAdminUser as adminUserFactory,
+} from '../factories/user.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { School } from '../../src/entities/school'
 
 use(chaiAsPromised)
 
@@ -838,78 +849,32 @@ describe('user', () => {
         )
     })
     describe('merge', () => {
-        let adminUser: User
         let organization: Organization
-        let organizationId: string
         let role: Role
-        let roleId: string
-        let schoolId: string
+        let school: School
+        let oldUser: User
+        let newUser: User
         beforeEach(async () => {
-            adminUser = await createAdminUser(testClient)
-            organization = await createOrganizationAndValidate(
-                testClient,
-                adminUser.user_id
-            )
-            organizationId = organization.organization_id
-            role = await createRole(
-                testClient,
-                organization.organization_id,
-                'student'
-            )
-            roleId = role.role_id
-            schoolId = (
-                await createSchool(
-                    testClient,
-                    organizationId,
-                    'school 1',
-                    undefined,
-                    { authorization: getAdminAuthToken() }
-                )
-            ).school_id
+            const adminUser = await adminUserFactory().save()
+            organization = await organizationFactory(adminUser).save()
+            role = await roleFactory(undefined, organization).save()
+            school = await schoolFactory(organization).save()
+
+            oldUser = await createUser().save()
+
+            newUser = await createUser().save()
+            await createOrganizationMembership({
+                user: newUser,
+                organization,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user: newUser,
+                school,
+                roles: [role],
+            }).save()
         })
         it('should merge one user into another deleting the source user', async () => {
-            let anne = {
-                given_name: 'Anne',
-                family_name: 'Bob',
-                email: 'anne@gmail.com',
-                avatar: 'anne_avatar',
-            } as User
-
-            // oldUser is a bare user with no memberships
-            let oldUser = await createUserAndValidate(testClient, anne)
-            let object = await organization['_setMembership'](
-                false,
-                false,
-                undefined,
-                'bob@nowhere.com',
-                undefined,
-                'Bob',
-                'Smith',
-                undefined,
-                'Buster',
-                'male',
-                undefined,
-                new Array(roleId),
-                Array(schoolId),
-                new Array(roleId)
-            )
-
-            let newUser = object.user
-            let membership = object.membership
-            let schoolmemberships = object.schoolMemberships
-            // newUser has memberships
-            expect(newUser).to.exist
-            expect(newUser.email).to.equal('bob@nowhere.com')
-
-            expect(schoolmemberships).to.exist
-            if (schoolmemberships) {
-                expect(schoolmemberships.length).to.equal(1)
-                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
-                expect(schoolmemberships[0].school_id).to.equal(schoolId)
-            }
-            expect(membership).to.exist
-            expect(membership.organization_id).to.equal(organizationId)
-            expect(membership.user_id).to.equal(newUser.user_id)
             // Merging newUser into oldUser
             let gqlUser = await mergeUser(
                 testClient,
@@ -925,7 +890,7 @@ describe('user', () => {
             if (newMemberships !== undefined) {
                 expect(newMemberships.length).to.equal(1)
                 expect(newMemberships[0].organization_id).to.equal(
-                    organizationId
+                    organization.organization_id
                 )
                 expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
             }
@@ -933,7 +898,9 @@ describe('user', () => {
             expect(newSchoolMemberships).to.exist
             if (newSchoolMemberships !== undefined) {
                 expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].school_id).to.equal(
+                    school.school_id
+                )
                 expect(newSchoolMemberships[0].user_id).to.equal(
                     oldUser.user_id
                 )
@@ -948,7 +915,7 @@ describe('user', () => {
             if (newMemberships !== undefined) {
                 expect(newMemberships.length).to.equal(1)
                 expect(newMemberships[0].organization_id).to.equal(
-                    organizationId
+                    organization.organization_id
                 )
                 expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
             }
@@ -956,7 +923,9 @@ describe('user', () => {
             expect(newSchoolMemberships).to.exist
             if (newSchoolMemberships !== undefined) {
                 expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].school_id).to.equal(
+                    school.school_id
+                )
                 expect(newSchoolMemberships[0].user_id).to.equal(
                     oldUser.user_id
                 )
@@ -968,58 +937,9 @@ describe('user', () => {
             expect(dbNewUser).to.not.exist
         })
         it('should merge one user into another including classes deleting the source user', async () => {
-            let anne = {
-                given_name: 'Anne',
-                family_name: 'Bob',
-                email: 'anne@gmail.com',
-                avatar: 'anne_avatar',
-            } as User
-
-            // oldUser is a bare user with no memberships
-            let oldUser = await createUserAndValidate(testClient, anne)
-            expect(oldUser).to.exist
-            let object = await organization['_setMembership'](
-                false,
-                false,
-                undefined,
-                'bob@nowhere.com',
-                undefined,
-                'Bob',
-                'Smith',
-                undefined,
-                'Buster',
-                'Male',
-                undefined,
-                new Array(roleId),
-                Array(schoolId),
-                new Array(roleId)
-            )
-
-            let newUser = object.user
-            let membership = object.membership
-            let schoolmemberships = object.schoolMemberships
-            // newUser has memberships
-            expect(newUser).to.exist
-            expect(newUser.email).to.equal('bob@nowhere.com')
-            expect(newUser.gender).to.equal('Male')
-
-            expect(schoolmemberships).to.exist
-            if (schoolmemberships) {
-                expect(schoolmemberships.length).to.equal(1)
-                expect(schoolmemberships[0].user_id).to.equal(newUser.user_id)
-                expect(schoolmemberships[0].school_id).to.equal(schoolId)
-            }
-            expect(membership).to.exist
-            expect(membership.organization_id).to.equal(organizationId)
-            expect(membership.user_id).to.equal(newUser.user_id)
-
-            const cls = await createClass(
-                testClient,
-                organization.organization_id
-            )
-            await addStudentToClass(testClient, cls.class_id, newUser.user_id, {
-                authorization: getAdminAuthToken(),
-            })
+            const cls = classFactory([], organization)
+            cls.students = Promise.resolve([newUser])
+            await cls.save()
 
             // Merging newUser into oldUser
             let gqlUser = await mergeUser(
@@ -1036,7 +956,7 @@ describe('user', () => {
             if (newMemberships !== undefined) {
                 expect(newMemberships.length).to.equal(1)
                 expect(newMemberships[0].organization_id).to.equal(
-                    organizationId
+                    organization.organization_id
                 )
                 expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
             }
@@ -1044,7 +964,9 @@ describe('user', () => {
             expect(newSchoolMemberships).to.exist
             if (newSchoolMemberships !== undefined) {
                 expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].school_id).to.equal(
+                    school.school_id
+                )
                 expect(newSchoolMemberships[0].user_id).to.equal(
                     oldUser.user_id
                 )
@@ -1065,7 +987,7 @@ describe('user', () => {
             if (newMemberships !== undefined) {
                 expect(newMemberships.length).to.equal(1)
                 expect(newMemberships[0].organization_id).to.equal(
-                    organizationId
+                    organization.organization_id
                 )
                 expect(newMemberships[0].user_id).to.equal(oldUser.user_id)
             }
@@ -1073,7 +995,9 @@ describe('user', () => {
             expect(newSchoolMemberships).to.exist
             if (newSchoolMemberships !== undefined) {
                 expect(newSchoolMemberships.length).to.equal(1)
-                expect(newSchoolMemberships[0].school_id).to.equal(schoolId)
+                expect(newSchoolMemberships[0].school_id).to.equal(
+                    school.school_id
+                )
                 expect(newSchoolMemberships[0].user_id).to.equal(
                     oldUser.user_id
                 )

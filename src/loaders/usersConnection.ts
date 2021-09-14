@@ -23,22 +23,30 @@ export const orgsForUsers = async (
     // fetch organization memberships for all users
     // and join on required entities
     //
-    const scope = await User.createQueryBuilder('User')
-        .leftJoinAndSelect('User.memberships', 'Memberships')
-        .leftJoinAndSelect('Memberships.organization', 'Organization')
+    const scope = User.createQueryBuilder('User')
+        .innerJoin('User.memberships', 'OrganizationMembership')
+        .innerJoin('OrganizationMembership.organization', 'Organization')
         .where('User.user_id IN (:...ids)', { ids: userIds })
+        .select([
+            'User.user_id',
+            'OrganizationMembership.organization_id',
+            'OrganizationMembership.join_timestamp',
+            'OrganizationMembership.status',
+            'Organization.organization_name',
+            'Organization.status',
+        ])
 
     if (filter) {
         if (filterHasProperty('roleId', filter)) {
-            scope.leftJoin('Memberships.roles', 'Roles')
+            scope.innerJoin('OrganizationMembership.roles', 'Roles')
         }
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'Memberships.organization_id',
+                organizationId: 'OrganizationMembership.organization_id',
                 schoolId: '',
                 roleId: 'Roles.role_id',
-                organizationUserStatus: 'Memberships.status',
+                organizationUserStatus: 'OrganizationMembership.status',
                 userId: '',
                 phone: '',
                 classId: '',
@@ -48,30 +56,28 @@ export const orgsForUsers = async (
 
     const users = await scope.getMany()
 
-    //
-    // translate to graphQL schema
-    //
-    const userOrgs: OrganizationSummaryNode[][] = []
-    for (const userId of userIds) {
-        const user = users.find((u) => u.user_id === userId)
-        if (user) {
-            const orgs: OrganizationSummaryNode[] = []
-            const memberships = (await user.memberships) || []
-            for (const m of memberships) {
-                orgs.push({
-                    id: m.organization_id,
-                    name: (await m.organization)?.organization_name,
-                    joinDate: m.join_timestamp,
-                    userStatus: m.status,
-                    status: (await m.organization)?.status,
+    const map = new Map(users.map((user) => [user.user_id, user]))
+
+    return Promise.all(
+        userIds.map(async (id) => {
+            const user = map.get(id)
+            if (!user) return []
+
+            const memberships = (await user.memberships) ?? []
+            return Promise.all(
+                memberships.map(async (membership) => {
+                    return {
+                        id: membership.organization_id,
+                        name: (await membership.organization)
+                            ?.organization_name,
+                        joinDate: membership.join_timestamp,
+                        userStatus: membership.status,
+                        status: (await membership.organization)?.status,
+                    }
                 })
-            }
-            userOrgs.push(orgs)
-        } else {
-            userOrgs.push([])
-        }
-    }
-    return userOrgs
+            )
+        })
+    )
 }
 
 export const schoolsForUsers = async (
@@ -83,16 +89,26 @@ export const schoolsForUsers = async (
     // and join on required entities
     //
     const scope = await User.createQueryBuilder('User')
-        .leftJoinAndSelect('User.school_memberships', 'Memberships')
-        .leftJoinAndSelect('Memberships.school', 'School')
-        .leftJoinAndSelect('School.organization', 'Organization')
+        .innerJoin('User.school_memberships', 'OrganizationMembership')
+        .innerJoin('OrganizationMembership.school', 'School')
+        // TODO expose `organization_id` FK column on School entity to save JOIN
+        .innerJoin('School.organization', 'Organization')
         .where('User.user_id IN (:...ids)', { ids: userIds })
+        .select([
+            'User.user_id',
+            'School.school_id',
+            'School.school_name',
+            'School.status',
+            'OrganizationMembership.school_id',
+            'OrganizationMembership.status',
+            'Organization.organization_id',
+        ])
 
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'Organization.organization_id',
-                schoolId: 'Memberships.school_id',
+                organizationId: 'School.organization',
+                schoolId: '',
                 roleId: '',
                 organizationUserStatus: '',
                 userId: '',
@@ -104,54 +120,60 @@ export const schoolsForUsers = async (
 
     const users = await scope.getMany()
 
-    //
-    // translate to graphQL schema
-    //
-    const userSchools: SchoolSummaryNode[][] = []
-    for (const userId of userIds) {
-        const user = users.find((u) => u.user_id === userId)
-        if (user) {
-            const schools: SchoolSummaryNode[] = []
-            const memberships = (await user.school_memberships) || []
-            for (const m of memberships) {
-                schools.push({
-                    id: m.school_id,
-                    name: (await m.school)?.school_name,
-                    organizationId:
-                        (await (await m.school)?.organization)
-                            ?.organization_id || '',
-                    userStatus: m.status,
-                    status: (await m.school)?.status,
+    const map = new Map(users.map((user) => [user.user_id, user]))
+
+    return Promise.all(
+        userIds.map(async (id) => {
+            const user = map.get(id)
+            if (!user) return []
+
+            const memberships = (await user.school_memberships) ?? []
+            return Promise.all(
+                memberships.map(async (membership) => {
+                    const school = await membership.school
+                    return {
+                        id: membership.school_id,
+                        name: school?.school_name,
+                        organizationId:
+                            (await school?.organization)?.organization_id ?? '',
+                        userStatus: membership.status,
+                        status: school?.status,
+                    }
                 })
-            }
-            userSchools.push(schools)
-        } else {
-            userSchools.push([])
-        }
-    }
-    return userSchools
+            )
+        })
+    )
 }
 
 export const rolesForUsers = async (
     userIds: readonly string[],
     filter?: IEntityFilter
 ): Promise<RoleSummaryNode[][]> => {
+    const commonFields = [
+        'User.user_id',
+        'Role.role_id',
+        'Role.role_name',
+        'Role.status',
+    ]
     //
     // fetch school & organization membership roles for each user
+    // need to be fetched separately, as TypeORM doesn't support UNION (which would be perfect here)
     const orgScope = await User.createQueryBuilder('User')
-        .leftJoinAndSelect('User.memberships', 'OrgMemberships')
-        .leftJoinAndSelect('OrgMemberships.roles', 'OrgRoles')
+        .innerJoin('User.memberships', 'OrganizationMembership')
+        .innerJoin('OrganizationMembership.roles', 'Role')
         .where('User.user_id IN (:...ids)', { ids: userIds })
+        .select([...commonFields, 'OrganizationMembership.organization_id'])
 
     const schoolScope = await User.createQueryBuilder('User')
-        .leftJoinAndSelect('User.school_memberships', 'SchoolMemberships')
-        .leftJoinAndSelect('SchoolMemberships.roles', 'SchoolRoles')
+        .innerJoin('User.school_memberships', 'SchoolMembership')
+        .innerJoin('SchoolMembership.roles', 'Role')
         .where('User.user_id IN (:...ids)', { ids: userIds })
+        .select([...commonFields, 'SchoolMembership.school_id'])
 
     if (filter) {
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'OrgMemberships.organization_id',
+                organizationId: 'OrganizationMembership.organization_id',
                 schoolId: '',
                 roleId: '',
                 phone: '',
@@ -161,14 +183,15 @@ export const rolesForUsers = async (
             })
         )
 
-        schoolScope
-            .leftJoin('SchoolMemberships.school', 'School')
-            .leftJoin('School.organization', 'SchoolOrg')
+        if (filterHasProperty('organizationId', filter)) {
+            // Use hidden TypeORM FK column `School.organizationOrganizationId` to save a JOIN to `Organization`
+            schoolScope.innerJoin('SchoolMembership.school', 'School')
+        }
 
         schoolScope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'SchoolOrg.organization_id',
-                schoolId: 'SchoolMemberships.school_id',
+                organizationId: 'School.organization',
+                schoolId: 'SchoolMembership.school_id',
                 roleId: '',
                 organizationUserStatus: '',
                 userId: '',
@@ -181,44 +204,44 @@ export const rolesForUsers = async (
     const orgUsers = await orgScope.getMany()
     const schoolUsers = await schoolScope.getMany()
 
-    //
-    // translate to graphQL schema
-    //
-    const userRoles: RoleSummaryNode[][] = []
-    for (const userId of userIds) {
-        const orgUser = orgUsers.find((u) => u.user_id === userId)
-        const schoolUser = schoolUsers.find((u) => u.user_id === userId)
-        if (orgUser || schoolUser) {
-            const roles: RoleSummaryNode[] = []
-            const orgs = (await orgUser?.memberships) || []
-            const schools = (await schoolUser?.school_memberships) || []
+    const orgMap = new Map(orgUsers.map((user) => [user.user_id, user]))
+    const schoolMap = new Map(schoolUsers.map((user) => [user.user_id, user]))
 
-            for (const m of orgs) {
-                const mRoles = (await m.roles) || []
-                for (const r of mRoles) {
+    return Promise.all(
+        userIds.map(async (id) => {
+            const orgUser = orgMap.get(id)
+            const schoolUser = schoolMap.get(id)
+
+            if (!(orgUser || schoolUser)) return []
+
+            const OrganizationMemberships = (await orgUser?.memberships) ?? []
+            const schoolMemberships =
+                (await schoolUser?.school_memberships) ?? []
+
+            const roles: RoleSummaryNode[] = []
+            OrganizationMemberships.forEach(async (orgMembership) => {
+                const orgRoles = (await orgMembership.roles) ?? []
+                orgRoles.forEach((role) => {
                     roles.push({
-                        id: r.role_id,
-                        name: r.role_name,
-                        organizationId: m.organization_id,
-                        status: r.status,
+                        id: role.role_id,
+                        name: role.role_name,
+                        organizationId: orgMembership.organization_id,
+                        status: role.status,
                     })
-                }
-            }
-            for (const m of schools) {
-                const mRoles = (await m.roles) || []
-                for (const r of mRoles) {
+                })
+            })
+            schoolMemberships.forEach(async (schoolMembership) => {
+                const schoolRoles = (await schoolMembership.roles) ?? []
+                schoolRoles.forEach((role) => {
                     roles.push({
-                        id: r.role_id,
-                        name: r.role_name,
-                        schoolId: m.school_id,
-                        status: r.status,
+                        id: role.role_id,
+                        name: role.role_name,
+                        schoolId: schoolMembership.school_id,
+                        status: role.status,
                     })
-                }
-            }
-            userRoles.push(roles)
-        } else {
-            userRoles.push([])
-        }
-    }
-    return userRoles
+                })
+            })
+            return roles
+        })
+    )
 }

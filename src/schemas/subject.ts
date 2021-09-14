@@ -40,11 +40,15 @@ const typeDefs = gql`
     }
 
     input SubjectFilter {
+        # table columns
+        id: UUIDFilter
+        name: StringFilter
         status: StringFilter
         system: BooleanFilter
 
         # joined columns
         organizationId: UUIDFilter
+        categoryId: UUIDFilter
 
         AND: [SubjectFilter]
         OR: [SubjectFilter]

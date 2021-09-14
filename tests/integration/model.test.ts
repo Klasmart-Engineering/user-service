@@ -1202,8 +1202,9 @@ describe('model', () => {
                 expect(usersConnection?.edges.length).to.equal(3)
 
                 //user belonging to more than one returned
+                //FE needs all a users schools even if they are not in the filter
                 expect(usersConnection?.edges[0].node.schools.length).to.equal(
-                    1
+                    2
                 )
                 expect(usersConnection?.edges[0].node.id).to.equal(
                     usersList[5].user_id

@@ -18,10 +18,7 @@ import { Class } from '../../../../src/entities/class'
 import { User } from '../../../../src/entities/user'
 import { UserRow } from '../../../../src/types/csv/userRow'
 import { Model } from '../../../../src/model'
-import {
-    Organization,
-    normalizedLowercaseTrimmed,
-} from '../../../../src/entities/organization'
+import { Organization } from '../../../../src/entities/organization'
 import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
 import { Role } from '../../../../src/entities/role'
 import { School } from '../../../../src/entities/school'
@@ -43,6 +40,7 @@ import { getAdminAuthToken } from '../../../utils/testConfig'
 import { addRoleToOrganizationMembership } from '../../../utils/operations/organizationMembershipOps'
 import { grantPermission } from '../../../utils/operations/roleOps'
 import { PermissionName } from '../../../../src/permissions/permissionNames'
+import { normalizedLowercaseTrimmed } from '../../../../src/utils/clean'
 
 use(chaiAsPromised)
 

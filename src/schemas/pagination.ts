@@ -10,7 +10,7 @@ const typeDefs = gql`
     }
 
     input ConnectionsDirectionArgs {
-        count: Int
+        count: PageSize
         cursor: String
     }
 

@@ -93,7 +93,7 @@ describe('acceptance.subject', () => {
             const index = i * (categoriesCount / subjectsCount)
 
             subjectDetails.push({
-                name: `category ${i + 1}`,
+                name: `subject ${i + 1}`,
                 categories: [categoryIds[index], categoryIds[index + 1]],
             })
         }
@@ -268,6 +268,87 @@ describe('acceptance.subject', () => {
 
             expect(response.status).to.eq(200)
             expect(subjectsConnection.totalCount).to.equal(systemSubjectsCount)
+        })
+
+        it('queries paginated subjects filtering by id', async () => {
+            const subjectId = subjectIds[0]
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBJECTS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            id: {
+                                operator: 'eq',
+                                value: subjectId,
+                            },
+                        },
+                    },
+                })
+
+            const subjectsConnection = response.body.data.subjectsConnection
+
+            expect(response.status).to.eq(200)
+            expect(subjectsConnection.totalCount).to.equal(1)
+        })
+
+        it('queries paginated subjects filtering by name', async () => {
+            const search = '2'
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBJECTS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            name: {
+                                operator: 'contains',
+                                value: search,
+                            },
+                        },
+                    },
+                })
+
+            const subjectsConnection = response.body.data.subjectsConnection
+
+            expect(response.status).to.eq(200)
+            expect(subjectsConnection.totalCount).to.equal(1)
+        })
+
+        it('queries paginated subjects filtering by categories', async () => {
+            const categoryId = categoryIds[0]
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBJECTS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            categoryId: {
+                                operator: 'eq',
+                                value: categoryId,
+                            },
+                        },
+                    },
+                })
+
+            const subjectsConnection = response.body.data.subjectsConnection
+
+            expect(response.status).to.eq(200)
+            expect(subjectsConnection.totalCount).to.be.gte(1)
         })
     })
 })
