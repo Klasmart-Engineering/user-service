@@ -377,7 +377,7 @@ export class Model {
         { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
     ) {
         scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (filterHasProperty('roleId', filter)) {
                 scope.innerJoinAndSelect(
                     'OrgMembership.roles',
@@ -456,7 +456,7 @@ export class Model {
     ) {
         const scope = this.permissionRepository.createQueryBuilder()
 
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             scope.andWhere(getWhereClauseFromFilter(filter))
         }
 
@@ -480,7 +480,7 @@ export class Model {
             sort,
         }: IPaginationArgs<School>
     ) {
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('School.organization', 'Organization')
             }
@@ -537,7 +537,7 @@ export class Model {
             sort,
         }: IPaginationArgs<Program>
     ) {
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('Program.organization', 'Organization')
             }
@@ -636,7 +636,7 @@ export class Model {
             sort,
         }: IPaginationArgs<Grade>
     ) {
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('Grade.organization', 'Organization')
             }
@@ -705,7 +705,7 @@ export class Model {
             sort,
         }: IPaginationArgs<AgeRange>
     ) {
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
             }
@@ -769,7 +769,7 @@ export class Model {
     ) {
         // Select only the ClassConnectionNode fields
         scope.select(['Class.class_id', 'Class.class_name', 'Class.status'])
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (
                 filterHasProperty('ageRangeValueFrom', filter) ||
                 filterHasProperty('ageRangeUnitFrom', filter) ||
@@ -859,7 +859,7 @@ export class Model {
             sort,
         }: IPaginationArgs<Subject>
     ) {
-        if (filter) {
+        if (filter && Object.keys(filter).length) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('Subject.organization', 'Organization')
             }

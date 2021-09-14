@@ -65,6 +65,9 @@ export function getWhereClauseFromFilter(
     columnAliases?: ColumnAliases
 ): Brackets {
     return new Brackets((qb) => {
+        if (!Object.keys(filter).length) {
+            return
+        }
         for (const key of Object.keys(filter)) {
             if (key === 'OR' || key === 'AND') {
                 // process these recursively afterwards

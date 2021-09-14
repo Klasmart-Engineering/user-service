@@ -36,7 +36,7 @@ export const orgsForUsers = async (
             'Organization.status',
         ])
 
-    if (filter) {
+    if (filter && Object.keys(filter).length) {
         if (filterHasProperty('roleId', filter)) {
             scope.innerJoin('OrganizationMembership.roles', 'Roles')
         }
@@ -104,7 +104,7 @@ export const schoolsForUsers = async (
             'Organization.organization_id',
         ])
 
-    if (filter) {
+    if (filter && Object.keys(filter).length) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'School.organization',
@@ -170,7 +170,7 @@ export const rolesForUsers = async (
         .where('User.user_id IN (:...ids)', { ids: userIds })
         .select([...commonFields, 'SchoolMembership.school_id'])
 
-    if (filter) {
+    if (filter && Object.keys(filter).length) {
         orgScope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'OrganizationMembership.organization_id',
