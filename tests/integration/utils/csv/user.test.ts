@@ -1040,6 +1040,29 @@ describe('processUserFromCSVRow', async () => {
             expect(err.parentEntity).to.eq('Organization')
             expect(err.parentName).to.eq(row.organization_name)
         })
+
+        it('errors when school is in wrong organization', async () => {
+            const wrongOrganization = createOrganization()
+            await connection.manager.save(wrongOrganization)
+            const wrongSchool = createSchool(wrongOrganization)
+            await connection.manager.save(wrongSchool)
+
+            row.school_name = wrongSchool.school_name
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+
+            err = rowErrors[0]
+            expect(err.code).to.eq(customErrors.nonexistent_child.code)
+            expect(err.entity).to.eq('School')
+            expect(err.entityName).to.eq(row.school_name)
+            expect(err.parentEntity).to.eq('Organization')
+            expect(err.parentName).to.eq(row.organization_name)
+        })
     })
 
     it(`does not validate school_role_name column`, async () => {
@@ -1098,6 +1121,23 @@ describe('processUserFromCSVRow', async () => {
             expect(err.parentEntity).to.eq('School')
             expect(err.parentName).to.eq(row.school_name)
         })
+        it('errors when class is assigned to a school and school is missing', async () => {
+            row.school_name = undefined
+            rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+
+            err = rowErrors[0]
+            expect(err.code).to.eq(customErrors.nonexistent_child.code)
+            expect(err.entity).to.eq('Class')
+            expect(err.entityName).to.eq(row.class_name)
+            expect(err.parentEntity).to.eq('School')
+            expect(err.parentName).to.eq('')
+        })
     })
 
     context('when all the data is correct', () => {
@@ -1141,6 +1181,46 @@ describe('processUserFromCSVRow', async () => {
             })
             const schoolRoles = (await schoolMembership.roles) || []
             expect(schoolRoles).to.deep.eq([])
+        })
+
+        it('it does not update SchoolMembership.roles based on `school_role_name` column', async () => {
+            // Fix for UD-738, which removes `school_role_name` handling added on original story KL-4408
+            const rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                { ...row, school_role_name: role.role_name } as UserRow,
+                1,
+                [],
+                adminPermissions
+            )
+
+            const dbUser = await User.findOneOrFail({
+                where: { email: normalizedLowercaseTrimmed(row.user_email) },
+            })
+
+            const schoolMembership = await SchoolMembership.findOneOrFail({
+                relations: [`roles`],
+                where: { user: dbUser, school: school },
+            })
+            expect(await schoolMembership.roles).to.deep.eq([])
+        })
+        it('creates the user if class is not in a school', async () => {
+            row.school_name = undefined
+            const cls2 = createClass([], organization)
+            await connection.manager.save(cls2)
+            row.class_name = cls2.class_name
+            const rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+
+            const dbUser = await User.findOneOrFail({
+                where: { email: normalizedLowercaseTrimmed(row.user_email) },
+            })
+
+            expect(dbUser.user_id).to.not.be.empty
         })
 
         it('it does not update SchoolMembership.roles based on `school_role_name` column', async () => {

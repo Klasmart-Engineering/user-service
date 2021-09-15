@@ -128,7 +128,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             )
         }
     }
-
+    let schoolIfPresentExistsInOrg = true
     let school: School | undefined = undefined
     if (row.school_name) {
         school = await manager.findOne(School, {
@@ -152,11 +152,12 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     parentName: row.organization_name,
                 }
             )
+            schoolIfPresentExistsInOrg = false
         }
     }
 
     let cls = undefined
-    if (row.class_name) {
+    if (row.class_name && schoolIfPresentExistsInOrg) {
         cls = await manager.findOne(Class, {
             where: {
                 class_name: row.class_name,
@@ -164,11 +165,17 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             },
         })
 
-        const classIsAssignedToSchool = (await cls?.schools)?.find(
-            (s) => s.school_id === school?.school_id
-        )
+        const classSchools = (await cls?.schools) || []
+        const classIsAssignedToSchool =
+            classSchools.length > 0 && school
+                ? classSchools?.find((s) => s.school_id === school?.school_id)
+                : false
 
-        if (!cls || !school || !classIsAssignedToSchool) {
+        if (
+            !cls ||
+            (school && !classIsAssignedToSchool) ||
+            (cls && !school && classSchools.length > 0)
+        ) {
             addCsvError(
                 rowErrors,
                 customErrors.nonexistent_child.code,
@@ -179,7 +186,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     entity: 'Class',
                     entityName: row.class_name,
                     parentEntity: 'School',
-                    parentName: row.school_name,
+                    parentName: row.school_name || '',
                 }
             )
         }
@@ -331,28 +338,33 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.user = Promise.resolve(user)
             await manager.save(schoolMembership)
         }
+    }
+    if (organizationRole && cls) {
+        const roleName = organizationRole?.role_name
 
-        if (organizationRole && cls) {
-            const roleName = organizationRole?.role_name
+        if (roleName?.includes('Student')) {
+            const students = (await cls.students) || []
+            const existingStudent = students.find((student) => {
+                return student.user_id === user?.user_id
+            })
 
-            if (roleName?.includes('Student')) {
-                const students = (await cls.students) || []
-
-                if (!students.includes(user)) {
-                    students.push(user)
-                    cls.students = Promise.resolve(students)
-                }
-            } else if (roleName?.includes('Teacher')) {
-                const teachers = (await cls.teachers) || []
-
-                if (!teachers.includes(user)) {
-                    teachers.push(user)
-                    cls.teachers = Promise.resolve(teachers)
-                }
+            if (!existingStudent) {
+                students.push(user)
+                cls.students = Promise.resolve(students)
             }
+        } else if (roleName?.includes('Teacher')) {
+            const teachers = (await cls.teachers) || []
+            const existingTeacher = teachers.find((teacher) => {
+                return teacher.user_id === user?.user_id
+            })
 
-            await manager.save(cls)
+            if (!existingTeacher) {
+                teachers.push(user)
+                cls.teachers = Promise.resolve(teachers)
+            }
         }
+
+        await manager.save(cls)
     }
 
     return rowErrors
