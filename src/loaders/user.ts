@@ -17,11 +17,16 @@ export const orgMembershipsForUsers = async (
         { ids: userIds }
     )
 
-    const memberships = await scope.getMany()
+    const memberships: Map<string, OrganizationMembership[]> = new Map()
+    ;(await scope.getMany()).map((membership: OrganizationMembership) => {
+        if (!memberships.has(membership.user_id)) {
+            memberships.set(membership.user_id, [membership])
+        } else {
+            memberships.get(membership.user_id)?.push(membership)
+        }
+    })
 
-    return userIds.map((userId) =>
-        memberships.filter((m) => m.user_id === userId)
-    )
+    return userIds.map((id) => memberships.get(id) || [])
 }
 
 export const schoolMembershipsForUsers = async (
@@ -32,11 +37,16 @@ export const schoolMembershipsForUsers = async (
         { ids: userIds }
     )
 
-    const memberships = await scope.getMany()
+    const memberships: Map<string, SchoolMembership[]> = new Map()
+    ;(await scope.getMany()).map((membership: SchoolMembership) => {
+        if (!memberships.has(membership.user_id)) {
+            memberships.set(membership.user_id, [membership])
+        } else {
+            memberships.get(membership.user_id)?.push(membership)
+        }
+    })
 
-    return userIds.map((userId) =>
-        memberships.filter((m) => m.user_id === userId)
-    )
+    return userIds.map((id) => memberships.get(id) || [])
 }
 
 export async function usersByIds(
