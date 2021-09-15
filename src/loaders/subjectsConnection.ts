@@ -12,25 +12,20 @@ export interface ISubjectsConnectionLoaders {
 export const categoriesForSubjects = async (
     subjectIds: readonly string[]
 ): Promise<CategorySummaryNode[][]> => {
-    const subjectCategories: CategorySummaryNode[][] = []
     const scope = await Subject.createQueryBuilder('Subject')
         .leftJoinAndSelect('Subject.categories', 'Category')
         .where('Subject.id IN (:...ids)', { ids: subjectIds })
 
-    const subjects = await scope.getMany()
+    const subjects = new Map(
+        (await scope.getMany()).map((subject) => [subject.id, subject])
+    )
 
-    for (const subjectId of subjectIds) {
-        const subject = subjects.find((s) => s.id === subjectId)
-
-        if (subject) {
-            const currentCategories = await getSubjectCategories(subject)
-            subjectCategories.push(currentCategories)
-        } else {
-            subjectCategories.push([])
-        }
-    }
-
-    return subjectCategories
+    return Promise.all(
+        subjectIds.map(async (subjectId) => {
+            const subject = subjects.get(subjectId)
+            return subject ? getSubjectCategories(subject) : []
+        })
+    )
 }
 
 // gets each subcategory in the given category

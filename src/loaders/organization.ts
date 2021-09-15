@@ -13,63 +13,60 @@ export interface IOrganizationLoaders {
 export const brandingForOrganizations = async (
     orgIds: readonly string[]
 ): Promise<BrandingResult[]> => {
-    const brandings: BrandingResult[] = []
-
     const scope = Branding.createQueryBuilder('Branding')
         .leftJoinAndSelect('Branding.images', 'BrandImages')
         .leftJoinAndSelect('Branding.organization', 'BrandingOrg')
         .where('BrandingOrg.organization_id IN (:...ids)', { ids: orgIds })
         .andWhere('Branding.status = :status', { status: Status.ACTIVE })
 
-    const data = await scope.getMany()
-
-    for (const orgId of orgIds) {
-        let branding: Branding | undefined
-        for (const brand of data) {
+    const brandings = new Map()
+    await Promise.all(
+        (await scope.getMany()).map(async (brand) => {
             const brandOrgId = (await brand.organization)?.organization_id
-            if (orgId === brandOrgId) {
-                branding = brand
-                break
+            if (brandOrgId) {
+                brandings.set(brandOrgId, brand)
             }
-        }
-        if (branding) {
-            // always use the latest images
-            branding.images?.sort(
+        })
+    )
+
+    return Promise.all(
+        orgIds.map(async (orgId) => {
+            const orgBrand: Branding | undefined = brandings.get(orgId)
+            if (!orgBrand) {
+                return {}
+            }
+            orgBrand.images?.sort(
                 (a, b) => b.created_at.valueOf() - a.created_at.valueOf()
             )
 
-            const icon = branding.images?.find(
+            const icon = orgBrand.images?.find(
                 (i) =>
                     i.tag === BrandingImageTag.ICON &&
                     i.status === Status.ACTIVE
             )
 
-            brandings.push({
+            return {
                 iconImageURL: icon?.url,
-                primaryColor: branding.primaryColor,
-            })
-        } else {
-            brandings.push({})
-        }
-    }
-
-    return brandings
+                primaryColor: orgBrand.primaryColor,
+            }
+        })
+    )
 }
 
 export const organizationForMemberships = async (
     orgIds: readonly string[]
 ): Promise<(Organization | undefined)[]> => {
-    const orgs: (Organization | undefined)[] = []
-
     const scope = Organization.createQueryBuilder().where(
         'organization_id in (:...ids)',
         { ids: orgIds }
     )
-    const data = await scope.getMany()
+    const organizations = new Map(
+        (await scope.getMany()).map((org) => [org.organization_id, org])
+    )
 
-    for (const orgId of orgIds) {
-        const org = data.find((o) => o.organization_id === orgId)
-        orgs.push(org)
-    }
-    return orgs
+    return Promise.all(
+        orgIds.map(async (orgId) => {
+            return organizations.get(orgId)
+        })
+    )
 }

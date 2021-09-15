@@ -10,29 +10,31 @@ export interface ISchoolLoaders {
 export const organizationsForSchools = async (
     schoolIds: readonly string[]
 ): Promise<(Organization | undefined)[]> => {
-    const orgs: (Organization | undefined)[] = []
-
     const scope = School.createQueryBuilder()
         .leftJoinAndSelect('School.organization', 'Organization')
         .where('school_id IN (:...ids)', {
             ids: schoolIds,
         })
 
-    const data = await scope.getMany()
+    const schools = new Map(
+        (await scope.getMany()).map((school) => [school.school_id, school])
+    )
 
-    for (const schoolId of schoolIds) {
-        const school = data.find((s) => s.school_id === schoolId)
-        const org = await school?.organization
-        orgs.push(org)
-    }
-
-    return orgs
+    return Promise.all(
+        schoolIds.map(async (schoolId) => {
+            return schools.get(schoolId)?.organization
+        })
+    )
 }
 
 export const schoolsByIds = async (
     schoolIds: readonly string[]
 ): Promise<(School | undefined)[]> => {
-    const data = await School.findByIds(schoolIds as string[])
-    const map = new Map(data.map((school) => [school.school_id, school]))
-    return schoolIds.map((id) => map.get(id))
+    const schools = new Map(
+        (await School.findByIds(schoolIds as string[])).map((school) => [
+            school.school_id,
+            school,
+        ])
+    )
+    return schoolIds.map((id) => schools.get(id))
 }

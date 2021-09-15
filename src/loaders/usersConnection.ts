@@ -54,16 +54,13 @@ export const orgsForUsers = async (
         )
     }
 
-    const users = await scope.getMany()
-
-    const map = new Map(users.map((user) => [user.user_id, user]))
+    const users = new Map(
+        (await scope.getMany()).map((user) => [user.user_id, user])
+    )
 
     return Promise.all(
         userIds.map(async (id) => {
-            const user = map.get(id)
-            if (!user) return []
-
-            const memberships = (await user.memberships) ?? []
+            const memberships = (await users.get(id)?.memberships) ?? []
             return Promise.all(
                 memberships.map(async (membership) => {
                     return {
@@ -118,16 +115,13 @@ export const schoolsForUsers = async (
         )
     }
 
-    const users = await scope.getMany()
-
-    const map = new Map(users.map((user) => [user.user_id, user]))
+    const users = new Map(
+        (await scope.getMany()).map((user) => [user.user_id, user])
+    )
 
     return Promise.all(
         userIds.map(async (id) => {
-            const user = map.get(id)
-            if (!user) return []
-
-            const memberships = (await user.school_memberships) ?? []
+            const memberships = (await users.get(id)?.school_memberships) ?? []
             return Promise.all(
                 memberships.map(async (membership) => {
                     const school = await membership.school
@@ -201,46 +195,43 @@ export const rolesForUsers = async (
         )
     }
 
-    const orgUsers = await orgScope.getMany()
-    const schoolUsers = await schoolScope.getMany()
+    const orgUsers = new Map(
+        (await orgScope.getMany()).map((user) => [user.user_id, user])
+    )
 
-    const orgMap = new Map(orgUsers.map((user) => [user.user_id, user]))
-    const schoolMap = new Map(schoolUsers.map((user) => [user.user_id, user]))
+    const schoolUsers = new Map(
+        (await schoolScope.getMany()).map((user) => [user.user_id, user])
+    )
 
     return Promise.all(
         userIds.map(async (id) => {
-            const orgUser = orgMap.get(id)
-            const schoolUser = schoolMap.get(id)
+            const organizationMemberships = await orgUsers.get(id)?.memberships
+            const schoolMemberships = await schoolUsers.get(id)
+                ?.school_memberships
 
-            if (!(orgUser || schoolUser)) return []
-
-            const OrganizationMemberships = (await orgUser?.memberships) ?? []
-            const schoolMemberships =
-                (await schoolUser?.school_memberships) ?? []
-
+            /* TODO: these forEach loops need to be reworked to
+                     correctly wait for the promises to complete. */
             const roles: RoleSummaryNode[] = []
-            OrganizationMemberships.forEach(async (orgMembership) => {
-                const orgRoles = (await orgMembership.roles) ?? []
-                orgRoles.forEach((role) => {
+            organizationMemberships?.forEach(async (orgMembership) =>
+                (await orgMembership.roles)?.forEach((role) =>
                     roles.push({
                         id: role.role_id,
                         name: role.role_name,
                         organizationId: orgMembership.organization_id,
                         status: role.status,
                     })
-                })
-            })
-            schoolMemberships.forEach(async (schoolMembership) => {
-                const schoolRoles = (await schoolMembership.roles) ?? []
-                schoolRoles.forEach((role) => {
+                )
+            )
+            schoolMemberships?.forEach(async (schoolMembership) =>
+                (await schoolMembership.roles)?.forEach((role) =>
                     roles.push({
                         id: role.role_id,
                         name: role.role_name,
                         schoolId: schoolMembership.school_id,
                         status: role.status,
                     })
-                })
-            })
+                )
+            )
             return roles
         })
     )

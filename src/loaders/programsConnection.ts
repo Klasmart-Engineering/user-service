@@ -13,104 +13,90 @@ export interface IProgramsConnectionLoaders {
 export const ageRangesForPrograms = async (
     programIds: readonly string[]
 ): Promise<AgeRangeConnectionNode[][]> => {
-    const programAgeRanges: AgeRangeConnectionNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
         .leftJoinAndSelect('Program.age_ranges', 'AgeRanges')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
-    const programs = await scope.getMany()
+    const programs = new Map(
+        (await scope.getMany()).map((program) => [program.id, program])
+    )
 
-    for (const programId of programIds) {
-        const program = programs.find((p) => p.id === programId)
+    return Promise.all(
+        programIds.map(async (id) => {
+            const ageRanges = (await programs.get(id)?.age_ranges) ?? []
 
-        if (program) {
-            const currentAgeRanges: AgeRangeConnectionNode[] = []
-            const ageRanges = (await program.age_ranges) || []
-
-            for (const ageRange of ageRanges) {
-                currentAgeRanges.push({
-                    id: ageRange.id,
-                    name: ageRange.name,
-                    lowValue: ageRange.low_value,
-                    highValue: ageRange.high_value,
-                    lowValueUnit: ageRange.low_value_unit,
-                    highValueUnit: ageRange.high_value_unit,
-                    status: ageRange.status,
-                    system: !!ageRange.system,
+            return Promise.all(
+                ageRanges.map(async (ageRange) => {
+                    return {
+                        id: ageRange.id,
+                        name: ageRange.name,
+                        lowValue: ageRange.low_value,
+                        highValue: ageRange.high_value,
+                        lowValueUnit: ageRange.low_value_unit,
+                        highValueUnit: ageRange.high_value_unit,
+                        status: ageRange.status,
+                        system: !!ageRange.system,
+                    }
                 })
-            }
-
-            programAgeRanges.push(currentAgeRanges)
-        } else {
-            programAgeRanges.push([])
-        }
-    }
-
-    return programAgeRanges
+            )
+        })
+    )
 }
 
 export const gradesForPrograms = async (
     programIds: readonly string[]
 ): Promise<GradeSummaryNode[][]> => {
-    const programGrades: GradeSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
         .leftJoinAndSelect('Program.grades', 'Grades')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
-    const programs = await scope.getMany()
-    for (const programId of programIds) {
-        const program = programs.find((p) => p.id === programId)
+    const programs = new Map(
+        (await scope.getMany()).map((program) => [program.id, program])
+    )
 
-        if (program) {
-            const currentGrades: GradeSummaryNode[] = []
-            const grades = (await program.grades) || []
-            for (const grade of grades) {
-                currentGrades.push({
-                    id: grade.id,
-                    name: grade.name,
-                    status: grade.status,
-                    system: !!grade.system,
+    return Promise.all(
+        programIds.map(async (id) => {
+            const grades = (await programs.get(id)?.grades) ?? []
+
+            return Promise.all(
+                grades.map(async (grade) => {
+                    return {
+                        id: grade.id,
+                        name: grade.name,
+                        status: grade.status,
+                        system: !!grade.system,
+                    }
                 })
-            }
-
-            programGrades.push(currentGrades)
-        } else {
-            programGrades.push([])
-        }
-    }
-
-    return programGrades
+            )
+        })
+    )
 }
 
 export const subjectsForPrograms = async (
     programIds: readonly string[]
 ): Promise<SubjectSummaryNode[][]> => {
-    const programSubjects: SubjectSummaryNode[][] = []
     const scope = await Program.createQueryBuilder('Program')
         .leftJoinAndSelect('Program.subjects', 'Subjects')
         .where('Program.id IN (:...ids)', { ids: programIds })
 
-    const programs = await scope.getMany()
-    for (const programId of programIds) {
-        const program = programs.find((p) => p.id === programId)
+    const programs = new Map(
+        (await scope.getMany()).map((program) => [program.id, program])
+    )
 
-        if (program) {
-            const currentSubjects: SubjectSummaryNode[] = []
-            const subjects = (await program.subjects) || []
-            for (const subject of subjects) {
-                currentSubjects.push({
-                    id: subject.id,
-                    name: subject.name,
-                    status: subject.status,
-                    system: !!subject.system,
+    return Promise.all(
+        programIds.map(async (id) => {
+            const subjects = (await programs.get(id)?.subjects) ?? []
+
+            return Promise.all(
+                subjects.map(async (subject) => {
+                    return {
+                        id: subject.id,
+                        name: subject.name,
+                        status: subject.status,
+                        system: !!subject.system,
+                    }
                 })
-            }
-
-            programSubjects.push(currentSubjects)
-        } else {
-            programSubjects.push([])
-        }
-    }
-
-    return programSubjects
+            )
+        })
+    )
 }
