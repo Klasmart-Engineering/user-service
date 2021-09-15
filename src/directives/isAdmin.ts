@@ -17,6 +17,7 @@ import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
+import { isSubsetOf } from '../utils/array'
 
 export class IsAdminDirective extends SchemaDirectiveVisitor {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,7 +103,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
                         await this.nonAdminClassScope(scope, context)
                         break
                     case 'school':
-                        await this.nonAdminSchoolScope(scope, context)
+                        await this.nonAdminSchoolScope(
+                            scope as SelectQueryBuilder<School>,
+                            context
+                        )
                         break
                     default:
                     // do nothing
@@ -363,46 +367,76 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
     }
 
     private async nonAdminSchoolScope(
-        scope: SelectQueryBuilder<unknown>,
+        scope: SelectQueryBuilder<School>,
         context: Context
     ) {
         const userId = context.permissions.getUserId()
-        const schoolOrgs = await context.permissions.orgMembershipsWithPermissions(
-            [PermissionName.view_school_20110]
-        )
+        const [schoolOrgs, mySchoolOrgs] = await Promise.all([
+            context.permissions.orgMembershipsWithPermissions([
+                PermissionName.view_school_20110,
+            ]),
+            context.permissions.orgMembershipsWithPermissions([
+                PermissionName.view_my_school_20119,
+            ]),
+        ])
 
-        const mySchoolOrgs = await context.permissions.orgMembershipsWithPermissions(
-            [PermissionName.view_my_school_20119]
-        )
-        if (schoolOrgs.length) {
+        if (
+            schoolOrgs.length &&
+            mySchoolOrgs.length &&
+            // perf: if User has both `view_school_20110` and `view_my_school_20119`
+            // for the same Organizations (or a subset), `view_school_20110`
+            // (ability to see all Schools in the Organization) can take precedence, saving JOINs
+            !isSubsetOf(mySchoolOrgs, schoolOrgs)
+        ) {
             scope
-                .leftJoinAndSelect(
+                .leftJoin(
                     OrganizationMembership,
                     'OrganizationMembership',
-                    'OrganizationMembership.organization = School.organization'
-                )
-                .where(
-                    'OrganizationMembership.organization_id IN (:...schoolOrgs) AND OrganizationMembership.user_id = :d_user_id',
+                    'School.organization IN (:...schoolOrgs) AND OrganizationMembership.user = :d_user_id',
                     {
                         schoolOrgs,
                         d_user_id: userId,
                     }
                 )
-        }
-        if (mySchoolOrgs.length) {
-            scope
-                .leftJoinAndSelect('School.memberships', 'SchoolMembership')
-                .orWhere(
-                    'School.organization IN (:...mySchoolOrgs) AND SchoolMembership.user_id = :user_id',
+                .leftJoin(
+                    'School.memberships',
+                    'SchoolMembership',
+                    'School.organization IN (:...mySchoolOrgs) AND SchoolMembership.user = :user_id',
                     {
                         mySchoolOrgs,
                         user_id: userId,
                     }
                 )
-        }
-
-        if (!mySchoolOrgs.length && !schoolOrgs.length) {
-            // user has not permissions, can not see anything
+                .where(
+                    // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
+                    new Brackets((qb) => {
+                        qb.where(
+                            'OrganizationMembership.user IS NOT NULL'
+                        ).orWhere('SchoolMembership.user IS NOT NULL')
+                    })
+                )
+        } else if (schoolOrgs.length) {
+            scope.innerJoin(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'School.organization IN (:...schoolOrgs) AND OrganizationMembership.user = :d_user_id',
+                {
+                    schoolOrgs,
+                    d_user_id: userId,
+                }
+            )
+        } else if (mySchoolOrgs.length) {
+            scope.innerJoin(
+                'School.memberships',
+                'SchoolMembership',
+                'School.organization IN (:...mySchoolOrgs) AND SchoolMembership.user = :user_id',
+                {
+                    mySchoolOrgs,
+                    user_id: userId,
+                }
+            )
+        } else {
+            // No permissions
             scope.where('false')
         }
     }

@@ -50,7 +50,6 @@ import {
     AVOID_NONE_SPECIFIED_BRACKETS,
 } from './utils/pagination/filtering'
 import { isDOB, isEmail, isPhone } from './utils/validations'
-import { ISchoolsConnectionNode } from './types/graphQL/schoolsConnectionNode'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
 import { ProgramConnectionNode } from './types/graphQL/programConnectionNode'
@@ -80,6 +79,7 @@ import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
 import { usersConnectionResolver } from './pagination/usersConnection'
+import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 
 export class Model {
     public static async create() {
@@ -397,62 +397,10 @@ export class Model {
         })
     }
 
-    public async schoolsConnection(
+    public schoolsConnection = async (
         context: Context,
-        {
-            direction,
-            directionArgs,
-            scope,
-            filter,
-            sort,
-        }: IPaginationArgs<School>
-    ) {
-        if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('School.organization', 'Organization')
-            }
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    organizationId: 'Organization.organization_id',
-                    schoolId: 'school_id',
-                    name: 'school_name',
-                    shortCode: 'shortcode',
-                    status: 'School.status', // not organization status!
-                })
-            )
-        }
-
-        const data = await paginateData<School>({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'school_id',
-                aliases: {
-                    id: 'school_id',
-                    name: 'school_name',
-                    shortCode: 'shortcode',
-                },
-                sort,
-            },
-        })
-
-        for (const edge of data.edges) {
-            const school = edge.node
-            const newNode: ISchoolsConnectionNode = {
-                id: school.school_id,
-                name: school.school_name,
-                status: school.status,
-                shortCode: school.shortcode,
-                organizationId:
-                    (await school.organization)?.organization_id || '',
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            edge.node = newNode as any
-        }
-
-        return data
-    }
+        paginationArgs: IPaginationArgs<School>
+    ) => schoolsConnectionResolver(paginationArgs)
 
     public async programsConnection(
         _context: Context,

@@ -341,6 +341,8 @@ const SCHOOLS_CONNECTION = `
                     id
                     name
                     shortCode
+                    status
+                    organizationId
                 }
             }
             pageInfo{

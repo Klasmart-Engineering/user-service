@@ -1,69 +1,42 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
+import faker from 'faker'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import faker from 'faker'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { Model } from '../../../src/model'
 import { createAdminUser } from '../../utils/testEntities'
-import {
-    generateToken,
-    getAdminAuthToken,
-    getNonAdminAuthToken,
-} from '../../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
 import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
 import { schoolsConnection } from '../../utils/operations/modelOps'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createOrganization } from '../../factories/organization.factory'
-import { generateShortCode } from '../../../src/utils/shortcode'
 import { Status } from '../../../src/entities/status'
-import { createRole as roleFactory } from '../../factories/role.factory'
-import { createUser as userFactory } from '../../factories/user.factory'
+import { createRole } from '../../factories/role.factory'
+import { createUser } from '../../factories/user.factory'
 import { createSchool } from '../../factories/school.factory'
-import { createRole, inviteUser } from '../../utils/operations/organizationOps'
 import { userToPayload } from '../../utils/operations/userOps'
-import { grantPermission } from '../../utils/operations/roleOps'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { Role } from '../../../src/entities/role'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { generateShortCode } from '../../../src/utils/shortcode'
 
 use(chaiAsPromised)
-
-async function createUserInRole(
-    testClient: ApolloServerTestClient,
-    orgId: string,
-    roleId: string,
-    schoolIds: string[],
-    orgOwnerToken: string
-): Promise<User> {
-    const gender = ['Male', 'Female']
-    let gqlresult = await inviteUser(
-        testClient,
-        orgId,
-        faker.internet.email(),
-        undefined,
-        faker.name.firstName(),
-        faker.name.lastName(),
-        '02-1974',
-        faker.name.firstName(),
-        faker.random.arrayElement(gender),
-        undefined,
-        new Array(roleId),
-        schoolIds,
-        [],
-        { authorization: orgOwnerToken }
-    )
-    return gqlresult.user
-}
+use(deepEqualInAnyOrder)
 
 describe('schoolsConnection', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     let admin: User
@@ -83,153 +56,348 @@ describe('schoolsConnection', () => {
 
     beforeEach(async () => {
         admin = await createAdminUser(testClient)
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(admin)
+        org1 = createOrganization(admin)
+        org2 = createOrganization(admin)
         await connection.manager.save([org1, org2])
         schools = []
         for (let i = 0; i < 10; i++) {
-            let school = await createSchool(org1, `school a${i}`)
-            school.shortcode = generateShortCode()
+            let school = createSchool(org1, `school a${i}`)
             school.status = Status.ACTIVE
             schools.push(school)
         }
 
         for (let i = 0; i < 10; i++) {
-            let school = await createSchool(org2, `school b${i}`)
-            school.shortcode = generateShortCode()
+            let school = createSchool(org2, `school b${i}`)
             school.status = Status.INACTIVE
             schools.push(school)
         }
         await connection.manager.save(schools)
     })
 
-    context('as a user with PermissionName.view_my_school_20119', () => {
-        let userToken: string
-
-        beforeEach(async () => {
-            const role = await createRole(testClient, org1.organization_id)
-            await grantPermission(
-                testClient,
-                role.role_id,
-                PermissionName.view_my_school_20119,
-                { authorization: getAdminAuthToken() }
-            )
-            userToken = generateToken(
-                userToPayload(
-                    await createUserInRole(
-                        testClient,
-                        org1.organization_id,
-                        role.role_id,
-                        [schools[0].school_id],
-                        getAdminAuthToken()
-                    )
-                )
-            )
-        })
-        it('returns the school that the user is associated with', async () => {
+    context('data', () => {
+        it('populates a SchoolConnectionNode at each edge.node based on the School entity', async () => {
             const result = await schoolsConnection(
                 testClient,
                 'FORWARD',
-                { count: 10 },
-                { authorization: userToken }
-            )
-
-            expect(result.totalCount).to.eq(1)
-        })
-    })
-
-    context('as a user with PermissionName.view_school_20110', () => {
-        let userToken: string
-        beforeEach(async () => {
-            const role = await createRole(testClient, org1.organization_id)
-            await grantPermission(
-                testClient,
-                role.role_id,
-                PermissionName.view_school_20110,
+                { count: 1 },
                 { authorization: getAdminAuthToken() }
             )
-            userToken = generateToken(
-                userToPayload(
-                    await createUserInRole(
-                        testClient,
-                        org1.organization_id,
-                        role.role_id,
-                        [],
-                        getAdminAuthToken()
-                    )
-                )
-            )
-        })
-        it('returns all the schools within the organization', async () => {
-            const result = await schoolsConnection(
-                testClient,
-                'FORWARD',
-                { count: 10 },
-                { authorization: userToken }
-            )
-            expect(result.totalCount).to.eq(10)
-        })
-    })
 
-    context(
-        'as having PermissionName.view_school_20110 of one Org and PermissionName.view_my_school_20119 of the other',
-        () => {
-            let userToken: string
+            const node = result.edges[0].node
+            expect(node).to.exist
 
-            beforeEach(async () => {
-                const user = await userFactory().save()
-                userToken = generateToken(userToPayload(user))
-                await Promise.all(
-                    [
-                        {
-                            organization: org1,
-                            permission: PermissionName.view_school_20110,
-                        },
-                        {
-                            organization: org2,
-                            permission: PermissionName.view_my_school_20119,
-                        },
-                    ].map(async ({ organization, permission }) => {
-                        const role = await roleFactory(
-                            undefined,
-                            organization,
-                            {
-                                permissions: [permission],
-                            }
-                        ).save()
-                        await createOrganizationMembership({
-                            user,
-                            organization,
-                            roles: [role],
-                        }).save()
-                    })
-                )
-
-                await createSchoolMembership({
-                    user,
-                    school: schools[11],
-                }).save()
+            const school = schools.find((s) => s.school_id === node.id)
+            expect(school).to.exist
+            expect(node).to.deep.equal({
+                id: school?.school_id,
+                name: school?.school_name,
+                shortCode: school?.shortcode,
+                status: school?.status,
+                organizationId: (await school?.organization)?.organization_id,
             })
-            it('returns all the schools in one organization and the school that the user is associated with in the other organization', async () => {
+        })
+        it('makes 3 DB queries', async () => {
+            connection.logger.reset()
+            await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 5 },
+                { authorization: getAdminAuthToken() }
+            )
+            expect(connection.logger.count).to.equal(
+                3,
+                '1. COUNT, 2. DISTINCT ids, 3. SchoolConnectionNode data'
+            )
+        })
+    })
+
+    context('permissions', () => {
+        let token: string
+
+        /**
+         * Test whether all `SchoolFilter` options can be successfully applied
+         * Specific return edges are tested in the `filter` context
+         */
+        const testSchoolFilters = () =>
+            ([
+                {
+                    organizationId: {
+                        operator: 'eq',
+                        value: faker.random.uuid(),
+                    },
+                },
+                {
+                    schoolId: {
+                        operator: 'eq',
+                        value: faker.random.uuid(),
+                    },
+                },
+                {
+                    name: {
+                        operator: 'eq',
+                        value: faker.random.word(),
+                    },
+                },
+                {
+                    shortCode: {
+                        operator: 'eq',
+                        value: generateShortCode(),
+                    },
+                },
+                {
+                    status: {
+                        operator: 'eq',
+                        value: Status.ACTIVE,
+                    },
+                },
+            ] as IEntityFilter[]).forEach((filter) =>
+                it(`can filter on ${Object.keys(filter)[0]}`, async () => {
+                    return await expect(
+                        schoolsConnection(
+                            testClient,
+                            'FORWARD',
+                            { count: 1 },
+                            { authorization: token },
+                            filter
+                        )
+                    ).to.be.fulfilled
+                })
+            )
+
+        /**
+         * Test whether all `SchoolSortBy` can be successfully applied
+         * Ordering is checked separately in the `sorting` context
+         */
+        const testSchoolSortBy = () => {
+            ;['id', 'name', 'shortCode'].forEach((field) =>
+                it(`can sort on ${field}`, async () => {
+                    return await expect(
+                        schoolsConnection(
+                            testClient,
+                            'FORWARD',
+                            { count: 1 },
+                            { authorization: token },
+                            undefined,
+                            { field, order: 'DESC' }
+                        )
+                    ).to.be.fulfilled
+                })
+            )
+        }
+
+        beforeEach(() => (token = getAdminAuthToken()))
+
+        context('admin', () => {
+            it('can view all Schools', async () => {
                 const result = await schoolsConnection(
                     testClient,
                     'FORWARD',
                     { count: 10 },
-                    { authorization: userToken }
+                    { authorization: token }
                 )
-                expect(result.totalCount).to.eq(11)
+                expect(result.totalCount).to.eq(schools.length)
             })
-        }
-    )
-    context('as a non org member', () => {
-        it('returns zero schools', async () => {
-            const result = await schoolsConnection(
-                testClient,
-                'FORWARD',
-                { count: 10 },
-                { authorization: getNonAdminAuthToken() }
+        })
+
+        context('non-admin', () => {
+            let user: User
+
+            const addPermission = async ({
+                user,
+                organization,
+                permission,
+            }: {
+                user: User
+                organization: Organization
+                permission: PermissionName
+            }) => {
+                const role = await createRole(undefined, organization).save()
+
+                await OrganizationMembership.createQueryBuilder()
+                    .relation('roles')
+                    .of({
+                        user_id: user.user_id,
+                        organization_id: organization.organization_id,
+                    })
+                    .add(role)
+
+                await Role.createQueryBuilder()
+                    .relation('permissions')
+                    .of(role)
+                    .add(permission)
+            }
+
+            beforeEach(async () => {
+                user = await createUser().save()
+                token = generateToken(userToPayload(user))
+            })
+            context('User with `view_my_school_20119', () => {
+                beforeEach(async () => {
+                    await createOrganizationMembership({
+                        user,
+                        organization: org1,
+                    }).save()
+                    await createSchoolMembership({
+                        user,
+                        school: schools[0],
+                    }).save()
+                    await addPermission({
+                        user,
+                        organization: org1,
+                        permission: PermissionName.view_my_school_20119,
+                    })
+                })
+                it('can view all Schools they belong to', async () => {
+                    const result = await schoolsConnection(
+                        testClient,
+                        'FORWARD',
+                        { count: 10 },
+                        { authorization: token }
+                    )
+
+                    expect(
+                        result.edges.map((edge) => edge.node.id)
+                    ).to.deep.eq([schools[0].school_id])
+                })
+
+                testSchoolFilters()
+
+                testSchoolSortBy()
+            })
+            context('User with `view_school_20110', () => {
+                beforeEach(async () => {
+                    await createOrganizationMembership({
+                        user,
+                        organization: org1,
+                    }).save()
+                    await addPermission({
+                        user,
+                        organization: org1,
+                        permission: PermissionName.view_school_20110,
+                    })
+                })
+                it('can view all Schools in the Organizations they belong to', async () => {
+                    const result = await schoolsConnection(
+                        testClient,
+                        'FORWARD',
+                        undefined,
+                        { authorization: token }
+                    )
+                    expect(
+                        result.edges.map((edge) => edge.node.id)
+                    ).to.deep.equalInAnyOrder(
+                        schools.slice(0, 10).map((s) => s.school_id)
+                    )
+                })
+
+                testSchoolFilters()
+
+                testSchoolSortBy()
+            })
+            context(
+                'User with both `view_my_school_20119` and `view_school_20110`',
+                () => {
+                    context('in the same Organization', () => {
+                        beforeEach(async () => {
+                            const role = await createRole(undefined, org1, {
+                                permissions: [
+                                    PermissionName.view_school_20110,
+                                    PermissionName.view_my_school_20119,
+                                ],
+                            }).save()
+                            await createOrganizationMembership({
+                                user,
+                                organization: org1,
+                                roles: [role],
+                            }).save()
+
+                            await createSchoolMembership({
+                                user,
+                                school: schools[0],
+                            }).save()
+                        })
+                        it('can view all Schools in the Organizations they belong to', async () => {
+                            const result = await schoolsConnection(
+                                testClient,
+                                'FORWARD',
+                                undefined,
+                                {
+                                    authorization: token,
+                                }
+                            )
+                            expect(
+                                result.edges.map((edge) => edge.node.id)
+                            ).to.deep.equalInAnyOrder(
+                                schools.slice(0, 10).map((s) => s.school_id)
+                            )
+                        })
+                    })
+                    context('in different Organizations', () => {
+                        beforeEach(async () => {
+                            await Promise.all(
+                                [
+                                    {
+                                        organization: org1,
+                                        permission:
+                                            PermissionName.view_school_20110,
+                                    },
+                                    {
+                                        organization: org2,
+                                        permission:
+                                            PermissionName.view_my_school_20119,
+                                    },
+                                ].map(async ({ organization, permission }) => {
+                                    const role = await createRole(
+                                        undefined,
+                                        organization,
+                                        {
+                                            permissions: [permission],
+                                        }
+                                    ).save()
+                                    await createOrganizationMembership({
+                                        user,
+                                        organization,
+                                        roles: [role],
+                                    }).save()
+                                })
+                            )
+
+                            await createSchoolMembership({
+                                user,
+                                school: schools[10],
+                            }).save()
+                        })
+                        it('returns all the Schools in one Organization and the School that the User is associated with in the other Organization', async () => {
+                            const result = await schoolsConnection(
+                                testClient,
+                                'FORWARD',
+                                undefined,
+                                { authorization: token }
+                            )
+                            expect(
+                                result.edges.map((edge) => edge.node.id)
+                            ).to.deep.equalInAnyOrder(
+                                schools.slice(0, 11).map((s) => s.school_id)
+                            )
+                        })
+
+                        testSchoolFilters()
+
+                        testSchoolSortBy()
+                    })
+                }
             )
-            expect(result.totalCount).to.eq(0)
+            context('User with no `view_*_school` permission', () => {
+                it('cannot see any Schools', async () => {
+                    const result = await schoolsConnection(
+                        testClient,
+                        'FORWARD',
+                        { count: 10 },
+                        { authorization: token }
+                    )
+                    expect(result.totalCount).to.eq(0)
+                })
+            })
         })
     })
 
