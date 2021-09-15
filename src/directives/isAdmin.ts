@@ -164,32 +164,38 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
             ]),
         ])
 
-        if (orgsWithClasses.length && classesTaught) {
+        if (
+            orgsWithClasses.length &&
+            classesTaught &&
+            classesTaught.length > 0
+        ) {
+            const distinctMembers = (
+                membershipTable: string,
+                qb: SelectQueryBuilder<User>
+            ) => {
+                return qb
+                    .select('membership_table.userUserId', 'user_id')
+                    .distinct(true)
+                    .from(membershipTable, 'membership_table')
+                    .andWhere('membership_table.classClassId IN (:...ids)', {
+                        ids: classesTaught.map(({ class_id }) => class_id),
+                    })
+            }
             scope.leftJoin(
-                (qb) =>
-                    qb
-                        .select('User.user_id', 'user_id')
-                        .distinct(true)
-                        .from(User, 'User')
-                        .innerJoin(
-                            'User.classesStudying',
-                            'class_membership',
-                            'class_membership.class_id IN (:...ids)',
-                            {
-                                ids: classesTaught.map(
-                                    ({ class_id }) => class_id
-                                ),
-                            }
-                        ),
-                'class_membership',
-                'class_membership.user_id = User.user_id'
+                (qb) => distinctMembers('user_classes_studying_class', qb),
+                'class_studying_membership',
+                'class_studying_membership.user_id = User.user_id'
             )
+            scope.leftJoin(
+                (qb) => distinctMembers('user_classes_teaching_class', qb),
+                'class_teaching_membership',
+                'class_teaching_membership.user_id = User.user_id'
+            )
+
             scope.andWhere(
                 new Brackets((qb) => {
-                    // As a teacher
-                    qb.orWhere('User.user_id = :user_id', { user_id })
-                    // Their students
-                    qb.orWhere('class_membership.user_id IS NOT NULL')
+                    qb.orWhere('class_studying_membership.user_id IS NOT NULL')
+                    qb.orWhere('class_teaching_membership.user_id IS NOT NULL')
                 })
             )
 

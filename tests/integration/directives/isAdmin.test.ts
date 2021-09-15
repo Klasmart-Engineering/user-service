@@ -48,7 +48,6 @@ import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionN
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -317,100 +316,147 @@ describe('isAdmin', () => {
                 expect(usersConnection.totalCount).to.eq(11)
             })
 
-            it('only shows users in taught classes for users with view_my_class_users_40112 permission', async () => {
-                const user = await createNonAdminUser(testClient)
-                const token = getNonAdminAuthToken()
-                await addOrganizationToUserAndValidate(
-                    testClient,
-                    user.user_id,
-                    organizations[0].organization_id,
-                    getAdminAuthToken()
-                )
+            context('with view_my_class_users_40112', () => {
+                let token: string
+                let user: User
 
-                await addRoleToOrganizationMembership(
-                    testClient,
-                    user.user_id,
-                    organizations[0].organization_id,
-                    roleList[0].role_id,
-                    { authorization: getAdminAuthToken() }
-                )
+                const makeClass = async (teachers: User[], students: User[]) =>
+                    createClass([schools[0]], organizations[0], {
+                        teachers,
+                        students,
+                    }).save()
 
-                await grantPermission(
-                    testClient,
-                    roleList[0].role_id,
-                    PermissionName.view_my_class_users_40112,
-                    { authorization: getAdminAuthToken() }
-                )
-
-                const classes = await Promise.all(
-                    Array.from({ length: 3 }).map((_) =>
-                        createClass(
-                            schools.slice(0, 1),
-                            organizations[0]
-                        ).save()
+                beforeEach(async () => {
+                    user = await createNonAdminUser(testClient)
+                    token = getNonAdminAuthToken()
+                    await addOrganizationToUserAndValidate(
+                        testClient,
+                        user.user_id,
+                        organizations[0].organization_id,
+                        getAdminAuthToken()
                     )
-                )
 
-                // Make user a teacher of 2 of the 3 classes
-                await addTeacherToClass(
-                    testClient,
-                    classes[0].class_id,
-                    user.user_id,
-                    { authorization: getAdminAuthToken() }
-                )
-                await addTeacherToClass(
-                    testClient,
-                    classes[1].class_id,
-                    user.user_id,
-                    { authorization: getAdminAuthToken() }
-                )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        user.user_id,
+                        organizations[0].organization_id,
+                        roleList[0].role_id,
+                        { authorization: getAdminAuthToken() }
+                    )
 
-                // Add 2 students to each class + one student being a member of 2 classes
+                    await grantPermission(
+                        testClient,
+                        roleList[0].role_id,
+                        PermissionName.view_my_class_users_40112,
+                        { authorization: getAdminAuthToken() }
+                    )
+                })
 
-                await Promise.all(
-                    usersList.slice(0, 3).map((student) => {
-                        return addStudentToClass(
-                            testClient,
-                            classes[0].class_id,
-                            student.user_id,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    })
-                )
+                it('can see themselves in a class', async () => {
+                    const teacher = user
+                    await makeClass([teacher], [])
 
-                await Promise.all(
-                    usersList.slice(2, 4).map((student) => {
-                        return addStudentToClass(
-                            testClient,
-                            classes[1].class_id,
-                            student.user_id,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    })
-                )
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
 
-                await Promise.all(
-                    usersList.slice(4, 6).map((student) => {
-                        return addStudentToClass(
-                            testClient,
-                            classes[2].class_id,
-                            student.user_id,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    })
-                )
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([teacher.user_id])
+                })
 
-                const usersConnection = await userConnection(
-                    testClient,
-                    direction,
-                    { count: 30 },
-                    { authorization: token }
-                )
+                it('can see other teachers in a class', async () => {
+                    const teachers = [user, usersList[0]]
+                    await makeClass(teachers, [])
 
-                expect(usersConnection.totalCount).to.eq(
-                    5,
-                    'the Teacher and the 4 students in their taught classes'
-                )
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
+
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members(teachers.map((t) => t.user_id))
+                })
+
+                it('can see students from multiple classes', async () => {
+                    const teacher = user
+                    const student1 = usersList[0]
+                    await makeClass([teacher], [student1])
+                    const student2 = usersList[1]
+                    await makeClass([teacher], [student2])
+
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
+
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([
+                        teacher.user_id,
+                        student1.user_id,
+                        student2.user_id,
+                    ])
+                })
+
+                it('students in multiple classes are not duplicated', async () => {
+                    const teacher = user
+                    const student = usersList[0]
+
+                    await makeClass([teacher], [student])
+                    await makeClass([teacher], [student])
+
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
+
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([teacher.user_id, student.user_id])
+                })
+
+                it('teachers in multiple classes are not duplicated', async () => {
+                    const teacher = user
+                    await makeClass([teacher], [])
+                    await makeClass([teacher], [])
+
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
+
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([teacher.user_id])
+                })
+
+                it("can't see students from classes they don't teach", async () => {
+                    const student = usersList[0]
+                    await makeClass([], [student])
+
+                    const usersConnection = await userConnection(
+                        testClient,
+                        direction,
+                        { count: 30 },
+                        { authorization: token }
+                    )
+                    expect(
+                        usersConnection.edges.map((edge) => edge.node.id)
+                    ).to.have.same.members([user.user_id])
+                })
             })
 
             it('requires view_my_school_users_40111 to view school users', async () => {
