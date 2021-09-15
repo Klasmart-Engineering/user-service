@@ -344,15 +344,21 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
 
         if (roleName?.includes('Student')) {
             const students = (await cls.students) || []
-            const studentIds = students.map(({ user_id }) => user_id)
-            if (!studentIds.includes(user.user_id)) {
+            const existingStudent = students.find((student) => {
+                return student.user_id === user?.user_id
+            })
+
+            if (!existingStudent) {
                 students.push(user)
                 cls.students = Promise.resolve(students)
             }
         } else if (roleName?.includes('Teacher')) {
             const teachers = (await cls.teachers) || []
-            const teacherIds = teachers.map(({ user_id }) => user_id)
-            if (!teacherIds.includes(user.user_id)) {
+            const existingTeacher = teachers.find((teacher) => {
+                return teacher.user_id === user?.user_id
+            })
+
+            if (!existingTeacher) {
                 teachers.push(user)
                 cls.teachers = Promise.resolve(teachers)
             }
