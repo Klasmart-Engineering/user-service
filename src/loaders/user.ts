@@ -12,52 +12,45 @@ export interface IUsersLoaders {
 export const orgMembershipsForUsers = async (
     userIds: readonly string[]
 ): Promise<OrganizationMembership[][]> => {
-    const memberships: OrganizationMembership[][] = []
-
     const scope = OrganizationMembership.createQueryBuilder().where(
         'user_id IN (:...ids)',
         { ids: userIds }
     )
 
-    const data = await scope.getMany()
+    const memberships = await scope.getMany()
 
-    for (const userId of userIds) {
-        const userMemberships = data.filter((m) => m.user_id === userId)
-        memberships.push(userMemberships)
-    }
-
-    return memberships
+    return userIds.map((userId) =>
+        memberships.filter((m) => m.user_id === userId)
+    )
 }
 
 export const schoolMembershipsForUsers = async (
     userIds: readonly string[]
 ): Promise<SchoolMembership[][]> => {
-    const schoolMemberships: SchoolMembership[][] = []
-
     const scope = SchoolMembership.createQueryBuilder().where(
         'user_id IN (:...ids)',
         { ids: userIds }
     )
 
-    const data = await scope.getMany()
+    const memberships = await scope.getMany()
 
-    for (const userId of userIds) {
-        const userMemberships = data.filter((m) => m.user_id === userId)
-        schoolMemberships.push(userMemberships)
-    }
-
-    return schoolMemberships
+    return userIds.map((userId) =>
+        memberships.filter((m) => m.user_id === userId)
+    )
 }
 
 export async function usersByIds(
     userIds: readonly string[]
 ): Promise<(User | Error)[]> {
-    const data = await User.findByIds(userIds as string[])
-
-    const map = new Map(data.map((user) => [user.user_id, user]))
+    const users = new Map(
+        (await User.findByIds(userIds as string[])).map((user) => [
+            user.user_id,
+            user,
+        ])
+    )
 
     return userIds.map(
         // TODO: convert to APIError once hotfix branch is aligned to master
-        (id) => map.get(id) ?? Error("User doesn't exist")
+        (id) => users.get(id) ?? Error("User doesn't exist")
     )
 }

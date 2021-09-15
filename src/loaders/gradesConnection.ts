@@ -19,32 +19,32 @@ export const fromGradeForGrades = async (
         },
     })
 
-    const gradeFromGrades: (GradeSummaryNode | undefined)[] = []
     const scope = await Grade.createQueryBuilder('Grade')
         .leftJoinAndSelect('Grade.progress_from_grade', 'FromGrade')
         .where('Grade.id IN (:...ids)', { ids: gradeIds })
 
-    const grades = await scope.getMany()
-    for (const gradeId of gradeIds) {
-        const grade = grades.find((g) => g.id === gradeId)
+    const grades = new Map(
+        (await scope.getMany()).map((grade) => [grade.id, grade])
+    )
 
-        if (grade) {
+    return Promise.all(
+        gradeIds.map(async (id) => {
+            const grade = grades.get(id)
+            if (!grade) {
+                return undefined
+            }
+
             const currentFromGrade =
                 (await grade.progress_from_grade) || noneSpecifiedGrade
-            const currentFromGradeSummary: GradeSummaryNode = {
+
+            return {
                 id: currentFromGrade.id,
                 name: currentFromGrade.name,
                 status: currentFromGrade.status,
                 system: !!currentFromGrade.system,
             }
-
-            gradeFromGrades.push(currentFromGradeSummary)
-        } else {
-            gradeFromGrades.push(undefined)
-        }
-    }
-
-    return gradeFromGrades
+        })
+    )
 }
 
 export const toGradeForGrades = async (
@@ -59,29 +59,30 @@ export const toGradeForGrades = async (
         },
     })
 
-    const gradeToGrades: (GradeSummaryNode | undefined)[] = []
     const scope = await Grade.createQueryBuilder('Grade')
         .leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
         .where('Grade.id IN (:...ids)', { ids: gradeIds })
 
-    const grades = await scope.getMany()
-    for (const gradeId of gradeIds) {
-        const grade = grades.find((g) => g.id === gradeId)
+    const grades = new Map(
+        (await scope.getMany()).map((grade) => [grade.id, grade])
+    )
 
-        if (grade) {
+    return Promise.all(
+        gradeIds.map(async (id) => {
+            const grade = grades.get(id)
+            if (!grade) {
+                return undefined
+            }
+
             const currentToGrade =
                 (await grade.progress_to_grade) || noneSpecifiedGrade
-            const currentToGradeSummary: GradeSummaryNode = {
+
+            return {
                 id: currentToGrade.id,
                 name: currentToGrade.name,
                 status: currentToGrade.status,
                 system: !!currentToGrade.system,
             }
-            gradeToGrades.push(currentToGradeSummary)
-        } else {
-            gradeToGrades.push(undefined)
-        }
-    }
-
-    return gradeToGrades
+        })
+    )
 }
