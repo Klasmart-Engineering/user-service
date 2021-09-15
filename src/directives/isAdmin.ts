@@ -131,28 +131,32 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         )
         if (userOrgs.length > 0) {
             // just filter by org, not school
-            scope.leftJoinAndSelect('User.memberships', 'orgMembership')
-            scope.andWhere('orgMembership.organization_id IN (:...userOrgs)', {
-                userOrgs,
-            })
+            scope.innerJoin(
+                'User.memberships',
+                'OrganizationMembership',
+                'OrganizationMembership.organization IN (:...organizations)',
+                { organizations: userOrgs }
+            )
             return
         }
         // 2 - can we view school users?
-        const schoolMemberships = await getRepository(SchoolMembership).find({
-            where: { user_id },
-        })
-        const userOrgSchools: string[] = await context.permissions.orgMembershipsWithPermissions(
-            [PermissionName.view_my_school_users_40111]
-        )
+        const [schoolMemberships, userOrgSchools] = await Promise.all([
+            getRepository(SchoolMembership).find({
+                where: { user_id },
+                select: ['school_id'],
+            }),
+            context.permissions.orgMembershipsWithPermissions([
+                PermissionName.view_my_school_users_40111,
+            ]),
+        ])
         if (userOrgSchools.length > 0 && schoolMemberships) {
             // you can view all users in the schools you belong to
-            scope.leftJoinAndSelect(
+            scope.innerJoin(
                 'User.school_memberships',
-                'schoolMembership'
+                'SchoolMembership',
+                'SchoolMembership.school IN (:...schools)',
+                { schools: schoolMemberships.map(({ school_id }) => school_id) }
             )
-            scope.andWhere('schoolMembership.school_id IN (:...schoolIds)', {
-                schoolIds: schoolMemberships.map(({ school_id }) => school_id),
-            })
             return
         }
 
@@ -204,12 +208,14 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         // can't view org or school users
 
         // 4 - can they view their own users?
-        const myUsersOrgs = await context.permissions.orgMembershipsWithPermissions(
-            [PermissionName.view_my_users_40113]
-        )
-        const myUsersSchools = await context.permissions.schoolMembershipsWithPermissions(
-            [PermissionName.view_my_users_40113]
-        )
+        const [myUsersOrgs, myUsersSchools] = await Promise.all([
+            context.permissions.orgMembershipsWithPermissions([
+                PermissionName.view_my_users_40113,
+            ]),
+            context.permissions.schoolMembershipsWithPermissions([
+                PermissionName.view_my_users_40113,
+            ]),
+        ])
         if (myUsersOrgs.length === 0 && myUsersSchools.length === 0) {
             // they can only view themselves
             scope.andWhere('User.user_id = :user_id', { user_id })

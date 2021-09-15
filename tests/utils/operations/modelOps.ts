@@ -24,6 +24,7 @@ import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnect
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
 import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
+import { gql } from 'apollo-server-express'
 
 const NEW_USER = `
     mutation myMutation(
@@ -281,6 +282,30 @@ export const USERS_CONNECTION = `
               hasPreviousPage
               startCursor
               endCursor
+            }
+        }
+    }
+`
+
+const USERS_CONNECTION_NODES = gql`
+    query($filter: UserFilter) {
+        usersConnection(direction: FORWARD, filter: $filter) {
+            edges {
+                node {
+                    id
+                    givenName
+                    familyName
+                    avatar
+                    contactInfo {
+                        email
+                        phone
+                    }
+                    alternateContactInfo {
+                        email
+                        phone
+                    }
+                    status
+                }
             }
         }
     }
@@ -913,6 +938,26 @@ export async function userConnection(
                 sortArgs: sort,
             },
             headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.usersConnection
+}
+
+export async function usersConnectionNodes(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    filter?: IEntityFilter
+): Promise<IPaginatedResponse<UserConnectionNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: USERS_CONNECTION_NODES,
+            variables: {
+                direction: 'FORWARD',
+                filter,
+            },
+            headers,
         })
 
     const res = await gqlTry(operation)

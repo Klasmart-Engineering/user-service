@@ -3,7 +3,20 @@ import { User } from '../../src/entities/user'
 
 const DEFAULT_GENDERS = ['Male', 'Female', 'Unspecified']
 
-const ADMIN_EMAIL = 'joe@gmail.com'
+export const ADMIN_EMAIL = 'joe@gmail.com'
+
+type PartialUser = Pick<
+    User,
+    | 'given_name'
+    | 'family_name'
+    | 'email'
+    | 'phone'
+    | 'username'
+    | 'date_of_birth'
+    | 'gender'
+    | 'alternate_email'
+    | 'alternate_phone'
+>
 
 export function createUser({
     given_name,
@@ -15,18 +28,7 @@ export function createUser({
     gender,
     alternate_email,
     alternate_phone,
-}: Pick<
-    User,
-    | 'given_name'
-    | 'family_name'
-    | 'email'
-    | 'phone'
-    | 'username'
-    | 'date_of_birth'
-    | 'gender'
-    | 'alternate_email'
-    | 'alternate_phone'
-> = {}) {
+}: PartialUser = {}) {
     const user = new User()
 
     user.given_name = given_name ?? faker.name.firstName()
@@ -45,3 +47,6 @@ export function createUser({
 export function createAdminUser() {
     return createUser({ email: ADMIN_EMAIL })
 }
+
+export const createUsers = (length: number, partialUser?: PartialUser) =>
+    Array(length).fill(partialUser).map(createUser)

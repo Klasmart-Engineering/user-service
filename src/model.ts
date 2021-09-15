@@ -49,7 +49,6 @@ import {
     filterHasProperty,
     AVOID_NONE_SPECIFIED_BRACKETS,
 } from './utils/pagination/filtering'
-import { UserConnectionNode } from './types/graphQL/userConnectionNode'
 import { isDOB, isEmail, isPhone } from './utils/validations'
 import { ISchoolsConnectionNode } from './types/graphQL/schoolsConnectionNode'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
@@ -80,6 +79,7 @@ import { ClassConnectionNode } from './types/graphQL/classConnectionNode'
 import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
+import { usersConnectionResolver } from './pagination/usersConnection'
 
 export class Model {
     public static async create() {
@@ -372,83 +372,10 @@ export class Model {
         }
     }
 
-    public async usersConnection(
+    public usersConnection = (
         context: Context,
-        { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
-    ) {
-        scope.leftJoinAndSelect('User.memberships', 'OrgMembership')
-        if (filter) {
-            if (filterHasProperty('roleId', filter)) {
-                scope.innerJoinAndSelect(
-                    'OrgMembership.roles',
-                    'RoleMembershipsOrganizationMembership'
-                )
-            }
-            if (filterHasProperty('schoolId', filter)) {
-                scope.leftJoinAndSelect(
-                    'User.school_memberships',
-                    'SchoolMembership'
-                )
-            }
-            if (filterHasProperty('classId', filter)) {
-                scope.leftJoin('User.classesStudying', 'ClassStudying')
-                scope.leftJoin('User.classesTeaching', 'ClassTeaching')
-            }
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    organizationId: 'OrgMembership.organization_id',
-                    organizationUserStatus: 'OrgMembership.status',
-                    userId: "concat(User.user_id, '')",
-                    phone: 'User.phone',
-                    schoolId: 'SchoolMembership.school_id',
-                    classId: {
-                        operator: 'OR',
-                        aliases: [
-                            'ClassStudying.class_id',
-                            'ClassTeaching.class_id',
-                        ],
-                    },
-                })
-            )
-        }
-
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'user_id',
-                aliases: {
-                    givenName: 'given_name',
-                    familyName: 'family_name',
-                },
-                sort,
-            },
-        })
-        for (const edge of data.edges) {
-            const user = edge.node as User
-            const newNode: Partial<UserConnectionNode> = {
-                id: user.user_id,
-                givenName: user.given_name,
-                familyName: user.family_name,
-                avatar: user.avatar,
-                status: user.status,
-                contactInfo: {
-                    email: user.email,
-                    phone: user.phone,
-                },
-                alternateContactInfo: {
-                    email: user.alternate_email,
-                    phone: user.alternate_phone,
-                },
-                // other properties have dedicated resolvers that use Dataloader
-            }
-
-            edge.node = newNode
-        }
-
-        return data
-    }
+        paginationArgs: IPaginationArgs<User>
+    ) => usersConnectionResolver(paginationArgs)
 
     public async permissionsConnection(
         context: Context,

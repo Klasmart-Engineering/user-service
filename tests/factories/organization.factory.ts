@@ -11,3 +11,6 @@ export function createOrganization(user: User = createUser()) {
 
     return organization
 }
+
+export const createOrganizations = (length: number) =>
+    Array(length).fill(undefined).map(createOrganization)

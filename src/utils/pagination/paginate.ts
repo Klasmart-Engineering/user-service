@@ -35,6 +35,11 @@ interface IQueryParams {
     [key: string]: string | number | boolean
 }
 
+export interface IEdge<N = unknown> {
+    cursor: string
+    node: N
+}
+
 export interface IPaginatedResponse<T = unknown> {
     totalCount: number
     pageInfo: {
@@ -43,10 +48,7 @@ export interface IPaginatedResponse<T = unknown> {
         hasNextPage: boolean
         hasPreviousPage: boolean
     }
-    edges: {
-        cursor: string
-        node: T
-    }[]
+    edges: IEdge<T>[]
 }
 
 interface directionArgs {
