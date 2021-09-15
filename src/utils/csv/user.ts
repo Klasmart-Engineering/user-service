@@ -128,7 +128,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             )
         }
     }
-
+    let schoolIfPresentExistsInOrg = true
     let school: School | undefined = undefined
     if (row.school_name) {
         school = await manager.findOne(School, {
@@ -152,12 +152,12 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
                     parentName: row.organization_name,
                 }
             )
-            return rowErrors
+            schoolIfPresentExistsInOrg = false
         }
     }
 
     let cls = undefined
-    if (row.class_name) {
+    if (row.class_name && schoolIfPresentExistsInOrg) {
         cls = await manager.findOne(Class, {
             where: {
                 class_name: row.class_name,
