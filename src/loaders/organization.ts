@@ -20,12 +20,14 @@ export const brandingForOrganizations = async (
         .andWhere('Branding.status = :status', { status: Status.ACTIVE })
 
     const brandings = new Map()
-    await Promise.all((await scope.getMany()).map(async (brand) => {
-        const brandOrgId = (await brand.organization)?.organization_id
-        if (brandOrgId) {
-            brandings.set(brandOrgId, brand)
-        }
-    }))
+    await Promise.all(
+        (await scope.getMany()).map(async (brand) => {
+            const brandOrgId = (await brand.organization)?.organization_id
+            if (brandOrgId) {
+                brandings.set(brandOrgId, brand)
+            }
+        })
+    )
 
     return Promise.all(
         orgIds.map(async (orgId) => {
