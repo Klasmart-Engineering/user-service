@@ -16,7 +16,7 @@ You need to understand that in order to interact with the API, you need to have 
 
 ### Token script
 
-- Create a file called `debug_user_service_secret` at the same level of the script containing the [calmid-debug secret](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/src/token.ts) alone
+- Create a file called `debug_user_service_secret` at the same level of the script, containing only the secret from the issuer `calmid-debug` found in [/src/token.ts](../src/token.ts) (it should be a short password, not a certificate/public key) .
 
 - Run the [script](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/scripts/create_jwt_token.py) for generating tokens
 ```bash
