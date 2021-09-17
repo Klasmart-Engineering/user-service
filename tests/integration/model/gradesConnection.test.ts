@@ -408,7 +408,7 @@ describe('model', () => {
                 },
             }
 
-            const fn = () =>
+            await expect(
                 gradesConnection(
                     testClient,
                     'FORWARD',
@@ -416,8 +416,7 @@ describe('model', () => {
                     { authorization: getAdminAuthToken() },
                     filter
                 )
-
-            expect(fn()).to.be.rejected
+            ).to.be.rejected
         })
     })
 })
