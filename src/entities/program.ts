@@ -250,6 +250,30 @@ export class Program extends BaseEntity {
 
         return Array.from(newSharedWith).map((a) => a.organization_id)
     }
+
+    public async unshare(
+        { organizationIds }: { organizationIds: string[] },
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const organizations = await Program.getSharedwith(organizationIds)
+        const previousSharedWith = new Set((await this.sharedWith) || [])
+        const newSharedWith = previousSharedWith
+
+        for (const org of organizations) {
+            if (!previousSharedWith.has(org)) {
+                throw Error('nope, not already shared')
+            } else {
+                newSharedWith.delete(org)
+            }
+        }
+        this.sharedWith = Promise.resolve(Array.from(newSharedWith))
+
+        await this.save()
+
+        return Array.from(newSharedWith).map((a) => a.organization_id)
+    }
+
     public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()

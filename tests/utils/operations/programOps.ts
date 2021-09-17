@@ -23,6 +23,14 @@ const SHARE_PROGRAM = `
     }
 `
 
+const UNSHARE_PROGRAM = `
+    mutation shareProgram($id: ID!, $age_range_ids: [ID!]) {
+       program(id: $id) {
+          share(organizationIds: $age_range_ids)
+       }
+    }
+`
+
 const EDIT_AGE_RANGES_PROGRAM = `
     mutation editAgeRangeProgram($id: ID!, $age_range_ids: [ID!]) {
        program(id: $id) {
@@ -86,6 +94,25 @@ export async function share(
     const operation = () =>
         mutate({
             mutation: SHARE_PROGRAM,
+            variables: { id: id, age_range_ids: shareIds },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.program?.share
+}
+
+export async function unshare(
+    testClient: ApolloServerTestClient,
+    id: string,
+    shareIds: string[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: UNSHARE_PROGRAM,
             variables: { id: id, age_range_ids: shareIds },
             headers: headers,
         })

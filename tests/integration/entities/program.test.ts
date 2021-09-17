@@ -27,6 +27,7 @@ import {
     editGrades,
     editSubjects,
     share,
+    unshare,
 } from '../../utils/operations/programOps'
 import { Grade } from '../../../src/entities/grade'
 import { grantPermission } from '../../utils/operations/roleOps'
@@ -527,6 +528,73 @@ describe('program', () => {
                     expect(dbSharedWith[0].organization_id).to.eq(
                         sharedWithOrganization.organization_id
                     )
+                })
+            })
+        })
+    })
+
+    describe('unshare', () => {
+        let otherUserId: string
+
+        beforeEach(async () => {
+            const otherUser = await createNonAdminUser(testClient)
+            otherUserId = otherUser.user_id
+            await addUserToOrganizationAndValidate(
+                testClient,
+                otherUserId,
+                organizationId,
+                { authorization: getAdminAuthToken() }
+            )
+        })
+
+        context('when authenticated', () => {
+            let role: any
+
+            beforeEach(async () => {
+                role = await createRole(testClient, org.organization_id)
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    otherUserId,
+                    organizationId,
+                    role.role_id
+                )
+            })
+
+            context('and the user has all the permissions', () => {
+                beforeEach(async () => {
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.edit_program_20331,
+                        { authorization: getAdminAuthToken() }
+                    )
+                })
+
+                it('un shares the program', async () => {
+                    const orgOwner2 = await createAdminUser(testClient)
+                    let sharedWithOrganization = await createOrganizationAndValidate(
+                        testClient,
+                        orgOwner2.user_id,
+                        'mcpoopy'
+                    )
+
+                    await share(
+                        testClient,
+                        program.id,
+                        [sharedWithOrganization.organization_id],
+                        { authorization: getNonAdminAuthToken() }
+                    )
+
+                    let gqlunSharedWith = await unshare(
+                        testClient,
+                        program.id,
+                        [sharedWithOrganization.organization_id],
+                        { authorization: getNonAdminAuthToken() }
+                    )
+                    expect(gqlunSharedWith.length).to.eq(0)
+                    let dbProgram = await Program.findOneOrFail(program.id)
+                    let dbSharedWith = (await dbProgram.sharedWith) || []
+                    expect(dbSharedWith.length).to.eq(0)
                 })
             })
         })
