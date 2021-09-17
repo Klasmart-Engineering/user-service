@@ -638,7 +638,7 @@ describe('model', () => {
                 },
             }
 
-            const fn = () =>
+            await expect(
                 programsConnection(
                     testClient,
                     'FORWARD',
@@ -646,8 +646,7 @@ describe('model', () => {
                     { authorization: getAdminAuthToken() },
                     filter
                 )
-
-            await expect(fn()).to.be.rejected
+            ).to.be.rejected
         })
 
         it("filters by age range from avoiding 'None Specified'", async () => {
