@@ -417,7 +417,7 @@ describe('model', () => {
                     filter
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
         })
     })
 })

@@ -647,7 +647,7 @@ describe('model', () => {
                     filter
                 )
 
-            expect(fn()).to.be.rejected
+            await expect(fn()).to.be.rejected
         })
 
         it("filters by age range from avoiding 'None Specified'", async () => {
