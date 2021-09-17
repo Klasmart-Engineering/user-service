@@ -108,6 +108,8 @@ const typeDefs = gql`
         subjects: [Subject!]
 
         # Mutations
+        share(organizationIds: [ID!]): [ID]
+        # unshare(organizations:[ID!])
         editAgeRanges(age_range_ids: [ID!]): [AgeRange]
         editGrades(grade_ids: [ID!]): [Grade]
         editSubjects(subject_ids: [ID!]): [Subject]

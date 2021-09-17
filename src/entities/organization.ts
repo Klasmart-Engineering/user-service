@@ -1657,16 +1657,6 @@ export class Organization extends BaseEntity {
         })
     }
 
-    private async getSharedwith(ids: string[]) {
-        if (ids.length === 0) {
-            return []
-        }
-
-        return await Organization.find({
-            where: { organization_id: In(ids) },
-        })
-    }
-
     public async createOrUpdatePrograms(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { programs }: any,
@@ -1699,7 +1689,7 @@ export class Organization extends BaseEntity {
 
             program.name = programDetail?.name || program.name
             if (programDetail?.sharedWith !== undefined) {
-                const sharedWith = await this.getSharedwith(
+                const sharedWith = await Program.getSharedwith(
                     programDetail.sharedWith
                 )
                 program.sharedWith = Promise.resolve(sharedWith)

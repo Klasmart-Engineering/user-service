@@ -26,6 +26,7 @@ import {
     editAgeRanges,
     editGrades,
     editSubjects,
+    share,
 } from '../../utils/operations/programOps'
 import { Grade } from '../../../src/entities/grade'
 import { grantPermission } from '../../utils/operations/roleOps'
@@ -37,6 +38,7 @@ import { Subject } from '../../../src/entities/subject'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import { AuthenticationError } from 'apollo-server-express'
+import { createOrganizationAndValidate } from '../../utils/operations/userOps'
 
 use(chaiAsPromised)
 
@@ -462,6 +464,70 @@ describe('program', () => {
                         })
                     }
                 )
+            })
+        })
+    })
+
+    describe('share', () => {
+        let otherUserId: string
+
+        beforeEach(async () => {
+            const otherUser = await createNonAdminUser(testClient)
+            otherUserId = otherUser.user_id
+            await addUserToOrganizationAndValidate(
+                testClient,
+                otherUserId,
+                organizationId,
+                { authorization: getAdminAuthToken() }
+            )
+        })
+
+        context('when authenticated', () => {
+            let role: any
+
+            beforeEach(async () => {
+                role = await createRole(testClient, org.organization_id)
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    otherUserId,
+                    organizationId,
+                    role.role_id
+                )
+            })
+
+            context('and the user has all the permissions', () => {
+                beforeEach(async () => {
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        PermissionName.edit_program_20331,
+                        { authorization: getAdminAuthToken() }
+                    )
+                })
+
+                it('sahres the program', async () => {
+                    const orgOwner2 = await createAdminUser(testClient)
+                    let sharedWithOrganization = await createOrganizationAndValidate(
+                        testClient,
+                        orgOwner2.user_id,
+                        'mcpoopy'
+                    )
+
+                    let gqlSharedWith = await share(
+                        testClient,
+                        program.id,
+                        [sharedWithOrganization.organization_id],
+                        { authorization: getNonAdminAuthToken() }
+                    )
+                    expect(gqlSharedWith[0]).to.eq(
+                        sharedWithOrganization.organization_id
+                    )
+                    let dbProgram = await Program.findOneOrFail(program.id)
+                    let dbSharedWith = (await dbProgram.sharedWith) || []
+                    expect(dbSharedWith[0].organization_id).to.eq(
+                        sharedWithOrganization.organization_id
+                    )
+                })
             })
         })
     })

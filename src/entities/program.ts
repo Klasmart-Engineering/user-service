@@ -184,6 +184,16 @@ export class Program extends BaseEntity {
         })
     }
 
+    public static async getSharedwith(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Organization.find({
+            where: { organization_id: In(ids) },
+        })
+    }
+
     public async delete(
         args: Record<string, unknown>,
         context: Context,
@@ -214,6 +224,32 @@ export class Program extends BaseEntity {
         return true
     }
 
+    public async share(
+        { organizationIds }: { organizationIds: string[] },
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const owner = await this.organization
+
+        const organizations = await Program.getSharedwith(organizationIds)
+        const previousSharedWith = new Set((await this.sharedWith) || [])
+        const newSharedWith = previousSharedWith
+
+        for (const org of organizations) {
+            if (org.organization_id == owner?.organization_id) {
+                throw Error('nope, cant share with yourself')
+            } else if (previousSharedWith.has(org)) {
+                throw Error('nope, already shared')
+            } else {
+                newSharedWith.add(org)
+            }
+        }
+        this.sharedWith = Promise.resolve(Array.from(newSharedWith))
+
+        await this.save()
+
+        return Array.from(newSharedWith).map((a) => a.organization_id)
+    }
     public async inactivate(manager: EntityManager) {
         this.status = Status.INACTIVE
         this.deleted_at = new Date()
