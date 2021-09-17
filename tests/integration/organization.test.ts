@@ -6025,6 +6025,7 @@ describe('organization', () => {
         const programInfo = async (program: any) => {
             return {
                 name: program.name,
+                sharedWith: ((await program.sharedWith) || []).map(entityInfo),
                 age_ranges: ((await program.age_ranges) || []).map(entityInfo),
                 grades: ((await program.grades) || []).map(entityInfo),
                 subjects: ((await program.subjects) || []).map(entityInfo),
@@ -6045,11 +6046,20 @@ describe('organization', () => {
             await grade.save()
             subject = createSubject(organization)
             await subject.save()
+
+            const orgOwner2 = await createAdminUser(testClient)
+            let sharedWithOrganization = await createOrganizationAndValidate(
+                testClient,
+                orgOwner2.user_id,
+                'mcpoopy'
+            )
+
             program = createProgram(
                 organization,
                 [ageRange],
                 [grade],
-                [subject]
+                [subject],
+                [sharedWithOrganization]
             )
             programDetails = await programInfo(program)
             const organizationId = organization?.organization_id

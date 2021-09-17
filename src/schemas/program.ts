@@ -116,6 +116,7 @@ const typeDefs = gql`
     }
     input ProgramDetail {
         id: ID
+        sharedWith: [ID]
         name: String
         system: Boolean
         age_ranges: [ID!]

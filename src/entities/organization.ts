@@ -1657,6 +1657,16 @@ export class Organization extends BaseEntity {
         })
     }
 
+    private async getSharedwith(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Organization.find({
+            where: { organization_id: In(ids) },
+        })
+    }
+
     public async createOrUpdatePrograms(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { programs }: any,
@@ -1679,7 +1689,6 @@ export class Organization extends BaseEntity {
         for (const programDetail of programs) {
             checkUpdatePermission = checkUpdatePermission || !!programDetail?.id
             checkCreatePermission = checkCreatePermission || !programDetail?.id
-
             const program =
                 (await Program.findOne({ id: programDetail?.id })) ||
                 new Program()
@@ -1689,7 +1698,12 @@ export class Organization extends BaseEntity {
                 !!programDetail?.system
 
             program.name = programDetail?.name || program.name
-
+            if (programDetail?.sharedWith !== undefined) {
+                const sharedWith = await this.getSharedwith(
+                    programDetail.sharedWith
+                )
+                program.sharedWith = Promise.resolve(sharedWith)
+            }
             program.organization = Promise.resolve(this)
 
             if (programDetail?.age_ranges !== undefined) {

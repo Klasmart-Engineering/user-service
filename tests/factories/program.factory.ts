@@ -11,7 +11,8 @@ export function createProgram(
     org: Organization = createOrganization(),
     age_ranges: AgeRange[] = [],
     grades: Grade[] = [],
-    subjects: Subject[] = []
+    subjects: Subject[] = [],
+    sharedWith: Organization[] = []
 ) {
     const program = new Program()
 
@@ -20,6 +21,7 @@ export function createProgram(
     program.age_ranges = Promise.resolve(age_ranges)
     program.grades = Promise.resolve(grades)
     program.subjects = Promise.resolve(subjects)
+    program.sharedWith = Promise.resolve(sharedWith)
     program.system = false
 
     return program

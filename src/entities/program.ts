@@ -27,6 +27,10 @@ export class Program extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
+    @ManyToMany(() => Organization)
+    @JoinTable()
+    public sharedWith?: Promise<Organization[]>
+
     @Column({ nullable: false })
     public name?: string
 
