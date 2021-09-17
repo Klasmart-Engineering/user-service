@@ -202,11 +202,11 @@ describe('Grade', () => {
                                 'and does not have delete grade permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteGrade(testClient, grade.id, {
                                                 authorization: getNonAdminAuthToken(),
                                             })
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbGrade = await Grade.findOneOrFail(
                                             grade.id
                                         )
@@ -237,11 +237,11 @@ describe('Grade', () => {
                                 })
 
                                 it('raises a permission error', async () => {
-                                    const fn = () =>
+                                    await expect(
                                         deleteGrade(testClient, grade.id, {
                                             authorization: getNonAdminAuthToken(),
                                         })
-                                    expect(fn()).to.be.rejected
+                                    ).to.be.rejected
                                     const dbGrade = await Grade.findOneOrFail(
                                         grade.id
                                     )
@@ -255,11 +255,11 @@ describe('Grade', () => {
                                 'and does not have delete grade permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteGrade(testClient, grade.id, {
                                                 authorization: getNonAdminAuthToken(),
                                             })
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbGrade = await Grade.findOneOrFail(
                                             grade.id
                                         )

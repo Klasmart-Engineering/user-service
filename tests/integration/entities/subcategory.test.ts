@@ -215,7 +215,7 @@ describe('Subcategory', () => {
                                 'and does not have delete subcategory permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteSubcategory(
                                                 testClient,
                                                 subcategory.id,
@@ -223,7 +223,7 @@ describe('Subcategory', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbSubcategory = await Subcategory.findOneOrFail(
                                             subcategory.id
                                         )
@@ -258,7 +258,7 @@ describe('Subcategory', () => {
                                     })
 
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteSubcategory(
                                                 testClient,
                                                 subcategory.id,
@@ -266,7 +266,7 @@ describe('Subcategory', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbSubcategory = await Subcategory.findOneOrFail(
                                             subcategory.id
                                         )
@@ -283,7 +283,7 @@ describe('Subcategory', () => {
                                 'and does not have delete subcategory permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteSubcategory(
                                                 testClient,
                                                 subcategory.id,
@@ -291,7 +291,7 @@ describe('Subcategory', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbSubcategory = await Subcategory.findOneOrFail(
                                             subcategory.id
                                         )

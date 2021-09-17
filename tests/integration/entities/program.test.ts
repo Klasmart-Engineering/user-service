@@ -220,7 +220,7 @@ describe('program', () => {
                                 'and does not have delete program permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteProgram(
                                                 testClient,
                                                 program.id,
@@ -228,8 +228,7 @@ describe('program', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbProgram = await Program.findOneOrFail(
                                             program.id
                                         )
@@ -264,7 +263,7 @@ describe('program', () => {
                                     })
 
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteProgram(
                                                 testClient,
                                                 program.id,
@@ -272,8 +271,7 @@ describe('program', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbProgram = await Program.findOneOrFail(
                                             program.id
                                         )
@@ -290,7 +288,7 @@ describe('program', () => {
                                 'and does not have delete program permissions',
                                 () => {
                                     it('raises a permission error', async () => {
-                                        const fn = () =>
+                                        await expect(
                                             deleteProgram(
                                                 testClient,
                                                 program.id,
@@ -298,8 +296,7 @@ describe('program', () => {
                                                     authorization: getNonAdminAuthToken(),
                                                 }
                                             )
-
-                                        expect(fn()).to.be.rejected
+                                        ).to.be.rejected
                                         const dbProgram = await Program.findOneOrFail(
                                             program.id
                                         )
@@ -489,11 +486,11 @@ describe('program', () => {
 
         context('when not authenticated', () => {
             it('throws a permission error', async () => {
-                const fn = () =>
+                await expect(
                     editAgeRanges(testClient, program.id, [ageRange.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbAgeRanges = (await program.age_ranges) || []
                 expect(dbAgeRanges).to.be.empty
@@ -517,14 +514,14 @@ describe('program', () => {
                 'and the user does not have edit program permissions',
                 () => {
                     it('throws a permission error', async () => {
-                        const fn = () =>
+                        await expect(
                             editAgeRanges(
                                 testClient,
                                 program.id,
                                 [ageRange.id],
                                 { authorization: getNonAdminAuthToken() }
                             )
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbAgeRanges = (await program.age_ranges) || []
                         expect(dbAgeRanges).to.be.empty
@@ -619,11 +616,11 @@ describe('program', () => {
 
         context('when not authenticated', () => {
             it('throws a permission error', async () => {
-                const fn = () =>
+                await expect(
                     editGrades(testClient, program.id, [grade.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbGrades = (await program.grades) || []
                 expect(dbGrades).to.be.empty
@@ -647,11 +644,11 @@ describe('program', () => {
                 'and the user does not have edit program permissions',
                 () => {
                     it('throws a permission error', async () => {
-                        const fn = () =>
+                        await expect(
                             editGrades(testClient, program.id, [grade.id], {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbGrades = (await program.grades) || []
                         expect(dbGrades).to.be.empty
@@ -743,11 +740,11 @@ describe('program', () => {
 
         context('when not authenticated', () => {
             it('throws a permission error', async () => {
-                const fn = () =>
+                await expect(
                     editSubjects(testClient, program.id, [subject.id], {
                         authorization: undefined,
                     })
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const dbSubjects = (await program.subjects) || []
                 expect(dbSubjects).to.be.empty
@@ -771,11 +768,11 @@ describe('program', () => {
                 'and the user does not have edit program permissions',
                 () => {
                     it('throws a permission error', async () => {
-                        const fn = () =>
+                        await expect(
                             editSubjects(testClient, program.id, [subject.id], {
                                 authorization: getNonAdminAuthToken(),
                             })
-                        expect(fn()).to.be.rejected
+                        ).to.be.rejected
 
                         const dbSubjects = (await program.subjects) || []
                         expect(dbSubjects).to.be.empty
