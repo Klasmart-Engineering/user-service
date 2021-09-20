@@ -24,9 +24,9 @@ const SHARE_PROGRAM = `
 `
 
 const UNSHARE_PROGRAM = `
-    mutation shareProgram($id: ID!, $age_range_ids: [ID!]) {
+    mutation unshareProgram($id: ID!, $age_range_ids: [ID!]) {
        program(id: $id) {
-          share(organizationIds: $age_range_ids)
+          unshare(organizationIds: $age_range_ids)
        }
     }
 `
@@ -118,7 +118,7 @@ export async function unshare(
         })
 
     const res = await gqlTry(operation)
-    return res.data?.program?.share
+    return res.data?.program?.unshare
 }
 
 export async function editAgeRanges(

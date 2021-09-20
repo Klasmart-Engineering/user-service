@@ -109,7 +109,7 @@ const typeDefs = gql`
 
         # Mutations
         share(organizationIds: [ID!]): [ID]
-        unshare(organizations: [ID!]): [ID]
+        unshare(organizationIds: [ID!]): [ID]
         editAgeRanges(age_range_ids: [ID!]): [AgeRange]
         editGrades(grade_ids: [ID!]): [Grade]
         editSubjects(subject_ids: [ID!]): [Subject]

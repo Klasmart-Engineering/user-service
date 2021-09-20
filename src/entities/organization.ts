@@ -60,6 +60,17 @@ import {
 } from '../operations/organization'
 import { pickBy } from 'lodash'
 
+type ProgramDetail = {
+    id?: string
+    sharedWith: string[]
+    name: string
+    system: boolean
+    age_ranges: string[]
+    grades: string[]
+    subjects: string[]
+    status: Status
+}
+
 @Entity()
 export class Organization extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -1657,9 +1668,20 @@ export class Organization extends BaseEntity {
         })
     }
 
+    public static async getOrganizations(ids: string[]) {
+        if (ids.length === 0) {
+            return []
+        }
+
+        return await Organization.find({
+            select: ['organization_id'],
+            where: { organization_id: In(ids) },
+        })
+    }
+
     public async createOrUpdatePrograms(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { programs }: any,
+        { programs }: { programs: ProgramDetail[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
@@ -1673,12 +1695,14 @@ export class Organization extends BaseEntity {
         let checkUpdatePermission = false
         let checkCreatePermission = false
         let checkAdminPermission = false
+        let checkShareWithPermission = false
         const permisionContext = { organization_id: this.organization_id }
         const dbPrograms = []
 
         for (const programDetail of programs) {
             checkUpdatePermission = checkUpdatePermission || !!programDetail?.id
             checkCreatePermission = checkCreatePermission || !programDetail?.id
+
             const program =
                 (await Program.findOne({ id: programDetail?.id })) ||
                 new Program()
@@ -1688,13 +1712,6 @@ export class Organization extends BaseEntity {
                 !!programDetail?.system
 
             program.name = programDetail?.name || program.name
-            if (programDetail?.sharedWith !== undefined) {
-                const sharedWith = await Program.getSharedwith(
-                    programDetail.sharedWith
-                )
-                program.sharedWith = Promise.resolve(sharedWith)
-            }
-            program.organization = Promise.resolve(this)
 
             if (programDetail?.age_ranges !== undefined) {
                 const ageRanges = await this.getAgeRanges(
@@ -1707,6 +1724,14 @@ export class Organization extends BaseEntity {
                 const grades = await this.getGrades(programDetail.grades)
                 program.grades = Promise.resolve(grades)
             }
+
+            if (programDetail?.sharedWith !== undefined) {
+                // checkShareWithPermission = true
+                program.shareHelper(programDetail.sharedWith, true)
+            }
+            // even if scoping already enforces security checks
+            // a user with > 1 org could move programs between orgs
+            program.organization = Promise.resolve(this)
 
             if (programDetail?.subjects !== undefined) {
                 const subjects = await this.getSubjects(programDetail.subjects)
@@ -1728,6 +1753,13 @@ export class Organization extends BaseEntity {
             await context.permissions.rejectIfNotAllowed(
                 permisionContext,
                 PermissionName.create_program_20221
+            )
+        }
+
+        if (checkShareWithPermission) {
+            await context.permissions.rejectIfNotAllowed(
+                permisionContext,
+                PermissionName.share_content_282
             )
         }
 

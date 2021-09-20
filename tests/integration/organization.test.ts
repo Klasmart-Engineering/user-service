@@ -6280,7 +6280,7 @@ describe('organization', () => {
                     })
 
                     context('and it tries to create new programs', () => {
-                        it('creates all the programs in the organization', async () => {
+                        it('shares creates all the programs in the organization', async () => {
                             const gqlPrograms = await createOrUpdatePrograms(
                                 testClient,
                                 organization.organization_id,
@@ -6328,6 +6328,91 @@ describe('organization', () => {
                                         name: 'New Name',
                                     },
                                 }
+                            })
+
+                            it('tries to update programs from another organization', async () => {
+                                // try to create the other org
+                                const orgOwner2 = await createAdminUser(
+                                    testClient
+                                )
+                                let organization2 = await createOrganizationAndValidate(
+                                    testClient,
+                                    orgOwner2.user_id
+                                )
+                                const role2 = await createRole(
+                                    testClient,
+                                    organization2.organization_id
+                                )
+                                await grantPermission(
+                                    testClient,
+                                    role2.role_id,
+                                    PermissionName.edit_program_20331,
+                                    { authorization: getAdminAuthToken() }
+                                )
+                                await addRoleToOrganizationMembership(
+                                    testClient,
+                                    user.user_id,
+                                    organization2.organization_id,
+                                    role.role_id
+                                )
+
+                                let gqlPrograms = await createOrUpdatePrograms(
+                                    testClient,
+                                    organization.organization_id,
+                                    [newProgram],
+                                    { authorization: getNonAdminAuthToken() }
+                                )
+
+                                let dbPrograms = await Program.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(dbPrograms).not.to.be.empty
+                                let dbProgramDetails = await Promise.all(
+                                    dbPrograms.map(programInfo)
+                                )
+                                let newProgramDetails = {
+                                    ...programDetails,
+                                    name: newProgram.name,
+                                }
+                                expect(dbProgramDetails).to.deep.eq([
+                                    newProgramDetails,
+                                ])
+
+                                newProgram.age_ranges = []
+                                newProgram.grades = []
+                                newProgram.subjects = []
+                                gqlPrograms = await createOrUpdatePrograms(
+                                    testClient,
+                                    organization.organization_id,
+                                    [newProgram],
+                                    { authorization: getNonAdminAuthToken() }
+                                )
+
+                                dbPrograms = await Program.find({
+                                    where: {
+                                        organization: {
+                                            organization_id:
+                                                organization.organization_id,
+                                        },
+                                    },
+                                })
+
+                                expect(dbPrograms).not.to.be.empty
+                                dbProgramDetails = await Promise.all(
+                                    dbPrograms.map(programInfo)
+                                )
+                                const gqlCateryDetails = await Promise.all(
+                                    gqlPrograms.map(programInfo)
+                                )
+                                expect(dbProgramDetails).to.deep.eq(
+                                    gqlCateryDetails
+                                )
                             })
 
                             it('updates the expected programs in the organization', async () => {

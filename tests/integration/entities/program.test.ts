@@ -506,7 +506,7 @@ describe('program', () => {
                     )
                 })
 
-                it('sahres the program', async () => {
+                it('shares the program', async () => {
                     const orgOwner2 = await createAdminUser(testClient)
                     let sharedWithOrganization = await createOrganizationAndValidate(
                         testClient,

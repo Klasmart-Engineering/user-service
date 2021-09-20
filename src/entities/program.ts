@@ -184,16 +184,6 @@ export class Program extends BaseEntity {
         })
     }
 
-    public static async getSharedwith(ids: string[]) {
-        if (ids.length === 0) {
-            return []
-        }
-
-        return await Organization.find({
-            where: { organization_id: In(ids) },
-        })
-    }
-
     public async delete(
         args: Record<string, unknown>,
         context: Context,
@@ -224,31 +214,74 @@ export class Program extends BaseEntity {
         return true
     }
 
+    public async shareHelper(
+        organizationIds: string[],
+        replaceExisting = false
+    ) {
+        const validRequestedOrganizations = new Map(
+            (await Organization.getOrganizations(organizationIds)).map((o) => [
+                o.organization_id,
+                o,
+            ])
+        )
+
+        // owner should never be null but this is not actually enforced in the db
+        const owner = await this.organization!
+        if (validRequestedOrganizations.has(owner.organization_id)) {
+            throw Error('nope, cant share with yourself')
+        }
+
+        let previousSharedWith: Organization[]
+        if (replaceExisting) {
+            previousSharedWith = (await this.sharedWith) || []
+        } else {
+            previousSharedWith = []
+        }
+        const previousSharedWithIds = new Set(
+            previousSharedWith.map((o) => o.organization_id)
+        )
+        const newSharedWith = previousSharedWith
+        for (const org of organizationIds) {
+            if (!validRequestedOrganizations.has(org)) {
+                throw Error('not a valid org ID')
+            }
+            if (previousSharedWithIds.has(org)) {
+                throw Error('nope, already shared')
+            } else {
+                newSharedWith.push(validRequestedOrganizations.get(org)!)
+            }
+        }
+
+        if (newSharedWith.length > 50) {
+            throw Error('shared with too many orgs')
+        }
+        this.sharedWith = Promise.resolve(newSharedWith)
+        return organizationIds
+    }
+
     public async share(
         { organizationIds }: { organizationIds: string[] },
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const owner = await this.organization
-
-        const organizations = await Program.getSharedwith(organizationIds)
-        const previousSharedWith = new Set((await this.sharedWith) || [])
-        const newSharedWith = previousSharedWith
-
-        for (const org of organizations) {
-            if (org.organization_id == owner?.organization_id) {
-                throw Error('nope, cant share with yourself')
-            } else if (previousSharedWith.has(org)) {
-                throw Error('nope, already shared')
-            } else {
-                newSharedWith.add(org)
-            }
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = {
+            organization_id,
         }
-        this.sharedWith = Promise.resolve(Array.from(newSharedWith))
-
+        // await context.permissions.rejectIfNotAllowed(
+        //     permisionContext,
+        //     PermissionName.share_content_282
+        // )
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+        const neworgs = await this.shareHelper(organizationIds)
         await this.save()
-
-        return Array.from(newSharedWith).map((a) => a.organization_id)
+        return neworgs
     }
 
     public async unshare(
@@ -256,22 +289,42 @@ export class Program extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const organizations = await Program.getSharedwith(organizationIds)
-        const previousSharedWith = new Set((await this.sharedWith) || [])
-        const newSharedWith = previousSharedWith
-
-        for (const org of organizations) {
-            if (!previousSharedWith.has(org)) {
+        const organization_id = (await this.organization)?.organization_id
+        const permisionContext = {
+            organization_id,
+        }
+        // await context.permissions.rejectIfNotAllowed(
+        //     permisionContext,
+        //     PermissionName.share_content_282
+        // )
+        if (
+            info.operation.operation !== 'mutation' ||
+            !organization_id ||
+            this.status == Status.INACTIVE
+        ) {
+            return null
+        }
+        const requestedSet = new Set(organizationIds)
+        const previousSharedWith = (await this.sharedWith) || []
+        const previousSharedWithMap = new Map(
+            (await this.sharedWith)?.map((o) => [o.organization_id, o]) || []
+        )
+        const newSharedWith = []
+        for (const org of organizationIds) {
+            if (!previousSharedWithMap.has(org)) {
                 throw Error('nope, not already shared')
-            } else {
-                newSharedWith.delete(org)
             }
         }
-        this.sharedWith = Promise.resolve(Array.from(newSharedWith))
+        for (const org of previousSharedWith) {
+            if (!requestedSet.has(org.organization_id)) {
+                newSharedWith.push(org)
+            }
+        }
+        this.sharedWith = Promise.resolve(newSharedWith)
 
         await this.save()
 
-        return Array.from(newSharedWith).map((a) => a.organization_id)
+        return newSharedWith.map((o) => o.organization_id)
     }
 
     public async inactivate(manager: EntityManager) {
