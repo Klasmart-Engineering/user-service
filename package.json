@@ -1,6 +1,6 @@
 {
-  "name": "kidsloop-live-webrtc-service",
-  "version": "1.0.0",
+  "name": "kidsloop-user-service",
+  "version": "2.1.0",
   "description": "",
   "main": "index.js",
   "engines": {
@@ -22,7 +22,8 @@
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
     "make-badges": "istanbul-badges-readme",
     "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/directives/isMIMEType.test.ts --timeout 5000",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm"
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm",
+    "version": "auto-changelog -p && git add CHANGELOG.md"
   },
   "repository": {
     "type": "git",
@@ -77,6 +78,7 @@
     "@graphql-tools/load": "6.2.5",
     "@sentry/node": "5.20.1",
     "apollo-server-express": "^2.19.0",
+    "auto-changelog": "^2.3.0",
     "axios": "0.21.1",
     "cookie-parser": "1.4.5",
     "cors": "2.8.5",
