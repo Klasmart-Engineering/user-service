@@ -282,14 +282,11 @@ describe('class', () => {
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
-                    await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const teacherInfo = { email: 'teacher@gmail.com' } as User
                     const studentInfo = { email: 'student@gmail.com' } as User
                     teacherId = (
@@ -378,7 +375,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlTeachers
@@ -424,7 +421,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlTeachers
@@ -446,14 +443,11 @@ describe('class', () => {
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
-                    await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const teacherInfo = { email: 'teacher@gmail.com' } as User
                     teacherId = (
                         await createUserAndValidate(testClient, teacherInfo)
@@ -501,7 +495,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlTeachers
@@ -537,7 +531,7 @@ describe('class', () => {
                         const gqlTeachers = await eligibleTeachers(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlTeachers
@@ -562,14 +556,11 @@ describe('class', () => {
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
-                    await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const teacherInfo = { email: 'teacher@gmail.com' } as User
                     const studentInfo = { email: 'student@gmail.com' } as User
                     teacherId = (
@@ -658,7 +649,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlStudents
@@ -704,7 +695,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlStudents
@@ -726,14 +717,11 @@ describe('class', () => {
                 let organizationId: string
                 let orgOwnerId: string
                 let orgOwnerToken: string
-                let arbitraryUserToken: string
 
                 beforeEach(async () => {
                     const orgOwner = await createAdminUser(testClient)
                     orgOwnerId = orgOwner?.user_id
                     orgOwnerToken = generateToken(userToPayload(orgOwner))
-                    await createNonAdminUser(testClient)
-                    arbitraryUserToken = getNonAdminAuthToken()
                     const studentInfo = { email: 'student@gmail.com' } as User
                     studentId = (
                         await createUserAndValidate(testClient, studentInfo)
@@ -781,7 +769,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlStudents
@@ -817,7 +805,7 @@ describe('class', () => {
                         const gqlStudents = await eligibleStudents(
                             testClient,
                             classId,
-                            { authorization: arbitraryUserToken }
+                            { authorization: undefined }
                         )
 
                         const userIds = gqlStudents
@@ -836,11 +824,8 @@ describe('class', () => {
             let class1: Class
             let studentRole: Role
             let teacherRole: Role
-            let arbitraryUserToken: string
 
             beforeEach(async () => {
-                await createNonAdminUser(testClient)
-                arbitraryUserToken = getNonAdminAuthToken()
                 schools = []
                 students = []
                 teachers = []
@@ -963,7 +948,7 @@ describe('class', () => {
                 let gqlStudents = await eligibleStudents(
                     testClient,
                     class1.class_id,
-                    { authorization: arbitraryUserToken }
+                    { authorization: undefined }
                 )
                 expect(gqlStudents.length).to.eq(2)
             })
@@ -972,7 +957,7 @@ describe('class', () => {
                 let gqlStudents = await eligibleTeachers(
                     testClient,
                     class1.class_id,
-                    { authorization: arbitraryUserToken }
+                    { authorization: undefined }
                 )
                 expect(gqlStudents.length).to.eq(3) // 2 teachers, 1 org admin
             })
@@ -990,7 +975,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: undefined,
                     }
                 )
                 expect(gqlStudents.length).to.eq(1)
@@ -1007,7 +992,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: undefined,
                     }
                 )
                 expect(gqlStudents.length).to.eq(2)
@@ -1026,7 +1011,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: undefined,
                     }
                 )
                 expect(gqlTeachers.length).to.eq(2) // 1 teacher, 1 org admin
@@ -1043,7 +1028,7 @@ describe('class', () => {
                     testClient,
                     class1.class_id,
                     {
-                        authorization: arbitraryUserToken,
+                        authorization: undefined,
                     }
                 )
                 expect(gqlTeachers.length).to.eq(3) // 2 teachers, 1 org admin

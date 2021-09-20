@@ -26,7 +26,6 @@ import { Organization } from '../../../src/entities/organization'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
-import { AuthenticationError } from 'apollo-server-express'
 
 use(chaiAsPromised)
 
@@ -62,15 +61,12 @@ describe('ageRange', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                let gqlResult = deleteAgeRange(testClient, ageRange.id, {
+            it('cannot find the age range', async () => {
+                const gqlBool = await deleteAgeRange(testClient, ageRange.id, {
                     authorization: undefined,
                 })
 
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
+                expect(gqlBool).to.be.undefined
             })
         })
 

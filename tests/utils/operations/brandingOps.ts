@@ -100,7 +100,6 @@ export async function setBranding(
         mutate({
             mutation: SET_BRANDING_MUTATION,
             variables: variables,
-            headers: headers,
         })
 
     const res = await gqlTry(operation)
@@ -124,7 +123,6 @@ export async function setBrandingWithoutImage(
         mutate({
             mutation: SET_BRANDING_WITHOUT_IMAGE_MUTATION,
             variables: variables,
-            headers: headers,
         })
 
     const res = await gqlTry(operation)
@@ -151,7 +149,6 @@ export async function setBrandingWithoutPrimaryColor(
         mutate({
             mutation: SET_BRANDING_WITHOUT_PRIMARY_COLOR_MUTATION,
             variables: variables,
-            headers: headers,
         })
 
     const res = await gqlTry(operation)
@@ -161,8 +158,7 @@ export async function setBrandingWithoutPrimaryColor(
 export async function deleteBrandingImageQuery(
     testClient: ApolloServerTestClient,
     organizationId: string,
-    type: string,
-    authToken: string
+    type: string
 ) {
     const variables = {
         organizationId,
@@ -175,7 +171,6 @@ export async function deleteBrandingImageQuery(
         mutate({
             mutation: DELETE_BRANDING_IMAGE_QUERY,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)
@@ -185,8 +180,7 @@ export async function deleteBrandingImageQuery(
 export async function deleteBrandingImageMutation(
     testClient: ApolloServerTestClient,
     organizationId: string,
-    type: BrandingImageTag,
-    authToken: string
+    type: BrandingImageTag
 ) {
     const variables = {
         organizationId,
@@ -199,7 +193,6 @@ export async function deleteBrandingImageMutation(
         mutate({
             mutation: DELETE_BRANDING_IMAGE_MUTATION,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)
@@ -208,8 +201,7 @@ export async function deleteBrandingImageMutation(
 
 export async function deleteBrandingColorMutation(
     testClient: ApolloServerTestClient,
-    organizationId: string,
-    authToken: string
+    organizationId: string
 ) {
     const variables = {
         organizationId,
@@ -221,7 +213,6 @@ export async function deleteBrandingColorMutation(
         mutate({
             mutation: DELETE_BRANDING_COLOR_MUTATION,
             variables: variables,
-            headers: { authorization: authToken },
         })
 
     const res = await gqlTry(operation)

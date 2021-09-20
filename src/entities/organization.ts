@@ -95,6 +95,10 @@ export class Organization extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call organization membership by ${context.permissions?.getUserId()}`
+        )
+
         try {
             const membership = await getRepository(
                 OrganizationMembership
@@ -386,6 +390,10 @@ export class Organization extends BaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
+        console.info(
+            `Unauthenticated endpoint call membersWithPermission by ${context.permissions?.getUserId()}`
+        )
+
         try {
             const query = getRepository(OrganizationMembership)
                 .createQueryBuilder()

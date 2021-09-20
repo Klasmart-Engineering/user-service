@@ -601,7 +601,6 @@ describe('user', () => {
         const userToBeQueried = {
             email: 'testuser@gmail.com',
         } as User
-        let arbitraryUserToken: string
 
         beforeEach(async () => {
             user = await createAdminUser(testClient)
@@ -682,9 +681,6 @@ describe('user', () => {
             await grantPermission(testClient, org2RoleId, permissionName, {
                 authorization: tokenOfOrg2Owner,
             })
-
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
         })
 
         context(
@@ -711,8 +707,7 @@ describe('user', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName,
-                        { authorization: arbitraryUserToken }
+                        permissionName
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -735,8 +730,7 @@ describe('user', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName,
-                        { authorization: arbitraryUserToken }
+                        permissionName
                     )
                     expect(isAllowed).to.be.false
                     expect(gqlMemberships).to.exist
@@ -769,8 +763,7 @@ describe('user', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName,
-                        { authorization: arbitraryUserToken }
+                        permissionName
                     )
                     expect(isAllowed).to.be.true
                     expect(gqlMemberships).to.exist
@@ -793,8 +786,7 @@ describe('user', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName,
-                        { authorization: arbitraryUserToken }
+                        permissionName
                     )
                     expect(isAllowed).to.be.false
                     expect(gqlMemberships).to.exist
@@ -834,15 +826,13 @@ describe('user', () => {
                         testClient,
                         idOfUserToBeQueried,
                         school1Id,
-                        permissionName,
-                        { authorization: arbitraryUserToken }
+                        permissionName
                     )
                     const isAllowed2 = await schoolMembershipCheckAllowed(
                         testClient,
                         idOfUserToBeQueried,
                         school2Id,
-                        permissionName,
-                        { authorization: arbitraryUserToken }
+                        permissionName
                     )
                     expect(isAllowed1).to.be.true
                     expect(isAllowed2).to.be.true
@@ -1339,11 +1329,8 @@ describe('user', () => {
         let idOfUserJoiningSchool: string
         let organizationId: string
         let schoolId: string
-        let arbitraryUserToken: string
 
         beforeEach(async () => {
-            await createNonAdminUser(testClient)
-            arbitraryUserToken = getNonAdminAuthToken()
             const orgOwner = await createAdminUser(testClient)
             organizationId = (
                 await createOrganizationAndValidate(
@@ -1381,7 +1368,7 @@ describe('user', () => {
                         testClient,
                         idOfUserPerformingOperation,
                         schoolId,
-                        { authorization: arbitraryUserToken }
+                        { authorization: undefined }
                     )
                     expect(membership).to.exist
                     await SchoolMembership.findOneOrFail({
@@ -1398,8 +1385,7 @@ describe('user', () => {
                         const membership = await addSchoolToUser(
                             testClient,
                             idOfUserPerformingOperation,
-                            schoolId,
-                            { authorization: arbitraryUserToken }
+                            schoolId
                         )
                         expect(membership).to.exist
                         await SchoolMembership.findOneOrFail({
