@@ -83,17 +83,13 @@ import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
-import { CSVError, CustomError } from '../../src/types/csv/csvError'
+import { CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
-import { addOrganizationToUserAndValidate } from '../utils/operations/userOps'
-import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
-import { grantPermission } from '../utils/operations/roleOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
-import { Permission } from '../../src/entities/permission'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 use(chaiAsPromised)
@@ -929,7 +925,8 @@ describe('model.csv', () => {
 
                     expect.fail(`Function incorrectly resolved.`)
                 } catch (e) {
-                    expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
+                    if (e instanceof Error)
+                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
                 }
 
                 const usersCount = await User.count()
@@ -954,7 +951,8 @@ describe('model.csv', () => {
                     )
                     expect.fail(`Function incorrectly resolved.`)
                 } catch (e) {
-                    expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
+                    if (e instanceof Error)
+                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
                 }
 
                 const usersCount = await User.count()
@@ -980,7 +978,8 @@ describe('model.csv', () => {
 
                     expect.fail(`Function incorrectly resolved.`)
                 } catch (e) {
-                    expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
+                    if (e instanceof Error)
+                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
                 }
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1086,16 +1085,21 @@ describe('model.csv', () => {
                 school.school_name = 'School I'
                 await connection.manager.save(school)
 
-                const perm = new Permission()
-                perm.permission_name = PermissionName.upload_users_40880
-
-                role = createRole('Teacher', organization)
-                role.permissions = Promise.resolve([perm])
-                await role.save()
-
-                const anotherRole = createRole('School Admin', organization)
-                anotherRole.permissions = Promise.resolve([perm])
-                await anotherRole.save()
+                const permNames = {
+                    permissions: [
+                        PermissionName.upload_users_40880,
+                        PermissionName.attend_live_class_as_a_teacher_186,
+                        PermissionName.attend_live_class_as_a_student_187,
+                    ],
+                }
+                role = createRole('Teacher', organization, permNames)
+                await connection.manager.save(role)
+                const anotherRole = createRole(
+                    'School Admin',
+                    organization,
+                    permNames
+                )
+                await connection.manager.save(anotherRole)
 
                 cls = createClass([school], organization)
                 cls.class_name = 'Class I'
@@ -1388,7 +1392,8 @@ describe('model.csv', () => {
                     await fn()
                     expect.fail(`Function incorrectly resolved.`)
                 } catch (e) {
-                    expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
+                    if (e instanceof Error)
+                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
                 }
 
                 const usersCount = await User.count()

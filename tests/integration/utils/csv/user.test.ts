@@ -99,6 +99,13 @@ describe('processUserFromCSVRow', async () => {
             { authorization: getAdminAuthToken() }
         )
 
+        await grantPermission(
+            testClient,
+            role.role_id,
+            PermissionName.attend_live_class_as_a_student_187,
+            { authorization: getAdminAuthToken() }
+        )
+
         row = {
             organization_name: organization.organization_name || '',
             user_given_name: user.given_name || '',
@@ -239,6 +246,7 @@ describe('processUserFromCSVRow', async () => {
                     { authorization: getAdminAuthToken() }
                 )
             })
+
             it('will not error if the user is a member of at least one with correct permissions', async () => {
                 await assignUploadPermission(
                     nonAdminUser.user_id,
@@ -620,7 +628,7 @@ describe('processUserFromCSVRow', async () => {
                 [],
                 adminPermissions
             )
-            expect(rowErrors.length).to.eq(0)
+            expect(rowErrors).to.be.empty
         })
         it('errors when too long', async () => {
             row.user_email =
@@ -672,7 +680,7 @@ describe('processUserFromCSVRow', async () => {
                 [],
                 adminPermissions
             )
-            expect(rowErrors.length).to.eq(0)
+            expect(rowErrors).to.be.empty
 
             const dbUser = await User.findOneOrFail({
                 where: { email: processedEmail },
@@ -702,7 +710,7 @@ describe('processUserFromCSVRow', async () => {
                 [],
                 adminPermissions
             )
-            expect(rowErrors.length).to.eq(0)
+            expect(rowErrors).to.be.empty
 
             const dbUsers = await User.find({
                 where: [{ email: row.user_email }, { email: adminUser.email }],
@@ -802,7 +810,7 @@ describe('processUserFromCSVRow', async () => {
                 [],
                 adminPermissions
             )
-            expect(rowErrors.length).to.eq(0)
+            expect(rowErrors).to.be.empty
 
             const dbUser = await User.findOneOrFail({
                 where: { alternate_email: processedEmail },
@@ -1075,7 +1083,7 @@ describe('processUserFromCSVRow', async () => {
             adminPermissions
         )
 
-        expect(rowErrors).to.deep.equal([])
+        expect(rowErrors).to.be.empty
     })
 
     context('class name', () => {
@@ -1146,6 +1154,51 @@ describe('processUserFromCSVRow', async () => {
         }
         let userInfo = (user: User) => {
             return user.user_id
+        }
+
+        async function createRoleForUser(
+            roleName: string,
+            permissions: PermissionName[] | undefined
+        ) {
+            role = createRole(roleName, organization, { permissions })
+            await connection.manager.save(role)
+            row.organization_role_name = role?.role_name || ''
+        }
+
+        async function processAndReturnUser(expectedErrorCode: string = '') {
+            const rowErrors = await processUserFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                [],
+                adminPermissions
+            )
+            if (expectedErrorCode) {
+                expect(rowErrors.length).to.eq(1)
+                expect(rowErrors[0].code).to.eq(expectedErrorCode)
+            } else expect(rowErrors).to.be.empty
+            return User.findOneOrFail({
+                where: {
+                    email: normalizedLowercaseTrimmed(row.user_email),
+                },
+            })
+        }
+
+        async function userInClass(
+            user: User,
+            asStudent: boolean,
+            asTeacher: boolean
+        ) {
+            const students = (await cls.students) || []
+            const teachers = (await cls.teachers) || []
+
+            if (asStudent) {
+                expect(students.map(userInfo)).to.deep.eq([user].map(userInfo))
+            } else expect(students).to.be.empty
+
+            if (asTeacher) {
+                expect(teachers.map(userInfo)).to.deep.eq([user].map(userInfo))
+            } else expect(teachers).to.be.empty
         }
 
         it('creates the user and its respective links', async () => {
@@ -1244,91 +1297,54 @@ describe('processUserFromCSVRow', async () => {
             expect(await schoolMembership.roles).to.deep.eq([])
         })
 
-        context('and the role is not student neither teacher related', () => {
-            it('does not assign the user to the class', async () => {
-                const rowErrors = await processUserFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    [],
-                    adminPermissions
-                )
+        context('and the role is neither student nor teacher related', () => {
+            beforeEach(() =>
+                createRoleForUser('notAStudentOrTeacher', [
+                    PermissionName.add_learning_outcome_to_content_485,
+                ])
+            )
 
-                const students = (await cls.students) || []
-                expect(students).to.be.empty
-                const teachers = (await cls.teachers) || []
-                expect(teachers).to.be.empty
-            })
+            it('errors with unauthorized_uploaded_entity', async () =>
+                processAndReturnUser(
+                    customErrors.unauthorized_uploaded_entity.code
+                ))
         })
 
         context('and the role is student related', () => {
-            beforeEach(async () => {
-                role = createRole('My Student Role', organization)
-                await connection.manager.save(role)
+            beforeEach(() =>
+                createRoleForUser('Pupil', [
+                    PermissionName.add_learning_outcome_to_content_485,
+                    PermissionName.attend_live_class_as_a_student_187,
+                ])
+            )
 
-                row = {
-                    ...row,
-                    organization_role_name: role.role_name || '',
-                }
-            })
-
-            it('assigns the user to the class as student', async () => {
-                const rowErrors = await processUserFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    [],
-                    adminPermissions
-                )
-
-                const dbUser = await User.findOneOrFail({
-                    where: {
-                        email: normalizedLowercaseTrimmed(row.user_email),
-                    },
-                })
-
-                const students = (await cls.students) || []
-                expect(students.map(userInfo)).to.deep.eq(
-                    [dbUser].map(userInfo)
-                )
-                const teachers = (await cls.teachers) || []
-                expect(teachers).to.be.empty
-            })
+            it('assigns the user to the class as student', async () =>
+                userInClass(await processAndReturnUser(), true, false))
         })
 
         context('and the role is teacher related', () => {
-            beforeEach(async () => {
-                role = createRole('My Teacher Role', organization)
-                await connection.manager.save(role)
+            beforeEach(() =>
+                createRoleForUser('Master', [
+                    PermissionName.add_learning_outcome_to_content_485,
+                    PermissionName.attend_live_class_as_a_teacher_186,
+                ])
+            )
 
-                row = {
-                    ...row,
-                    organization_role_name: role.role_name || '',
-                }
-            })
+            it('assigns the user to the class as teacher', async () =>
+                userInClass(await processAndReturnUser(), false, true))
+        })
 
-            it('assigns the user to the class as teacher', async () => {
-                const rowErrors = await processUserFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    [],
-                    adminPermissions
-                )
+        context('and the role is both student and teacher related', () => {
+            beforeEach(() =>
+                createRoleForUser('MasterAndPupil', [
+                    PermissionName.add_learning_outcome_to_content_485,
+                    PermissionName.attend_live_class_as_a_teacher_186,
+                    PermissionName.attend_live_class_as_a_student_187,
+                ])
+            )
 
-                const dbUser = await User.findOneOrFail({
-                    where: {
-                        email: normalizedLowercaseTrimmed(row.user_email),
-                    },
-                })
-
-                const students = (await cls.students) || []
-                expect(students).to.be.empty
-                const teachers = (await cls.teachers) || []
-                expect(teachers.map(userInfo)).to.deep.eq(
-                    [dbUser].map(userInfo)
-                )
-            })
+            it('assigns the user to the class as a teacher and a student', async () =>
+                userInClass(await processAndReturnUser(), true, true))
         })
 
         context(
@@ -1484,8 +1500,9 @@ describe('processUserFromCSVRow', async () => {
                 expect(rowErrors.length).to.eq(0)
                 expect(dbUsers.length).to.eq(1)
             })
+
             context(
-                'and user_shortcode is different than already assigned shortcode',
+                'and user_shortcode is different to already assigned shortcode',
                 () => {
                     async function getUpdatedUser() {
                         return User.findOneOrFail({
@@ -1587,6 +1604,21 @@ describe('processUserFromCSVRow', async () => {
                             )
                         ).to.deep.eq([originalShortcode])
                     })
+                }
+            )
+
+            context(
+                'and user role is different to already assigned role',
+                () => {
+                    beforeEach(() =>
+                        createRoleForUser('Pupil', [
+                            PermissionName.add_learning_outcome_to_content_485,
+                            PermissionName.attend_live_class_as_a_student_187,
+                        ])
+                    )
+
+                    it('assigns the user to the class as student', async () =>
+                        userInClass(await processAndReturnUser(), true, false))
                 }
             )
         })

@@ -20,6 +20,7 @@ import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import clean from '../clean'
+import { Permission } from '../../entities/permission'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],
@@ -338,29 +339,65 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.user = Promise.resolve(user)
             await manager.save(schoolMembership)
         }
-    }
-    if (organizationRole && cls) {
-        const roleName = organizationRole?.role_name
 
-        if (roleName?.includes('Student')) {
-            const students = (await cls.students) || []
-            const existingStudent = students.find((student) => {
-                return student.user_id === user?.user_id
-            })
+        if (cls) {
+            const perms = await manager
+                .createQueryBuilder(Permission, 'Permission')
+                .innerJoin('Permission.roles', 'Role')
+                .innerJoin('Role.memberships', 'OrganizationMembership')
+                .where('OrganizationMembership.user_id = :user_id', {
+                    user_id: user.user_id,
+                })
+                .andWhere(
+                    'OrganizationMembership.organization_id = :organization_id',
+                    {
+                        organization_id: organizationMembership.organization_id,
+                    }
+                )
+                .getMany()
 
-            if (!existingStudent) {
-                students.push(user)
-                cls.students = Promise.resolve(students)
+            const teacherPerm =
+                perms.some(
+                    (p) =>
+                        p.permission_name ===
+                        PermissionName.attend_live_class_as_a_teacher_186.valueOf()
+                ) || false
+            const studentPerm =
+                perms.some(
+                    (p) =>
+                        p.permission_name ===
+                        PermissionName.attend_live_class_as_a_student_187.valueOf()
+                ) || false
+
+            if (teacherPerm) {
+                const teachers = (await cls.teachers) || []
+                if (!teachers.includes(user)) {
+                    teachers.push(user)
+                    cls.teachers = Promise.resolve(teachers)
+                }
             }
-        } else if (roleName?.includes('Teacher')) {
-            const teachers = (await cls.teachers) || []
-            const existingTeacher = teachers.find((teacher) => {
-                return teacher.user_id === user?.user_id
-            })
-
-            if (!existingTeacher) {
-                teachers.push(user)
-                cls.teachers = Promise.resolve(teachers)
+            if (studentPerm) {
+                const students = (await cls.students) || []
+                if (!students.includes(user)) {
+                    students.push(user)
+                    cls.students = Promise.resolve(students)
+                }
+            }
+            if (!studentPerm && !teacherPerm) {
+                addCsvError(
+                    rowErrors,
+                    customErrors.unauthorized_uploaded_entity.code,
+                    rowNumber,
+                    'organization_role_name',
+                    customErrors.unauthorized_uploaded_entity.message,
+                    {
+                        entity: 'User',
+                        entityName: user.full_name(),
+                        parentEntity: 'Class',
+                        parentName: row.class_name,
+                        organizationName: row.organization_name,
+                    }
+                )
             }
         }
 

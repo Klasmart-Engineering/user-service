@@ -77,6 +77,7 @@ export class UserPermissions {
             return false
         }
         const user = await getRepository(User).findOne(userId)
+
         return user?.status === Status.ACTIVE
     }
 
@@ -122,6 +123,7 @@ export class UserPermissions {
         permission_name: PermissionName
     ) {
         const isActive = await this.getUserIsActive(user_id)
+
         if (!isActive) {
             return false
         }
