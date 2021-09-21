@@ -268,10 +268,14 @@ export class Program extends BaseEntity {
         const permisionContext = {
             organization_id,
         }
-        // await context.permissions.rejectIfNotAllowed(
-        //     permisionContext,
-        //     PermissionName.share_content_282
-        // )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.share_content_282
+        )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_program_20331
+        )
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
@@ -293,10 +297,14 @@ export class Program extends BaseEntity {
         const permisionContext = {
             organization_id,
         }
-        // await context.permissions.rejectIfNotAllowed(
-        //     permisionContext,
-        //     PermissionName.share_content_282
-        // )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.share_content_282
+        )
+        await context.permissions.rejectIfNotAllowed(
+            permisionContext,
+            PermissionName.edit_program_20331
+        )
         if (
             info.operation.operation !== 'mutation' ||
             !organization_id ||
