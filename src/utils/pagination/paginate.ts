@@ -183,6 +183,7 @@ export const paginateData = async <T = unknown>({
 
     if (cursorData) {
         const directionOperator = order === 'ASC' ? '>' : '<'
+
         if (primaryColumns.length) {
             const queryColumns: string[] = []
             const queryValues: string[] = []
@@ -199,12 +200,31 @@ export const paginateData = async <T = unknown>({
             const queryValuesString = queryValues.join(', ')
 
             scope.andWhere(
-                `(${queryColumnsString}, ${scope.alias}.${sort.primaryKey}) ${directionOperator} (${queryValuesString}, :defaultColumn)`,
+                `(${queryColumnsString}) ${directionOperator} (${queryValuesString})`,
                 {
                     ...queryParams,
-                    defaultColumn: cursorData[sort.primaryKey],
                 }
             )
+
+            const paramValues = Object.values(queryParams)
+            const primaryKey = cursorData[sort.primaryKey]
+
+            if (!paramValues.includes(primaryKey)) {
+                scope
+                    .orWhere(
+                        `(${queryColumnsString}) = (${queryValuesString})`,
+                        {
+                            ...queryParams,
+                        }
+                    )
+                    .andWhere(
+                        `${scope.alias}.${sort.primaryKey} > :defaultColumn`,
+                        {
+                            defaultColumn: primaryKey,
+                        }
+                    )
+            }
+
             scope.offset(0)
         } else {
             scope.andWhere(

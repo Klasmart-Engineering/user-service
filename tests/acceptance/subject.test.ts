@@ -30,6 +30,7 @@ const programsCount = 2
 let org1Id: string
 let categoryIds: string[]
 let subjectIds: string[]
+let subjects: { id: string; name: string }[]
 let systemSubjectsCount = 0
 
 describe('acceptance.subject', () => {
@@ -111,6 +112,10 @@ describe('acceptance.subject', () => {
             (s: { id: string; name: string; system: boolean }) => s.id
         )
 
+        subjects = (await connection.manager.find(Subject)).map((s) => {
+            return { id: s.id, name: s.name || '' }
+        })
+
         await deleteSubject(subjectIds[1], getAdminAuthToken())
     })
 
@@ -177,6 +182,32 @@ describe('acceptance.subject', () => {
                         sortArgs: {
                             field: 'name',
                             order: 'DESC',
+                        },
+                    },
+                })
+
+            const subjectsConnection = response.body.data.subjectsConnection
+
+            expect(response.status).to.eq(200)
+            expect(subjectsConnection.totalCount).to.equal(
+                subjectsCount + systemSubjectsCount
+            )
+        })
+
+        it('queries paginated subjects sorted by system', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: SUBJECTS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                        sortArgs: {
+                            field: 'system',
+                            order: 'ASC',
                         },
                     },
                 })
@@ -349,6 +380,131 @@ describe('acceptance.subject', () => {
 
             expect(response.status).to.eq(200)
             expect(subjectsConnection.totalCount).to.be.gte(1)
+        })
+
+        context('using cursor', () => {
+            it('queries paginated subjects sorted by system in a DESC order', async () => {
+                let hasNextPage = true
+                let cursor = undefined
+                let index = 0
+                const totalUsers = subjectsCount + systemSubjectsCount
+                const fetchCount = 5
+
+                while (hasNextPage) {
+                    const response: any = await request
+                        .post('/graphql')
+                        .set({
+                            ContentType: 'application/json',
+                            Authorization: getAdminAuthToken(),
+                        })
+                        .send({
+                            query: SUBJECTS_CONNECTION,
+                            variables: {
+                                direction: 'FORWARD',
+                                directionArgs: {
+                                    count: fetchCount,
+                                    cursor,
+                                },
+                                sortArgs: {
+                                    field: 'system',
+                                    order: 'ASC',
+                                },
+                            },
+                        })
+
+                    const subjectsConnection =
+                        response.body.data.subjectsConnection
+                    const unseenUsers = totalUsers - index
+
+                    expect(response.status).to.eq(200)
+                    expect(subjectsConnection.totalCount).to.eq(totalUsers)
+                    expect(subjectsConnection.edges.length).to.eq(
+                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                    )
+
+                    for (let i = 0; i < subjectsConnection.edges.length; i++) {
+                        expect(subjectsConnection.edges[i].node.system).to.eq(
+                            i >= subjectsCount
+                        )
+
+                        index++
+                    }
+
+                    hasNextPage = subjectsConnection.pageInfo.hasNextPage
+                    cursor = subjectsConnection.pageInfo.endCursor
+                }
+            })
+
+            it('queries paginated subjects sorted by name in a DESC order', async () => {
+                let hasNextPage = true
+                let cursor = undefined
+                let index = 0
+                const totalUsers = subjectsCount + systemSubjectsCount
+                const fetchCount = 5
+                const sortedSubjects = subjects.sort((a, b) => {
+                    if (a.name < b.name) {
+                        return 1
+                    }
+
+                    if (a.name > b.name) {
+                        return -1
+                    }
+
+                    if (a.id < b.id) {
+                        return -1
+                    }
+
+                    if (a.id > b.id) {
+                        return 1
+                    }
+
+                    return 0
+                })
+
+                while (hasNextPage) {
+                    const response: any = await request
+                        .post('/graphql')
+                        .set({
+                            ContentType: 'application/json',
+                            Authorization: getAdminAuthToken(),
+                        })
+                        .send({
+                            query: SUBJECTS_CONNECTION,
+                            variables: {
+                                direction: 'FORWARD',
+                                directionArgs: {
+                                    count: fetchCount,
+                                    cursor,
+                                },
+                                sortArgs: {
+                                    field: 'name',
+                                    order: 'ASC',
+                                },
+                            },
+                        })
+
+                    const subjectsConnection =
+                        response.body.data.subjectsConnection
+                    const unseenUsers = totalUsers - index
+
+                    expect(response.status).to.eq(200)
+                    expect(subjectsConnection.totalCount).to.eq(totalUsers)
+                    expect(subjectsConnection.edges.length).to.eq(
+                        unseenUsers < fetchCount ? unseenUsers : fetchCount
+                    )
+
+                    for (let i = 0; i < subjectsConnection.edges.length; i++) {
+                        expect(subjectsConnection.edges[i].node.id).to.eq(
+                            sortedSubjects[index].id
+                        )
+
+                        index++
+                    }
+
+                    hasNextPage = subjectsConnection.pageInfo.hasNextPage
+                    cursor = subjectsConnection.pageInfo.endCursor
+                }
+            })
         })
     })
 })
