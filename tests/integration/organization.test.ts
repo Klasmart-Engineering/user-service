@@ -6271,6 +6271,12 @@ describe('organization', () => {
                             PermissionName.edit_program_20331,
                             { authorization: getAdminAuthToken() }
                         )
+                        await grantPermission(
+                            testClient,
+                            role.role_id,
+                            PermissionName.share_content_282,
+                            { authorization: getAdminAuthToken() }
+                        )
                         await addRoleToOrganizationMembership(
                             testClient,
                             user.user_id,

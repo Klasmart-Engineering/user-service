@@ -1726,7 +1726,7 @@ export class Organization extends BaseEntity {
             }
 
             if (programDetail?.sharedWith !== undefined) {
-                // checkShareWithPermission = true
+                checkShareWithPermission = true
                 program.shareHelper(programDetail.sharedWith, true)
             }
             // even if scoping already enforces security checks
