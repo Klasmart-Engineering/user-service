@@ -233,9 +233,9 @@ export class Program extends BaseEntity {
 
         let previousSharedWith: Organization[]
         if (replaceExisting) {
-            previousSharedWith = (await this.sharedWith) || []
-        } else {
             previousSharedWith = []
+        } else {
+            previousSharedWith = (await this.sharedWith) || []
         }
         const previousSharedWithIds = new Set(
             previousSharedWith.map((o) => o.organization_id)
@@ -256,7 +256,7 @@ export class Program extends BaseEntity {
             throw Error('shared with too many orgs')
         }
         this.sharedWith = Promise.resolve(newSharedWith)
-        return organizationIds
+        return newSharedWith.map((o) => o.organization_id)
     }
 
     public async share(

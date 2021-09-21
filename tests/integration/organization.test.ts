@@ -6047,19 +6047,11 @@ describe('organization', () => {
             subject = createSubject(organization)
             await subject.save()
 
-            const orgOwner2 = await createAdminUser(testClient)
-            let sharedWithOrganization = await createOrganizationAndValidate(
-                testClient,
-                orgOwner2.user_id,
-                'mcpoopy'
-            )
-
             program = createProgram(
                 organization,
                 [ageRange],
                 [grade],
-                [subject],
-                [sharedWithOrganization]
+                [subject]
             )
             programDetails = await programInfo(program)
             const organizationId = organization?.organization_id
@@ -6286,7 +6278,7 @@ describe('organization', () => {
                     })
 
                     context('and it tries to create new programs', () => {
-                        it('shares creates all the programs in the organization', async () => {
+                        it('creates all the programs in the organization', async () => {
                             const gqlPrograms = await createOrUpdatePrograms(
                                 testClient,
                                 organization.organization_id,
@@ -6313,6 +6305,58 @@ describe('organization', () => {
                             expect(dbProgramDetails).to.deep.eq(
                                 gqlCateryDetails
                             )
+                        })
+                    })
+
+                    context('supplies sharedWith', async () => {
+                        let sharedWithOrganization: Organization
+
+                        beforeEach(async () => {
+                            const orgOwner2 = await createAdminUser(testClient)
+                            sharedWithOrganization = await createOrganizationAndValidate(
+                                testClient,
+                                orgOwner2.user_id,
+                                'mcpoopy'
+                            )
+                        })
+
+                        // todo: checks permissions
+                        // todo: has replacement behavioiur
+                        // todo: returns correct ids
+
+                        it('saves sharedWith', async () => {
+                            programDetails.sharedWith = [
+                                sharedWithOrganization.organization_id,
+                            ]
+
+                            const gqlPrograms = await createOrUpdatePrograms(
+                                testClient,
+                                organization.organization_id,
+                                [programDetails],
+                                { authorization: getNonAdminAuthToken() }
+                            )
+
+                            const dbPrograms = await Program.find({
+                                where: {
+                                    organization: {
+                                        organization_id:
+                                            organization.organization_id,
+                                    },
+                                },
+                            })
+
+                            const dbProgramDetails = await Promise.all(
+                                dbPrograms.map(programInfo)
+                            )
+                            const gqlCateryDetails = await Promise.all(
+                                gqlPrograms.map(programInfo)
+                            )
+                            expect(
+                                gqlCateryDetails[0].sharedWith
+                            ).to.have.same.members(programDetails.sharedWith)
+                            expect(
+                                dbProgramDetails[0].sharedWith.length
+                            ).to.have.same.members(programDetails.sharedWith)
                         })
                     })
 

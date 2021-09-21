@@ -359,4 +359,149 @@ describe('acceptance.program', () => {
             expect(response.body).to.have.property('errors')
         })
     })
+
+    // context('program.unshare', async () => {
+    //     let otherUserId: string
+    //     let sharedWithOwner: User
+    //     let sharedWithOrganization: Organization
+    //     let permissions: UserPermissions
+    //     let info = <GraphQLResolveInfo>{
+    //         operation: { operation: 'mutation' },
+    //     }
+    //     let requiredPermissions = [
+    //         PermissionName.share_content_282,
+    //         PermissionName.edit_program_20331,
+    //     ]
+
+    //     beforeEach(async () => {
+    //         user = await createNonAdminUser(testClient)
+    //         userId = user.user_id
+
+    //         org = createOrganization()
+    //         await connection.manager.save(org)
+    //         organizationId = org.organization_id
+    //         program = createProgram(org)
+    //         await connection.manager.save(program)
+
+    //         const otherUser = await createNonAdminUser(testClient)
+    //         otherUserId = otherUser.user_id
+    //         await addUserToOrganizationAndValidate(
+    //             testClient,
+    //             otherUserId,
+    //             organizationId,
+    //             { authorization: getAdminAuthToken() }
+    //         )
+    //         sharedWithOwner = await createAdminUser(testClient)
+    //         sharedWithOrganization = await createOrganizationAndValidate(
+    //             testClient,
+    //             sharedWithOwner.user_id,
+    //             'mcpoopy'
+    //         )
+    //         permissions = new UserPermissions({
+    //             id: user.user_id,
+    //             email: user.email || '',
+    //         })
+    //     })
+
+    //     let makeRole = async (permissions: PermissionName[]) => {
+    //         let role = roleFactory.createRole(
+    //             undefined,
+    //             await program.organization!,
+    //             {
+    //                 permissions: permissions,
+    //             }
+    //         )
+    //         await role.save()
+    //         await createOrganizationMembership({
+    //             user,
+    //             organization: await program.organization!,
+    //             roles: [role],
+    //         }).save()
+    //     }
+
+    //     let sharing = async (idsToShare: string[]) => {
+    //         return program.share(
+    //             {
+    //                 organizationIds: idsToShare,
+    //             },
+    //             {
+    //                 permissions: permissions,
+    //                 loaders: createDefaultDataLoaders(),
+    //             },
+    //             info
+    //         )
+    //     }
+
+    //     let unsharing = async (idsToShare: string[]) => {
+    //         return program.unshare(
+    //             {
+    //                 organizationIds: idsToShare,
+    //             },
+    //             {
+    //                 permissions: permissions,
+    //                 loaders: createDefaultDataLoaders(),
+    //             },
+    //             info
+    //         )
+    //     }
+
+    //     context('and the user has all the permissions', () => {
+    //         beforeEach(async () => {
+    //             await makeRole(requiredPermissions)
+    //         })
+
+    //         it('shares unshares the program', async () => {
+    //             await sharing([sharedWithOrganization.organization_id])
+
+    //             let sharedOrgs: string[] = <string[]>(
+    //                 await unsharing([sharedWithOrganization.organization_id])
+    //             )
+    //             expect(sharedOrgs.length).to.eq(0)
+    //             let dbProgram = await Program.findOneOrFail(program.id)
+    //             let dbSharedWith = (await dbProgram.sharedWith) || []
+    //             expect(dbSharedWith.length).to.eq(0)
+    //         })
+    //     })
+
+    //     context('and the user does not permission', () => {
+    //         beforeEach(async () => {
+    //             let adminUser = await createAdminUser(testClient)
+    //             let adminPermissions = new UserPermissions({
+    //                 id: adminUser.user_id,
+    //                 email: adminUser.email || '',
+    //             })
+    //             await program.share(
+    //                 {
+    //                     organizationIds: [
+    //                         sharedWithOrganization.organization_id,
+    //                     ],
+    //                 },
+    //                 {
+    //                     permissions: adminPermissions,
+    //                     loaders: createDefaultDataLoaders(),
+    //                 },
+    //                 info
+    //             )
+    //         })
+
+    //         it('shares to share the program', async () => {
+    //             let missingPermissions = [PermissionName.edit_program_20331]
+    //             await makeRole(missingPermissions)
+    //             let sharedOrgs = unsharing([
+    //                 sharedWithOrganization.organization_id,
+    //             ])
+    //             await expect(sharedOrgs).to.be.rejectedWith('share_content_282')
+    //         })
+    //         it('shares to edit the program', async () => {
+    //             let missingPermissions = [PermissionName.share_content_282]
+    //             await makeRole(missingPermissions)
+    //             let sharedOrgs = unsharing([
+    //                 sharedWithOrganization.organization_id,
+    //             ])
+    //             await expect(sharedOrgs).to.be.rejectedWith(
+    //                 'edit_program_20331'
+    //             )
+    //         })
+    //     })
+    // })
 })

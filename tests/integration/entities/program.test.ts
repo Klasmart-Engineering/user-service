@@ -19,7 +19,10 @@ import { createProgram } from '../../factories/program.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { createServer } from '../../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
-import { createOrganization } from '../../factories/organization.factory'
+import {
+    createOrganization,
+    createOrganizations,
+} from '../../factories/organization.factory'
 import * as roleFactory from '../../factories/role.factory'
 import { createTestConnection } from '../../utils/testConnection'
 import {
@@ -47,6 +50,8 @@ import { GraphQLResolveInfo } from 'graphql'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { Role } from '../../../src/entities/role'
 import { Context } from 'apollo-server-core'
+import { createUser } from '../../factories/user.factory'
+import uuid from '../../../src/schemas/scalars/uuid'
 
 use(chaiAsPromised)
 
@@ -476,18 +481,133 @@ describe('program', () => {
         })
     })
 
-    describe('share', () => {
-        let otherUserId: string
-        let sharedWithOwner: User
+    describe('shareHelper', () => {
+        let nonAdminUser: User
         let sharedWithOrganization: Organization
-        let permissions: UserPermissions
-        let info = <GraphQLResolveInfo>{
-            operation: { operation: 'mutation' },
-        }
+
+        beforeEach(async () => {
+            nonAdminUser = await createUser().save()
+            sharedWithOrganization = await createOrganization().save()
+        })
+
+        it('when program not already shared', async () => {
+            let sharedOrgs = await program.shareHelper([
+                sharedWithOrganization.organization_id,
+            ])
+            expect(sharedOrgs[0]).to.eq(sharedWithOrganization.organization_id)
+        })
+
+        context('when program already shared', () => {
+            let alreadySharedId: string
+
+            beforeEach(async () => {
+                let org = createOrganization()
+                await org.save()
+                alreadySharedId = org.organization_id
+                await program.shareHelper([org.organization_id])
+            })
+
+            it('and replaceExisting=false', async () => {
+                let sharedOrgs = await program.shareHelper([
+                    sharedWithOrganization.organization_id,
+                ])
+                expect(sharedOrgs.length).to.eq(2)
+                expect(sharedOrgs[0]).to.eq(alreadySharedId)
+                expect(sharedOrgs[1]).to.eq(
+                    sharedWithOrganization.organization_id
+                )
+            })
+
+            it('and replaceExisting=true', async () => {
+                let sharedOrgs = await program.shareHelper(
+                    [sharedWithOrganization.organization_id],
+                    true
+                )
+                expect(sharedOrgs.length).to.be.eq(1)
+                expect(sharedOrgs[0]).to.eq(
+                    sharedWithOrganization.organization_id
+                )
+            })
+        })
+
+        it('shares the program with program owner', async () => {
+            let sharedOrgs = program.shareHelper([
+                (await program.organization!).organization_id,
+            ])
+            await expect(sharedOrgs).to.be.rejectedWith(
+                'nope, cant share with yourself'
+            )
+        })
+        it('shares the program with someone its already shared with', async () => {
+            await program.shareHelper([sharedWithOrganization.organization_id])
+            let sharedOrgs = program.shareHelper([
+                sharedWithOrganization.organization_id,
+            ])
+            await expect(sharedOrgs).to.be.rejectedWith('nope, already shared')
+        })
+        it('shares the program with an invalid organization ID', async () => {
+            let sharedOrgs = program.shareHelper([
+                'deadbeef-dead-beef-dead-beefdeadbeef',
+            ])
+            await expect(sharedOrgs).to.be.rejectedWith('not a valid org ID')
+        })
+        it('shares too many orgs supplied', async () => {
+            let orgs = createOrganizations(50)
+            await Promise.all(orgs.map((o) => o.save()))
+            let orgIds = orgs.map((o) => o.organization_id)
+            let sharedOrgs = program.shareHelper(orgIds)
+            await expect(sharedOrgs).to.be.rejectedWith(
+                'shared with too many orgs'
+            )
+        })
+
+        context(
+            'shares the program has been shared with maxiumum number of orgs',
+            async () => {
+                let orgIds: string[]
+
+                beforeEach(async () => {
+                    let orgs = createOrganizations(50)
+                    await Promise.all(orgs.map((o) => o.save()))
+                    orgIds = orgs.map((o) => o.organization_id)
+                })
+
+                it('and replaceExisting=false', async () => {
+                    await program.shareHelper(orgIds)
+                    let sharedOrgs = program.shareHelper([
+                        sharedWithOrganization.organization_id,
+                    ])
+                    await expect(sharedOrgs).to.be.rejectedWith(
+                        'shared with too many orgs'
+                    )
+                })
+
+                it('and replaceExisting=true', async () => {
+                    await program.shareHelper(orgIds, true)
+                    let sharedOrgs = await program.shareHelper(
+                        [sharedWithOrganization.organization_id],
+                        true
+                    )
+                    expect(sharedOrgs[0]).to.eq(
+                        sharedWithOrganization.organization_id
+                    )
+                })
+            }
+        )
+    })
+
+    describe('share', () => {
+        let nonAdminUser: User
+        let sharedWithOrganization: Organization
         let requiredPermissions = [
             PermissionName.share_content_282,
             PermissionName.edit_program_20331,
         ]
+
+        beforeEach(async () => {
+            nonAdminUser = await createUser().save()
+            sharedWithOrganization = await createOrganization().save()
+        })
 
         let makeRole = async (permissions: PermissionName[]) => {
             let role = roleFactory.createRole(
@@ -499,41 +619,13 @@ describe('program', () => {
             )
             await role.save()
             await createOrganizationMembership({
-                user,
+                user: nonAdminUser,
                 organization: await program.organization!,
                 roles: [role],
             }).save()
         }
 
-        beforeEach(async () => {
-            user = await createNonAdminUser(testClient)
-            userId = user.user_id
-
-            org = createOrganization()
-            await connection.manager.save(org)
-            organizationId = org.organization_id
-            program = createProgram(org)
-            await connection.manager.save(program)
-
-            const otherUser = await createNonAdminUser(testClient)
-            otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(
-                testClient,
-                otherUserId,
-                organizationId,
-                { authorization: getAdminAuthToken() }
-            )
-            sharedWithOwner = await createAdminUser(testClient)
-            sharedWithOrganization = await createOrganizationAndValidate(
-                testClient,
-                sharedWithOwner.user_id,
-                'mcpoopy'
-            )
-            permissions = new UserPermissions({
-                id: user.user_id,
-                email: user.email || '',
-            })
-        })
+        let defaultLoaders = createDefaultDataLoaders()
 
         let sharing = async (idsToShare: string[]) => {
             return program.share(
@@ -541,10 +633,15 @@ describe('program', () => {
                     organizationIds: idsToShare,
                 },
                 {
-                    permissions: permissions,
-                    loaders: createDefaultDataLoaders(),
+                    permissions: new UserPermissions({
+                        id: nonAdminUser.user_id,
+                        email: nonAdminUser.email!,
+                    }),
+                    loaders: defaultLoaders,
                 },
-                info
+                <GraphQLResolveInfo>{
+                    operation: { operation: 'mutation' },
+                }
             )
         }
 
@@ -553,8 +650,8 @@ describe('program', () => {
                 await makeRole(requiredPermissions)
             })
 
+            // todo: make this an acceptance test
             it('shares the program', async () => {
-                await connection.manager.save(program)
                 let sharedOrgs: string[] = <string[]>(
                     await sharing([sharedWithOrganization.organization_id])
                 )
@@ -569,7 +666,8 @@ describe('program', () => {
             })
         })
 
-        context('and the user does not permission', () => {
+        // should this be in acceptance test?
+        context('and the user does not have permission', () => {
             it('shares to share the program', async () => {
                 let missingPermissions = [PermissionName.edit_program_20331]
                 await makeRole(missingPermissions)
@@ -577,6 +675,9 @@ describe('program', () => {
                     sharedWithOrganization.organization_id,
                 ])
                 await expect(sharedOrgs).to.be.rejectedWith('share_content_282')
+                let dbProgram = await Program.findOneOrFail(program.id)
+                let dbSharedWith = (await dbProgram.sharedWith) || []
+                expect(dbSharedWith).to.be.empty
             })
             it('shares to edit the program', async () => {
                 let missingPermissions = [PermissionName.share_content_282]
@@ -587,6 +688,9 @@ describe('program', () => {
                 await expect(sharedOrgs).to.be.rejectedWith(
                     'edit_program_20331'
                 )
+                let dbProgram = await Program.findOneOrFail(program.id)
+                let dbSharedWith = (await dbProgram.sharedWith) || []
+                expect(dbSharedWith).to.be.empty
             })
         })
     })
