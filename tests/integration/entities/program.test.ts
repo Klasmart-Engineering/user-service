@@ -552,7 +552,7 @@ describe('program', () => {
             await expect(sharedOrgs).to.be.rejectedWith('not a valid org ID')
         })
         it('shares too many orgs supplied', async () => {
-            let orgs = createOrganizations(50)
+            let orgs = createOrganizations(51)
             await Promise.all(orgs.map((o) => o.save()))
             let orgIds = orgs.map((o) => o.organization_id)
             let sharedOrgs = program.shareHelper(orgIds)
@@ -696,46 +696,16 @@ describe('program', () => {
     })
 
     describe('unshare', () => {
-        let otherUserId: string
-        let sharedWithOwner: User
+        let nonAdminUser: User
         let sharedWithOrganization: Organization
-        let permissions: UserPermissions
-        let info = <GraphQLResolveInfo>{
-            operation: { operation: 'mutation' },
-        }
         let requiredPermissions = [
             PermissionName.share_content_282,
             PermissionName.edit_program_20331,
         ]
 
         beforeEach(async () => {
-            user = await createNonAdminUser(testClient)
-            userId = user.user_id
-
-            org = createOrganization()
-            await connection.manager.save(org)
-            organizationId = org.organization_id
-            program = createProgram(org)
-            await connection.manager.save(program)
-
-            const otherUser = await createNonAdminUser(testClient)
-            otherUserId = otherUser.user_id
-            await addUserToOrganizationAndValidate(
-                testClient,
-                otherUserId,
-                organizationId,
-                { authorization: getAdminAuthToken() }
-            )
-            sharedWithOwner = await createAdminUser(testClient)
-            sharedWithOrganization = await createOrganizationAndValidate(
-                testClient,
-                sharedWithOwner.user_id,
-                'mcpoopy'
-            )
-            permissions = new UserPermissions({
-                id: user.user_id,
-                email: user.email || '',
-            })
+            nonAdminUser = await createUser().save()
+            sharedWithOrganization = await createOrganization().save()
         })
 
         let makeRole = async (permissions: PermissionName[]) => {
@@ -748,11 +718,13 @@ describe('program', () => {
             )
             await role.save()
             await createOrganizationMembership({
-                user,
+                user: nonAdminUser,
                 organization: await program.organization!,
                 roles: [role],
             }).save()
         }
+
+        let defaultLoaders = createDefaultDataLoaders()
 
         let sharing = async (idsToShare: string[]) => {
             return program.share(
@@ -760,10 +732,15 @@ describe('program', () => {
                     organizationIds: idsToShare,
                 },
                 {
-                    permissions: permissions,
-                    loaders: createDefaultDataLoaders(),
+                    permissions: new UserPermissions({
+                        id: user.user_id,
+                        email: user.email!,
+                    }),
+                    loaders: defaultLoaders,
                 },
-                info
+                <GraphQLResolveInfo>{
+                    operation: { operation: 'mutation' },
+                }
             )
         }
 
@@ -773,16 +750,42 @@ describe('program', () => {
                     organizationIds: idsToShare,
                 },
                 {
-                    permissions: permissions,
-                    loaders: createDefaultDataLoaders(),
+                    permissions: new UserPermissions({
+                        id: nonAdminUser.user_id,
+                        email: nonAdminUser.email!,
+                    }),
+                    loaders: defaultLoaders,
                 },
-                info
+                <GraphQLResolveInfo>{
+                    operation: { operation: 'mutation' },
+                }
             )
         }
 
         context('and the user has all the permissions', () => {
             beforeEach(async () => {
                 await makeRole(requiredPermissions)
+            })
+
+            it('shares doesnt remove orgs that arent mentioned', async () => {
+                let otherSharedWithOrganization = await createOrganization().save()
+                await sharing([
+                    sharedWithOrganization.organization_id,
+                    otherSharedWithOrganization.organization_id,
+                ])
+                let sharedOrgs: string[] = <string[]>(
+                    await unsharing([sharedWithOrganization.organization_id])
+                )
+                expect(sharedOrgs).to.have.same.members([
+                    otherSharedWithOrganization.organization_id,
+                ])
+                let dbProgram = await Program.findOneOrFail(program.id)
+                let dbSharedWith = (await dbProgram.sharedWith) || []
+                expect(
+                    dbSharedWith.map((o) => o.organization_id)
+                ).to.have.same.members([
+                    otherSharedWithOrganization.organization_id,
+                ])
             })
 
             it('shares unshares the program', async () => {
@@ -796,27 +799,23 @@ describe('program', () => {
                 let dbSharedWith = (await dbProgram.sharedWith) || []
                 expect(dbSharedWith.length).to.eq(0)
             })
+
+            it('shares cant unshare id not already shared', async () => {
+                let sharedOrgs = unsharing([
+                    sharedWithOrganization.organization_id,
+                ])
+                expect(sharedOrgs).to.be.rejectedWith(
+                    'nope, not already shared'
+                )
+                let dbProgram = await Program.findOneOrFail(program.id)
+                let dbSharedWith = (await dbProgram.sharedWith) || []
+                expect(dbSharedWith.length).to.eq(0)
+            })
         })
 
         context('and the user does not permission', () => {
             beforeEach(async () => {
-                let adminUser = await createAdminUser(testClient)
-                let adminPermissions = new UserPermissions({
-                    id: adminUser.user_id,
-                    email: adminUser.email || '',
-                })
-                await program.share(
-                    {
-                        organizationIds: [
-                            sharedWithOrganization.organization_id,
-                        ],
-                    },
-                    {
-                        permissions: adminPermissions,
-                        loaders: createDefaultDataLoaders(),
-                    },
-                    info
-                )
+                await sharing([sharedWithOrganization.organization_id])
             })
 
             it('shares to share the program', async () => {
