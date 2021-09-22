@@ -73,7 +73,7 @@ The idea is, that it should be very easy to understand and add a new similar opt
 
 At present the environment variables are defined in terrafom files.
 
-I have found two user&#46;tf files that define the user service enviromental variablesm 
+I have found two user&#46;tf (terraform) files that define the user service enviromental variables. 
  - [prod-ap-northeast-2](https://bitbucket.org/calmisland/kidsloop-hub-infra/src/master/prod-ap-northeast-2/user.tf)
  - [prod-cn-north-1](https://bitbucket.org/calmisland/kidsloop-hub-infra/src/master/prod-cn-north-1/user.tf)
  
