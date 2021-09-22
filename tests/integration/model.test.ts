@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, getRepository } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,

@@ -55,7 +55,7 @@ const typeDefs = gql`
         ageRangeUnitFrom: AgeRangeUnitFilter
         ageRangeValueTo: AgeRangeValueFilter
         ageRangeUnitTo: AgeRangeUnitFilter
-        schoolId: UUIDFilter
+        schoolId: UUIDExclusiveFilter
         gradeId: UUIDFilter
         subjectId: UUIDFilter
         programId: UUIDFilter

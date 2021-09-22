@@ -53,7 +53,7 @@ export async function usersConnectionResolver({
             filterHasProperty('schoolId', filter) &&
             !scopeHasJoin(scope, SchoolMembership)
         ) {
-            scope.innerJoin('User.school_memberships', 'SchoolMembership')
+            scope.leftJoin('User.school_memberships', 'SchoolMembership')
         }
         if (filterHasProperty('classId', filter)) {
             scope.leftJoin('User.classesStudying', 'ClassStudying')

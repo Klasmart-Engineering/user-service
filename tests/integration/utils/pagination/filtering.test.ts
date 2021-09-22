@@ -412,6 +412,21 @@ describe('filtering', () => {
 
             expect(data.length).to.equal(1)
         })
+        it('supports uuid.isNull', async () => {
+            const filter: IEntityFilter = {
+                userId: {
+                    operator: 'isNull',
+                },
+            }
+
+            scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    userId: 'User.user_id',
+                })
+            )
+            const data = await scope.getMany()
+            expect(data.length).to.equal(0)
+        })
     })
 
     context('ageRanges', () => {

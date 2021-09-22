@@ -661,7 +661,7 @@ export class Model {
                 // nonAdminClassScope may have already joined on Schools
                 !scopeHasJoin(scope, School)
             ) {
-                scope.innerJoin('Class.schools', 'School')
+                scope.leftJoin('Class.schools', 'School')
             }
 
             if (filterHasProperty('gradeId', filter)) {

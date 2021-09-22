@@ -79,9 +79,9 @@ const typeDefs = gql`
         # joined columns
         organizationId: UUIDFilter
         roleId: UUIDFilter
-        schoolId: UUIDFilter
+        schoolId: UUIDExclusiveFilter
         organizationUserStatus: StringFilter
-        classId: UUIDFilter
+        classId: UUIDExclusiveFilter
 
         AND: [UserFilter!]
         OR: [UserFilter!]

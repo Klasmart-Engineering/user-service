@@ -855,6 +855,25 @@ describe('classesConnection', () => {
                 it('supports filtering', async () => {
                     return testSchoolFilter(getAdminAuthToken())
                 })
+                it('supports the exclusive filter via IS NULL', async () => {
+                    const filter: IEntityFilter = {
+                        schoolId: {
+                            operator: 'isNull',
+                        },
+                    }
+
+                    // only classes in one org have been assigned to a school
+                    const expectedClasses = classesCount * 2
+
+                    const result = await classesConnection(
+                        testClient,
+                        'FORWARD',
+                        { count: 10 },
+                        { authorization: getAdminAuthToken() },
+                        filter
+                    )
+                    expect(result.totalCount).to.eq(expectedClasses)
+                })
             })
 
             context('with non-admin scope', () => {

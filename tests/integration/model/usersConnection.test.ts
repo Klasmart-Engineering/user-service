@@ -802,6 +802,23 @@ describe('usersConnection', () => {
             )
             expect(usersConnection?.totalCount).to.eql(5)
         })
+        it('supports the exclusive filter via IS NULL', async () => {
+            await createUser().save()
+
+            const filter: IEntityFilter = {
+                schoolId: {
+                    operator: 'isNull',
+                },
+            }
+            const usersConnection = await userConnection(
+                testClient,
+                direction,
+                { count: 3 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(usersConnection.totalCount).to.eql(2) // new user + super admin
+        })
     })
 
     context('role filter', () => {
@@ -1379,6 +1396,23 @@ describe('usersConnection', () => {
                 }) || []
 
             expect(userIds).to.deep.equalInAnyOrder(classUserIds)
+        })
+        it('supports the exclusive filter via IS NULL', async () => {
+            await createUser().save()
+
+            const filter: IEntityFilter = {
+                classId: {
+                    operator: 'isNull',
+                },
+            }
+            const usersConnection = await userConnection(
+                testClient,
+                direction,
+                { count: 3 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(usersConnection.totalCount).to.eql(2) // new user + super admin
         })
     })
 

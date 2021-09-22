@@ -155,12 +155,10 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         ])
         if (userOrgSchools.length > 0 && schoolMemberships) {
             // you can view all users in the schools you belong to
-            scope.innerJoin(
-                'User.school_memberships',
-                'SchoolMembership',
-                'SchoolMembership.school IN (:...schools)',
-                { schools: schoolMemberships.map(({ school_id }) => school_id) }
-            )
+            scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            scope.andWhere('SchoolMembership.school_id IN (:...schoolIds)', {
+                schoolIds: schoolMemberships.map(({ school_id }) => school_id),
+            })
             return
         }
 
@@ -482,7 +480,7 @@ export class IsAdminDirective extends SchemaDirectiveVisitor {
         }
         if (schoolOrgs.length) {
             scope
-                .innerJoin('Class.schools', 'School')
+                .leftJoin('Class.schools', 'School')
                 .innerJoin(
                     'School.memberships',
                     'SchoolMembership',

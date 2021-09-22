@@ -8,11 +8,19 @@ export interface IEntityFilter {
     AND?: IEntityFilter[]
 }
 
-type FilteringOperator = 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains'
+type FilteringOperator =
+    | 'eq'
+    | 'neq'
+    | 'lt'
+    | 'lte'
+    | 'gt'
+    | 'gte'
+    | 'contains'
+    | 'isNull'
 
 interface IFilter {
     operator: FilteringOperator
-    value: FilteringValue
+    value?: FilteringValue
     caseInsensitive?: boolean
 }
 
@@ -185,8 +193,14 @@ export function getWhereClauseFromFilter(
                         })
 
                         for (let i = 1; i < aliases.length; i += 1) {
-                            const operator = (columnAliasValue as IMultipleColumn)
+                            let operator = (columnAliasValue as IMultipleColumn)
                                 .operator
+                            // Always enforce an AND operation when using the isNull operator
+                            // Currently only required for the classId filter of userConnection to
+                            // check for classes studying AND teaching
+                            if (data.operator === 'isNull') {
+                                operator = 'AND'
+                            }
                             uniqueId = uuid_v4()
                             whereCondition = createWhereCondition(
                                 !!data.caseInsensitive,
@@ -277,13 +291,14 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
         lt: '<',
         lte: '<=',
         contains: 'LIKE',
+        isNull: 'IS NULL',
     }
 
     return operators[op]
 }
 
 // parses the value given for use in SQL
-function parseValueForSQLOperator(operator: string, value: CommonValue) {
+function parseValueForSQLOperator(operator: string, value?: CommonValue) {
     switch (operator) {
         case 'LIKE':
             return `%${value}%`
@@ -330,6 +345,9 @@ function createWhereCondition(
     sqlOperator: string,
     uniqueId: string
 ) {
+    if (sqlOperator === 'IS NULL') {
+        return `${alias} ${sqlOperator}`
+    }
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`
     } else {

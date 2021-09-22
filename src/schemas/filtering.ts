@@ -20,6 +20,10 @@ const typeDefs = gql`
         operator: UUIDOperator!
         value: UUID!
     }
+    input UUIDExclusiveFilter {
+        operator: UUIDExclusiveOperator!
+        value: UUID
+    }
 
     input BooleanFilter {
         operator: BooleanOperator!
@@ -61,6 +65,11 @@ const typeDefs = gql`
     enum UUIDOperator {
         eq
         neq
+    }
+    enum UUIDExclusiveOperator {
+        eq
+        neq
+        isNull
     }
 
     enum NumberOrDateOperator {
