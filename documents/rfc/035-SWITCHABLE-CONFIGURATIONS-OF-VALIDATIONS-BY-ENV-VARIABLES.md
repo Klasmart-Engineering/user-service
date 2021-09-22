@@ -11,9 +11,9 @@ We use environment variables already in the project to indicate aspects of the c
 <a name="rkfootnote1">1</a>: RK stands for Rumah Kisah an organization in Indonesia.
 
 Related tickets:
-[UD-545](https://calmisland.atlassian.net/browse/UD-545)
-[UD-688](https://calmisland.atlassian.net/browse/UD-688)
-[UD-689](https://calmisland.atlassian.net/browse/UD-689)
+- [UD-545](https://calmisland.atlassian.net/browse/UD-545)
+- [UD-688](https://calmisland.atlassian.net/browse/UD-688)
+- [UD-689](https://calmisland.atlassian.net/browse/UD-689)
 
 
 
@@ -23,7 +23,7 @@ We allow aspects of the validation that we use to be configured by an environmen
 In the case that the environment variable is missing we leave the behaviour as it is was before the change. The question is where in the logic to make this configuration given that most of the Joi validation is static.
 
 In the code snippet below we use the environment variable EMAIL_ONLY to restrict the use of contact_info to email that is used to create the user records.
-
+```typescript
     const getEmailValidation = () => {
         const onlyEmail = sharedValidations.email.required().messages({
            'string.base': 'email is required',
@@ -47,7 +47,9 @@ In the code snippet below we use the environment variable EMAIL_ONLY to restrict
     }
 
     const getPhoneValidation = () => {
-        const noPhone = Joi.forbidden()
+        const noPhone = Joi.forbidden().messages({
+            'any.unknown': 'phone is not allowed',
+        }),
         const either = sharedValidations.phone.allow(null, '').empty(null)
 
         if (process.env.EMAIL_ONLY) {
@@ -63,11 +65,11 @@ In the code snippet below we use the environment variable EMAIL_ONLY to restrict
 
         phone: getPhoneValidation(),
     
-
+```
     
 The effect of this is that if we specify EMAIL_ONLY it will become a validation error if an attempt at creating a user using a phone number is attempted.
 
-The idea is that is very easy to understand and add a new similar option without creating a rats nest of unmaintainable code.
+The idea is, that it should be very easy to understand and add a new similar option without creating a rats nest of unmaintainable code.
 ### Acknowledgements
 Thanks to Richard Sommerville for the code suggestions.
 
