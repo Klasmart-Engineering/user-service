@@ -86,3 +86,4 @@ Thanks to Richard Sommerville for the code suggestions.
 | Sam  | Pending  |   🟡  |
 | Raphael  | Pending  |   🟡  |
 | Marlon  | Pending  |   🟡  |
+| Nicholas  | Pending  |   🟡  |
