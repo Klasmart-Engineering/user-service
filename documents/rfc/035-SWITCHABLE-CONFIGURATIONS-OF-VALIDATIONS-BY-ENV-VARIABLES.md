@@ -85,7 +85,7 @@ Thanks to Richard Sommerville for the code suggestions.
 | Enrique        | Pending |   🟡  |
 | Oliver      | Pending |   🟡  |
 | Max  | Approved |   🟢  |
-| Richard  | Pending  |   🟡  |
+| Richard  | Approved |   🟢  |
 | Matt  | Pending  |   🟡  |
 | Sam  | Pending  |   🟡  |
 | Raphael  | Pending  |   🟡  |
