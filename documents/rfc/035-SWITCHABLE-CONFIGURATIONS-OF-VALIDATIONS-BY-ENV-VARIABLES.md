@@ -90,7 +90,7 @@ Thanks to Richard Sommerville for the code suggestions.
 |     Reviewer     |  Status  | Color |
 |------------------|----------|-------|
 | Enrique        | Pending |   🟡  |
-| Oliver      | Pending |   🟡  |
+| Oliver      |  Approved |   🟢  |
 | Max  | Approved |   🟢  |
 | Richard  | Approved |   🟢  |
 | Matt  | Pending  |   🟡  |
