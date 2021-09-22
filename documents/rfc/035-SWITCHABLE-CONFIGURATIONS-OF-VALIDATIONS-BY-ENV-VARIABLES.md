@@ -66,6 +66,8 @@ In the code snippet below we use the environment variable EMAIL_ONLY to restrict
 
     
 The effect of this is that if we specify EMAIL_ONLY it will become a validation error if an attempt at creating a user using a phone number is attempted.
+
+The idea is that is very easy to understand and add a new similar option without creating a rats nest of unmaintainable code.
 ### Acknowledgements
 Thanks to Richard Sommerville for the code suggestions.
 
