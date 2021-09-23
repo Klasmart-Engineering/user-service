@@ -1,21 +1,28 @@
-import { SchemaDirectiveVisitor } from 'apollo-server-express'
-import { defaultFieldResolver, GraphQLField, GraphQLResolveInfo } from 'graphql'
+import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
+import { defaultFieldResolver, GraphQLSchema } from 'graphql'
 import { Context } from '../main'
 
-export class IsAuthenticatedDirective extends SchemaDirectiveVisitor {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public visitFieldDefinition(field: GraphQLField<any, any>) {
-        const { resolve = defaultFieldResolver } = field
+export function isAuthenticatedTransformer(schema: GraphQLSchema) {
+    return mapSchema(schema, {
+        [MapperKind.OBJECT_FIELD]: (fieldConfig) => {
+            const isAuthenticatedDirective = getDirective(
+                schema,
+                fieldConfig,
+                'isAuthenticated'
+            )?.[0]
+            if (!isAuthenticatedDirective) return
 
-        field.resolve = (
-            prnt: unknown,
-            args: Record<string, unknown>,
-            context: Context,
-            info: GraphQLResolveInfo
-        ) => {
-            context.permissions.rejectIfNotAuthenticated()
-
-            return resolve.apply(this, [prnt, args, context, info])
-        }
-    }
+            const { resolve = defaultFieldResolver } = fieldConfig
+            fieldConfig.resolve = async (
+                source,
+                args,
+                context: Context,
+                info
+            ) => {
+                context.permissions.rejectIfNotAuthenticated()
+                return resolve(source, args, context, info)
+            }
+            return fieldConfig
+        },
+    })
 }

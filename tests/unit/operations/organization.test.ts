@@ -15,7 +15,7 @@ context('inviteUser', () => {
         given_name: validUser.given_name,
         family_name: validUser.family_name,
         gender: validUser.gender,
-        organization_role_ids: [faker.random.uuid()],
+        organization_role_ids: [faker.datatype.uuid()],
     }
 
     it('fails validation if missing all required fields', () => {

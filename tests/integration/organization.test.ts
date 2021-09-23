@@ -121,7 +121,7 @@ describe('organization', () => {
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
-        testClient = createTestClient(server)
+        testClient = await createTestClient(server)
     })
 
     after(async () => {
@@ -1195,7 +1195,7 @@ describe('organization', () => {
                 })
 
                 it("returns an APIError if the Role doesn't exist", async () => {
-                    const nonexistentRoleId = faker.random.uuid()
+                    const nonexistentRoleId = faker.datatype.uuid()
                     return expect(
                         api({
                             organization_role_ids: [nonexistentRoleId],
@@ -1315,7 +1315,7 @@ describe('organization', () => {
                 })
 
                 it("returns an APIError if the Role doesn't exist", async () => {
-                    const nonexistentRoleId = faker.random.uuid()
+                    const nonexistentRoleId = faker.datatype.uuid()
                     return expect(
                         api({
                             school_role_ids: [nonexistentRoleId],
@@ -2128,7 +2128,7 @@ describe('organization', () => {
         })
         context('user_id', () => {
             it("if the `user_id` doesn't exist throws ERR_NONEXISTENT_ENTITY APIError", async () => {
-                const user_id = faker.random.uuid()
+                const user_id = faker.datatype.uuid()
                 return expect(
                     editMembershipWithDefaults({ user_id })
                 ).to.be.rejected.then((e) => {
@@ -2833,7 +2833,9 @@ describe('organization', () => {
                                     testClient,
                                     organization.organization_id,
                                     [newAgeRange],
-                                    { authorization: getNonAdminAuthToken() }
+                                    {
+                                        authorization: getNonAdminAuthToken(),
+                                    }
                                 )
 
                                 const dbAgeRanges = await AgeRange.find({
@@ -4224,7 +4226,9 @@ describe('organization', () => {
                                     testClient,
                                     organization.organization_id,
                                     [newSubcategory],
-                                    { authorization: getNonAdminAuthToken() }
+                                    {
+                                        authorization: getNonAdminAuthToken(),
+                                    }
                                 )
 
                                 const dbSubcategories = await Subcategory.find({
@@ -4894,7 +4898,9 @@ describe('organization', () => {
                                     testClient,
                                     organization.organization_id,
                                     [newCategory],
-                                    { authorization: getNonAdminAuthToken() }
+                                    {
+                                        authorization: getNonAdminAuthToken(),
+                                    }
                                 )
 
                                 let dbCategories = await Category.find({

@@ -79,7 +79,7 @@ context('Organization', () => {
             })
 
             it("if the ID doesn't exist, returns an empty `data` array and APIError for that ID", async () => {
-                const nonexistentID = faker.random.uuid()
+                const nonexistentID = faker.datatype.uuid()
 
                 const { data, errors } = await organization['findRolesById'](
                     [nonexistentID],
@@ -139,7 +139,7 @@ context('Organization', () => {
             })
 
             it('if a mix of existing and non-existent IDs, returns both a `data` array and APIError array', async () => {
-                const nonexistentID = faker.random.uuid()
+                const nonexistentID = faker.datatype.uuid()
 
                 const { data, errors } = await organization['findRolesById'](
                     [nonexistentID, customRole.role_id],
@@ -172,7 +172,7 @@ context('Organization', () => {
             })
 
             it("if the ID doesn't exist, returns an empty `data` array and APIError for that ID", async () => {
-                const nonexistentID = faker.random.uuid()
+                const nonexistentID = faker.datatype.uuid()
 
                 const { data, errors } = await organization['findSchoolsById'](
                     [nonexistentID],
@@ -218,7 +218,7 @@ context('Organization', () => {
             })
 
             it('if a mix of existing and non-existent IDs, returns both a `data` array and APIError array', async () => {
-                const nonexistentID = faker.random.uuid()
+                const nonexistentID = faker.datatype.uuid()
 
                 const { data, errors } = await organization['findSchoolsById'](
                     [nonexistentID, school.school_id],

@@ -1,5 +1,7 @@
 import { createCloudClient } from '../utils/storage'
 
+const PROVIDER = process.env.STORAGE_PROVIDER ?? ''
+
 export class CloudStorageUrlBuilder {
     /**
      * Get object URL, the `bucket` must be set as `PUBLIC`. If not, users will
@@ -13,7 +15,7 @@ export class CloudStorageUrlBuilder {
             throw new Error('fileName is empty')
         }
 
-        const client = createCloudClient(process.env.STORAGE_PROVIDER)
+        const client = createCloudClient(PROVIDER)
 
         client.getFile(
             process.env.STORAGE_BUCKET || 'kl-user-service',
@@ -23,7 +25,7 @@ export class CloudStorageUrlBuilder {
                     throw new Error(`failed to get file with error ${err}`)
                 }
                 let paths: Array<string> = []
-                switch (provider) {
+                switch (PROVIDER) {
                     case 'amazon':
                         paths = [
                             `https://${file.container}.s3.${process.env.STORAGE_REGION}.amazonaws.com`,

@@ -29,11 +29,6 @@ interface IMultipleColumn {
     operator: 'AND' | 'OR'
 }
 
-interface FilteringPropsParsed {
-    sqlOperator: string
-    value: CommonValue
-}
-
 type ColumnAliasValue = string | IMultipleColumn
 type CommonValue = string | number | boolean
 type ComposedValue = Record<string, CommonValue>

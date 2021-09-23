@@ -19,6 +19,7 @@ const routePrefix = process.env.ROUTE_PREFIX || ''
 export const initApp = async () => {
     const model = await Model.create()
     const apolloServer = createServer(model)
+    await apolloServer.start()
 
     const app = express()
     app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
@@ -41,7 +42,11 @@ export const initApp = async () => {
                     callback(null, Boolean(match))
                 } catch (e) {
                     console.error(e)
-                    callback(e)
+                    if (e instanceof Error || e === null) {
+                        callback(e)
+                    } else {
+                        throw e
+                    }
                 }
             },
         },

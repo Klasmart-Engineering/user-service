@@ -45,7 +45,8 @@ export async function createEntityFromCsvWithRollBack(
         ) {
             throw new CustomError(errors)
         }
-        throw new Error(errors)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        throw new Error(errors as any)
     } finally {
         await queryRunner.release()
     }

@@ -15,13 +15,13 @@ export function createAgeRange(
     // Low value should start with 0 as min but the library has an error with that int value
     // considering it falsey. A bug has been raised to them, until then we need to start at
     // 1
-    ageRange.low_value = lowValue || faker.random.number({ min: 1, max: 99 })
+    ageRange.low_value = lowValue || faker.datatype.number({ min: 1, max: 99 })
     ageRange.low_value_unit = faker.random.arrayElement(
         Object.values(AgeRangeUnit)
     )
     ageRange.high_value =
         highValue ||
-        faker.random.number({
+        faker.datatype.number({
             min: ageRange.low_value,
             max: 99,
         })

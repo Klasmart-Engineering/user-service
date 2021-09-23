@@ -79,7 +79,7 @@ describe('usersConnection loaders', async () => {
         it('returns an empty array for a user_id with no memberships', async () => {
             const userOrgs = await orgsForUsers([
                 userIds[0],
-                faker.random.uuid(),
+                faker.datatype.uuid(),
             ])
             expect(userOrgs).to.have.length(2)
             expect(userOrgs[1]).to.deep.equal([])
@@ -140,13 +140,13 @@ describe('usersConnection loaders', async () => {
             {
                 schoolId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
                 userId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
@@ -158,7 +158,7 @@ describe('usersConnection loaders', async () => {
             {
                 classId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
         ] as IEntityFilter[]).forEach((filter) =>
@@ -197,7 +197,7 @@ describe('usersConnection loaders', async () => {
         it('returns an empty array for a user_id with no memberships', async () => {
             const userSchools = await schoolsForUsers([
                 userIds[0],
-                faker.random.uuid(),
+                faker.datatype.uuid(),
             ])
             expect(userSchools).to.have.length(2)
             expect(userSchools[1]).to.deep.equal([])
@@ -243,13 +243,13 @@ describe('usersConnection loaders', async () => {
             {
                 schoolId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
                 roleId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
@@ -261,7 +261,7 @@ describe('usersConnection loaders', async () => {
             {
                 userId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
@@ -273,7 +273,7 @@ describe('usersConnection loaders', async () => {
             {
                 classId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
         ] as IEntityFilter[]).forEach((filter) =>
@@ -325,7 +325,7 @@ describe('usersConnection loaders', async () => {
         it('returns an empty array for a user_id with no roles', async () => {
             const userRoles = await rolesForUsers([
                 userIds[0],
-                faker.random.uuid(),
+                faker.datatype.uuid(),
             ])
             expect(userRoles).to.have.length(2)
             expect(userRoles[1]).to.deep.equal([])
@@ -382,7 +382,7 @@ describe('usersConnection loaders', async () => {
             {
                 roleId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
@@ -394,7 +394,7 @@ describe('usersConnection loaders', async () => {
             {
                 userId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
             {
@@ -406,7 +406,7 @@ describe('usersConnection loaders', async () => {
             {
                 classId: {
                     operator: 'eq',
-                    value: faker.random.uuid(),
+                    value: faker.datatype.uuid(),
                 },
             },
         ] as IEntityFilter[]).forEach((filter) =>

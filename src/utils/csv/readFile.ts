@@ -55,7 +55,7 @@ function checkFileSize(
     filename: string,
     fileErrors: CSVError[]
 ) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         let byteLength = 0
         let fileHasData = false
 

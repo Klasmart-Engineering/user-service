@@ -36,7 +36,7 @@ type ExpectAPIError<K extends keyof ErrorParams> = (
 ) => Chai.Assertion
 
 function expectAPIErrorType(
-    expectedErrorType: keyof typeof customErrors,
+    expectedErrorType: GenericErrorCode,
     actualError: Error,
     params: ErrorParams,
     variables: APIError['variables']
@@ -89,7 +89,7 @@ type ExpectAPIErrors = Implements<
     }
 >
 
-export const expectAPIError: ExpectAPIErrors = Object.fromEntries(
+export const expectAPIError = Object.fromEntries(
     Object.keys(customErrors)
         .filter((error) =>
             genericErrorCodes.includes(error as GenericErrorCode)
@@ -100,4 +100,4 @@ export const expectAPIError: ExpectAPIErrors = Object.fromEntries(
             (actualError: Error, params: ErrorParams, variables: string[]) =>
                 expectAPIErrorType(error, actualError, params, variables),
         ])
-)
+) as ExpectAPIErrors

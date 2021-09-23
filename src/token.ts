@@ -112,26 +112,22 @@ export function checkIssuerAuthorization(
 ) {
     const token = req.headers?.authorization
 
-    try {
-        if (token) {
-            const payload = decode(token)
+    if (token) {
+        const payload = decode(token)
 
-            if (payload && typeof payload !== 'string') {
-                const issuer = payload['iss']
+        if (payload && typeof payload !== 'string') {
+            const issuer = payload['iss']
 
-                if (
-                    !issuer ||
-                    typeof issuer !== 'string' ||
-                    blackListIssuers.includes(issuer)
-                ) {
-                    res.status(401)
-                    return res.send({ message: 'User not authorized' })
-                }
+            if (
+                !issuer ||
+                typeof issuer !== 'string' ||
+                blackListIssuers.includes(issuer)
+            ) {
+                res.status(401)
+                return res.send({ message: 'User not authorized' })
             }
         }
-
-        next()
-    } catch (error) {
-        throw new Error(error)
     }
+
+    next()
 }

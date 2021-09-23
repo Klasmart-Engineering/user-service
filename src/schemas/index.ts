@@ -19,9 +19,9 @@ import user from './user'
 import enums from './enums'
 import scalars from './scalars'
 import { Model } from '../model'
-import { IsAdminDirective } from '../directives/isAdmin'
-import { IsAuthenticatedDirective } from '../directives/isAuthenticated'
-import { IsMIMETypeDirective } from '../directives/isMIMEType'
+import isAdminDirective from './directives/isAdmin'
+import isAuthenticatedDirective from './directives/isAuthenticated'
+import isMIMETypeDirective from './directives/isMIMEType'
 import { Context } from '../main'
 
 export default function getDefault(model: Model, context?: Context) {
@@ -54,14 +54,12 @@ export default function getDefault(model: Model, context?: Context) {
                         _empty: String
                     }
                 `,
+                isAdminDirective,
+                isAuthenticatedDirective,
+                isMIMETypeDirective,
             ]
                 .concat(enums)
                 .concat(directives),
-            schemaDirectives: {
-                isAdmin: IsAdminDirective,
-                isAuthenticated: IsAuthenticatedDirective,
-                isMIMEType: IsMIMETypeDirective,
-            },
             resolvers: {},
         },
         schemas,

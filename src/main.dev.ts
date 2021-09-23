@@ -11,16 +11,17 @@ import './utils/dotenv'
 import { initApp } from './app'
 import https from 'https'
 
-// don't bother with types as this is just a dev tool
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const httpsLocalhost = require('https-localhost')()
+import createServer from 'https-localhost'
+import { getCerts } from 'https-localhost/certs'
+
+createServer()
 
 // The frontend uses port 8080, so use 3000 instead
 const port = 3000
 
 initApp()
     .then(async (app) => {
-        const certs = await httpsLocalhost.getCerts()
+        const certs = await getCerts()
 
         https.createServer(certs, app.expressApp).listen(port, () => {
             console.log(

@@ -1,7 +1,6 @@
 import fs from 'fs'
 import { Connection } from 'typeorm'
-
-const yaml = require('js-yaml')
+import yaml from 'js-yaml'
 
 // Seeding data for testing, especially is users
 export async function loadFixtures(
@@ -10,7 +9,7 @@ export async function loadFixtures(
 ): Promise<any> {
     let items: any[] = []
     try {
-        const file: any = yaml.safeLoad(
+        const file: any = yaml.load(
             fs.readFileSync(
                 __dirname + `/../fixtures/data/${name}.yml`,
                 'utf-8'

@@ -133,9 +133,9 @@ context('User loaders', () => {
             const loadedUsers = (
                 await usersByIds([
                     users[0].user_id,
-                    faker.random.uuid(),
+                    faker.datatype.uuid(),
                     users[1].user_id,
-                    faker.random.uuid(),
+                    faker.datatype.uuid(),
                 ])
             ).map(extractUserOrErrorData)
 

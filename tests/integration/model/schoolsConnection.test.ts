@@ -47,7 +47,7 @@ describe('schoolsConnection', () => {
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
-        testClient = createTestClient(server)
+        testClient = await createTestClient(server)
     })
 
     after(async () => {
@@ -123,13 +123,13 @@ describe('schoolsConnection', () => {
                 {
                     organizationId: {
                         operator: 'eq',
-                        value: faker.random.uuid(),
+                        value: faker.datatype.uuid(),
                     },
                 },
                 {
                     schoolId: {
                         operator: 'eq',
-                        value: faker.random.uuid(),
+                        value: faker.datatype.uuid(),
                     },
                 },
                 {

@@ -96,7 +96,7 @@ export function arraySchemaContext(schema: Joi.ArraySchema) {
                 arrayContainingOnly(schema, faker.random.word(), 'string')
             },
             uuid() {
-                uniqueArray(schema, faker.random.uuid(), 'UUID')
+                uniqueArray(schema, faker.datatype.uuid(), 'UUID')
             },
         },
         only: {
@@ -104,7 +104,7 @@ export function arraySchemaContext(schema: Joi.ArraySchema) {
                 arrayContainingOnly(schema, faker.random.word(), 'string')
             },
             uuid() {
-                arrayContainingOnly(schema, faker.random.uuid(), 'UUID')
+                arrayContainingOnly(schema, faker.datatype.uuid(), 'UUID')
             },
         },
     }

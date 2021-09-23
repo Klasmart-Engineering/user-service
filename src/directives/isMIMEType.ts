@@ -1,27 +1,38 @@
-import { defaultFieldResolver, GraphQLField, GraphQLResolveInfo } from 'graphql'
-import { SchemaDirectiveVisitor } from 'graphql-tools'
+import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
+import { defaultFieldResolver, GraphQLSchema } from 'graphql'
 import { Context } from '../main'
 
-export class IsMIMETypeDirective extends SchemaDirectiveVisitor {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public visitFieldDefinition(field: GraphQLField<any, any>) {
-        const { resolve = defaultFieldResolver } = field
-        const { mimetype } = this.args
+interface IsMIMETypeDirectiveArgs {
+    mimetype: string
+}
 
-        field.resolve = async (
-            prnt: unknown,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            args: Record<string, any>,
-            context: Context,
-            info: GraphQLResolveInfo
-        ) => {
-            const file = await args.file.promise
+export function isMIMETypeTransformer(schema: GraphQLSchema) {
+    return mapSchema(schema, {
+        [MapperKind.OBJECT_FIELD]: (fieldConfig) => {
+            const isMIMETypeDirective = getDirective(
+                schema,
+                fieldConfig,
+                'isMIMEType'
+            )?.[0]
+            if (!isMIMETypeDirective) return
 
-            if (file.mimetype !== mimetype) {
-                return null
+            const { resolve = defaultFieldResolver } = fieldConfig
+            const { mimetype } = isMIMETypeDirective as IsMIMETypeDirectiveArgs
+            fieldConfig.resolve = async (
+                source,
+                args,
+                context: Context,
+                info
+            ) => {
+                const file = await args.file.promise
+
+                if (file.mimetype !== mimetype) {
+                    return null
+                }
+
+                return resolve(source, args, context, info)
             }
-
-            return resolve.apply(this, [prnt, args, context, info])
-        }
-    }
+            return fieldConfig
+        },
+    })
 }

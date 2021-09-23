@@ -1,7 +1,6 @@
 import './utils/dotenv'
 import { initApp } from './app'
 import * as Sentry from '@sentry/node'
-import WebSocket from 'ws'
 import { UserPermissions } from './permissions/userPermissions'
 import express from 'express'
 import { IDataLoaders } from './loaders/setup'
@@ -13,7 +12,6 @@ export interface Context {
     sessionId?: string
     res?: express.Response
     req?: express.Request
-    websocket?: WebSocket
     permissions: UserPermissions
     loaders: IDataLoaders
 }

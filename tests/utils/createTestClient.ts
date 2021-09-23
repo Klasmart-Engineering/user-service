@@ -120,11 +120,12 @@ export interface ApolloServerTestClient {
  * @param server The `Apollo Server`
  * @returns `ApolloServerTestClient`
  */
-export const createTestClient = (
+export const createTestClient = async (
     server: ApolloServer
-): ApolloServerTestClient => {
+): Promise<ApolloServerTestClient> => {
     const app = express()
     app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
+    await server.start()
     server.applyMiddleware({ app })
 
     const test = async ({

@@ -24,7 +24,6 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { OrganizationMembership } from './organizationMembership'
 import { Program } from './program'
-import { Role } from './role'
 import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 
 @Entity()
@@ -45,9 +44,6 @@ export class School extends BaseEntity {
     @OneToMany(() => SchoolMembership, (membership) => membership.school)
     @JoinColumn({ name: 'user_id', referencedColumnName: 'user_id' })
     public memberships?: Promise<SchoolMembership[]>
-
-    @ManyToMany(() => Role, (role) => role.schoolMemberships)
-    public roles?: Promise<Role[]>
 
     public async membership(
         { user_id }: { user_id: string },

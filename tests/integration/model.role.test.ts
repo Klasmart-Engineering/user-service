@@ -43,7 +43,7 @@ describe('model.role', () => {
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
-        testClient = createTestClient(server)
+        testClient = await createTestClient(server)
     })
 
     after(async () => {

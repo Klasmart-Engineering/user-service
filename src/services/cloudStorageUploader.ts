@@ -17,7 +17,7 @@ export class CloudStorageUploader {
             remote: filePath,
         })
 
-        await new Promise((resolve) =>
+        await new Promise<void>((resolve) =>
             imageStream
                 .pipe(writeStream)
                 .on('success', function (remoteFile) {
