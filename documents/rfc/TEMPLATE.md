@@ -19,6 +19,14 @@ When documenting a workflow, include graphs / charts that visualise the textual 
 
 When suggesting a new design, revisit the RFC when the decision for a specific design approach has been made.
 
+### Out of scope
+
+List anything that is explicitly outside of the scope of the RFC to help keep discussion focused and avoid scope creep.
+Consider giving reasons for why something was considered out of scope. For example:
+* X is/will be discussed in it's own RFC
+* X is owned by another team who will define it themselves
+* X is not required for an MVP
+
 ### Appendix
 Optional link relevant information  (e.g API docs)
 
