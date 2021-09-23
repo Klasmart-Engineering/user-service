@@ -41,6 +41,7 @@ import { addRoleToOrganizationMembership } from '../../../utils/operations/organ
 import { grantPermission } from '../../../utils/operations/roleOps'
 import { PermissionName } from '../../../../src/permissions/permissionNames'
 import { normalizedLowercaseTrimmed } from '../../../../src/utils/clean'
+import { pick } from 'lodash'
 
 use(chaiAsPromised)
 
@@ -1165,14 +1166,17 @@ describe('processUserFromCSVRow', async () => {
             row.organization_role_name = role?.role_name || ''
         }
 
-        async function processAndReturnUser(expectedErrorCode: string = '') {
-            const rowErrors = await processUserFromCSVRow(
+        const processRow = async () =>
+            processUserFromCSVRow(
                 connection.manager,
                 row,
                 1,
                 [],
                 adminPermissions
             )
+
+        async function processAndReturnUser(expectedErrorCode: string = '') {
+            const rowErrors = await processRow()
             if (expectedErrorCode) {
                 expect(rowErrors.length).to.eq(1)
                 expect(rowErrors[0].code).to.eq(expectedErrorCode)
@@ -1304,10 +1308,17 @@ describe('processUserFromCSVRow', async () => {
                 ])
             )
 
-            it('errors with unauthorized_uploaded_entity', async () =>
-                processAndReturnUser(
-                    customErrors.unauthorized_uploaded_entity.code
-                ))
+            it('raises an UNAUTHORIZED_UPLOAD_CHILD_ENTITY error against the Role column', async () => {
+                const rowErrors = await processRow()
+                expect(rowErrors).to.have.length(1)
+                expect(
+                    pick(rowErrors[0], ['code', 'message', 'column'])
+                ).to.deep.equal({
+                    code: 'UNAUTHORIZED_UPLOAD_CHILD_ENTITY',
+                    message: `On row number 1, Unauthorized to upload User to Class "${cls.class_name}".`,
+                    column: 'organization_role_name',
+                })
+            })
         })
 
         context('and the role is student related', () => {

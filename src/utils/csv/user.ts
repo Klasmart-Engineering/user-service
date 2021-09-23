@@ -386,16 +386,14 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             if (!studentPerm && !teacherPerm) {
                 addCsvError(
                     rowErrors,
-                    customErrors.unauthorized_uploaded_entity.code,
+                    customErrors.unauthorized_upload_child.code,
                     rowNumber,
                     'organization_role_name',
-                    customErrors.unauthorized_uploaded_entity.message,
+                    customErrors.unauthorized_upload_child.message,
                     {
                         entity: 'User',
-                        entityName: user.full_name(),
                         parentEntity: 'Class',
                         parentName: row.class_name,
-                        organizationName: row.organization_name,
                     }
                 )
             }

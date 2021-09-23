@@ -148,10 +148,10 @@ export const customErrors = {
         message:
             'Unauthorized to upload {entity} to organization {organizationName}.',
     },
-    unauthorized_uploaded_entity: {
-        code: 'UNAUTHORIZED_UPLOADED_ENTITY',
+    unauthorized_upload_child: {
+        code: 'UNAUTHORIZED_UPLOAD_CHILD_ENTITY',
         message:
-            '{entity} {entityName} unauthorized to be uploaded to {parentEntity} {parentName} within Organization {organizationName}.',
+            'Unauthorized to upload {entity} to {parentEntity} "{parentName}".',
     },
 
     // generic fallback if a joi constraint is not overridden
