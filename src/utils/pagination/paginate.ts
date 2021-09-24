@@ -1,5 +1,10 @@
-import { addOrderByClause, ISortingConfig, ISortField } from './sorting'
-import { SelectQueryBuilder, BaseEntity } from 'typeorm'
+import {
+    addOrderByClause,
+    ISortingConfig,
+    ISortField,
+    SortOrder,
+} from './sorting'
+import { SelectQueryBuilder, BaseEntity, Brackets } from 'typeorm'
 import { IEntityFilter } from './filtering'
 
 const DEFAULT_PAGE_SIZE = 50
@@ -179,11 +184,18 @@ export const paginateData = async <T = unknown>({
 
     const totalCount = await scope.getCount()
 
-    const { order, primaryColumns } = addOrderByClause(scope, direction, sort)
+    const { order, primaryColumns, primaryKeyOrder } = addOrderByClause(
+        scope,
+        direction,
+        sort
+    )
 
     if (cursorData) {
-        const directionOperator = order === 'ASC' ? '>' : '<'
+        const directionOperator = order === SortOrder.ASC ? '>' : '<'
         if (primaryColumns.length) {
+            const pKeydirectionOperator =
+                primaryKeyOrder === SortOrder.ASC ? '>' : '<'
+
             const queryColumns: string[] = []
             const queryValues: string[] = []
             const queryParams: IQueryParams = {}
@@ -194,17 +206,31 @@ export const paginateData = async <T = unknown>({
                 queryValues.push(`:${paramName}`)
                 queryParams[paramName] = cursorData[primaryColumn]
             })
-
             const queryColumnsString = queryColumns.join(', ')
             const queryValuesString = queryValues.join(', ')
+            scope
+                .andWhere(
+                    `(${queryColumnsString}) ${directionOperator} (${queryValuesString})`,
+                    {
+                        ...queryParams,
+                    }
+                )
+                .orWhere(
+                    new Brackets((qb) => {
+                        qb.where(
+                            `(${queryColumnsString}) = (${queryValuesString})`,
+                            {
+                                ...queryParams,
+                            }
+                        ).andWhere(
+                            `${scope.alias}.${sort.primaryKey} ${pKeydirectionOperator} :defaultColumn`,
+                            {
+                                defaultColumn: cursorData[sort.primaryKey],
+                            }
+                        )
+                    })
+                )
 
-            scope.andWhere(
-                `(${queryColumnsString}, ${scope.alias}.${sort.primaryKey}) ${directionOperator} (${queryValuesString}, :defaultColumn)`,
-                {
-                    ...queryParams,
-                    defaultColumn: cursorData[sort.primaryKey],
-                }
-            )
             scope.offset(0)
         } else {
             scope.andWhere(

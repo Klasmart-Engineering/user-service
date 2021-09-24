@@ -18,6 +18,9 @@ import {
 import { createOrganization } from '../../../factories/organization.factory'
 import { addOrganizationToUserAndValidate } from '../../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../../utils/testConfig'
+import { Subject } from '../../../../src/entities/subject'
+import { createSubject } from '../../../factories/subject.factory'
+import { v4 } from 'uuid'
 
 use(chaiAsPromised)
 
@@ -372,6 +375,324 @@ describe('paginate', () => {
             )
             expect(data.pageInfo.hasNextPage).to.be.true
             expect(data.pageInfo.hasPreviousPage).to.be.false
+        })
+    })
+
+    context('query conditions', () => {
+        let subjectsList: Subject[] = []
+        const ids: string[] = []
+
+        beforeEach(async () => {
+            subjectsList = []
+
+            const names = [
+                'ccc',
+                'ccc',
+                'ccc',
+                'ddd',
+                'ddd',
+                'ddd',
+                'eee',
+                'aaa',
+                'aaa',
+                'aaa',
+                'bbb',
+                'bbb',
+                'bbb',
+            ]
+            for (let i = 0; i < 13; i++) {
+                const subject = createSubject()
+                const id = v4()
+                ids.push(id)
+                subject.id = id
+                subject.name = names[i]
+                subjectsList.push(subject)
+            }
+            await connection.manager.save(subjectsList)
+            scope = getRepository(Subject).createQueryBuilder()
+
+            ids.sort((a, b) => (a > b ? 1 : -1))
+        })
+        context('seek forward', () => {
+            const direction = 'FORWARD'
+
+            context('primary column ASC', () => {
+                beforeEach(() => {
+                    subjectsList.sort((a, b) =>
+                        a.name! > b.name! ||
+                        (a.name! === b.name! && a.id > b.id)
+                            ? 1
+                            : -1
+                    )
+                })
+                it('should get the next few records according to the primary column ASC', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[9].id,
+                            name: subjectsList[9].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'ASC',
+                            },
+                        },
+                    })
+
+                    expect(data.totalCount).to.eql(13)
+                    expect(data.edges.length).to.equal(3)
+                    expect(data.edges[0].node.name).to.equal('ddd')
+                    expect(data.edges[1].node.name).to.equal('ddd')
+                    expect(data.edges[2].node.name).to.equal('eee')
+                    expect(data.pageInfo.hasNextPage).to.be.false
+                    expect(data.pageInfo.hasPreviousPage).to.be.true
+                })
+
+                it('should get the next few records according to the primary key if the primary column ASC are equal', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[9].id,
+                            name: subjectsList[9].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'ASC',
+                            },
+                        },
+                    })
+
+                    const firstId = ids.findIndex(
+                        (id) => data.edges[0].node.id === id
+                    )
+                    const secondId = ids.findIndex(
+                        (id) => data.edges[1].node.id === id
+                    )
+
+                    expect(firstId).to.be.lt(secondId)
+                })
+            })
+
+            context('primary column DESC', () => {
+                beforeEach(() => {
+                    subjectsList.sort((a, b) =>
+                        a.name! < b.name! ||
+                        (a.name! === b.name! && a.id > b.id)
+                            ? 1
+                            : -1
+                    )
+                })
+                it('should get the next few records according to the primary column DESC', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[9].id,
+                            name: subjectsList[9].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'DESC',
+                            },
+                        },
+                    })
+
+                    expect(data.totalCount).to.eql(13)
+                    expect(data.edges.length).to.equal(3)
+                    expect(data.edges[0].node.name).to.equal('aaa')
+                    expect(data.edges[1].node.name).to.equal('aaa')
+                    expect(data.edges[2].node.name).to.equal('aaa')
+                    expect(data.pageInfo.hasNextPage).to.be.false
+                    expect(data.pageInfo.hasPreviousPage).to.be.true
+                })
+
+                it('should get the next few records according to the primary key if the primary column DESC are equal', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[9].id,
+                            name: subjectsList[9].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'DESC',
+                            },
+                        },
+                    })
+
+                    const firstId = ids.findIndex(
+                        (id) => data.edges[0].node.id === id
+                    )
+                    const secondId = ids.findIndex(
+                        (id) => data.edges[1].node.id === id
+                    )
+
+                    expect(firstId).to.be.lt(secondId)
+                })
+            })
+        })
+
+        context('seek backward', () => {
+            const direction = 'BACKWARD'
+
+            context('primary column ASC', () => {
+                beforeEach(() => {
+                    subjectsList.sort((a, b) =>
+                        a.name! > b.name! ||
+                        (a.name! === b.name! && a.id > b.id)
+                            ? 1
+                            : -1
+                    )
+                })
+                it('should get the next few records according to the primary column ASC', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[10].id,
+                            name: subjectsList[10].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'ASC',
+                            },
+                        },
+                    })
+
+                    expect(data.totalCount).to.eql(13)
+                    expect(data.edges.length).to.equal(10)
+                    expect(data.edges[0].node.name).to.equal('aaa')
+                    expect(data.edges[1].node.name).to.equal('aaa')
+                    expect(data.edges[2].node.name).to.equal('aaa')
+                    expect(data.pageInfo.hasNextPage).to.be.true
+                    expect(data.pageInfo.hasPreviousPage).to.be.false
+                })
+
+                it('should get the next few records according to the primary key if the primary column ASC are equal', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[10].id,
+                            name: subjectsList[10].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'ASC',
+                            },
+                        },
+                    })
+
+                    const firstId = ids.findIndex(
+                        (id) => data.edges[0].node.id === id
+                    )
+                    const secondId = ids.findIndex(
+                        (id) => data.edges[1].node.id === id
+                    )
+
+                    expect(firstId).to.be.lt(secondId)
+                })
+            })
+
+            context('primary column DESC', () => {
+                beforeEach(() => {
+                    subjectsList.sort((a, b) =>
+                        a.name! < b.name! ||
+                        (a.name! === b.name! && a.id > b.id)
+                            ? 1
+                            : -1
+                    )
+                })
+                it('should get the next few records according to the primary column DESC', async () => {
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[10].id,
+                            name: subjectsList[10].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'DESC',
+                            },
+                        },
+                    })
+
+                    expect(data.totalCount).to.eql(13)
+                    expect(data.edges.length).to.equal(10)
+                    expect(data.edges[0].node.name).to.equal('eee')
+                    expect(data.edges[1].node.name).to.equal('ddd')
+                    expect(data.edges[2].node.name).to.equal('ddd')
+                    expect(data.pageInfo.hasNextPage).to.be.true
+                    expect(data.pageInfo.hasPreviousPage).to.be.false
+                })
+            })
         })
     })
 })

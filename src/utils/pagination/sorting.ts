@@ -77,5 +77,6 @@ export function addOrderByClause(
     return {
         order,
         primaryColumns,
+        primaryKeyOrder,
     }
 }

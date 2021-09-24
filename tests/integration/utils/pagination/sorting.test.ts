@@ -432,6 +432,31 @@ describe('sorting', () => {
                 args.scope = createQueryBuilder('user')
             }
         })
+
+        it('secondary sorting order is ASC when primary sorting is DESC', async () => {
+            args.sort!.sort!.order = 'DESC'
+
+            let hasNextPage = true
+            let index = 0
+
+            while (hasNextPage) {
+                const data = await paginateData<User>(args)
+                const unseenUsers = totalUsers - index
+                expect(data.totalCount).to.eq(totalUsers)
+                expect(data.edges.length).to.eq(
+                    unseenUsers < fetchCount ? unseenUsers : fetchCount
+                )
+
+                for (let i = 0; i < data.edges.length; i++) {
+                    expect(data.edges[i].node.user_id).to.eq(userIds[index])
+                    index++
+                }
+
+                hasNextPage = data.pageInfo.hasNextPage
+                args.directionArgs!.cursor = data.pageInfo.endCursor
+                args.scope = createQueryBuilder('user')
+            }
+        })
     })
 
     context('multiple field sorting', () => {
