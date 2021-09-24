@@ -14,7 +14,7 @@ const PERMISSION_INFO_FILE = path.join(
 )
 
 interface PermissionInfo {
-    name: String
+    name: string
     superAdmin: boolean
     orgAdmin: boolean
     teacher: boolean
@@ -23,8 +23,8 @@ interface PermissionInfo {
     student: boolean
 }
 
-export const latestPermissions = async (forceDownload: boolean = false) => {
-    let permissions: Map<string, PermissionInfo> = new Map()
+export const latestPermissions = async (forceDownload = false) => {
+    const permissions: Map<string, PermissionInfo> = new Map()
 
     if (forceDownload) {
         const permissions = await axios.get(PERMISSIONS_CSV_URL, {

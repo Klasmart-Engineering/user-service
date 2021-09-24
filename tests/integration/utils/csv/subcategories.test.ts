@@ -30,7 +30,7 @@ describe('processSubCategoriesFromCSVRow', () => {
     let adminUser: User
     let adminPermissions: UserPermissions
 
-    const orgName: string = 'my-org'
+    const orgName = 'my-org'
     before(async () => {
         connection = await createTestConnection()
         const server = createServer(new Model(connection))
@@ -38,6 +38,7 @@ describe('processSubCategoriesFromCSVRow', () => {
     })
 
     beforeEach(async () => {
+        fileErrors = []
         expectedOrg = createOrganization()
         expectedOrg.organization_name = orgName
         await connection.manager.save(expectedOrg)

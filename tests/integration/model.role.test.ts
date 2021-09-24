@@ -36,7 +36,7 @@ describe('model.role', () => {
     let connection: Connection
     let originalAdmins: string[]
     let testClient: ApolloServerTestClient
-    let roleInfo = (role: Role) => {
+    const roleInfo = (role: Role) => {
         return role.role_id
     }
 
@@ -54,7 +54,7 @@ describe('model.role', () => {
         context('when none', () => {
             it('returns only the system roles', async () => {
                 await createNonAdminUser(testClient)
-                let arbitraryUserToken = getNonAdminAuthToken()
+                const arbitraryUserToken = getNonAdminAuthToken()
 
                 const { query } = testClient
 
@@ -113,7 +113,7 @@ describe('model.role', () => {
                 const { query } = testClient
 
                 await createNonAdminUser(testClient)
-                let arbitraryUserToken = getNonAdminAuthToken()
+                const arbitraryUserToken = getNonAdminAuthToken()
 
                 const res = await query({
                     query: GET_ROLE,

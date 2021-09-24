@@ -613,8 +613,7 @@ export async function inviteUser(
     alternate_phone?: string | null
 ) {
     const { mutate } = testClient
-    let variables: any
-    variables = { organization_id: organizationId }
+    const variables: any = { organization_id: organizationId }
     if (email) {
         variables.email = email
     }
@@ -1027,8 +1026,10 @@ export async function listClasses(
 export async function getSystemRoleIds() {
     const dbRoles = await Role.find({ system_role: true })
 
+    let result: any
+
     if (dbRoles) {
-        var result = dbRoles.reduce(function (map: any, obj: Role) {
+        result = dbRoles.reduce(function (map: any, obj: Role) {
             obj.role_name = obj.role_name || ''
             map[obj.role_name] = obj.role_id
             return map

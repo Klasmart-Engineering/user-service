@@ -26,7 +26,7 @@ describe('processSubjectFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: SubjectRow
     let organization: Organization
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
 
@@ -52,6 +52,7 @@ describe('processSubjectFromCSVRow', () => {
             subject_name: 'Wacking',
             category_name: 'Gross Motor Skills',
         }
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
@@ -160,7 +161,7 @@ describe('processSubjectFromCSVRow', () => {
             expect(subject?.status).eq('active')
             expect(categories).to.exist
             expect(categories?.length).to.equal(1)
-            let category = categories ? categories[0] : undefined
+            const category = categories ? categories[0] : undefined
             expect(category?.name).to.equal('None Specified')
             expect(organizationInSubject?.organization_name).eq(
                 row.organization_name
@@ -240,7 +241,7 @@ describe('processSubjectFromCSVRow', () => {
         'when the provided category already exists in the current subject',
         () => {
             beforeEach(async () => {
-                let categories: Category[] = []
+                const categories: Category[] = []
                 const categoryFound = await Category.findOneOrFail({
                     where: {
                         name: row.category_name,

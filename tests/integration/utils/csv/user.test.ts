@@ -176,15 +176,15 @@ describe('processUserFromCSVRow', async () => {
         context('organization does not exist', () => {
             it('errors with nonexistent_entity', async () => {
                 row.organization_name = 'None existing org'
-                let rowErrors = await processUsers()
-                let err = rowErrors[0]
+                const rowErrors = await processUsers()
+                const err = rowErrors[0]
                 expect(err.code).to.eq(customErrors.nonexistent_entity.code)
             })
         })
         context('org exists but user is not a member', () => {
             it('errors with nonexistent_entity', async () => {
-                let rowErrors = await processUsers()
-                let err = rowErrors[0]
+                const rowErrors = await processUsers()
+                const err = rowErrors[0]
                 expect(err.code).to.eq(customErrors.nonexistent_entity.code)
             })
         })
@@ -198,8 +198,8 @@ describe('processUserFromCSVRow', async () => {
                         organization.organization_id,
                         getAdminAuthToken()
                     )
-                    let rowErrors = await processUsers()
-                    let err = rowErrors[0]
+                    const rowErrors = await processUsers()
+                    const err = rowErrors[0]
                     expect(err.code).to.eq(
                         customErrors.unauthorized_org_upload.code
                     )
@@ -223,7 +223,7 @@ describe('processUserFromCSVRow', async () => {
                         organization.organization_id,
                         role.role_id
                     )
-                    let rowErrors = await processUsers()
+                    const rowErrors = await processUsers()
                     expect(rowErrors).to.be.empty
                 })
             }
@@ -258,7 +258,7 @@ describe('processUserFromCSVRow', async () => {
                 row.school_name = undefined
                 row.class_name = undefined
 
-                let rowErrors = await processUsers()
+                const rowErrors = await processUsers()
                 expect(rowErrors).to.be.empty
             })
         })
@@ -486,9 +486,8 @@ describe('processUserFromCSVRow', async () => {
                 '2020-01',
                 '01/01/2020',
             ]) {
-                let rowErrors: CSVError[]
                 row.user_date_of_birth = date_of_birth
-                rowErrors = await processUserFromCSVRow(
+                const rowErrors: CSVError[] = await processUserFromCSVRow(
                     connection.manager,
                     row,
                     1,
@@ -1150,10 +1149,10 @@ describe('processUserFromCSVRow', async () => {
     })
 
     context('when all the data is correct', () => {
-        let roleInfo = (role: Role) => {
+        const roleInfo = (role: Role) => {
             return role.role_id
         }
-        let userInfo = (user: User) => {
+        const userInfo = (user: User) => {
             return user.user_id
         }
 
@@ -1175,7 +1174,7 @@ describe('processUserFromCSVRow', async () => {
                 adminPermissions
             )
 
-        async function processAndReturnUser(expectedErrorCode: string = '') {
+        async function processAndReturnUser(expectedErrorCode = '') {
             const rowErrors = await processRow()
             if (expectedErrorCode) {
                 expect(rowErrors.length).to.eq(1)

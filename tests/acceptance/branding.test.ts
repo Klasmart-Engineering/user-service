@@ -148,7 +148,7 @@ describe('acceptance.branding', () => {
     })
 
     it('sets branding successfully', async () => {
-        let organization_id: string = ''
+        const organization_id = ''
 
         // create organization
         const createOrgResponse = await createOrg(user_id, getAdminAuthToken())
@@ -195,7 +195,7 @@ describe('acceptance.branding', () => {
     })
 
     it('deletes branding image successfully', async () => {
-        let organization_id: string = ''
+        const organization_id = ''
 
         const user2 = await connection
             .getRepository(User)
@@ -272,7 +272,7 @@ describe('acceptance.branding', () => {
     })
 
     it('deletes branding color successfully', async () => {
-        let organization_id: string = ''
+        const organization_id = ''
 
         const user2 = await connection
             .getRepository(User)

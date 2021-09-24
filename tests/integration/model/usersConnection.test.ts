@@ -501,7 +501,7 @@ describe('usersConnection', () => {
         })
 
         it('should get the next few records according to pagesize and startcursor', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({
                     user_id: usersList[3].user_id,
@@ -550,8 +550,8 @@ describe('usersConnection', () => {
             school1 = createSchool(org)
 
             // org and school whose membership shouldnt be included
-            let org2 = createOrganization()
-            let role2 = createRole('role 2', org2)
+            const org2 = createOrganization()
+            const role2 = createRole('role 2', org2)
             const school2 = createSchool(org2)
 
             await Organization.save([org, org2])
@@ -589,7 +589,7 @@ describe('usersConnection', () => {
             usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
         })
         it('should filter the pagination results on organizationId', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({
                     user_id: usersList[3].user_id,
@@ -725,7 +725,7 @@ describe('usersConnection', () => {
             )
         })
         it('should filter the pagination results on schoolId', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
             }
             const filter: IEntityFilter = {
@@ -875,7 +875,7 @@ describe('usersConnection', () => {
                 .add(schoolMemberships.slice(5))
         })
         it('should filter the pagination results on roleId', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
             }
             const filter: IEntityFilter = {
@@ -957,7 +957,7 @@ describe('usersConnection', () => {
         })
 
         it('should filter the pagination results on organizationId', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
             }
             const filter: IEntityFilter = {
@@ -1110,7 +1110,7 @@ describe('usersConnection', () => {
                 .add(otherSchoolMemberships)
         })
         it('should filter the pagination results on all filters', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
             }
             const filter: IEntityFilter = {
@@ -1219,7 +1219,7 @@ describe('usersConnection', () => {
                     value: '123',
                 },
             }
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
             }
             const usersConnection = await userConnection(
@@ -1293,7 +1293,7 @@ describe('usersConnection', () => {
         })
 
         it('should filter the pagination results on classId', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 5,
             }
 

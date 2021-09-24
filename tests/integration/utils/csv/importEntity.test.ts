@@ -39,8 +39,8 @@ describe('createEntityFromCsvWithRollBack', () => {
     })
 
     context('when file to process has errors', () => {
-        let fileName = 'example.csv'
-        let fileStream = fs.createReadStream(
+        const fileName = 'example.csv'
+        const fileStream = fs.createReadStream(
             `tests/fixtures/${fileName}`,
             'utf-8'
         )
@@ -73,8 +73,8 @@ describe('createEntityFromCsvWithRollBack', () => {
     })
 
     context('when file to process is valid', () => {
-        let fileName = 'organizationsExample.csv'
-        let fileStream = fs.createReadStream(
+        const fileName = 'organizationsExample.csv'
+        const fileStream = fs.createReadStream(
             `tests/fixtures/${fileName}`,
             'utf-8'
         )
@@ -104,12 +104,12 @@ describe('createEntityFromCsvWithRollBack', () => {
     })
 
     context('when dry run', () => {
-        let fileName = 'organizationsExample.csv'
-        let fileStream = fs.createReadStream(
+        const fileName = 'organizationsExample.csv'
+        const fileStream = fs.createReadStream(
             `tests/fixtures/${fileName}`,
             'utf-8'
         )
-        let isDryRun = true
+        const isDryRun = true
 
         beforeEach(async () => {
             file = {

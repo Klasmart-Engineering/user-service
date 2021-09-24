@@ -39,27 +39,27 @@ describe('Check Token', () => {
         it('issuer has wrong type in token', async () => {
             payload['iss'] = 1
 
-            let token = generateToken(payload)
+            const token = generateToken(payload)
             await expect(checkToken(token)).to.be.rejectedWith(
                 'Malformed authentication token issuer'
             )
         })
         it('missing issuer in token', async () => {
             payload = {}
-            let token = generateToken(payload)
+            const token = generateToken(payload)
             await expect(checkToken(token)).to.be.rejectedWith(
                 'Malformed authentication token issuer'
             )
         })
         it('unknown token issuer', async () => {
             payload['iss'] = 'not-allowed-issuer'
-            let token = generateToken(payload)
+            const token = generateToken(payload)
             await expect(checkToken(token)).to.be.rejectedWith(
                 'Unknown authentication token issuer'
             )
         })
         it('bad signature', async () => {
-            let token = sign(payload, 'the_wrong_secret', {
+            const token = sign(payload, 'the_wrong_secret', {
                 expiresIn: '1800s',
             })
 
@@ -70,7 +70,7 @@ describe('Check Token', () => {
     })
 
     it('with valid token', async () => {
-        let token = generateToken(payload)
+        const token = generateToken(payload)
         await expect(checkToken(token)).to.eventually.have.deep.include(payload)
     })
 })
@@ -80,7 +80,7 @@ describe('Issuer Authorization', () => {
     let middlewarePass = false
     let mockRequest: any
     let mockResponse: any
-    let nextFunction = () => {
+    const nextFunction = () => {
         middlewarePass = true
     }
 

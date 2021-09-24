@@ -38,7 +38,7 @@ describe('processProgramFromCSVRow', () => {
     let noneSpecifiedAgeRange: AgeRange
     let noneSpecifiedGrade: Grade
     let noneSpecifiedSubject: Subject
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
     const rowModel: ProgramRow = {
@@ -63,6 +63,7 @@ describe('processProgramFromCSVRow', () => {
 
     beforeEach(async () => {
         row = rowModel
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
@@ -506,7 +507,7 @@ describe('processProgramFromCSVRow', () => {
         'when provided age range already exists in the provided program',
         () => {
             beforeEach(async () => {
-                let ageRanges: AgeRange[] = []
+                const ageRanges: AgeRange[] = []
                 ageRanges.push(ageRange)
 
                 const program = new Program()
@@ -552,7 +553,7 @@ describe('processProgramFromCSVRow', () => {
         'when provided grade already exists in the provided program',
         () => {
             beforeEach(async () => {
-                let grades: Grade[] = []
+                const grades: Grade[] = []
                 grades.push(grade)
 
                 const program = new Program()
@@ -598,7 +599,7 @@ describe('processProgramFromCSVRow', () => {
         'when provided subject already exists in the provided program',
         () => {
             beforeEach(async () => {
-                let subjects: Subject[] = []
+                const subjects: Subject[] = []
                 subjects.push(subject)
 
                 const program = new Program()

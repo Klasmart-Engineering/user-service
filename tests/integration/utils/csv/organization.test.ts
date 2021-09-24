@@ -30,7 +30,7 @@ describe('processOrganizationFromCSVRow', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let row: OrganizationRow
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
 
@@ -53,6 +53,7 @@ describe('processOrganizationFromCSVRow', () => {
             owner_email: 'bpresnellj@marketwatch.com',
             owner_phone: '+232 938 966 2102',
         }
+        fileErrors = []
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
             id: adminUser.user_id,
@@ -252,11 +253,6 @@ describe('processOrganizationFromCSVRow', () => {
 
     context('when all data provided is valid', () => {
         it('creates the organizations with its relations', async () => {
-            let user
-            let organization
-            let organizationOwnership
-            let organizationMembership
-
             const errors = await processOrganizationFromCSVRow(
                 connection.manager,
                 row,
@@ -267,19 +263,21 @@ describe('processOrganizationFromCSVRow', () => {
 
             expect(errors).to.deep.equal([])
 
-            organization = await Organization.findOneOrFail({
+            const organization = await Organization.findOneOrFail({
                 where: { organization_name: row.organization_name },
             })
-            user = await User.findOneOrFail({
+            const user = await User.findOneOrFail({
                 where: { my_organization: organization.organization_id },
             })
-            organizationOwnership = await OrganizationOwnership.findOneOrFail({
-                where: {
-                    organization_id: organization.organization_id,
-                    user_id: user.user_id,
-                },
-            })
-            organizationMembership = await OrganizationMembership.findOneOrFail(
+            const organizationOwnership = await OrganizationOwnership.findOneOrFail(
+                {
+                    where: {
+                        organization_id: organization.organization_id,
+                        user_id: user.user_id,
+                    },
+                }
+            )
+            const organizationMembership = await OrganizationMembership.findOneOrFail(
                 {
                     where: {
                         organization_id: organization.organization_id,

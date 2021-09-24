@@ -33,10 +33,10 @@ describe('processSchoolFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: SchoolRow
     let organization: Organization
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
-    const sameShortcodeAnotherSchoolName: string = 'School One'
+    const sameShortcodeAnotherSchoolName = 'School One'
 
     before(async () => {
         connection = await createTestConnection()
@@ -65,6 +65,7 @@ describe('processSchoolFromCSVRow', () => {
             school_shortcode: 'SCHOOL1',
             program_name: 'Math',
         }
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
@@ -392,7 +393,7 @@ describe('processSchoolFromCSVRow', () => {
         'when the provided program already exists in the current school',
         () => {
             beforeEach(async () => {
-                let programs: Program[] = []
+                const programs: Program[] = []
                 const programFound = await Program.findOneOrFail({
                     where: {
                         name: row.program_name,

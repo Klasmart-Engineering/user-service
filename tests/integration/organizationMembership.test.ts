@@ -53,7 +53,7 @@ describe('organizationMembership', () => {
     let organization: Organization
     let testSchoolRoleId: string
 
-    let roleInfo = (role: any) => {
+    const roleInfo = (role: any) => {
         return role.role_id
     }
 
@@ -803,7 +803,7 @@ describe('organizationMembership', () => {
                     )
                 })
                 it('should succed to add the role ', async () => {
-                    let result = await addRoleToOrganizationMembership(
+                    const result = await addRoleToOrganizationMembership(
                         testClient,
                         org1Owner.user_id,
                         organization1Id,
@@ -812,7 +812,7 @@ describe('organizationMembership', () => {
                     expect(result).to.exist
                 })
                 it('should should fail to add the role ', async () => {
-                    let result = await addRoleToOrganizationMembership(
+                    const result = await addRoleToOrganizationMembership(
                         testClient,
                         org1Owner.user_id,
                         organization1Id,
@@ -821,7 +821,7 @@ describe('organizationMembership', () => {
                     expect(result).to.not.exist
                 })
                 it('should succed to add the roles ', async () => {
-                    let result = await addRolesToOrganizationMembership(
+                    const result = await addRolesToOrganizationMembership(
                         testClient,
                         org1Owner.user_id,
                         organization1Id,
@@ -830,7 +830,7 @@ describe('organizationMembership', () => {
                     expect(result).to.exist
                 })
                 it('should should fail to add the roles ', async () => {
-                    let result = await addRolesToOrganizationMembership(
+                    const result = await addRolesToOrganizationMembership(
                         testClient,
                         org1Owner.user_id,
                         organization1Id,

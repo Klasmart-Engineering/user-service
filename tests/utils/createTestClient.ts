@@ -171,7 +171,7 @@ export const createTestClient = async (
             request: convertNodeHttpToRequest(req),
         })
 
-        let gqlResponse = JSON.parse(graphqlResponse)
+        const gqlResponse = JSON.parse(graphqlResponse)
         gqlResponse.extensions = { cookies: res.cookies }
 
         return gqlResponse as GraphQLResponse

@@ -28,7 +28,7 @@ describe('processAgeRangeFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: AgeRangeRow
     let organization: Organization
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
     const rowModel: AgeRangeRow = {
@@ -50,6 +50,7 @@ describe('processAgeRangeFromCSVRow', () => {
 
     beforeEach(async () => {
         row = rowModel
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({

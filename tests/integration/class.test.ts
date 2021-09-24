@@ -960,7 +960,7 @@ describe('class', () => {
             })
 
             it('returns all org students if the class has not been assigned to a school', async () => {
-                let gqlStudents = await eligibleStudents(
+                const gqlStudents = await eligibleStudents(
                     testClient,
                     class1.class_id,
                     { authorization: arbitraryUserToken }
@@ -969,7 +969,7 @@ describe('class', () => {
             })
 
             it('returns all org teachers if the class has not been assigned to a school', async () => {
-                let gqlStudents = await eligibleTeachers(
+                const gqlStudents = await eligibleTeachers(
                     testClient,
                     class1.class_id,
                     { authorization: arbitraryUserToken }
@@ -1175,10 +1175,10 @@ describe('class', () => {
             )
 
             context('and the user has all the permissions', () => {
-                let userInfo = (user: User) => {
+                const userInfo = (user: User) => {
                     return user.user_id
                 }
-                let classInfo = (cls: Class) => {
+                const classInfo = (cls: Class) => {
                     return cls.class_id
                 }
 
@@ -1457,10 +1457,10 @@ describe('class', () => {
     })
 
     describe('removeTeacher', () => {
-        let userInfo = (user: User) => {
+        const userInfo = (user: User) => {
             return user.user_id
         }
-        let classInfo = (cls: Class) => {
+        const classInfo = (cls: Class) => {
             return cls.class_id
         }
 
@@ -1886,10 +1886,10 @@ describe('class', () => {
             )
 
             context('and the user has all the permissions', () => {
-                let userInfo = (user: User) => {
+                const userInfo = (user: User) => {
                     return user.user_id
                 }
-                let classInfo = (cls: Class) => {
+                const classInfo = (cls: Class) => {
                     return cls.class_id
                 }
 
@@ -2166,10 +2166,10 @@ describe('class', () => {
     })
 
     describe('removeStudent', () => {
-        let userInfo = (user: User) => {
+        const userInfo = (user: User) => {
             return user.user_id
         }
-        let classInfo = (cls: Class) => {
+        const classInfo = (cls: Class) => {
             return cls.class_id
         }
 
@@ -2541,10 +2541,10 @@ describe('class', () => {
             })
 
             context('and the user has all the permissions', () => {
-                let schoolInfo = (school: School) => {
+                const schoolInfo = (school: School) => {
                     return school.school_id
                 }
-                let classInfo = (cls: Class) => {
+                const classInfo = (cls: Class) => {
                     return cls.class_id
                 }
 
@@ -2853,10 +2853,10 @@ describe('class', () => {
     })
 
     describe('removeSchool', () => {
-        let schoolInfo = (school: School) => {
+        const schoolInfo = (school: School) => {
             return school.school_id
         }
-        let classInfo = (cls: Class) => {
+        const classInfo = (cls: Class) => {
             return cls.class_id
         }
 

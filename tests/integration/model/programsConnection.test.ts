@@ -95,14 +95,14 @@ describe('model', () => {
         subjects = []
 
         for (let i = 0; i < ageRangesCount / 2; i++) {
-            let ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.low_value_unit = AgeRangeUnit.MONTH
             ageRange.high_value_unit = AgeRangeUnit.MONTH
             ageRanges.push(ageRange)
         }
 
         for (let i = 0; i < ageRangesCount / 2; i++) {
-            let ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.low_value_unit = AgeRangeUnit.YEAR
             ageRange.high_value_unit = AgeRangeUnit.YEAR
             ageRanges.push(ageRange)
@@ -118,21 +118,21 @@ describe('model', () => {
         programs.push(...systemPrograms)
 
         for (let i = 0; i < gradesCount; i++) {
-            let grade = await createGrade(org1)
+            const grade = await createGrade(org1)
             grades.push(grade)
         }
 
         await connection.manager.save(grades)
 
         for (let i = 0; i < subjectsCount; i++) {
-            let subject = await createSubject(org1)
+            const subject = await createSubject(org1)
             subjects.push(subject)
         }
 
         await connection.manager.save(subjects)
 
         for (let i = 0; i < programsCount; i++) {
-            let program = await createProgram(org1)
+            const program = await createProgram(org1)
             program.name = `program ${i}`
             program.age_ranges = Promise.resolve([
                 ageRanges[Math.floor(i / (programsCount / ageRangesCount))],
@@ -149,7 +149,7 @@ describe('model', () => {
         }
 
         for (let i = 0; i < programsCount; i++) {
-            let program = await createProgram(org2)
+            const program = await createProgram(org2)
             program.name = `program ${i}`
             program.status = Status.INACTIVE
             org2Programs.push(program)

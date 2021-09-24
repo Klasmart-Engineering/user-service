@@ -49,7 +49,7 @@ describe('RolesInitializer', () => {
             it('does not modify the default roles permissions', async () => {
                 const { mutate } = testClient
                 const dbRoles = (await organization.roles({})) || []
-                let dbPermissions = []
+                const dbPermissions = []
                 expect(dbRoles).not.to.be.empty
 
                 for (const role of dbRoles) {
@@ -70,7 +70,7 @@ describe('RolesInitializer', () => {
                 expect(dbRoles.map(roleInfoFunc)).to.deep.equal(
                     dbNewRoles?.map(roleInfoFunc)
                 )
-                let resetPermissions = []
+                const resetPermissions = []
 
                 for (const role of dbNewRoles) {
                     const permissions = (await role.permissions) || []

@@ -342,7 +342,7 @@ describe('userPermissions', () => {
                 userPermissions = new UserPermissions(token)
             })
 
-            let permissionContext = {}
+            const permissionContext = {}
 
             it('allows all the actions of a super admin', async () => {
                 for (const permission of superAdminRole.permissions) {
@@ -379,7 +379,7 @@ describe('userPermissions', () => {
                 await connection.manager.save(org)
                 orgs.push(org)
 
-                let role = await createRoleFactory('role', org)
+                const role = await createRoleFactory('role', org)
                 await connection.manager.save(role)
                 roles.push(role)
 
@@ -427,7 +427,7 @@ describe('userPermissions', () => {
                         expect(orgIds.length).to.eq(0)
                     })
                     it("returns no orgs if the user doesn't have any the permissions", async () => {
-                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -443,7 +443,7 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -465,7 +465,7 @@ describe('userPermissions', () => {
                             PermissionName.view_user_page_40101,
                             { authorization: getAdminAuthToken() }
                         )
-                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -487,7 +487,7 @@ describe('userPermissions', () => {
                         expect(orgIds.length).to.eq(0)
                     })
                     it("returns no orgs if the user doesn't have any the permissions", async () => {
-                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -503,7 +503,7 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        let orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -527,7 +527,7 @@ describe('userPermissions', () => {
                         expect(schoolIds.length).to.eq(0)
                     })
                     it("returns no schools if the user doesn't have any the permissions", async () => {
-                        let schoolIds = await userPermissions?.orgMembershipsWithPermissions(
+                        const schoolIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -543,7 +543,7 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -565,7 +565,7 @@ describe('userPermissions', () => {
                             PermissionName.view_user_page_40101,
                             { authorization: getAdminAuthToken() }
                         )
-                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -587,7 +587,7 @@ describe('userPermissions', () => {
                         expect(schoolIds.length).to.eq(0)
                     })
                     it("returns no schools if the user doesn't have any the permissions", async () => {
-                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,
@@ -603,7 +603,7 @@ describe('userPermissions', () => {
                             PermissionName.view_users_40110,
                             { authorization: getAdminAuthToken() }
                         )
-                        let schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,
                                 PermissionName.view_user_page_40101,

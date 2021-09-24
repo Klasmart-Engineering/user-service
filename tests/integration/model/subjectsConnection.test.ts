@@ -121,13 +121,13 @@ describe('subjectsConnection', () => {
 
         // Creating Org1 Categories
         for (let i = 0; i < categoriesCount; i++) {
-            let category = await createCategory(org1)
+            const category = await createCategory(org1)
             org1Categories.push(category)
         }
 
         // Creating Org2 Categories
         for (let i = 0; i < categoriesCount; i++) {
-            let category = await createCategory(org2)
+            const category = await createCategory(org2)
             org2Categories.push(category)
         }
 
@@ -137,7 +137,7 @@ describe('subjectsConnection', () => {
         // Creating Org1 Subjects
         for (let i = 0; i < subjectsCount; i++) {
             const index = i * (categoriesCount / subjectsCount)
-            let subject = await createSubject(org1, [
+            const subject = await createSubject(org1, [
                 org1Categories[index],
                 org1Categories[index + 1],
             ])
@@ -149,7 +149,7 @@ describe('subjectsConnection', () => {
         // Creating Org2 Subjects
         for (let i = 0; i < subjectsCount; i++) {
             const index = i * (categoriesCount / subjectsCount)
-            let subject = await createSubject(org2, [
+            const subject = await createSubject(org2, [
                 org2Categories[index],
                 org2Categories[index + 1],
             ])

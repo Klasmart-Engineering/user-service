@@ -134,14 +134,14 @@ describe('classesConnection', () => {
 
         // creating org1 age ranges
         for (let i = 1; i <= ageRangesCount / 2; i++) {
-            let ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.low_value_unit = AgeRangeUnit.MONTH
             ageRange.high_value_unit = AgeRangeUnit.MONTH
             ageRanges.push(ageRange)
         }
 
         for (let i = 1; i <= ageRangesCount / 2; i++) {
-            let ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.low_value_unit = AgeRangeUnit.YEAR
             ageRange.high_value_unit = AgeRangeUnit.YEAR
             ageRanges.push(ageRange)
@@ -151,7 +151,7 @@ describe('classesConnection', () => {
 
         // creating org1 grades
         for (let i = 0; i < gradesCount; i++) {
-            let grade = await createGrade(org1)
+            const grade = await createGrade(org1)
             grades.push(grade)
         }
 
@@ -159,7 +159,7 @@ describe('classesConnection', () => {
 
         // creating org1 subjects
         for (let i = 0; i < subjectsCount; i++) {
-            let subject = await createSubject(org1)
+            const subject = await createSubject(org1)
             subjects.push(subject)
         }
 
@@ -167,7 +167,7 @@ describe('classesConnection', () => {
 
         // creating org1 programs
         for (let i = 0; i < programsCount; i++) {
-            let program = await createProgram(org1)
+            const program = await createProgram(org1)
             programs.push(program)
         }
 
@@ -175,8 +175,8 @@ describe('classesConnection', () => {
 
         // creating org1 classes
         for (let i = 0; i < classesCount; i++) {
-            let class_ = await createClass(undefined, org1)
-            let ageRangesForClass = [
+            const class_ = await createClass(undefined, org1)
+            const ageRangesForClass = [
                 ageRanges[Math.floor(i / (classesCount / ageRangesCount))],
             ]
 
@@ -202,7 +202,7 @@ describe('classesConnection', () => {
 
         // creating org2 classes
         for (let i = 0; i < classesCount; i++) {
-            let class_ = await createClass(undefined, org2)
+            const class_ = await createClass(undefined, org2)
             class_.class_name = `class ${i + 1}`
             class_.status = Status.INACTIVE
             org2Classes.push(class_)
@@ -210,7 +210,7 @@ describe('classesConnection', () => {
 
         // creating org3 schools
         for (let i = 0; i < schoolsCount; i++) {
-            let school = await createSchool(org3)
+            const school = await createSchool(org3)
             school.school_name = `school ${i}`
             org3Schools.push(school)
         }
@@ -220,7 +220,7 @@ describe('classesConnection', () => {
         // creating org3 classes
         for (let i = 0; i < classesCount; i++) {
             const index = Math.floor(i / (classesCount / schoolsCount))
-            let class_ = await createClass([org3Schools[index]], org3)
+            const class_ = await createClass([org3Schools[index]], org3)
 
             class_.class_name = `class ${i + 1}`
             class_.status = Status.ACTIVE
@@ -1094,7 +1094,7 @@ describe('classesConnection', () => {
                 let class_: Class
 
                 beforeEach(async () => {
-                    let program = await createProgram(org1)
+                    const program = await createProgram(org1)
 
                     await connection.manager.save([program])
 
@@ -1109,7 +1109,7 @@ describe('classesConnection', () => {
                 })
 
                 it('include it in results', async () => {
-                    let query = (filter: IEntityFilter) => {
+                    const query = (filter: IEntityFilter) => {
                         return classesConnection(
                             testClient,
                             'FORWARD',

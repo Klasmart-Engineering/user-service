@@ -7,12 +7,12 @@ import {
 describe('stringInject', () => {
     context('replace brackets with array items', () => {
         it('should replace brackets {0} in string with array[0]', () => {
-            var str = stringInject('My username is {0}', ['tjcafferkey'])
+            const str = stringInject('My username is {0}', ['tjcafferkey'])
             expect(str).to.equal('My username is tjcafferkey')
         })
 
         it('should replace brackets {0} and {1} in string with array[0] and array[1]', () => {
-            var str = stringInject('I am {0} the {1} function', [
+            const str = stringInject('I am {0} the {1} function', [
                 'testing',
                 'stringInject',
             ])
@@ -22,7 +22,7 @@ describe('stringInject', () => {
 
     context('pass in a string with no {} with an array of items', () => {
         it('should return the same string as passed in', () => {
-            var str = stringInject('This should be the same', [
+            const str = stringInject('This should be the same', [
                 'testing',
                 'stringInject',
             ])
@@ -32,55 +32,70 @@ describe('stringInject', () => {
 
     context('replace object values based on their keys', () => {
         it('replace object values based on one key', () => {
-            var str = stringInject('My username is {username}', {
+            const str = stringInject('My username is {username}', {
                 username: 'tjcafferkey',
             })
             expect(str).to.equal('My username is tjcafferkey')
         })
 
         it('replace object values based on two keys', () => {
-            var str = stringInject('My username is {username} on {platform}', {
-                username: 'tjcafferkey',
-                platform: 'GitHub',
-            })
+            const str = stringInject(
+                'My username is {username} on {platform}',
+                {
+                    username: 'tjcafferkey',
+                    platform: 'GitHub',
+                }
+            )
             expect(str).to.equal('My username is tjcafferkey on GitHub')
         })
 
         it('replace object values although the keys are omitted', () => {
-            var username = 'tjcafferkey'
-            var platform = 'GitHub'
-            var str = stringInject('My username is {username} on {platform}', {
-                username,
-                platform,
-            })
+            const username = 'tjcafferkey'
+            const platform = 'GitHub'
+            const str = stringInject(
+                'My username is {username} on {platform}',
+                {
+                    username,
+                    platform,
+                }
+            )
             expect(str).to.equal('My username is tjcafferkey on GitHub')
         })
 
         it('replace object values based on two keys in reverse order', () => {
-            var str = stringInject('My username is {platform} on {username}', {
-                username: 'tjcafferkey',
-                platform: 'GitHub',
-            })
+            const str = stringInject(
+                'My username is {platform} on {username}',
+                {
+                    username: 'tjcafferkey',
+                    platform: 'GitHub',
+                }
+            )
             expect(str).to.equal('My username is GitHub on tjcafferkey')
         })
 
         it('if the key does not exist in the object it will not replace it in the string', () => {
-            var str = stringInject('My username is {platform} on {username}', {
-                username: 'tjcafferkey',
-            })
+            const str = stringInject(
+                'My username is {platform} on {username}',
+                {
+                    username: 'tjcafferkey',
+                }
+            )
             expect(str).to.equal('My username is {platform} on tjcafferkey')
         })
 
         it('replace object values based on one nested key and one regular', function () {
-            var str = stringInject('My username is {user.name} on {platform}', {
-                user: { name: 'Robert' },
-                platform: 'IRL',
-            })
+            const str = stringInject(
+                'My username is {user.name} on {platform}',
+                {
+                    user: { name: 'Robert' },
+                    platform: 'IRL',
+                }
+            )
             expect(str).to.equal('My username is Robert on IRL')
         })
 
         it('if the object has no keys then it will return the string', () => {
-            var str = stringInject(
+            const str = stringInject(
                 'My username is {platform} on {username}',
                 {}
             )
@@ -90,12 +105,12 @@ describe('stringInject', () => {
 
     context('pass in incorrect parameters', () => {
         it('should return false when passed a number instead of an array as second parameter', () => {
-            var str = stringInject('hello', 1)
+            const str = stringInject('hello', 1)
             expect(str).to.equal('hello')
         })
 
         it('if the data param is false bool', () => {
-            var str = stringInject(
+            const str = stringInject(
                 'My username is {platform} on {username}',
                 false
             )
@@ -103,7 +118,7 @@ describe('stringInject', () => {
         })
 
         it('if the data param is true bool', () => {
-            var str = stringInject(
+            const str = stringInject(
                 'My username is {platform} on {username}',
                 true
             )
@@ -111,7 +126,7 @@ describe('stringInject', () => {
         })
 
         it('if the data param is a string', () => {
-            var str = stringInject(
+            const str = stringInject(
                 'My username is {platform} on {username}',
                 'string'
             )
@@ -127,7 +142,7 @@ describe('isHexadecimalColor', () => {
     })
     it('must be 6 or 8 characters long', () => {
         for (let i = 0; i < 10; i++) {
-            let hex = `#${'0'.repeat(i)}`
+            const hex = `#${'0'.repeat(i)}`
             if (i === 6 || i === 8) {
                 expect(isHexadecimalColor(hex)).to.be.true
             } else {
@@ -138,7 +153,7 @@ describe('isHexadecimalColor', () => {
 
     it('can consist of numbers', () => {
         for (let i = 0; i < 10; i++) {
-            let hex = `#${i.toString().repeat(6)}`
+            const hex = `#${i.toString().repeat(6)}`
             expect(isHexadecimalColor(hex)).to.be.true
         }
     })
@@ -147,8 +162,8 @@ describe('isHexadecimalColor', () => {
         const chars = 'abcdefghijklmnopqrstuvwxyz'
 
         for (const c of chars.split('')) {
-            let hexLowercase = `#${c.toLowerCase().repeat(6)}`
-            let hexUppercase = `#${c.toUpperCase().repeat(6)}`
+            const hexLowercase = `#${c.toLowerCase().repeat(6)}`
+            const hexUppercase = `#${c.toUpperCase().repeat(6)}`
             if (c.valueOf() <= 'f'.valueOf()) {
                 expect(isHexadecimalColor(hexLowercase)).to.be.true
                 expect(isHexadecimalColor(hexUppercase)).to.be.true

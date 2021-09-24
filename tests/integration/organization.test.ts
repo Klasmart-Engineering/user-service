@@ -17,7 +17,6 @@ import {
     createOrganizationAndValidate,
     userToPayload,
 } from '../utils/operations/userOps'
-import { createUserAndValidate } from '../utils/operations/modelOps'
 import {
     createAdminUser,
     createNonAdminUser,
@@ -90,13 +89,9 @@ import { isRequiredArgument } from 'graphql'
 import { Program } from '../../src/entities/program'
 import { createProgram } from '../factories/program.factory'
 import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
-import RoleInitializer from '../../src/initializers/roles'
-import { studentRole } from '../../src/permissions/student'
-import { UserPermissions } from '../../src/permissions/userPermissions'
 import { Class } from '../../src/entities/class'
 import { addSchoolToClass } from '../utils/operations/classOps'
 import { pick } from 'lodash'
-import { validationConstants } from '../../src/entities/validations/constants'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import {
     EditMembershipArguments,
@@ -105,7 +100,6 @@ import {
 import { Headers } from 'node-mocks-http'
 import { expectAPIError, expectToBeAPIErrorCollection } from '../utils/apiError'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { fake } from 'sinon'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -263,9 +257,8 @@ describe('organization', () => {
         })
 
         it('should assign the old user to the exsting user', async () => {
-            let oldUser: User
-            let email = user.email ?? ''
-            oldUser = await organization['updateOrCreateUser']({
+            const email = user.email ?? ''
+            const oldUser: User = await organization['updateOrCreateUser']({
                 user_id: user.user_id,
                 email,
                 given_name: user.given_name!,
@@ -276,8 +269,7 @@ describe('organization', () => {
             expect(oldUser.user_id).to.equal(user.user_id)
         })
         it('should assign the new user to a new user with an email', async () => {
-            let newUser: User
-            newUser = await organization['updateOrCreateUser']({
+            const newUser: User = await organization['updateOrCreateUser']({
                 email: 'bob@nowhere.com',
                 given_name: 'Bob',
                 family_name: 'Smith',
@@ -288,8 +280,7 @@ describe('organization', () => {
         })
 
         it('should assign the new user to a new user with a phone number', async () => {
-            let newUser: User
-            newUser = await organization['updateOrCreateUser']({
+            const newUser: User = await organization['updateOrCreateUser']({
                 phone: '+44207344141',
                 given_name: 'Bob',
                 family_name: 'Smith',
@@ -378,7 +369,7 @@ describe('organization', () => {
                 )
             })
             it('Should set the user as a member of the organization', async () => {
-                let membership = await organization['membershipOrganization'](
+                const membership = await organization['membershipOrganization'](
                     user,
                     new Array(role)
                 )
@@ -392,7 +383,7 @@ describe('organization', () => {
     describe('createClass', async () => {
         let userId: string
         let organizationId: string
-        let classInfo = (cls: any) => {
+        const classInfo = (cls: any) => {
             return cls.class_id
         }
 
@@ -637,7 +628,7 @@ describe('organization', () => {
     describe('createSchool', async () => {
         let userId: string
         let organizationId: string
-        let schoolInfo = (school: any) => {
+        const schoolInfo = (school: any) => {
             return school.school_id
         }
 
@@ -978,9 +969,10 @@ describe('organization', () => {
             })
 
             it('should set the school in the schools membership for the user', async () => {
-                let schoolmemberships: SchoolMembership[]
-                let oldSchoolMemberships: SchoolMembership[]
-                ;[schoolmemberships, oldSchoolMemberships] = await organization[
+                const [
+                    schoolmemberships,
+                    oldSchoolMemberships,
+                ]: SchoolMembership[][] = await organization[
                     'membershipSchools'
                 ](user, [school], new Array(role))
                 expect(oldSchoolMemberships).to.exist
@@ -4916,7 +4908,7 @@ describe('organization', () => {
                                 let dbCategoryDetails = await Promise.all(
                                     dbCategories.map(categoryInfo)
                                 )
-                                let newCategoryDetails = {
+                                const newCategoryDetails = {
                                     ...categoryDetails,
                                     name: newCategory.name,
                                 }
@@ -5629,7 +5621,7 @@ describe('organization', () => {
                                 let dbSubjectDetails = await Promise.all(
                                     dbSubjects.map(subjectInfo)
                                 )
-                                let newSubjectDetails = {
+                                const newSubjectDetails = {
                                     ...subjectDetails,
                                     name: newSubject.name,
                                 }
@@ -6347,7 +6339,7 @@ describe('organization', () => {
                                 let dbProgramDetails = await Promise.all(
                                     dbPrograms.map(programInfo)
                                 )
-                                let newProgramDetails = {
+                                const newProgramDetails = {
                                     ...programDetails,
                                     name: newProgram.name,
                                 }

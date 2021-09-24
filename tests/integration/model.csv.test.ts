@@ -345,7 +345,7 @@ describe('model.csv', () => {
         context('when file data is correct', () => {
             beforeEach(async () => {
                 for (let i = 1; i <= 4; i += 1) {
-                    let org = await createOrganization()
+                    const org = await createOrganization()
                     org.organization_name = `Company ${i}`
                     await connection.manager.save(org)
                 }
@@ -439,7 +439,7 @@ describe('model.csv', () => {
         context('when file data is correct', () => {
             beforeEach(async () => {
                 for (let i = 1; i <= 4; i += 1) {
-                    let org = await createOrganization()
+                    const org = await createOrganization()
                     org.organization_name = `Company ${i}`
                     await connection.manager.save(org)
                 }
@@ -735,7 +735,7 @@ describe('model.csv', () => {
         context('when file data is correct', () => {
             beforeEach(async () => {
                 for (let i = 1; i <= 4; i += 1) {
-                    let org = createOrganization()
+                    const org = createOrganization()
                     org.organization_name = `Company ${i}`
                     await connection.manager.save(org)
                 }
@@ -824,8 +824,7 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                let expectedOrg: Organization
-                expectedOrg = createOrganization()
+                const expectedOrg: Organization = createOrganization()
                 expectedOrg.organization_name = 'my-org'
                 await connection.manager.save(expectedOrg)
 
@@ -1275,11 +1274,11 @@ describe('model.csv', () => {
         context('when file data is correct', () => {
             beforeEach(async () => {
                 for (let i = 1; i <= 2; i += 1) {
-                    let org = await createOrganization()
+                    const org = await createOrganization()
                     org.organization_name = `Company ${i}`
                     await connection.manager.save(org)
 
-                    let subcategory = await createSubcategory(org)
+                    const subcategory = await createSubcategory(org)
                     subcategory.name = `Subcategory ${i}`
                     await connection.manager.save(subcategory)
                 }
@@ -1372,7 +1371,7 @@ describe('model.csv', () => {
             })
 
             it('should throw errors when age range fields are not all present or all omitted', async () => {
-                let priorUserCount = await User.count()
+                const priorUserCount = await User.count()
 
                 const filename = 'programsWithErrors.csv'
                 file = fs.createReadStream(
@@ -1404,12 +1403,12 @@ describe('model.csv', () => {
         context('when file data is correct', () => {
             beforeEach(async () => {
                 for (let i = 1; i <= 3; i += 1) {
-                    let org = await createOrganization()
+                    const org = await createOrganization()
                     org.organization_name = `Company ${i}`
                     await connection.manager.save(org)
 
                     for (let i = 1; i <= 3; i += 1) {
-                        let subject = await createSubject(org)
+                        const subject = await createSubject(org)
                         subject.name = `Subject ${i}`
                         await connection.manager.save(subject)
                     }
@@ -1560,7 +1559,7 @@ describe('model.csv', () => {
 
         context('when file data has multiple errors', () => {
             it('should return multiple errors', async () => {
-                let filename = 'ageRangesMultipleErrorsExample.csv'
+                const filename = 'ageRangesMultipleErrorsExample.csv'
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
@@ -1586,7 +1585,7 @@ describe('model.csv', () => {
         context('when file data is correct', () => {
             beforeEach(async () => {
                 for (let i = 1; i <= 2; i += 1) {
-                    let org = await createOrganization()
+                    const org = await createOrganization()
                     org.organization_name = `Company ${i}`
                     await connection.manager.save(org)
                 }

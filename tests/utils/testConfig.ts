@@ -36,7 +36,7 @@ let NonAdminAuthToken =
 const secret = 'iXtZx1D5AqEB0B9pfn+hRQ=='
 
 export function generateToken(payload: any): string {
-    let val = sign(payload, secret, { expiresIn: '1800s' })
+    const val = sign(payload, secret, { expiresIn: '1800s' })
     return val
 }
 

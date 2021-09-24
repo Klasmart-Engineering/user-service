@@ -30,7 +30,7 @@ export async function uploadUsers(
     filename: string,
     mimetype: string,
     encoding: string,
-    isDryRun: boolean = false,
+    isDryRun = false,
     headers?: Headers
 ) {
     const variables = {

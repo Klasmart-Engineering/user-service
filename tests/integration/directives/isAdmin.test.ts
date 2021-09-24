@@ -80,7 +80,7 @@ describe('isAdmin', () => {
 
         context('when user is not logged in', () => {
             it('fails authentication', async () => {
-                let gqlResult = getAllOrganizations(testClient, {
+                const gqlResult = getAllOrganizations(testClient, {
                     authorization: undefined,
                 })
 
@@ -153,7 +153,7 @@ describe('isAdmin', () => {
                 const org = createOrganization(superAdmin)
                 await connection.manager.save(org)
                 organizations.push(org)
-                let role = createRole('role ' + i, org)
+                const role = createRole('role ' + i, org)
                 await connection.manager.save(role)
                 roleList.push(role)
                 const school = createSchool(org)
@@ -213,7 +213,7 @@ describe('isAdmin', () => {
                 user2.email = user.email
                 await connection.manager.save([user2])
 
-                let usersConnection = await userConnection(
+                const usersConnection = await userConnection(
                     testClient,
                     direction,
                     { count: 10 },
@@ -546,7 +546,7 @@ describe('isAdmin', () => {
                     getAdminAuthToken()
                 )
 
-                let usersConnection = await userConnection(
+                const usersConnection = await userConnection(
                     testClient,
                     direction,
                     { count: 3 },
@@ -617,7 +617,7 @@ describe('isAdmin', () => {
                     getAdminAuthToken()
                 )
 
-                let usersConnection = await userConnection(
+                const usersConnection = await userConnection(
                     testClient,
                     direction,
                     { count: 3 },

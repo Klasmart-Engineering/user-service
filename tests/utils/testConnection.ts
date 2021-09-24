@@ -46,8 +46,8 @@ export interface TestConnection extends Connection {
 }
 
 export const createTestConnection = async (
-    drop: boolean = false,
-    name: string = 'default'
+    drop = false,
+    name = 'default'
 ): Promise<TestConnection> => {
     const logger = new QueryMetricsLogger()
     return createConnection({
@@ -75,9 +75,9 @@ export const createTestConnection = async (
 }
 
 export const createMigrationsTestConnection = async (
-    drop: boolean = false,
-    synchronize: boolean = false,
-    name: string = 'default'
+    drop = false,
+    synchronize = false,
+    name = 'default'
 ): Promise<TestConnection> => {
     const logger = new QueryMetricsLogger()
     return createConnection({

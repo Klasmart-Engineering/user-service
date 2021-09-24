@@ -52,7 +52,7 @@ describe('paginate', () => {
     context('seek forward', () => {
         const direction = 'FORWARD'
         it('should get the first few records according to pagesize', async () => {
-            let directionArgs = { count: 3 }
+            const directionArgs = { count: 3 }
             const data = await paginateData<User>({
                 direction,
                 directionArgs,
@@ -79,7 +79,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.false
         })
         it('should get the next few records according to pagesize and startcursor', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[3].user_id }),
             }
@@ -109,7 +109,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.true
         })
         it('should get the last few records less than pagesize and startcursor', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[7].user_id }),
             }
@@ -139,7 +139,7 @@ describe('paginate', () => {
         })
         it('handles no results appropriately', async () => {
             await connection.synchronize(true)
-            let directionArgs = { count: 10 }
+            const directionArgs = { count: 10 }
             const data = await paginateData({
                 direction,
                 directionArgs,
@@ -167,7 +167,7 @@ describe('paginate', () => {
 
             scope.leftJoinAndSelect('User.memberships', 'orgMembership')
 
-            let directionArgs = { count: 10 }
+            const directionArgs = { count: 10 }
             const data = await paginateData({
                 direction,
                 directionArgs,
@@ -187,7 +187,7 @@ describe('paginate', () => {
     context('seek backward', () => {
         const direction = 'BACKWARD'
         it('should get the last records according to pagesize and null cursor', async () => {
-            let directionArgs = { count: 3 }
+            const directionArgs = { count: 3 }
             const data = await paginateData<User>({
                 direction,
                 directionArgs,
@@ -209,7 +209,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.true
         })
         it('should get the next few records according to pagesize and cursor', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[9].user_id }),
             }
@@ -238,7 +238,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.true
         })
         it('should get more next few records according to pagesize and cursor', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[6].user_id }),
             }
@@ -268,7 +268,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.true
         })
         it('should get the last records according to pagesize and cursor', async () => {
-            let directionArgs = {
+            const directionArgs = {
                 count: 3,
                 cursor: convertDataToCursor({ user_id: usersList[3].user_id }),
             }
@@ -299,7 +299,7 @@ describe('paginate', () => {
         })
         it('handles no results appropriately', async () => {
             await connection.synchronize(true)
-            let directionArgs = { count: 10 }
+            const directionArgs = { count: 10 }
             const data = await paginateData({
                 direction,
                 directionArgs,
@@ -327,7 +327,7 @@ describe('paginate', () => {
 
             scope.leftJoinAndSelect('User.memberships', 'orgMembership')
 
-            let directionArgs = { count: 10 }
+            const directionArgs = { count: 10 }
             const data = await paginateData({
                 direction,
                 directionArgs,

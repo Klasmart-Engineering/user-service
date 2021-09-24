@@ -66,7 +66,7 @@ describe('model', () => {
         grades = []
 
         for (let i = 0; i < gradesCount; i++) {
-            let grade = await createGrade(
+            const grade = await createGrade(
                 org1,
                 systemGrades[i],
                 systemGrades[i + 1]
@@ -77,7 +77,7 @@ describe('model', () => {
         }
 
         for (let i = 0; i < gradesCount; i++) {
-            let grade = await createGrade(
+            const grade = await createGrade(
                 org2,
                 systemGrades[i],
                 systemGrades[i + 1]

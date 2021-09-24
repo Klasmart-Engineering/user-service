@@ -28,7 +28,7 @@ describe('processCategoryFromCSVRow', () => {
     let row: CategoryRow
     let organization: Organization
     let subcategory: Subcategory
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
 
@@ -48,6 +48,7 @@ describe('processCategoryFromCSVRow', () => {
             category_name: 'Category 1',
             subcategory_name: 'Subcategory 1',
         }
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
@@ -206,7 +207,7 @@ describe('processCategoryFromCSVRow', () => {
         'when the provided subcategory already exists in the current category',
         () => {
             beforeEach(async () => {
-                let subcategories: Subcategory[] = []
+                const subcategories: Subcategory[] = []
                 subcategories.push(subcategory)
 
                 const category = new Category()

@@ -1020,7 +1020,7 @@ describe('user', () => {
             cls.students = Promise.resolve([newUser])
             await cls.save()
 
-            let gqlUser = await mergeUser(
+            const gqlUser = await mergeUser(
                 testClient,
                 oldUser.user_id,
                 newUser.user_id,

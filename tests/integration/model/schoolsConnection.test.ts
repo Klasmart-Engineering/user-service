@@ -61,13 +61,13 @@ describe('schoolsConnection', () => {
         await connection.manager.save([org1, org2])
         schools = []
         for (let i = 0; i < 10; i++) {
-            let school = createSchool(org1, `school a${i}`)
+            const school = createSchool(org1, `school a${i}`)
             school.status = Status.ACTIVE
             schools.push(school)
         }
 
         for (let i = 0; i < 10; i++) {
-            let school = createSchool(org2, `school b${i}`)
+            const school = createSchool(org2, `school b${i}`)
             school.status = Status.INACTIVE
             schools.push(school)
         }
@@ -600,7 +600,7 @@ describe('schoolsConnection', () => {
     })
 
     context('combinations', () => {
-        let fetchCount = 4
+        const fetchCount = 4
         context('forwards pagination', () => {
             it('paginates correctly with filtering & sorting applied', async () => {
                 const schoolsOrderedByNameAsc = [...schools]

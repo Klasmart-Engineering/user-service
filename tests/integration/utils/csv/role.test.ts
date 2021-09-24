@@ -26,7 +26,7 @@ describe('processRoleFromCSVRow', () => {
     let testClient: ApolloServerTestClient
     let row: RoleRow
     let organization: Organization
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
 
@@ -50,6 +50,8 @@ describe('processRoleFromCSVRow', () => {
             role_name: 'Assistant',
             permission_id: 'add_teachers_to_class_20226',
         }
+
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({
@@ -232,7 +234,7 @@ describe('processRoleFromCSVRow', () => {
         'when the provided permission already exists in the current role',
         () => {
             beforeEach(async () => {
-                let permissions: Permission[] = []
+                const permissions: Permission[] = []
                 const permissionFound = await Permission.findOneOrFail(
                     row.permission_id
                 )

@@ -69,7 +69,7 @@ describe('model', () => {
         ageRanges = []
 
         for (let i = 1; i <= ageRangesCount; i++) {
-            let ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = await createAgeRange(org1, i, i + 1)
             ageRange.name = `age range ${i}`
             ageRange.low_value_unit = AgeRangeUnit.YEAR
             ageRange.high_value_unit = AgeRangeUnit.YEAR
@@ -78,7 +78,7 @@ describe('model', () => {
         }
 
         for (let i = 1; i <= ageRangesCount; i++) {
-            let ageRange = await createAgeRange(org2, i, i + 1)
+            const ageRange = await createAgeRange(org2, i, i + 1)
             ageRange.name = `age range ${i}`
             ageRange.low_value_unit = AgeRangeUnit.MONTH
             ageRange.high_value_unit = AgeRangeUnit.MONTH

@@ -26,7 +26,7 @@ describe('processGradeFromCSVRow', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let row: GradeRow
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
     let adminUser: User
     let adminPermissions: UserPermissions
 
@@ -47,6 +47,7 @@ describe('processGradeFromCSVRow', () => {
             progress_from_grade_name: 'Kindergarten',
             progress_to_grade_name: 'Second Grade',
         }
+        fileErrors = []
 
         adminUser = await createAdminUser(testClient)
         adminPermissions = new UserPermissions({

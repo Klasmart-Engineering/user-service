@@ -823,7 +823,7 @@ describe('role', () => {
                 )
 
                 context('and the user has all the permissions', () => {
-                    let permissionInfo = (permission: Permission) => {
+                    const permissionInfo = (permission: Permission) => {
                         return permission.permission_name
                     }
                     const editRolePermission =
@@ -955,7 +955,7 @@ describe('role', () => {
                 )
 
                 context('and the user has all the permissions', () => {
-                    let permissionInfo = (permission: Permission) => {
+                    const permissionInfo = (permission: Permission) => {
                         return permission.permission_name
                     }
                     const editRolePermission =

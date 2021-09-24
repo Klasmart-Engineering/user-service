@@ -41,21 +41,21 @@ describe('processClassFromCSVRow', () => {
     let expectedSchool: School
     let expectedSchool2: School
     let secondSchool: School
-    let fileErrors: CSVError[] = []
+    let fileErrors: CSVError[]
 
     let adminUser: User
     let adminPermissions: UserPermissions
 
-    const orgName: string = 'my-org'
-    const secondOrgName: string = 'second-org'
-    const school1Name: string = 'test-school'
-    const school2Name: string = 'test-school2'
-    const shortcodeDuplicatedSchoolName: string = 'duplicated-school'
-    const secondSchoolName: string = 'second-school'
-    const progName: string = 'outdoor activities'
-    const systemProgName: string = 'Bada Read'
-    const noneProgName: string = 'None Specified'
-    const className: string = 'Class Test'
+    const orgName = 'my-org'
+    const secondOrgName = 'second-org'
+    const school1Name = 'test-school'
+    const school2Name = 'test-school2'
+    const shortcodeDuplicatedSchoolName = 'duplicated-school'
+    const secondSchoolName = 'second-school'
+    const progName = 'outdoor activities'
+    const systemProgName = 'Bada Read'
+    const noneProgName = 'None Specified'
+    const className = 'Class Test'
 
     before(async () => {
         connection = await createTestConnection()
@@ -69,6 +69,8 @@ describe('processClassFromCSVRow', () => {
             id: adminUser.user_id,
             email: adminUser.email || '',
         })
+
+        fileErrors = []
 
         expectedOrg = createOrganization()
         expectedOrg.organization_name = orgName

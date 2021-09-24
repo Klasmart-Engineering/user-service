@@ -32,7 +32,7 @@ import { Model } from '../../src/model'
 describe('SchoolMembership', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
-    let roleInfo = (role: any) => {
+    const roleInfo = (role: any) => {
         return role.role_id
     }
     let originalAdmins: string[]

@@ -238,7 +238,7 @@ describe('acceptance.program', () => {
                 }
             )
 
-            ageRangesValues.every((values: Number[]) =>
+            ageRangesValues.every((values: number[]) =>
                 values?.includes(ageRangeValue.value)
             )
 
@@ -294,7 +294,7 @@ describe('acceptance.program', () => {
                 }
             )
 
-            ageRangesValues.every((values: Number[]) =>
+            ageRangesValues.every((values: number[]) =>
                 values?.includes(ageRangeValue.value)
             )
 

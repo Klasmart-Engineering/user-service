@@ -128,7 +128,7 @@ describe('model.organization', () => {
 
             beforeEach(async () => {
                 await createNonAdminUser(testClient)
-                let arbitraryUserToken = getNonAdminAuthToken()
+                const arbitraryUserToken = getNonAdminAuthToken()
                 orgs = []
                 brandings = []
                 for (let i = 0; i < 3; i++) {
