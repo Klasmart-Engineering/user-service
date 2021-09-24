@@ -36,7 +36,7 @@ export default {
 
     ERR_CSV_NONE_EXIST_CHILD_ENTITY: 'ERR_CSV_NONE_EXIST_CHILD_ENTITY',
     MSG_ERR_CSV_NONE_EXIST_CHILD_ENTITY:
-        '"{name}" {entity} doesn\'t exist for "{parent_name}" {parent_entity}',
+        '"{name}" {entity} doesn\'t exist for "{parent_name}" {parent_entity}.',
 
     ERR_CSV_INVALID_FIELD: 'ERR_CSV_INVALID_FIELD',
 

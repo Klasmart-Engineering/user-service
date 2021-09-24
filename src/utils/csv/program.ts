@@ -101,8 +101,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             {
                 entity: 'ageRange',
                 attribute: 'age_range_high_value',
-                min: validationConstants.AGE_RANGE_LOW_VALUE_MIN,
-                max: validationConstants.AGE_RANGE_LOW_VALUE_MAX,
+                min: validationConstants.AGE_RANGE_HIGH_VALUE_MIN,
+                max: validationConstants.AGE_RANGE_HIGH_VALUE_MAX,
             }
         )
     }
@@ -375,7 +375,7 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
                 'subject_name',
                 csvErrorConstants.MSG_ERR_CSV_DUPLICATE_CHILD_ENTITY,
                 {
-                    entity: 'grade',
+                    entity: 'subject',
                     name: subject_name,
                     parent_entity: 'program',
                     parent_name: program.name,

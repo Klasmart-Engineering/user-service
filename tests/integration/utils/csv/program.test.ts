@@ -115,17 +115,22 @@ describe('processProgramFromCSVRow', () => {
             row = { ...row, organization_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(programRowError.message).to.equal(
+                'On row number 1, organization name is required.'
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -144,17 +149,22 @@ describe('processProgramFromCSVRow', () => {
             row = { ...row, program_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(programRowError.message).to.equal(
+                'On row number 1, program name is required.'
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -173,17 +183,24 @@ describe('processProgramFromCSVRow', () => {
             row = { ...row, age_range_unit: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal(
+                'ERR_PROGRAM_AGE_RANGE_FIELD_EXIST'
+            )
+            expect(programRowError.message).to.equal(
+                'On row number 1, program must exist age_range_high_value, age_range_low_value, age_range_unit or none of them.'
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -202,17 +219,22 @@ describe('processProgramFromCSVRow', () => {
             row = { ...row, age_range_high_value: '100.5d' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_INVALID_BETWEEN')
+            expect(programRowError.message).to.equal(
+                'On row number 1, ageRange age_range_high_value must be between 1 and 99.'
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -231,17 +253,22 @@ describe('processProgramFromCSVRow', () => {
             row = { ...row, age_range_low_value: '100.5d' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_INVALID_BETWEEN')
+            expect(programRowError.message).to.equal(
+                'On row number 1, ageRange age_range_low_value must be between 0 and 99.'
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -256,7 +283,7 @@ describe('processProgramFromCSVRow', () => {
     })
 
     context(
-        'when age range low value is greather than age range high value',
+        'when age range low value is greater than age range high value',
         () => {
             beforeEach(() => {
                 row = {
@@ -267,17 +294,24 @@ describe('processProgramFromCSVRow', () => {
                 }
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processProgramFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('records an appropriate error and message', async () => {
+                const rowErrors = await processProgramFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const programRowError = rowErrors[0]
+                expect(programRowError.code).to.equal(
+                    'ERR_CSV_INVALID_GREATER_THAN_OTHER'
+                )
+                expect(programRowError.message).to.equal(
+                    'On row number 1, ageRange age_range_high_value must be greater than age_range_low_value.'
+                )
+
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
@@ -292,22 +326,27 @@ describe('processProgramFromCSVRow', () => {
         }
     )
 
-    context('when age range unit value is not AgeRangeUnit', () => {
+    context('when age range unit value is invalid', () => {
         beforeEach(() => {
             row = { ...row, age_range_unit: 'week' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_INVALID_ENUM')
+            expect(programRowError.message).to.equal(
+                'On row number 1, ageRange age_range_unit must be one of these: month, year.'
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -321,22 +360,27 @@ describe('processProgramFromCSVRow', () => {
         })
     })
 
-    context("when provided organization doesn't exists", () => {
+    context("when provided organization doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, organization_name: 'Organization 2' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(programRowError.message).to.equal(
+                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -350,22 +394,29 @@ describe('processProgramFromCSVRow', () => {
         })
     })
 
-    context("when provided age range doesn't exists", () => {
+    context("when provided age range doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, age_range_unit: 'month' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal(
+                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+            )
+            expect(programRowError.message).to.equal(
+                `On row number 1, "6 - 7 month(s)" ageRange doesn\'t exist for "${rowModel.organization_name}" organization.`
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -379,22 +430,29 @@ describe('processProgramFromCSVRow', () => {
         })
     })
 
-    context("when provided grade doesn't exists", () => {
+    context("when provided grade doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, grade_name: 'Second Grade' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal(
+                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+            )
+            expect(programRowError.message).to.equal(
+                `On row number 1, "${row.grade_name}" grade doesn\'t exist for "${rowModel.organization_name}" organization.`
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -408,22 +466,29 @@ describe('processProgramFromCSVRow', () => {
         })
     })
 
-    context("when provided subject doesn't exists", () => {
+    context("when provided subject doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, subject_name: 'Subject 2' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processProgramFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processProgramFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal(
+                'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
+            )
+            expect(programRowError.message).to.equal(
+                `On row number 1, "${row.subject_name}" subject doesn\'t exist for "${rowModel.organization_name}" organization.`
+            )
+
             const program = await Program.findOne({
                 where: {
                     name: row.program_name,
@@ -451,17 +516,24 @@ describe('processProgramFromCSVRow', () => {
                 await connection.manager.save(program)
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processProgramFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('records an appropriate error and message', async () => {
+                const rowErrors = await processProgramFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const programRowError = rowErrors[0]
+                expect(programRowError.code).to.equal(
+                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                )
+                expect(programRowError.message).to.equal(
+                    `On row number 1, "6 - 7 year(s)" ageRange already exists for "${rowModel.program_name}" program.`
+                )
+
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
@@ -490,17 +562,24 @@ describe('processProgramFromCSVRow', () => {
                 await connection.manager.save(program)
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processProgramFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('records an appropriate error and message', async () => {
+                const rowErrors = await processProgramFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const programRowError = rowErrors[0]
+                expect(programRowError.code).to.equal(
+                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                )
+                expect(programRowError.message).to.equal(
+                    `On row number 1, "${rowModel.grade_name}" grade already exists for "${rowModel.program_name}" program.`
+                )
+
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,
@@ -529,17 +608,24 @@ describe('processProgramFromCSVRow', () => {
                 await connection.manager.save(program)
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processProgramFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('records an appropriate error and message', async () => {
+                const rowErrors = await processProgramFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const programRowError = rowErrors[0]
+                expect(programRowError.code).to.equal(
+                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                )
+                expect(programRowError.message).to.equal(
+                    `On row number 1, "${rowModel.subject_name}" subject already exists for "${rowModel.program_name}" program.`
+                )
+
                 const program = await Program.findOne({
                     where: {
                         name: row.program_name,

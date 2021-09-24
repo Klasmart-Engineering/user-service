@@ -19,6 +19,7 @@ import { createTestConnection } from '../../../utils/testConnection'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { User } from '../../../../src/entities/user'
 import { createAdminUser } from '../../../utils/testEntities'
+import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 
 use(chaiAsPromised)
 
@@ -66,17 +67,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, organization_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_MISSING_REQUIRED code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const orgRowError = rowErrors[0]
+            expect(orgRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(orgRowError.message).to.equal(
+                'On row number 1, organization name is required.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -100,17 +105,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, age_range_low_value: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_MISSING_REQUIRED code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(ageRowError.message).to.equal(
+                'On row number 1, ageRange age_range_low_value is required.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -134,17 +143,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, age_range_high_value: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_MISSING_REQUIRED code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(3) // This is legacy behaviour and should be changed to only expect the below code+msg
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(ageRowError.message).to.equal(
+                'On row number 1, ageRange age_range_high_value is required.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -168,17 +181,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, age_range_unit: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_MISSING_REQUIRED code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(2) // This is legacy behaviour and should be changed to only expect the below code+msg
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(ageRowError.message).to.equal(
+                'On row number 1, ageRange age_range_unit is required.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -202,17 +219,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, age_range_low_value: '100.5d' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_INVALID_BETWEEN code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_INVALID_BETWEEN')
+            expect(ageRowError.message).to.equal(
+                'On row number 1, ageRange age_range_low_value must be between 0 and 99.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -236,17 +257,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, age_range_high_value: '100.5d' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_INVALID_BETWEEN code and an appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_INVALID_BETWEEN')
+            expect(ageRowError.message).to.equal(
+                'On row number 1, ageRange age_range_high_value must be between 1 and 99.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -277,17 +302,23 @@ describe('processAgeRangeFromCSVRow', () => {
                 }
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processAgeRangeFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('returns rowErrors containing an ERR_CSV_INVALID_GREATER_THAN_OTHER code and appropriate message', async () => {
+                const rowErrors = await processAgeRangeFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const ageRowError = rowErrors[0]
+                expect(ageRowError.code).to.equal(
+                    'ERR_CSV_INVALID_GREATER_THAN_OTHER'
+                )
+                expect(ageRowError.message).to.equal(
+                    'On row number 1, ageRange age_range_high_value must be greater than age_range_low_value.'
+                )
 
                 const ageRange = await AgeRange.findOne({
                     where: {
@@ -312,17 +343,21 @@ describe('processAgeRangeFromCSVRow', () => {
             row = { ...row, age_range_unit: 'week' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_INVALID_ENUM code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_INVALID_ENUM')
+            expect(ageRowError.message).to.equal(
+                'On row number 1, ageRange age_range_unit must be one of these: month, year.'
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -341,22 +376,26 @@ describe('processAgeRangeFromCSVRow', () => {
         })
     })
 
-    context("when the provided organization doesn't exists", () => {
+    context("when the provided organization doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, organization_name: 'Company 2' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_NONE_EXIST_ENTITY code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(ageRowError.message).to.equal(
+                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {
@@ -387,17 +426,21 @@ describe('processAgeRangeFromCSVRow', () => {
             await connection.manager.save(ageRange)
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processAgeRangeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_DUPLICATE_CHILD_ENTITY code and appropriate message', async () => {
+            const rowErrors = await processAgeRangeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const ageRowError = rowErrors[0]
+            expect(ageRowError.code).to.equal('ERR_CSV_DUPLICATE_CHILD_ENTITY')
+            expect(ageRowError.message).to.equal(
+                `On row number 1, "6 - 7 year(s)" ageRange already exists for "${rowModel.organization_name}" organization.`
+            )
 
             const ageRange = await AgeRange.findOne({
                 where: {

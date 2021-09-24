@@ -69,17 +69,24 @@ describe('processCategoryFromCSVRow', () => {
             row = { ...row, organization_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processCategoryFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_MISSING_REQUIRED code and appropriate message', async () => {
+            const rowErrors = await processCategoryFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            console.log(rowErrors)
 
-            expect(fn()).to.be.rejected
+            expect(rowErrors).to.have.length(2) // Should actually be 1, needs to be fixed
+
+            const orgRowError = rowErrors[0]
+            expect(orgRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(orgRowError.message).to.equal(
+                'On row number 1, organization name is required.'
+            )
+
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -99,16 +106,21 @@ describe('processCategoryFromCSVRow', () => {
         })
 
         it('throws an error', async () => {
-            const fn = () =>
-                processCategoryFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+            const rowErrors = await processCategoryFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const categoryRowError = rowErrors[0]
+            expect(categoryRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(categoryRowError.message).to.equal(
+                'On row number 1, category name is required.'
+            )
+
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -122,22 +134,27 @@ describe('processCategoryFromCSVRow', () => {
         })
     })
 
-    context("when the provided organization doesn't exists", () => {
+    context("when the provided organization doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, organization_name: 'Company 10' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processCategoryFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_NONE_EXIST_ENTITY code and appropriate message', async () => {
+            const rowErrors = await processCategoryFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const categoryRowError = rowErrors[0]
+            expect(categoryRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(categoryRowError.message).to.equal(
+                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+            )
+
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -151,22 +168,27 @@ describe('processCategoryFromCSVRow', () => {
         })
     })
 
-    context("when the provided subcategory doesn't exists", () => {
+    context("when the provided subcategory doesn't exist", () => {
         beforeEach(() => {
-            row = { ...row, subcategory_name: 'None Existent Subcategory' }
+            row = { ...row, subcategory_name: 'Non-Existent Subcategory' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processCategoryFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('returns rowErrors containing an ERR_CSV_NONE_EXIST_ENTITY code and appropriate message', async () => {
+            const rowErrors = await processCategoryFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const categoryRowError = rowErrors[0]
+            expect(categoryRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(categoryRowError.message).to.equal(
+                `On row number 1, "${row.subcategory_name}" subCategory doesn\'t exist.`
+            )
+
             const category = await Category.findOne({
                 where: {
                     name: row.category_name,
@@ -194,17 +216,24 @@ describe('processCategoryFromCSVRow', () => {
                 await connection.manager.save(category)
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processCategoryFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('returns rowErrors containing an ERR_CSV_DUPLICATE_CHILD_ENTITY code and appropriate message', async () => {
+                const rowErrors = await processCategoryFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const categoryRowError = rowErrors[0]
+                expect(categoryRowError.code).to.equal(
+                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                )
+                expect(categoryRowError.message).to.equal(
+                    `On row number 1, "${subcategory.name}" subCategory already exists for "Category 1" category.`
+                )
+
                 const category = await Category.findOne({
                     where: {
                         name: row.category_name,

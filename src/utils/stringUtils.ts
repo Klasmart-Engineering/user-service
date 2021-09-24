@@ -49,11 +49,7 @@ export function stringInject(str: string, data: any) {
                     }
                 }
 
-                if (!data[key]) {
-                    return i
-                }
-
-                return data[key]
+                return data[key] || data[key] === 0 ? data[key] : i
             })
         }
     } else if (

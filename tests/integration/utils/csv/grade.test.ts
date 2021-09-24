@@ -60,17 +60,22 @@ describe('processGradeFromCSVRow', () => {
             row = { ...row, organization_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processGradeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error code and message', async () => {
+            const rowErrors = await processGradeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const gradeRowError = rowErrors[0]
+            expect(gradeRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(gradeRowError.message).to.equal(
+                'On row number 1, organization name is required.'
+            )
+
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -88,17 +93,22 @@ describe('processGradeFromCSVRow', () => {
             row = { ...row, grade_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processGradeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error code and message', async () => {
+            const rowErrors = await processGradeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const gradeRowError = rowErrors[0]
+            expect(gradeRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(gradeRowError.message).to.equal(
+                'On row number 1, grade name is required.'
+            )
+
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -111,18 +121,27 @@ describe('processGradeFromCSVRow', () => {
         })
     })
 
-    context("when the organization provided doesn't exists", () => {
-        it('throws an error', async () => {
-            const fn = () =>
-                processGradeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+    context("when the organization provided doesn't exist", () => {
+        beforeEach(() => {
+            row = { ...row, organization_name: 'I Do Not Exist' }
+        })
 
-            expect(fn()).to.be.rejected
+        it('records an appropriate error code and message', async () => {
+            const rowErrors = await processGradeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
+
+            const gradeRowError = rowErrors[0]
+            expect(gradeRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(gradeRowError.message).to.equal(
+                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+            )
+
             const grade = await Grade.findOne({
                 where: {
                     system: false,
@@ -155,17 +174,24 @@ describe('processGradeFromCSVRow', () => {
             }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processGradeFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error code and message', async () => {
+            const rowErrors = await processGradeFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const gradeRowError = rowErrors[0]
+            expect(gradeRowError.code).to.equal(
+                'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+            )
+            expect(gradeRowError.message).to.equal(
+                `On row number 1, "${row.grade_name}" grade already exists for "${row.organization_name}" organization.`
+            )
+
             const grade = await Grade.findOne({
                 where: {
                     organization,

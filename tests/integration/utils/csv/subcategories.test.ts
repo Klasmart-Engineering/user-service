@@ -68,34 +68,44 @@ describe('processSubCategoriesFromCSVRow', () => {
         })
     })
 
-    it('should throw an error (missing org/sub category) and rollback when all transactions', async () => {
+    it('should record an appropriate error and message for missing organization', async () => {
         row = { organization_name: '', subcategory_name: 'sc1' }
-        const fn = () =>
-            processSubCategoriesFromCSVRow(
-                connection.manager,
-                row,
-                1,
-                fileErrors,
-                adminPermissions
-            )
+        const rowErrors = await processSubCategoriesFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
+        expect(rowErrors).to.have.length(1)
 
-        expect(fn()).to.be.rejected
+        const subRowError = rowErrors[0]
+        expect(subRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+        expect(subRowError.message).to.equal(
+            'On row number 1, organization name is required.'
+        )
+
         const dbSubCategories = await Subcategory.find()
         expect(dbSubCategories.length).to.equal(0)
     })
 
-    it('should throw an error missing sub category and rollback when all transactions', async () => {
+    it('should record an appropriate error and message for missing sub category', async () => {
         row = { organization_name: 'test', subcategory_name: '' }
-        const fn = () =>
-            processSubCategoriesFromCSVRow(
-                connection.manager,
-                row,
-                1,
-                fileErrors,
-                adminPermissions
-            )
+        const rowErrors = await processSubCategoriesFromCSVRow(
+            connection.manager,
+            row,
+            1,
+            fileErrors,
+            adminPermissions
+        )
+        expect(rowErrors).to.have.length(1)
 
-        expect(fn()).to.be.rejected
+        const subRowError = rowErrors[0]
+        expect(subRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+        expect(subRowError.message).to.equal(
+            'On row number 1, subCategory name is required.'
+        )
+
         const dbSubCategories = await Subcategory.find()
         expect(dbSubCategories.length).to.equal(0)
     })

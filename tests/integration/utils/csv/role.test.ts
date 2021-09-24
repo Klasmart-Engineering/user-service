@@ -47,7 +47,7 @@ describe('processRoleFromCSVRow', () => {
 
         row = {
             organization_name: 'Company 1',
-            role_name: 'Asistant',
+            role_name: 'Assistant',
             permission_id: 'add_teachers_to_class_20226',
         }
 
@@ -63,17 +63,22 @@ describe('processRoleFromCSVRow', () => {
             row = { ...row, organization_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processRoleFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processRoleFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(programRowError.message).to.equal(
+                'On row number 1, organization name is required.'
+            )
+
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -92,17 +97,22 @@ describe('processRoleFromCSVRow', () => {
             row = { ...row, role_name: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processRoleFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processRoleFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(programRowError.message).to.equal(
+                'On row number 1, role name is required.'
+            )
+
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -121,17 +131,22 @@ describe('processRoleFromCSVRow', () => {
             row = { ...row, permission_id: '' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processRoleFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processRoleFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_MISSING_REQUIRED')
+            expect(programRowError.message).to.equal(
+                'On row number 1, permission id is required.'
+            )
+
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -145,22 +160,27 @@ describe('processRoleFromCSVRow', () => {
         })
     })
 
-    context("when the provided organization doesn't exists", () => {
+    context("when the provided organization doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, organization_name: 'Company 10' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processRoleFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processRoleFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(programRowError.message).to.equal(
+                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+            )
+
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -174,22 +194,27 @@ describe('processRoleFromCSVRow', () => {
         })
     })
 
-    context("when the provided permission id doesn't exists", () => {
+    context("when the provided permission id doesn't exist", () => {
         beforeEach(() => {
             row = { ...row, permission_id: 'non_existent_permission123' }
         })
 
-        it('throws an error', async () => {
-            const fn = () =>
-                processRoleFromCSVRow(
-                    connection.manager,
-                    row,
-                    1,
-                    fileErrors,
-                    adminPermissions
-                )
+        it('records an appropriate error and message', async () => {
+            const rowErrors = await processRoleFromCSVRow(
+                connection.manager,
+                row,
+                1,
+                fileErrors,
+                adminPermissions
+            )
+            expect(rowErrors).to.have.length(1)
 
-            expect(fn()).to.be.rejected
+            const programRowError = rowErrors[0]
+            expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
+            expect(programRowError.message).to.equal(
+                `On row number 1, "${row.permission_id}" permission doesn\'t exist.`
+            )
+
             const role = await Role.findOne({
                 where: {
                     role_name: row.role_name,
@@ -220,17 +245,24 @@ describe('processRoleFromCSVRow', () => {
                 await connection.manager.save(role)
             })
 
-            it('throws an error', async () => {
-                const fn = () =>
-                    processRoleFromCSVRow(
-                        connection.manager,
-                        row,
-                        1,
-                        fileErrors,
-                        adminPermissions
-                    )
+            it('records an appropriate error and message', async () => {
+                const rowErrors = await processRoleFromCSVRow(
+                    connection.manager,
+                    row,
+                    1,
+                    fileErrors,
+                    adminPermissions
+                )
+                expect(rowErrors).to.have.length(1)
 
-                expect(fn()).to.be.rejected
+                const programRowError = rowErrors[0]
+                expect(programRowError.code).to.equal(
+                    'ERR_CSV_DUPLICATE_CHILD_ENTITY'
+                )
+                expect(programRowError.message).to.equal(
+                    `On row number 1, "${row.permission_id}" permission already exists for "${row.role_name}" role.`
+                )
+
                 const role = await Role.findOne({
                     where: {
                         role_name: row.role_name,
