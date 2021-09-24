@@ -6,7 +6,10 @@ import {
     apiErrorConstants,
 } from '../../src/types/errors/apiError'
 
-export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
+export async function gqlTry(
+    gqlOperation: () => Promise<GraphQLResponse>,
+    throwCompleteError?: boolean
+) {
     try {
         const res = await gqlOperation()
         if (res.errors) {
@@ -26,7 +29,7 @@ export async function gqlTry(gqlOperation: () => Promise<GraphQLResponse>) {
         }
         return res
     } catch (e) {
-        if (e instanceof HttpQueryError) {
+        if (e instanceof HttpQueryError && !throwCompleteError) {
             throw new Error(
                 JSON.parse(e.message)
                     .errors.map((x: { message: string }) => x.message)

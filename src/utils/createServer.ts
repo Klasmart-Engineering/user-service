@@ -15,6 +15,7 @@ import {
 } from '../directives'
 
 export const createServer = (model: Model, context?: Context) => {
+    const environment = process.env.NODE_ENV
     const schema = [
         isAdminTransformer,
         isAuthenticatedTransformer,
@@ -23,6 +24,7 @@ export const createServer = (model: Model, context?: Context) => {
         (previousSchema, transformer) => transformer(previousSchema),
         makeExecutableSchema(getSchema(model, context))
     )
+
     return new ApolloServer({
         schema: schema,
         context:
@@ -69,5 +71,6 @@ export const createServer = (model: Model, context?: Context) => {
                 extensions: error.extensions,
             }
         },
+        debug: environment === 'development',
     })
 }
