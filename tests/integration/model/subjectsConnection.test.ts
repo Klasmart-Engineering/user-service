@@ -1,9 +1,7 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm/connection/Connection'
 import { Category } from '../../../src/entities/category'
 import { Organization } from '../../../src/entities/organization'
-import { Program } from '../../../src/entities/program'
 import { Status } from '../../../src/entities/status'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
@@ -13,14 +11,16 @@ import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createCategory } from '../../factories/category.factory'
 import { createOrganization } from '../../factories/organization.factory'
-import { createProgram } from '../../factories/program.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import { subjectsConnection } from '../../utils/operations/modelOps'
+import {
+    subjectsConnection,
+    subjectsConnectionMainData,
+} from '../../utils/operations/modelOps'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
 import {
     addUserToOrganizationAndValidate,
@@ -32,13 +32,16 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 
 describe('subjectsConnection', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
     let orgOwner: User
@@ -547,6 +550,22 @@ describe('subjectsConnection', () => {
             })
 
             categoryIds.every((ids) => ids?.includes(categoryId))
+        })
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await subjectsConnectionMainData(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                false,
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
         })
     })
 })

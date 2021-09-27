@@ -17,6 +17,7 @@ export interface IPaginateData {
     directionArgs?: directionArgs
     scope: SelectQueryBuilder<unknown>
     sort: ISortingConfig
+    includeTotalCount: boolean
 }
 
 interface IPaginationOptions {
@@ -25,7 +26,7 @@ interface IPaginationOptions {
     cursorData: unknown
     defaultColumn: string
     primaryColumns?: string[]
-    totalCount: number
+    totalCount?: number
 }
 
 export interface IPaginationArgs<Entity extends BaseEntity> {
@@ -46,7 +47,7 @@ export interface IEdge<N = unknown> {
 }
 
 export interface IPaginatedResponse<T = unknown> {
-    totalCount: number
+    totalCount?: number
     pageInfo: {
         startCursor: string
         endCursor: string
@@ -138,7 +139,12 @@ const backwardPaginate = async ({
     let newPageSize = pageSize
     // this is to make the first page going backwards look like offset pagination
     if (!cursorData) {
+        if (totalCount === undefined) {
+            totalCount = await scope.getCount()
+        }
+
         newPageSize = totalCount % pageSize
+
         if (newPageSize === 0) {
             newPageSize = pageSize
         }
@@ -173,6 +179,7 @@ export const paginateData = async <T = unknown>({
     directionArgs,
     scope,
     sort,
+    includeTotalCount,
 }: IPaginateData): Promise<IPaginatedResponse<T>> => {
     const pageSize = directionArgs?.count
         ? directionArgs.count
@@ -182,7 +189,7 @@ export const paginateData = async <T = unknown>({
         ? getDataFromCursor(directionArgs.cursor)
         : null
 
-    const totalCount = await scope.getCount()
+    const totalCount = includeTotalCount ? await scope.getCount() : undefined
 
     const { order, primaryColumns, primaryKeyOrder } = addOrderByClause(
         scope,

@@ -212,7 +212,7 @@ export default function getDefault(
             Query: {
                 class: (_parent, args, _context, _info) => model.getClass(args),
                 classes: () => model.getClasses(),
-                classesConnection: (_parent, args, ctx: Context, _info) => {
+                classesConnection: (_parent, args, ctx: Context, info) => {
                     ctx.loaders.classesConnection = {
                         schools: new DataLoader((keys) =>
                             schoolsForClasses(keys)
@@ -231,7 +231,7 @@ export default function getDefault(
                         ),
                     }
 
-                    return model.classesConnection(ctx, args)
+                    return model.classesConnection(ctx, info, args)
                 },
             },
         },

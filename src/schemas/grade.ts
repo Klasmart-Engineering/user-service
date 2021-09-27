@@ -131,7 +131,7 @@ export default function getDefault(
             },
             Query: {
                 grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),
-                gradesConnection: (_parent, args, ctx: Context, _info) => {
+                gradesConnection: (_parent, args, ctx: Context, info) => {
                     ctx.loaders.gradesConnection = {
                         fromGrade: new Dataloader((keys) =>
                             fromGradeForGrades(keys)
@@ -141,7 +141,7 @@ export default function getDefault(
                         ),
                     }
 
-                    return model.gradesConnection(ctx, args)
+                    return model.gradesConnection(ctx, info, args)
                 },
             },
         },

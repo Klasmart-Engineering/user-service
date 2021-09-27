@@ -257,7 +257,7 @@ export default function getDefault(
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
-                usersConnection: (_parent, args, ctx: Context, _info) => {
+                usersConnection: (_parent, args, ctx: Context, info) => {
                     ctx.loaders.usersConnection = {
                         organizations: new Dataloader((keys) =>
                             orgsForUsers(keys, args.filter)
@@ -269,7 +269,7 @@ export default function getDefault(
                             rolesForUsers(keys, args.filter)
                         ),
                     }
-                    return model.usersConnection(ctx, args)
+                    return model.usersConnection(ctx, info, args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, ctx: Context, _info) =>

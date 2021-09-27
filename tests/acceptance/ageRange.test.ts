@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm/connection/Connection'
+import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
@@ -80,7 +80,7 @@ describe('acceptance.ageRange', () => {
         })
     })
 
-    context('classesConnection', () => {
+    context('ageRangesConnection', () => {
         it('queries paginated age ranges', async () => {
             const response = await request
                 .post('/graphql')

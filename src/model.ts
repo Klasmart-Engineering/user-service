@@ -80,6 +80,7 @@ import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
 import { usersConnectionResolver } from './pagination/usersConnection'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
+import { findTotalCountInPaginationEndpoints } from './utils/graphql'
 
 export class Model {
     public static async create() {
@@ -385,14 +386,17 @@ export class Model {
     }
 
     public usersConnection = (
-        context: Context,
+        _context: Context,
+        info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<User>
-    ) => usersConnectionResolver(paginationArgs)
+    ) => usersConnectionResolver(info, paginationArgs)
 
     public async permissionsConnection(
-        context: Context,
+        _context: Context,
+        info: GraphQLResolveInfo,
         { direction, directionArgs, filter }: IPaginationArgs<Permission>
     ) {
+        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
         const scope = this.permissionRepository.createQueryBuilder()
 
         if (filter) {
@@ -406,16 +410,19 @@ export class Model {
             sort: {
                 primaryKey: 'permission_id',
             },
+            includeTotalCount,
         })
     }
 
     public schoolsConnection = async (
-        context: Context,
+        _context: Context,
+        info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<School>
-    ) => schoolsConnectionResolver(paginationArgs)
+    ) => schoolsConnectionResolver(info, paginationArgs)
 
     public async programsConnection(
         _context: Context,
+        info: GraphQLResolveInfo,
         {
             direction,
             directionArgs,
@@ -424,6 +431,8 @@ export class Model {
             sort,
         }: IPaginationArgs<Program>
     ) {
+        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
         if (filter) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('Program.organization', 'Organization')
@@ -495,6 +504,7 @@ export class Model {
                 },
                 sort,
             },
+            includeTotalCount,
         })
 
         for (const edge of data.edges) {
@@ -515,6 +525,7 @@ export class Model {
 
     public async gradesConnection(
         _context: Context,
+        info: GraphQLResolveInfo,
         {
             direction,
             directionArgs,
@@ -523,6 +534,8 @@ export class Model {
             sort,
         }: IPaginationArgs<Grade>
     ) {
+        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
         if (filter) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('Grade.organization', 'Organization')
@@ -564,6 +577,7 @@ export class Model {
                 },
                 sort,
             },
+            includeTotalCount,
         })
 
         for (const edge of data.edges) {
@@ -584,6 +598,7 @@ export class Model {
 
     public async ageRangesConnection(
         _context: Context,
+        info: GraphQLResolveInfo,
         {
             direction,
             directionArgs,
@@ -592,6 +607,8 @@ export class Model {
             sort,
         }: IPaginationArgs<AgeRange>
     ) {
+        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
         if (filter) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
@@ -623,6 +640,7 @@ export class Model {
                 },
                 sort,
             },
+            includeTotalCount,
         })
 
         for (const edge of data.edges) {
@@ -646,6 +664,7 @@ export class Model {
 
     public async classesConnection(
         _context: Context,
+        info: GraphQLResolveInfo,
         {
             direction,
             directionArgs,
@@ -654,6 +673,8 @@ export class Model {
             sort,
         }: IPaginationArgs<Class>
     ) {
+        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
         // Select only the ClassConnectionNode fields
         scope.select(['Class.class_id', 'Class.class_name', 'Class.status'])
         if (filter) {
@@ -719,6 +740,7 @@ export class Model {
                 },
                 sort,
             },
+            includeTotalCount,
         })
 
         for (const edge of data.edges) {
@@ -738,6 +760,7 @@ export class Model {
 
     public async subjectsConnection(
         _context: Context,
+        info: GraphQLResolveInfo,
         {
             direction,
             directionArgs,
@@ -746,6 +769,8 @@ export class Model {
             sort,
         }: IPaginationArgs<Subject>
     ) {
+        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
         if (filter) {
             if (filterHasProperty('organizationId', filter)) {
                 scope.leftJoinAndSelect('Subject.organization', 'Organization')
@@ -780,6 +805,7 @@ export class Model {
                 },
                 sort,
             },
+            includeTotalCount,
         })
 
         for (const edge of data.edges) {

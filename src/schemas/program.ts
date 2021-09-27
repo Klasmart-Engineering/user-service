@@ -170,7 +170,7 @@ export default function getDefault(
             Query: {
                 program: (_parent, args, ctx, _info) =>
                     model.getProgram(args, ctx),
-                programsConnection: (_parent, args, ctx: Context, _info) => {
+                programsConnection: (_parent, args, ctx: Context, info) => {
                     ctx.loaders.programsConnection = {
                         ageRanges: new Dataloader((keys) =>
                             ageRangesForPrograms(keys)
@@ -185,7 +185,7 @@ export default function getDefault(
                         ),
                     }
 
-                    return model.programsConnection(ctx, args)
+                    return model.programsConnection(ctx, info, args)
                 },
             },
         },

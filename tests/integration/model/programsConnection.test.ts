@@ -1,7 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { Connection } from 'typeorm'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
@@ -16,9 +15,15 @@ import { createGrade } from '../../factories/grade.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createProgram } from '../../factories/program.factory'
 import { createSubject } from '../../factories/subject.factory'
-import { programsConnection } from '../../utils/operations/modelOps'
+import {
+    programsConnection,
+    programsConnectionMainData,
+} from '../../utils/operations/modelOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 import {
     ApolloServerTestClient,
@@ -44,7 +49,7 @@ use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('model', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
     let org1: Organization
@@ -699,6 +704,22 @@ describe('model', () => {
             )
 
             expect(result.totalCount).to.eq(0)
+        })
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await programsConnectionMainData(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                false,
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
         })
     })
 })

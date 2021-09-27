@@ -1,6 +1,5 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm/connection/Connection'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 import { Organization } from '../../../src/entities/organization'
@@ -24,13 +23,16 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 
 describe('model', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
     let org1: Organization
@@ -97,6 +99,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() }
             )
 
@@ -119,6 +122,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 { field: 'id', order: 'ASC' }
@@ -146,6 +150,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 { field: 'id', order: 'DESC' }
@@ -173,6 +178,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 { field: ['lowValueUnit', 'lowValue'], order: 'ASC' }
@@ -213,6 +219,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 { field: ['lowValueUnit', 'lowValue'], order: 'DESC' }
@@ -263,6 +270,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -294,6 +302,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -317,6 +326,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -340,6 +350,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -363,6 +374,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -389,6 +401,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -412,6 +425,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -440,6 +454,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -471,6 +486,7 @@ describe('model', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -482,6 +498,22 @@ describe('model', () => {
                 expect(ar.highValue).eq(value)
                 expect(ar.highValueUnit).eq(unit)
             })
+        })
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                false,
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
         })
     })
 })

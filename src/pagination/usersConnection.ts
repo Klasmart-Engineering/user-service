@@ -1,7 +1,9 @@
+import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
@@ -27,13 +29,12 @@ export type CoreUserConnectionNode = Pick<
     | 'alternateContactInfo'
 >
 
-export async function usersConnectionResolver({
-    direction,
-    directionArgs,
-    scope,
-    filter,
-    sort,
-}: IPaginationArgs<User>): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
+export async function usersConnectionResolver(
+    info: GraphQLResolveInfo,
+    { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
+): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
     if (filter) {
         if (
             (filterHasProperty('organizationId', filter) ||
@@ -103,6 +104,7 @@ export async function usersConnectionResolver({
             },
             sort,
         },
+        includeTotalCount,
     })
 
     return {

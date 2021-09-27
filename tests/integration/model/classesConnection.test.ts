@@ -1,6 +1,5 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../../src/entities/ageRangeUnit'
 import { Class } from '../../../src/entities/class'
@@ -35,7 +34,10 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import { classesConnection } from '../../utils/operations/modelOps'
+import {
+    classesConnection,
+    classesConnectionMainData,
+} from '../../utils/operations/modelOps'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
 import {
     addUserToOrganizationAndValidate,
@@ -48,13 +50,16 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 
 describe('classesConnection', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
     let orgOwner: User
@@ -1143,5 +1148,21 @@ describe('classesConnection', () => {
                 })
             }
         )
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await classesConnectionMainData(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                false,
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
+        })
     })
 })

@@ -110,8 +110,8 @@ export default function getDefault(
             Query: {
                 age_range: (_parent, args, ctx, _info) =>
                     model.getAgeRange(args, ctx),
-                ageRangesConnection: (_parent, args, ctx: Context, _info) =>
-                    model.ageRangesConnection(ctx, args),
+                ageRangesConnection: (_parent, args, ctx: Context, info) =>
+                    model.ageRangesConnection(ctx, info, args),
             },
         },
     }

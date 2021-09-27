@@ -1,10 +1,9 @@
 import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
 
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -54,7 +53,7 @@ const ME = `
 `
 
 describe('acceptance.user', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
         connection = await createTestConnection()

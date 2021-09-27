@@ -16,6 +16,7 @@ import {
     IPaginateData,
 } from '../../../../src/utils/pagination/paginate'
 import { createOrganization } from '../../../factories/organization.factory'
+
 use(chaiAsPromised)
 
 describe('sorting', () => {
@@ -71,6 +72,7 @@ describe('sorting', () => {
                         order: 'ASC',
                     },
                 },
+                includeTotalCount: true,
             }
         })
 
@@ -236,6 +238,7 @@ describe('sorting', () => {
                         order: 'ASC',
                     },
                 },
+                includeTotalCount: true,
             }
         })
 
@@ -406,6 +409,7 @@ describe('sorting', () => {
                         order: 'ASC',
                     },
                 },
+                includeTotalCount: true,
             }
         })
         it('uses the primary key as the secondary sort when sorting by strings', async () => {
@@ -513,6 +517,7 @@ describe('sorting', () => {
                         order: 'ASC',
                     },
                 },
+                includeTotalCount: true,
             }
         })
 

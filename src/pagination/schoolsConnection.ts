@@ -1,6 +1,8 @@
+import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {
     IEdge,
@@ -9,15 +11,12 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 
-export async function schoolsConnectionResolver({
-    direction,
-    directionArgs,
-    scope,
-    filter,
-    sort,
-}: IPaginationArgs<School>): Promise<
-    IPaginatedResponse<ISchoolsConnectionNode>
-> {
+export async function schoolsConnectionResolver(
+    info: GraphQLResolveInfo,
+    { direction, directionArgs, scope, filter, sort }: IPaginationArgs<School>
+): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+
     // Required for building SchoolConnectionNode
     // TODO remove once School.organization_id FK is exposed on the Entity
     scope.innerJoin('School.organization', 'Organization')
@@ -65,6 +64,7 @@ export async function schoolsConnectionResolver({
             },
             sort,
         },
+        includeTotalCount,
     })
 
     return {

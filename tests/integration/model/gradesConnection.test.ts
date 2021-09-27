@@ -1,13 +1,11 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Connection } from 'typeorm'
 import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import GradesInitializer from '../../../src/initializers/grades'
 import { Model } from '../../../src/model'
-import { GradeSummaryNode } from '../../../src/types/graphQL/gradeSummaryNode'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createGrade } from '../../factories/grade.factory'
@@ -16,19 +14,25 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import { gradesConnection } from '../../utils/operations/modelOps'
+import {
+    gradesConnection,
+    gradesConnectionMainData,
+} from '../../utils/operations/modelOps'
 import {
     isStringArraySortedAscending,
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { getAdminAuthToken } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 
 describe('model', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
     let org1: Organization
@@ -417,6 +421,22 @@ describe('model', () => {
                     filter
                 )
             ).to.be.rejected
+        })
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await gradesConnectionMainData(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                false,
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
         })
     })
 })

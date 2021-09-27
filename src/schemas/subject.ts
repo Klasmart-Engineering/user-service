@@ -129,14 +129,14 @@ export default function getDefault(
             Query: {
                 subject: (_parent, args, ctx, _info) =>
                     model.getSubject(args, ctx),
-                subjectsConnection: (_parent, args, ctx: Context, _info) => {
+                subjectsConnection: (_parent, args, ctx: Context, info) => {
                     ctx.loaders.subjectsConnection = {
                         categories: new DataLoader((keys) =>
                             categoriesForSubjects(keys)
                         ),
                     }
 
-                    return model.subjectsConnection(ctx, args)
+                    return model.subjectsConnection(ctx, info, args)
                 },
             },
         },

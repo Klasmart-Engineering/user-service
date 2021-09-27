@@ -8,11 +8,9 @@ import { loadFixtures } from '../utils/fixtures'
 import {
     createCategories,
     createOrg,
-    createPrograms,
     createSubjects,
     deleteSubject,
     ICategoryDetail,
-    IProgramDetail,
     ISubjectDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { SUBJECTS_CONNECTION } from '../utils/operations/modelOps'

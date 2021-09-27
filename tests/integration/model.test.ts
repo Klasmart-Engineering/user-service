@@ -1,10 +1,9 @@
 import { expect, use } from 'chai'
-import { Connection, getRepository } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 import { createAgeRange } from '../factories/ageRange.factory'
@@ -62,7 +61,7 @@ use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('model', () => {
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
@@ -838,6 +837,7 @@ describe('model', () => {
                     const gqlPermissions = await permissionsConnection(
                         testClient,
                         direction,
+                        true,
                         undefined,
                         { authorization: getAdminAuthToken() }
                     )
@@ -882,6 +882,7 @@ describe('model', () => {
                     const gqlPermissions = await permissionsConnection(
                         testClient,
                         direction,
+                        true,
                         directionArgs,
                         { authorization: getAdminAuthToken() }
                     )
@@ -913,6 +914,7 @@ describe('model', () => {
                 let gqlPermissions = await permissionsConnection(
                     testClient,
                     direction,
+                    true,
                     { count: 10 },
                     { authorization: getAdminAuthToken() },
                     filter
@@ -928,12 +930,31 @@ describe('model', () => {
                 gqlPermissions = await permissionsConnection(
                     testClient,
                     direction,
+                    true,
                     { count: 10 },
                     { authorization: getAdminAuthToken() },
                     filter
                 )
                 expect(gqlPermissions?.totalCount).to.eql(27)
                 expect(gqlPermissions?.edges.length).to.equal(10)
+            })
+        })
+
+        context('when totalCount is not requested', () => {
+            const direction = 'FORWARD'
+
+            it('makes just one call to the database', async () => {
+                connection.logger.reset()
+
+                await permissionsConnection(
+                    testClient,
+                    direction,
+                    false,
+                    { count: 10 },
+                    { authorization: getAdminAuthToken() }
+                )
+
+                expect(connection.logger.count).to.be.eq(1)
             })
         })
     })

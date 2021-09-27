@@ -287,6 +287,28 @@ export const USERS_CONNECTION = `
     }
 `
 
+export const USERS_CONNECTION_MAIN_DATA = `
+    query usersConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: UserFilter, $sortArgs: UserSortInput) {
+        usersConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    givenName
+                    familyName
+                }
+            }
+            pageInfo{
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+        }
+    }
+`
+
 const USERS_CONNECTION_NODES = gql`
     query($filter: UserFilter) {
         usersConnection(direction: FORWARD, filter: $filter) {
@@ -404,6 +426,30 @@ export const PROGRAMS_CONNECTION = `
     }
 `
 
+export const PROGRAMS_CONNECTION_MAIN_DATA = `
+    query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
+        programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
 const GRADES_CONNECTION = `
     query gradesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: GradeFilter, $sortArgs: GradeSortInput) {
         gradesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
@@ -429,6 +475,30 @@ const GRADES_CONNECTION = `
                         status
                         system
                     }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+const GRADES_CONNECTION_MAIN_DATA = `
+    query gradesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: GradeFilter, $sortArgs: GradeSortInput) {
+        gradesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
                 }
             }
 
@@ -533,6 +603,30 @@ export const CLASSES_CONNECTION = `
     }
 `
 
+export const CLASSES_CONNECTION_MAIN_DATA = `
+query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
+    classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+        totalCount
+
+        edges {
+            cursor
+            node {
+                id
+                name
+                status
+            }
+        }
+
+        pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+        }
+    }
+}
+`
+
 export const SUBJECTS_CONNECTION = `
     query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
         subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
@@ -552,6 +646,31 @@ export const SUBJECTS_CONNECTION = `
                         status
                         system
                     }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const SUBJECTS_CONNECTION_MAIN_DATA = `
+    query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
+        subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
                 }
             }
 
@@ -946,6 +1065,37 @@ export async function userConnection(
     return res.data?.usersConnection
 }
 
+export async function usersConnectionMainData(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<UserConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        USERS_CONNECTION_MAIN_DATA,
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.usersConnection
+}
+
 export async function usersConnectionNodes(
     testClient: ApolloServerTestClient,
     headers: Headers,
@@ -969,15 +1119,20 @@ export async function usersConnectionNodes(
 export async function permissionsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
+    includeTotalCount: boolean,
     directionArgs?: any,
     headers?: Headers,
     filter?: IEntityFilter
 ) {
     const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        PERMISSIONS_CONNECTION,
+        includeTotalCount
+    )
 
     const operation = () =>
         query({
-            query: PERMISSIONS_CONNECTION,
+            query: paginationQuery,
             variables: { direction, directionArgs, filter },
             headers: headers,
         })
@@ -1011,18 +1166,55 @@ export async function programsConnection(
     return res.data?.programsConnection
 }
 
+export async function programsConnectionMainData(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<ProgramConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        PROGRAMS_CONNECTION_MAIN_DATA,
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.programsConnection
+}
+
 export async function schoolsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
     directionArgs: any,
+    includeTotalCount: boolean,
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
 ): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
     const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        SCHOOLS_CONNECTION,
+        includeTotalCount
+    )
+
     const operation = () =>
         query({
-            query: SCHOOLS_CONNECTION,
+            query: paginationQuery,
             variables: {
                 direction,
                 directionArgs,
@@ -1061,18 +1253,55 @@ export async function gradesConnection(
     return res.data?.gradesConnection
 }
 
+export async function gradesConnectionMainData(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<GradeConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        GRADES_CONNECTION_MAIN_DATA,
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.gradesConnection
+}
+
 export async function ageRangesConnection(
     testClient: ApolloServerTestClient,
     direction: string,
     directionArgs: any,
+    includeTotalCount: boolean,
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
 ): Promise<IPaginatedResponse<AgeRangeConnectionNode>> {
     const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        AGE_RANGES_CONNECTION,
+        includeTotalCount
+    )
+
     const operation = () =>
         query({
-            query: AGE_RANGES_CONNECTION,
+            query: paginationQuery,
             variables: {
                 direction,
                 directionArgs,
@@ -1112,6 +1341,37 @@ export async function classesConnection(
     return res.data?.classesConnection
 }
 
+export async function classesConnectionMainData(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<ClassConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        CLASSES_CONNECTION_MAIN_DATA,
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.classesConnection
+}
+
 export async function subjectsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
@@ -1135,4 +1395,44 @@ export async function subjectsConnection(
 
     const res = await gqlTry(operation)
     return res.data?.subjectsConnection
+}
+
+export async function subjectsConnectionMainData(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<SubjectConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        SUBJECTS_CONNECTION_MAIN_DATA,
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.subjectsConnection
+}
+
+function buildPaginationQuery(
+    paginationQuery: string,
+    includeTotalCount: boolean
+) {
+    return includeTotalCount
+        ? paginationQuery
+        : paginationQuery.split('totalCount').join('')
 }

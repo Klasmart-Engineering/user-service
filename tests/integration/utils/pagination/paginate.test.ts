@@ -52,6 +52,7 @@ describe('paginate', () => {
         //sort users by userId
         usersList.sort((a, b) => (a.user_id > b.user_id ? 1 : -1))
     })
+
     context('seek forward', () => {
         const direction = 'FORWARD'
         it('should get the first few records according to pagesize', async () => {
@@ -63,6 +64,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(10)
@@ -93,6 +95,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(10)
@@ -123,6 +126,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(2)
@@ -150,6 +154,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
             expect(data.totalCount).to.equal(0)
             expect(data.edges.length).to.equal(0)
@@ -178,12 +183,31 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(10)
             expect(data.pageInfo.hasNextPage).to.eq(false)
             expect(data.pageInfo.hasPreviousPage).to.eq(false)
+        })
+
+        context('when totalCount is not requested', () => {
+            it('should not send it', async () => {
+                const directionArgs = { count: 3 }
+                const data = await paginateData<User>({
+                    direction,
+                    directionArgs,
+                    scope,
+                    sort: {
+                        primaryKey: sortColumn,
+                    },
+                    includeTotalCount: false,
+                })
+
+                expect(data.totalCount).to.be.undefined
+                expect(data.edges.length).to.equal(3)
+            })
         })
     })
 
@@ -198,6 +222,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(10 % 3)
@@ -223,6 +248,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(3)
@@ -252,6 +278,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(10)
@@ -282,6 +309,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(10)
@@ -310,6 +338,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
             expect(data.totalCount).to.equal(0)
             expect(data.edges.length).to.equal(0)
@@ -338,12 +367,37 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(10)
             expect(data.edges.length).to.equal(10)
             expect(data.pageInfo.hasNextPage).to.eq(false)
             expect(data.pageInfo.hasPreviousPage).to.eq(false)
+        })
+
+        context('when totalCount is not requested', () => {
+            it('should not send it', async () => {
+                const directionArgs = {
+                    count: 3,
+                    cursor: convertDataToCursor({
+                        user_id: usersList[9].user_id,
+                    }),
+                }
+
+                const data = await paginateData<User>({
+                    direction,
+                    directionArgs,
+                    scope,
+                    sort: {
+                        primaryKey: sortColumn,
+                    },
+                    includeTotalCount: false,
+                })
+
+                expect(data.totalCount).to.be.undefined
+                expect(data.edges.length).to.equal(3)
+            })
         })
     })
 
@@ -365,6 +419,7 @@ describe('paginate', () => {
                 sort: {
                     primaryKey: sortColumn,
                 },
+                includeTotalCount: true,
             })
 
             expect(data.totalCount).to.eql(60)
@@ -447,6 +502,7 @@ describe('paginate', () => {
                                 order: 'ASC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     expect(data.totalCount).to.eql(13)
@@ -480,6 +536,7 @@ describe('paginate', () => {
                                 order: 'ASC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     const firstId = ids.findIndex(
@@ -524,6 +581,7 @@ describe('paginate', () => {
                                 order: 'DESC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     expect(data.totalCount).to.eql(13)
@@ -557,6 +615,7 @@ describe('paginate', () => {
                                 order: 'DESC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     const firstId = ids.findIndex(
@@ -605,6 +664,7 @@ describe('paginate', () => {
                                 order: 'ASC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     expect(data.totalCount).to.eql(13)
@@ -638,6 +698,7 @@ describe('paginate', () => {
                                 order: 'ASC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     const firstId = ids.findIndex(
@@ -682,6 +743,7 @@ describe('paginate', () => {
                                 order: 'DESC',
                             },
                         },
+                        includeTotalCount: true,
                     })
 
                     expect(data.totalCount).to.eql(13)

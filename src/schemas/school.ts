@@ -132,8 +132,8 @@ export default function getDefault(
             Query: {
                 school: (_parent, args, _context, _info) =>
                     model.getSchool(args),
-                schoolsConnection: (_parent, args, ctx, _info) => {
-                    return model.schoolsConnection(ctx, args)
+                schoolsConnection: (_parent, args, ctx, info) => {
+                    return model.schoolsConnection(ctx, info, args)
                 },
             },
             SchoolMembership: {

@@ -2,7 +2,7 @@ import { expect, use } from 'chai'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { sortBy } from 'lodash'
-import { Connection, Like } from 'typeorm'
+import { Like } from 'typeorm'
 import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
@@ -45,6 +45,7 @@ import {
 import {
     usersConnectionNodes,
     userConnection,
+    usersConnectionMainData,
 } from '../../utils/operations/modelOps'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
 import { grantPermission } from '../../utils/operations/roleOps'
@@ -57,7 +58,10 @@ import {
     generateToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
-import { createTestConnection } from '../../utils/testConnection'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 
 use(deepEqualInAnyOrder)
@@ -65,7 +69,7 @@ use(deepEqualInAnyOrder)
 describe('usersConnection', () => {
     let usersList: User[] = []
     const direction = 'FORWARD'
-    let connection: Connection
+    let connection: TestConnection
     let testClient: ApolloServerTestClient
 
     before(async () => {
@@ -1492,6 +1496,31 @@ describe('usersConnection', () => {
                     usersOrderedByGivenNameAsc[i + 1].given_name
                 )
             }
+        })
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            const directionArgs = {
+                count: 3,
+                cursor: convertDataToCursor({
+                    user_id: usersList[3].user_id,
+                }),
+            }
+
+            await usersConnectionMainData(
+                testClient,
+                direction,
+                directionArgs,
+                false,
+                {
+                    authorization: getAdminAuthToken(),
+                }
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
         })
     })
 })

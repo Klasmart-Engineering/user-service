@@ -64,8 +64,8 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             Query: {
-                permissionsConnection: (_parent, args, ctx, _info) =>
-                    model.permissionsConnection(ctx, args),
+                permissionsConnection: (_parent, args, ctx, info) =>
+                    model.permissionsConnection(ctx, info, args),
             },
         },
     }

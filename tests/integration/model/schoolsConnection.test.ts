@@ -80,6 +80,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 1 },
+                true,
                 { authorization: getAdminAuthToken() }
             )
 
@@ -98,12 +99,9 @@ describe('schoolsConnection', () => {
         })
         it('makes 3 DB queries', async () => {
             connection.logger.reset()
-            await schoolsConnection(
-                testClient,
-                'FORWARD',
-                { count: 5 },
-                { authorization: getAdminAuthToken() }
-            )
+            await schoolsConnection(testClient, 'FORWARD', { count: 5 }, true, {
+                authorization: getAdminAuthToken(),
+            })
             expect(connection.logger.count).to.equal(
                 3,
                 '1. COUNT, 2. DISTINCT ids, 3. SchoolConnectionNode data'
@@ -157,6 +155,7 @@ describe('schoolsConnection', () => {
                             testClient,
                             'FORWARD',
                             { count: 1 },
+                            true,
                             { authorization: token },
                             filter
                         )
@@ -176,6 +175,7 @@ describe('schoolsConnection', () => {
                             testClient,
                             'FORWARD',
                             { count: 1 },
+                            true,
                             { authorization: token },
                             undefined,
                             { field, order: 'DESC' }
@@ -193,6 +193,7 @@ describe('schoolsConnection', () => {
                     testClient,
                     'FORWARD',
                     { count: 10 },
+                    true,
                     { authorization: token }
                 )
                 expect(result.totalCount).to.eq(schools.length)
@@ -252,6 +253,7 @@ describe('schoolsConnection', () => {
                         testClient,
                         'FORWARD',
                         { count: 10 },
+                        true,
                         { authorization: token }
                     )
 
@@ -281,6 +283,7 @@ describe('schoolsConnection', () => {
                         testClient,
                         'FORWARD',
                         undefined,
+                        true,
                         { authorization: token }
                     )
                     expect(
@@ -321,6 +324,7 @@ describe('schoolsConnection', () => {
                                 testClient,
                                 'FORWARD',
                                 undefined,
+                                true,
                                 {
                                     authorization: token,
                                 }
@@ -372,6 +376,7 @@ describe('schoolsConnection', () => {
                                 testClient,
                                 'FORWARD',
                                 undefined,
+                                true,
                                 { authorization: token }
                             )
                             expect(
@@ -393,6 +398,7 @@ describe('schoolsConnection', () => {
                         testClient,
                         'FORWARD',
                         { count: 10 },
+                        true,
                         { authorization: token }
                     )
                     expect(result.totalCount).to.eq(0)
@@ -407,6 +413,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() }
             )
 
@@ -426,6 +433,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -443,6 +451,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -460,6 +469,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -477,6 +487,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -494,6 +505,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -522,6 +534,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 filter
             )
@@ -536,6 +549,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 {
@@ -558,6 +572,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 {
@@ -581,6 +596,7 @@ describe('schoolsConnection', () => {
                 testClient,
                 'FORWARD',
                 { count: 10 },
+                true,
                 { authorization: getAdminAuthToken() },
                 undefined,
                 {
@@ -618,6 +634,7 @@ describe('schoolsConnection', () => {
                         testClient,
                         'FORWARD',
                         { count: fetchCount, cursor },
+                        true,
                         { authorization: getAdminAuthToken() },
                         {
                             name: {
@@ -665,6 +682,7 @@ describe('schoolsConnection', () => {
                         testClient,
                         'BACKWARD',
                         { count: fetchCount, cursor },
+                        true,
                         { authorization: getAdminAuthToken() },
                         {
                             name: {
@@ -699,6 +717,25 @@ describe('schoolsConnection', () => {
                     cursor = result.pageInfo.startCursor
                 }
             })
+        })
+    })
+
+    context('when totalCount is not requested', () => {
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await schoolsConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                false,
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(connection.logger.count).to.be.eq(
+                2,
+                '1. DISTINCT ids, 2. SchoolConnectionNode data'
+            )
         })
     })
 })
