@@ -151,6 +151,9 @@ const typeDefs = gql`
         user: User
         roles: [Role]
         classes: [Class]
+            @deprecated(
+                reason: "Use User.classesStudying and User.classesTeaching"
+            )
         schoolMemberships(permission_name: String): [SchoolMembership]
 
         #query
