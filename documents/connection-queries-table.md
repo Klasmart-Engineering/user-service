@@ -16,5 +16,5 @@
 | Role                   |                                          | 🟡 In need               |
 | School                 | schoolsConnection                        |                          |
 | Subcategory            |                                          | 🟡 In need               |
-| Subject                |                                          | 🟡 In need               |
+| Subject                | subjectsConnection                       |                          |
 | User                   | usersConnection                          |                          |
