@@ -215,28 +215,30 @@ export const paginateData = async <T = unknown>({
             })
             const queryColumnsString = queryColumns.join(', ')
             const queryValuesString = queryValues.join(', ')
-            scope
-                .andWhere(
-                    `(${queryColumnsString}) ${directionOperator} (${queryValuesString})`,
-                    {
-                        ...queryParams,
-                    }
-                )
-                .orWhere(
-                    new Brackets((qb) => {
-                        qb.where(
-                            `(${queryColumnsString}) = (${queryValuesString})`,
-                            {
-                                ...queryParams,
-                            }
-                        ).andWhere(
-                            `${scope.alias}.${sort.primaryKey} ${pKeydirectionOperator} :defaultColumn`,
-                            {
-                                defaultColumn: cursorData[sort.primaryKey],
-                            }
-                        )
-                    })
-                )
+            scope.andWhere(
+                new Brackets((qa) => {
+                    qa.where(
+                        `(${queryColumnsString}) ${directionOperator} (${queryValuesString})`,
+                        {
+                            ...queryParams,
+                        }
+                    ).orWhere(
+                        new Brackets((qb) => {
+                            qb.where(
+                                `(${queryColumnsString}) = (${queryValuesString})`,
+                                {
+                                    ...queryParams,
+                                }
+                            ).andWhere(
+                                `${scope.alias}.${sort.primaryKey} ${pKeydirectionOperator} :defaultColumn`,
+                                {
+                                    defaultColumn: cursorData[sort.primaryKey],
+                                }
+                            )
+                        })
+                    )
+                })
+            )
 
             scope.offset(0)
         } else {
