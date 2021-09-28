@@ -83,7 +83,7 @@ import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
 import SubjectsInitializer from '../../src/initializers/subjects'
 import GradesInitializer from '../../src/initializers/grades'
-import { CustomError } from '../../src/types/csv/csvError'
+import { CSVError, CustomError } from '../../src/types/csv/csvError'
 import csvErrorConstants from '../../src/types/errors/csv/csvErrorConstants'
 import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
@@ -91,6 +91,7 @@ import { customErrors } from '../../src/types/errors/customError'
 import { buildCsvError } from '../../src/utils/csv/csvUtils'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import _ from 'lodash'
 
 use(chaiAsPromised)
 
@@ -109,6 +110,16 @@ describe('model.csv', () => {
         await connection?.close()
     })
 
+    async function checkErrorsMatch(error: Error, expectedError: CSVError) {
+        expect(error)
+            .to.have.property('message')
+            .equal(customErrors.csv_bad_input.message)
+        expect(error).to.have.property('errors').to.have.length(1)
+        expect(error)
+            .to.have.property('errors')
+            .to.have.deep.members([expectedError])
+    }
+
     describe('uploadFileSizeExceededCSV', () => {
         let file: ReadStream
         const mimetype = 'text/csv'
@@ -125,8 +136,8 @@ describe('model.csv', () => {
         it('should throw high level error', async () => {
             file = fs.createReadStream(resolve(`tests/fixtures/${filename}`))
 
-            const fn = async () =>
-                await uploadOrganizations(
+            await expect(
+                uploadOrganizations(
                     testClient,
                     file,
                     filename,
@@ -134,9 +145,7 @@ describe('model.csv', () => {
                     encoding,
                     arbitraryUserToken
                 )
-            await expect(fn()).to.be.rejectedWith(
-                'File size exceeds max file size (50KB)'
-            )
+            ).to.be.rejectedWith('File size exceeds max file size (50KB)')
 
             const organizationsCreated = await Organization.count()
             expect(organizationsCreated).eq(0)
@@ -163,8 +172,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadOrganizations(
+                await expect(
+                    queryUploadOrganizations(
                         testClient,
                         file,
                         filename,
@@ -172,7 +181,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -186,8 +195,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadOrganizations(
+                await expect(
+                    uploadOrganizations(
                         testClient,
                         file,
                         filename,
@@ -195,7 +204,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const organizationsCreated = await Organization.count()
                 expect(organizationsCreated).eq(0)
@@ -216,16 +225,6 @@ describe('model.csv', () => {
                 org.organization_name = 'Company 1'
                 await connection.manager.save(org)
 
-                const fn = async () =>
-                    await uploadOrganizations(
-                        testClient,
-                        file,
-                        filename,
-                        mimetype,
-                        encoding,
-                        arbitraryUserToken
-                    )
-
                 const expectedCSVError = buildCsvError(
                     csvErrorConstants.ERR_CSV_DUPLICATE_CHILD_ENTITY,
                     1,
@@ -239,18 +238,17 @@ describe('model.csv', () => {
                     }
                 )
 
-                try {
-                    await fn()
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    expect(e)
-                        .to.have.property('message')
-                        .equal(customErrors.csv_bad_input.message)
-                    expect(e).to.have.property('errors').to.have.length(1)
-                    expect(e)
-                        .to.have.property('errors')
-                        .to.have.deep.members([expectedCSVError])
-                }
+                const e = await expect(
+                    uploadOrganizations(
+                        testClient,
+                        file,
+                        filename,
+                        mimetype,
+                        encoding,
+                        arbitraryUserToken
+                    )
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
                 const allOrganizations = await Organization.count()
                 expect(allOrganizations).eq(1) // pre created "Company 1" org
@@ -300,8 +298,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadRoles(
+                await expect(
+                    queryUploadRoles(
                         testClient,
                         file,
                         filename,
@@ -309,7 +307,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const rolesCreated = await Role.count({
                     where: { system_role: false },
@@ -324,8 +322,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadRoles(
+                await expect(
+                    uploadRoles(
                         testClient,
                         file,
                         filename,
@@ -333,7 +331,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const rolesCreated = await Role.count({
                     where: { system_role: false },
@@ -394,8 +392,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadSubjects(
+                await expect(
+                    queryUploadSubjects(
                         testClient,
                         file,
                         filename,
@@ -403,7 +401,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const subjectsCreated = await Subject.count({
                     where: { system: false },
@@ -418,8 +416,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadSubjects(
+                await expect(
+                    uploadSubjects(
                         testClient,
                         file,
                         filename,
@@ -427,7 +425,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const subjectsCreated = await Subject.count({
                     where: { system: false },
@@ -490,8 +488,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadGrades(
+                await expect(
+                    queryUploadGrades(
                         testClient,
                         file,
                         filename,
@@ -499,7 +497,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const gradesCreated = await Grade.count()
                 expect(gradesCreated).eq(0)
@@ -513,8 +511,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadGrades(
+                await expect(
+                    uploadGrades(
                         testClient,
                         file,
                         filename,
@@ -522,7 +520,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const gradesCreated = await Grade.count()
                 expect(gradesCreated).eq(0)
@@ -589,8 +587,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadClasses(
+                await expect(
+                    queryUploadClasses(
                         testClient,
                         file,
                         filename,
@@ -598,7 +596,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const classesCreated = await Class.count()
                 expect(classesCreated).eq(0)
@@ -611,8 +609,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadClasses(
+                await expect(
+                    uploadClasses(
                         testClient,
                         file,
                         filename,
@@ -620,7 +618,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const classesreated = await Class.count()
                 expect(classesreated).eq(0)
@@ -696,8 +694,8 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                const fn = async () =>
-                    await queryUploadSchools(
+                await expect(
+                    queryUploadSchools(
                         testClient,
                         file,
                         filename,
@@ -705,7 +703,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const schoolsCreated = await School.count()
                 expect(schoolsCreated).eq(0)
@@ -717,8 +715,8 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                const fn = async () =>
-                    await uploadSchools(
+                await expect(
+                    uploadSchools(
                         testClient,
                         file,
                         filename,
@@ -726,7 +724,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const schoolsCreated = await School.count()
                 expect(schoolsCreated).eq(0)
@@ -781,8 +779,8 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                const fn = async () =>
-                    await queryUploadSubCategories(
+                await expect(
+                    queryUploadSubCategories(
                         testClient,
                         file,
                         filename,
@@ -790,7 +788,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const subCategoriesCreated = await Subcategory.count()
                 expect(subCategoriesCreated).eq(0)
@@ -802,8 +800,8 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                const fn = async () =>
-                    await uploadSubCategories(
+                await expect(
+                    uploadSubCategories(
                         testClient,
                         file,
                         filename,
@@ -811,7 +809,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const subCategoriesCreated = await Subcategory.count()
                 expect(subCategoriesCreated).eq(0)
@@ -868,15 +866,15 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadUsers(
+                await expect(
+                    queryUploadUsers(
                         testClient,
                         file,
                         filename,
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -889,8 +887,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadUsers(
+                await expect(
+                    uploadUsers(
                         testClient,
                         file,
                         filename,
@@ -899,7 +897,7 @@ describe('model.csv', () => {
                         false,
                         { authorization: arbitraryUserToken }
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -911,8 +909,22 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                try {
-                    await uploadUsers(
+                const expectedCSVError = buildCsvError(
+                    customErrors.missing_required_either.code,
+                    1,
+                    'user_email',
+                    customErrors.missing_required_either.message,
+                    {
+                        entity: 'User',
+                        attribute: 'Email',
+                        otherAttribute: 'Phone',
+                        key: 'user_email',
+                        label: 'user_email',
+                    }
+                )
+
+                const e = await expect(
+                    uploadUsers(
                         testClient,
                         file,
                         filename,
@@ -921,12 +933,8 @@ describe('model.csv', () => {
                         false,
                         { authorization: arbitraryUserToken }
                     )
-
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    if (e instanceof Error)
-                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
-                }
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -938,8 +946,24 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                try {
-                    await uploadUsers(
+                const expectedCSVError = buildCsvError(
+                    customErrors.invalid_email.code,
+                    1,
+                    'user_email',
+                    customErrors.invalid_email.message,
+                    {
+                        entity: 'User',
+                        attribute: 'Email',
+                        name: 'email',
+                        regex: {},
+                        value: 'invalid@email',
+                        label: 'user_email',
+                        key: 'user_email',
+                    }
+                )
+
+                const e = await expect(
+                    uploadUsers(
                         testClient,
                         file,
                         filename,
@@ -948,11 +972,8 @@ describe('model.csv', () => {
                         false,
                         { authorization: arbitraryUserToken }
                     )
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    if (e instanceof Error)
-                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
-                }
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -964,8 +985,24 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                try {
-                    await uploadUsers(
+                const expectedCSVError = buildCsvError(
+                    customErrors.invalid_phone.code,
+                    1,
+                    'user_phone',
+                    customErrors.invalid_phone.message,
+                    {
+                        entity: 'User',
+                        attribute: 'Phone',
+                        name: 'phone',
+                        regex: {},
+                        value: 'invalid_phone',
+                        label: 'user_phone',
+                        key: 'user_phone',
+                    }
+                )
+
+                const e = await expect(
+                    uploadUsers(
                         testClient,
                         file,
                         filename,
@@ -974,12 +1011,9 @@ describe('model.csv', () => {
                         false,
                         { authorization: arbitraryUserToken }
                     )
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    if (e instanceof Error)
-                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
-                }
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
             })
@@ -1001,8 +1035,8 @@ describe('model.csv', () => {
                     }
                 )
 
-                try {
-                    await uploadUsers(
+                const e = await expect(
+                    uploadUsers(
                         testClient,
                         file,
                         filename,
@@ -1011,17 +1045,8 @@ describe('model.csv', () => {
                         false,
                         { authorization: arbitraryUserToken }
                     )
-
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    expect(e)
-                        .to.have.property('message')
-                        .equal(customErrors.csv_bad_input.message)
-                    expect(e).to.have.property('errors').to.have.length(1)
-                    expect(e)
-                        .to.have.property('errors')
-                        .to.have.deep.members([expectedCSVError])
-                }
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
@@ -1044,8 +1069,8 @@ describe('model.csv', () => {
                     }
                 )
 
-                try {
-                    await uploadUsers(
+                const e = await expect(
+                    uploadUsers(
                         testClient,
                         file,
                         filename,
@@ -1054,17 +1079,9 @@ describe('model.csv', () => {
                         false,
                         { authorization: arbitraryUserToken }
                     )
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    expect(e)
-                        .to.have.property('message')
-                        .equal(customErrors.csv_bad_input.message)
-                    expect(e).to.have.property('errors').to.have.length(1)
-                    expect(e)
-                        .to.have.property('errors')
-                        .to.have.deep.members([expectedCSVError])
-                }
                 const usersCount = await User.count()
                 expect(usersCount).eq(1)
             })
@@ -1229,8 +1246,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadCategories(
+                await expect(
+                    queryUploadCategories(
                         testClient,
                         file,
                         filename,
@@ -1238,7 +1255,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const categoriesCreated = await Category.count({
                     where: { system: false },
@@ -1253,8 +1270,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadCategories(
+                await expect(
+                    uploadCategories(
                         testClient,
                         file,
                         filename,
@@ -1262,7 +1279,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const categoriesCreated = await Category.count({
                     where: { system: false },
@@ -1331,15 +1348,15 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                const fn = async () =>
-                    await queryUploadPrograms(
+                await expect(
+                    queryUploadPrograms(
                         testClient,
                         file,
                         filename,
                         mimetype,
                         encoding
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const programsCreated = await Program.count({
                     where: { system: false },
@@ -1353,8 +1370,8 @@ describe('model.csv', () => {
                 file = fs.createReadStream(
                     resolve(`tests/fixtures/${filename}`)
                 )
-                const fn = async () =>
-                    await uploadPrograms(
+                await expect(
+                    uploadPrograms(
                         testClient,
                         file,
                         filename,
@@ -1362,7 +1379,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const programsCreated = await Program.count({
                     where: { system: false },
@@ -1378,8 +1395,16 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadPrograms(
+                const expectedCSVError = buildCsvError(
+                    csvErrorConstants.ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST,
+                    1,
+                    'age_range_high_value, age_range_low_value, age_range_unit',
+                    csvErrorConstants.MSG_ERR_PROGRAM_AGE_RANGE_FIELDS_EXIST,
+                    {}
+                )
+
+                const e = await expect(
+                    uploadPrograms(
                         testClient,
                         file,
                         filename,
@@ -1387,13 +1412,8 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                try {
-                    await fn()
-                    expect.fail(`Function incorrectly resolved.`)
-                } catch (e) {
-                    if (e instanceof Error)
-                        expect(e.message).to.be.eq('ERR_CSV_BAD_INPUT')
-                }
+                ).to.be.rejected
+                checkErrorsMatch(e, expectedCSVError)
 
                 const usersCount = await User.count()
                 expect(usersCount).eq(priorUserCount)
@@ -1515,8 +1535,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await queryUploadAgeRanges(
+                await expect(
+                    queryUploadAgeRanges(
                         testClient,
                         file,
                         filename,
@@ -1524,7 +1544,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },
@@ -1539,8 +1559,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadAgeRanges(
+                await expect(
+                    uploadAgeRanges(
                         testClient,
                         file,
                         filename,
@@ -1548,7 +1568,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },
@@ -1564,8 +1584,8 @@ describe('model.csv', () => {
                     resolve(`tests/fixtures/${filename}`)
                 )
 
-                const fn = async () =>
-                    await uploadAgeRanges(
+                await expect(
+                    uploadAgeRanges(
                         testClient,
                         file,
                         filename,
@@ -1573,7 +1593,7 @@ describe('model.csv', () => {
                         encoding,
                         arbitraryUserToken
                     )
-                expect(fn()).to.be.rejectedWith(CustomError)
+                ).to.be.rejectedWith(CustomError)
 
                 const ageRangesCreated = await AgeRange.count({
                     where: { system: false },

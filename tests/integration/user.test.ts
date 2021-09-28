@@ -3,7 +3,7 @@ import { Connection } from 'typeorm'
 import { Model } from '../../src/model'
 import { createTestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
-import { accountUUID, User } from '../../src/entities/user'
+import { User } from '../../src/entities/user'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { OrganizationOwnership } from '../../src/entities/organizationOwnership'
 import {
@@ -521,15 +521,14 @@ describe('user', () => {
 
             context('and the shortcode is not valid', () => {
                 it('should fail to create an organization with a bad short code', async () => {
-                    const fn = () =>
+                    await expect(
                         createOrganization(
                             testClient,
                             user.user_id,
                             'A name',
                             'very wrong'
                         )
-
-                    expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
         })
@@ -558,10 +557,9 @@ describe('user', () => {
             })
 
             it('does not create another organisation', async () => {
-                const fn = () =>
+                await expect(
                     createOrganization(testClient, user.user_id, 'Another Org')
-
-                expect(fn()).to.be.rejected
+                ).to.be.rejected
             })
         })
     })

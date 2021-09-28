@@ -154,12 +154,12 @@ describe('userPermissions', () => {
                     school_ids: [schoolId],
                     organization_id: undefined,
                 }
-                const fn = async () =>
-                    await userPermissions.rejectIfNotAllowed(
+                await expect(
+                    userPermissions.rejectIfNotAllowed(
                         permissionContext,
                         PermissionName.edit_class_20334
                     )
-                await expect(fn()).to.be.rejected
+                ).to.be.rejected
             })
 
             it('should throw error when organization ID is provided', async () => {
@@ -168,12 +168,12 @@ describe('userPermissions', () => {
                     school_ids: undefined,
                     organization_id: organizationId,
                 }
-                const fn = async () =>
-                    await userPermissions.rejectIfNotAllowed(
+                await expect(
+                    userPermissions.rejectIfNotAllowed(
                         permissionContext,
                         PermissionName.edit_class_20334
                     )
-                await expect(fn()).to.be.rejected
+                ).to.be.rejected
             })
         })
 
@@ -197,12 +197,12 @@ describe('userPermissions', () => {
                         school_ids: [schoolId],
                         organization_id: undefined,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.fulfilled
+                    ).to.be.fulfilled
                 })
 
                 it('should not throw error when organization ID is provided', async () => {
@@ -217,12 +217,12 @@ describe('userPermissions', () => {
                         school_ids: undefined,
                         organization_id: organizationId,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.fulfilled
+                    ).to.be.fulfilled
                 })
 
                 it("should not throw error when user dosn't have organization permission, but does have permission for at least one school", async () => {
@@ -237,12 +237,12 @@ describe('userPermissions', () => {
                         school_ids: [schoolId],
                         organization_id: organizationId,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.fulfilled
+                    ).to.be.fulfilled
                 })
             })
 
@@ -260,12 +260,12 @@ describe('userPermissions', () => {
                         school_ids: [schoolId],
                         organization_id: undefined,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
 
                 it('should throw error when organization ID is provided', async () => {
@@ -274,12 +274,12 @@ describe('userPermissions', () => {
                         school_ids: undefined,
                         organization_id: organizationId,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
 
@@ -311,12 +311,12 @@ describe('userPermissions', () => {
                         school_ids: [schoolId],
                         organization_id: undefined,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
 
                 it('throws an error when organization ID is provided', async () => {
@@ -325,12 +325,12 @@ describe('userPermissions', () => {
                         school_ids: undefined,
                         organization_id: organizationId,
                     }
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             PermissionName.edit_class_20334
                         )
-                    await expect(fn()).to.be.rejected
+                    ).to.be.rejected
                 })
             })
         })
@@ -346,12 +346,12 @@ describe('userPermissions', () => {
 
             it('allows all the actions of a super admin', async () => {
                 for (const permission of superAdminRole.permissions) {
-                    const fn = async () =>
-                        await userPermissions.rejectIfNotAllowed(
+                    await expect(
+                        userPermissions.rejectIfNotAllowed(
                             permissionContext,
                             permission
                         )
-                    await expect(fn()).to.be.fulfilled
+                    ).to.be.fulfilled
                 }
             })
         })
