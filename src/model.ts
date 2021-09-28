@@ -106,18 +106,6 @@ export class Model {
                           ]
                         : [],
                 },
-                extra: {
-                    // reduce the connection pool size
-                    // https://github.com/typeorm/typeorm/issues/3388
-
-                    // maximum number of clients the pool should contain
-                    // default 10
-                    max: 5,
-
-                    // number of milliseconds to wait before timing out when connecting a new client
-                    // default 0 (never timeout)
-                    connectionTimeoutMillis: 2000,
-                },
             })
 
             await runMigrations(connection)
