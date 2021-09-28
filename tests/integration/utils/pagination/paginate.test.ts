@@ -21,6 +21,10 @@ import { getAdminAuthToken } from '../../../utils/testConfig'
 import { Subject } from '../../../../src/entities/subject'
 import { createSubject } from '../../../factories/subject.factory'
 import { v4 } from 'uuid'
+import {
+    IEntityFilter,
+    getWhereClauseFromFilter,
+} from '../../../../src/utils/pagination/filtering'
 
 use(chaiAsPromised)
 
@@ -463,6 +467,7 @@ describe('paginate', () => {
                 subject.name = names[i]
                 subjectsList.push(subject)
             }
+            subjectsList[12].system = true
             await connection.manager.save(subjectsList)
             scope = getRepository(Subject).createQueryBuilder()
 
@@ -547,6 +552,43 @@ describe('paginate', () => {
                     )
 
                     expect(firstId).to.be.lt(secondId)
+                })
+
+                it('should get the next few records according respecting the filtering', async () => {
+                    const filter: IEntityFilter = {
+                        system: {
+                            operator: 'eq',
+                            value: false,
+                        },
+                    }
+
+                    scope.andWhere(getWhereClauseFromFilter(filter))
+
+                    const directionArgs = {
+                        count: 10,
+                        cursor: convertDataToCursor({
+                            id: subjectsList[9].id,
+                            name: subjectsList[9].name,
+                        }),
+                    }
+                    const data = await paginateData<Subject>({
+                        direction,
+                        directionArgs,
+                        scope,
+                        sort: {
+                            primaryKey: 'id',
+                            aliases: {
+                                givenName: 'name',
+                            },
+                            sort: {
+                                field: 'name',
+                                order: 'ASC',
+                            },
+                        },
+                        includeTotalCount: true,
+                    })
+
+                    expect(data.totalCount).to.eql(12)
                 })
             })
 
