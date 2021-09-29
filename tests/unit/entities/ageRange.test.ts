@@ -7,6 +7,7 @@ import { createAgeRange } from '../../factories/ageRange.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { Organization } from '../../../src/entities/organization'
 import chaiAsPromised from 'chai-as-promised'
+import { truncateTables } from '../../utils/database'
 
 use(chaiAsPromised)
 
@@ -26,9 +27,12 @@ describe('AgeRange', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         org = createOrganization()
         ageRange = createAgeRange(org)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

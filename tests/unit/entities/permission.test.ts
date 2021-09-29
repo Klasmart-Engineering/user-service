@@ -6,6 +6,7 @@ import { createPermission } from '../../factories/permission.factory'
 import { createRole } from '../../factories/role.factory'
 import { Permission } from '../../../src/entities/permission'
 import { Role } from '../../../src/entities/role'
+import { truncateTables } from '../../utils/database'
 
 describe('Permission', () => {
     let connection: Connection
@@ -23,9 +24,12 @@ describe('Permission', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         role = createRole()
         permission = createPermission(role)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

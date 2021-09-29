@@ -7,6 +7,7 @@ import { createOrganization } from '../../factories/organization.factory'
 import { createSubcategory } from '../../factories/subcategory.factory'
 import { Organization } from '../../../src/entities/organization'
 import chaiAsPromised from 'chai-as-promised'
+import { truncateTables } from '../../utils/database'
 
 use(chaiAsPromised)
 
@@ -26,9 +27,12 @@ describe('Subcategory', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         org = createOrganization()
         subcategory = createSubcategory(org)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

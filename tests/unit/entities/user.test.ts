@@ -9,6 +9,7 @@ import { userValidations } from '../../../src/entities/validations/user'
 import Joi from 'joi'
 import { permutationsWithRepetition } from '../../utils/permute'
 import { expectValidationErrors } from '../../utils/joi'
+import { truncateTables } from '../../utils/database'
 
 describe('User', () => {
     let connection: Connection
@@ -25,8 +26,11 @@ describe('User', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         user = createUser()
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {
