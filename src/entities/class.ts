@@ -1,6 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
 import {
-    BaseEntity,
     Column,
     Check,
     Entity,
@@ -12,7 +11,6 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     In,
-    EntityManager,
 } from 'typeorm'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
@@ -25,19 +23,17 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { Subject } from './subject'
 import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
 @Check(`"class_name" <> ''`)
 @Unique(['class_name', 'organization'])
-export class Class extends BaseEntity {
+export class Class extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public class_id!: string
 
     @Column({ nullable: false })
     public class_name?: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
     public shortcode?: string
@@ -69,9 +65,6 @@ export class Class extends BaseEntity {
     @ManyToMany(() => Subject, (subject) => subject.classes)
     @JoinTable()
     public subjects?: Promise<Subject[]>
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async set(
         { class_name, shortcode }: { class_name: string; shortcode: string },
@@ -782,13 +775,6 @@ export class Class extends BaseEntity {
             console.error(e)
         }
         return false
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 
     // we should see users who are in the schools that the class belongs to, AND

@@ -1,5 +1,4 @@
 import {
-    BaseEntity,
     Column,
     Entity,
     getManager,
@@ -9,7 +8,6 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
-    EntityManager,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -18,9 +16,10 @@ import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Subcategory } from './subcategory'
 import { Status } from './status'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class Category extends BaseEntity {
+export class Category extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
@@ -37,15 +36,6 @@ export class Category extends BaseEntity {
     @ManyToMany(() => Subcategory)
     @JoinTable()
     public subcategories?: Promise<Subcategory[]>
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
-    public created_at!: Date
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async editSubcategories(
         { subcategory_ids }: { subcategory_ids: string[] },
@@ -115,12 +105,5 @@ export class Category extends BaseEntity {
         })
 
         return true
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

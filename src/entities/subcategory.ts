@@ -1,12 +1,10 @@
 import {
-    BaseEntity,
     Column,
     Entity,
     getManager,
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
-    EntityManager,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -14,9 +12,10 @@ import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class Subcategory extends BaseEntity {
+export class Subcategory extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
@@ -29,15 +28,6 @@ export class Subcategory extends BaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
-    public created_at!: Date
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async delete(
         args: Record<string, unknown>,
@@ -67,12 +57,5 @@ export class Subcategory extends BaseEntity {
         })
 
         return true
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

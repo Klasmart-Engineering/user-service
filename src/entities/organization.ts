@@ -9,13 +9,13 @@ import {
     In,
     OneToOne,
     ManyToOne,
-    BaseEntity,
     EntityManager,
     EntityTarget,
     FindConditions,
     Not,
     Brackets,
     FindOneOptions,
+    BaseEntity,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -43,6 +43,7 @@ import {
 } from '../utils/shortcode'
 import clean, { unswapEmailAndPhone } from '../utils/clean'
 import validationConstants from './validations/constants'
+import { CustomBaseEntity } from './customBaseEntity'
 import {
     APIError,
     APIErrorCollection,
@@ -61,7 +62,7 @@ import {
 import { pickBy } from 'lodash'
 
 @Entity()
-export class Organization extends BaseEntity {
+export class Organization extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public organization_id!: string
 
@@ -79,9 +80,6 @@ export class Organization extends BaseEntity {
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
     public shortCode?: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
 
     @OneToMany(
         () => OrganizationMembership,
@@ -322,9 +320,6 @@ export class Organization extends BaseEntity {
             ],
         })
     }
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async set(
         {
@@ -1801,8 +1796,7 @@ export class Organization extends BaseEntity {
     }
 
     public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
+        await super.inactivate(manager)
 
         await this.inactivateSchools(manager)
         await this.inactivateOrganizationMemberships(manager)

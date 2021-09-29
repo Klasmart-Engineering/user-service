@@ -1,5 +1,4 @@
 import {
-    BaseEntity,
     Column,
     Entity,
     getManager,
@@ -8,7 +7,6 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
-    EntityManager,
 } from 'typeorm'
 
 import { Context } from '../main'
@@ -19,9 +17,10 @@ import { PermissionName } from '../permissions/permissionNames'
 import { Subcategory } from './subcategory'
 import { Status } from './status'
 import { Class } from './class'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class Subject extends BaseEntity {
+export class Subject extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
@@ -65,15 +64,6 @@ export class Subject extends BaseEntity {
         return dbSubcategories
     }
 
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
-    public created_at!: Date
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
-
     public async delete(
         args: Record<string, unknown>,
         context: Context,
@@ -102,12 +92,5 @@ export class Subject extends BaseEntity {
         })
 
         return true
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

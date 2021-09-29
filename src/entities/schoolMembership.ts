@@ -2,13 +2,10 @@ import {
     Entity,
     ManyToOne,
     PrimaryColumn,
-    Column,
     CreateDateColumn,
     ManyToMany,
-    BaseEntity,
     getRepository,
     getManager,
-    EntityManager,
 } from 'typeorm'
 import { User } from './user'
 import { Role } from './role'
@@ -16,17 +13,15 @@ import { GraphQLResolveInfo } from 'graphql'
 import { School } from './school'
 import { Status } from './status'
 import { Context } from 'mocha'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class SchoolMembership extends BaseEntity {
+export class SchoolMembership extends CustomBaseEntity {
     @PrimaryColumn()
     public user_id!: string
 
     @PrimaryColumn()
     public school_id!: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
 
     @CreateDateColumn()
     public join_timestamp?: Date
@@ -39,9 +34,6 @@ export class SchoolMembership extends BaseEntity {
 
     @ManyToMany(() => Role, (role) => role.schoolMemberships)
     public roles?: Promise<Role[]>
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async checkAllowed(
         { permission_name }: { permission_name: string },
@@ -166,13 +158,6 @@ export class SchoolMembership extends BaseEntity {
             console.error(e)
         }
         return false
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }
 

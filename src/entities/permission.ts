@@ -1,15 +1,9 @@
-import {
-    BaseEntity,
-    Column,
-    Entity,
-    JoinTable,
-    ManyToMany,
-    PrimaryColumn,
-} from 'typeorm'
+import { Column, Entity, JoinTable, ManyToMany, PrimaryColumn } from 'typeorm'
 import { Role } from './role'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class Permission extends BaseEntity {
+export class Permission extends CustomBaseEntity {
     @PrimaryColumn({ name: 'permission_id' })
     public permission_name!: string
 

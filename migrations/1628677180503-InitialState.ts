@@ -924,5 +924,6 @@ export class InitialState1628677180503 implements MigrationInterface {
         console.log('Successfully ran the initial state database migration.')
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     public async down(queryRunner: QueryRunner): Promise<void> {}
 }

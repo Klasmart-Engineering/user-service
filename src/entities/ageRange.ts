@@ -1,5 +1,4 @@
 import {
-    BaseEntity,
     Check,
     Column,
     Entity,
@@ -8,7 +7,6 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
     Unique,
-    EntityManager,
 } from 'typeorm'
 import { AgeRangeUnit } from './ageRangeUnit'
 import { Context } from '../main'
@@ -16,6 +14,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
 @Check(`"low_value" >= 0 AND "low_value" <= 99`)
@@ -27,7 +26,7 @@ import { Status } from './status'
     'high_value_unit',
     'organization',
 ])
-export class AgeRange extends BaseEntity {
+export class AgeRange extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
@@ -52,15 +51,6 @@ export class AgeRange extends BaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
-    public created_at!: Date
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async delete(
         args: Record<string, unknown>,
@@ -90,12 +80,5 @@ export class AgeRange extends BaseEntity {
         })
 
         return true
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

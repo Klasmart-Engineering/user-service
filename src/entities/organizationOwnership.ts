@@ -1,19 +1,11 @@
-import {
-    BaseEntity,
-    Column,
-    Entity,
-    JoinColumn,
-    OneToOne,
-    PrimaryColumn,
-    EntityManager,
-} from 'typeorm'
+import { Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm'
 
 import { Organization } from './organization'
-import { Status } from './status'
 import { User } from './user'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class OrganizationOwnership extends BaseEntity {
+export class OrganizationOwnership extends CustomBaseEntity {
     @PrimaryColumn()
     public user_id!: string
 
@@ -30,21 +22,4 @@ export class OrganizationOwnership extends BaseEntity {
         referencedColumnName: 'organization_id',
     })
     public organization!: Promise<Organization>
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
-
-    public async inactivate(manager: EntityManager) {
-        if (this.status != Status.ACTIVE) {
-            return
-        }
-
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
-    }
 }

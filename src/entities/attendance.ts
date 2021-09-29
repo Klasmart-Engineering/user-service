@@ -1,9 +1,10 @@
-import { BaseEntity, Column, Entity, PrimaryColumn, Index } from 'typeorm'
+import { Column, Entity, PrimaryColumn, Index } from 'typeorm'
+import { CustomBaseEntity } from './customBaseEntity'
 
 //Shared by kidsloop-live-server
 // TODO: Create a shared repository
 @Entity()
-export class Attendance extends BaseEntity {
+export class Attendance extends CustomBaseEntity {
     @PrimaryColumn()
     public session_id!: string
 

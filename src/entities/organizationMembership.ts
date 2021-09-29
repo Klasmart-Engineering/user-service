@@ -5,10 +5,8 @@ import {
     Column,
     CreateDateColumn,
     ManyToMany,
-    BaseEntity,
     getRepository,
     getManager,
-    EntityManager,
 } from 'typeorm'
 import { User } from './user'
 import { Organization } from './organization'
@@ -20,17 +18,15 @@ import { Status } from './status'
 import { Class } from './class'
 import { PermissionName } from '../permissions/permissionNames'
 import validationConstants from './validations/constants'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class OrganizationMembership extends BaseEntity {
+export class OrganizationMembership extends CustomBaseEntity {
     @PrimaryColumn()
     public user_id!: string
 
     @PrimaryColumn()
     public organization_id!: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
 
     @CreateDateColumn()
     public join_timestamp?: Date
@@ -49,9 +45,6 @@ export class OrganizationMembership extends BaseEntity {
 
     @ManyToMany(() => Role, (role) => role.memberships)
     public roles?: Promise<Role[]>
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async schoolMemberships(
         { permission_name }: { permission_name: string },
@@ -289,12 +282,5 @@ export class OrganizationMembership extends BaseEntity {
             console.error(e)
         }
         return false
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

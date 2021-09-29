@@ -2,9 +2,9 @@ import { Connection, QueryRunner } from 'typeorm'
 import {
     createMigrationsTestConnection,
     createTestConnection,
-} from '../../utils/testConnection'
+} from '../utils/testConnection'
 import { expect } from 'chai'
-import { InitialState1628677180503 } from '../../../migrations/1628677180503-InitialState'
+import { InitialState1628677180503 } from '../../migrations/1628677180503-InitialState'
 
 async function getDatabaseTables(connection: Connection) {
     const tables = (await connection.createQueryRunner().query(`

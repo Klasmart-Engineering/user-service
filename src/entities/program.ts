@@ -1,5 +1,4 @@
 import {
-    BaseEntity,
     Column,
     Entity,
     getManager,
@@ -9,7 +8,6 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
-    EntityManager,
 } from 'typeorm'
 import { Status } from './status'
 import { Organization } from './organization'
@@ -21,9 +19,10 @@ import { AgeRange } from './ageRange'
 import { Grade } from './grade'
 import { School } from './school'
 import { Class } from './class'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class Program extends BaseEntity {
+export class Program extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public id!: string
 
@@ -51,12 +50,6 @@ export class Program extends BaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.programs)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
-
-    @Column({ type: 'timestamp', nullable: false, default: () => 'now()' })
-    public created_at!: Date
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     @ManyToMany(() => School, (school) => school.programs)
     public schools?: Promise<School>
@@ -208,12 +201,5 @@ export class Program extends BaseEntity {
         })
 
         return true
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

@@ -7,8 +7,6 @@ import {
     JoinTable,
     ManyToOne,
     getRepository,
-    BaseEntity,
-    EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -18,20 +16,15 @@ import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
-export class Role extends BaseEntity {
+export class Role extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public role_id!: string
 
     @Column({ nullable: true })
     public role_name?: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     @Column({ nullable: false, default: 'System Default Role' })
     public role_description?: string
@@ -313,12 +306,5 @@ export class Role extends BaseEntity {
             console.error(e)
         }
         return false
-    }
-
-    public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
-        await manager.save(this)
     }
 }

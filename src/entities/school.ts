@@ -11,7 +11,6 @@ import {
     ManyToMany,
     JoinTable,
     ManyToOne,
-    BaseEntity,
     EntityManager,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
@@ -25,10 +24,11 @@ import { Status } from './status'
 import { OrganizationMembership } from './organizationMembership'
 import { Program } from './program'
 import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
+import { CustomBaseEntity } from './customBaseEntity'
 
 @Entity()
 @Check(`"school_name" <> ''`)
-export class School extends BaseEntity {
+export class School extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public readonly school_id!: string
 
@@ -37,9 +37,6 @@ export class School extends BaseEntity {
 
     @Column({ nullable: true, length: SHORTCODE_DEFAULT_MAXLEN })
     public shortcode?: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
 
     @OneToMany(() => SchoolMembership, (membership) => membership.school)
     @JoinColumn({ name: 'user_id', referencedColumnName: 'user_id' })
@@ -71,9 +68,6 @@ export class School extends BaseEntity {
     @ManyToMany(() => Program, (program) => program.schools)
     @JoinTable()
     public programs?: Promise<Program[]>
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     public async set(
         { school_name, shortcode }: { school_name: string; shortcode: string },
@@ -249,8 +243,7 @@ export class School extends BaseEntity {
     }
 
     public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
+        await super.inactivate(manager)
 
         await this.inactivateClasses(manager)
         await this.inactivateSchoolMemberships(manager)

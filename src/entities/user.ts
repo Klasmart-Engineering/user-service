@@ -5,7 +5,6 @@ import {
     OneToMany,
     getConnection,
     getRepository,
-    BaseEntity,
     ManyToMany,
     getManager,
     JoinColumn,
@@ -28,11 +27,12 @@ import { School } from './school'
 import { Status } from './status'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 import { Context } from '../main'
+import { CustomBaseEntity } from './customBaseEntity'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
 import clean from '../utils/clean'
 
 @Entity()
-export class User extends BaseEntity {
+export class User extends CustomBaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public user_id!: string
 
@@ -63,12 +63,6 @@ export class User extends BaseEntity {
 
     @Column({ nullable: true })
     public avatar?: string
-
-    @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
-    public status!: Status
-
-    @Column({ type: 'timestamp', nullable: true })
-    public deleted_at?: Date
 
     @Column({ type: 'boolean', default: false })
     public primary!: boolean
@@ -665,13 +659,9 @@ export class User extends BaseEntity {
     }
 
     public async inactivate(manager: EntityManager) {
-        this.status = Status.INACTIVE
-        this.deleted_at = new Date()
-
+        await super.inactivate(manager)
         await this.inactivateOrganizationMemberships(manager)
-
         await this.inactivateSchoolMemberships(manager)
-
         await manager.save(this)
     }
 
