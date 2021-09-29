@@ -45,15 +45,16 @@ export interface TestConnection extends Connection {
     logger: QueryMetricsLogger
 }
 
-export const createTestConnection = async (
+export const createTestConnection = async ({
     drop = false,
-    name = 'default'
-): Promise<TestConnection> => {
+    synchronize = false,
+    name = 'default',
+} = {}): Promise<TestConnection> => {
     const logger = new QueryMetricsLogger()
     return createConnection({
         name: name,
         type: 'postgres',
-        synchronize: drop,
+        synchronize: synchronize,
         dropSchema: drop,
         entities: ['src/entities/*.ts'],
         logger,

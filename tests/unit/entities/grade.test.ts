@@ -8,6 +8,7 @@ import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
 import { Status } from '../../../src/entities/status'
 import chaiAsPromised from 'chai-as-promised'
+import { truncateTables } from '../../utils/database'
 
 use(chaiAsPromised)
 
@@ -29,11 +30,14 @@ describe('Grade', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         org = createOrganization()
         progressFromGrade = createGrade(org)
         progressToGrade = createGrade(org)
         grade = createGrade(org, progressFromGrade, progressToGrade)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

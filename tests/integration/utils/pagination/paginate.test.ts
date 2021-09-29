@@ -25,6 +25,7 @@ import {
     IEntityFilter,
     getWhereClauseFromFilter,
 } from '../../../../src/utils/pagination/filtering'
+import { truncateTables } from '../../../utils/database'
 
 use(chaiAsPromised)
 
@@ -149,7 +150,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.true
         })
         it('handles no results appropriately', async () => {
-            await connection.synchronize(true)
+            await truncateTables(connection, [User])
             const directionArgs = { count: 10 }
             const data = await paginateData({
                 direction,
@@ -333,7 +334,7 @@ describe('paginate', () => {
             expect(data.pageInfo.hasPreviousPage).to.be.false
         })
         it('handles no results appropriately', async () => {
-            await connection.synchronize(true)
+            await truncateTables(connection, [User])
             const directionArgs = { count: 10 }
             const data = await paginateData({
                 direction,

@@ -4,6 +4,7 @@ import { Connection, EntityManager } from 'typeorm'
 import { createTestConnection } from '../../utils/testConnection'
 import { createRole } from '../../factories/role.factory'
 import { Role } from '../../../src/entities/role'
+import { truncateTables } from '../../utils/database'
 
 describe('Role', () => {
     let connection: Connection
@@ -20,8 +21,11 @@ describe('Role', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         role = createRole()
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

@@ -7,6 +7,7 @@ import { createOrganization } from '../../factories/organization.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { Organization } from '../../../src/entities/organization'
 import chaiAsPromised from 'chai-as-promised'
+import { truncateTables } from '../../utils/database'
 
 use(chaiAsPromised)
 
@@ -26,9 +27,12 @@ describe('Subject', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         org = createOrganization()
         subject = createSubject(org)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

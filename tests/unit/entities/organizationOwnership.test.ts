@@ -10,6 +10,7 @@ import { Organization } from '../../../src/entities/organization'
 import { OrganizationOwnership } from '../../../src/entities/organizationOwnership'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
+import { truncateTables } from '../../utils/database'
 
 use(chaiAsPromised)
 
@@ -29,9 +30,12 @@ describe('OrganizationOwnership', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         user = createUser()
         organization = createOrganization(user)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     describe('.new', () => {

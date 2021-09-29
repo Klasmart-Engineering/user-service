@@ -8,6 +8,7 @@ import { createOrganization } from '../../factories/organization.factory'
 import { School } from '../../../src/entities/school'
 import { Status } from '../../../src/entities/status'
 import { Organization } from '../../../src/entities/organization'
+import { truncateTables } from '../../utils/database'
 
 chai.should()
 use(chaiAsPromised)
@@ -28,12 +29,15 @@ describe('School', () => {
     })
 
     beforeEach(async () => {
-        await connection.synchronize(true)
         existingOrg = createOrganization()
         await manager.save(existingOrg)
 
         existingSchool = createSchool(existingOrg)
         await manager.save(existingSchool)
+    })
+
+    afterEach(async () => {
+        await truncateTables(connection)
     })
 
     // Unique constraint on School.organization_id/School.school_name has been temporarily removed
