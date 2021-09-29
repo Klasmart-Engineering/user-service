@@ -68,7 +68,7 @@ export async function createOrg(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -88,7 +88,7 @@ export async function createAgeRanges(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -108,7 +108,7 @@ export async function addProgramsToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -128,7 +128,7 @@ export async function createPrograms(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -148,7 +148,7 @@ export async function createClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -168,7 +168,7 @@ export async function addStudentsToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -195,7 +195,7 @@ export async function inviteUserToOrganization(
     school_ids?: string[]
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -222,7 +222,7 @@ export async function createSchool(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -242,7 +242,7 @@ export async function addSchoolToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -262,7 +262,7 @@ export async function leaveTheOrganization(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -282,7 +282,7 @@ export async function createGrades(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -302,7 +302,7 @@ export async function createSubjects(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -322,7 +322,7 @@ export async function addAgeRangesToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -342,7 +342,7 @@ export async function addSchoolsToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -362,7 +362,7 @@ export async function addGradesToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -382,7 +382,7 @@ export async function addSubjectsToClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -402,7 +402,7 @@ export async function createCategories(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -418,7 +418,7 @@ export async function createCategories(
 
 export async function deleteSubject(id: string, token: string) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,

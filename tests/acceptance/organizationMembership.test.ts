@@ -15,7 +15,7 @@ import supertest from 'supertest'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { print } from 'graphql'
 
-const request = supertest('http://localhost:8080')
+const request = supertest('http://localhost:8080/user')
 
 use(deepEqualInAnyOrder)
 

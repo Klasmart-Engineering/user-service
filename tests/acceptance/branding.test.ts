@@ -15,7 +15,7 @@ import { userToPayload } from '../utils/operations/userOps'
 
 use(chaiAsPromised)
 
-const url = 'http://localhost:8080'
+const url = 'http://localhost:8080/user'
 const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'

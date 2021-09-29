@@ -76,7 +76,7 @@ const ageRangeDetail: IAgeRangeDetail = {
 
 async function createOrg(user_id: string, org_name: string, token: string) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -96,7 +96,7 @@ async function createClass(
     token: string
 ) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -112,7 +112,7 @@ async function createClass(
 
 async function deleteClass(classId: string, token: string) {
     return await request
-        .post('/graphql')
+        .post('/user')
         .set({
             ContentType: 'application/json',
             Authorization: token,
@@ -326,7 +326,7 @@ describe('acceptance.class', () => {
         context('using explict count', async () => {
             async function makeQuery(pageSize: any) {
                 return await request
-                    .post('/graphql')
+                    .post('/user')
                     .set({
                         ContentType: 'application/json',
                         Authorization: getAdminAuthToken(),
@@ -372,7 +372,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -392,7 +392,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes sorted by name', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: generateToken(userToPayload(user2)),
@@ -416,7 +416,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes sorted by ID', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -442,7 +442,7 @@ describe('acceptance.class', () => {
             const organizationId = org2Id
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: generateToken(userToPayload(user2)),
@@ -470,7 +470,7 @@ describe('acceptance.class', () => {
             const status = Status.INACTIVE
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -498,7 +498,7 @@ describe('acceptance.class', () => {
             const classId = class1Ids[0]
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -526,7 +526,7 @@ describe('acceptance.class', () => {
             const lowValue = ageRangeDetail.low_value
             const lowUnit = ageRangeDetail.low_value_unit
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -570,7 +570,7 @@ describe('acceptance.class', () => {
             const highValue = ageRangeDetail.high_value
             const highUnit = ageRangeDetail.high_value_unit
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -612,7 +612,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes filtering by school ID', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -647,7 +647,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes filtering by grade ID', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -682,7 +682,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes filtering by subject ID', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -717,7 +717,7 @@ describe('acceptance.class', () => {
 
         it('queries paginated classes filtering by program ID', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -754,7 +754,7 @@ describe('acceptance.class', () => {
             const search = 'class 1'
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -782,7 +782,7 @@ describe('acceptance.class', () => {
             const organizationId = org1Id
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: generateToken(userToPayload(schoolAdmin)),
@@ -812,7 +812,7 @@ describe('acceptance.class', () => {
             const organizationId = org1Id
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: generateToken(userToPayload(orgMember)),
@@ -840,7 +840,7 @@ describe('acceptance.class', () => {
             const organizationId = org1Id
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: generateToken(userToPayload(user2)),
@@ -869,7 +869,7 @@ describe('acceptance.class', () => {
                 'hOfLDx5hwPm1KnwNEaAHUddKjN62yGEk4ZycRB7UjmZXMtm2ODnQCycCmylMDsVDCztWgrepOaQ9itKx94g2rELPj8w533bGpKqUT9a25NuKrzs5R3OfTUprOkCLE1PBHYOAUpSU289e4BhZzR40ncGsKwKtIFHQ9fzy1hlPr3gWMK8H6s5JGtO0oQrl8Lf0co5IlKWRaeEY4eaUUIWVHRiSdsaaXgM5ffW1zgZCrhOYCPZrBrP8uYaiPGsn1GjE8Chf'
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -895,7 +895,7 @@ describe('acceptance.class', () => {
             const organizationId = 6
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),

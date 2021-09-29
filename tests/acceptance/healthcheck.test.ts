@@ -26,7 +26,7 @@ describe('acceptance.healthcheck', () => {
     })
 
     it('fetches health status', async () => {
-        const response = await request.get('/.well-known/apollo/server-health')
+        const response = await request.get('/user/health')
         expect(response.status).to.eq(200)
     })
 })
