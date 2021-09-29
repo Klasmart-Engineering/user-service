@@ -5,6 +5,7 @@ import { graphqlUploadExpress } from 'graphql-upload'
 import { createServer } from './utils/createServer'
 import { checkIssuerAuthorization } from './token'
 import escapeStringRegexp from 'escape-string-regexp'
+import appPackage from '../package.json'
 
 const domain = process.env.DOMAIN || ''
 if (!domain) {
@@ -51,6 +52,10 @@ export const initApp = async () => {
             },
         },
         path: routePrefix,
+    })
+
+    app.get('/version', (req, res) => {
+        res.status(200).send(appPackage.version)
     })
 
     return { expressApp: app, apolloServer }
