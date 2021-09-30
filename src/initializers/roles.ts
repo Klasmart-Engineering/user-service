@@ -88,7 +88,7 @@ export class RolesInitializer {
             studentRole,
             teacherRole,
         ]) {
-            let role = await Role.findOne({
+            let role = await manager.findOne(Role, {
                 where: {
                     role_name: role_name,
                     system_role: true,
@@ -120,7 +120,7 @@ export class RolesInitializer {
         permissions: string[]
     ) {
         role.permissions = Promise.resolve([])
-        await role.save()
+        await manager.save(role)
 
         await manager
             .createQueryBuilder()
