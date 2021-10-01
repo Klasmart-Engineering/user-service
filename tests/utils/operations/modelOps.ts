@@ -29,6 +29,7 @@ import { gql } from 'apollo-server-express'
 import { Role } from '../../../src/entities/role'
 import { CategorySummaryNode } from '../../../src/types/graphQL/categorySummaryNode'
 import { DocumentNode } from 'graphql'
+import { CoreUserConnectionNode } from '../../../src/pagination/usersConnection'
 
 const NEW_USER = `
     mutation myMutation(

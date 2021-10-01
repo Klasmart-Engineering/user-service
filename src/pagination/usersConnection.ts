@@ -112,6 +112,7 @@ export async function usersConnectionResolver(
     }
 }
 
+
 export function mapUserToUserConnectionNode(
     user: User
 ): CoreUserConnectionNode {
