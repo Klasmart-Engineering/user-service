@@ -1,4 +1,5 @@
 import './utils/dotenv'
+import 'newrelic' // Must be imported as early as possible
 import { initApp } from './app'
 import * as Sentry from '@sentry/node'
 import { UserPermissions } from './permissions/userPermissions'

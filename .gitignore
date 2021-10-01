@@ -7,3 +7,4 @@ coverage
 .env.test
 .idea
 .log
+newrelic_agent.log
