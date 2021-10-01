@@ -3,6 +3,7 @@ WORKDIR /usr/src/app
 COPY ./package*.json ./
 RUN npm ci
 RUN npm audit fix
+COPY ./newrelic.js .
 COPY ./customTypings ./customTypings
 COPY ./src ./src
 COPY ./migrations ./migrations
