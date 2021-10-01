@@ -38,7 +38,7 @@ Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.c
 
 ### Running tests acceptance during development:
 
-**Make sure you have the [docker-compose running](#docker) first**
+Stop the `postgres` container, then start the `kidsloop-user-service` container stack. If you don't have this in your Docker view yet, run `docker-compose up` to pull it.
 
 -   `npm run test:acceptance`
 
