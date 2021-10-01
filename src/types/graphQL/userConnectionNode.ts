@@ -15,4 +15,6 @@ export interface UserConnectionNode {
     roles: RoleSummaryNode[]
     schools: SchoolSummaryNode[]
     status: Status
+    dateOfBirth?: string
+    gender?: string
 }

@@ -327,6 +327,8 @@ const USERS_CONNECTION_NODES = gql`
                         phone
                     }
                     status
+                    dateOfBirth
+                    gender
                 }
             }
         }

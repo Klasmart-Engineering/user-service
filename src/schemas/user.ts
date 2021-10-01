@@ -98,6 +98,8 @@ const typeDefs = gql`
         roles: [RoleSummaryNode!]!
         schools: [SchoolSummaryNode!]!
         status: Status!
+        dateOfBirth: String
+        gender: String
     }
 
     type ContactInfo {
@@ -111,6 +113,7 @@ const typeDefs = gql`
         joinDate: Date
         userStatus: Status
         status: Status
+        userShortCode: String
     }
 
     type RoleSummaryNode {

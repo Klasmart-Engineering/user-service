@@ -105,6 +105,9 @@ describe('usersConnection loaders', async () => {
                         )
                         expect(org.status).to.equal(org1.status)
                         expect(org.userStatus).to.equal(membership?.status)
+                        expect(org.userShortCode).to.equal(
+                            membership?.shortcode
+                        )
                     }
                 })
             )

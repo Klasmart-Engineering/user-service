@@ -34,6 +34,7 @@ export const orgsForUsers = async (
             'OrganizationMembership.status',
             'Organization.organization_name',
             'Organization.status',
+            'OrganizationMembership.shortcode',
         ])
 
     if (filter) {
@@ -70,6 +71,7 @@ export const orgsForUsers = async (
                         joinDate: membership.join_timestamp,
                         userStatus: membership.status,
                         status: (await membership.organization)?.status,
+                        userShortCode: membership.shortcode,
                     }
                 })
             )

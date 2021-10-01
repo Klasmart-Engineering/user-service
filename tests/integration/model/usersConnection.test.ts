@@ -92,6 +92,8 @@ describe('usersConnection', () => {
             familyName: user.family_name,
             avatar: user.avatar,
             status: user.status,
+            dateOfBirth: user.date_of_birth,
+            gender: user.gender,
             contactInfo: {
                 email: user.email,
                 phone: user.phone,
@@ -249,7 +251,6 @@ describe('usersConnection', () => {
                             authorization: generateToken(userToPayload(user)),
                         }
                     )
-
                     expect(
                         usersConnectionResponse.edges.map((edge) => edge.node)
                     ).to.deep.equalInAnyOrder(

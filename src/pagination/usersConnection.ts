@@ -27,6 +27,8 @@ export type CoreUserConnectionNode = Pick<
     | 'status'
     | 'contactInfo'
     | 'alternateContactInfo'
+    | 'dateOfBirth'
+    | 'gender'
 >
 
 export async function usersConnectionResolver(
@@ -89,6 +91,8 @@ export async function usersConnectionResolver(
             'phone',
             'alternate_email',
             'alternate_phone',
+            'date_of_birth',
+            'gender',
         ] as (keyof User)[]).map((field) => `User.${field}`)
     )
 
@@ -128,6 +132,8 @@ export function mapUserToUserConnectionNode(
         familyName: user.family_name,
         avatar: user.avatar,
         status: user.status,
+        dateOfBirth: user.date_of_birth,
+        gender: user.gender,
         contactInfo: {
             email: user.email,
             phone: user.phone,
