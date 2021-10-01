@@ -25,6 +25,7 @@ import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConne
 import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
 import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
 import { gql } from 'apollo-server-express'
+import { CoreUserConnectionNode } from '../../../src/pagination/usersConnection'
 
 const NEW_USER = `
     mutation myMutation(
@@ -331,6 +332,28 @@ const USERS_CONNECTION_NODES = gql`
                     gender
                 }
             }
+        }
+    }
+`
+
+const USER_NODE = gql`
+    query($id: ID!) {
+        userNode(id: $id) {
+            id
+            givenName
+            familyName
+            avatar
+            contactInfo {
+                email
+                phone
+            }
+            alternateContactInfo {
+                email
+                phone
+            }
+            status
+            dateOfBirth
+            gender
         }
     }
 `
@@ -1116,6 +1139,25 @@ export async function usersConnectionNodes(
 
     const res = await gqlTry(operation)
     return res.data?.usersConnection
+}
+
+export async function userNode(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string,
+): Promise<UserConnectionNode> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: USER_NODE,
+            variables: {
+                id,
+            },
+            headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.userNode
 }
 
 export async function permissionsConnection(

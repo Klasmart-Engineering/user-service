@@ -136,6 +136,7 @@ const typeDefs = gql`
         me: User
         user(user_id: ID!): User
             @deprecated(reason: "Use 'usersConnection' with 'userId' filter.")
+        userNode(id: ID!): UserConnectionNode @isAdmin(entity: "user")
         usersConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -273,6 +274,20 @@ export default function getDefault(
                         ),
                     }
                     return model.usersConnection(ctx, info, args)
+                },
+                userNode: (_parent, args, ctx: Context) => {
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys, args.filter)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys, args.filter)
+                        ),
+                        roles: new Dataloader((keys) =>
+                            rolesForUsers(keys, args.filter)
+                        ),
+                    }
+                    return model.userNode(ctx, args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, ctx: Context, _info) =>
