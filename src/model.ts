@@ -87,6 +87,8 @@ import { ReplaceRoleArguments } from './operations/roles'
 import { PermissionName } from './permissions/permissionNames'
 import { APIError, APIErrorCollection } from './types/errors/apiError'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
+import { INodeArgs } from './types/node'
+import { classNodeResolver } from './nodes/classNode'
 
 export class Model {
     public static async create() {
@@ -767,6 +769,9 @@ export class Model {
 
         return data
     }
+
+    public classNode = (_context: Context, args: INodeArgs<Class>) =>
+        classNodeResolver(args)
 
     public async subjectsConnection(
         _context: Context,

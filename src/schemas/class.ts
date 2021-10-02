@@ -93,6 +93,7 @@ const typeDefs = gql`
         classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
         class(class_id: ID!): Class
             @deprecated(reason: "Use 'classesConnection' with 'id' filter.")
+        classNode(id: UUID!): ClassConnectionNode @isAdmin(entity: "class")
         classesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -227,6 +228,27 @@ export default function getDefault(
                     }
 
                     return model.classesConnection(ctx, info, args)
+                },
+                classNode: (_parent, args, ctx: Context, info) => {
+                    ctx.loaders.classesConnection = {
+                        schools: new DataLoader((keys) =>
+                            schoolsForClasses(keys)
+                        ),
+                        ageRanges: new DataLoader((keys) =>
+                            ageRangesForClasses(keys)
+                        ),
+                        grades: new DataLoader((keys) =>
+                            gradesForClasses(keys)
+                        ),
+                        subjects: new DataLoader((keys) =>
+                            subjectsForClasses(keys)
+                        ),
+                        programs: new DataLoader((keys) =>
+                            programsForClasses(keys)
+                        ),
+                    }
+
+                    return model.classNode(ctx, args)
                 },
             },
         },

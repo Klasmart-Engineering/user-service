@@ -686,6 +686,55 @@ query ClassesConnection($direction: ConnectionDirection!, $directionArgs: Connec
 }
 `
 
+export const CLASS_NODE = `
+query ClassNode($id: UUID!) {
+    classNode(id: $id) {
+        id
+        name
+        status
+        shortCode
+
+        schools {
+            id
+            name
+            status
+        }
+
+        ageRanges {
+            id
+            name
+            lowValue
+            lowValueUnit
+            highValue
+            highValueUnit
+            status
+            system
+        }
+
+        grades {
+            id
+            name
+            status
+            system
+        }
+
+        subjects {
+            id
+            name
+            status
+            system
+        }
+
+        programs {
+            id
+            name
+            status
+            system
+        }
+    }
+}
+`
+
 export const SUBJECTS_CONNECTION = `
     query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
         subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
@@ -1592,6 +1641,25 @@ export async function classesConnectionMainData(
 
     const res = await gqlTry(operation)
     return res.data?.classesConnection
+}
+
+export async function classNode(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+): Promise<ClassConnectionNode> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: CLASS_NODE,
+            variables: {
+                id,
+            },
+            headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.classNode
 }
 
 export async function subjectsConnection(
