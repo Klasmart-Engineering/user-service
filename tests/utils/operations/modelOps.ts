@@ -554,6 +554,7 @@ export const CLASSES_CONNECTION = `
                     id
                     name
                     status
+                    shortCode
 
                     schools {
                         id
@@ -616,6 +617,7 @@ query ClassesConnection($direction: ConnectionDirection!, $directionArgs: Connec
                 id
                 name
                 status
+                shortCode
             }
         }
 

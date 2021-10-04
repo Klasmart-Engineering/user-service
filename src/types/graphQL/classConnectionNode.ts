@@ -9,6 +9,7 @@ export interface ClassConnectionNode {
     id: string
     name?: string
     status: Status
+    shortCode?: string
     schools?: SchoolSimplifiedSummaryNode[]
     ageRanges?: AgeRangeConnectionNode[]
     grades?: GradeSummaryNode[]
