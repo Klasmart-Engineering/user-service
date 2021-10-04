@@ -6,8 +6,9 @@ import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
 import { createDefaultDataLoaders } from '../loaders/setup'
+import { loadPlugins } from './plugins'
 
-export const createServer = (model: Model, context?: Context) => {
+export const createServer = async (model: Model, context?: Context) => {
     const schema = makeExecutableSchema(getSchema(model, context))
     return new ApolloServer({
         schema: schema,
@@ -55,6 +56,7 @@ export const createServer = (model: Model, context?: Context) => {
             },
         },
         uploads: false,
+        plugins: await loadPlugins(),
         formatError: (error) => {
             if (error.originalError instanceof CustomError) {
                 return { ...error, details: error.originalError.errors }

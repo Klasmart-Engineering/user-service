@@ -18,7 +18,7 @@ const routePrefix = process.env.ROUTE_PREFIX || ''
 
 export const initApp = async () => {
     const model = await Model.create()
-    const apolloServer = createServer(model)
+    const apolloServer = await createServer(model)
 
     const app = express()
     app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))

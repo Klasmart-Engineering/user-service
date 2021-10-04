@@ -34,7 +34,7 @@ describe('processCategoryFromCSVRow', () => {
 
     before(async () => {
         connection = await createTestConnection()
-        const server = createServer(new Model(connection))
+        const server = await createServer(new Model(connection))
         testClient = createTestClient(server)
     })
 
