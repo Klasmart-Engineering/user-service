@@ -1,8 +1,9 @@
+/* eslint-env node */
 // Documentation: https://docs.newrelic.com/docs/agents/nodejs-agent/installation-configuration/nodejs-agent-configuration/
 
 // NB: @env NEW_RELIC_LICENSE_KEY and @env NEW_RELIC_APP_NAME should be set in the environment
 
-export const config = {
+exports.config = {
     /**
      * Should be overriden per deployment with @env NEW_RELIC_APP_NAME
      * This is here to provide a more useful default than New Relic's default of `My Application`
