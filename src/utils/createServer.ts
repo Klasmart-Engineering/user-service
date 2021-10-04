@@ -1,4 +1,3 @@
-import { ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core'
 import { ApolloServer } from 'apollo-server-express'
 import { makeExecutableSchema } from '@graphql-tools/schema'
 import { Context } from '../main'
@@ -13,8 +12,9 @@ import {
     isAuthenticatedTransformer,
     isMIMETypeTransformer,
 } from '../directives'
+import { loadPlugins } from './plugins'
 
-export const createServer = (model: Model, context?: Context) => {
+export const createServer = async (model: Model, context?: Context) => {
     const environment = process.env.NODE_ENV
     const schema = [
         isAdminTransformer,
@@ -43,23 +43,7 @@ export const createServer = (model: Model, context?: Context) => {
                     loaders: createDefaultDataLoaders(),
                 }
             }),
-        plugins: [
-            ApolloServerPluginLandingPageGraphQLPlayground({
-                settings: {
-                    // Apollo Server v2 defaults
-                    'general.betaUpdates': false,
-                    'editor.theme': 'dark',
-                    'editor.cursorShape': 'line',
-                    'editor.reuseHeaders': true,
-                    'tracing.hideTracingResponse': true,
-                    'queryPlan.hideQueryPlanResponse': true,
-                    'editor.fontSize': 14,
-                    'editor.fontFamily': `'Source Code Pro', 'Consolas', 'Inconsolata', 'Droid Sans Mono', 'Monaco', monospace`,
-                    // Custom settings
-                    'request.credentials': 'include',
-                },
-            }),
-        ],
+        plugins: await loadPlugins(),
         formatError: (error) => {
             if (error.originalError instanceof CustomError) {
                 return { ...error, details: error.originalError.errors }

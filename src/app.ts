@@ -19,7 +19,7 @@ const routePrefix = process.env.ROUTE_PREFIX || ''
 
 export const initApp = async () => {
     const model = await Model.create()
-    const apolloServer = createServer(model)
+    const apolloServer = await createServer(model)
     await apolloServer.start()
 
     const app = express()

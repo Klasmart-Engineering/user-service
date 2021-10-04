@@ -23,7 +23,7 @@ describe('errors', () => {
 
     before(async () => {
         connection = await createTestConnection()
-        server = createServer(new Model(connection))
+        server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
         env = process.env
     })
@@ -53,7 +53,7 @@ describe('errors', () => {
     context('when environment is not development', () => {
         beforeEach(async () => {
             process.env = { ...env, NODE_ENV: 'not-development' }
-            server = createServer(new Model(connection))
+            server = await createServer(new Model(connection))
             testClient = await createTestClient(server)
         })
 

@@ -24,7 +24,7 @@ describe('createEntityFromCsvWithRollBack', () => {
 
     before(async () => {
         connection = await createTestConnection()
-        const server = createServer(new Model(connection))
+        const server = await createServer(new Model(connection))
         const testClient = await createTestClient(server)
 
         const adminUser = await createAdminUser(testClient)
