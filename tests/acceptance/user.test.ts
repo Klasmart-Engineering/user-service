@@ -16,7 +16,6 @@ import { User } from '../../src/entities/user'
 import {
     MY_USERS,
     USERS_CONNECTION,
-    USER_NODE,
 } from '../utils/operations/modelOps'
 import {
     userToPayload,
