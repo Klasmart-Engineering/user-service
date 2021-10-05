@@ -88,7 +88,7 @@ describe('classesConnection', () => {
 
     before(async () => {
         connection = await createTestConnection()
-        const server = createServer(new Model(connection))
+        const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
     })
 
@@ -181,6 +181,8 @@ describe('classesConnection', () => {
         // creating org1 classes
         for (let i = 0; i < classesCount; i++) {
             const class_ = await createClass(undefined, org1)
+            const classNumber = i < 9 ? `0${i + 1}` : `${i + 1}`
+            const shortcode = `CL455${classNumber}`
             const ageRangesForClass = [
                 ageRanges[Math.floor(i / (classesCount / ageRangesCount))],
             ]
@@ -189,9 +191,10 @@ describe('classesConnection', () => {
                 ageRangesForClass.push(noneSpecifiedAgeRange)
             }
 
-            class_.class_name = `class ${i + 1}`
+            class_.class_name = `class ${classNumber}`
             class_.status = Status.ACTIVE
             class_.age_ranges = Promise.resolve(ageRangesForClass)
+            class_.shortcode = shortcode
             class_.grades = Promise.resolve([
                 grades[Math.floor(i / (classesCount / gradesCount))],
             ])
@@ -208,8 +211,11 @@ describe('classesConnection', () => {
         // creating org2 classes
         for (let i = 0; i < classesCount; i++) {
             const class_ = await createClass(undefined, org2)
-            class_.class_name = `class ${i + 1}`
+            const classNumber = i < 9 ? `0${i + 1}` : `${i + 1}`
+            const shortcode = `CL455${classNumber}`
+            class_.class_name = `class ${classNumber}`
             class_.status = Status.INACTIVE
+            class_.shortcode = shortcode
             org2Classes.push(class_)
         }
 
@@ -225,10 +231,13 @@ describe('classesConnection', () => {
         // creating org3 classes
         for (let i = 0; i < classesCount; i++) {
             const index = Math.floor(i / (classesCount / schoolsCount))
+            const classNumber = i < 9 ? `0${i + 1}` : `${i + 1}`
+            const shortcode = `CL455${classNumber}`
             const class_ = await createClass([org3Schools[index]], org3)
 
-            class_.class_name = `class ${i + 1}`
+            class_.class_name = `class ${classNumber}`
             class_.status = Status.ACTIVE
+            class_.shortcode = shortcode
             org3Classes.push(class_)
         }
 
@@ -504,6 +513,25 @@ describe('classesConnection', () => {
                 expect(class_.node.programs?.length).lte(50)
             })
         })
+
+        it('returns classes with shortCodes', async () => {
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() }
+            )
+
+            expect(result.totalCount).to.eq(classesCount * 3)
+            expect(result.edges.length).eq(10)
+
+            const shortCodeClasses = result.edges.map((e) => e.node)
+            shortCodeClasses.forEach((c) => {
+                const number = c.name?.substring(c.name.length - 2)
+                expect(c.shortCode).to.exist
+                expect(c.shortCode).to.eq(`CL455${number}`)
+            })
+        })
     })
 
     context('sorting', () => {
@@ -691,7 +719,7 @@ describe('classesConnection', () => {
         })
 
         it('supports filtering by class name', async () => {
-            const search = 'class 1'
+            const search = '1'
 
             const filter: IEntityFilter = {
                 name: {

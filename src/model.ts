@@ -83,6 +83,7 @@ import { userNodeResolver } from './nodes/userNode'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
 import { INodeArgs } from './types/node'
+import { organizationsConnectionResolver } from './pagination/organizationsConnection'
 
 export class Model {
     public static async create() {
@@ -374,6 +375,12 @@ export class Model {
             return await scope.getMany()
         }
     }
+
+    public organizationsConnection = (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Organization>
+    ) => organizationsConnectionResolver(info, paginationArgs)
 
     public usersConnection = (
         _context: Context,
@@ -669,7 +676,13 @@ export class Model {
         const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
         // Select only the ClassConnectionNode fields
-        scope.select(['Class.class_id', 'Class.class_name', 'Class.status'])
+        scope.select([
+            'Class.class_id',
+            'Class.class_name',
+            'Class.status',
+            'Class.shortcode',
+        ])
+
         if (filter) {
             if (
                 filterHasProperty('ageRangeValueFrom', filter) ||
@@ -742,6 +755,7 @@ export class Model {
                 id: class_.class_id,
                 name: class_.class_name,
                 status: class_.status,
+                shortCode: class_.shortcode,
                 // other properties have dedicated resolvers that use Dataloader
             }
 

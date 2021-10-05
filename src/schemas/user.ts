@@ -70,6 +70,7 @@ const typeDefs = gql`
     input UserFilter {
         # table columns
         userId: UUIDFilter
+        userStatus: StringFilter
         givenName: StringFilter
         familyName: StringFilter
         avatar: StringFilter
@@ -145,6 +146,9 @@ const typeDefs = gql`
         ): UsersConnectionResponse @isAdmin(entity: "user")
         users: [User] @deprecated(reason: "Unused")
         my_users: [User!]
+            @deprecated(
+                reason: "Use 'usersConnection with a filter for matching 'email' or 'phone'"
+            )
     }
 
     type User {

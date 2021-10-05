@@ -628,6 +628,7 @@ export function userToSuperPayload(user: User): any {
 export function userToPayload(user: User): any {
     const payload = {
         email: user.email,
+        phone: user.phone,
         given_name: user.given_name,
         family_name: user.family_name,
         name: user.user_name,

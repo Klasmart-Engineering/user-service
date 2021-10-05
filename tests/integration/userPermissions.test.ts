@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { Connection } from 'typeorm'
+import { Request } from 'express'
 import { School } from '../../src/entities/school'
 import { Model } from '../../src/model'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { superAdminRole } from '../../src/permissions/superAdmin'
-import { checkToken } from '../../src/token'
+import { checkToken, TokenPayload } from '../../src/token'
 import { createServer } from '../../src/utils/createServer'
 import {
     ApolloServerTestClient,
@@ -42,10 +43,13 @@ describe('userPermissions', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
     let originalAdmins: string[]
+    const req = {
+        headers: {},
+    } as Request
 
     before(async () => {
         connection = await createTestConnection()
-        const server = createServer(new Model(connection))
+        const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
     })
 
@@ -55,11 +59,12 @@ describe('userPermissions', () => {
 
     describe('isAdmin', () => {
         let userPermissions: UserPermissions
-        let token
+        let token: TokenPayload
 
         beforeEach(async () => {
             const encodedToken = getNonAdminAuthToken()
-            token = (await checkToken(encodedToken)) as any
+            req.headers = { authorization: encodedToken }
+            token = await checkToken(req)
             userPermissions = new UserPermissions(token)
         })
 
@@ -70,7 +75,8 @@ describe('userPermissions', () => {
         context('when user is a super admin', () => {
             beforeEach(async () => {
                 const encodedToken = getAdminAuthToken()
-                token = (await checkToken(encodedToken)) as any
+                req.headers = { authorization: encodedToken }
+                token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
             })
 
@@ -144,7 +150,8 @@ describe('userPermissions', () => {
         context("when user role doesn't include specified permission", () => {
             beforeEach(async () => {
                 const encodedToken = getNonAdminAuthToken()
-                token = (await checkToken(encodedToken)) as any
+                req.headers = { authorization: encodedToken }
+                token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
             })
 
@@ -180,7 +187,8 @@ describe('userPermissions', () => {
         context('when user role does include specified permission', () => {
             beforeEach(async () => {
                 const encodedToken = getNonAdminAuthToken()
-                token = (await checkToken(encodedToken)) as any
+                req.headers = { authorization: encodedToken }
+                token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
             })
 
@@ -338,7 +346,10 @@ describe('userPermissions', () => {
         context('when the user is super admin', () => {
             beforeEach(async () => {
                 const encodedToken = getAdminAuthToken()
-                token = (await checkToken(encodedToken)) as any
+                req.headers = {
+                    authorization: encodedToken,
+                }
+                token = await checkToken(req)
                 userPermissions = new UserPermissions(token)
             })
 
@@ -368,7 +379,8 @@ describe('userPermissions', () => {
             orgs = []
             nonAdmin = await createNonAdminUser(testClient)
             const encodedToken = getNonAdminAuthToken()
-            const token = (await checkToken(encodedToken)) as any
+            req.headers = { authorization: encodedToken }
+            const token = await checkToken(req)
             token.id = nonAdmin.user_id
             userPermissions = new UserPermissions(token)
 

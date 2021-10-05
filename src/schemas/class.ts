@@ -68,6 +68,7 @@ const typeDefs = gql`
         id: ID!
         name: String
         status: Status!
+        shortCode: String
         schools: [SchoolSimplifiedSummaryNode!]
         ageRanges: [AgeRangeConnectionNode!]
         grades: [GradeSummaryNode!]

@@ -62,12 +62,15 @@ export async function usersConnectionResolver(
             scope.leftJoin('User.classesStudying', 'ClassStudying')
             scope.leftJoin('User.classesTeaching', 'ClassTeaching')
         }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'OrganizationMembership.organization_id',
                 organizationUserStatus: 'OrganizationMembership.status',
+                userStatus: 'User.status',
                 userId: 'User.user_id',
                 phone: 'User.phone',
+                email: 'User.email',
                 schoolId: 'SchoolMembership.school_id',
                 classId: {
                     operator: 'OR',

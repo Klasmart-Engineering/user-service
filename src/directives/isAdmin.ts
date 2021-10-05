@@ -4,6 +4,7 @@ import {
     getRepository,
     SelectQueryBuilder,
     Brackets,
+    WhereExpression,
 } from 'typeorm'
 import { Class } from '../entities/class'
 import { AgeRange } from '../entities/ageRange'
@@ -175,6 +176,25 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
 ) => {
     const user_id = permissions.getUserId()
     const user = getRepository(User).create({ user_id })
+    const email = permissions.getEmail()
+    const phone = permissions.getPhone()
+
+    const orUsersSharedEmailOrPhone = (qb: WhereExpression) => {
+        qb.orWhere('User.user_id = :user_id', {
+            user_id,
+        })
+
+        if (email) {
+            qb.orWhere('User.email = :email', {
+                email: email,
+            })
+        }
+        if (phone) {
+            qb.orWhere('User.phone = :phone', {
+                phone: phone,
+            })
+        }
+    }
 
     // 1 - can we view org users?
     const userOrgs: string[] = await permissions.orgMembershipsWithPermissions([
@@ -182,11 +202,17 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     ])
     if (userOrgs.length > 0) {
         // just filter by org, not school
-        scope.innerJoin(
+        scope.leftJoin(
             'User.memberships',
             'OrganizationMembership',
             'OrganizationMembership.organization IN (:...organizations)',
             { organizations: userOrgs }
+        )
+        scope.andWhere(
+            new Brackets((qb) => {
+                qb.orWhere('OrganizationMembership.user_id IS NOT NULL')
+                orUsersSharedEmailOrPhone(qb)
+            })
         )
         return
     }
@@ -203,10 +229,20 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     if (userOrgSchools.length > 0 && schoolMemberships) {
         // you can view all users in the schools you belong to
         // Must be LEFT JOIN to support `isNull` operator
-        scope.leftJoin('User.school_memberships', 'SchoolMembership')
-        scope.andWhere('SchoolMembership.school_id IN (:...schoolIds)', {
-            schoolIds: schoolMemberships.map(({ school_id }) => school_id),
-        })
+        scope.leftJoin(
+            'User.school_memberships',
+            'SchoolMembership',
+            'SchoolMembership.school_id IN (:...schoolIds)',
+            {
+                schoolIds: schoolMemberships.map(({ school_id }) => school_id),
+            }
+        )
+        scope.andWhere(
+            new Brackets((qb) => {
+                qb.orWhere('SchoolMembership.user_id IS NOT NULL')
+                orUsersSharedEmailOrPhone(qb)
+            })
+        )
         return
     }
 
@@ -246,37 +282,16 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
             new Brackets((qb) => {
                 qb.orWhere('class_studying_membership.user_id IS NOT NULL')
                 qb.orWhere('class_teaching_membership.user_id IS NOT NULL')
+                orUsersSharedEmailOrPhone(qb)
             })
         )
 
         return
     }
-    // can't view org or school users
 
-    // 4 - can they view their own users?
-    const [myUsersOrgs, myUsersSchools] = await Promise.all([
-        permissions.orgMembershipsWithPermissions([
-            PermissionName.view_my_users_40113,
-        ]),
-        permissions.schoolMembershipsWithPermissions([
-            PermissionName.view_my_users_40113,
-        ]),
-    ])
-    if (myUsersOrgs.length === 0 && myUsersSchools.length === 0) {
-        // they can only view themselves
-        scope.andWhere('User.user_id = :user_id', { user_id })
-        return
-    }
-
-    // they can view users with same email
     scope.andWhere(
         new Brackets((qb) => {
-            qb.orWhere('User.user_id = :user_id', {
-                user_id,
-            })
-            qb.orWhere('User.email = :email', {
-                email: permissions.getEmail(),
-            })
+            orUsersSharedEmailOrPhone(qb)
         })
     )
 }

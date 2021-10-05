@@ -1,7 +1,9 @@
 import { AuthenticationError } from 'apollo-server-express'
 import { NextFunction, Request, Response } from 'express'
 import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
+import getAuthenticatedUser from './services/azureAdB2C'
 
+const IS_AZURE_B2C_ENABLED = process.env.AZURE_B2C_ENABLED === 'true'
 const issuers = new Map<
     string,
     {
@@ -67,13 +69,15 @@ const blackListIssuers = [
 ]
 
 export interface TokenPayload {
-    [k: string]: string
+    [k: string]: string | undefined
     id: string
-    email: string
+    email?: string
+    phone?: string
     iss: string
 }
 
-export async function checkToken(token?: string): Promise<TokenPayload> {
+async function checkTokenAMS(req: Request): Promise<TokenPayload> {
+    const token = req.headers.authorization || req.cookies.access
     if (!token) {
         throw new AuthenticationError('No authentication token')
     }
@@ -103,6 +107,23 @@ export async function checkToken(token?: string): Promise<TokenPayload> {
         })
     })
     return verifiedToken
+}
+
+export async function checkToken(req: Request): Promise<TokenPayload> {
+    if (IS_AZURE_B2C_ENABLED) {
+        const azureTokenPayload = await getAuthenticatedUser(req)
+        const { emails, ...rest } = azureTokenPayload
+        const tokenPayload = {
+            ...rest,
+            id: azureTokenPayload.sub,
+            iss: azureTokenPayload.iss,
+            email: emails && emails?.length > 0 ? emails[0] : '',
+        }
+        // To be compatible with  [k: string]: string | undefined type of TokenPayload we need to convert as unknown and then convert to TokenPayload
+        return (tokenPayload as unknown) as TokenPayload
+    } else {
+        return checkTokenAMS(req)
+    }
 }
 
 export function checkIssuerAuthorization(

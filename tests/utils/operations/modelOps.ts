@@ -24,6 +24,7 @@ import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnect
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
 import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
 import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
+import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
 import { gql } from 'apollo-server-express'
 import { CoreUserConnectionNode } from '../../../src/pagination/usersConnection'
 
@@ -605,6 +606,7 @@ export const CLASSES_CONNECTION = `
                     id
                     name
                     status
+                    shortCode
 
                     schools {
                         id
@@ -667,6 +669,7 @@ query ClassesConnection($direction: ConnectionDirection!, $directionArgs: Connec
                 id
                 name
                 status
+                shortCode
             }
         }
 
@@ -732,6 +735,71 @@ export const SUBJECTS_CONNECTION_MAIN_DATA = `
                 hasPreviousPage
                 startCursor
                 endCursor
+            }
+        }
+    }
+`
+
+export const ORGANIZATIONS_CONNECTION = `
+    query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: OrganizationFilter, $sortArgs: OrganizationSortInput) {
+        organizationsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    owners {
+                        id
+                    }
+                }
+            }
+            pageInfo{
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+        }
+    }
+`
+
+export const ORGANIZATIONS_CONNECTION_MAIN_DATA = `
+    query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: OrganizationFilter, $sortArgs: OrganizationSortInput) {
+        organizationsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs){
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                }
+            }
+            pageInfo{
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+        }
+    }
+`
+
+const ORGANIZATIONS_CONNECTION_NODES = gql`
+    query($filter: OrganizationFilter) {
+        organizationsConnection(direction: FORWARD, filter: $filter) {
+            edges {
+                node {
+                    id
+                    name
+                    contactInfo {
+                        address1
+                        address2
+                        phone
+                    }
+                    shortCode
+                    status
+                }
             }
         }
     }
@@ -1498,6 +1566,82 @@ export async function subjectsConnectionMainData(
 
     const res = await gqlTry(operation)
     return res.data?.subjectsConnection
+}
+
+export async function organizationsConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<OrganizationConnectionNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: ORGANIZATIONS_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.organizationsConnection
+}
+
+export async function organizationsConnectionMainData(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<OrganizationConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        ORGANIZATIONS_CONNECTION_MAIN_DATA,
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.organizationsConnection
+}
+
+export async function organizationsConnectionNodes(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    filter?: IEntityFilter
+): Promise<IPaginatedResponse<OrganizationConnectionNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: ORGANIZATIONS_CONNECTION_NODES,
+            variables: {
+                direction: 'FORWARD',
+                filter,
+            },
+            headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.organizationsConnection
 }
 
 function buildPaginationQuery(
