@@ -310,54 +310,34 @@ export const USERS_CONNECTION_MAIN_DATA = `
     }
 `
 
-export const USER_NODE = `
-    query userNode($id: ID!) {
-        userNode(id: $id) {
-            id
-            givenName
-            familyName
-            avatar
-            contactInfo {
-                email
-                phone
-            }
-            alternateContactInfo {
-                email
-                phone
-            }
-            status
-            dateOfBirth
-            gender
-            schools{
-                name
-            }
-            organizations{
-                name
-            }
+const USER_NODE_FIELDS = gql`
+    fragment userFields on UserConnectionNode {
+        id
+        givenName
+        familyName
+        avatar
+        contactInfo {
+            email
+            phone
         }
+        alternateContactInfo {
+            email
+            phone
+        }
+        status
+        dateOfBirth
+        gender
     }
 `
 
 const USERS_CONNECTION_NODES = gql`
+    ${USER_NODE_FIELDS}
+
     query($filter: UserFilter) {
         usersConnection(direction: FORWARD, filter: $filter) {
             edges {
                 node {
-                    id
-                    givenName
-                    familyName
-                    avatar
-                    contactInfo {
-                        email
-                        phone
-                    }
-                    alternateContactInfo {
-                        email
-                        phone
-                    }
-                    status
-                    dateOfBirth
-                    gender
+                    ...userFields
                 }
             }
         }
@@ -365,23 +345,11 @@ const USERS_CONNECTION_NODES = gql`
 `
 
 const USER_NODE_QUERY = gql`
+    ${USER_NODE_FIELDS}
+
     query($id: ID!) {
         userNode(id: $id) {
-            id
-            givenName
-            familyName
-            avatar
-            contactInfo {
-                email
-                phone
-            }
-            alternateContactInfo {
-                email
-                phone
-            }
-            status
-            dateOfBirth
-            gender
+            ...userFields
         }
     }
 `
