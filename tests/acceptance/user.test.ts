@@ -13,10 +13,7 @@ import {
     leaveTheOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
-import {
-    MY_USERS,
-    USERS_CONNECTION,
-} from '../utils/operations/modelOps'
+import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
 import {
     userToPayload,
     GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
