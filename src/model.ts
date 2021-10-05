@@ -79,7 +79,7 @@ import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
 import { usersConnectionResolver } from './pagination/usersConnection'
-import { INodeArgs, userNodeResolver } from './nodes/userNode'
+import { userNodeResolver } from './nodes/userNode'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
 import { organizationsConnectionResolver } from './pagination/organizationsConnection'
@@ -89,6 +89,7 @@ import { PermissionName } from './permissions/permissionNames'
 import { APIError, APIErrorCollection } from './types/errors/apiError'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 import { CLASS_NODE_COLUMNS } from './nodes/classNode'
+import { INodeArgs } from './types/node'
 
 export class Model {
     public static async create() {
