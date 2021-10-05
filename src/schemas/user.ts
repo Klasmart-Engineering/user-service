@@ -10,6 +10,7 @@ import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 import { User } from '../entities/user'
+import { userNodeResolver } from '../nodes/userNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -289,7 +290,7 @@ export default function getDefault(
                         ),
                         roles: new Dataloader((keys) => rolesForUsers(keys)),
                     }
-                    return model.userNode(ctx, args)
+                    return userNodeResolver(args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, ctx: Context, _info) =>

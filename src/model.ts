@@ -79,10 +79,8 @@ import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
 import { usersConnectionResolver } from './pagination/usersConnection'
-import { userNodeResolver } from './nodes/userNode'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
-import { INodeArgs } from './types/node'
 import { organizationsConnectionResolver } from './pagination/organizationsConnection'
 
 export class Model {
@@ -387,9 +385,6 @@ export class Model {
         info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<User>
     ) => usersConnectionResolver(info, paginationArgs)
-
-    public userNode = (_context: Context, args: INodeArgs<User>) =>
-        userNodeResolver(args)
 
     public async permissionsConnection(
         _context: Context,
