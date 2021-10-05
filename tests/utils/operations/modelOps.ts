@@ -28,6 +28,7 @@ import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizat
 import { gql } from 'apollo-server-express'
 import { Role } from '../../../src/entities/role'
 import { CategorySummaryNode } from '../../../src/types/graphQL/categorySummaryNode'
+import { DocumentNode } from 'graphql'
 
 const NEW_USER = `
     mutation myMutation(
@@ -598,101 +599,20 @@ export const AGE_RANGES_CONNECTION = `
     }
 `
 
-export const CLASSES_CONNECTION = `
-    query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
-        classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
-            totalCount
-
-            edges {
-                cursor
-                node {
-                    id
-                    name
-                    status
-                    shortCode
-
-                    schools {
-                        id
-                        name
-                        status
-                    }
-
-                    ageRanges {
-                        id
-                        name
-                        lowValue
-                        lowValueUnit
-                        highValue
-                        highValueUnit
-                        status
-                        system
-                    }
-
-                    grades {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    subjects {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    programs {
-                        id
-                        name
-                        status
-                        system
-                    }
-                }
-            }
-
-            pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-            }
-        }
-    }
-`
-
-export const CLASSES_CONNECTION_MAIN_DATA = `
-query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
-    classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
-        totalCount
-
-        edges {
-            cursor
-            node {
-                id
-                name
-                status
-                shortCode
-            }
-        }
-
-        pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
-        }
-    }
-}
-`
-
-export const CLASS_NODE = `
-query ClassNode($id: UUID!) {
-    classNode(id: $id) {
+const CLASS_MAIN_FIELDS = gql`
+    fragment classMainFields on ClassConnectionNode {
         id
         name
         status
         shortCode
+    }
+`
+
+const CLASS_FIELDS = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    fragment classFields on ClassConnectionNode {
+        ...classMainFields
 
         schools {
             id
@@ -732,7 +652,84 @@ query ClassNode($id: UUID!) {
             system
         }
     }
-}
+`
+
+export const CLASSES_CONNECTION = gql`
+    ${CLASS_FIELDS}
+
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    ...classFields
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const CLASSES_CONNECTION_MAIN_DATA = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    ...classMainFields
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const CLASS_NODE = gql`
+    ${CLASS_FIELDS}
+
+    query ClassNode($id: UUID!) {
+        classNode(id: $id) {
+            ...classFields
+        }
+    }
 `
 
 export const SUBJECTS_CONNECTION = `
@@ -1819,10 +1816,10 @@ export async function organizationsConnectionNodes(
 }
 
 function buildPaginationQuery(
-    paginationQuery: string,
+    paginationQuery: string | DocumentNode,
     includeTotalCount: boolean
 ) {
     return includeTotalCount
         ? paginationQuery
-        : paginationQuery.split('totalCount').join('')
+        : (paginationQuery as string).split('totalCount').join('')
 }

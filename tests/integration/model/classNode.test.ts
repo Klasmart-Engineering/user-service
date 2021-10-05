@@ -346,22 +346,22 @@ describe('classNode', () => {
         expect(result).to.haveOwnProperty('ageRanges')
         expect(result.ageRanges).to.be.an('array')
         expect(result.ageRanges?.length).to.eql(1)
-        expect(result.ageRanges?.[0].id).to.deep.eq(ageRanges[0].id)
+        expect(result.ageRanges?.[0].id).to.eql(ageRanges[0].id)
 
         expect(result).to.haveOwnProperty('grades')
         expect(result.grades).to.be.an('array')
         expect(result.grades?.length).to.eql(1)
-        expect(result.grades?.[0].id).to.deep.eq(grades[0].id)
+        expect(result.grades?.[0].id).to.eql(grades[0].id)
 
         expect(result).to.haveOwnProperty('subjects')
         expect(result.subjects).to.be.an('array')
         expect(result.subjects?.length).to.eql(1)
-        expect(result.subjects?.[0].id).to.deep.eq(subjects[0].id)
+        expect(result.subjects?.[0].id).to.eql(subjects[0].id)
 
         expect(result).to.haveOwnProperty('programs')
         expect(result.programs).to.be.an('array')
         expect(result.programs?.length).to.eql(1)
-        expect(result.programs?.[0].id).to.deep.eq(programs[0].id)
+        expect(result.programs?.[0].id).to.eql(programs[0].id)
     })
 
     context('permissions', () => {
