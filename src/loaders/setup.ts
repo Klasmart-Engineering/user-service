@@ -40,11 +40,7 @@ import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { Class } from '../entities/class'
-import {
-    CLASS_NODE_COLUMNS,
-    CoreClassConnectionNode,
-    mapClassToClassNode,
-} from '../nodes/classNode'
+import { CoreClassConnectionNode } from '../nodes/classNode'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
