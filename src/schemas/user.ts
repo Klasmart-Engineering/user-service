@@ -278,14 +278,12 @@ export default function getDefault(
                 userNode: (_parent, args, ctx: Context) => {
                     ctx.loaders.usersConnection = {
                         organizations: new Dataloader((keys) =>
-                            orgsForUsers(keys, args.filter)
+                            orgsForUsers(keys)
                         ),
                         schools: new Dataloader((keys) =>
-                            schoolsForUsers(keys, args.filter)
+                            schoolsForUsers(keys)
                         ),
-                        roles: new Dataloader((keys) =>
-                            rolesForUsers(keys, args.filter)
-                        ),
+                        roles: new Dataloader((keys) => rolesForUsers(keys)),
                     }
                     return model.userNode(ctx, args)
                 },

@@ -79,9 +79,10 @@ import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
 import { runMigrations } from './initializers/migrations'
 import { scopeHasJoin } from './utils/typeorm'
 import { usersConnectionResolver } from './pagination/usersConnection'
-import { INodeArgs, userNodeResolver } from './nodes/userNode'
+import { userNodeResolver } from './nodes/userNode'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
+import { INodeArgs } from './types/node'
 
 export class Model {
     public static async create() {

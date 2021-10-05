@@ -3,17 +3,14 @@ import {
     mapUserToUserConnectionNode,
 } from '../pagination/usersConnection'
 import { User } from '../entities/user'
-import { BaseEntity, SelectQueryBuilder } from 'typeorm'
-
-export interface INodeArgs<Entity extends BaseEntity> {
-    scope: SelectQueryBuilder<Entity>
-    id: string
-}
+import { APIError } from '../types/errors/apiError'
+import { customErrors } from '../types/errors/customError'
+import { INodeArgs } from '../types/node'
 
 export async function userNodeResolver({
     scope,
     id,
-}: INodeArgs<User>): Promise<CoreUserConnectionNode> {
+}: INodeArgs<User>): Promise<CoreUserConnectionNode | APIError> {
     scope
         .select(
             ([
@@ -30,8 +27,16 @@ export async function userNodeResolver({
                 'gender',
             ] as (keyof User)[]).map((field) => `User.${field}`)
         )
-        .where(`${scope.alias}.user_id = :id`, { id })
+        .andWhere(`${scope.alias}.user_id = :id`, { id })
 
-    const data = await scope.getOneOrFail()
+    const data = await scope.getOne()
+    if (!data) {
+        return new APIError({
+            message: customErrors.nonexistent_entity.message,
+            code: customErrors.nonexistent_entity.code,
+            variables: ['id'],
+            entity: 'User',
+        })
+    }
     return mapUserToUserConnectionNode(data)
 }

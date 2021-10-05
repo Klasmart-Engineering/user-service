@@ -310,6 +310,34 @@ export const USERS_CONNECTION_MAIN_DATA = `
     }
 `
 
+export const USER_NODE = `
+    query userNode($id: ID!) {
+        userNode(id: $id) {
+            id
+            givenName
+            familyName
+            avatar
+            contactInfo {
+                email
+                phone
+            }
+            alternateContactInfo {
+                email
+                phone
+            }
+            status
+            dateOfBirth
+            gender
+            schools{
+                name
+            }
+            organizations{
+                name
+            }
+        }
+    }
+`
+
 const USERS_CONNECTION_NODES = gql`
     query($filter: UserFilter) {
         usersConnection(direction: FORWARD, filter: $filter) {
@@ -336,7 +364,7 @@ const USERS_CONNECTION_NODES = gql`
     }
 `
 
-const USER_NODE = gql`
+const USER_NODE_QUERY = gql`
     query($id: ID!) {
         userNode(id: $id) {
             id
@@ -1144,12 +1172,12 @@ export async function usersConnectionNodes(
 export async function userNode(
     testClient: ApolloServerTestClient,
     headers: Headers,
-    id: string,
+    id: string
 ): Promise<UserConnectionNode> {
     const { query } = testClient
     const operation = () =>
         query({
-            query: USER_NODE,
+            query: USER_NODE_QUERY,
             variables: {
                 id,
             },
