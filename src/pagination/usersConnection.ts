@@ -134,7 +134,7 @@ export function mapUserToUserConnectionNode(
     }
 }
 
-export function selectUserFields(scope: SelectQueryBuilder<User>) {
+function selectUserFields(scope: SelectQueryBuilder<User>) {
     return scope.select(
         ([
             'user_id',

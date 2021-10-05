@@ -17,6 +17,7 @@ import {
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
+import { IUserNodesLoaders, userNodesByIds } from './userNode'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -26,6 +27,7 @@ export interface IDataLoaders {
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection?: IOrganizationsConnectionLoaders
     user: IUsersLoaders
+    userNode: IUserNodesLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 }
@@ -53,6 +55,9 @@ export function createDefaultDataLoaders(): IDataLoaders {
                 organizationsForSchools(keys)
             ),
             schoolById: new Dataloader((keys) => schoolsByIds(keys)),
+        },
+        userNode: {
+            userNode: new Dataloader(userNodesByIds),
         },
     }
 }

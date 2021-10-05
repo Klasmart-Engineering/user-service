@@ -10,7 +10,6 @@ import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 import { User } from '../entities/user'
-import { userNodeResolver } from '../nodes/userNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -266,30 +265,12 @@ export default function getDefault(
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
                 usersConnection: (_parent, args, ctx: Context, info) => {
-                    ctx.loaders.usersConnection = {
-                        organizations: new Dataloader((keys) =>
-                            orgsForUsers(keys, args.filter)
-                        ),
-                        schools: new Dataloader((keys) =>
-                            schoolsForUsers(keys, args.filter)
-                        ),
-                        roles: new Dataloader((keys) =>
-                            rolesForUsers(keys, args.filter)
-                        ),
-                    }
+                    usersConnectionLoadersLoad(ctx)
                     return model.usersConnection(ctx, info, args)
                 },
-                userNode: (_parent, args, ctx: Context) => {
-                    ctx.loaders.usersConnection = {
-                        organizations: new Dataloader((keys) =>
-                            orgsForUsers(keys)
-                        ),
-                        schools: new Dataloader((keys) =>
-                            schoolsForUsers(keys)
-                        ),
-                        roles: new Dataloader((keys) => rolesForUsers(keys)),
-                    }
-                    return userNodeResolver(args)
+                userNode: (_parent, { id }, ctx: Context) => {
+                    usersConnectionLoadersLoad(ctx)
+                    return ctx.loaders.userNode.userNode.load(id)
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, ctx: Context, _info) =>
@@ -308,5 +289,15 @@ export default function getDefault(
                 },
             },
         },
+    }
+}
+
+const usersConnectionLoadersLoad = (ctx: Context) => {
+    if (typeof ctx.loaders.usersConnection === 'undefined') {
+        ctx.loaders.usersConnection = {
+            organizations: new Dataloader((keys) => orgsForUsers(keys)),
+            schools: new Dataloader((keys) => schoolsForUsers(keys)),
+            roles: new Dataloader((keys) => rolesForUsers(keys)),
+        }
     }
 }
