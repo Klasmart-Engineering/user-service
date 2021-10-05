@@ -1,4 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
@@ -88,7 +89,7 @@ export async function usersConnectionResolver(
     const data = await paginateData<User>({
         direction,
         directionArgs,
-        scope,
+        scope: selectUserFields(scope),
         sort: {
             primaryKey: 'user_id',
             aliases: {
@@ -148,3 +149,21 @@ export const coreUserConnectionNodeFields = ([
     'date_of_birth',
     'gender',
 ] as (keyof User)[]).map((field) => `User.${field}`)
+
+export function selectUserFields(scope: SelectQueryBuilder<User>) {
+    return scope.select(
+        ([
+            'user_id',
+            'given_name',
+            'family_name',
+            'avatar',
+            'status',
+            'email',
+            'phone',
+            'alternate_email',
+            'alternate_phone',
+            'date_of_birth',
+            'gender',
+        ] as (keyof User)[]).map((field) => `User.${field}`)
+    )
+}
