@@ -27,13 +27,21 @@ export class UserPermissions {
     private _schoolPermissions?: Promise<Map<string, Set<string>>>
 
     private readonly user_id?: string
-    private readonly email: string
+    private readonly email?: string
+    private readonly phone?: string
     public readonly isAdmin?: boolean
 
-    public constructor(token?: { id: string; email: string }) {
+    public constructor(token?: { id: string; email?: string; phone?: string }) {
         this.user_id = token?.id
-        this.email = token?.email || ''
-        this.isAdmin = this.isAdminEmail(this.email)
+        if (typeof token?.email == 'string' && token?.email?.length > 0) {
+            this.email = token.email
+            this.isAdmin = this.isAdminEmail(this.email!)
+        } else {
+            this.isAdmin = false
+        }
+        if (typeof token?.phone == 'string' && token?.phone?.length > 0) {
+            this.phone = token?.phone
+        }
     }
 
     private isAdminEmail(email: string) {
@@ -48,6 +56,10 @@ export class UserPermissions {
         return this.email
     }
 
+    public getPhone() {
+        return this.phone
+    }
+
     private async isUserAdmin(user_id?: string) {
         const user = await User.findOne({ user_id })
 
@@ -55,7 +67,7 @@ export class UserPermissions {
     }
 
     public rejectIfNotAdmin() {
-        if (!this.isAdminEmail(this.email)) {
+        if (!this.isAdmin) {
             throw new Error(
                 `User(${this.user_id}) does not have Admin permissions`
             )

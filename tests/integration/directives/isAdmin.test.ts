@@ -207,23 +207,7 @@ describe('isAdmin', () => {
             })
         })
         context('non admin', () => {
-            it("only shows the logged in user if they aren't part of a school/org", async () => {
-                const user = await createNonAdminUser(testClient)
-                const user2 = createUser()
-                user2.email = user.email
-                await connection.manager.save([user2])
-
-                const usersConnection = await userConnection(
-                    testClient,
-                    direction,
-                    { count: 10 },
-                    { authorization: getNonAdminAuthToken() }
-                )
-
-                expect(usersConnection.totalCount).to.eq(1)
-                expect(usersConnection.edges.length).to.eq(1)
-            })
-            it('requires view_my_users_40113 permission to view my users', async () => {
+            it('no permission needed to view my users', async () => {
                 const user = await createNonAdminUser(testClient)
                 const user2 = createUser()
                 user2.email = user.email
@@ -243,24 +227,7 @@ describe('isAdmin', () => {
                     { authorization: getAdminAuthToken() }
                 )
 
-                let usersConnection = await userConnection(
-                    testClient,
-                    direction,
-                    { count: 10 },
-                    { authorization: getNonAdminAuthToken() }
-                )
-
-                expect(usersConnection.totalCount).to.eq(1)
-                expect(usersConnection.edges.length).to.eq(1)
-
-                await grantPermission(
-                    testClient,
-                    roleList[0].role_id,
-                    PermissionName.view_my_users_40113,
-                    { authorization: getAdminAuthToken() }
-                )
-
-                usersConnection = await userConnection(
+                const usersConnection = await userConnection(
                     testClient,
                     direction,
                     { count: 10 },

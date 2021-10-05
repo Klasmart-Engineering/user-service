@@ -67,9 +67,10 @@ const blackListIssuers = [
 ]
 
 export interface TokenPayload {
-    [k: string]: string
+    [k: string]: string | undefined
     id: string
-    email: string
+    email?: string
+    phone?: string
     iss: string
 }
 

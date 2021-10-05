@@ -187,10 +187,6 @@ describe('usersConnection', () => {
                     teachers: [users[1]],
                 }),
             ])
-
-            // make at least one user in a different Org have the same email as `user`
-            users[8].email = user.email
-            await users[8].save()
         })
 
         context('admin', () => {
@@ -212,6 +208,16 @@ describe('usersConnection', () => {
         })
 
         context('non-admin', () => {
+            let userWithSameEmail: User
+            let userWithSamePhone: User
+
+            beforeEach(async () => {
+                userWithSameEmail = createUser({ email: user.email })
+                await userWithSameEmail.save()
+                userWithSamePhone = createUser({ phone: user.phone })
+                await userWithSamePhone.save()
+            })
+
             const addPermission = async ({
                 user,
                 organization,
@@ -254,9 +260,13 @@ describe('usersConnection', () => {
                     expect(
                         usersConnectionResponse.edges.map((edge) => edge.node)
                     ).to.deep.equalInAnyOrder(
-                        [users[0], users[3], users[6]].map(
-                            mapUserToUserConnectionNode
-                        )
+                        [
+                            users[0],
+                            users[3],
+                            users[6],
+                            userWithSameEmail,
+                            userWithSamePhone,
+                        ].map(mapUserToUserConnectionNode)
                     )
                 })
 
@@ -321,6 +331,34 @@ describe('usersConnection', () => {
                     ).to.deep.equal([mapUserToUserConnectionNode(filteredUser)])
                 })
 
+                it('applies userStatus filters', async () => {
+                    const filteredUser = users[3]
+                    await User.update(
+                        {
+                            user_id: filteredUser.user_id,
+                        },
+                        { status: Status.INACTIVE }
+                    )
+                    filteredUser.status = Status.INACTIVE
+
+                    const usersConnectionResponse = await usersConnectionNodes(
+                        testClient,
+                        {
+                            authorization: generateToken(userToPayload(user)),
+                        },
+                        {
+                            userStatus: {
+                                operator: 'eq',
+                                value: Status.INACTIVE,
+                            },
+                        }
+                    )
+
+                    expect(
+                        usersConnectionResponse.edges.map((edge) => edge.node)
+                    ).to.deep.equal([mapUserToUserConnectionNode(filteredUser)])
+                })
+
                 it('applies roleId filters', async () => {
                     const role = await createRole(
                         undefined,
@@ -374,7 +412,12 @@ describe('usersConnection', () => {
                     expect(
                         usersConnectionResponse.edges.map((edge) => edge.node)
                     ).to.deep.equalInAnyOrder(
-                        [user, users[3]].map(mapUserToUserConnectionNode)
+                        [
+                            user,
+                            users[3],
+                            userWithSameEmail,
+                            userWithSamePhone,
+                        ].map(mapUserToUserConnectionNode)
                     )
                 })
 
@@ -416,38 +459,20 @@ describe('usersConnection', () => {
                     expect(
                         usersConnectionResponse.edges.map((edge) => edge.node)
                     ).to.deep.equalInAnyOrder(
-                        [user, users[1], users[5], users[6]].map(
-                            mapUserToUserConnectionNode
-                        )
-                    )
-                })
-            })
-            context('User with `view_my_users_40113`', () => {
-                beforeEach(
-                    async () =>
-                        await addPermission({
+                        [
                             user,
-                            organization,
-                            permission: PermissionName.view_my_users_40113,
-                        })
-                )
-                it('can view Users with the same email', async () => {
-                    const usersConnectionResponse = await usersConnectionNodes(
-                        testClient,
-                        {
-                            authorization: generateToken(userToPayload(user)),
-                        }
+                            users[1],
+                            users[5],
+                            users[6],
+                            userWithSameEmail,
+                            userWithSamePhone,
+                        ].map(mapUserToUserConnectionNode)
                     )
-
-                    expect(
-                        usersConnectionResponse.edges.map(
-                            (edge) => edge.node.id
-                        )
-                    ).to.deep.equalInAnyOrder([user.user_id, users[8].user_id])
                 })
             })
+
             context('User with no "view_*_users" permission', () => {
-                it('can only see their own User', async () => {
+                it('can view Users with the same email or phone', async () => {
                     const usersConnectionResponse = await usersConnectionNodes(
                         testClient,
                         {
@@ -459,7 +484,55 @@ describe('usersConnection', () => {
                         usersConnectionResponse.edges.map(
                             (edge) => edge.node.id
                         )
-                    ).to.deep.equal([user.user_id])
+                    ).to.deep.equalInAnyOrder([
+                        user.user_id,
+                        userWithSameEmail.user_id,
+                        userWithSamePhone.user_id,
+                    ])
+                })
+
+                it('cannot view other users with email undefined', async () => {
+                    user.email = undefined
+                    await user.save()
+                    const userWithUndefinedEmail = createUser({
+                        email: user.email,
+                    })
+                    await userWithSameEmail.save()
+
+                    const usersConnectionResponse = await usersConnectionNodes(
+                        testClient,
+                        {
+                            authorization: generateToken(userToPayload(user)),
+                        }
+                    )
+
+                    expect(
+                        usersConnectionResponse.edges.map(
+                            (edge) => edge.node.id
+                        )
+                    ).to.not.contain(userWithUndefinedEmail.user_id)
+                })
+
+                it('cannot view other users with phone undefined', async () => {
+                    user.phone = undefined
+                    await user.save()
+                    const userWithUndefinedPhone = createUser({
+                        phone: user.phone,
+                    })
+                    await userWithUndefinedPhone.save()
+
+                    const usersConnectionResponse = await usersConnectionNodes(
+                        testClient,
+                        {
+                            authorization: generateToken(userToPayload(user)),
+                        }
+                    )
+
+                    expect(
+                        usersConnectionResponse.edges.map(
+                            (edge) => edge.node.id
+                        )
+                    ).to.not.contain(userWithUndefinedPhone.user_id)
                 })
             })
         })
