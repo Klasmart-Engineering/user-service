@@ -5,7 +5,12 @@ import {
     ITokenPayload,
 } from 'passport-azure-ad'
 import { Request } from 'express'
-import { TokenPayload } from '../token'
+
+interface AzureB2CTokenPayload extends ITokenPayload {
+    emails?: string[]
+    sub: string
+    iss: string
+}
 
 const credentials = {
     tenantName: process.env.AZURE_B2C_TENANT_NAME,
@@ -53,7 +58,7 @@ if (process.env.AZURE_B2C_ENABLED === 'true') {
 
 export async function getAuthenticatedUser(
     req: Request
-): Promise<TokenPayload> {
+): Promise<AzureB2CTokenPayload> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const token = await new Promise<any>((resolve, reject) => {
         passport.authenticate(

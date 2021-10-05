@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express'
 import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
 
+const IS_AZURE_B2C_ENABLED = process.env.AZURE_B2C_ENABLED === 'true'
 const issuers = new Map<
     string,
     {
@@ -109,15 +110,17 @@ async function checkTokenAMS(req: Request): Promise<TokenPayload> {
 }
 
 export async function checkToken(req: Request): Promise<TokenPayload> {
-    if (process.env.AZURE_B2C_ENABLED === 'true') {
-        const user = await getAuthenticatedUser(req)
+    if (IS_AZURE_B2C_ENABLED) {
+        const azureTokenPayload = await getAuthenticatedUser(req)
+        const { emails, ...rest } = azureTokenPayload
         const tokenPayload = {
-            ...user,
-            id: user.sub,
-            iss: user.iss,
-            email: user?.emails?.length > 0 ? user.emails[0] : '',
+            ...rest,
+            id: azureTokenPayload.sub,
+            iss: azureTokenPayload.iss,
+            email: emails && emails?.length > 0 ? emails[0] : '',
         }
-        return tokenPayload
+        // To be compatible with  [k: string]: string | undefined type of TokenPayload we need to convert as unknown and then convert to TokenPayload
+        return (tokenPayload as unknown) as TokenPayload
     } else {
         return checkTokenAMS(req)
     }
