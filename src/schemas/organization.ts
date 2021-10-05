@@ -1,9 +1,12 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { ownersForOrgs } from '../loaders/organizationsConnection'
+import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
 
 const typeDefs = gql`
     scalar HexColor
@@ -36,6 +39,12 @@ const typeDefs = gql`
         organization(organization_id: ID!): Organization
         organizations(organization_ids: [ID!]): [Organization]
             @isAdmin(entity: "organization")
+        organizationsConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: OrganizationFilter
+            sort: OrganizationSortInput
+        ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
     }
     type Organization {
         organization_id: ID!
@@ -133,11 +142,6 @@ const typeDefs = gql`
         createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]
         delete(_: Int): Boolean
     }
-    type OrganizationConnection {
-        total: Int
-        edges: [Organization]!
-        pageInfo: PageInfo!
-    }
     type OrganizationMembership {
         #properties
         user_id: ID!
@@ -185,6 +189,65 @@ const typeDefs = gql`
     enum BrandingImageTag {
         ICON
     }
+
+    # Organization connection related definitions
+
+    enum OrganizationSortBy {
+        name
+    }
+
+    input OrganizationSortInput {
+        field: [OrganizationSortBy!]!
+        order: SortOrder!
+    }
+
+    input OrganizationFilter {
+        # table columns
+        id: UUIDFilter
+        name: StringFilter
+        phone: StringFilter
+        shortCode: StringFilter
+        status: StringFilter
+
+        # joined columns
+        ownerUserId: UUIDFilter
+
+        AND: [OrganizationFilter!]
+        OR: [OrganizationFilter!]
+    }
+
+    type OrganizationsConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [OrganizationsConnectionEdge]
+    }
+
+    type OrganizationsConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: OrganizationConnectionNode
+    }
+
+    type OrganizationContactInfo {
+        address1: String
+        address2: String
+        phone: String
+    }
+
+    type UserSummaryNode {
+        id: String
+    }
+
+    type OrganizationConnectionNode {
+        id: ID!
+        name: String
+        contactInfo: OrganizationContactInfo
+        shortCode: String
+        status: Status
+
+        # connections
+        owners: [UserSummaryNode]
+        branding: Branding
+    }
 `
 export default function getDefault(
     model: Model,
@@ -193,6 +256,21 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            OrganizationConnectionNode: {
+                owners: async (
+                    organization: OrganizationConnectionNode,
+                    args: Record<string, unknown>,
+                    ctx: Context
+                ) =>
+                    ctx.loaders.organizationsConnection?.owners?.load(
+                        organization.id
+                    ),
+                branding: async (
+                    organization: OrganizationConnectionNode,
+                    args: Record<string, unknown>,
+                    ctx: Context
+                ) => ctx.loaders.organization?.branding.load(organization.id),
+            },
             Mutation: {
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
@@ -212,6 +290,17 @@ export default function getDefault(
                     model.getOrganizations(args),
                 organization: (_parent, { organization_id }, _context, _info) =>
                     model.getOrganization(organization_id),
+                organizationsConnection: (
+                    _parent,
+                    args,
+                    ctx: Context,
+                    info
+                ) => {
+                    ctx.loaders.organizationsConnection = {
+                        owners: new Dataloader((keys) => ownersForOrgs(keys)),
+                    }
+                    return model.organizationsConnection(ctx, info, args)
+                },
             },
             Organization: {
                 branding: (org: Organization, args, ctx: Context, _info) => {

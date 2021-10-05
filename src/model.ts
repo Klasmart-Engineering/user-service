@@ -81,6 +81,7 @@ import { scopeHasJoin } from './utils/typeorm'
 import { usersConnectionResolver } from './pagination/usersConnection'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
+import { organizationsConnectionResolver } from './pagination/organizationsConnection'
 
 export class Model {
     public static async create() {
@@ -372,6 +373,12 @@ export class Model {
             return await scope.getMany()
         }
     }
+
+    public organizationsConnection = (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Organization>
+    ) => organizationsConnectionResolver(info, paginationArgs)
 
     public usersConnection = (
         _context: Context,

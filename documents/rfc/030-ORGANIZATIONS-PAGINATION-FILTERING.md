@@ -60,11 +60,10 @@ type OrganizationContactInfo {
     address1: String
     address2: String
     phone: String
-    email: String
 }
 
 type UserSummaryNode {
-    userId: ID!
+    id: ID!
 }
 ```
 
