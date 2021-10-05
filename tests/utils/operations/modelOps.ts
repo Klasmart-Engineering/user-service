@@ -26,7 +26,6 @@ import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionN
 import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
 import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
 import { gql } from 'apollo-server-express'
-import { CoreUserConnectionNode } from '../../../src/pagination/usersConnection'
 
 const NEW_USER = `
     mutation myMutation(
