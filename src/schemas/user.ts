@@ -137,7 +137,7 @@ const typeDefs = gql`
     extend type Query {
         me: User
         user(user_id: ID!): User
-            @deprecated(reason: "Use 'usersConnection' with 'userId' filter.")
+            @deprecated(reason: "Use 'userNode'")
         userNode(id: ID!): UserConnectionNode @isAdmin(entity: "user")
         usersConnection(
             direction: ConnectionDirection!
