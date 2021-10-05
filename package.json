@@ -24,7 +24,7 @@
     "test": "npm run test:unit && npm run test:integration && npm run test:migrations",
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
     "make-badges": "istanbul-badges-readme",
-    "test:file": "NODE_ENV=development mocha --require ts-node/register --file tests/integration/hooks.ts tests/integration/model/UsersConnection.test.ts --timeout 8000",
+    "test:file": "NODE_ENV=development mocha --require ts-node/register --file tests/integration/hooks.ts tests/integration/model/userNode.test.ts --timeout 8000",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm",
     "release": "standard-version"
   },
