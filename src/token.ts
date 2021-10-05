@@ -1,6 +1,7 @@
 import { AuthenticationError } from 'apollo-server-express'
 import { NextFunction, Request, Response } from 'express'
 import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
+import getAuthenticatedUser from './services/azureAdB2C'
 
 const issuers = new Map<
     string,
@@ -74,7 +75,8 @@ export interface TokenPayload {
     iss: string
 }
 
-export async function checkToken(token?: string): Promise<TokenPayload> {
+async function checkTokenAMS(req: Request): Promise<TokenPayload> {
+    const token = req.headers.authorization || req.cookies.access
     if (!token) {
         throw new AuthenticationError('No authentication token')
     }
@@ -104,6 +106,21 @@ export async function checkToken(token?: string): Promise<TokenPayload> {
         })
     })
     return verifiedToken
+}
+
+export async function checkToken(req: Request): Promise<TokenPayload> {
+    if (process.env.AZURE_B2C_ENABLED === 'true') {
+        const user = await getAuthenticatedUser(req)
+        const tokenPayload = {
+            ...user,
+            id: user.sub,
+            iss: user.iss,
+            email: user?.emails?.length > 0 ? user.emails[0] : '',
+        }
+        return tokenPayload
+    } else {
+        return checkTokenAMS(req)
+    }
 }
 
 export function checkIssuerAuthorization(

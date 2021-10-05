@@ -30,9 +30,7 @@ export const createServer = async (model: Model, context?: Context) => {
         context:
             context ??
             (async ({ res, req }) => {
-                const encodedToken =
-                    req.headers.authorization || req.cookies.access
-                const token = await checkToken(encodedToken)
+                const token = await checkToken(req)
                 const permissions = new UserPermissions(token)
 
                 return {
