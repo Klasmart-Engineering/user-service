@@ -5,9 +5,7 @@ import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
 import { UserConnectionNode } from '../../../src/types/graphQL/userConnectionNode'
 import { createServer } from '../../../src/utils/createServer'
-import {
-    createUser,
-} from '../../factories/user.factory'
+import { createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
