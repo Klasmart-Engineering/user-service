@@ -668,25 +668,9 @@ describe('usersConnection', () => {
             expect(usersConnection?.totalCount).to.eql(10)
             expect(usersConnection?.edges.length).to.equal(3)
             for (let i = 0; i < 3; i++) {
-                expect(usersConnection?.edges[i].node.id).to.equal(
-                    usersList[4 + i].user_id
-                )
-                expect(
-                    usersConnection?.edges[i].node.organizations.length
-                ).to.equal(1)
                 expect(
                     usersConnection?.edges[i].node.organizations[0].id
                 ).to.equal(org.organization_id)
-                expect(usersConnection?.edges[i].node.schools.length).to.equal(
-                    1
-                )
-                expect(usersConnection?.edges[i].node.roles.length).to.equal(2)
-                expect(usersConnection?.edges[i].node.schools[0].id).to.equal(
-                    school1.school_id
-                )
-                expect(usersConnection?.edges[i].node.roles[0].id).to.equal(
-                    role1.role_id
-                )
             }
             expect(usersConnection?.pageInfo.startCursor).to.equal(
                 convertDataToCursor({ user_id: usersList[4].user_id })
