@@ -273,5 +273,17 @@ describe('userNode', () => {
                 })
             })
         })
+
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await userNode(
+                testClient,
+                { authorization: getAdminAuthToken() },
+                aUser.user_id
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
+        })
     })
 })
