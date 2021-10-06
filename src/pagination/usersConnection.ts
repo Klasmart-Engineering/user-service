@@ -89,7 +89,7 @@ export async function usersConnectionResolver(
     const data = await paginateData<User>({
         direction,
         directionArgs,
-        scope: selectUserFields(scope),
+        scope,
         sort: {
             primaryKey: 'user_id',
             aliases: {
