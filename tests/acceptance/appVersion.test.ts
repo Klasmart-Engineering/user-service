@@ -7,7 +7,7 @@ import { createTestConnection } from '../utils/testConnection'
 
 use(chaiAsPromised)
 
-const url = 'http://localhost:8080'
+const url = 'http://localhost:8080/user'
 const request = supertest(url)
 
 describe('acceptance.app', () => {
@@ -25,6 +25,8 @@ describe('acceptance.app', () => {
         const response = await request.get('/version')
 
         expect(response.status).to.eq(200)
-        expect(response.text).to.equal(`${appPackage.version}`)
+        expect(response.body).to.deep.equal({
+            version: `${appPackage.version}`,
+        })
     })
 })
