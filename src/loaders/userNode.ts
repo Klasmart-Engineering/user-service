@@ -3,6 +3,7 @@ import { User } from '../entities/user'
 import {
     CoreUserConnectionNode,
     mapUserToUserConnectionNode,
+    selectUserFields,
 } from '../pagination/usersConnection'
 import { APIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -13,9 +14,12 @@ export interface IUserNodesLoaders {
 
 export async function userNodesByIds(
     userIds: readonly string[]
-): Promise<(CoreUserConnectionNode | Error)[]> {
+): Promise<(CoreUserConnectionNode | APIError)[]> {
+    const scope = User.createQueryBuilder()
+        .select(selectUserFields())
+        .where('user_id IN (:...ids)', { ids: userIds })
     const userNodes = new Map(
-        (await User.findByIds(userIds as string[])).map((user) => [
+        (await scope.getMany()).map((user) => [
             user.user_id,
             mapUserToUserConnectionNode(user),
         ])

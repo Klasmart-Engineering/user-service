@@ -84,10 +84,12 @@ export async function usersConnectionResolver(
         )
     }
 
+    scope.select(selectUserFields())
+
     const data = await paginateData<User>({
         direction,
         directionArgs,
-        scope: selectUserFields(scope),
+        scope,
         sort: {
             primaryKey: 'user_id',
             aliases: {
@@ -134,20 +136,18 @@ export function mapUserToUserConnectionNode(
     }
 }
 
-function selectUserFields(scope: SelectQueryBuilder<User>) {
-    return scope.select(
-        ([
-            'user_id',
-            'given_name',
-            'family_name',
-            'avatar',
-            'status',
-            'email',
-            'phone',
-            'alternate_email',
-            'alternate_phone',
-            'date_of_birth',
-            'gender',
-        ] as (keyof User)[]).map((field) => `User.${field}`)
-    )
+export function selectUserFields() {
+    return ([
+        'user_id',
+        'given_name',
+        'family_name',
+        'avatar',
+        'status',
+        'email',
+        'phone',
+        'alternate_email',
+        'alternate_phone',
+        'date_of_birth',
+        'gender',
+    ] as (keyof User)[]).map((field) => `User.${field}`)
 }
