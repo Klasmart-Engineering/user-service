@@ -270,7 +270,7 @@ export default function getDefault(
                 },
                 userNode: (_parent, { id }, ctx: Context) => {
                     usersConnectionLoadersLoad(ctx)
-                    return ctx.loaders.userNode.userNode.load(id)
+                    return ctx.loaders.userNode.load(id)
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, ctx: Context, _info) =>

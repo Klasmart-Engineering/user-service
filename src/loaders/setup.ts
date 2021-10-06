@@ -17,7 +17,13 @@ import {
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
-import { IUserNodesLoaders, userNodesByIds } from './userNode'
+import { User } from '../entities/user'
+import { NodeDataLoader } from './genericNode'
+import {
+    CoreUserConnectionNode,
+    selectUserFields,
+    mapUserToUserConnectionNode,
+} from '../pagination/usersConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -27,7 +33,7 @@ export interface IDataLoaders {
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection?: IOrganizationsConnectionLoaders
     user: IUsersLoaders
-    userNode: IUserNodesLoaders
+    userNode: NodeDataLoader<User, CoreUserConnectionNode>
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 }
@@ -56,8 +62,10 @@ export function createDefaultDataLoaders(): IDataLoaders {
             ),
             schoolById: new Dataloader((keys) => schoolsByIds(keys)),
         },
-        userNode: {
-            userNode: new Dataloader(userNodesByIds),
-        },
+        userNode: new NodeDataLoader(
+            User,
+            mapUserToUserConnectionNode,
+            selectUserFields()
+        ),
     }
 }
