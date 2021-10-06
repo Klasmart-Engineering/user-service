@@ -37,9 +37,12 @@ const typeDefs = gql`
     }
     extend type Query {
         organization(organization_id: ID!): Organization
-            @deprecated(reason: "Use 'organizations'.")
+            @deprecated(reason: "Use 'organizationNode(id: ID!)'.")
         organizations(organization_ids: [ID!]): [Organization]
             @isAdmin(entity: "organization")
+            @deprecated(
+                reason: "Use 'organizationsConnection' and relevant other connection queries for children nodes, i.e. 'permissionsConnection'."
+            )
         organizationsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
