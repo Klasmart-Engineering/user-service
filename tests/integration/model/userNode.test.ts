@@ -54,7 +54,7 @@ describe('userNode', () => {
         } as Required<UserConnectionNode>)
     }
 
-    context('data', () => {
+    context('data & connection', () => {
         beforeEach(async () => {
             const newUser = createUser()
             // Populate fields not set in `createUser`
@@ -72,6 +72,18 @@ describe('userNode', () => {
             )
 
             expectUserConnectionEdge(userNodeResponse, aUser)
+        })
+
+        it('makes just one call to the database', async () => {
+            connection.logger.reset()
+
+            await userNode(
+                testClient,
+                { authorization: getAdminAuthToken() },
+                aUser.user_id
+            )
+
+            expect(connection.logger.count).to.be.eq(1)
         })
     })
 })
