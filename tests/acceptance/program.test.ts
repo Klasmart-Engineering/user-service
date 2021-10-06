@@ -128,7 +128,7 @@ describe('acceptance.program', () => {
         context('using explict count', async () => {
             async function makeQuery(pageSize: any) {
                 return await request
-                    .post('/graphql')
+                    .post('/user')
                     .set({
                         ContentType: 'application/json',
                         Authorization: getAdminAuthToken(),
@@ -173,7 +173,7 @@ describe('acceptance.program', () => {
         })
         it('queries paginated programs without filter', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -198,7 +198,7 @@ describe('acceptance.program', () => {
             }
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -254,7 +254,7 @@ describe('acceptance.program', () => {
             }
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -306,7 +306,7 @@ describe('acceptance.program', () => {
         it('queries paginated programs filtering by class ID', async () => {
             const classId = classIds[0]
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -337,7 +337,7 @@ describe('acceptance.program', () => {
             }
 
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),

@@ -28,6 +28,18 @@ export const initApp = async () => {
     app.use(express.json())
     app.use(checkIssuerAuthorization)
 
+    app.get(`${routePrefix}/health`, (req, res) => {
+        res.status(200).json({
+            status: 'pass',
+        })
+    })
+
+    app.get(`${routePrefix}/version`, (req, res) => {
+        res.status(200).json({
+            version: `${appPackage.version}`,
+        })
+    })
+
     apolloServer.applyMiddleware({
         app: app,
         cors: {
@@ -52,10 +64,6 @@ export const initApp = async () => {
             },
         },
         path: routePrefix,
-    })
-
-    app.get('/version', (req, res) => {
-        res.status(200).send(appPackage.version)
     })
 
     return { expressApp: app, apolloServer }

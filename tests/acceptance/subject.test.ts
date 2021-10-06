@@ -17,7 +17,7 @@ import { SUBJECTS_CONNECTION } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 
-const url = 'http://localhost:8080'
+const url = 'http://localhost:8080/user'
 const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'

@@ -115,7 +115,7 @@ describe('acceptance.user', () => {
 
     it('queries current user information successfully', async () => {
         const response = await request
-            .post('/graphql')
+            .post('/user')
             .set({
                 ContentType: 'application/json',
                 Authorization: getAdminAuthToken(),
@@ -164,7 +164,7 @@ describe('acceptance.user', () => {
         })
         it('loads nested school membership relations', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -189,7 +189,7 @@ describe('acceptance.user', () => {
         context('using explict count', async () => {
             async function makeQuery(pageSize: any) {
                 return await request
-                    .post('/graphql')
+                    .post('/user')
                     .set({
                         ContentType: 'application/json',
                         Authorization: getAdminAuthToken(),
@@ -234,7 +234,7 @@ describe('acceptance.user', () => {
         })
         it('queries paginated users without filter', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -255,7 +255,7 @@ describe('acceptance.user', () => {
         it('queries paginated users filtered by classId', async () => {
             const classId = classIds[0]
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -282,7 +282,7 @@ describe('acceptance.user', () => {
         it('responds with an error if the filter is wrong', async () => {
             const classId = 'inval-id'
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: getAdminAuthToken(),
@@ -307,7 +307,7 @@ describe('acceptance.user', () => {
     context('my_users', async () => {
         it('Finds no users if I am not logged in', async () => {
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: '',
@@ -330,7 +330,7 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: token,
@@ -350,7 +350,7 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
             const response = await request
-                .post('/graphql')
+                .post('/user')
                 .set({
                     ContentType: 'application/json',
                     Authorization: token,
