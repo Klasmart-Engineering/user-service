@@ -42,11 +42,6 @@ const typeDefs = gql`
 
         delete_role(_: Int): Boolean
     }
-    type RoleConnection {
-        total: Int
-        edges: [Role]!
-        pageInfo: PageInfo!
-    }
 `
 export default function getDefault(
     model: Model,
