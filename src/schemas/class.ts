@@ -143,12 +143,6 @@ const typeDefs = gql`
         # addSchedule(id: ID!, timestamp: Date): Boolean
         # removeSchedule(id: ID!): Boolean
     }
-
-    type ClassConnection {
-        total: Int
-        edges: [Class]!
-        pageInfo: PageInfo!
-    }
 `
 export default function getDefault(
     model: Model,
