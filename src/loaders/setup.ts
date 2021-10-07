@@ -21,7 +21,7 @@ import { User } from '../entities/user'
 import { NodeDataLoader } from './genericNode'
 import {
     CoreUserConnectionNode,
-    selectUserFields,
+    coreUserConnectionNodeFields,
     mapUserToUserConnectionNode,
 } from '../pagination/usersConnection'
 
@@ -65,7 +65,7 @@ export function createDefaultDataLoaders(): IDataLoaders {
         userNode: new NodeDataLoader(
             User,
             mapUserToUserConnectionNode,
-            selectUserFields()
+            coreUserConnectionNodeFields
         ),
     }
 }
