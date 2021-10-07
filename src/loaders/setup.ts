@@ -1,5 +1,10 @@
 import Dataloader from 'dataloader'
-import { IUsersConnectionLoaders } from './usersConnection'
+import {
+    IUsersConnectionLoaders,
+    orgsForUsers,
+    rolesForUsers,
+    schoolsForUsers,
+} from './usersConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
@@ -25,6 +30,10 @@ import {
     mapUserToUserConnectionNode,
 } from '../pagination/usersConnection'
 
+interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
+    node: NodeDataLoader<User, CoreUserConnectionNode>
+}
+
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection?: IProgramsConnectionLoaders
@@ -33,7 +42,7 @@ export interface IDataLoaders {
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection?: IOrganizationsConnectionLoaders
     user: IUsersLoaders
-    userNode: NodeDataLoader<User, CoreUserConnectionNode>
+    userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 }
@@ -62,11 +71,16 @@ export function createDefaultDataLoaders(): IDataLoaders {
             ),
             schoolById: new Dataloader((keys) => schoolsByIds(keys)),
         },
-        userNode: new NodeDataLoader(
-            User,
-            'UserConnectionNode',
-            mapUserToUserConnectionNode,
-            coreUserConnectionNodeFields
-        ),
+        userNode: {
+            node: new NodeDataLoader(
+                User,
+                'UserConnectionNode',
+                mapUserToUserConnectionNode,
+                coreUserConnectionNodeFields
+            ),
+            organizations: new Dataloader((keys) => orgsForUsers(keys)),
+            schools: new Dataloader((keys) => schoolsForUsers(keys)),
+            roles: new Dataloader((keys) => rolesForUsers(keys)),
+        },
     }
 }
