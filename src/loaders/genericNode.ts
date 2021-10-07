@@ -4,7 +4,7 @@ import { CustomBaseEntity } from '../entities/customBaseEntity'
 import { APIError } from '../types/errors/apiError'
 import { buildStaticAPIErrorProps } from './generic'
 
-interface Ideable {
+interface Node {
     id: string
 }
 
@@ -15,7 +15,7 @@ interface Ideable {
  */
 export class NodeDataLoader<
     Entity extends CustomBaseEntity,
-    ReturnEntity extends Ideable
+    ReturnEntity extends Node
 > extends DataLoader<string, ReturnEntity | APIError> {
     constructor(
         entityClass: EntityTarget<Entity>,
