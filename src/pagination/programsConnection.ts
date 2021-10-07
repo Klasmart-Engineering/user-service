@@ -7,10 +7,10 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import { ProgramConnectionNode } from '../types/graphQL/programConnectionNode'
 
-
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 
 import {
+    AVOID_NONE_SPECIFIED_BRACKETS,
     filterHasProperty,
     getWhereClauseFromFilter,
 } from '../utils/pagination/filtering'
@@ -42,70 +42,60 @@ export async function programsConnectionResolver(
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
     if (filter) {
-        if (
-            (filterHasProperty('organizationId', filter) ||
-                filterHasProperty('organizationUserStatus', filter) ||
-                filterHasProperty('roleId', filter)) &&
-            !scopeHasJoin(scope, OrganizationMembership)
-        ) {
-            scope.innerJoin('User.memberships', 'OrganizationMembership')
+        if (filterHasProperty('organizationId', filter)) {
+            scope.leftJoinAndSelect('Program.organization', 'Organization')
         }
 
-        if (filterHasProperty('roleId', filter)) {
-            scope.innerJoin(
-                'OrganizationMembership.roles',
-
-                'RoleMembershipsOrganizationMembership'
-            )
+        if (filterHasProperty('gradeId', filter)) {
+            scope.leftJoinAndSelect('Program.grades', 'Grade')
         }
 
         if (
-            filterHasProperty('schoolId', filter) &&
-            !scopeHasJoin(scope, SchoolMembership)
+            filterHasProperty('ageRangeFrom', filter) ||
+            filterHasProperty('ageRangeTo', filter)
         ) {
-            scope.leftJoin('User.school_memberships', 'SchoolMembership')
+            scope
+                .leftJoinAndSelect('Program.age_ranges', 'AgeRange')
+                .where(AVOID_NONE_SPECIFIED_BRACKETS)
+        }
+
+        if (filterHasProperty('subjectId', filter)) {
+            scope.leftJoinAndSelect('Program.subjects', 'Subject')
+        }
+
+        if (filterHasProperty('schoolId', filter)) {
+            scope.leftJoinAndSelect('Program.schools', 'School')
         }
 
         if (filterHasProperty('classId', filter)) {
-            scope.leftJoin('User.classesStudying', 'ClassStudying')
-
-            scope.leftJoin('User.classesTeaching', 'ClassTeaching')
+            scope.leftJoin('Program.classes', 'Class')
         }
 
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'OrganizationMembership.organization_id',
-
-                organizationUserStatus: 'OrganizationMembership.status',
-
-                userStatus: 'User.status',
-
-                userId: 'User.user_id',
-
-                phone: 'User.phone',
-
-                email: 'User.email',
-
-                schoolId: 'SchoolMembership.school_id',
-
-                classId: {
-                    operator: 'OR',
-
+                id: 'Program.id',
+                name: 'Program.name',
+                system: 'Program.system',
+                status: 'Program.status',
+                organizationId: 'Organization.organization_id',
+                gradeId: 'Grade.id',
+                ageRangeFrom: {
+                    operator: 'AND',
+                    aliases: ['AgeRange.low_value', 'AgeRange.low_value_unit'],
+                },
+                ageRangeTo: {
+                    operator: 'AND',
                     aliases: [
-                        'ClassStudying.class_id',
-
-                        'ClassTeaching.class_id',
+                        'AgeRange.high_value',
+                        'AgeRange.high_value_unit',
                     ],
                 },
+                subjectId: 'Subject.id',
+                schoolId: 'School.school_id',
+                classId: 'Class.class_id',
             })
         )
     }
-
-    scope.select(
-        (['id', 'name', 'status', 'system'] as (keyof Program)[]).map(
-            (field) => `Program.${field}`
-        )
-    )
 
     scope.select(coreProgramConnectionNodeFields)
 
@@ -137,6 +127,20 @@ export async function programsConnectionResolver(
             }
         }),
     }
+    // for (const edge of data.edges) {
+    //     const program = edge.node as CoreProgramConnectionNode
+    //     const newNode: Partial<ProgramConnectionNode> = {
+    //         id: program.id,
+    //         name: program.name,
+    //         status: program.status,
+    //         system: program.system,
+    //         // other properties have dedicated resolvers that use Dataloader
+    //     }
+
+    //     edge.node = newNode
+    // }
+
+    // return data
 }
 
 export function mapProgramToProgramConnectionNode(

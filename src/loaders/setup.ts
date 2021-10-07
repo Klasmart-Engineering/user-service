@@ -23,8 +23,11 @@ import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { Program } from '../entities/program'
 import { NodeDataLoader } from './genericNode'
-import { CoreProgramConnectionNode } from '../types/graphQL/programConnectionNode'
-import { mapProgramToProgramConnectionNode, coreProgramConnectionNodeFields } from '../pagination/programsConnection'
+import {
+    mapProgramToProgramConnectionNode,
+    coreProgramConnectionNodeFields,
+    CoreProgramConnectionNode,
+} from '../pagination/programsConnection'
 
 interface IProgramNodeDataLoaders extends Required<IProgramsConnectionLoaders> {
     node: NodeDataLoader<Program, CoreProgramConnectionNode>
@@ -72,7 +75,6 @@ export function createDefaultDataLoaders(): IDataLoaders {
                 'ProgramConnectionNode',
                 mapProgramToProgramConnectionNode,
                 coreProgramConnectionNodeFields
-
             ),
             ageRanges: new Dataloader((keys) => ageRangesForPrograms(keys)),
             grades: new Dataloader((keys) => gradesForPrograms(keys)),
