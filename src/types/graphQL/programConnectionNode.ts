@@ -12,3 +12,10 @@ export interface ProgramConnectionNode {
     grades?: GradeSummaryNode[]
     subjects?: SubjectSummaryNode[]
 }
+
+export interface CoreProgramConnectionNode{
+    id: string
+    name?: string
+    status: Status
+    system: boolean
+}

@@ -137,29 +137,38 @@ export default function getDefault(
                 ageRanges: async (
                     program: ProgramConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.programsConnection?.ageRanges?.load(
-                        program.id
-                    )
+                    return info.path.prev?.key === 'programNode'
+                        ? ctx.loaders.programNode?.ageRanges?.load(program.id)
+                        : ctx.loaders.programsConnection?.ageRanges?.load(
+                              program.id
+                          )
                 },
                 grades: async (
                     program: ProgramConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.programsConnection?.grades?.load(
-                        program.id
-                    )
+                    return info.path.prev?.key === 'programNode'
+                        ? ctx.loaders.programNode?.grades?.load(program.id)
+                        : ctx.loaders.programsConnection?.grades?.load(
+                              program.id
+                          )
                 },
                 subjects: async (
                     program: ProgramConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.programsConnection?.subjects?.load(
-                        program.id
-                    )
+                    return info.path.prev?.key === 'programNode'
+                        ? ctx.loaders.programNode?.subjects?.load(program.id)
+                        : ctx.loaders.programsConnection?.subjects?.load(
+                              program.id
+                          )
                 },
             },
             Mutation: {
@@ -187,6 +196,9 @@ export default function getDefault(
                     }
 
                     return model.programsConnection(ctx, info, args)
+                },
+                programNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.programNode.node.load(args.id)
                 },
             },
         },

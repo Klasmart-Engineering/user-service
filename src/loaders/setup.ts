@@ -1,6 +1,11 @@
 import Dataloader from 'dataloader'
 import { IUsersConnectionLoaders } from './usersConnection'
-import { IProgramsConnectionLoaders } from './programsConnection'
+import {
+    ageRangesForPrograms,
+    gradesForPrograms,
+    IProgramsConnectionLoaders,
+    subjectsForPrograms,
+} from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
     IUsersLoaders,
@@ -16,10 +21,19 @@ import {
 } from './organization'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
+import { Program } from '../entities/program'
+import { NodeDataLoader } from './genericNode'
+import { CoreProgramConnectionNode } from '../types/graphQL/programConnectionNode'
+import { mapProgramToProgramConnectionNode, coreProgramConnectionNodeFields } from '../pagination/programsConnection'
+
+interface IProgramNodeDataLoaders extends Required<IProgramsConnectionLoaders> {
+    node: NodeDataLoader<Program, CoreProgramConnectionNode>
+}
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection?: IProgramsConnectionLoaders
+    programNode: IProgramNodeDataLoaders
     gradesConnection?: IGradesConnectionLoaders
     classesConnection?: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
@@ -51,6 +65,18 @@ export function createDefaultDataLoaders(): IDataLoaders {
                 organizationsForSchools(keys)
             ),
             schoolById: new Dataloader((keys) => schoolsByIds(keys)),
+        },
+        programNode: {
+            node: new NodeDataLoader(
+                Program,
+                'ProgramConnectionNode',
+                mapProgramToProgramConnectionNode,
+                coreProgramConnectionNodeFields
+
+            ),
+            ageRanges: new Dataloader((keys) => ageRangesForPrograms(keys)),
+            grades: new Dataloader((keys) => gradesForPrograms(keys)),
+            subjects: new Dataloader((keys) => subjectsForPrograms(keys)),
         },
     }
 }
