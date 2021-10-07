@@ -229,31 +229,34 @@ export default function getDefault(
                 organizations: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.usersConnection
-                        ? ctx.loaders.usersConnection?.organizations?.load(
+                    return info.path.prev?.key === 'userNode'
+                        ? ctx.loaders.userNode?.organizations?.load(user.id)
+                        : ctx.loaders.usersConnection?.organizations?.load(
                               user.id
                           )
-                        : ctx.loaders.userNode?.organizations?.load(user.id)
                 },
                 schools: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.usersConnection
-                        ? ctx.loaders.usersConnection?.schools?.load(user.id)
-                        : ctx.loaders.userNode?.schools?.load(user.id)
+                    return info.path.prev?.key === 'userNode'
+                        ? ctx.loaders.userNode?.schools?.load(user.id)
+                        : ctx.loaders.usersConnection?.schools?.load(user.id)
                 },
                 roles: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.usersConnection
-                        ? ctx.loaders.usersConnection?.roles?.load(user.id)
-                        : ctx.loaders.userNode?.roles?.load(user.id)
+                    return info.path.prev?.key === 'userNode'
+                        ? ctx.loaders.userNode?.roles?.load(user.id)
+                        : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
             },
             Mutation: {
