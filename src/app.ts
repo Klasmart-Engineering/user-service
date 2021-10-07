@@ -45,6 +45,7 @@ export const initApp = async () => {
         cors: {
             allowedHeaders: ['Authorization', 'Content-Type'],
             credentials: true,
+            maxAge: 60 * 60 * 24, // 1 day
             origin: (origin, callback) => {
                 try {
                     if (!origin) {
