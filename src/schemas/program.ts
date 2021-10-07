@@ -89,7 +89,8 @@ const typeDefs = gql`
     extend type Query {
         program(id: ID!): Program
             @isAdmin(entity: "program")
-            @deprecated(reason: "Use 'programsConnection' with 'id' filter.")
+            @deprecated(reason: "Use 'programNode'")
+        programNode(id: ID!): ProgramConnectionNode @isAdmin(entity: "user")
         programsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
