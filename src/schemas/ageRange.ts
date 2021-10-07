@@ -62,7 +62,9 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+        age_range(id: ID!): AgeRange
+            @isAdmin(entity: "ageRange")
+            @deprecated(reason: "Use 'ageRangeNode(id: ID!)'.")
         ageRangesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
