@@ -64,6 +64,7 @@ export function createDefaultDataLoaders(): IDataLoaders {
         },
         userNode: new NodeDataLoader(
             User,
+            'UserConnectionNode',
             mapUserToUserConnectionNode,
             coreUserConnectionNodeFields
         ),

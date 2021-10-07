@@ -1,8 +1,19 @@
 import DataLoader from 'dataloader'
 import { EntityTarget, getConnection } from 'typeorm'
 import { CustomBaseEntity } from '../entities/customBaseEntity'
-import { APIError } from '../types/errors/apiError'
-import { buildStaticAPIErrorProps } from './generic'
+import { APIError, IAPIError } from '../types/errors/apiError'
+import { customErrors } from '../types/errors/customError'
+
+function buildStaticAPIErrorProps(
+    nodeType: string
+): Pick<IAPIError, 'code' | 'message' | 'entity' | 'variables'> {
+    return {
+        message: customErrors.nonexistent_entity.message,
+        code: customErrors.nonexistent_entity.code,
+        variables: ['id'],
+        entity: nodeType,
+    }
+}
 
 interface Node {
     id: string
@@ -19,6 +30,7 @@ export class NodeDataLoader<
 > extends DataLoader<string, ReturnEntity | APIError> {
     constructor(
         entityClass: EntityTarget<Entity>,
+        nodeType: string,
         entityMapper: (entity: Entity) => ReturnEntity,
         selectFields: string[]
     ) {
@@ -46,7 +58,7 @@ export class NodeDataLoader<
                 ])
             )
 
-            const staticErrorProps = buildStaticAPIErrorProps(metadata)
+            const staticErrorProps = buildStaticAPIErrorProps(nodeType)
 
             return ids.map(
                 (id) =>
