@@ -71,7 +71,9 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        subject(id: ID!): Subject @isAdmin(entity: "subject")
+        subject(id: ID!): Subject
+            @isAdmin(entity: "subject")
+            @deprecated(reason: "Use 'subjectNode(id: ID!)'.")
         subjectsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
