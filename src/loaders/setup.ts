@@ -13,7 +13,14 @@ import {
     schoolMembershipsForUsers,
     usersByIds,
 } from './user'
-import { IClassesConnectionLoaders } from './classesConnection'
+import {
+    ageRangesForClasses,
+    gradesForClasses,
+    IClassesConnectionLoaders,
+    programsForClasses,
+    schoolsForClasses,
+    subjectsForClasses,
+} from './classesConnection'
 import {
     brandingForOrganizations,
     IOrganizationLoaders,
@@ -32,9 +39,19 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
+import { Class } from '../entities/class'
+import {
+    CLASS_NODE_COLUMNS,
+    CoreClassConnectionNode,
+    mapClassToClassNode,
+} from '../nodes/classNode'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
+}
+
+interface IClassNodeDataLoaders extends Required<IClassesConnectionLoaders> {
+    node?: NodeDataLoader<Class, CoreClassConnectionNode>
 }
 
 export interface IDataLoaders {
@@ -48,6 +65,7 @@ export interface IDataLoaders {
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    classNode: IClassNodeDataLoaders
 }
 
 export function createContextLazyLoaders(): IDataLoaders {
@@ -83,6 +101,13 @@ export function createContextLazyLoaders(): IDataLoaders {
             organizations: new Dataloader((keys) => orgsForUsers(keys)),
             schools: new Dataloader((keys) => schoolsForUsers(keys)),
             roles: new Dataloader((keys) => rolesForUsers(keys)),
+        },
+        classNode: {
+            schools: new Dataloader((keys) => schoolsForClasses(keys)),
+            ageRanges: new Dataloader((keys) => ageRangesForClasses(keys)),
+            grades: new Dataloader((keys) => gradesForClasses(keys)),
+            subjects: new Dataloader((keys) => subjectsForClasses(keys)),
+            programs: new Dataloader((keys) => programsForClasses(keys)),
         },
     }
 }

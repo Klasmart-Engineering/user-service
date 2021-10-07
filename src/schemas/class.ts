@@ -11,7 +11,6 @@ import {
     schoolsForClasses,
     subjectsForClasses,
 } from '../loaders/classesConnection'
-import { classNodeResolver } from '../nodes/classNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -93,7 +92,7 @@ const typeDefs = gql`
     extend type Query {
         classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
         class(class_id: ID!): Class @deprecated(reason: "Use 'classNode'.")
-        classNode(id: UUID!): ClassConnectionNode @isAdmin(entity: "class")
+        classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
         classesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -158,45 +157,51 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.schools?.load(
-                        class_.id
-                    )
+                    return ctx.loaders.classesConnection
+                        ? ctx.loaders.classesConnection.schools?.load(class_.id)
+                        : ctx.loaders.classNode.schools.load(class_.id)
                 },
                 ageRanges: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.ageRanges?.load(
-                        class_.id
-                    )
+                    return ctx.loaders.classesConnection
+                        ? ctx.loaders.classesConnection.ageRanges?.load(
+                              class_.id
+                          )
+                        : ctx.loaders.classNode.ageRanges.load(class_.id)
                 },
                 grades: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.grades?.load(
-                        class_.id
-                    )
+                    return ctx.loaders.classesConnection
+                        ? ctx.loaders.classesConnection.grades?.load(class_.id)
+                        : ctx.loaders.classNode.grades.load(class_.id)
                 },
                 subjects: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.subjects?.load(
-                        class_.id
-                    )
+                    return ctx.loaders.classesConnection
+                        ? ctx.loaders.classesConnection.subjects?.load(
+                              class_.id
+                          )
+                        : ctx.loaders.classNode.subjects.load(class_.id)
                 },
                 programs: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.programs?.load(
-                        class_.id
-                    )
+                    return ctx.loaders.classesConnection
+                        ? ctx.loaders.classesConnection.programs?.load(
+                              class_.id
+                          )
+                        : ctx.loaders.classNode.programs.load(class_.id)
                 },
             },
             Mutation: {
@@ -209,50 +214,31 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
-                    if (!ctx.loaders.classesConnection) {
-                        ctx.loaders.classesConnection = {
-                            schools: new DataLoader((keys) =>
-                                schoolsForClasses(keys)
-                            ),
-                            ageRanges: new DataLoader((keys) =>
-                                ageRangesForClasses(keys)
-                            ),
-                            grades: new DataLoader((keys) =>
-                                gradesForClasses(keys)
-                            ),
-                            subjects: new DataLoader((keys) =>
-                                subjectsForClasses(keys)
-                            ),
-                            programs: new DataLoader((keys) =>
-                                programsForClasses(keys)
-                            ),
-                        }
+                    // Regenerate the loaders on every resolution, because the `args.filter`
+                    // may be different
+                    // In theory we could store `args.filter` and check for deep equality, but this is overcomplicating things
+                    ctx.loaders.classesConnection = {
+                        schools: new DataLoader((keys) =>
+                            schoolsForClasses(keys)
+                        ),
+                        ageRanges: new DataLoader((keys) =>
+                            ageRangesForClasses(keys)
+                        ),
+                        grades: new DataLoader((keys) =>
+                            gradesForClasses(keys)
+                        ),
+                        subjects: new DataLoader((keys) =>
+                            subjectsForClasses(keys)
+                        ),
+                        programs: new DataLoader((keys) =>
+                            programsForClasses(keys)
+                        ),
                     }
 
                     return model.classesConnection(ctx, info, args)
                 },
-                classNode: (_parent, args, ctx: Context, info) => {
-                    if (!ctx.loaders.classesConnection) {
-                        ctx.loaders.classesConnection = {
-                            schools: new DataLoader((keys) =>
-                                schoolsForClasses(keys)
-                            ),
-                            ageRanges: new DataLoader((keys) =>
-                                ageRangesForClasses(keys)
-                            ),
-                            grades: new DataLoader((keys) =>
-                                gradesForClasses(keys)
-                            ),
-                            subjects: new DataLoader((keys) =>
-                                subjectsForClasses(keys)
-                            ),
-                            programs: new DataLoader((keys) =>
-                                programsForClasses(keys)
-                            ),
-                        }
-                    }
-
-                    return classNodeResolver(args)
+                classNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.classNode.node.load(args.id)
                 },
             },
         },

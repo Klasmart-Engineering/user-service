@@ -87,7 +87,7 @@ import { ReplaceRoleArguments } from './operations/roles'
 import { PermissionName } from './permissions/permissionNames'
 import { APIError, APIErrorCollection } from './types/errors/apiError'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
-import { CLASS_COLUMNS } from './nodes/classNode'
+import { CLASS_NODE_COLUMNS } from './nodes/classNode'
 
 export class Model {
     public static async create() {
@@ -680,7 +680,7 @@ export class Model {
         const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
         // Select only the ClassConnectionNode fields
-        scope.select(CLASS_COLUMNS)
+        scope.select(CLASS_NODE_COLUMNS)
 
         if (filter) {
             if (
