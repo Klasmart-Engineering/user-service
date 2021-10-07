@@ -10,7 +10,11 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
     }
     extend type Query {
-        subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
+        subcategory(id: ID!): Subcategory
+            @isAdmin(entity: "subcategory")
+            @deprecated(
+                reason: "Use 'subcategoryNode(id: ID!)' (when released)."
+            )
     }
     type Subcategory {
         id: ID!
