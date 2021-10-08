@@ -72,3 +72,26 @@ export class NodeDataLoader<
         })
     }
 }
+
+export const loadNodeDataLoader = <
+    Entity extends CustomBaseEntity,
+    ReturnEntity extends Node
+>(
+    scope: SelectQueryBuilder<Entity>,
+    nodeDataLoader: NodeDataLoader<Entity, ReturnEntity> | undefined,
+    entityClass: EntityTarget<Entity>,
+    nodeType: string,
+    entityMapper: (entity: Entity) => ReturnEntity,
+    selectFields: string[]
+) => {
+    if (typeof nodeDataLoader === 'undefined') {
+        return new NodeDataLoader(
+            scope,
+            entityClass,
+            nodeType,
+            entityMapper,
+            selectFields
+        )
+    }
+    return nodeDataLoader
+}
