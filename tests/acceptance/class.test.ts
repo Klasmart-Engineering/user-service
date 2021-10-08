@@ -28,7 +28,6 @@ import {
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { DELETE_CLASS } from '../utils/operations/classOps'
-import { CLASSES_CONNECTION } from '../utils/operations/modelOps'
 import {
     CREATE_CLASS,
     getSystemRoleIds,
@@ -73,6 +72,81 @@ const ageRangeDetail: IAgeRangeDetail = {
     high_value: 12,
     high_value_unit: AgeRangeUnit.YEAR,
 }
+
+// CLASSES_CONNECTION in modelOps is DocumentNode type,
+// and for these tests is necessary a string type query
+const CLASSES_CONNECTION = `
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    shortCode
+
+                    schools {
+                        id
+                        name
+                        status
+                    }
+            
+                    ageRanges {
+                        id
+                        name
+                        lowValue
+                        lowValueUnit
+                        highValue
+                        highValueUnit
+                        status
+                        system
+                    }
+            
+                    grades {
+                        id
+                        name
+                        status
+                        system
+                    }
+
+                    subjects {
+                        id
+                        name
+                        status
+                        system
+                    }
+
+                    programs {
+                        id
+                        name
+                        status
+                        system
+                    }
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
 
 async function createOrg(user_id: string, org_name: string, token: string) {
     return await request
@@ -383,6 +457,8 @@ describe('acceptance.class', () => {
                         direction: 'FORWARD',
                     },
                 })
+
+            console.log(response)
 
             const classesConnection = response.body.data.classesConnection
 
