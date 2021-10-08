@@ -233,7 +233,7 @@ export default function getDefault(
                     info
                 ) => {
                     return info.path.prev?.key === 'userNode'
-                        ? ctx.loaders.userNode?.organizations?.load(user.id)
+                        ? ctx.loaders.userNode.organizations.load(user.id)
                         : ctx.loaders.usersConnection?.organizations?.load(
                               user.id
                           )
@@ -245,7 +245,7 @@ export default function getDefault(
                     info
                 ) => {
                     return info.path.prev?.key === 'userNode'
-                        ? ctx.loaders.userNode?.schools?.load(user.id)
+                        ? ctx.loaders.userNode.schools.load(user.id)
                         : ctx.loaders.usersConnection?.schools?.load(user.id)
                 },
                 roles: async (
@@ -255,7 +255,7 @@ export default function getDefault(
                     info
                 ) => {
                     return info.path.prev?.key === 'userNode'
-                        ? ctx.loaders.userNode?.roles?.load(user.id)
+                        ? ctx.loaders.userNode.roles.load(user.id)
                         : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
             },
