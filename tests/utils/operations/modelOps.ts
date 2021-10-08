@@ -310,28 +310,46 @@ export const USERS_CONNECTION_MAIN_DATA = `
     }
 `
 
+const USER_NODE_FIELDS = gql`
+    fragment userFields on UserConnectionNode {
+        id
+        givenName
+        familyName
+        avatar
+        contactInfo {
+            email
+            phone
+        }
+        alternateContactInfo {
+            email
+            phone
+        }
+        status
+        dateOfBirth
+        gender
+    }
+`
+
 const USERS_CONNECTION_NODES = gql`
+    ${USER_NODE_FIELDS}
+
     query($filter: UserFilter) {
         usersConnection(direction: FORWARD, filter: $filter) {
             edges {
                 node {
-                    id
-                    givenName
-                    familyName
-                    avatar
-                    contactInfo {
-                        email
-                        phone
-                    }
-                    alternateContactInfo {
-                        email
-                        phone
-                    }
-                    status
-                    dateOfBirth
-                    gender
+                    ...userFields
                 }
             }
+        }
+    }
+`
+
+const USER_NODE_QUERY = gql`
+    ${USER_NODE_FIELDS}
+
+    query($id: ID!) {
+        userNode(id: $id) {
+            ...userFields
         }
     }
 `
@@ -1184,6 +1202,25 @@ export async function usersConnectionNodes(
 
     const res = await gqlTry(operation)
     return res.data?.usersConnection
+}
+
+export async function userNode(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string
+): Promise<UserConnectionNode> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: USER_NODE_QUERY,
+            variables: {
+                id,
+            },
+            headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.userNode
 }
 
 export async function permissionsConnection(

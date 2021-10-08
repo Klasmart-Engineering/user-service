@@ -8,7 +8,7 @@ import {
 import { APIError, IAPIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 
-function buildStaticAPIErrorProps(
+export function buildStaticAPIErrorProps(
     metadata: EntityMetadata
 ): Pick<IAPIError, 'code' | 'message' | 'entity' | 'variables'> {
     return {
