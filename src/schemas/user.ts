@@ -10,13 +10,11 @@ import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 import { User } from '../entities/user'
-import { NodeDataLoader } from '../loaders/genericNode'
+import { loadNodeDataLoader } from '../loaders/genericNode'
 import {
     mapUserToUserConnectionNode,
     coreUserConnectionNodeFields,
-    CoreUserConnectionNode,
 } from '../pagination/usersConnection'
-import { SelectQueryBuilder } from 'typeorm'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -298,9 +296,13 @@ export default function getDefault(
                     return model.usersConnection(ctx, info, args)
                 },
                 userNode: (_parent, args, ctx: Context) => {
-                    ctx.loaders.userNode.node = loadUserNodeDataLoader(
+                    ctx.loaders.userNode.node = loadNodeDataLoader(
                         args.scope,
-                        ctx.loaders.userNode.node ?? undefined
+                        ctx.loaders.userNode.node,
+                        User,
+                        'UserConnectionNode',
+                        mapUserToUserConnectionNode,
+                        coreUserConnectionNodeFields
                     )
                     return ctx.loaders.userNode.node?.load(args.id)
                 },
@@ -322,20 +324,4 @@ export default function getDefault(
             },
         },
     }
-}
-
-const loadUserNodeDataLoader = (
-    scope: SelectQueryBuilder<User>,
-    userNodeDataLoader: NodeDataLoader<User, CoreUserConnectionNode> | undefined
-) => {
-    if (typeof userNodeDataLoader === 'undefined') {
-        return new NodeDataLoader(
-            scope,
-            User,
-            'UserConnectionNode',
-            mapUserToUserConnectionNode,
-            coreUserConnectionNodeFields
-        )
-    }
-    return userNodeDataLoader
 }
