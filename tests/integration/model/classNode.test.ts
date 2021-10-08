@@ -25,7 +25,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import { classNode } from '../../utils/operations/modelOps'
+import { classNode, classNodeMainData } from '../../utils/operations/modelOps'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
 import {
     addUserToOrganizationAndValidate,
@@ -364,6 +364,17 @@ describe('classNode', () => {
         expect(result.programs?.[0].id).to.eql(programs[0].id)
     })
 
+    it('makes just one call to the database', async () => {
+        const classToTest = org1Classes[0]
+        connection.logger.reset()
+
+        await classNodeMainData(testClient, classToTest.class_id, {
+            authorization: getAdminAuthToken(),
+        })
+
+        expect(connection.logger.count).to.be.eq(1)
+    })
+
     context('permissions', () => {
         it('super admin should get any class', async () => {
             let classToTest = org1Classes[0]
@@ -469,9 +480,9 @@ describe('classNode', () => {
     })
 
     context('error handling', () => {
-        it('throws an error if id is not a UUID', async () => {
+        it('throws an error if id is not a ID', async () => {
             await expect(
-                classNode(testClient, '1-4m-n0t-4n-uu1d', {
+                classNode(testClient, '1-4m-n0t-4n-1d', {
                     authorization: getAdminAuthToken(),
                 })
             ).to.be.rejected

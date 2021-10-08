@@ -725,9 +725,19 @@ export const CLASSES_CONNECTION_MAIN_DATA = gql`
 export const CLASS_NODE = gql`
     ${CLASS_FIELDS}
 
-    query ClassNode($id: UUID!) {
+    query ClassNode($id: ID!) {
         classNode(id: $id) {
             ...classFields
+        }
+    }
+`
+
+export const CLASS_NODE_MAIN_DATA = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    query ClassNode($id: ID!) {
+        classNode(id: $id) {
+            ...classMainFields
         }
     }
 `
@@ -1649,6 +1659,25 @@ export async function classNode(
     const operation = () =>
         query({
             query: CLASS_NODE,
+            variables: {
+                id,
+            },
+            headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.classNode
+}
+
+export async function classNodeMainData(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers?: Headers
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: CLASS_NODE_MAIN_DATA,
             variables: {
                 id,
             },
