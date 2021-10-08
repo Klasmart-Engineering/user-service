@@ -13,6 +13,7 @@ import { User } from '../entities/user'
 import {
     mapUserToUserConnectionNode,
     coreUserConnectionNodeFields,
+    CoreUserConnectionNode,
 } from '../pagination/usersConnection'
 import { NodeDataLoader } from '../loaders/genericNode'
 
