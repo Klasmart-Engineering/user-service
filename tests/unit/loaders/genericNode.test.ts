@@ -2,6 +2,7 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import faker from 'faker'
 import { pick } from 'lodash'
+import { createQueryBuilder, SelectQueryBuilder } from 'typeorm'
 import { User } from '../../../src/entities/user'
 import { NodeDataLoader } from '../../../src/loaders/genericNode'
 import {
@@ -33,10 +34,13 @@ context('loaders.genericNode', () => {
     context('NodeDataLoader', () => {
         let loader: NodeDataLoader<User, CoreUserConnectionNode>
         let users: User[]
+        let scope: SelectQueryBuilder<User>
 
         beforeEach(async () => {
             users = await User.save(createUsers(3))
+            scope = createQueryBuilder('user')
             loader = new NodeDataLoader(
+                scope,
                 User,
                 'UserConnectionNode',
                 mapUserToUserConnectionNode,
