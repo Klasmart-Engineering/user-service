@@ -17,6 +17,7 @@ type FilteringOperator =
     | 'gte'
     | 'contains'
     | 'isNull'
+    | 'in'
 
 interface IFilter {
     operator: FilteringOperator
@@ -30,7 +31,7 @@ interface IMultipleColumn {
 }
 
 type ColumnAliasValue = string | IMultipleColumn
-type CommonValue = string | number | boolean
+type CommonValue = string | number | boolean | string[]
 type ComposedValue = Record<string, CommonValue>
 type FilteringValue = CommonValue | ComposedValue
 type ColumnAliases = Record<string, ColumnAliasValue> // use empty string to ignore
@@ -132,7 +133,8 @@ export function getWhereClauseFromFilter(
 
                     // resetting value and operator to work properly with the given compound value
                     currentValue = processComposedValue(
-                        currentValue,
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        currentValue as any,
                         alias
                     ) as CommonValue
 
@@ -287,6 +289,7 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
         lte: '<=',
         contains: 'LIKE',
         isNull: 'IS NULL',
+        in: 'IN',
     }
 
     return operators[op]
@@ -297,6 +300,8 @@ function parseValueForSQLOperator(operator: string, value?: CommonValue) {
     switch (operator) {
         case 'LIKE':
             return `%${value}%`
+        case 'IN':
+            return value
         default:
             return value
     }
@@ -342,6 +347,9 @@ function createWhereCondition(
 ) {
     if (sqlOperator === 'IS NULL') {
         return `${alias} ${sqlOperator}`
+    }
+    if (sqlOperator === 'IN') {
+        return `${alias} ${sqlOperator} (:...${uniqueId})`
     }
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`

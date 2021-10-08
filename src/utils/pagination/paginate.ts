@@ -174,6 +174,87 @@ const backwardPaginate = async ({
     return { edges, pageInfo }
 }
 
+export const getPaginationQuery = async ({
+    direction,
+    directionArgs,
+    scope,
+    sort,
+    includeTotalCount,
+}: IPaginateData) => {
+    const pageSize = directionArgs?.count
+        ? directionArgs.count
+        : DEFAULT_PAGE_SIZE
+
+    const cursorData = directionArgs?.cursor
+        ? getDataFromCursor(directionArgs.cursor)
+        : null
+
+    const totalCount = includeTotalCount ? await scope.getCount() : undefined
+
+    const { order, primaryColumns, primaryKeyOrder } = addOrderByClause(
+        scope,
+        direction,
+        sort
+    )
+
+    if (cursorData) {
+        const directionOperator = order === SortOrder.ASC ? '>' : '<'
+        if (primaryColumns.length) {
+            const pKeydirectionOperator =
+                primaryKeyOrder === SortOrder.ASC ? '>' : '<'
+
+            const queryColumns: string[] = []
+            const queryValues: string[] = []
+            const queryParams: IQueryParams = {}
+
+            primaryColumns.forEach((primaryColumn, index) => {
+                const paramName = `primaryColumn${index + 1}`
+                queryColumns.push(`${scope.alias}.${primaryColumn}`)
+                queryValues.push(`:${paramName}`)
+                queryParams[paramName] = cursorData[primaryColumn]
+            })
+            const queryColumnsString = queryColumns.join(', ')
+            const queryValuesString = queryValues.join(', ')
+            scope.andWhere(
+                new Brackets((qa) => {
+                    qa.where(
+                        `(${queryColumnsString}) ${directionOperator} (${queryValuesString})`,
+                        {
+                            ...queryParams,
+                        }
+                    ).orWhere(
+                        new Brackets((qb) => {
+                            qb.where(
+                                `(${queryColumnsString}) = (${queryValuesString})`,
+                                {
+                                    ...queryParams,
+                                }
+                            ).andWhere(
+                                `${scope.alias}.${sort.primaryKey} ${pKeydirectionOperator} :defaultColumn`,
+                                {
+                                    defaultColumn: cursorData[sort.primaryKey],
+                                }
+                            )
+                        })
+                    )
+                })
+            )
+
+            scope.offset(0)
+        } else {
+            scope.andWhere(
+                `${scope.alias}.${sort.primaryKey} ${directionOperator} :defaultColumn`,
+                {
+                    defaultColumn: cursorData[sort.primaryKey],
+                }
+            )
+        }
+    }
+
+    scope.take(pageSize)
+    return scope
+}
+
 export const paginateData = async <T = unknown>({
     direction,
     directionArgs,

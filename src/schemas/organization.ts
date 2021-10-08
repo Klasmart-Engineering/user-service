@@ -7,6 +7,25 @@ import { Context } from '../main'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
+import {
+    CoreUserConnectionNode,
+    mapUserToUserConnectionNode,
+    usersConnectionQuery,
+    usersConnectionResolver,
+} from '../pagination/usersConnection'
+import { GraphQLResolveInfo } from 'graphql'
+import { getManager, getRepository, SelectQueryBuilder } from 'typeorm'
+import { User } from '../entities/user'
+import {
+    orgsForUsers,
+    schoolsForUsers,
+    rolesForUsers,
+} from '../loaders/usersConnection'
+import {
+    IPaginatedResponse,
+    IPaginationArgs,
+} from '../utils/pagination/paginate'
+import { childConnectionLoader } from '../loaders/childConnectionLoader'
 
 const typeDefs = gql`
     scalar HexColor
@@ -247,6 +266,13 @@ const typeDefs = gql`
         # connections
         owners: [UserSummaryNode]
         branding: Branding
+
+        usersConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: UserFilter
+            sort: UserSortInput
+        ): UsersConnectionResponse @isAdmin(entity: "user")
     }
 `
 export default function getDefault(
@@ -270,6 +296,17 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) => ctx.loaders.organization?.branding.load(organization.id),
+                usersConnection: async (
+                    organization: OrganizationConnectionNode,
+                    args: IPaginationArgs<User>,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    return ctx.loaders.usersConnectionChild?.load({
+                        orgId: organization.id,
+                        args,
+                    })
+                },
             },
             Mutation: {
                 organization: (_parent, args, _context, _info) =>
@@ -299,6 +336,55 @@ export default function getDefault(
                     ctx.loaders.organizationsConnection = {
                         owners: new Dataloader((keys) => ownersForOrgs(keys)),
                     }
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys, args.filter)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys, args.filter)
+                        ),
+                        roles: new Dataloader((keys) =>
+                            rolesForUsers(keys, args.filter)
+                        ),
+                    }
+                    ctx.loaders.usersConnectionChild = new Dataloader(
+                        (items) => {
+                            return new Promise(async (resolve) => {
+                                const orgIds = items.map((i) => i.orgId)
+                                const args = items[0]
+                                    .args as IPaginationArgs<User>
+
+                                const scope = await usersConnectionQuery(info, {
+                                    direction: 'FORWARD',
+                                    directionArgs: {
+                                        count: 1000000000,
+                                    },
+                                    scope: args.scope,
+                                    filter: {
+                                        organizationId: {
+                                            operator: 'in',
+                                            value: orgIds as string[],
+                                        },
+                                        ...args.filter,
+                                    },
+                                })
+
+                                const maxCountPerOrg =
+                                    args.directionArgs?.count ?? 50
+
+                                const result = await childConnectionLoader(
+                                    orgIds,
+                                    scope,
+                                    '"OrganizationMembership"."organization_id"',
+                                    maxCountPerOrg,
+                                    'User_',
+                                    mapUserToUserConnectionNode
+                                )
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                resolve(result as any)
+                            })
+                        }
+                    )
                     return model.organizationsConnection(ctx, info, args)
                 },
             },
