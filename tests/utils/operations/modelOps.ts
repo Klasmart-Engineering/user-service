@@ -722,6 +722,38 @@ export const CLASSES_CONNECTION_MAIN_DATA = gql`
     }
 `
 
+export const CLASSES_CONNECTION_MAIN_DATA_NO_TOTAL = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            edges {
+                cursor
+                node {
+                    ...classMainFields
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
 export const CLASS_NODE = gql`
     ${CLASS_FIELDS}
 
@@ -1629,10 +1661,9 @@ export async function classesConnectionMainData(
     sort?: ISortField
 ): Promise<IPaginatedResponse<ClassConnectionNode>> {
     const { query } = testClient
-    const paginationQuery = buildPaginationQuery(
-        CLASSES_CONNECTION_MAIN_DATA,
-        includeTotalCount
-    )
+    const paginationQuery = includeTotalCount
+        ? CLASSES_CONNECTION_MAIN_DATA
+        : CLASSES_CONNECTION_MAIN_DATA_NO_TOTAL
 
     const operation = () =>
         query({
