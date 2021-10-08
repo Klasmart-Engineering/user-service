@@ -24,14 +24,10 @@ import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { User } from '../entities/user'
 import { NodeDataLoader } from './genericNode'
-import {
-    CoreUserConnectionNode,
-    coreUserConnectionNodeFields,
-    mapUserToUserConnectionNode,
-} from '../pagination/usersConnection'
+import { CoreUserConnectionNode } from '../pagination/usersConnection'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
-    node: NodeDataLoader<User, CoreUserConnectionNode>
+    node?: NodeDataLoader<User, CoreUserConnectionNode>
 }
 
 export interface IDataLoaders {
@@ -72,12 +68,6 @@ export function createDefaultDataLoaders(): IDataLoaders {
             schoolById: new Dataloader((keys) => schoolsByIds(keys)),
         },
         userNode: {
-            node: new NodeDataLoader(
-                User,
-                'UserConnectionNode',
-                mapUserToUserConnectionNode,
-                coreUserConnectionNodeFields
-            ),
             organizations: new Dataloader((keys) => orgsForUsers(keys)),
             schools: new Dataloader((keys) => schoolsForUsers(keys)),
             roles: new Dataloader((keys) => rolesForUsers(keys)),

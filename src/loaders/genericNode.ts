@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader'
-import { EntityTarget, getConnection } from 'typeorm'
+import { EntityTarget, getConnection, SelectQueryBuilder } from 'typeorm'
 import { CustomBaseEntity } from '../entities/customBaseEntity'
 import { APIError, IAPIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
@@ -29,6 +29,7 @@ export class NodeDataLoader<
     ReturnEntity extends Node
 > extends DataLoader<string, ReturnEntity | APIError> {
     constructor(
+        scope: SelectQueryBuilder<Entity>,
         entityClass: EntityTarget<Entity>,
         nodeType: string,
         entityMapper: (entity: Entity) => ReturnEntity,
@@ -38,18 +39,18 @@ export class NodeDataLoader<
             ids: readonly string[]
         ): Promise<(ReturnEntity | APIError)[]> {
             const connection = getConnection()
-            const repository = connection.getRepository(entityClass)
             const metadata = connection.getMetadata(entityClass)
-            const entityName = metadata.name
             const primaryKeyColumn = metadata.primaryColumns[0]
             const primaryKeyLabel = primaryKeyColumn.propertyName
 
-            const scope = repository
-                .createQueryBuilder()
+            scope
                 .select(selectFields)
-                .where(`"${entityName}"."${primaryKeyLabel}" IN (:...ids)`, {
-                    ids,
-                })
+                .andWhere(
+                    `"${scope.alias}"."${primaryKeyLabel}" IN (:...ids)`,
+                    {
+                        ids,
+                    }
+                )
 
             const nodes = new Map<string, ReturnEntity>(
                 (await scope.getMany()).map((node) => [

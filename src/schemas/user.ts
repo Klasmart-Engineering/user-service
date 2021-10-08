@@ -10,6 +10,11 @@ import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 import { User } from '../entities/user'
+import { NodeDataLoader } from '../loaders/genericNode'
+import {
+    mapUserToUserConnectionNode,
+    coreUserConnectionNodeFields,
+} from '../pagination/usersConnection'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -291,6 +296,13 @@ export default function getDefault(
                     return model.usersConnection(ctx, info, args)
                 },
                 userNode: (_parent, args, ctx: Context) => {
+                    ctx.loaders.userNode.node = new NodeDataLoader(
+                        args.scope,
+                        User,
+                        'UserConnectionNode',
+                        mapUserToUserConnectionNode,
+                        coreUserConnectionNodeFields
+                    )
                     return ctx.loaders.userNode.node.load(args.id)
                 },
                 users: (_parent, _args, ctx, _info) => [],
