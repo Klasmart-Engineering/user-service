@@ -81,8 +81,8 @@ pipelines:
             - export NEWRELIC_APP_ID=$(aws ssm get-parameter --name /newrelic/basic/app-id --query Parameter.Value --output text --region eu-west-2)
             - export NEWRELIC_API_KEY=$(aws ssm get-parameter --name /newrelic/basic/api-key --query Parameter.Value --output text --region eu-west-2)
             - pwd
-            - ls
-            - scripts/monitor_deployment.sh
+            - ls scripts/
+            # - scripts/monitor_deployment.sh
     master:
       - step:
           name: "Unit and integration tests"
