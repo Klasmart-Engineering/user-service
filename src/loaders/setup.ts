@@ -20,14 +20,24 @@ import {
     organizationForMemberships,
 } from './organization'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
-import { IOrganizationsConnectionLoaders } from './organizationsConnection'
+import {
+    IOrganizationsConnectionLoaders,
+    ownersForOrgs,
+} from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { User } from '../entities/user'
 import { NodeDataLoader } from './genericNode'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
+import { CoreOrganizationConnectionNode } from '../pagination/organizationsConnection'
+import { Organization } from '../entities/organization'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
+}
+
+interface IOrganizationNodeDataLoaders
+    extends Required<IOrganizationsConnectionLoaders> {
+    node?: NodeDataLoader<Organization, CoreOrganizationConnectionNode>
 }
 
 export interface IDataLoaders {
@@ -41,6 +51,7 @@ export interface IDataLoaders {
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    organizationNode: IOrganizationNodeDataLoaders
 }
 
 export function createDefaultDataLoaders(): IDataLoaders {
@@ -71,6 +82,9 @@ export function createDefaultDataLoaders(): IDataLoaders {
             organizations: new Dataloader((keys) => orgsForUsers(keys)),
             schools: new Dataloader((keys) => schoolsForUsers(keys)),
             roles: new Dataloader((keys) => rolesForUsers(keys)),
+        },
+        organizationNode: {
+            owners: new Dataloader((keys) => ownersForOrgs(keys)),
         },
     }
 }

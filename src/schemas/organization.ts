@@ -7,6 +7,11 @@ import { Context } from '../main'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
+import { loadNodeDataLoader } from '../loaders/genericNode'
+import {
+    mapOrganizationToOrganizationConnectionNode,
+    ORGANIZATION_NODE_COLUMNS,
+} from '../pagination/organizationsConnection'
 
 const typeDefs = gql`
     scalar HexColor
@@ -45,6 +50,8 @@ const typeDefs = gql`
             filter: OrganizationFilter
             sort: OrganizationSortInput
         ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
+        organizationNode(id: ID!): OrganizationConnectionNode
+            @isAdmin(entity: "organization")
     }
     type Organization {
         organization_id: ID!
@@ -260,11 +267,17 @@ export default function getDefault(
                 owners: async (
                     organization: OrganizationConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
-                ) =>
-                    ctx.loaders.organizationsConnection?.owners?.load(
-                        organization.id
-                    ),
+                    ctx: Context,
+                    info
+                ) => {
+                    return info.path.prev?.key === 'organizationNode'
+                        ? ctx.loaders.organizationNode.owners.load(
+                              organization.id
+                          )
+                        : ctx.loaders.organizationsConnection?.owners?.load(
+                              organization.id
+                          )
+                },
                 branding: async (
                     organization: OrganizationConnectionNode,
                     args: Record<string, unknown>,
@@ -300,6 +313,18 @@ export default function getDefault(
                         owners: new Dataloader((keys) => ownersForOrgs(keys)),
                     }
                     return model.organizationsConnection(ctx, info, args)
+                },
+                organizationNode: (_parent, args, ctx: Context) => {
+                    ctx.loaders.organizationNode.node = loadNodeDataLoader(
+                        args.scope,
+                        ctx.loaders.organizationNode.node,
+                        Organization,
+                        'OrganizationConnectionNode',
+                        mapOrganizationToOrganizationConnectionNode,
+                        ORGANIZATION_NODE_COLUMNS
+                    )
+
+                    return ctx.loaders.organizationNode.node.load(args.id)
                 },
             },
             Organization: {

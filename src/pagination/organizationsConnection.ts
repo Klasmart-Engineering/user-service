@@ -21,6 +21,16 @@ export type CoreOrganizationConnectionNode = Pick<
     'id' | 'name' | 'contactInfo' | 'shortCode' | 'status'
 >
 
+export const ORGANIZATION_NODE_COLUMNS = ([
+    'organization_id',
+    'organization_name',
+    'address1',
+    'address2',
+    'phone',
+    'shortCode',
+    'status',
+] as (keyof Organization)[]).map((field) => `Organization.${field}`)
+
 export async function organizationsConnectionResolver(
     info: GraphQLResolveInfo,
     {
@@ -55,17 +65,7 @@ export async function organizationsConnectionResolver(
         )
     }
 
-    scope.select(
-        ([
-            'organization_id',
-            'organization_name',
-            'address1',
-            'address2',
-            'phone',
-            'shortCode',
-            'status',
-        ] as (keyof Organization)[]).map((field) => `Organization.${field}`)
-    )
+    scope.select(ORGANIZATION_NODE_COLUMNS)
 
     const data = await paginateData<Organization>({
         direction,
