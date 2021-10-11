@@ -71,7 +71,7 @@ pipelines:
   branches:
     feature/DEV-8-add-instrumentation-scripts-to-bit:
       - step:
-          name: "instrumentation",
+          name: "instrumentation"
           - step:
             name: "Call NewRelic to register a deployment attempt"
             caches:
