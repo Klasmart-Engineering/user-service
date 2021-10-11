@@ -9,7 +9,6 @@ import {
     getWhereClauseFromFilter,
 } from '../utils/pagination/filtering'
 import {
-    getPaginationQuery,
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
@@ -35,75 +34,21 @@ export type CoreUserConnectionNode = Pick<
 export async function usersConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
-): Promise<IPaginatedResponse<User>> {
+): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    if (filter) {
-        if (
-            (filterHasProperty('organizationId', filter) ||
-                filterHasProperty('organizationUserStatus', filter) ||
-                filterHasProperty('roleId', filter)) &&
-            !scopeHasJoin(scope, OrganizationMembership)
-        ) {
-            scope.innerJoin('User.memberships', 'OrganizationMembership')
-        }
-        if (filterHasProperty('roleId', filter)) {
-            scope.innerJoin(
-                'OrganizationMembership.roles',
-                'RoleMembershipsOrganizationMembership'
-            )
-        }
-        if (
-            filterHasProperty('schoolId', filter) &&
-            !scopeHasJoin(scope, SchoolMembership)
-        ) {
-            scope.leftJoin('User.school_memberships', 'SchoolMembership')
-        }
-        if (filterHasProperty('classId', filter)) {
-            scope.leftJoin('User.classesStudying', 'ClassStudying')
-            scope.leftJoin('User.classesTeaching', 'ClassTeaching')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                organizationId: 'OrganizationMembership.organization_id',
-                organizationUserStatus: 'OrganizationMembership.status',
-                userStatus: 'User.status',
-                userId: 'User.user_id',
-                phone: 'User.phone',
-                email: 'User.email',
-                schoolId: 'SchoolMembership.school_id',
-                classId: {
-                    operator: 'OR',
-                    aliases: [
-                        'ClassStudying.class_id',
-                        'ClassTeaching.class_id',
-                    ],
-                },
-            })
-        )
-    }
-
-    scope.select(
-        ([
-            'user_id',
-            'given_name',
-            'family_name',
-            'avatar',
-            'status',
-            'email',
-            'phone',
-            'alternate_email',
-            'alternate_phone',
-            'date_of_birth',
-            'gender',
-        ] as (keyof User)[]).map((field) => `User.${field}`)
-    )
+    const newScope = await usersConnectionQuery(info, {
+        direction,
+        directionArgs,
+        scope,
+        filter,
+        sort,
+    })
 
     const data = await paginateData<User>({
         direction,
         directionArgs,
-        scope,
+        scope: newScope,
         sort: {
             primaryKey: 'user_id',
             aliases: {
@@ -115,15 +60,22 @@ export async function usersConnectionResolver(
         includeTotalCount,
     })
 
-    return data
+    return {
+        totalCount: data.totalCount,
+        pageInfo: data.pageInfo,
+        edges: data.edges.map((edge) => {
+            return {
+                node: mapUserToUserConnectionNode(edge.node),
+                cursor: edge.cursor,
+            }
+        }),
+    }
 }
 
 export async function usersConnectionQuery(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
 ) {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
     if (filter) {
         if (
             (filterHasProperty('organizationId', filter) ||
@@ -186,22 +138,7 @@ export async function usersConnectionQuery(
         ] as (keyof User)[]).map((field) => `User.${field}`)
     )
 
-    const query = await getPaginationQuery({
-        direction,
-        directionArgs,
-        scope,
-        sort: {
-            primaryKey: 'user_id',
-            aliases: {
-                givenName: 'given_name',
-                familyName: 'family_name',
-            },
-            sort,
-        },
-        includeTotalCount,
-    })
-
-    return query
+    return scope
 }
 
 export function mapUserToUserConnectionNode(

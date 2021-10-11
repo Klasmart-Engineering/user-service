@@ -70,7 +70,7 @@ const getDataFromCursor = (cursor: string) => {
     return JSON.parse(Buffer.from(cursor, 'base64').toString())
 }
 
-const getEdges = (
+export const getEdges = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any[],
     defaultColumn: string,
@@ -251,8 +251,7 @@ export const getPaginationQuery = async ({
         }
     }
 
-    scope.take(pageSize)
-    return scope
+    return { scope, primaryColumns, pageSize, cursorData, totalCount }
 }
 
 export const paginateData = async <T = unknown>({
@@ -262,75 +261,18 @@ export const paginateData = async <T = unknown>({
     sort,
     includeTotalCount,
 }: IPaginateData): Promise<IPaginatedResponse<T>> => {
-    const pageSize = directionArgs?.count
-        ? directionArgs.count
-        : DEFAULT_PAGE_SIZE
-
-    const cursorData = directionArgs?.cursor
-        ? getDataFromCursor(directionArgs.cursor)
-        : null
-
-    const totalCount = includeTotalCount ? await scope.getCount() : undefined
-
-    const { order, primaryColumns, primaryKeyOrder } = addOrderByClause(
-        scope,
+    const {
+        pageSize,
+        cursorData,
+        totalCount,
+        primaryColumns,
+    } = await getPaginationQuery({
         direction,
-        sort
-    )
-
-    if (cursorData) {
-        const directionOperator = order === SortOrder.ASC ? '>' : '<'
-        if (primaryColumns.length) {
-            const pKeydirectionOperator =
-                primaryKeyOrder === SortOrder.ASC ? '>' : '<'
-
-            const queryColumns: string[] = []
-            const queryValues: string[] = []
-            const queryParams: IQueryParams = {}
-
-            primaryColumns.forEach((primaryColumn, index) => {
-                const paramName = `primaryColumn${index + 1}`
-                queryColumns.push(`${scope.alias}.${primaryColumn}`)
-                queryValues.push(`:${paramName}`)
-                queryParams[paramName] = cursorData[primaryColumn]
-            })
-            const queryColumnsString = queryColumns.join(', ')
-            const queryValuesString = queryValues.join(', ')
-            scope.andWhere(
-                new Brackets((qa) => {
-                    qa.where(
-                        `(${queryColumnsString}) ${directionOperator} (${queryValuesString})`,
-                        {
-                            ...queryParams,
-                        }
-                    ).orWhere(
-                        new Brackets((qb) => {
-                            qb.where(
-                                `(${queryColumnsString}) = (${queryValuesString})`,
-                                {
-                                    ...queryParams,
-                                }
-                            ).andWhere(
-                                `${scope.alias}.${sort.primaryKey} ${pKeydirectionOperator} :defaultColumn`,
-                                {
-                                    defaultColumn: cursorData[sort.primaryKey],
-                                }
-                            )
-                        })
-                    )
-                })
-            )
-
-            scope.offset(0)
-        } else {
-            scope.andWhere(
-                `${scope.alias}.${sort.primaryKey} ${directionOperator} :defaultColumn`,
-                {
-                    defaultColumn: cursorData[sort.primaryKey],
-                }
-            )
-        }
-    }
+        directionArgs,
+        scope,
+        sort,
+        includeTotalCount,
+    })
 
     const { edges, pageInfo } =
         direction && direction === SEEK_BACKWARD

@@ -1,43 +1,60 @@
 import { getManager, SelectQueryBuilder } from 'typeorm'
+import { getEdges } from '../utils/pagination/paginate'
 
 export const childConnectionLoader = async (
     parentIds: string[],
-    scope: SelectQueryBuilder<unknown>,
+    baseScope: SelectQueryBuilder<unknown>,
+    filteredScope: SelectQueryBuilder<unknown>,
     groupByProperty: string,
     childCount: number,
     tablePrefix: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    entityMapper: (item: any) => any
+    entityMapper: (item: any) => any,
+    primaryColumns: string[]
 ) => {
-    const parentMap = new Map<string, unknown>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parentMap = new Map<string, any>(
         parentIds.map((parentId) => [
             parentId,
             {
                 totalCount: 0,
+                pageInfo: {
+                    hasPreviousPage: true,
+                    hasNextPage: true,
+                    startCursor: '',
+                    endCursor: '',
+                },
                 edges: [],
             },
         ])
     )
 
-    scope.addSelect(
-        `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty})`,
+    // return query
+    baseScope.addSelect(`${groupByProperty} as "parentId"`)
+    filteredScope.addSelect(`${groupByProperty} as "parentId"`)
+
+    const filterQuery = filteredScope.getQuery()
+    // TODO this better....
+    const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY'))
+
+    filteredScope.addSelect(
+        `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty} ${orderBy})`,
         'row_num'
     )
 
-    scope.addSelect(`${groupByProperty} as "parentId"`)
-
     const childScope = getManager()
         .createQueryBuilder()
-        .from(`(${scope.getQuery()})`, 'subquery')
+        .select('*')
+        .from(`(${filteredScope.getQuery()})`, 'subquery')
         .where(`"row_num" <= ${childCount}`)
-        .setParameters(scope.getParameters())
+        .setParameters(filteredScope.getParameters())
 
     const countScope = getManager()
         .createQueryBuilder()
         .select(['"parentId"', 'count(*)'])
-        .from(`(${scope.getQuery()})`, 'subquery')
+        .from(`(${baseScope.getQuery()})`, 'subquery')
         .groupBy('"parentId"')
-        .setParameters(scope.getParameters())
+        .setParameters(baseScope.getParameters())
 
     const childrenRaw = await childScope.getRawMany()
     const parentCounts = await countScope.getRawMany()
@@ -45,21 +62,42 @@ export const childConnectionLoader = async (
     for (const parent of parentCounts) {
         parentMap.set(parent.parentId, {
             totalCount: parent.count,
+            pageInfo: {
+                hasPreviousPage: true,
+                hasNextPage: true,
+                startCursor: '',
+                endCursor: '',
+            },
             edges: [],
         })
     }
 
-    for (const child of childrenRaw) {
-        const parentId = child.parentId
-        const parsedNode = JSON.parse(
-            JSON.stringify(child).replaceAll(tablePrefix, '')
-        )
+    // convert from sql column aliases to column names
+    const childrenProcessed = childrenRaw.map((child) => {
+        return JSON.parse(JSON.stringify(child).replaceAll(tablePrefix, ''))
+    })
+
+    const edges = getEdges(childrenProcessed, 'user_id', primaryColumns)
+
+    for (const edge of edges) {
+        const parentId = edge.node.parentId
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapItem = parentMap.get(parentId) as any
+
+        // TODO cursors....
         mapItem?.edges.push({
-            cursor: '',
-            node: entityMapper(parsedNode),
+            cursor: edge.cursor,
+            node: entityMapper(edge.node),
         })
+    }
+    // throw new Error('test')
+    for (const [parentId, value] of parentMap) {
+        value.pageInfo.startCursor = value.edges.length
+            ? value.edges[0].cursor
+            : ''
+        value.pageInfo.endCursor = value.edges.length
+            ? value.edges[value.edges.length - 1].cursor
+            : ''
     }
 
     return Array.from(parentMap.values())

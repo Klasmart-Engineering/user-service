@@ -28,6 +28,8 @@ export interface IDataLoaders {
     user: IUsersLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    usersConnectionChild?: Dataloader<any, any>
 }
 
 export function createDefaultDataLoaders(): IDataLoaders {

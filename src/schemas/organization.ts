@@ -8,13 +8,10 @@ import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
 import {
-    CoreUserConnectionNode,
     mapUserToUserConnectionNode,
     usersConnectionQuery,
-    usersConnectionResolver,
 } from '../pagination/usersConnection'
 import { GraphQLResolveInfo } from 'graphql'
-import { getManager, getRepository, SelectQueryBuilder } from 'typeorm'
 import { User } from '../entities/user'
 import {
     orgsForUsers,
@@ -22,7 +19,7 @@ import {
     rolesForUsers,
 } from '../loaders/usersConnection'
 import {
-    IPaginatedResponse,
+    getPaginationQuery,
     IPaginationArgs,
 } from '../utils/pagination/paginate'
 import { childConnectionLoader } from '../loaders/childConnectionLoader'
@@ -358,6 +355,7 @@ export default function getDefault(
                                     direction: 'FORWARD',
                                     directionArgs: {
                                         count: 1000000000,
+                                        cursor: args.directionArgs?.cursor,
                                     },
                                     scope: args.scope,
                                     filter: {
@@ -369,16 +367,37 @@ export default function getDefault(
                                     },
                                 })
 
+                                const whereQuery = await getPaginationQuery({
+                                    direction: 'FORWARD',
+                                    directionArgs: {
+                                        count: 1000000000,
+                                        cursor: args.directionArgs?.cursor,
+                                    },
+                                    scope: scope.clone(),
+                                    sort: {
+                                        primaryKey: 'user_id',
+                                        aliases: {
+                                            givenName: 'given_name',
+                                            familyName: 'family_name',
+                                        },
+                                        sort: args.sort,
+                                    },
+                                    includeTotalCount: false,
+                                })
+                                whereQuery.scope.take(whereQuery.pageSize)
+
                                 const maxCountPerOrg =
                                     args.directionArgs?.count ?? 50
 
                                 const result = await childConnectionLoader(
                                     orgIds,
                                     scope,
+                                    whereQuery.scope,
                                     '"OrganizationMembership"."organization_id"',
                                     maxCountPerOrg,
                                     'User_',
-                                    mapUserToUserConnectionNode
+                                    mapUserToUserConnectionNode,
+                                    whereQuery.primaryColumns
                                 )
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 resolve(result as any)
