@@ -23,6 +23,8 @@ import {
     IPaginationArgs,
 } from '../utils/pagination/paginate'
 import { childConnectionLoader } from '../loaders/childConnectionLoader'
+import { IEntityFilter } from '../utils/pagination/filtering'
+import { ISortingConfig } from '../utils/pagination/sorting'
 
 const typeDefs = gql`
     scalar HexColor
@@ -350,54 +352,39 @@ export default function getDefault(
                                 const orgIds = items.map((i) => i.orgId)
                                 const args = items[0]
                                     .args as IPaginationArgs<User>
-
-                                const scope = await usersConnectionQuery(info, {
-                                    direction: 'FORWARD',
-                                    directionArgs: {
-                                        count: 1000000000,
-                                        cursor: args.directionArgs?.cursor,
-                                    },
-                                    scope: args.scope,
-                                    filter: {
-                                        organizationId: {
-                                            operator: 'in',
-                                            value: orgIds as string[],
+                                const baseScope = await usersConnectionQuery(
+                                    info,
+                                    {
+                                        direction: 'FORWARD',
+                                        directionArgs: {
+                                            count: 1000000000,
+                                            cursor: args.directionArgs?.cursor,
                                         },
-                                        ...args.filter,
-                                    },
-                                })
+                                        scope: args.scope,
+                                        filter: {
+                                            organizationId: {
+                                                operator: 'in',
+                                                value: orgIds as string[],
+                                            },
+                                            ...args.filter,
+                                        },
+                                    }
+                                )
 
-                                const whereQuery = await getPaginationQuery({
-                                    direction: 'FORWARD',
-                                    directionArgs: {
-                                        count: 1000000000,
-                                        cursor: args.directionArgs?.cursor,
-                                    },
-                                    scope: scope.clone(),
-                                    sort: {
+                                const result = await childConnectionLoader(
+                                    orgIds,
+                                    baseScope,
+                                    '"OrganizationMembership"."organization_id"',
+                                    'User_',
+                                    mapUserToUserConnectionNode,
+                                    args,
+                                    {
                                         primaryKey: 'user_id',
                                         aliases: {
                                             givenName: 'given_name',
                                             familyName: 'family_name',
                                         },
-                                        sort: args.sort,
-                                    },
-                                    includeTotalCount: false,
-                                })
-                                whereQuery.scope.take(whereQuery.pageSize)
-
-                                const maxCountPerOrg =
-                                    args.directionArgs?.count ?? 50
-
-                                const result = await childConnectionLoader(
-                                    orgIds,
-                                    scope,
-                                    whereQuery.scope,
-                                    '"OrganizationMembership"."organization_id"',
-                                    maxCountPerOrg,
-                                    'User_',
-                                    mapUserToUserConnectionNode,
-                                    whereQuery.primaryColumns
+                                    }
                                 )
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 resolve(result as any)

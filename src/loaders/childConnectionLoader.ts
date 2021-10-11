@@ -1,18 +1,39 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getManager, SelectQueryBuilder } from 'typeorm'
-import { getEdges } from '../utils/pagination/paginate'
+import {
+    getEdges,
+    getPaginationQuery,
+    IPaginationArgs,
+} from '../utils/pagination/paginate'
+import { ISortingConfig } from '../utils/pagination/sorting'
 
 export const childConnectionLoader = async (
     parentIds: string[],
     baseScope: SelectQueryBuilder<unknown>,
-    filteredScope: SelectQueryBuilder<unknown>,
     groupByProperty: string,
-    childCount: number,
     tablePrefix: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     entityMapper: (item: any) => any,
-    primaryColumns: string[]
+    args: IPaginationArgs<any>,
+    sortConfig: ISortingConfig
 ) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const childCount = args.directionArgs?.count ?? 50
+
+    const whereQuery = await getPaginationQuery({
+        direction: 'FORWARD',
+        directionArgs: {
+            count: 1000000000,
+            cursor: args.directionArgs?.cursor,
+        },
+        scope: baseScope.clone(),
+        sort: {
+            ...sortConfig,
+            sort: args.sort,
+        },
+        includeTotalCount: false,
+    })
+    whereQuery.scope.take(whereQuery.pageSize)
+
+    // Create our Dataloader map
     const parentMap = new Map<string, any>(
         parentIds.map((parentId) => [
             parentId,
@@ -29,26 +50,27 @@ export const childConnectionLoader = async (
         ])
     )
 
-    // return query
+    // Select the parentId to pivot by
     baseScope.addSelect(`${groupByProperty} as "parentId"`)
-    filteredScope.addSelect(`${groupByProperty} as "parentId"`)
+    whereQuery.scope.addSelect(`${groupByProperty} as "parentId"`)
 
-    const filterQuery = filteredScope.getQuery()
-    // TODO this better....
+    // Select the row number to select n children per parent, respecting the request order
+    const filterQuery = whereQuery.scope.getQuery()
     const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY'))
-
-    filteredScope.addSelect(
+    whereQuery.scope.addSelect(
         `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty} ${orderBy})`,
         'row_num'
     )
 
+    // Create the query for getting children per parents
     const childScope = getManager()
         .createQueryBuilder()
         .select('*')
-        .from(`(${filteredScope.getQuery()})`, 'subquery')
+        .from(`(${whereQuery.scope.getQuery()})`, 'subquery')
         .where(`"row_num" <= ${childCount}`)
-        .setParameters(filteredScope.getParameters())
+        .setParameters(whereQuery.scope.getParameters())
 
+    // Create the query to get total children counts per parent (ignores pagination filters etc)
     const countScope = getManager()
         .createQueryBuilder()
         .select(['"parentId"', 'count(*)'])
@@ -56,9 +78,10 @@ export const childConnectionLoader = async (
         .groupBy('"parentId"')
         .setParameters(baseScope.getParameters())
 
-    const childrenRaw = await childScope.getRawMany()
+    //
+    // Get the counts and update the dataloader map
+    //
     const parentCounts = await countScope.getRawMany()
-
     for (const parent of parentCounts) {
         parentMap.set(parent.parentId, {
             totalCount: parent.count,
@@ -72,26 +95,33 @@ export const childConnectionLoader = async (
         })
     }
 
+    //
+    // Get the children and convert to the expected format with pagination edges and cursors
+    //
+    const childrenRaw = await childScope.getRawMany()
     // convert from sql column aliases to column names
     const childrenProcessed = childrenRaw.map((child) => {
         return JSON.parse(JSON.stringify(child).replaceAll(tablePrefix, ''))
     })
 
-    const edges = getEdges(childrenProcessed, 'user_id', primaryColumns)
+    const edges = getEdges(
+        childrenProcessed,
+        sortConfig.primaryKey,
+        whereQuery.primaryColumns
+    )
 
     for (const edge of edges) {
         const parentId = edge.node.parentId
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mapItem = parentMap.get(parentId) as any
 
-        // TODO cursors....
         mapItem?.edges.push({
             cursor: edge.cursor,
             node: entityMapper(edge.node),
         })
     }
-    // throw new Error('test')
-    for (const [parentId, value] of parentMap) {
+
+    // calculate page cursors
+    for (const [, value] of parentMap) {
         value.pageInfo.startCursor = value.edges.length
             ? value.edges[0].cursor
             : ''
