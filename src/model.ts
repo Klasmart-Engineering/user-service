@@ -95,8 +95,8 @@ export class Model {
                     process.env.DATABASE_LOGGING === 'true'
                         ? new TypeORMLogger(logger)
                         : undefined,
-                entities: ['src/entities/*.ts'],
-                migrations: ['migrations/*.ts'],
+                entities: ['src/entities/*{.ts,.js}'],
+                migrations: ['migrations/*{.ts,.js}'],
                 replication: {
                     master: {
                         url:

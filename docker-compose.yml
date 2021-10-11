@@ -25,7 +25,6 @@ services:
         depends_on:
             - postgres1
             - localstack1
-        command: npm run start
     postgres1:
         container_name: postgres1
         image: postgres

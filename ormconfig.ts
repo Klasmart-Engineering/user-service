@@ -11,8 +11,8 @@ const config: ConnectionOptions = {
     url:
         process.env.DATABASE_URL ||
         'postgres://postgres:kidsloop@localhost/postgres',
-    entities: ['src/entities/*.ts'],
-    migrations: ['migrations/*.js'],
+    entities: ['src/entities/*{.ts,.js}'],
+    migrations: ['migrations/*{.ts,.js}'],
     cli: {
         migrationsDir: 'migrations',
     },
