@@ -8,7 +8,7 @@ TIMESTAMP="1994-11-05T13:15:30Z"
 # BITBUCKET_COMMIT="0554acd2c02745a5e963b728346c7f1cc3512fca"
 AUTHOR="$(git show -s --format='%ae' $BITBUCKET_COMMIT)"
 
-echo "author: $AUTHOR"
+echo "authors: $AUTHOR"
 
 generate_post_data()
 {
