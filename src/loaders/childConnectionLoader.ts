@@ -18,7 +18,12 @@ export const childConnectionLoader = async (
 ) => {
     const childCount = args.directionArgs?.count ?? 50
 
-    const whereQuery = await getPaginationQuery({
+    // apply pagination where clause and order by statements to the scope
+    const {
+        scope: filteredScope,
+        pageSize,
+        primaryColumns,
+    } = await getPaginationQuery({
         direction: 'FORWARD',
         directionArgs: {
             count: 1000000000,
@@ -31,9 +36,11 @@ export const childConnectionLoader = async (
         },
         includeTotalCount: false,
     })
-    whereQuery.scope.take(whereQuery.pageSize)
 
-    // Create our Dataloader map
+    // always paginate FORWARDS
+    filteredScope.take(pageSize)
+
+    // Create our Dataloader map of parentId: childConnectionNode[]
     const parentMap = new Map<string, any>(
         parentIds.map((parentId) => [
             parentId,
@@ -50,14 +57,15 @@ export const childConnectionLoader = async (
         ])
     )
 
-    // Select the parentId to pivot by
+    // Select the parentId, which will be used to pivot by when
+    // calculating counts and children per parent
     baseScope.addSelect(`${groupByProperty} as "parentId"`)
-    whereQuery.scope.addSelect(`${groupByProperty} as "parentId"`)
+    filteredScope.addSelect(`${groupByProperty} as "parentId"`)
 
-    // Select the row number to select n children per parent, respecting the request order
-    const filterQuery = whereQuery.scope.getQuery()
-    const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY'))
-    whereQuery.scope.addSelect(
+    // Select the row number to select n children per parent, respecting the requested order
+    const filterQuery = filteredScope.getQuery()
+    const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY')) // TODO this better...
+    filteredScope.addSelect(
         `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty} ${orderBy})`,
         'row_num'
     )
@@ -66,9 +74,9 @@ export const childConnectionLoader = async (
     const childScope = getManager()
         .createQueryBuilder()
         .select('*')
-        .from(`(${whereQuery.scope.getQuery()})`, 'subquery')
+        .from(`(${filteredScope.getQuery()})`, 'subquery')
         .where(`"row_num" <= ${childCount}`)
-        .setParameters(whereQuery.scope.getParameters())
+        .setParameters(filteredScope.getParameters())
 
     // Create the query to get total children counts per parent (ignores pagination filters etc)
     const countScope = getManager()
@@ -100,16 +108,20 @@ export const childConnectionLoader = async (
     //
     const childrenRaw = await childScope.getRawMany()
     // convert from sql column aliases to column names
+    // e.g. User_user_id -> user_id
+    // this is rather ugly, can we do better?
     const childrenProcessed = childrenRaw.map((child) => {
         return JSON.parse(JSON.stringify(child).replaceAll(tablePrefix, ''))
     })
 
+    // generate pagination cursors for each node
     const edges = getEdges(
         childrenProcessed,
         sortConfig.primaryKey,
-        whereQuery.primaryColumns
+        primaryColumns
     )
 
+    // construction the full edge for each node
     for (const edge of edges) {
         const parentId = edge.node.parentId
         const mapItem = parentMap.get(parentId) as any
