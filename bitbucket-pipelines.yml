@@ -71,18 +71,16 @@ pipelines:
   branches:
     feature/DEV-8-add-instrumentation-scripts-to-bit:
       - step:
-          name: "instrumentation"
-          - step:
-            name: "Call NewRelic to register a deployment attempt"
-            caches:
-              - pip
-            image: python:3.9-alpine
-            script:
-              # auth to AWS
-              - pip3 install -U awscli
-              - export NEWRELIC_APP_ID=$(aws ssm get-parameter --name /newrelic/basic/app-id --query Parameter.Value --output text --region eu-west-2)
-              - export NEWRELIC_API_KEY=$(aws ssm get-parameter --name /newrelic/basic/api-key --query Parameter.Value --output text --region eu-west-2)
-              - ./scripts/monitor_deployment.sh
+          name: "Call NewRelic to register a deployment attempt"
+          caches:
+            - pip
+          image: python:3.9-alpine
+          script:
+            # auth to AWS
+            - pip3 install -U awscli
+            - export NEWRELIC_APP_ID=$(aws ssm get-parameter --name /newrelic/basic/app-id --query Parameter.Value --output text --region eu-west-2)
+            - export NEWRELIC_API_KEY=$(aws ssm get-parameter --name /newrelic/basic/api-key --query Parameter.Value --output text --region eu-west-2)
+            - ./scripts/monitor_deployment.sh
     master:
       - step:
           name: "Unit and integration tests"
