@@ -53,6 +53,8 @@ export const createServer = async (model: Model, context?: Context) => {
                 extensions: error.extensions,
             }
         },
+        // Defaults to `false` if `NODE_ENV === 'production'`, which removes the Schema & Docs from GraphQL Playground
+        introspection: true,
         debug: environment === 'development',
     })
 }
