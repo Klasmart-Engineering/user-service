@@ -28,6 +28,7 @@ import {
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { DELETE_CLASS } from '../utils/operations/classOps'
+import { CLASSES_CONNECTION } from '../utils/operations/modelOps'
 import {
     CREATE_CLASS,
     getSystemRoleIds,
@@ -35,6 +36,7 @@ import {
 import { CREATE_ORGANIZATION, userToPayload } from '../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
+import { print } from 'graphql'
 
 interface IClassEdge {
     node: ClassConnectionNode
@@ -72,81 +74,6 @@ const ageRangeDetail: IAgeRangeDetail = {
     high_value: 12,
     high_value_unit: AgeRangeUnit.YEAR,
 }
-
-// CLASSES_CONNECTION in modelOps is DocumentNode type,
-// and for these tests is necessary a string type query
-const CLASSES_CONNECTION = `
-    query ClassesConnection(
-        $direction: ConnectionDirection!
-        $directionArgs: ConnectionsDirectionArgs
-        $filterArgs: ClassFilter
-        $sortArgs: ClassSortInput
-    ) {
-        classesConnection(
-            direction: $direction
-            directionArgs: $directionArgs
-            filter: $filterArgs
-            sort: $sortArgs
-        ) {
-            totalCount
-
-            edges {
-                cursor
-                node {
-                    id
-                    name
-                    status
-                    shortCode
-
-                    schools {
-                        id
-                        name
-                        status
-                    }
-            
-                    ageRanges {
-                        id
-                        name
-                        lowValue
-                        lowValueUnit
-                        highValue
-                        highValueUnit
-                        status
-                        system
-                    }
-            
-                    grades {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    subjects {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    programs {
-                        id
-                        name
-                        status
-                        system
-                    }
-                }
-            }
-
-            pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-            }
-        }
-    }
-`
 
 async function createOrg(user_id: string, org_name: string, token: string) {
     return await request
@@ -406,7 +333,7 @@ describe('acceptance.class', () => {
                         Authorization: getAdminAuthToken(),
                     })
                     .send({
-                        query: CLASSES_CONNECTION,
+                        query: print(CLASSES_CONNECTION),
                         variables: {
                             direction: 'FORWARD',
                             directionArgs: {
@@ -452,13 +379,11 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                     },
                 })
-
-            console.log(response)
 
             const classesConnection = response.body.data.classesConnection
 
@@ -474,7 +399,7 @@ describe('acceptance.class', () => {
                     Authorization: generateToken(userToPayload(user2)),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         sortArgs: {
@@ -498,7 +423,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         sortArgs: {
@@ -524,7 +449,7 @@ describe('acceptance.class', () => {
                     Authorization: generateToken(userToPayload(user2)),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -552,7 +477,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -580,7 +505,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -608,7 +533,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -652,7 +577,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -694,7 +619,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -729,7 +654,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -764,7 +689,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -799,7 +724,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -836,7 +761,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -864,7 +789,7 @@ describe('acceptance.class', () => {
                     Authorization: generateToken(userToPayload(schoolAdmin)),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -894,7 +819,7 @@ describe('acceptance.class', () => {
                     Authorization: generateToken(userToPayload(orgMember)),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -922,7 +847,7 @@ describe('acceptance.class', () => {
                     Authorization: generateToken(userToPayload(user2)),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -951,7 +876,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -977,7 +902,7 @@ describe('acceptance.class', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: CLASSES_CONNECTION,
+                    query: print(CLASSES_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {

@@ -6,17 +6,25 @@ import { Class } from '../../../src/entities/class'
 import { Grade } from '../../../src/entities/grade'
 import { Organization } from '../../../src/entities/organization'
 import { Program } from '../../../src/entities/program'
+import { Role } from '../../../src/entities/role'
 import { School } from '../../../src/entities/school'
 import { Status } from '../../../src/entities/status'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
 import AgeRangesInitializer from '../../../src/initializers/ageRanges'
 import { Model } from '../../../src/model'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
+import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { GradeSummaryNode } from '../../../src/types/graphQL/gradeSummaryNode'
+import { ProgramSummaryNode } from '../../../src/types/graphQL/programSummaryNode'
+import { SchoolSimplifiedSummaryNode } from '../../../src/types/graphQL/schoolSimplifiedSummaryNode'
+import { SubjectSummaryNode } from '../../../src/types/graphQL/subjectSummaryNode'
 import { createServer } from '../../../src/utils/createServer'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { createClass } from '../../factories/class.factory'
 import { createGrade } from '../../factories/grade.factory'
 import { createOrganization } from '../../factories/organization.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createProgram } from '../../factories/program.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createSubject } from '../../factories/subject.factory'
@@ -26,11 +34,6 @@ import {
     createTestClient,
 } from '../../utils/createTestClient'
 import { classNode, classNodeMainData } from '../../utils/operations/modelOps'
-import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
-import {
-    addUserToOrganizationAndValidate,
-    getSystemRoleIds,
-} from '../../utils/operations/organizationOps'
 import { addUserToSchool } from '../../utils/operations/schoolOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
@@ -39,6 +42,133 @@ import {
     TestConnection,
 } from '../../utils/testConnection'
 import { createAdminUser } from '../../utils/testEntities'
+
+const sorting = (a: { id: string }, b: { id: string }) => {
+    if (a.id < b.id) {
+        return -1
+    }
+
+    if (a.id > b.id) {
+        return 1
+    }
+
+    return 0
+}
+
+function expectCoreClassConnectionEdge(
+    queryResult: ClassConnectionNode,
+    classToCompare: Class
+) {
+    expect(queryResult.id).to.eql(classToCompare.class_id)
+    expect(queryResult.name).to.eql(classToCompare.class_name)
+    expect(queryResult.status).to.eql(classToCompare.status)
+    expect(queryResult.shortCode).to.eql(classToCompare.shortcode)
+}
+
+function expectSchoolsSummaryNode(
+    querySchools: SchoolSimplifiedSummaryNode[],
+    schoolsToCompare: School[]
+) {
+    querySchools.sort(sorting)
+
+    schoolsToCompare.sort((a, b) => {
+        if (a.school_id < b.school_id) {
+            return -1
+        }
+
+        if (a.school_id > b.school_id) {
+            return 1
+        }
+
+        return 0
+    })
+
+    expect(querySchools.length).to.eql(schoolsToCompare.length)
+
+    querySchools.forEach((qs, index) => {
+        expect(qs.id).to.eql(schoolsToCompare[index].school_id)
+        expect(qs.name).to.eql(schoolsToCompare[index].school_name)
+        expect(qs.status).to.eql(schoolsToCompare[index].status)
+    })
+}
+
+function expectAgeRangesSummaryNode(
+    queryAgeRanges: AgeRangeConnectionNode[],
+    ageRangesToCompare: AgeRange[]
+) {
+    queryAgeRanges.sort(sorting)
+    ageRangesToCompare.sort(sorting)
+
+    expect(queryAgeRanges.length).to.eql(ageRangesToCompare.length)
+
+    queryAgeRanges.forEach((qar, index) => {
+        expect(qar.id).to.eql(ageRangesToCompare[index].id)
+        expect(qar.name).to.eql(ageRangesToCompare[index].name)
+        expect(qar.status).to.eql(ageRangesToCompare[index].status)
+        expect(qar.system).to.eql(ageRangesToCompare[index].system)
+        expect(qar.highValue).to.eql(ageRangesToCompare[index].high_value)
+        expect(qar.lowValue).to.eql(ageRangesToCompare[index].low_value)
+
+        expect(qar.highValueUnit).to.eql(
+            ageRangesToCompare[index].high_value_unit
+        )
+
+        expect(qar.lowValueUnit).to.eql(
+            ageRangesToCompare[index].low_value_unit
+        )
+    })
+}
+
+function expectGradesSummaryNode(
+    queryGrades: GradeSummaryNode[],
+    gradesToCompare: Grade[]
+) {
+    queryGrades.sort(sorting)
+    gradesToCompare.sort(sorting)
+
+    expect(queryGrades.length).to.eql(gradesToCompare.length)
+
+    queryGrades.forEach((qg, index) => {
+        expect(qg.id).to.eql(gradesToCompare[index].id)
+        expect(qg.name).to.eql(gradesToCompare[index].name)
+        expect(qg.status).to.eql(gradesToCompare[index].status)
+        expect(qg.system).to.eql(gradesToCompare[index].system)
+    })
+}
+
+function expectSubjectsSummaryNode(
+    querySubjects: SubjectSummaryNode[],
+    subjectsToCompare: Subject[]
+) {
+    querySubjects.sort(sorting)
+    subjectsToCompare.sort(sorting)
+
+    expect(querySubjects.length).to.eql(subjectsToCompare.length)
+
+    querySubjects.forEach((qs, index) => {
+        expect(qs.id).to.eql(subjectsToCompare[index].id)
+        expect(qs.name).to.eql(subjectsToCompare[index].name)
+        expect(qs.status).to.eql(subjectsToCompare[index].status)
+        expect(qs.system).to.eql(subjectsToCompare[index].system)
+    })
+}
+
+function expectProgramsSummaryNode(
+    queryPrograms: ProgramSummaryNode[],
+    programsToCompare: Program[]
+) {
+    queryPrograms.sort(sorting)
+    programsToCompare.sort(sorting)
+
+    expect(queryPrograms.length).to.eql(programsToCompare.length)
+
+    queryPrograms.forEach((qp, index) => {
+        expect(qp.id).to.eql(programsToCompare[index].id)
+        expect(qp.name).to.eql(programsToCompare[index].name)
+        expect(qp.status).to.eql(programsToCompare[index].status)
+        expect(qp.system).to.eql(programsToCompare[index].system)
+    })
+}
 
 use(chaiAsPromised)
 
@@ -83,9 +213,14 @@ describe('classNode', () => {
     beforeEach(async () => {
         await AgeRangesInitializer.run()
 
-        const systemRoles = await getSystemRoleIds()
-        const schoolAdminRoleId = systemRoles['School Admin']
-        const orgAdminRoleId = systemRoles['Organization Admin']
+        const schoolAdminRole = await Role.findOneOrFail({
+            where: { role_name: 'School Admin', system_role: true },
+        })
+
+        const orgAdminRole = await Role.findOneOrFail({
+            where: { role_name: 'Organization Admin', system_role: true },
+        })
+
         const noneSpecifiedAgeRange = await connection.manager.findOneOrFail(
             AgeRange,
             {
@@ -94,14 +229,14 @@ describe('classNode', () => {
         )
 
         admin = await createAdminUser(testClient)
-        orgOwner = await createUser()
-        schoolAdmin = await createUser()
-        orgMember = await createUser()
-        ownerAndSchoolAdmin = await createUser()
+        orgOwner = createUser()
+        schoolAdmin = createUser()
+        orgMember = createUser()
+        ownerAndSchoolAdmin = createUser()
 
-        org1 = await createOrganization(admin)
-        org2 = await createOrganization(ownerAndSchoolAdmin)
-        org3 = await createOrganization(orgOwner)
+        org1 = createOrganization(admin)
+        org2 = createOrganization(ownerAndSchoolAdmin)
+        org3 = createOrganization(orgOwner)
 
         await connection.manager.save([
             orgOwner,
@@ -109,6 +244,7 @@ describe('classNode', () => {
             orgMember,
             ownerAndSchoolAdmin,
         ])
+
         await connection.manager.save([org1, org2, org3])
 
         org1Classes = []
@@ -123,14 +259,14 @@ describe('classNode', () => {
 
         // creating org1 age ranges
         for (let i = 1; i <= ageRangesCount / 2; i++) {
-            const ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = createAgeRange(org1, i, i + 1)
             ageRange.low_value_unit = AgeRangeUnit.MONTH
             ageRange.high_value_unit = AgeRangeUnit.MONTH
             ageRanges.push(ageRange)
         }
 
         for (let i = 1; i <= ageRangesCount / 2; i++) {
-            const ageRange = await createAgeRange(org1, i, i + 1)
+            const ageRange = createAgeRange(org1, i, i + 1)
             ageRange.low_value_unit = AgeRangeUnit.YEAR
             ageRange.high_value_unit = AgeRangeUnit.YEAR
             ageRanges.push(ageRange)
@@ -140,7 +276,7 @@ describe('classNode', () => {
 
         // creating org1 grades
         for (let i = 0; i < gradesCount; i++) {
-            const grade = await createGrade(org1)
+            const grade = createGrade(org1)
             grades.push(grade)
         }
 
@@ -148,7 +284,7 @@ describe('classNode', () => {
 
         // creating org1 subjects
         for (let i = 0; i < subjectsCount; i++) {
-            const subject = await createSubject(org1)
+            const subject = createSubject(org1)
             subjects.push(subject)
         }
 
@@ -156,7 +292,7 @@ describe('classNode', () => {
 
         // creating org1 programs
         for (let i = 0; i < programsCount; i++) {
-            const program = await createProgram(org1)
+            const program = createProgram(org1)
             programs.push(program)
         }
 
@@ -164,7 +300,7 @@ describe('classNode', () => {
 
         // creating org1 classes
         for (let i = 0; i < classesCount; i++) {
-            const class_ = await createClass(undefined, org1)
+            const class_ = createClass(undefined, org1)
             const classNumber = i < 9 ? `0${i + 1}` : `${i + 1}`
             const shortcode = `CL455${classNumber}`
             const ageRangesForClass = [
@@ -194,7 +330,7 @@ describe('classNode', () => {
 
         // creating org2 classes
         for (let i = 0; i < classesCount; i++) {
-            const class_ = await createClass(undefined, org2)
+            const class_ = createClass(undefined, org2)
             const classNumber = i < 9 ? `0${i + 1}` : `${i + 1}`
             const shortcode = `CL455${classNumber}`
             class_.class_name = `class ${classNumber}`
@@ -205,7 +341,7 @@ describe('classNode', () => {
 
         // creating org3 schools
         for (let i = 0; i < schoolsCount; i++) {
-            const school = await createSchool(org3)
+            const school = createSchool(org3)
             school.school_name = `school ${i}`
             org3Schools.push(school)
         }
@@ -217,7 +353,7 @@ describe('classNode', () => {
             const index = Math.floor(i / (classesCount / schoolsCount))
             const classNumber = i < 9 ? `0${i + 1}` : `${i + 1}`
             const shortcode = `CL455${classNumber}`
-            const class_ = await createClass([org3Schools[index]], org3)
+            const class_ = createClass([org3Schools[index]], org3)
 
             class_.class_name = `class ${classNumber}`
             class_.status = Status.ACTIVE
@@ -229,44 +365,31 @@ describe('classNode', () => {
 
         await connection.manager.save(classes)
 
-        // adding orgOwner to org3
-        await addUserToOrganizationAndValidate(
-            testClient,
-            orgOwner.user_id,
-            org3.organization_id,
-            { authorization: getAdminAuthToken() }
+        // adding orgOwner to org3 with orgAdminRole¿
+        await connection.manager.save(
+            createOrganizationMembership({
+                user: orgOwner,
+                organization: org3,
+                roles: [orgAdminRole],
+            })
         )
 
-        // assign org admin role to orgOwner
-        await addRoleToOrganizationMembership(
-            testClient,
-            orgOwner.user_id,
-            org3.organization_id,
-            orgAdminRoleId
+        // adding ownerAndSchoolAdmin to org2 with orgAdminRole
+        await connection.manager.save(
+            createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org2,
+                roles: [orgAdminRole],
+            })
         )
 
-        // adding ownerAndSchoolAdmin to org2
-        await addUserToOrganizationAndValidate(
-            testClient,
-            ownerAndSchoolAdmin.user_id,
-            org2.organization_id,
-            { authorization: getAdminAuthToken() }
-        )
-
-        // assign org admin role to ownerAndSchoolAdmin
-        await addRoleToOrganizationMembership(
-            testClient,
-            ownerAndSchoolAdmin.user_id,
-            org2.organization_id,
-            orgAdminRoleId
-        )
-
-        // adding schoolAdmin to org3
-        await addUserToOrganizationAndValidate(
-            testClient,
-            schoolAdmin.user_id,
-            org3.organization_id,
-            { authorization: getAdminAuthToken() }
+        // adding schoolAdmin to org3 with schoolAdminRole
+        await connection.manager.save(
+            createOrganizationMembership({
+                user: schoolAdmin,
+                organization: org3,
+                roles: [schoolAdminRole],
+            })
         )
 
         // adding schoolAdmin to first org3School
@@ -279,20 +402,13 @@ describe('classNode', () => {
             }
         )
 
-        // assign school admin role to schoolAdmin
-        await addRoleToOrganizationMembership(
-            testClient,
-            schoolAdmin.user_id,
-            org3.organization_id,
-            schoolAdminRoleId
-        )
-
-        // adding ownerAndSchoolAdmin to org3
-        await addUserToOrganizationAndValidate(
-            testClient,
-            ownerAndSchoolAdmin.user_id,
-            org3.organization_id,
-            { authorization: getAdminAuthToken() }
+        // adding ownerAndSchoolAdmin to org3 with schoolAdminRole
+        await connection.manager.save(
+            createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org3,
+                roles: [schoolAdminRole],
+            })
         )
 
         // adding ownerAndSchoolAdmin to second org3School
@@ -305,20 +421,13 @@ describe('classNode', () => {
             }
         )
 
-        // assign school admin role to ownerAndSchoolAdmin
-        await addRoleToOrganizationMembership(
-            testClient,
-            ownerAndSchoolAdmin.user_id,
-            org3.organization_id,
-            schoolAdminRoleId
-        )
-
         // adding orgMember to org3
-        await addUserToOrganizationAndValidate(
-            testClient,
-            orgMember.user_id,
-            org3.organization_id,
-            { authorization: getAdminAuthToken() }
+        await connection.manager.save(
+            createOrganizationMembership({
+                user: orgMember,
+                organization: org3,
+                roles: [],
+            })
         )
     })
 
@@ -329,39 +438,32 @@ describe('classNode', () => {
         })
 
         expect(result).to.be.an('object')
+        expectCoreClassConnectionEdge(result, classToTest)
 
-        expect(result).to.haveOwnProperty('id')
-        expect(result.id).to.eql(classToTest.class_id)
-        expect(result).to.haveOwnProperty('name')
-        expect(result.name).to.eql(classToTest.class_name)
-        expect(result).to.haveOwnProperty('status')
-        expect(result.status).to.eql(classToTest.status)
-        expect(result).to.haveOwnProperty('shortCode')
-        expect(result.shortCode).to.eql(classToTest.shortcode)
+        expectSchoolsSummaryNode(
+            result.schools || [],
+            (await classToTest.schools) || []
+        )
 
-        expect(result).to.haveOwnProperty('schools')
-        expect(result.schools).to.be.an('array')
-        expect(result.schools?.length).to.eql(0)
+        expectAgeRangesSummaryNode(
+            result.ageRanges || [],
+            (await classToTest.age_ranges) || []
+        )
 
-        expect(result).to.haveOwnProperty('ageRanges')
-        expect(result.ageRanges).to.be.an('array')
-        expect(result.ageRanges?.length).to.eql(1)
-        expect(result.ageRanges?.[0].id).to.eql(ageRanges[0].id)
+        expectGradesSummaryNode(
+            result.grades || [],
+            (await classToTest.grades) || []
+        )
 
-        expect(result).to.haveOwnProperty('grades')
-        expect(result.grades).to.be.an('array')
-        expect(result.grades?.length).to.eql(1)
-        expect(result.grades?.[0].id).to.eql(grades[0].id)
+        expectSubjectsSummaryNode(
+            result.subjects || [],
+            (await classToTest.subjects) || []
+        )
 
-        expect(result).to.haveOwnProperty('subjects')
-        expect(result.subjects).to.be.an('array')
-        expect(result.subjects?.length).to.eql(1)
-        expect(result.subjects?.[0].id).to.eql(subjects[0].id)
-
-        expect(result).to.haveOwnProperty('programs')
-        expect(result.programs).to.be.an('array')
-        expect(result.programs?.length).to.eql(1)
-        expect(result.programs?.[0].id).to.eql(programs[0].id)
+        expectProgramsSummaryNode(
+            result.programs || [],
+            (await classToTest.programs) || []
+        )
     })
 
     it('makes just one call to the database', async () => {

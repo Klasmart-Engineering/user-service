@@ -214,25 +214,24 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
-                    // Regenerate the loaders on every resolution, because the `args.filter`
-                    // may be different
-                    // In theory we could store `args.filter` and check for deep equality, but this is overcomplicating things
-                    ctx.loaders.classesConnection = {
-                        schools: new DataLoader((keys) =>
-                            schoolsForClasses(keys)
-                        ),
-                        ageRanges: new DataLoader((keys) =>
-                            ageRangesForClasses(keys)
-                        ),
-                        grades: new DataLoader((keys) =>
-                            gradesForClasses(keys)
-                        ),
-                        subjects: new DataLoader((keys) =>
-                            subjectsForClasses(keys)
-                        ),
-                        programs: new DataLoader((keys) =>
-                            programsForClasses(keys)
-                        ),
+                    if (ctx.loaders.classesConnection === undefined) {
+                        ctx.loaders.classesConnection = {
+                            schools: new DataLoader((keys) =>
+                                schoolsForClasses(keys)
+                            ),
+                            ageRanges: new DataLoader((keys) =>
+                                ageRangesForClasses(keys)
+                            ),
+                            grades: new DataLoader((keys) =>
+                                gradesForClasses(keys)
+                            ),
+                            subjects: new DataLoader((keys) =>
+                                subjectsForClasses(keys)
+                            ),
+                            programs: new DataLoader((keys) =>
+                                programsForClasses(keys)
+                            ),
+                        }
                     }
 
                     return model.classesConnection(ctx, info, args)

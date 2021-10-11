@@ -1876,10 +1876,10 @@ export async function organizationsConnectionNodes(
 }
 
 function buildPaginationQuery(
-    paginationQuery: string | DocumentNode,
+    paginationQuery: string,
     includeTotalCount: boolean
 ) {
     return includeTotalCount
         ? paginationQuery
-        : (paginationQuery as string).split('totalCount').join('')
+        : paginationQuery.split('totalCount').join('')
 }
