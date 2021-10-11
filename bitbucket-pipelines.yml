@@ -80,7 +80,9 @@ pipelines:
             - pip3 install -U awscli
             - export NEWRELIC_APP_ID=$(aws ssm get-parameter --name /newrelic/basic/app-id --query Parameter.Value --output text --region eu-west-2)
             - export NEWRELIC_API_KEY=$(aws ssm get-parameter --name /newrelic/basic/api-key --query Parameter.Value --output text --region eu-west-2)
-            - ./scripts/monitor_deployment.sh
+            - pwd
+            - ls
+            - scripts/monitor_deployment.sh
     master:
       - step:
           name: "Unit and integration tests"
