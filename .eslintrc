@@ -16,6 +16,7 @@
       "@typescript-eslint/no-this-alias": "warn",
       "no-empty-pattern": "warn",
       "no-useless-escape": "warn",
+      "no-console": "error",
       "@typescript-eslint/no-empty-function": "warn",
       "@typescript-eslint/no-extra-semi": "off",
       "@typescript-eslint/explicit-member-accessibility": "off",

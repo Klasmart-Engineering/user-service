@@ -82,6 +82,7 @@ import { usersConnectionResolver } from './pagination/usersConnection'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
 import { organizationsConnectionResolver } from './pagination/organizationsConnection'
+import logger, { TypeORMLogger } from './logging'
 
 export class Model {
     public static async create() {
@@ -90,7 +91,10 @@ export class Model {
                 name: 'default',
                 type: 'postgres',
                 synchronize: false,
-                logging: Boolean(process.env.DATABASE_LOGGING),
+                logger:
+                    process.env.DATABASE_LOGGING === 'true'
+                        ? new TypeORMLogger(logger)
+                        : undefined,
                 entities: ['src/entities/*.ts'],
                 migrations: ['migrations/*.ts'],
                 replication: {
@@ -116,10 +120,10 @@ export class Model {
                 'CREATE EXTENSION IF NOT EXISTS pg_trgm'
             )
             await model.createOrUpdateSystemEntities()
-            console.log('🐘 Connected to postgres')
+            logger.info('🐘 Connected to postgres')
             return model
         } catch (e) {
-            console.log('❌ Failed to connect or initialize postgres')
+            logger.error(e, '❌ Failed to connect or initialize postgres')
             throw e
         }
     }
@@ -831,7 +835,7 @@ export class Model {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -840,7 +844,7 @@ export class Model {
             const roles = await this.roleRepository.find()
             return roles
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -851,7 +855,7 @@ export class Model {
             })
             return _class
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
     public async getClasses() {
@@ -859,7 +863,7 @@ export class Model {
             const classes = await this.classRepository.find()
             return classes
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -870,7 +874,7 @@ export class Model {
             })
             return school
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 

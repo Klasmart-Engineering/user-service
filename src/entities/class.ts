@@ -24,6 +24,7 @@ import { Status } from './status'
 import { Subject } from './subject'
 import { SHORTCODE_DEFAULT_MAXLEN, validateShortCode } from '../utils/shortcode'
 import { CustomBaseEntity } from './customBaseEntity'
+import logger from '../logging'
 
 @Entity()
 @Check(`"class_name" <> ''`)
@@ -101,7 +102,7 @@ export class Class extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -242,7 +243,7 @@ export class Class extends CustomBaseEntity {
 
             return newTeachers
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -275,7 +276,7 @@ export class Class extends CustomBaseEntity {
 
             return user
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -312,7 +313,7 @@ export class Class extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }
@@ -378,7 +379,7 @@ export class Class extends CustomBaseEntity {
 
             return newStudents
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -411,7 +412,7 @@ export class Class extends CustomBaseEntity {
 
             return user
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -448,7 +449,7 @@ export class Class extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }
@@ -514,7 +515,7 @@ export class Class extends CustomBaseEntity {
 
             return newSchools
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -549,7 +550,7 @@ export class Class extends CustomBaseEntity {
 
             return school
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -588,7 +589,7 @@ export class Class extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }
@@ -772,7 +773,7 @@ export class Class extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }

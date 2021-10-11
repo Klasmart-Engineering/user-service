@@ -17,6 +17,7 @@ import {
 import * as Stream from 'stream'
 import { customErrors } from '../../types/errors/customError'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
+import logger from '../../logging'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -206,8 +207,8 @@ export async function readCSVFile(
 
                     if (canFinish(i, rowCallbacks, csvStream)) {
                         if (fileErrors.length) {
-                            console.error(
-                                'These errors were found in the file: ',
+                            logger.error(
+                                'These errors were found in the file: %o',
                                 fileErrors
                             )
                             reject(fileErrors)

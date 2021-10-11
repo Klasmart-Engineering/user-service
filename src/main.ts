@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/node'
 import { UserPermissions } from './permissions/userPermissions'
 import express from 'express'
 import { IDataLoaders } from './loaders/setup'
+import logger from './logging'
 
 const port = process.env.PORT || 8080
 
@@ -27,13 +28,15 @@ Sentry.init({
 initApp()
     .then((app) => {
         app.expressApp.listen(port, () => {
-            console.log(
-                `🌎 Server ready at http://localhost:${port}${app.apolloServer.graphqlPath}`
+            logger.info(
+                '🌎 Server ready at http://localhost:%s%s',
+                port,
+                app.apolloServer.graphqlPath
             )
         })
     })
     .catch((e) => {
         Sentry.captureException(e)
-        console.error(e)
+        logger.fatal(e)
         process.exit(-1)
     })

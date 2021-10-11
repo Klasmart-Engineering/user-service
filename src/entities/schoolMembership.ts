@@ -14,6 +14,7 @@ import { School } from './school'
 import { Status } from './status'
 import { Context } from 'mocha'
 import { CustomBaseEntity } from './customBaseEntity'
+import logger from '../logging'
 
 @Entity()
 export class SchoolMembership extends CustomBaseEntity {
@@ -74,7 +75,7 @@ export class SchoolMembership extends CustomBaseEntity {
             await role.save()
             return role
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -107,7 +108,7 @@ export class SchoolMembership extends CustomBaseEntity {
             await getManager().save(roles)
             return roles
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -134,7 +135,7 @@ export class SchoolMembership extends CustomBaseEntity {
             }
             return this
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -155,7 +156,7 @@ export class SchoolMembership extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }

@@ -1,0 +1,4 @@
+{
+    "translateTime": "dd-mmm HH:MM:ss.L",
+    "ignore": "pid,hostname"
+}

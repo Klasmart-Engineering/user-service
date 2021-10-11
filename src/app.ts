@@ -6,6 +6,7 @@ import { createServer } from './utils/createServer'
 import { checkIssuerAuthorization } from './token'
 import escapeStringRegexp from 'escape-string-regexp'
 import appPackage from '../package.json'
+import logger from './logging'
 
 const domain = process.env.DOMAIN || ''
 if (!domain) {
@@ -55,7 +56,7 @@ export const initApp = async () => {
                     const match = origin.match(domainRegex)
                     callback(null, Boolean(match))
                 } catch (e) {
-                    console.error(e)
+                    logger.error(e)
                     if (e instanceof Error || e === null) {
                         callback(e)
                     } else {

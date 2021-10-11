@@ -1,3 +1,4 @@
+import logger from '../logging'
 import { createCloudClient } from '../utils/storage'
 
 const PROVIDER = process.env.STORAGE_PROVIDER ?? ''
@@ -34,7 +35,7 @@ export class CloudStorageUrlBuilder {
                         break
 
                     case 'google':
-                        console.log(file)
+                        logger.info(file)
                         break
 
                     case 'vngcloud':

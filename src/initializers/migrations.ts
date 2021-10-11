@@ -1,5 +1,6 @@
 import { Connection } from 'typeorm'
 import { MigrationLock1627128803380 } from '../../migrations/1627128803380-MigrationLock'
+import logger from '../logging'
 
 export async function runMigrations(connection: Connection) {
     // first check if there are any pending migrations
@@ -7,10 +8,10 @@ export async function runMigrations(connection: Connection) {
 
     if (!havePendingMigrations) {
         // nothing to do here!
-        console.log('No pending database migrations.')
+        logger.info('No pending database migrations.')
         return
     } else {
-        console.log(
+        logger.info(
             'Found pending database migrations, obtaining migration lock...'
         )
 

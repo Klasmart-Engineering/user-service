@@ -5,6 +5,7 @@ import { readCSVFile } from './readFile'
 import { CustomError, instanceOfCSVError } from '../../types/csv/csvError'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
+import logger from '../../logging'
 
 export async function createEntityFromCsvWithRollBack(
     connection: Connection,
@@ -25,7 +26,7 @@ export async function createEntityFromCsvWithRollBack(
             userPermissions,
             functionToValidateCSVHeaders
         )
-        console.log('Generic Upload CSV File finished')
+        logger.info('Generic Upload CSV File finished')
 
         if (!isDryRun) {
             await queryRunner.commitTransaction()
@@ -34,9 +35,9 @@ export async function createEntityFromCsvWithRollBack(
         }
     } catch (errors) {
         if (isDryRun) {
-            console.error('Errors found when previewing CSV file: ', errors)
+            logger.error('Errors found when previewing CSV file: %o', errors)
         } else {
-            console.error('Error uploading from CSV file: ', errors)
+            logger.error('Error uploading from CSV file: %o', errors)
         }
         await queryRunner.rollbackTransaction()
         if (

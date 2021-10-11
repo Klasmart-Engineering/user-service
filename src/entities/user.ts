@@ -30,6 +30,7 @@ import { Context } from '../main'
 import { CustomBaseEntity } from './customBaseEntity'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
 import clean from '../utils/clean'
+import logger from '../logging'
 
 @Entity()
 export class User extends CustomBaseEntity {
@@ -93,7 +94,7 @@ export class User extends CustomBaseEntity {
             })
             return membership
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -115,7 +116,7 @@ export class User extends CustomBaseEntity {
             ).findOneOrFail({ where: { user_id: this.user_id, school_id } })
             return membership
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -159,7 +160,7 @@ export class User extends CustomBaseEntity {
                 })
                 .getMany()
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -227,7 +228,7 @@ export class User extends CustomBaseEntity {
                 })
             )
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -304,7 +305,7 @@ export class User extends CustomBaseEntity {
             await this.save()
             return this
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -352,7 +353,7 @@ export class User extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
             return false
         }
     }
@@ -469,7 +470,7 @@ export class User extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -492,7 +493,7 @@ export class User extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -578,14 +579,14 @@ export class User extends CustomBaseEntity {
             queryRunner.commitTransaction()
         } catch (err) {
             success = false
-            console.log(err)
+            logger.error(err)
             dberr = err
             await queryRunner.rollbackTransaction()
         } finally {
             await queryRunner.release()
         }
         if (success) {
-            console.log('success')
+            logger.info('success')
             return this
         }
         if (dberr !== undefined) {
@@ -742,9 +743,7 @@ export class User extends CustomBaseEntity {
 }
 
 if (!process.env.DOMAIN) {
-    console.log(
-        'Warning DOMAIN env varible not set, defaulting to kidsloop.net'
-    )
+    logger.warn('DOMAIN env varible not set, defaulting to kidsloop.net')
 }
 const domain = process.env.DOMAIN || 'kidsloop.net'
 const accountNamespace = v5(domain, v5.DNS)

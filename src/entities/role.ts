@@ -17,6 +17,7 @@ import { Status } from './status'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { CustomBaseEntity } from './customBaseEntity'
+import logger from '../logging'
 
 @Entity()
 export class Role extends CustomBaseEntity {
@@ -83,7 +84,7 @@ export class Role extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -109,7 +110,7 @@ export class Role extends CustomBaseEntity {
             })
             return permission
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -151,7 +152,7 @@ export class Role extends CustomBaseEntity {
 
             return permission
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
     public async revoke(
@@ -191,7 +192,7 @@ export class Role extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }
@@ -223,7 +224,7 @@ export class Role extends CustomBaseEntity {
 
             return permission
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -268,7 +269,7 @@ export class Role extends CustomBaseEntity {
 
             return permissionEntities
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
     }
 
@@ -303,7 +304,7 @@ export class Role extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
         return false
     }
