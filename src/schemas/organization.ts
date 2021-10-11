@@ -18,13 +18,8 @@ import {
     schoolsForUsers,
     rolesForUsers,
 } from '../loaders/usersConnection'
-import {
-    getPaginationQuery,
-    IPaginationArgs,
-} from '../utils/pagination/paginate'
+import { IPaginationArgs } from '../utils/pagination/paginate'
 import { childConnectionLoader } from '../loaders/childConnectionLoader'
-import { IEntityFilter } from '../utils/pagination/filtering'
-import { ISortingConfig } from '../utils/pagination/sorting'
 
 const typeDefs = gql`
     scalar HexColor

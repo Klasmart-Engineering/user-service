@@ -20,7 +20,7 @@ export const childConnectionLoader = async (
 
     // apply pagination where clause and order by statements to the scope
     const {
-        scope: filteredScope,
+        scope: paginationScope,
         pageSize,
         primaryColumns,
     } = await getPaginationQuery({
@@ -38,7 +38,7 @@ export const childConnectionLoader = async (
     })
 
     // always paginate FORWARDS
-    filteredScope.take(pageSize)
+    paginationScope.take(pageSize)
 
     // Create our Dataloader map of parentId: childConnectionNode[]
     const parentMap = new Map<string, any>(
@@ -60,12 +60,12 @@ export const childConnectionLoader = async (
     // Select the parentId, which will be used to pivot by when
     // calculating counts and children per parent
     baseScope.addSelect(`${groupByProperty} as "parentId"`)
-    filteredScope.addSelect(`${groupByProperty} as "parentId"`)
+    paginationScope.addSelect(`${groupByProperty} as "parentId"`)
 
     // Select the row number to select n children per parent, respecting the requested order
-    const filterQuery = filteredScope.getQuery()
+    const filterQuery = paginationScope.getQuery()
     const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY')) // TODO this better...
-    filteredScope.addSelect(
+    paginationScope.addSelect(
         `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty} ${orderBy})`,
         'row_num'
     )
@@ -74,9 +74,9 @@ export const childConnectionLoader = async (
     const childScope = getManager()
         .createQueryBuilder()
         .select('*')
-        .from(`(${filteredScope.getQuery()})`, 'subquery')
+        .from(`(${paginationScope.getQuery()})`, 'subquery')
         .where(`"row_num" <= ${childCount}`)
-        .setParameters(filteredScope.getParameters())
+        .setParameters(paginationScope.getParameters())
 
     // Create the query to get total children counts per parent (ignores pagination filters etc)
     const countScope = getManager()
