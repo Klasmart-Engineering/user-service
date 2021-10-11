@@ -82,7 +82,7 @@ pipelines:
             - export NEWRELIC_API_KEY=$(aws ssm get-parameter --name /newrelic/basic/api-key --query Parameter.Value --output text --region eu-west-2)
             - pwd
             - ls scripts/
-            - /bin/bash scripts/monitor_deployment.sh
+            - /bin/sh scripts/monitor_deployment.sh
     master:
       - step:
           name: "Unit and integration tests"
