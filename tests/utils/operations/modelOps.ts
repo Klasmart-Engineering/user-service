@@ -752,21 +752,46 @@ export const ORGANIZATIONS_CONNECTION_MAIN_DATA = `
     }
 `
 
+const ORGANIZATION_CORE_FIELDS = gql`
+    fragment organizationFields on OrganizationConnectionNode {
+        id
+        name
+        contactInfo {
+            address1
+            address2
+            phone
+        }
+        shortCode
+        status
+    }
+`
+
 const ORGANIZATIONS_CONNECTION_NODES = gql`
+    ${ORGANIZATION_CORE_FIELDS}
     query($filter: OrganizationFilter) {
         organizationsConnection(direction: FORWARD, filter: $filter) {
             edges {
                 node {
-                    id
-                    name
-                    contactInfo {
-                        address1
-                        address2
-                        phone
-                    }
-                    shortCode
-                    status
+                    ...organizationFields
                 }
+            }
+        }
+    }
+`
+
+const ORGANIZATION_NODE = gql`
+    ${ORGANIZATION_CORE_FIELDS}
+    query($id: ID!) {
+        organizationNode(id: $id) {
+            ...organizationFields
+
+            branding {
+                iconImageURL
+                primaryColor
+            }
+
+            owners {
+                id
             }
         }
     }
@@ -1609,6 +1634,25 @@ export async function organizationsConnectionNodes(
 
     const res = await gqlTry(operation)
     return res.data?.organizationsConnection
+}
+
+export async function organizationNode(
+    testClient: ApolloServerTestClient,
+    id: string,
+    headers: Headers
+): Promise<OrganizationConnectionNode> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: ORGANIZATION_NODE,
+            variables: {
+                id,
+            },
+            headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.organizationNode
 }
 
 function buildPaginationQuery(
