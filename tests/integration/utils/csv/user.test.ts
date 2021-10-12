@@ -1272,11 +1272,17 @@ describe('processUserFromCSVRow', async () => {
                 adminPermissions
             )
 
+            expect(rowErrors).to.be.empty
+
             const dbUser = await User.findOneOrFail({
                 where: { email: normalizedLowercaseTrimmed(row.user_email) },
             })
 
             expect(dbUser.user_id).to.not.be.empty
+            expect((await cls2.students)?.map(userInfo)).to.deep.equal(
+                [userInfo(dbUser)],
+                'User is added to the Class as a Student'
+            )
         })
 
         it('it does not update SchoolMembership.roles based on `school_role_name` column', async () => {
