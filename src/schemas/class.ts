@@ -199,14 +199,14 @@ export default function getDefault(
                 },
             },
             Mutation: {
-                classes: () => model.getClasses(),
-                class: (_parent, args, _context, _info) => model.getClass(args),
+                classes: (_parent, _args, ctx) => model.getClasses(ctx),
+                class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 uploadClassesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadClassesFromCSV(args, ctx, info),
             },
             Query: {
-                class: (_parent, args, _context, _info) => model.getClass(args),
-                classes: () => model.getClasses(),
+                class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
+                classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
                     ctx.loaders.classesConnection = {
                         schools: new DataLoader((keys) =>

@@ -13,8 +13,29 @@ import {
     isMIMETypeTransformer,
 } from '../directives'
 import { loadPlugins } from './plugins'
+import { Request, Response } from 'express'
 
-export const createServer = async (model: Model, context?: Context) => {
+async function createContext({
+    res,
+    req,
+}: {
+    res: Response
+    req: Request
+}): Promise<Context> {
+    const token = await checkToken(req)
+    const permissions = new UserPermissions(token)
+
+    return {
+        token,
+        permissions,
+        res,
+        req,
+        logger: req.logger,
+        loaders: createDefaultDataLoaders(),
+    }
+}
+
+export const createServer = async (model: Model) => {
     const environment = process.env.NODE_ENV
     const schema = [
         isAdminTransformer,
@@ -22,25 +43,12 @@ export const createServer = async (model: Model, context?: Context) => {
         isMIMETypeTransformer,
     ].reduce(
         (previousSchema, transformer) => transformer(previousSchema),
-        makeExecutableSchema(getSchema(model, context))
+        makeExecutableSchema(getSchema(model))
     )
 
     return new ApolloServer({
         schema: schema,
-        context:
-            context ??
-            (async ({ res, req }) => {
-                const token = await checkToken(req)
-                const permissions = new UserPermissions(token)
-
-                return {
-                    token,
-                    permissions,
-                    res,
-                    req,
-                    loaders: createDefaultDataLoaders(),
-                }
-            }),
+        context: createContext,
         plugins: await loadPlugins(),
         formatError: (error) => {
             if (error.originalError instanceof CustomError) {

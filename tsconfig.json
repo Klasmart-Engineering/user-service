@@ -1,5 +1,5 @@
 {
-  "include": ["src", "tests", "migrations", "ormconfig.ts"],
+  "include": ["customTypings", "src", "tests", "migrations", "ormconfig.ts"],
   "compilerOptions": {
     /* Basic Options */
     // "incremental": true,                   /* Enable incremental compilation */
@@ -67,5 +67,8 @@
 
     /* Advanced Options */
     "forceConsistentCasingInFileNames": true  /* Disallow inconsistently-cased references to the same file. */
+  },
+  "ts-node": {
+    "files": true
   }
 }

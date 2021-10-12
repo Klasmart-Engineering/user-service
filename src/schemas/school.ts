@@ -124,14 +124,14 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             Mutation: {
-                school: (_parent, args, _context, _info) =>
-                    model.getSchool(args),
+                school: (_parent, args, ctx, _info) =>
+                    model.getSchool(args, ctx),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
             },
             Query: {
-                school: (_parent, args, _context, _info) =>
-                    model.getSchool(args),
+                school: (_parent, args, ctx, _info) =>
+                    model.getSchool(args, ctx),
                 schoolsConnection: (_parent, args, ctx, info) => {
                     return model.schoolsConnection(ctx, info, args)
                 },

@@ -60,7 +60,6 @@ import {
     editMembershipSchemaMetadata,
 } from '../operations/organization'
 import { pickBy } from 'lodash'
-import logger from '../logging'
 
 @Entity()
 export class Organization extends CustomBaseEntity {
@@ -102,7 +101,7 @@ export class Organization extends CustomBaseEntity {
             })
             return membership
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -370,7 +369,7 @@ export class Organization extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -422,7 +421,7 @@ export class Organization extends CustomBaseEntity {
             const results = await query.getMany()
             return results
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -460,7 +459,7 @@ export class Organization extends CustomBaseEntity {
                 .setParameter('search_query', search_query)
                 .getMany()
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -489,7 +488,7 @@ export class Organization extends CustomBaseEntity {
 
             return user
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -537,7 +536,7 @@ export class Organization extends CustomBaseEntity {
 
             return membership
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1149,7 +1148,7 @@ export class Organization extends CustomBaseEntity {
             await manager.save(role)
             return role
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1189,7 +1188,7 @@ export class Organization extends CustomBaseEntity {
 
             return _class
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1227,7 +1226,7 @@ export class Organization extends CustomBaseEntity {
 
             return school
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1759,7 +1758,7 @@ export class Organization extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
         return false
     }

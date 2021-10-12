@@ -5,15 +5,16 @@ import * as Sentry from '@sentry/node'
 import { UserPermissions } from './permissions/userPermissions'
 import express from 'express'
 import { IDataLoaders } from './loaders/setup'
-import logger from './logging'
+import logger, { Logger } from './logging'
+import { TokenPayload } from './token'
 
 const port = process.env.PORT || 8080
 
 export interface Context {
-    token?: Record<string, string>
-    sessionId?: string
-    res?: express.Response
-    req?: express.Request
+    token: TokenPayload
+    res: express.Response
+    req: express.Request
+    logger: Logger
     permissions: UserPermissions
     loaders: IDataLoaders
 }

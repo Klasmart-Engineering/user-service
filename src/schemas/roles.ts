@@ -51,14 +51,14 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             Mutation: {
-                roles: () => model.getRoles(),
-                role: (_parent, args, _context, _info) => model.getRole(args),
+                roles: (_parent, _args, ctx) => model.getRoles(ctx),
+                role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
                 uploadRolesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadRolesFromCSV(args, ctx, info),
             },
             Query: {
-                roles: () => model.getRoles(),
-                role: (_parent, args, _context, _info) => model.getRole(args),
+                roles: (_parent, _args, ctx) => model.getRoles(ctx),
+                role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
             },
         },
     }

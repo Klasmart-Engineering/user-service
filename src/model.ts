@@ -830,51 +830,51 @@ export class Model {
         return data
     }
 
-    public async getRole({ role_id }: Role) {
+    public async getRole({ role_id }: Role, context: Context) {
         try {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
-    public async getRoles() {
+    public async getRoles(context: Context) {
         try {
             const roles = await this.roleRepository.find()
             return roles
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
-    public async getClass({ class_id }: Class) {
+    public async getClass({ class_id }: Class, context: Context) {
         try {
             const _class = await this.classRepository.findOneOrFail({
                 class_id,
             })
             return _class
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
-    public async getClasses() {
+    public async getClasses(context: Context) {
         try {
             const classes = await this.classRepository.find()
             return classes
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 
-    public async getSchool({ school_id }: School) {
+    public async getSchool({ school_id }: School, context: Context) {
         try {
             const school = await this.schoolRepository.findOneOrFail({
                 school_id,
             })
             return school
         } catch (e) {
-            logger.error(e)
+            context.logger.error(e)
         }
     }
 

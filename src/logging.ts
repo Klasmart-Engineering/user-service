@@ -2,7 +2,7 @@ import pino from 'pino'
 import { QueryRunner, Logger as BaseTypeORMLogger } from 'typeorm'
 
 // pino.Logger (return type of pino()) includes {[key: string]: LogFn}, which is unecessarily type widening
-type Logger = pino.BaseLogger
+export type Logger = pino.BaseLogger
 
 const loggerOptions: pino.LoggerOptions = {
     level: process.env.LOG_LEVEL ?? 'info',
