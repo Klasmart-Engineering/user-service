@@ -18,7 +18,10 @@ import {
     schoolsForUsers,
     rolesForUsers,
 } from '../loaders/usersConnection'
-import { IPaginationArgs } from '../utils/pagination/paginate'
+import {
+    IChildPaginationArgs,
+    IPaginationArgs,
+} from '../utils/pagination/paginate'
 import { childConnectionLoader } from '../loaders/childConnectionLoader'
 
 const typeDefs = gql`
@@ -262,10 +265,11 @@ const typeDefs = gql`
         branding: Branding
 
         usersConnection(
-            direction: ConnectionDirection!
-            directionArgs: ConnectionsDirectionArgs
+            count: PageSize
+            cursor: String
             filter: UserFilter
             sort: UserSortInput
+            direction: ConnectionDirection
         ): UsersConnectionResponse @isAdmin(entity: "user")
     }
 `
@@ -346,14 +350,13 @@ export default function getDefault(
                             return new Promise(async (resolve) => {
                                 const orgIds = items.map((i) => i.orgId)
                                 const args = items[0]
-                                    .args as IPaginationArgs<User>
+                                    .args as IChildPaginationArgs<User>
                                 const baseScope = await usersConnectionQuery(
                                     info,
                                     {
                                         direction: 'FORWARD',
                                         directionArgs: {
-                                            count: 1000000000,
-                                            cursor: args.directionArgs?.cursor,
+                                            cursor: args.cursor,
                                         },
                                         scope: args.scope,
                                         filter: {
