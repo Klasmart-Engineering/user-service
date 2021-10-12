@@ -242,3 +242,13 @@ function buildEntityProps(
             return _exhaustiveCheck
     }
 }
+
+export function buildClassesConnectionDataLoaders(): Required<IClassesConnectionLoaders> {
+    return {
+        schools: new DataLoader(schoolsForClasses),
+        ageRanges: new DataLoader(ageRangesForClasses),
+        grades: new DataLoader(gradesForClasses),
+        subjects: new DataLoader(subjectsForClasses),
+        programs: new DataLoader(programsForClasses),
+    }
+}

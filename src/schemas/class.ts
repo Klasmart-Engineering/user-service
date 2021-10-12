@@ -3,14 +3,10 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
-import DataLoader from 'dataloader'
-import {
-    ageRangesForClasses,
-    gradesForClasses,
-    programsForClasses,
-    schoolsForClasses,
-    subjectsForClasses,
-} from '../loaders/classesConnection'
+import { buildClassesConnectionDataLoaders } from '../loaders/classesConnection'
+import { NodeDataLoader } from '../loaders/genericNode'
+import { Class } from '../entities/class'
+import { CLASS_NODE_COLUMNS, mapClassToClassNode } from '../nodes/classNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -157,51 +153,45 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection
-                        ? ctx.loaders.classesConnection.schools?.load(class_.id)
-                        : ctx.loaders.classNode.schools.load(class_.id)
+                    return ctx.loaders.classesConnection?.schools?.load(
+                        class_.id
+                    )
                 },
                 ageRanges: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection
-                        ? ctx.loaders.classesConnection.ageRanges?.load(
-                              class_.id
-                          )
-                        : ctx.loaders.classNode.ageRanges.load(class_.id)
+                    return ctx.loaders.classesConnection?.ageRanges?.load(
+                        class_.id
+                    )
                 },
                 grades: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection
-                        ? ctx.loaders.classesConnection.grades?.load(class_.id)
-                        : ctx.loaders.classNode.grades.load(class_.id)
+                    return ctx.loaders.classesConnection?.grades?.load(
+                        class_.id
+                    )
                 },
                 subjects: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection
-                        ? ctx.loaders.classesConnection.subjects?.load(
-                              class_.id
-                          )
-                        : ctx.loaders.classNode.subjects.load(class_.id)
+                    return ctx.loaders.classesConnection?.subjects?.load(
+                        class_.id
+                    )
                 },
                 programs: async (
                     class_: ClassConnectionNode,
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection
-                        ? ctx.loaders.classesConnection.programs?.load(
-                              class_.id
-                          )
-                        : ctx.loaders.classNode.programs.load(class_.id)
+                    return ctx.loaders.classesConnection?.programs?.load(
+                        class_.id
+                    )
                 },
             },
             Mutation: {
@@ -215,29 +205,29 @@ export default function getDefault(
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
                     if (ctx.loaders.classesConnection === undefined) {
-                        ctx.loaders.classesConnection = {
-                            schools: new DataLoader((keys) =>
-                                schoolsForClasses(keys)
-                            ),
-                            ageRanges: new DataLoader((keys) =>
-                                ageRangesForClasses(keys)
-                            ),
-                            grades: new DataLoader((keys) =>
-                                gradesForClasses(keys)
-                            ),
-                            subjects: new DataLoader((keys) =>
-                                subjectsForClasses(keys)
-                            ),
-                            programs: new DataLoader((keys) =>
-                                programsForClasses(keys)
-                            ),
-                        }
+                        ctx.loaders.classesConnection = buildClassesConnectionDataLoaders()
                     }
 
                     return model.classesConnection(ctx, info, args)
                 },
                 classNode: (_parent, args, ctx: Context) => {
-                    return ctx.loaders.classNode.node.load(args.id)
+                    if (ctx.loaders.classesConnection === undefined) {
+                        ctx.loaders.classesConnection = buildClassesConnectionDataLoaders()
+                    }
+
+                    if (ctx.loaders.classNode === undefined) {
+                        ctx.loaders.classNode = {
+                            node: new NodeDataLoader(
+                                args.scope,
+                                Class,
+                                'ClassConnectionNode',
+                                mapClassToClassNode,
+                                CLASS_NODE_COLUMNS
+                            ),
+                        }
+                    }
+
+                    return ctx.loaders.classNode.node?.load(args.id)
                 },
             },
         },

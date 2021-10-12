@@ -13,14 +13,7 @@ import {
     schoolMembershipsForUsers,
     usersByIds,
 } from './user'
-import {
-    ageRangesForClasses,
-    gradesForClasses,
-    IClassesConnectionLoaders,
-    programsForClasses,
-    schoolsForClasses,
-    subjectsForClasses,
-} from './classesConnection'
+import { IClassesConnectionLoaders } from './classesConnection'
 import {
     brandingForOrganizations,
     IOrganizationLoaders,
@@ -46,7 +39,7 @@ interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
 }
 
-interface IClassNodeDataLoaders extends Required<IClassesConnectionLoaders> {
+interface IClassNodeDataLoaders {
     node?: NodeDataLoader<Class, CoreClassConnectionNode>
 }
 
@@ -61,7 +54,7 @@ export interface IDataLoaders {
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
-    classNode: IClassNodeDataLoaders
+    classNode?: IClassNodeDataLoaders
 }
 
 export function createContextLazyLoaders(): IDataLoaders {
@@ -97,13 +90,6 @@ export function createContextLazyLoaders(): IDataLoaders {
             organizations: new Dataloader((keys) => orgsForUsers(keys)),
             schools: new Dataloader((keys) => schoolsForUsers(keys)),
             roles: new Dataloader((keys) => rolesForUsers(keys)),
-        },
-        classNode: {
-            schools: new Dataloader((keys) => schoolsForClasses(keys)),
-            ageRanges: new Dataloader((keys) => ageRangesForClasses(keys)),
-            grades: new Dataloader((keys) => gradesForClasses(keys)),
-            subjects: new Dataloader((keys) => subjectsForClasses(keys)),
-            programs: new Dataloader((keys) => programsForClasses(keys)),
         },
     }
 }
