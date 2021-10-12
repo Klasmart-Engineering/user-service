@@ -17,8 +17,6 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
     args: IChildPaginationArgs<any>,
     sortConfig: ISortingConfig
 ) => {
-    // const requestedChildCount = args.count ?? 50
-
     // Create our Dataloader map of parentId: childConnectionNode[]
     const parentMap = new Map<string, IPaginatedResponse<ConnectionNodeType>>(
         parentIds.map((parentId) => [
@@ -92,11 +90,7 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
     // get one more item to determine if there is another page
     const seekPageSize = pageSize + 1
 
-    // // always paginate FORWARDS
-    // paginationScope.take(pageSize)
-
-    // Select the parentId, which will be used to pivot by when
-    // calculating counts and children per parent
+    // Select the parentId for grouping children
     paginationScope.addSelect(`${groupByProperty} as "parentId"`)
 
     // Select the row number to select n children per parent, respecting the requested order
@@ -107,7 +101,7 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
         'row_num'
     )
 
-    // Create the query for getting children per parents
+    // Create the query for getting n children per parents
     const childScope = getManager()
         .createQueryBuilder()
         .select('*')
@@ -124,7 +118,7 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
         return JSON.parse(JSON.stringify(child).replaceAll(tablePrefix, ''))
     })
 
-    // create a map of parentId:rawChildSqlRow
+    // group by parentId by create a map of parentId:rawChildSqlRow
     const parentToRawChildMap = new Map<string, any[]>(
         parentIds.map((id) => [id, []])
     )
