@@ -101,7 +101,7 @@ aws s3 ls s3://kidsloop-alpha-account-asset-objects/ --endpoint http://localhost
 
 ## Via TypeORM
 
-Enable the `DATABASE_LOGGING` environment variable to enable TypeORM logging, e.g. `DATABASE_LOGGING=true npm start`
+Enable environment variable `DATABASE_LOGGING` and set environment variable `LOG_LEVEL` to `debug` for enabling TypeORM logging, e.g. `DATABASE_LOGGING=true LOG_LEVEL=debug npm start`
 
 ## Via Docker
 
