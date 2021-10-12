@@ -95,12 +95,15 @@ export const getEdges = (
 export const adjustPageSize = (
     pageSize: number,
     cursorData: unknown,
-    totalCount: number,
+    totalCount?: number,
     direction: Direction = 'FORWARD'
 ) => {
     if (direction === 'FORWARD') {
         return pageSize
+    } else if (totalCount === undefined) {
+        return pageSize
     }
+
     let newPageSize = pageSize
     // this is to make the first page going backwards look like offset pagination
     if (!cursorData) {
@@ -119,7 +122,7 @@ export const getPageInfoAndEdges = (
     pageSize: number,
     defaultColumn: string,
     primaryColumns: string[],
-    totalCount: number,
+    totalCount?: number,
     cursorData?: unknown,
     direction: Direction = 'FORWARD'
 ) => {
@@ -187,10 +190,7 @@ export const getPaginationQuery = async ({
         ? getDataFromCursor(directionArgs.cursor)
         : null
 
-    const totalCount =
-        includeTotalCount || direction === 'BACKWARD'
-            ? await scope.getCount()
-            : undefined
+    const totalCount = includeTotalCount ? await scope.getCount() : undefined
 
     const { order, primaryColumns, primaryKeyOrder } = addOrderByClause(
         scope,
@@ -274,11 +274,15 @@ export const paginateData = async <T = unknown>({
         sort,
         includeTotalCount,
     })
+    let count = totalCount
+    if (direction === 'BACKWARD' && count === undefined) {
+        count = await scope.getCount()
+    }
 
     const adjustedPageSize = adjustPageSize(
         pageSize,
         cursorData,
-        totalCount || 0,
+        count,
         direction
     )
     const seekPageSize = adjustedPageSize + 1
@@ -291,7 +295,7 @@ export const paginateData = async <T = unknown>({
         pageSize,
         sort.primaryKey,
         primaryColumns,
-        totalCount || 0, // only required for backwards pagination
+        count,
         cursorData,
         direction
     )
