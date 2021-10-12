@@ -15,8 +15,8 @@ import {
 } from './user'
 import { IClassesConnectionLoaders } from './classesConnection'
 import {
-    brandingForOrganizations,
     IOrganizationLoaders,
+    brandingForOrganizations,
     organizationForMemberships,
 } from './organization'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
