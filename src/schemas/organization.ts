@@ -309,9 +309,14 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    ctx.loaders.organizationsConnection = {
-                        owners: new Dataloader((keys) => ownersForOrgs(keys)),
+                    if (ctx.loaders.organizationsConnection === undefined) {
+                        ctx.loaders.organizationsConnection = {
+                            owners: new Dataloader((keys) =>
+                                ownersForOrgs(keys)
+                            ),
+                        }
                     }
+
                     return model.organizationsConnection(ctx, info, args)
                 },
                 organizationNode: (_parent, args, ctx: Context) => {
