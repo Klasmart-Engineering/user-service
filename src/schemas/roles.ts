@@ -9,6 +9,11 @@ const typeDefs = gql`
         roles: [Role]
         uploadRolesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        replaceRole(
+            old_role_id: ID!
+            new_role_id: ID!
+            organization_id: ID!
+        ): Role
     }
     extend type Query {
         role(role_id: ID!): Role
@@ -55,6 +60,8 @@ export default function getDefault(
                 role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
                 uploadRolesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadRolesFromCSV(args, ctx, info),
+                replaceRole: (_parent, args, ctx, info) =>
+                    model.replaceRole(args, ctx, info),
             },
             Query: {
                 roles: (_parent, _args, ctx) => model.getRoles(ctx),

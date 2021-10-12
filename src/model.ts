@@ -67,7 +67,7 @@ import { CloudStorageUploader } from './services/cloudStorageUploader'
 import { BrandingImageTag } from './types/graphQL/brandingImageTag'
 import { buildFilePath } from './utils/storage'
 import { Branding } from './entities/branding'
-import { CustomError } from './types/errors/customError'
+import { CustomError, customErrors } from './types/errors/customError'
 import BrandingErrorConstants from './types/errors/branding/brandingErrorConstants'
 import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
@@ -83,6 +83,9 @@ import { schoolsConnectionResolver } from './pagination/schoolsConnection'
 import { findTotalCountInPaginationEndpoints } from './utils/graphql'
 import { organizationsConnectionResolver } from './pagination/organizationsConnection'
 import logger, { TypeORMLogger } from './logging'
+import { ReplaceRoleArguments } from './operations/roles'
+import { PermissionName } from './permissions/permissionNames'
+import { APIError, APIErrorCollection } from './types/errors/apiError'
 
 export class Model {
     public static async create() {
@@ -848,6 +851,101 @@ export class Model {
         }
     }
 
+    public async replaceRole(
+        { old_role_id, new_role_id, organization_id }: ReplaceRoleArguments,
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        const user_id = context.permissions.getUserId()
+        await context.permissions.rejectIfNotAllowed(
+            { organization_id, user_id },
+            PermissionName.edit_users_40330
+        )
+
+        const errors: APIError[] = []
+        const organization = await getRepository(Organization).findOneOrFail(
+            organization_id
+        )
+        const newRole = await getRepository(Role).findOneOrFail(new_role_id)
+        const newRoleOrganization = await newRole.organization
+        if (info.operation.operation !== 'mutation')
+            errors.push(
+                new APIError({
+                    code: customErrors.invalid_operation_type.code,
+                    message: customErrors.invalid_operation_type.message,
+                    variables: [],
+                    attribute: info.operation.operation,
+                    otherAttribute: 'mutation',
+                })
+            )
+        if (organization.status == Status.INACTIVE)
+            errors.push(
+                new APIError({
+                    code: customErrors.inactive_status.code,
+                    message: customErrors.inactive_status.message,
+                    variables: ['organization_id'],
+                    entity: 'Organization',
+                    entityName: organization.organization_name,
+                })
+            )
+        if (
+            !newRole.system_role &&
+            newRoleOrganization?.organization_id !== organization_id
+        )
+            errors.push(
+                new APIError({
+                    code: customErrors.nonexistent_child.code,
+                    message: customErrors.nonexistent_child.message,
+                    variables: ['role_id', 'organization_id'],
+                    entity: 'Role',
+                    entityName: newRole.role_name,
+                    parentEntity: 'Organization',
+                    parentName: organization.organization_name,
+                })
+            )
+        if (errors.length > 0) throw new APIErrorCollection(errors)
+
+        const orgMembs = await getRepository(OrganizationMembership)
+            .createQueryBuilder()
+            .innerJoinAndSelect('OrganizationMembership.roles', 'Role')
+            .where(
+                'OrganizationMembership.organization_id = :organization_id',
+                { organization_id: organization_id }
+            )
+            .andWhere('Role.role_id = :role_id', {
+                role_id: old_role_id,
+            })
+            .getMany()
+        const schoolMembs = await getRepository(SchoolMembership)
+            .createQueryBuilder()
+            .innerJoinAndSelect('SchoolMembership.roles', 'Role')
+            .innerJoin('SchoolMembership.school', 'School')
+            .where(`School.organization = :organization_id`, {
+                organization_id,
+            })
+            .andWhere('Role.role_id = :role_id', {
+                role_id: old_role_id,
+            })
+            .getMany()
+        if (!orgMembs.length && !schoolMembs.length) return null
+
+        const roleUpdate = async (
+            memb: OrganizationMembership | SchoolMembership
+        ) => {
+            let roles = await memb.roles
+            if (!roles) return
+            roles = roles.filter((r) => r.role_id != old_role_id)
+            if (roles.every((r) => r.role_id != new_role_id))
+                roles.push(newRole)
+            memb.roles = Promise.resolve(roles)
+        }
+        await Promise.all(orgMembs.map(roleUpdate))
+        await Promise.all(schoolMembs.map(roleUpdate))
+
+        await this.manager.save([...orgMembs, ...schoolMembs])
+        return newRole
+    }
+
     public async getClass({ class_id }: Class, context: Context) {
         try {
             const _class = await this.classRepository.findOneOrFail({
@@ -858,6 +956,7 @@ export class Model {
             context.logger.error(e)
         }
     }
+
     public async getClasses(context: Context) {
         try {
             const classes = await this.classRepository.find()

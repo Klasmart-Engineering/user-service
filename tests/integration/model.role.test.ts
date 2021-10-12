@@ -1,18 +1,35 @@
-import { expect } from 'chai'
+import { expect, use } from 'chai'
+import chaiAsPromised from 'chai-as-promised'
 import { Connection } from 'typeorm'
 import { Model } from '../../src/model'
 import { createTestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { Role } from '../../src/entities/role'
-import { createRole } from '../utils/operations/organizationOps'
+import { createRole } from '../factories/role.factory'
 import { createOrganizationAndValidate } from '../utils/operations/userOps'
 import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
-import { accountUUID } from '../../src/entities/user'
+import { accountUUID, User } from '../../src/entities/user'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { getNonAdminAuthToken } from '../utils/testConfig'
+import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import { Organization } from '../../src/entities/organization'
+import { School } from '../../src/entities/school'
+import { createUsers } from '../factories/user.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createSchool } from '../factories/school.factory'
+import { SchoolMembership } from '../../src/entities/schoolMembership'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { replaceRole } from '../utils/operations/modelOps'
+import { customErrors } from '../../src/types/errors/customError'
+import { expectAPIError } from '../utils/apiError'
+import { APIError } from '../../src/types/errors/apiError'
+import { Status } from '../../src/entities/status'
+
+use(chaiAsPromised)
 
 const GET_ROLES = `
     query getRoles {
@@ -50,7 +67,7 @@ describe('model.role', () => {
         await connection?.close()
     })
 
-    describe('getRoles', () => {
+    describe('.getRoles', () => {
         context('when none', () => {
             it('returns only the system roles', async () => {
                 await createNonAdminUser(testClient)
@@ -84,7 +101,7 @@ describe('model.role', () => {
                     testClient,
                     user.user_id
                 )
-                await createRole(testClient, organization.organization_id)
+                await createRole(undefined, organization).save()
                 await createNonAdminUser(testClient)
                 arbitraryUserToken = getNonAdminAuthToken()
             })
@@ -107,7 +124,7 @@ describe('model.role', () => {
         })
     })
 
-    describe('getRole', () => {
+    describe('.getRole', () => {
         context('when none', () => {
             it('should return null', async () => {
                 const { query } = testClient
@@ -136,10 +153,7 @@ describe('model.role', () => {
                     testClient,
                     user.user_id
                 )
-                role = await createRole(
-                    testClient,
-                    organization.organization_id
-                )
+                role = await createRole(undefined, organization).save()
 
                 await createNonAdminUser(testClient)
                 arbitraryUserToken = getNonAdminAuthToken()
@@ -158,6 +172,288 @@ describe('model.role', () => {
                 const gqlRole = res.data?.role as Role
                 expect(gqlRole).to.exist
                 expect(role).to.include(gqlRole)
+            })
+        })
+    })
+
+    describe('.replaceRole', () => {
+        let organization: Organization
+        let otherOrganization: Organization
+        let school: School
+        let oldRole: Role
+        let newRole: Role
+        let defaultRole: Role
+        let userOne: User
+        let userTwo: User
+        let userThree: User
+
+        function runReplaceRole() {
+            return replaceRole(
+                testClient,
+                oldRole.role_id,
+                newRole.role_id,
+                organization.organization_id,
+                {
+                    authorization: getAdminAuthToken(),
+                }
+            )
+        }
+
+        async function expectNothingToReplace() {
+            const updatedRole = await expect(runReplaceRole()).to.be.fulfilled
+            expect(updatedRole).to.be.null
+            return updatedRole
+        }
+
+        async function expectReplacementSuccess() {
+            const updatedRole = await expect(runReplaceRole()).to.be.fulfilled
+            expect(updatedRole).to.not.be.null
+            return updatedRole
+        }
+
+        async function setupOrganisations() {
+            const orgOwner = await createAdminUser(testClient)
+            organization = createOrganization(orgOwner)
+            otherOrganization = createOrganization(orgOwner)
+            school = createSchool(organization)
+            oldRole = createRole('Old Role', organization)
+            newRole = createRole('New Role', organization)
+            defaultRole = createRole('Default Role', undefined)
+            defaultRole.system_role = true
+            return connection.manager.save([
+                organization,
+                otherOrganization,
+                school,
+                oldRole,
+                newRole,
+                defaultRole,
+            ])
+        }
+
+        async function setupMemberships() {
+            await setupOrganisations()
+            ;[userOne, userTwo, userThree] = await connection.manager.save(
+                createUsers(3)
+            )
+
+            await connection.manager.save([
+                createOrganizationMembership({
+                    user: userOne,
+                    organization,
+                    roles: [oldRole],
+                }),
+                createOrganizationMembership({
+                    user: userTwo,
+                    organization,
+                    roles: [oldRole, newRole],
+                }),
+                createOrganizationMembership({
+                    user: userThree,
+                    organization,
+                    roles: [newRole],
+                }),
+                createSchoolMembership({
+                    user: userOne,
+                    school,
+                    roles: [oldRole],
+                }),
+                createSchoolMembership({
+                    user: userTwo,
+                    school,
+                    roles: [oldRole, newRole],
+                }),
+                createSchoolMembership({
+                    user: userThree,
+                    school,
+                    roles: [newRole],
+                }),
+            ])
+        }
+
+        context(
+            'when at least one of the roles is a system default role',
+            () => {
+                beforeEach(async () => await setupMemberships())
+
+                context(
+                    'and the old role is a system default role and has no memberships',
+                    () => {
+                        beforeEach(() => (oldRole = defaultRole))
+                        it('completes with no changes', async () =>
+                            await expectNothingToReplace())
+                    }
+                )
+
+                context(
+                    'and the old role is a system default role and has memberships',
+                    () => {
+                        beforeEach(async () => {
+                            oldRole.system_role = true
+                            await oldRole.save()
+                        })
+                        it('completes successfully', async () =>
+                            await expectReplacementSuccess())
+                    }
+                )
+
+                context('and the new role is a system default role', () => {
+                    beforeEach(async () => (newRole = defaultRole))
+                    it('completes successfully', async () =>
+                        await expectReplacementSuccess())
+                })
+            }
+        )
+
+        context(
+            'when a role is not associated with the right organisation',
+            () => {
+                beforeEach(async () => await setupOrganisations())
+
+                context(
+                    'and the old role belongs to wrong organisation',
+                    () => {
+                        beforeEach(async () => {
+                            oldRole = await createRole(
+                                'Old Role',
+                                otherOrganization
+                            ).save()
+                            ;[userOne, userTwo] = await connection.manager.save(
+                                createUsers(2)
+                            )
+                            await connection.manager.save([
+                                createOrganizationMembership({
+                                    user: userOne,
+                                    organization: otherOrganization,
+                                    roles: [oldRole],
+                                }),
+                                createOrganizationMembership({
+                                    user: userTwo,
+                                    organization,
+                                    roles: [newRole],
+                                }),
+                            ])
+                        })
+                        it('completes with no changes', async () => {
+                            await expectNothingToReplace()
+                        })
+                    }
+                )
+
+                context(
+                    'and the new role belongs to wrong organisation',
+                    () => {
+                        beforeEach(async () => {
+                            newRole.organization = Promise.resolve(
+                                otherOrganization
+                            )
+                            await newRole.save()
+                        })
+                        it('throws an APIError with code ERR_NON_EXISTENT_CHILD_ENTITY', async () => {
+                            expectAPIError.nonexistent_child(
+                                await expect(runReplaceRole()).to.be.rejected,
+                                {
+                                    entity: 'Role',
+                                    entityName: newRole.role_name || '',
+                                    parentEntity: 'Organization',
+                                    parentName:
+                                        organization.organization_name || '',
+                                },
+                                ['role_id', 'organization_id']
+                            )
+                        })
+                    }
+                )
+            }
+        )
+
+        context('when the roles belong to the same organisation', () => {
+            async function getDbRoles() {
+                const oldDbRole = await Role.findOneOrFail({
+                    where: { role_id: oldRole.role_id },
+                })
+                const newDbRole = await Role.findOneOrFail({
+                    where: { role_id: newRole.role_id },
+                })
+                return [oldDbRole, newDbRole]
+            }
+
+            async function checkMemberships(
+                memberships: OrganizationMembership[] | SchoolMembership[]
+            ) {
+                expect(memberships).to.be.length(3)
+                const userIds = memberships
+                    .map(
+                        (m: OrganizationMembership | SchoolMembership) =>
+                            m.user_id
+                    )
+                    .sort()
+                expect(
+                    [userOne.user_id, userTwo.user_id, userThree.user_id]
+                        .sort()
+                        .every((v, i) => v === userIds.sort()[i])
+                ).to.be.true
+            }
+
+            async function checkUpdatedRole(
+                updatedRole: Role,
+                hasSchoolMemberships: boolean
+            ) {
+                expect(updatedRole.role_id).to.equal(newRole.role_id)
+                const updatedRoleOrgMembs = await updatedRole.memberships
+                if (!updatedRoleOrgMembs) return expect(false).to.be.true
+                checkMemberships(updatedRoleOrgMembs)
+                const updatedRoleSchMembs = await updatedRole.schoolMemberships
+                if (!updatedRoleSchMembs)
+                    return expect(hasSchoolMemberships).to.be.false
+                checkMemberships(updatedRoleSchMembs)
+            }
+
+            beforeEach(async () => {
+                await setupMemberships()
+            })
+
+            it('checks return value is valid', async () => {
+                const updatedRole: Role = await expectReplacementSuccess()
+                await checkUpdatedRole(updatedRole, false)
+            })
+            it('replaces the old role with the new one', async () => {
+                await expectReplacementSuccess()
+                const [oldDbRole, newDbRole] = await getDbRoles()
+                expect(await oldDbRole.memberships).to.be.empty
+                expect(await oldDbRole.schoolMemberships).to.be.empty
+                await checkUpdatedRole(newDbRole, true)
+            })
+            it('does not leave duplicates in organisations', async () => {
+                await expectReplacementSuccess()
+                const [_, newDbRole] = await getDbRoles()
+                const orgMembs = await newDbRole.memberships
+                const uniqueOrgMembs = [...new Set(orgMembs)]
+                expect(orgMembs?.length).to.equal(uniqueOrgMembs.length)
+            })
+            it('does not leave duplicates in schools', async () => {
+                await expectReplacementSuccess()
+                const [_, newDbRole] = await getDbRoles()
+                const schoolMembs = await newDbRole.schoolMemberships
+                const uniqueSchoolMembs = [...new Set(schoolMembs)]
+                expect(schoolMembs?.length).to.equal(uniqueSchoolMembs.length)
+            })
+
+            context('and the organisation is deactivated', () => {
+                beforeEach(async () => {
+                    organization.status = Status.INACTIVE
+                    await organization.save()
+                })
+
+                it('throws an APIError with code ERR_INACTIVE_STATUS', async () => {
+                    expectAPIError.inactive_status(
+                        await expect(runReplaceRole()).to.be.rejected,
+                        {
+                            entity: 'Organization',
+                            entityName: organization.organization_name || '',
+                        },
+                        ['organization_id']
+                    )
+                })
             })
         })
     })

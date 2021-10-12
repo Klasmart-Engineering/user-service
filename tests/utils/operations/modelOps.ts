@@ -26,6 +26,7 @@ import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionN
 import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
 import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
 import { gql } from 'apollo-server-express'
+import { Role } from '../../../src/entities/role'
 
 const NEW_USER = `
     mutation myMutation(
@@ -754,6 +755,40 @@ const ORGANIZATIONS_CONNECTION_NODES = gql`
     }
 `
 
+const REPLACE_ROLE = `
+    mutation myMutation(
+        $old_role_id: ID!
+        $new_role_id: ID!
+        $organization_id: ID!
+    ) {
+        replaceRole (old_role_id: $old_role_id, new_role_id: $new_role_id, organization_id: $organization_id){
+            role_id
+            role_name
+            role_description
+            system_role
+            organization {
+                organization_id
+                organization_name
+                address1
+                address2
+                phone
+                shortCode
+            }
+            memberships {
+                user_id
+                organization_id
+                join_timestamp
+                shortcode
+            }
+            permissions {
+                permission_name
+                permission_id
+                allow
+            }
+        }
+    }
+`
+
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */
@@ -813,6 +848,31 @@ export async function updateUser(
     const res = await gqlTry(operation)
     const gqlUser = res.data?.user as User
     return gqlUser
+}
+
+export async function replaceRole(
+    testClient: ApolloServerTestClient,
+    old_role_id: string,
+    new_role_id: string,
+    organization_id: string,
+    headers?: Headers
+) {
+    const { mutate } = testClient
+    const operation = () =>
+        mutate({
+            mutation: REPLACE_ROLE,
+            variables: {
+                old_role_id,
+                new_role_id,
+                organization_id,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+
+    const gqlRole = res.data?.replaceRole as Role
+    return gqlRole
 }
 
 export async function getUsers(
