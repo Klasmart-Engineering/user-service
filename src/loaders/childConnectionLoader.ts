@@ -8,19 +8,19 @@ import {
 } from '../utils/pagination/paginate'
 import { ISortingConfig } from '../utils/pagination/sorting'
 
-export const childConnectionLoader = async (
+export const childConnectionLoader = async <ConnectionNodeType = unknown>(
     parentIds: string[],
     baseScope: SelectQueryBuilder<unknown>,
     groupByProperty: string,
     tablePrefix: string,
-    entityMapper: (item: any) => any,
+    entityMapper: (item: any) => ConnectionNodeType,
     args: IChildPaginationArgs<any>,
     sortConfig: ISortingConfig
 ) => {
     // const requestedChildCount = args.count ?? 50
 
     // Create our Dataloader map of parentId: childConnectionNode[]
-    const parentMap = new Map<string, IPaginatedResponse>(
+    const parentMap = new Map<string, IPaginatedResponse<ConnectionNodeType>>(
         parentIds.map((parentId) => [
             parentId,
             {

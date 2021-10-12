@@ -1,16 +1,15 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { ownersForOrgs } from '../loaders/organizationsConnection'
+import {
+    ownersForOrgs,
+    usersConnection,
+} from '../loaders/organizationsConnection'
 import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
-import {
-    mapUserToUserConnectionNode,
-    usersConnectionQuery,
-} from '../pagination/usersConnection'
 import { GraphQLResolveInfo } from 'graphql'
 import { User } from '../entities/user'
 import {
@@ -18,11 +17,7 @@ import {
     schoolsForUsers,
     rolesForUsers,
 } from '../loaders/usersConnection'
-import {
-    IChildPaginationArgs,
-    IPaginationArgs,
-} from '../utils/pagination/paginate'
-import { childConnectionLoader } from '../loaders/childConnectionLoader'
+import { IPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     scalar HexColor
@@ -345,49 +340,8 @@ export default function getDefault(
                             rolesForUsers(keys, args.filter)
                         ),
                     }
-                    ctx.loaders.usersConnectionChild = new Dataloader(
-                        (items) => {
-                            return new Promise(async (resolve) => {
-                                const orgIds = items.map((i) => i.orgId)
-                                const args = items[0]
-                                    .args as IChildPaginationArgs<User>
-                                const baseScope = await usersConnectionQuery(
-                                    info,
-                                    {
-                                        direction: 'FORWARD',
-                                        directionArgs: {
-                                            cursor: args.cursor,
-                                        },
-                                        scope: args.scope,
-                                        filter: {
-                                            organizationId: {
-                                                operator: 'in',
-                                                value: orgIds as string[],
-                                            },
-                                            ...args.filter,
-                                        },
-                                    }
-                                )
-
-                                const result = await childConnectionLoader(
-                                    orgIds,
-                                    baseScope,
-                                    '"OrganizationMembership"."organization_id"',
-                                    'User_',
-                                    mapUserToUserConnectionNode,
-                                    args,
-                                    {
-                                        primaryKey: 'user_id',
-                                        aliases: {
-                                            givenName: 'given_name',
-                                            familyName: 'family_name',
-                                        },
-                                    }
-                                )
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                resolve(result as any)
-                            })
-                        }
+                    ctx.loaders.usersConnectionChild = new Dataloader((items) =>
+                        usersConnection(items, info)
                     )
                     return model.organizationsConnection(ctx, info, args)
                 },
