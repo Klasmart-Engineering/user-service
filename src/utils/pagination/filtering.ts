@@ -133,8 +133,7 @@ export function getWhereClauseFromFilter(
 
                     // resetting value and operator to work properly with the given compound value
                     currentValue = processComposedValue(
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        currentValue as any,
+                        currentValue as ComposedValue,
                         alias
                     ) as CommonValue
 
