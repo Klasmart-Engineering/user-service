@@ -13,6 +13,7 @@ import {
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 
 /**
@@ -30,6 +31,14 @@ export type CoreUserConnectionNode = Pick<
     | 'dateOfBirth'
     | 'gender'
 >
+
+export const userConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'user_id',
+    aliases: {
+        givenName: 'given_name',
+        familyName: 'family_name',
+    },
+}
 
 export async function usersConnectionResolver(
     info: GraphQLResolveInfo,
@@ -50,11 +59,7 @@ export async function usersConnectionResolver(
         directionArgs,
         scope: newScope,
         sort: {
-            primaryKey: 'user_id',
-            aliases: {
-                givenName: 'given_name',
-                familyName: 'family_name',
-            },
+            ...userConnectionSortingConfig,
             sort,
         },
         includeTotalCount,

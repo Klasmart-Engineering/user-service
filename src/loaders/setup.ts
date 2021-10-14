@@ -1,7 +1,16 @@
 import { default as Dataloader, default as DataLoader } from 'dataloader'
-import { CoreUserConnectionNode } from '../pagination/usersConnection'
+import { User } from '../entities/user'
+import {
+    CoreUserConnectionNode,
+    mapUserToUserConnectionNode,
+    userConnectionSortingConfig,
+    usersConnectionQuery,
+} from '../pagination/usersConnection'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
-import { IChildConnectionDataloaderKey } from './childConnectionLoader'
+import {
+    genericChildConnection,
+    IChildConnectionDataloaderKey,
+} from './childConnectionLoader'
 import {
     ageRangesForClasses,
     gradesForClasses,
@@ -16,10 +25,7 @@ import {
     IOrganizationLoaders,
     organizationForMemberships,
 } from './organization'
-import {
-    IOrganizationsConnectionLoaders,
-    usersConnection,
-} from './organizationsConnection'
+import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
@@ -79,6 +85,13 @@ export function createDefaultDataLoaders(): IDataLoaders {
             subjects: new DataLoader((keys) => subjectsForClasses(keys)),
             programs: new DataLoader((keys) => programsForClasses(keys)),
         },
-        usersConnectionChild: new Dataloader((items) => usersConnection(items)),
+        usersConnectionChild: new Dataloader((items) => {
+            return genericChildConnection<User, CoreUserConnectionNode>(
+                items,
+                usersConnectionQuery,
+                mapUserToUserConnectionNode,
+                userConnectionSortingConfig
+            )
+        }),
     }
 }

@@ -300,7 +300,9 @@ export default function getDefault(
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
-                    return ctx.loaders.usersConnectionChild?.load({
+                    return ctx.loaders.usersConnectionChild.load({
+                        args,
+                        info,
                         parent: {
                             id: organization.id,
                             filterKey: 'organizationId',

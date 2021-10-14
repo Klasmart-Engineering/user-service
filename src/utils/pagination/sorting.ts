@@ -1,6 +1,15 @@
 import { SelectQueryBuilder } from 'typeorm'
 import { Direction } from './paginate'
 
+export interface IConnectionSortingConfig {
+    // primary key to sort on by default
+    // e.g. user_id for User table
+    primaryKey: string
+
+    // mapping of fields from GraphQL schema to columns for the SQL query
+    aliases?: Record<string, string>
+}
+
 export interface ISortingConfig {
     // primary key to sort on by default
     // e.g. user_id for User table

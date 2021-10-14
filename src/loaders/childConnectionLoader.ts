@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GraphQLResolveInfo } from 'graphql'
-import { getManager, SelectQueryBuilder } from 'typeorm'
+import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     getPageInfoAndEdges,
     getPaginationQuery,
     IChildPaginationArgs,
     IPaginatedResponse,
+    IPaginationArgs,
 } from '../utils/pagination/paginate'
 import { ISortingConfig } from '../utils/pagination/sorting'
 import { convertRawToEntities } from '../utils/typeorm'
@@ -176,4 +177,46 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
     }
 
     return Array.from(parentMap.values())
+}
+
+export const genericChildConnection = async <
+    SourceEntity extends BaseEntity,
+    ConnectionNode
+>(
+    items: readonly IChildConnectionDataloaderKey[],
+    query: (
+        args: IPaginationArgs<SourceEntity>
+    ) => Promise<SelectQueryBuilder<SourceEntity>>,
+    mapFunc: (source: SourceEntity) => ConnectionNode,
+    sort: ISortingConfig
+): Promise<IPaginatedResponse<ConnectionNode>[]> => {
+    const parentIds = items.map((i) => i.parent.id)
+    const args = items[0]?.args as IChildPaginationArgs<SourceEntity>
+    const parent = items[0]?.parent
+    const info = items[0]?.info
+
+    const baseScope = await query({
+        direction: args.direction || 'FORWARD',
+        directionArgs: {
+            cursor: args.cursor,
+        },
+        scope: args.scope,
+        filter: {
+            [parent.filterKey]: {
+                operator: 'in',
+                value: parentIds as string[],
+            },
+            ...args.filter,
+        },
+    })
+
+    return childConnectionLoader<ConnectionNode>(
+        parentIds,
+        baseScope,
+        parent.pivot,
+        info,
+        mapFunc,
+        args,
+        sort
+    )
 }
