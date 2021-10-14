@@ -1,10 +1,11 @@
 import DataLoader from 'dataloader'
 import { School } from '../entities/school'
 import { Organization } from '../entities/organization'
+import { Lazy } from '../utils/lazyLoading'
 
 export interface ISchoolLoaders {
-    organization: DataLoader<string, Organization | undefined>
-    schoolById: DataLoader<string, School | undefined>
+    organization: Lazy<DataLoader<string, Organization | undefined>>
+    schoolById: Lazy<DataLoader<string, School | undefined>>
 }
 
 export const organizationsForSchools = async (

@@ -1,12 +1,13 @@
-import { OrganizationMembership } from '../entities/organizationMembership'
 import DataLoader from 'dataloader'
+import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
+import { Lazy } from '../utils/lazyLoading'
 
 export interface IUsersLoaders {
-    user: DataLoader<string, User | Error>
-    orgMemberships: DataLoader<string, OrganizationMembership[]>
-    schoolMemberships: DataLoader<string, SchoolMembership[]>
+    user: Lazy<DataLoader<string, User | Error>>
+    orgMemberships: Lazy<DataLoader<string, OrganizationMembership[]>>
+    schoolMemberships: Lazy<DataLoader<string, SchoolMembership[]>>
 }
 
 export const orgMembershipsForUsers = async (

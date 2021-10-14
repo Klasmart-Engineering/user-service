@@ -6,7 +6,7 @@ import { checkToken } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
-import { createDefaultDataLoaders } from '../loaders/setup'
+import { createContextLazyLoaders } from '../loaders/setup'
 import {
     isAdminTransformer,
     isAuthenticatedTransformer,
@@ -31,7 +31,7 @@ async function createContext({
         res,
         req,
         logger: req.logger,
-        loaders: createDefaultDataLoaders(),
+        loaders: createContextLazyLoaders(),
     }
 }
 
@@ -49,6 +49,7 @@ export const createServer = async (model: Model) => {
     return new ApolloServer({
         schema: schema,
         context: createContext,
+
         plugins: await loadPlugins(),
         formatError: (error) => {
             if (error.originalError instanceof CustomError) {

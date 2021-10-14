@@ -1,4 +1,3 @@
-import Dataloader from 'dataloader'
 import { IUsersConnectionLoaders } from './usersConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
@@ -10,13 +9,21 @@ import {
 } from './user'
 import { IClassesConnectionLoaders } from './classesConnection'
 import {
-    IOrganizationLoaders,
     brandingForOrganizations,
+    IOrganizationLoaders,
     organizationForMemberships,
 } from './organization'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
+import DataLoader from 'dataloader'
+import { User } from '../entities/user'
+import { Lazy } from '../utils/lazyLoading'
+import { OrganizationMembership } from '../entities/organizationMembership'
+import { SchoolMembership } from '../entities/schoolMembership'
+import { BrandingResult } from '../types/graphQL/branding'
+import { Organization } from '../entities/organization'
+import { School } from '../entities/school'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -30,29 +37,34 @@ export interface IDataLoaders {
     school: ISchoolLoaders
 }
 
-export function createDefaultDataLoaders(): IDataLoaders {
+export function createContextLazyLoaders(): IDataLoaders {
     return {
         user: {
-            user: new Dataloader(usersByIds),
-            orgMemberships: new Dataloader((keys) =>
-                orgMembershipsForUsers(keys)
+            user: new Lazy<DataLoader<string, User | Error>>(
+                () => new DataLoader(usersByIds)
             ),
-            schoolMemberships: new Dataloader((keys) =>
-                schoolMembershipsForUsers(keys)
+            orgMemberships: new Lazy<
+                DataLoader<string, OrganizationMembership[]>
+            >(() => new DataLoader(orgMembershipsForUsers)),
+            schoolMemberships: new Lazy<DataLoader<string, SchoolMembership[]>>(
+                () => new DataLoader(schoolMembershipsForUsers)
             ),
         },
         organization: {
-            branding: new Dataloader((keys) => brandingForOrganizations(keys)),
-            // used to get orgs from org memberships
-            organization: new Dataloader((keys) =>
-                organizationForMemberships(keys)
+            branding: new Lazy<DataLoader<string, BrandingResult | undefined>>(
+                () => new DataLoader(brandingForOrganizations)
             ),
+            organization: new Lazy<
+                DataLoader<string, Organization | undefined>
+            >(() => new DataLoader(organizationForMemberships)),
         },
         school: {
-            organization: new Dataloader((keys) =>
-                organizationsForSchools(keys)
+            organization: new Lazy<
+                DataLoader<string, Organization | undefined>
+            >(() => new DataLoader(organizationsForSchools)),
+            schoolById: new Lazy<DataLoader<string, School | undefined>>(
+                () => new DataLoader(schoolsByIds)
             ),
-            schoolById: new Dataloader((keys) => schoolsByIds(keys)),
         },
     }
 }

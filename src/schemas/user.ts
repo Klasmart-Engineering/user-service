@@ -279,17 +279,20 @@ export default function getDefault(
                     return model.usersConnection(ctx, info, args)
                 },
                 users: (_parent, _args, ctx, _info) => [],
-                user: (_parent, { user_id }, ctx: Context, _info) =>
-                    ctx.loaders.user.user.load(user_id),
+                user: (_parent, { user_id }, ctx: Context, _info) => {
+                    return ctx.loaders.user.user.instance.load(user_id)
+                },
                 my_users: (_parent, _args, ctx, info) =>
                     model.myUsers({}, ctx, info),
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {
-                    return ctx.loaders.user?.orgMemberships?.load(user.user_id)
+                    return ctx.loaders.user.orgMemberships.instance.load(
+                        user.user_id
+                    )
                 },
                 school_memberships: (user: User, _args, ctx: Context, info) => {
-                    return ctx.loaders.user?.schoolMemberships?.load(
+                    return ctx.loaders.user.schoolMemberships.instance.load(
                         user.user_id
                     )
                 },
