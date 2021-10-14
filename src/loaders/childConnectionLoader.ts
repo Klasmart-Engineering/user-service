@@ -22,19 +22,26 @@ export interface IChildConnectionDataloaderKey {
     readonly info: GraphQLResolveInfo
 }
 
-export const childConnectionLoader = async <ConnectionNodeType = unknown>(
-    parentIds: string[],
-    baseScope: SelectQueryBuilder<unknown>,
-    groupByProperty: string,
-    info: GraphQLResolveInfo,
-    entityMapper: (
-        item: any
-    ) => Promise<ConnectionNodeType> | ConnectionNodeType,
-    args: IChildPaginationArgs<any>,
-    sortConfig: ISortingConfig
-) => {
+export const childConnectionLoader = async <
+    SourceEntity extends BaseEntity,
+    ConnectionNode
+>(
+    items: readonly IChildConnectionDataloaderKey[],
+    query: (
+        args: IPaginationArgs<SourceEntity>
+    ) => Promise<SelectQueryBuilder<SourceEntity>>,
+    mapFunc: (source: SourceEntity) => ConnectionNode | Promise<ConnectionNode>,
+    sort: ISortingConfig
+): Promise<IPaginatedResponse<ConnectionNode>[]> => {
+    // extact query info that we've added to each Dataloader key
+    const parentIds = items.map((i) => i.parent.id)
+    const args = items[0]?.args as IChildPaginationArgs<SourceEntity>
+    const parent = items[0]?.parent
+    const info = items[0]?.info
+    const groupByProperty = parent.pivot
+
     // Create our Dataloader map of parentId: childConnectionNode[]
-    const parentMap = new Map<string, IPaginatedResponse<ConnectionNodeType>>(
+    const parentMap = new Map<string, IPaginatedResponse<ConnectionNode>>(
         parentIds.map((parentId) => [
             parentId,
             {
@@ -49,6 +56,23 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
             },
         ])
     )
+
+    // Create the base scope with necessary joins, filters, and selects
+    // Sorting and pagination is done separately in the paginationScope
+    const baseScope = await query({
+        direction: args.direction || 'FORWARD',
+        directionArgs: {
+            cursor: args.cursor,
+        },
+        scope: args.scope,
+        filter: {
+            [parent.filterKey]: {
+                operator: 'in',
+                value: parentIds as string[],
+            },
+            ...args.filter,
+        },
+    })
 
     //
     // Get the total counts per parent and update the dataloader map
@@ -103,7 +127,7 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
         },
         scope: baseScope.clone(),
         sort: {
-            ...sortConfig,
+            ...sort,
             sort: args.sort,
         },
         includeTotalCount: false,
@@ -156,67 +180,25 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
         const { pageInfo, edges } = getPageInfoAndEdges(
             children,
             pageSize,
-            sortConfig.primaryKey,
+            sort.primaryKey,
             primaryColumns,
             parentMap.get(parentId)?.totalCount || 0,
             cursorData,
             args.direction
         )
 
-        const parent = parentMap.get(parentId)
-        if (parent) {
+        const parentResult = parentMap.get(parentId)
+        if (parentResult) {
             for (const edge of edges) {
                 const processedEdge = {
                     cursor: edge.cursor,
-                    node: await entityMapper(edge.node),
+                    node: await mapFunc(edge.node),
                 }
-                parent.edges.push(processedEdge)
+                parentResult.edges.push(processedEdge)
             }
-            parent.pageInfo = pageInfo
+            parentResult.pageInfo = pageInfo
         }
     }
 
     return Array.from(parentMap.values())
-}
-
-export const genericChildConnection = async <
-    SourceEntity extends BaseEntity,
-    ConnectionNode
->(
-    items: readonly IChildConnectionDataloaderKey[],
-    query: (
-        args: IPaginationArgs<SourceEntity>
-    ) => Promise<SelectQueryBuilder<SourceEntity>>,
-    mapFunc: (source: SourceEntity) => ConnectionNode | Promise<ConnectionNode>,
-    sort: ISortingConfig
-): Promise<IPaginatedResponse<ConnectionNode>[]> => {
-    const parentIds = items.map((i) => i.parent.id)
-    const args = items[0]?.args as IChildPaginationArgs<SourceEntity>
-    const parent = items[0]?.parent
-    const info = items[0]?.info
-
-    const baseScope = await query({
-        direction: args.direction || 'FORWARD',
-        directionArgs: {
-            cursor: args.cursor,
-        },
-        scope: args.scope,
-        filter: {
-            [parent.filterKey]: {
-                operator: 'in',
-                value: parentIds as string[],
-            },
-            ...args.filter,
-        },
-    })
-
-    return childConnectionLoader<ConnectionNode>(
-        parentIds,
-        baseScope,
-        parent.pivot,
-        info,
-        mapFunc,
-        args,
-        sort
-    )
 }

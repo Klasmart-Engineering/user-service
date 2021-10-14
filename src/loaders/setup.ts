@@ -20,7 +20,7 @@ import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
-    genericChildConnection,
+    childConnectionLoader,
     IChildConnectionDataloaderKey,
 } from './childConnectionLoader'
 import {
@@ -113,7 +113,7 @@ export function createContextLazyLoaders(): IDataLoaders {
         usersConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {
-                    return genericChildConnection<User, CoreUserConnectionNode>(
+                    return childConnectionLoader(
                         items,
                         usersConnectionQuery,
                         mapUserToUserConnectionNode,
@@ -124,10 +124,7 @@ export function createContextLazyLoaders(): IDataLoaders {
         schoolsConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {
-                    return genericChildConnection<
-                        School,
-                        ISchoolsConnectionNode
-                    >(
+                    return childConnectionLoader(
                         items,
                         schoolConnectionQuery,
                         mapSchoolToSchoolConnectionNode,
