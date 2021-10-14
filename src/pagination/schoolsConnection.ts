@@ -3,13 +3,26 @@ import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
+import {
+    filterHasProperty,
+    getWhereClauseFromFilter,
+} from '../utils/pagination/filtering'
 import {
     IEdge,
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+
+export const schoolsConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'school_id',
+    aliases: {
+        id: 'school_id',
+        name: 'school_name',
+        shortCode: 'shortcode',
+    },
+}
 
 export async function schoolsConnectionResolver(
     info: GraphQLResolveInfo,
@@ -17,6 +30,41 @@ export async function schoolsConnectionResolver(
 ): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
+    const newScope = await schoolConnectionQuery({
+        direction,
+        directionArgs,
+        scope,
+        filter,
+        sort,
+    })
+
+    const data = await paginateData<School>({
+        direction,
+        directionArgs,
+        scope: newScope,
+        sort: {
+            ...schoolsConnectionSortingConfig,
+            sort,
+        },
+        includeTotalCount,
+    })
+
+    return {
+        totalCount: data.totalCount,
+        pageInfo: data.pageInfo,
+        edges: await Promise.all(
+            data.edges.map(mapSchoolEdgeToSchoolConnectionEdge)
+        ),
+    }
+}
+
+export async function schoolConnectionQuery({
+    direction,
+    directionArgs,
+    scope,
+    filter,
+    sort,
+}: IPaginationArgs<School>) {
     // Required for building SchoolConnectionNode
     // TODO remove once School.organization_id FK is exposed on the Entity
     scope.innerJoin('School.organization', 'Organization')
@@ -51,29 +99,7 @@ export async function schoolsConnectionResolver(
 
     scope.select(selects)
 
-    const data = await paginateData<School>({
-        direction,
-        directionArgs,
-        scope,
-        sort: {
-            primaryKey: 'school_id',
-            aliases: {
-                id: 'school_id',
-                name: 'school_name',
-                shortCode: 'shortcode',
-            },
-            sort,
-        },
-        includeTotalCount,
-    })
-
-    return {
-        totalCount: data.totalCount,
-        pageInfo: data.pageInfo,
-        edges: await Promise.all(
-            data.edges.map(mapSchoolEdgeToSchoolConnectionEdge)
-        ),
-    }
+    return scope
 }
 
 async function mapSchoolEdgeToSchoolConnectionEdge(

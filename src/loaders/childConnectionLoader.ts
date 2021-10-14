@@ -187,7 +187,7 @@ export const genericChildConnection = async <
     query: (
         args: IPaginationArgs<SourceEntity>
     ) => Promise<SelectQueryBuilder<SourceEntity>>,
-    mapFunc: (source: SourceEntity) => ConnectionNode,
+    mapFunc: (source: SourceEntity) => ConnectionNode | Promise<ConnectionNode>,
     sort: ISortingConfig
 ): Promise<IPaginatedResponse<ConnectionNode>[]> => {
     const parentIds = items.map((i) => i.parent.id)

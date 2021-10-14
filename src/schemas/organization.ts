@@ -308,8 +308,22 @@ export default function getDefault(
                             filterKey: 'organizationId',
                             pivot: '"OrganizationMembership"."organization_id"',
                         },
+                    })
+                },
+                schoolsConnection: async (
+                    organization: OrganizationConnectionNode,
+                    args: IPaginationArgs<User>,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    return ctx.loaders.schoolsConnectionChild.load({
                         args,
                         info,
+                        parent: {
+                            id: organization.id,
+                            filterKey: 'organizationId',
+                            pivot: '"Organization"."organization_id"',
+                        },
                     })
                 },
             },

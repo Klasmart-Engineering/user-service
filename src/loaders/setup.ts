@@ -1,11 +1,18 @@
 import { default as Dataloader, default as DataLoader } from 'dataloader'
+import { School } from '../entities/school'
 import { User } from '../entities/user'
+import {
+    mapSchoolToSchoolConnectionNode,
+    schoolConnectionQuery,
+    schoolsConnectionSortingConfig,
+} from '../pagination/schoolsConnection'
 import {
     CoreUserConnectionNode,
     mapUserToUserConnectionNode,
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../pagination/usersConnection'
+import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
     genericChildConnection,
@@ -52,6 +59,10 @@ export interface IDataLoaders {
         IChildConnectionDataloaderKey,
         IPaginatedResponse<CoreUserConnectionNode>
     >
+    schoolsConnectionChild: Dataloader<
+        IChildConnectionDataloaderKey,
+        IPaginatedResponse<ISchoolsConnectionNode>
+    >
 }
 
 export function createDefaultDataLoaders(): IDataLoaders {
@@ -91,6 +102,14 @@ export function createDefaultDataLoaders(): IDataLoaders {
                 usersConnectionQuery,
                 mapUserToUserConnectionNode,
                 userConnectionSortingConfig
+            )
+        }),
+        schoolsConnectionChild: new Dataloader((items) => {
+            return genericChildConnection<School, ISchoolsConnectionNode>(
+                items,
+                schoolConnectionQuery,
+                mapSchoolToSchoolConnectionNode,
+                schoolsConnectionSortingConfig
             )
         }),
     }
