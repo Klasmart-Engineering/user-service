@@ -1,22 +1,19 @@
-import gql from 'graphql-tag'
-import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import {
-    ownersForOrgs,
-    usersConnection,
-} from '../loaders/organizationsConnection'
 import Dataloader from 'dataloader'
-import { Context } from '../main'
+import { GraphQLResolveInfo } from 'graphql'
+import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
-import { GraphQLResolveInfo } from 'graphql'
 import { User } from '../entities/user'
+import { ownersForOrgs } from '../loaders/organizationsConnection'
 import {
     orgsForUsers,
-    schoolsForUsers,
     rolesForUsers,
+    schoolsForUsers,
 } from '../loaders/usersConnection'
+import { Context } from '../main'
+import { Model } from '../model'
+import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
 import { IPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
@@ -266,6 +263,14 @@ const typeDefs = gql`
             sort: UserSortInput
             direction: ConnectionDirection
         ): UsersConnectionResponse @isAdmin(entity: "user")
+
+        schoolsConnection(
+            count: PageSize
+            cursor: String
+            filter: UserFilter
+            sort: UserSortInput
+            direction: ConnectionDirection
+        ): SchoolsConnectionResponse @isAdmin(entity: "school")
     }
 `
 export default function getDefault(
@@ -296,8 +301,13 @@ export default function getDefault(
                     info: GraphQLResolveInfo
                 ) => {
                     return ctx.loaders.usersConnectionChild?.load({
-                        orgId: organization.id,
+                        parent: {
+                            id: organization.id,
+                            filterKey: 'organizationId',
+                            pivot: '"OrganizationMembership"."organization_id"',
+                        },
                         args,
+                        info,
                     })
                 },
             },
@@ -340,9 +350,6 @@ export default function getDefault(
                             rolesForUsers(keys, args.filter)
                         ),
                     }
-                    ctx.loaders.usersConnectionChild = new Dataloader((items) =>
-                        usersConnection(items, info)
-                    )
                     return model.organizationsConnection(ctx, info, args)
                 },
             },

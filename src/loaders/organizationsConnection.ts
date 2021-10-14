@@ -4,7 +4,6 @@ import DataLoader from 'dataloader'
 import {
     IChildPaginationArgs,
     IPaginatedResponse,
-    IPaginationArgs,
 } from '../utils/pagination/paginate'
 import {
     CoreUserConnectionNode,
@@ -12,8 +11,10 @@ import {
     usersConnectionQuery,
 } from '../pagination/usersConnection'
 import { User } from '../entities/user'
-import { childConnectionLoader } from './childConnectionLoader'
-import { GraphQLResolveInfo } from 'graphql'
+import {
+    childConnectionLoader,
+    IChildConnectionDataloaderKey,
+} from './childConnectionLoader'
 
 export interface IOrganizationsConnectionLoaders {
     owners?: DataLoader<string, UserSummaryNode[]>
@@ -51,32 +52,33 @@ export const ownersForOrgs = async (
 }
 
 export const usersConnection = async (
-    items: readonly { orgId: string; args: IPaginationArgs<User> }[],
-    info: GraphQLResolveInfo
+    items: readonly IChildConnectionDataloaderKey[]
 ): Promise<IPaginatedResponse<CoreUserConnectionNode>[]> => {
-    const orgIds = items.map((i) => i.orgId)
+    const parentIds = items.map((i) => i.parent.id)
     const args = items[0]?.args as IChildPaginationArgs<User>
+    const parent = items[0].parent
+    const info = items[0]?.info
 
-    const baseScope = await usersConnectionQuery(info, {
-        direction: 'FORWARD',
+    const baseScope = await usersConnectionQuery({
+        direction: args.direction || 'FORWARD',
         directionArgs: {
             cursor: args.cursor,
         },
         scope: args.scope,
         filter: {
-            organizationId: {
+            [parent.filterKey]: {
                 operator: 'in',
-                value: orgIds as string[],
+                value: parentIds as string[],
             },
             ...args.filter,
         },
     })
 
     return childConnectionLoader(
-        orgIds,
+        parentIds,
         baseScope,
-        '"OrganizationMembership"."organization_id"',
-        'User_',
+        parent.pivot,
+        info,
         mapUserToUserConnectionNode,
         args,
         {

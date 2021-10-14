@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { GraphQLResolveInfo } from 'graphql'
 import { getManager, SelectQueryBuilder } from 'typeorm'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     getPageInfoAndEdges,
     getPaginationQuery,
@@ -7,13 +9,26 @@ import {
     IPaginatedResponse,
 } from '../utils/pagination/paginate'
 import { ISortingConfig } from '../utils/pagination/sorting'
+import { convertRawToEntities } from '../utils/typeorm'
+
+export interface IChildConnectionDataloaderKey {
+    readonly parent: {
+        id: string
+        filterKey: string
+        pivot: string
+    }
+    readonly args: IChildPaginationArgs<any>
+    readonly info: GraphQLResolveInfo
+}
 
 export const childConnectionLoader = async <ConnectionNodeType = unknown>(
     parentIds: string[],
     baseScope: SelectQueryBuilder<unknown>,
     groupByProperty: string,
-    tablePrefix: string,
-    entityMapper: (item: any) => ConnectionNodeType,
+    info: GraphQLResolveInfo,
+    entityMapper: (
+        item: any
+    ) => Promise<ConnectionNodeType> | ConnectionNodeType,
     args: IChildPaginationArgs<any>,
     sortConfig: ISortingConfig
 ) => {
@@ -37,31 +52,36 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
     //
     // Get the total counts per parent and update the dataloader map
     //
+    const includeTotalCount =
+        findTotalCountInPaginationEndpoints(info) ||
+        args.direction === 'BACKWARD'
 
-    // select the parentId to group by
-    baseScope.addSelect(`${groupByProperty} as "parentId"`)
+    if (includeTotalCount) {
+        // select the parentId to group by
+        baseScope.addSelect(`${groupByProperty} as "parentId"`)
 
-    // Create the query to get total children counts per parent (ignores pagination filters etc)
-    const countScope = getManager()
-        .createQueryBuilder()
-        .select(['"parentId"', 'count(*)'])
-        .from(`(${baseScope.getQuery()})`, 'subquery')
-        .groupBy('"parentId"')
-        .setParameters(baseScope.getParameters())
+        // Create the query to get total children counts per parent (ignores pagination filters etc)
+        const countScope = getManager()
+            .createQueryBuilder()
+            .select(['"parentId"', 'count(*)'])
+            .from(`(${baseScope.getQuery()})`, 'subquery')
+            .groupBy('"parentId"')
+            .setParameters(baseScope.getParameters())
 
-    // Get the counts and update the dataloader map
-    const parentCounts = await countScope.getRawMany()
-    for (const parent of parentCounts) {
-        parentMap.set(parent.parentId, {
-            totalCount: parent.count,
-            pageInfo: {
-                hasPreviousPage: true,
-                hasNextPage: true,
-                startCursor: '',
-                endCursor: '',
-            },
-            edges: [],
-        })
+        // Get the counts and update the dataloader map
+        const parentCounts = await countScope.getRawMany()
+        for (const parent of parentCounts) {
+            parentMap.set(parent.parentId, {
+                totalCount: parent.count,
+                pageInfo: {
+                    hasPreviousPage: true,
+                    hasNextPage: true,
+                    startCursor: '',
+                    endCursor: '',
+                },
+                edges: [],
+            })
+        }
     }
 
     //
@@ -111,23 +131,24 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
 
     const childrenRaw = await childScope.getRawMany()
 
-    // convert from sql column aliases to column names
-    // e.g. User_user_id -> user_id
-    // this is rather ugly, can we do better?
-    const childrenProcessed = childrenRaw.map((child) => {
-        return JSON.parse(JSON.stringify(child).replaceAll(tablePrefix, ''))
-    })
+    const childParentIds = childrenRaw.map((c) => c.parentId)
+    const entities = await convertRawToEntities(childrenRaw, baseScope)
 
     // group by parentId by create a map of parentId:rawChildSqlRow
     const parentToRawChildMap = new Map<string, any[]>(
         parentIds.map((id) => [id, []])
     )
-    for (const child of childrenProcessed) {
-        const parentId = child.parentId as string
+
+    if (childParentIds.length !== entities.length) {
+        // big problemo
+    }
+
+    childParentIds.forEach((parentId, index) => {
+        const child = entities[index]
         const children = parentToRawChildMap.get(parentId)
         children?.push(child)
         parentToRawChildMap.set(parentId, children || [])
-    }
+    })
 
     // for each parent, calculate their edges and page info
     for (const [parentId, children] of parentToRawChildMap) {
@@ -143,12 +164,13 @@ export const childConnectionLoader = async <ConnectionNodeType = unknown>(
 
         const parent = parentMap.get(parentId)
         if (parent) {
-            parent.edges = edges.map((edge) => {
-                return {
+            for (const edge of edges) {
+                const processedEdge = {
                     cursor: edge.cursor,
-                    node: entityMapper(edge.node),
+                    node: await entityMapper(edge.node),
                 }
-            })
+                parent.edges.push(processedEdge)
+            }
             parent.pageInfo = pageInfo
         }
     }

@@ -37,7 +37,7 @@ export async function usersConnectionResolver(
 ): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    const newScope = await usersConnectionQuery(info, {
+    const newScope = await usersConnectionQuery({
         direction,
         directionArgs,
         scope,
@@ -72,10 +72,13 @@ export async function usersConnectionResolver(
     }
 }
 
-export async function usersConnectionQuery(
-    info: GraphQLResolveInfo,
-    { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
-) {
+export async function usersConnectionQuery({
+    direction,
+    directionArgs,
+    scope,
+    filter,
+    sort,
+}: IPaginationArgs<User>) {
     if (filter) {
         if (
             (filterHasProperty('organizationId', filter) ||
