@@ -293,14 +293,18 @@ export default function getDefault(
                     organization: OrganizationConnectionNode,
                     args: Record<string, unknown>,
                     ctx: Context
-                ) => ctx.loaders.organization?.branding.load(organization.id),
+                ) => {
+                    ctx.loaders.organization.branding.instance.load(
+                        organization.id
+                    )
+                },
                 usersConnection: async (
                     organization: OrganizationConnectionNode,
                     args: IPaginationArgs<User>,
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
-                    return ctx.loaders.usersConnectionChild.load({
+                    return ctx.loaders.usersConnectionChild.instance.load({
                         args,
                         info,
                         parent: {
@@ -316,7 +320,7 @@ export default function getDefault(
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
-                    return ctx.loaders.schoolsConnectionChild.load({
+                    return ctx.loaders.schoolsConnectionChild.instance.load({
                         args,
                         info,
                         parent: {
@@ -371,7 +375,7 @@ export default function getDefault(
             },
             Organization: {
                 branding: (org: Organization, args, ctx: Context, _info) => {
-                    return ctx.loaders.organization.branding.load(
+                    return ctx.loaders.organization.branding.instance.load(
                         org.organization_id
                     )
                 },
@@ -383,7 +387,7 @@ export default function getDefault(
                     ctx: Context,
                     _info
                 ) => {
-                    return ctx.loaders.organization.organization.load(
+                    return ctx.loaders.organization.organization.instance.load(
                         membership.organization_id
                     )
                 },
@@ -393,7 +397,9 @@ export default function getDefault(
                     ctx: Context,
                     _info
                 ) => {
-                    return ctx.loaders.user.user.load(membership.user_id)
+                    return ctx.loaders.user.user.instance.load(
+                        membership.user_id
+                    )
                 },
             },
         },

@@ -339,67 +339,67 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
             schoolMembership.user = Promise.resolve(user)
             await manager.save(schoolMembership)
         }
+    }
 
-        if (cls) {
-            const perms = await manager
-                .createQueryBuilder(Permission, 'Permission')
-                .innerJoin('Permission.roles', 'Role')
-                .innerJoin('Role.memberships', 'OrganizationMembership')
-                .where('OrganizationMembership.user_id = :user_id', {
-                    user_id: user.user_id,
-                })
-                .andWhere(
-                    'OrganizationMembership.organization_id = :organization_id',
-                    {
-                        organization_id: organizationMembership.organization_id,
-                    }
-                )
-                .getMany()
-
-            const teacherPerm =
-                perms.some(
-                    (p) =>
-                        p.permission_name ===
-                        PermissionName.attend_live_class_as_a_teacher_186.valueOf()
-                ) || false
-            const studentPerm =
-                perms.some(
-                    (p) =>
-                        p.permission_name ===
-                        PermissionName.attend_live_class_as_a_student_187.valueOf()
-                ) || false
-
-            if (teacherPerm) {
-                const teachers = (await cls.teachers) || []
-                if (!teachers.includes(user)) {
-                    teachers.push(user)
-                    cls.teachers = Promise.resolve(teachers)
+    if (cls) {
+        const perms = await manager
+            .createQueryBuilder(Permission, 'Permission')
+            .innerJoin('Permission.roles', 'Role')
+            .innerJoin('Role.memberships', 'OrganizationMembership')
+            .where('OrganizationMembership.user_id = :user_id', {
+                user_id: user.user_id,
+            })
+            .andWhere(
+                'OrganizationMembership.organization_id = :organization_id',
+                {
+                    organization_id: organizationMembership.organization_id,
                 }
-            }
-            if (studentPerm) {
-                const students = (await cls.students) || []
-                if (!students.includes(user)) {
-                    students.push(user)
-                    cls.students = Promise.resolve(students)
-                }
-            }
-            if (!studentPerm && !teacherPerm) {
-                addCsvError(
-                    rowErrors,
-                    customErrors.unauthorized_upload_child.code,
-                    rowNumber,
-                    'organization_role_name',
-                    customErrors.unauthorized_upload_child.message,
-                    {
-                        entity: 'User',
-                        parentEntity: 'Class',
-                        parentName: row.class_name,
-                    }
-                )
+            )
+            .getMany()
+
+        const teacherPerm =
+            perms.some(
+                (p) =>
+                    p.permission_name ===
+                    PermissionName.attend_live_class_as_a_teacher_186.valueOf()
+            ) || false
+        const studentPerm =
+            perms.some(
+                (p) =>
+                    p.permission_name ===
+                    PermissionName.attend_live_class_as_a_student_187.valueOf()
+            ) || false
+
+        if (teacherPerm) {
+            const teachers = (await cls.teachers) || []
+            if (!teachers.includes(user)) {
+                teachers.push(user)
+                cls.teachers = Promise.resolve(teachers)
             }
         }
-
-        await manager.save(cls)
+        if (studentPerm) {
+            const students = (await cls.students) || []
+            if (!students.includes(user)) {
+                students.push(user)
+                cls.students = Promise.resolve(students)
+            }
+        }
+        if (!studentPerm && !teacherPerm) {
+            addCsvError(
+                rowErrors,
+                customErrors.unauthorized_upload_child.code,
+                rowNumber,
+                'organization_role_name',
+                customErrors.unauthorized_upload_child.message,
+                {
+                    entity: 'User',
+                    parentEntity: 'Class',
+                    parentName: row.class_name,
+                }
+            )
+        } else {
+            await manager.save(cls)
+        }
     }
 
     return rowErrors

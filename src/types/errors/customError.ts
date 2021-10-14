@@ -19,6 +19,8 @@ export const genericErrorCodes = [
     'invalid_uuid',
     'unauthorized',
     'invalid_format',
+    'inactive_status',
+    'invalid_operation_type',
 ] as const
 
 export type GenericErrorCode = typeof genericErrorCodes[number]
@@ -136,6 +138,15 @@ export const customErrors = {
     invalid_uuid: {
         code: 'ERR_INVALID_UUID',
         message: '{entity} {attribute} must be a valid UUID.',
+    },
+    invalid_operation_type: {
+        code: 'ERR_INVALID_OPERATION_TYPE',
+        message:
+            'Operation type was {attribute}, but a {otherAttribute} was expected',
+    },
+    inactive_status: {
+        code: 'ERR_INACTIVE_STATUS',
+        message: '{entity} {entityName} is inactive.',
     },
 
     // auth

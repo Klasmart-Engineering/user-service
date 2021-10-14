@@ -74,7 +74,7 @@ export class SchoolMembership extends CustomBaseEntity {
             await role.save()
             return role
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -107,7 +107,7 @@ export class SchoolMembership extends CustomBaseEntity {
             await getManager().save(roles)
             return roles
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -134,7 +134,7 @@ export class SchoolMembership extends CustomBaseEntity {
             }
             return this
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -155,7 +155,7 @@ export class SchoolMembership extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
         return false
     }

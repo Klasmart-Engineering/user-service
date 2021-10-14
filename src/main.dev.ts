@@ -13,6 +13,7 @@ import https from 'https'
 
 import createServer from 'https-localhost'
 import { getCerts } from 'https-localhost/certs'
+import logger from './logging'
 
 createServer()
 
@@ -24,12 +25,14 @@ initApp()
         const certs = await getCerts()
 
         https.createServer(certs, app.expressApp).listen(port, () => {
-            console.log(
-                `🌎 Development server ready at https://fe.alpha.kidsloop.net:${port}${app.apolloServer.graphqlPath}`
+            logger.info(
+                '🌎 Development server ready at https://fe.alpha.kidsloop.net:%s%s',
+                port,
+                app.apolloServer.graphqlPath
             )
         })
     })
     .catch((e) => {
-        console.error(e)
+        logger.fatal(e)
         process.exit(-1)
     })

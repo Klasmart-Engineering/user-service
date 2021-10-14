@@ -53,7 +53,7 @@ export class School extends CustomBaseEntity {
             ).findOneOrFail({ where: { user_id, school_id: this.school_id } })
             return membership
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -105,7 +105,7 @@ export class School extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -147,7 +147,7 @@ export class School extends CustomBaseEntity {
             await getManager().save(membership)
             return membership
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -217,7 +217,7 @@ export class School extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
         return false
     }

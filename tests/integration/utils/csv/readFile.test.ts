@@ -146,7 +146,6 @@ describe('read file', () => {
 
                 expect.fail(`Function incorrectly resolved.`)
             } catch (e) {
-                console.log(e)
                 expect(e)
                     .to.have.property('message')
                     .equal(`The ${filename} file is empty.`)

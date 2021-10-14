@@ -86,6 +86,8 @@ type ExpectAPIErrors = Implements<
         invalid_uuid: ExpectAPIError<'entity' | 'attribute'>
         unauthorized: ExpectAPIError<'entity' | 'attribute'>
         invalid_format: ExpectAPIError<'entity' | 'attribute'>
+        invalid_operation_type: ExpectAPIError<'attribute' | 'otherAttribute'>
+        inactive_status: ExpectAPIError<'entity' | 'entityName'>
     }
 >
 

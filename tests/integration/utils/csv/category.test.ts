@@ -78,7 +78,6 @@ describe('processCategoryFromCSVRow', () => {
                 fileErrors,
                 adminPermissions
             )
-            console.log(rowErrors)
 
             expect(rowErrors).to.have.length(2) // Should actually be 1, needs to be fixed
 

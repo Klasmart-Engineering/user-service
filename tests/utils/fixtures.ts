@@ -1,6 +1,7 @@
 import fs from 'fs'
 import { Connection } from 'typeorm'
 import yaml from 'js-yaml'
+import logger from '../../src/logging'
 
 // Seeding data for testing, especially is users
 export async function loadFixtures(
@@ -17,7 +18,7 @@ export async function loadFixtures(
         )
         items = file['fixtures']
     } catch (e) {
-        console.log('seeding data error', e)
+        logger.error(e, 'seeding data error')
     }
 
     if (!items) {

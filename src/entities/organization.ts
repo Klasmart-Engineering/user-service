@@ -101,7 +101,7 @@ export class Organization extends CustomBaseEntity {
             })
             return membership
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -369,7 +369,7 @@ export class Organization extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -421,7 +421,7 @@ export class Organization extends CustomBaseEntity {
             const results = await query.getMany()
             return results
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -459,7 +459,7 @@ export class Organization extends CustomBaseEntity {
                 .setParameter('search_query', search_query)
                 .getMany()
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -488,7 +488,7 @@ export class Organization extends CustomBaseEntity {
 
             return user
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -536,7 +536,7 @@ export class Organization extends CustomBaseEntity {
 
             return membership
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1148,7 +1148,7 @@ export class Organization extends CustomBaseEntity {
             await manager.save(role)
             return role
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1188,7 +1188,7 @@ export class Organization extends CustomBaseEntity {
 
             return _class
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1226,7 +1226,7 @@ export class Organization extends CustomBaseEntity {
 
             return school
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -1758,7 +1758,7 @@ export class Organization extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
         return false
     }

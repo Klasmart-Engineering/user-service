@@ -124,14 +124,14 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             Mutation: {
-                school: (_parent, args, _context, _info) =>
-                    model.getSchool(args),
+                school: (_parent, args, ctx, _info) =>
+                    model.getSchool(args, ctx),
                 uploadSchoolsFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSchoolsFromCSV(args, ctx, info),
             },
             Query: {
-                school: (_parent, args, _context, _info) =>
-                    model.getSchool(args),
+                school: (_parent, args, ctx, _info) =>
+                    model.getSchool(args, ctx),
                 schoolsConnection: (_parent, args, ctx, info) => {
                     return model.schoolsConnection(ctx, info, args)
                 },
@@ -143,14 +143,14 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    return ctx.loaders.school?.schoolById?.load(
+                    return ctx.loaders.school.schoolById.instance.load(
                         schoolMembership.school_id
                     )
                 },
             },
             School: {
                 organization: (school: School, _args, ctx: Context, info) => {
-                    return ctx.loaders.school?.organization?.load(
+                    return ctx.loaders.school.organization.instance.load(
                         school.school_id
                     )
                 },

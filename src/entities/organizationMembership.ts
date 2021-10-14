@@ -126,7 +126,7 @@ export class OrganizationMembership extends CustomBaseEntity {
                 return results
             }
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -142,7 +142,7 @@ export class OrganizationMembership extends CustomBaseEntity {
                 })
                 .getMany()
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -190,7 +190,7 @@ export class OrganizationMembership extends CustomBaseEntity {
             await role.save()
             return role
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -232,7 +232,7 @@ export class OrganizationMembership extends CustomBaseEntity {
             await getManager().save(roles)
             return roles
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
 
@@ -260,7 +260,7 @@ export class OrganizationMembership extends CustomBaseEntity {
             }
             return this
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
     }
     public async leave(
@@ -279,7 +279,7 @@ export class OrganizationMembership extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            console.error(e)
+            context.logger.error(e)
         }
         return false
     }

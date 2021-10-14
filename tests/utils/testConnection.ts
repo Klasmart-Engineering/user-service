@@ -1,21 +1,9 @@
-import {
-    AdvancedConsoleLogger,
-    Connection,
-    createConnection,
-    QueryRunner,
-} from 'typeorm'
-import { LoggerOptions } from 'typeorm/logger/LoggerOptions'
+import { Connection, createConnection, QueryRunner } from 'typeorm'
+import logger, { TypeORMLogger } from '../../src/logging'
 
-class QueryMetricsLogger extends AdvancedConsoleLogger {
+class QueryMetricsLogger extends TypeORMLogger {
     private counter = 0
     private wasReset = false
-
-    // LoggerOptions must be passed directly to QueryMetricsLogger
-    // passing them via createConnection({logging: ...}) does not work with custom loggers
-    // because they must already be instantiated before createConnection is called
-    constructor(options?: LoggerOptions) {
-        super(options)
-    }
 
     logQuery(
         query: string,
@@ -50,14 +38,13 @@ export const createTestConnection = async ({
     synchronize = false,
     name = 'default',
 } = {}): Promise<TestConnection> => {
-    const logger = new QueryMetricsLogger()
     return createConnection({
         name: name,
         type: 'postgres',
         synchronize: synchronize,
         dropSchema: drop,
-        entities: ['src/entities/*.ts'],
-        logger,
+        entities: ['src/entities/*{.ts,.js}'],
+        logger: new QueryMetricsLogger(logger),
         replication: {
             master: {
                 url:
@@ -80,7 +67,6 @@ export const createMigrationsTestConnection = async (
     synchronize = false,
     name = 'default'
 ): Promise<TestConnection> => {
-    const logger = new QueryMetricsLogger()
     return createConnection({
         name: name,
         type: 'postgres',
@@ -89,8 +75,8 @@ export const createMigrationsTestConnection = async (
             'postgres://postgres:kidsloop@localhost/testdb',
         synchronize,
         dropSchema: drop,
-        migrations: ['migrations/*.ts'],
-        entities: ['src/entities/*.ts'],
-        logger,
+        migrations: ['migrations/*{.ts,.js}'],
+        entities: ['src/entities/*{.ts,.js}'],
+        logger: new QueryMetricsLogger(logger),
     }) as Promise<TestConnection>
 }

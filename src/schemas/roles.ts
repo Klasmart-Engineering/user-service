@@ -9,6 +9,11 @@ const typeDefs = gql`
         roles: [Role]
         uploadRolesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        replaceRole(
+            old_role_id: ID!
+            new_role_id: ID!
+            organization_id: ID!
+        ): Role
     }
     extend type Query {
         role(role_id: ID!): Role
@@ -42,11 +47,6 @@ const typeDefs = gql`
 
         delete_role(_: Int): Boolean
     }
-    type RoleConnection {
-        total: Int
-        edges: [Role]!
-        pageInfo: PageInfo!
-    }
 `
 export default function getDefault(
     model: Model,
@@ -56,14 +56,16 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             Mutation: {
-                roles: () => model.getRoles(),
-                role: (_parent, args, _context, _info) => model.getRole(args),
+                roles: (_parent, _args, ctx) => model.getRoles(ctx),
+                role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
                 uploadRolesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadRolesFromCSV(args, ctx, info),
+                replaceRole: (_parent, args, ctx, info) =>
+                    model.replaceRole(args, ctx, info),
             },
             Query: {
-                roles: () => model.getRoles(),
-                role: (_parent, args, _context, _info) => model.getRole(args),
+                roles: (_parent, _args, ctx) => model.getRoles(ctx),
+                role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
             },
         },
     }

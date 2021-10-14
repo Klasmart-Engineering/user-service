@@ -153,8 +153,6 @@ describe('Issuer Authorization', () => {
             }
 
             token = generateToken(payload)
-
-            console.log(token)
         })
 
         it('should throw an 401: Unauthorized error', async () => {

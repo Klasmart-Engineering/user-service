@@ -1,10 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm'
+import logger from '../src/logging'
 
 export class InitialState1628677180503 implements MigrationInterface {
     name = 'InitialState1628677180503'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        console.log('Starting initial state database migration...')
+        logger.info('Starting initial state database migration...')
 
         await queryRunner.query(
             `
@@ -921,7 +922,7 @@ export class InitialState1628677180503 implements MigrationInterface {
             `
         )
 
-        console.log('Successfully ran the initial state database migration.')
+        logger.info('Successfully ran the initial state database migration.')
     }
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function

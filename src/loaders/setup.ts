@@ -1,5 +1,8 @@
-import { default as Dataloader, default as DataLoader } from 'dataloader'
+import DataLoader from 'dataloader'
+import { Organization } from '../entities/organization'
+import { OrganizationMembership } from '../entities/organizationMembership'
 import { School } from '../entities/school'
+import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import {
     mapSchoolToSchoolConnectionNode,
@@ -12,7 +15,9 @@ import {
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../pagination/usersConnection'
+import { BrandingResult } from '../types/graphQL/branding'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
+import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
     genericChildConnection,
@@ -55,39 +60,48 @@ export interface IDataLoaders {
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 
-    usersConnectionChild: Dataloader<
-        IChildConnectionDataloaderKey,
-        IPaginatedResponse<CoreUserConnectionNode>
+    usersConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<CoreUserConnectionNode>
+        >
     >
-    schoolsConnectionChild: Dataloader<
-        IChildConnectionDataloaderKey,
-        IPaginatedResponse<ISchoolsConnectionNode>
+    schoolsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<ISchoolsConnectionNode>
+        >
     >
 }
 
-export function createDefaultDataLoaders(): IDataLoaders {
+export function createContextLazyLoaders(): IDataLoaders {
     return {
         user: {
-            user: new Dataloader(usersByIds),
-            orgMemberships: new Dataloader((keys) =>
-                orgMembershipsForUsers(keys)
+            user: new Lazy<DataLoader<string, User | Error>>(
+                () => new DataLoader(usersByIds)
             ),
-            schoolMemberships: new Dataloader((keys) =>
-                schoolMembershipsForUsers(keys)
+            orgMemberships: new Lazy<
+                DataLoader<string, OrganizationMembership[]>
+            >(() => new DataLoader(orgMembershipsForUsers)),
+            schoolMemberships: new Lazy<DataLoader<string, SchoolMembership[]>>(
+                () => new DataLoader(schoolMembershipsForUsers)
             ),
         },
         organization: {
-            branding: new Dataloader((keys) => brandingForOrganizations(keys)),
-            // used to get orgs from org memberships
-            organization: new Dataloader((keys) =>
-                organizationForMemberships(keys)
+            branding: new Lazy<DataLoader<string, BrandingResult | undefined>>(
+                () => new DataLoader(brandingForOrganizations)
             ),
+            organization: new Lazy<
+                DataLoader<string, Organization | undefined>
+            >(() => new DataLoader(organizationForMemberships)),
         },
         school: {
-            organization: new Dataloader((keys) =>
-                organizationsForSchools(keys)
+            organization: new Lazy<
+                DataLoader<string, Organization | undefined>
+            >(() => new DataLoader(organizationsForSchools)),
+            schoolById: new Lazy<DataLoader<string, School | undefined>>(
+                () => new DataLoader(schoolsByIds)
             ),
-            schoolById: new Dataloader((keys) => schoolsByIds(keys)),
         },
         classesConnection: {
             schools: new DataLoader((keys) => schoolsForClasses(keys)),
@@ -96,21 +110,30 @@ export function createDefaultDataLoaders(): IDataLoaders {
             subjects: new DataLoader((keys) => subjectsForClasses(keys)),
             programs: new DataLoader((keys) => programsForClasses(keys)),
         },
-        usersConnectionChild: new Dataloader((items) => {
-            return genericChildConnection<User, CoreUserConnectionNode>(
-                items,
-                usersConnectionQuery,
-                mapUserToUserConnectionNode,
-                userConnectionSortingConfig
-            )
-        }),
-        schoolsConnectionChild: new Dataloader((items) => {
-            return genericChildConnection<School, ISchoolsConnectionNode>(
-                items,
-                schoolConnectionQuery,
-                mapSchoolToSchoolConnectionNode,
-                schoolsConnectionSortingConfig
-            )
-        }),
+        usersConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return genericChildConnection<User, CoreUserConnectionNode>(
+                        items,
+                        usersConnectionQuery,
+                        mapUserToUserConnectionNode,
+                        userConnectionSortingConfig
+                    )
+                })
+        ),
+        schoolsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return genericChildConnection<
+                        School,
+                        ISchoolsConnectionNode
+                    >(
+                        items,
+                        schoolConnectionQuery,
+                        mapSchoolToSchoolConnectionNode,
+                        schoolsConnectionSortingConfig
+                    )
+                })
+        ),
     }
 }
