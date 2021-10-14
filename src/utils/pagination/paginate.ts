@@ -6,6 +6,8 @@ import {
 } from './sorting'
 import { SelectQueryBuilder, BaseEntity, Brackets } from 'typeorm'
 import { IEntityFilter } from './filtering'
+import { GraphQLResolveInfo } from 'graphql'
+import { findTotalCountInPaginationEndpoints } from '../graphql'
 
 const DEFAULT_PAGE_SIZE = 50
 
@@ -66,6 +68,13 @@ export const convertDataToCursor = (data: Record<string, unknown>) => {
 
 const getDataFromCursor = (cursor: string) => {
     return JSON.parse(Buffer.from(cursor, 'base64').toString())
+}
+
+export function shouldIncludeTotalCount(
+    info: GraphQLResolveInfo,
+    direction: Direction
+) {
+    return direction === 'BACKWARD' || findTotalCountInPaginationEndpoints(info)
 }
 
 export const getEdges = (

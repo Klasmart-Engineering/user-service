@@ -14,7 +14,10 @@ import {
 import { Context } from '../main'
 import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
-import { IPaginationArgs } from '../utils/pagination/paginate'
+import {
+    IPaginationArgs,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     scalar HexColor
@@ -306,7 +309,10 @@ export default function getDefault(
                 ) => {
                     return ctx.loaders.usersConnectionChild.instance.load({
                         args,
-                        info,
+                        includeTotalCount: shouldIncludeTotalCount(
+                            info,
+                            args.direction
+                        ),
                         parent: {
                             id: organization.id,
                             filterKey: 'organizationId',
@@ -322,7 +328,10 @@ export default function getDefault(
                 ) => {
                     return ctx.loaders.schoolsConnectionChild.instance.load({
                         args,
-                        info,
+                        includeTotalCount: shouldIncludeTotalCount(
+                            info,
+                            args.direction
+                        ),
                         parent: {
                             id: organization.id,
                             filterKey: 'organizationId',

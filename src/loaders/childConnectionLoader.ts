@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { GraphQLResolveInfo } from 'graphql'
 import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     getPageInfoAndEdges,
     getPaginationQuery,
@@ -19,7 +17,7 @@ export interface IChildConnectionDataloaderKey {
         pivot: string
     }
     readonly args: IChildPaginationArgs<any>
-    readonly info: GraphQLResolveInfo
+    readonly includeTotalCount: boolean
 }
 
 export const childConnectionLoader = async <
@@ -37,7 +35,7 @@ export const childConnectionLoader = async <
     const parentIds = items.map((i) => i.parent.id)
     const args = items[0]?.args as IChildPaginationArgs<SourceEntity>
     const parent = items[0]?.parent
-    const info = items[0]?.info
+    const includeTotalCount = items[0]?.includeTotalCount
     const groupByProperty = parent.pivot
 
     // Create our Dataloader map of parentId: childConnectionNode[]
@@ -77,10 +75,6 @@ export const childConnectionLoader = async <
     //
     // Get the total counts per parent and update the dataloader map
     //
-    const includeTotalCount =
-        findTotalCountInPaginationEndpoints(info) ||
-        args.direction === 'BACKWARD'
-
     if (includeTotalCount) {
         // select the parentId to group by
         baseScope.addSelect(`${groupByProperty} as "parentId"`)
