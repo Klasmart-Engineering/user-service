@@ -393,29 +393,6 @@ export class Model {
         paginationArgs: IPaginationArgs<User>
     ) => usersConnectionResolver(info, paginationArgs)
 
-    public async permissionsConnection(
-        _context: Context,
-        info: GraphQLResolveInfo,
-        { direction, directionArgs, filter }: IPaginationArgs<Permission>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-        const scope = this.permissionRepository.createQueryBuilder()
-
-        if (filter) {
-            scope.andWhere(getWhereClauseFromFilter(filter))
-        }
-
-        return paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'permission_id',
-            },
-            includeTotalCount,
-        })
-    }
-
     public schoolsConnection = async (
         _context: Context,
         info: GraphQLResolveInfo,
