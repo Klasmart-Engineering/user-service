@@ -24,6 +24,12 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
+import { Permission } from '../entities/permission'
+import {
+    joinOrganizationAndSchoolMemberships,
+    joinOrganizationMemberships,
+    joinSchoolMemberships,
+} from '../pagination/permissionsConnection'
 
 interface IsAdminDirectiveArgs {
     entity?: string
@@ -88,6 +94,9 @@ export function isAdminTransformer(schema: GraphQLSchema) {
                     case 'school':
                         scope = getRepository(School).createQueryBuilder()
                         break
+                    case 'permission':
+                        scope = getRepository(Permission).createQueryBuilder()
+                        break
                     default:
                         permissions.rejectIfNotAdmin()
                 }
@@ -150,6 +159,12 @@ export function isAdminTransformer(schema: GraphQLSchema) {
                         case 'school':
                             await nonAdminSchoolScope(
                                 scope as SelectQueryBuilder<School>,
+                                permissions
+                            )
+                            break
+                        case 'permission':
+                            await nonAdminPermissionScope(
+                                scope as SelectQueryBuilder<Permission>,
                                 permissions
                             )
                             break
@@ -549,6 +564,37 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
             )
             .where('Class.organization IN (:...schoolOrgs)', { schoolOrgs })
         return
+    }
+
+    scope.where('false')
+}
+
+export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
+    scope,
+    permissions
+) => {
+    const userId = permissions.getUserId() || ''
+    const user = await User.findOneOrFail(userId)
+    const orgMemberships = await user.memberships
+    const schoolMemberships = await user.school_memberships
+
+    if (orgMemberships?.length || schoolMemberships?.length) {
+        scope.innerJoin('Permission.roles', 'Role')
+
+        if (orgMemberships?.length && schoolMemberships?.length) {
+            joinOrganizationAndSchoolMemberships(scope, userId)
+            return
+        }
+
+        if (orgMemberships?.length) {
+            joinOrganizationMemberships(scope, userId)
+            return
+        }
+
+        if (schoolMemberships?.length) {
+            joinSchoolMemberships(scope, userId)
+            return
+        }
     }
 
     scope.where('false')
