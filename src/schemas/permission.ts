@@ -50,7 +50,6 @@ const typeDefs = gql`
     }
 
     input PermissionFilter {
-        organizationId: UUIDFilter
         roleId: UUIDFilter
         name: StringFilter
         allow: BooleanFilter

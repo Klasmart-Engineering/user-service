@@ -25,11 +25,6 @@ import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
-import {
-    joinOrganizationAndSchoolMemberships,
-    joinOrganizationMemberships,
-    joinSchoolMemberships,
-} from '../pagination/permissionsConnection'
 
 interface IsAdminDirectiveArgs {
     entity?: string
@@ -579,22 +574,12 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     const schoolMemberships = await user.school_memberships
 
     if (orgMemberships?.length || schoolMemberships?.length) {
-        scope.innerJoin('Permission.roles', 'Role')
-
-        if (orgMemberships?.length && schoolMemberships?.length) {
-            joinOrganizationAndSchoolMemberships(scope, userId)
-            return
-        }
-
-        if (orgMemberships?.length) {
-            joinOrganizationMemberships(scope, userId)
-            return
-        }
-
-        if (schoolMemberships?.length) {
-            joinSchoolMemberships(scope, userId)
-            return
-        }
+        scope
+            .innerJoin('Permission.roles', 'Role')
+            .where('Role.system_role = :truthyValue', {
+                truthyValue: true,
+            })
+        return
     }
 
     scope.where('false')
