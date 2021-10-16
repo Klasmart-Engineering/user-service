@@ -13,7 +13,7 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 
-const PERMISSIONS_CONNECTION_COLUMNS: string[] = ([
+export const PERMISSIONS_CONNECTION_COLUMNS: string[] = ([
     'permission_id',
     'permission_name',
     'permission_category',
