@@ -31,7 +31,7 @@ function getDataloaderKeys(
     orgs: Organization[],
     args: IChildPaginationArgs<User>
 ) {
-    const items: IChildConnectionDataloaderKey[] = []
+    const items: IChildConnectionDataloaderKey<User>[] = []
     for (const org of orgs) {
         items.push({
             parent: {

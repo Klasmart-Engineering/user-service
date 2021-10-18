@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
 import { filterHasProperty } from '../utils/pagination/filtering'
 import {
@@ -11,13 +10,15 @@ import {
 import { ISortingConfig } from '../utils/pagination/sorting'
 import { convertRawToEntities } from '../utils/typeorm'
 
-export interface IChildConnectionDataloaderKey {
+export interface IChildConnectionDataloaderKey<
+    SourceEntity extends BaseEntity
+> {
     readonly parent: {
         id: string
         filterKey: string
         pivot: string
     }
-    readonly args: IChildPaginationArgs<any>
+    readonly args: IChildPaginationArgs<SourceEntity>
     readonly includeTotalCount: boolean
 }
 
@@ -25,7 +26,7 @@ export const childConnectionLoader = async <
     SourceEntity extends BaseEntity,
     ConnectionNode
 >(
-    items: readonly IChildConnectionDataloaderKey[],
+    items: readonly IChildConnectionDataloaderKey<SourceEntity>[],
     connectionQuery: (
         args: IPaginationArgs<SourceEntity>
     ) => Promise<SelectQueryBuilder<SourceEntity>>,
@@ -102,10 +103,13 @@ export const childConnectionLoader = async <
             .setParameters(baseScope.getParameters())
 
         // Get the counts and update the dataloader map
-        const parentCounts = await countScope.getRawMany()
-        for (const parent of parentCounts) {
-            parentMap.set(parent.parentId, {
-                totalCount: parseInt(parent.count),
+        const parentCounts: {
+            parentId: string
+            count: string
+        }[] = await countScope.getRawMany()
+        for (const parentCount of parentCounts) {
+            parentMap.set(parentCount.parentId, {
+                totalCount: parseInt(parentCount.count),
                 pageInfo: {
                     hasPreviousPage: true,
                     hasNextPage: true,
@@ -168,7 +172,7 @@ export const childConnectionLoader = async <
     const entities = await convertRawToEntities(childrenRaw, baseScope)
 
     // group by parentId by create a map of parentId:rawChildSqlRow
-    const parentToRawChildMap = new Map<string, any[]>(
+    const parentToRawChildMap = new Map<string, unknown[]>(
         parentIds.map((id) => [id, []])
     )
 

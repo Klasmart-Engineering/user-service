@@ -23,14 +23,7 @@ import {
     childConnectionLoader,
     IChildConnectionDataloaderKey,
 } from './childConnectionLoader'
-import {
-    ageRangesForClasses,
-    gradesForClasses,
-    IClassesConnectionLoaders,
-    programsForClasses,
-    schoolsForClasses,
-    subjectsForClasses,
-} from './classesConnection'
+import { IClassesConnectionLoaders } from './classesConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
     brandingForOrganizations,
@@ -62,13 +55,13 @@ export interface IDataLoaders {
 
     usersConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<User>,
             IPaginatedResponse<CoreUserConnectionNode>
         >
     >
     schoolsConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<School>,
             IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
