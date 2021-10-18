@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
+import { filterHasProperty } from '../utils/pagination/filtering'
 import {
     getPageInfoAndEdges,
     getPaginationQuery,
@@ -25,20 +26,35 @@ export const childConnectionLoader = async <
     ConnectionNode
 >(
     items: readonly IChildConnectionDataloaderKey[],
-    query: (
+    connectionQuery: (
         args: IPaginationArgs<SourceEntity>
     ) => Promise<SelectQueryBuilder<SourceEntity>>,
-    mapFunc: (source: SourceEntity) => ConnectionNode | Promise<ConnectionNode>,
+    entityToNodeMapFunction: (
+        source: SourceEntity
+    ) => ConnectionNode | Promise<ConnectionNode>,
     sort: ISortingConfig
 ): Promise<IPaginatedResponse<ConnectionNode>[]> => {
-    // extact query info that we've added to each Dataloader key
+    // extract query info that was added to each Dataloader key
     const parentIds = items.map((i) => i.parent.id)
+
+    if (items.length < 1) {
+        // no thanks
+        // TODO
+    }
     const args = items[0]?.args as IChildPaginationArgs<SourceEntity>
     const parent = items[0]?.parent
     const includeTotalCount = items[0]?.includeTotalCount
     const groupByProperty = parent.pivot
 
-    // Create our Dataloader map of parentId: childConnectionNode[]
+    // not allowed to filter by the parent entity
+    if (args.filter && filterHasProperty(parent.filterKey, args.filter)) {
+        // TODO
+        throw new Error(
+            `Cannot filter by parent ID ${parent.filterKey} in a child connection.`
+        )
+    }
+
+    // Create the Dataloader map of parentId: childConnectionNode[]
     const parentMap = new Map<string, IPaginatedResponse<ConnectionNode>>(
         parentIds.map((parentId) => [
             parentId,
@@ -57,7 +73,7 @@ export const childConnectionLoader = async <
 
     // Create the base scope with necessary joins, filters, and selects
     // Sorting and pagination is done separately in the paginationScope
-    const baseScope = await query({
+    const baseScope = await connectionQuery({
         direction: args.direction || 'FORWARD',
         directionArgs: {
             cursor: args.cursor,
@@ -91,7 +107,7 @@ export const childConnectionLoader = async <
         const parentCounts = await countScope.getRawMany()
         for (const parent of parentCounts) {
             parentMap.set(parent.parentId, {
-                totalCount: parent.count,
+                totalCount: parseInt(parent.count),
                 pageInfo: {
                     hasPreviousPage: true,
                     hasNextPage: true,
@@ -160,6 +176,7 @@ export const childConnectionLoader = async <
 
     if (childParentIds.length !== entities.length) {
         // big problemo
+        // TODO
     }
 
     childParentIds.forEach((parentId, index) => {
@@ -186,7 +203,7 @@ export const childConnectionLoader = async <
             for (const edge of edges) {
                 const processedEdge = {
                     cursor: edge.cursor,
-                    node: await mapFunc(edge.node),
+                    node: await entityToNodeMapFunction(edge.node),
                 }
                 parentResult.edges.push(processedEdge)
             }
