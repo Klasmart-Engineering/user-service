@@ -14,32 +14,31 @@ import { Program } from '../../../../src/entities/program'
 use(chaiAsPromised)
 
 // don't use faker, as we need this to be deterministic for these tests
+const userData = [
+    {
+        user_id: '07d15ab3-67e2-4933-b933-3d3a3d40887f',
+        given_name: 'John',
+        family_name: 'Smith',
+        email: 'john@gmail.com',
+        username: 'john',
+        date_of_birth: '01-1993',
+        gender: 'male',
+        primary: true,
+        deleted_at: new Date(2020, 0, 1),
+    },
+    {
+        user_id: '122e3d10-43ed-4bac-8d7a-f0d6fde115b9',
+        given_name: 'Sally',
+        family_name: 'Smith',
+        email: 'sally@gmail.com',
+        username: 'sally',
+        date_of_birth: '01-2000',
+        gender: 'female',
+        primary: false,
+        deleted_at: new Date(2000, 0, 1),
+    },
+]
 function getUsers() {
-    const userData = [
-        {
-            user_id: '07d15ab3-67e2-4933-b933-3d3a3d40887f',
-            given_name: 'John',
-            family_name: 'Smith',
-            email: 'john@gmail.com',
-            username: 'john',
-            date_of_birth: '01-1993',
-            gender: 'male',
-            primary: true,
-            deleted_at: new Date(2020, 0, 1),
-        },
-        {
-            user_id: '122e3d10-43ed-4bac-8d7a-f0d6fde115b9',
-            given_name: 'Sally',
-            family_name: 'Smith',
-            email: 'sally@gmail.com',
-            username: 'sally',
-            date_of_birth: '01-2000',
-            gender: 'female',
-            primary: false,
-            deleted_at: new Date(2000, 0, 1),
-        },
-    ]
-
     const users: User[] = []
     for (const u of userData) {
         const user = new User()
@@ -259,6 +258,18 @@ describe('filtering', () => {
 
             expect(data.length).to.equal(2)
         })
+        it('supports string.in', async () => {
+            const filter: IEntityFilter = {
+                email: {
+                    operator: 'in',
+                    value: userData.map((u) => u.email),
+                },
+            }
+            scope.andWhere(getWhereClauseFromFilter(filter))
+            const data = await scope.getMany()
+
+            expect(data.length).to.equal(2)
+        })
     })
 
     context('booleans', () => {
@@ -426,6 +437,17 @@ describe('filtering', () => {
             )
             const data = await scope.getMany()
             expect(data.length).to.equal(0)
+        })
+        it('supports uuid.in', async () => {
+            const filter: IEntityFilter = {
+                userId: {
+                    operator: 'in',
+                    value: userData.map((u) => u.user_id),
+                },
+            }
+            scope.andWhere(getWhereClauseFromFilter(filter))
+            const data = await scope.getMany()
+            expect(data.length).to.equal(2)
         })
     })
 
