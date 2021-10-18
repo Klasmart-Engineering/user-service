@@ -157,7 +157,7 @@ describe('child connections', () => {
                 mapFunc,
                 sort
             )
-            expect(response.length).to.eq(2)
+            expect(response).to.have.lengthOf(2)
             for (const orgUsers of response) {
                 const isSorted = isStringArraySortedAscending(
                     orgUsers.edges.map((e) => e.node.givenName ?? '')
@@ -196,14 +196,46 @@ describe('child connections', () => {
                 mapFunc,
                 sort
             )
-            expect(response.length).to.eq(2)
+            expect(response).to.have.lengthOf(2)
             for (const orgUsers of response) {
                 expect(orgUsers.totalCount).to.eq(6)
-                expect(orgUsers.edges.length).to.eq(pageSize)
+                expect(orgUsers.edges).to.have.lengthOf(pageSize)
                 for (const userNode of orgUsers.edges) {
                     expect(userNode.node.givenName).to.include('user_to_filter')
                 }
             }
+        })
+    })
+
+    context('error handling', () => {
+        it('errors if trying to filter by the parentId', async () => {
+            const query = childConnectionLoader(
+                getDataloaderKeys(orgs, {
+                    ...args,
+                    filter: {
+                        organizationId: {
+                            operator: 'eq',
+                            value: orgs[0].organization_id,
+                        },
+                    },
+                }),
+                usersConnectionQuery,
+                mapFunc,
+                sort
+            )
+            await expect(query).to.be.rejectedWith(
+                Error,
+                'Cannot filter by parent ID organizationId in a child connection.'
+            )
+        })
+        it('returns an empty array if no keys are provided', async () => {
+            const result = await childConnectionLoader(
+                [],
+                usersConnectionQuery,
+                mapFunc,
+                sort
+            )
+            expect(result).to.have.lengthOf(0)
         })
     })
 })
