@@ -103,13 +103,6 @@ export function createContextLazyLoaders(): IDataLoaders {
                 () => new DataLoader(schoolsByIds)
             ),
         },
-        classesConnection: {
-            schools: new DataLoader((keys) => schoolsForClasses(keys)),
-            ageRanges: new DataLoader((keys) => ageRangesForClasses(keys)),
-            grades: new DataLoader((keys) => gradesForClasses(keys)),
-            subjects: new DataLoader((keys) => subjectsForClasses(keys)),
-            programs: new DataLoader((keys) => programsForClasses(keys)),
-        },
         usersConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {
