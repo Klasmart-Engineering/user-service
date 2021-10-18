@@ -3,7 +3,10 @@ import chaiAsPromised from 'chai-as-promised'
 import { Permission } from '../../../src/entities/permission'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
-import { PERMISSIONS_CONNECTION_COLUMNS } from '../../../src/pagination/permissionsConnection'
+import {
+    permissionsConnectionResolver,
+    PERMISSIONS_CONNECTION_COLUMNS,
+} from '../../../src/pagination/permissionsConnection'
 import { PermissionConnectionNode } from '../../../src/types/graphQL/permissionConnectionNode'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
@@ -31,6 +34,9 @@ import { createSchoolMembership } from '../../factories/schoolMembership.factory
 import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
 import { userToPayload } from '../../utils/operations/userOps'
+import { GraphQLResolveInfo } from 'graphql'
+import { Context } from '../../../src/main'
+import { SelectQueryBuilder } from 'typeorm'
 
 type PermissionConnectionNodeKey = keyof Pick<
     PermissionConnectionNode,
@@ -49,7 +55,15 @@ describe('model', () => {
     let school: School
     let permissionsCount = 0
     let systemRolesPermissionsCount = 0
+    let scope: SelectQueryBuilder<Permission>
+
     const pageSize = 10
+
+    // emulated info object to could test resolver
+    let info: GraphQLResolveInfo
+
+    // emulated ctx object to could test resolver
+    let ctx: Context
 
     const expectSorting = async (
         field: PermissionConnectionNodeKey,
@@ -92,6 +106,30 @@ describe('model', () => {
             .innerJoin('Permission.roles', 'Role')
             .where('Role.system_role = true')
             .getCount()
+
+        // Emulating graphql objects
+        scope = Permission.createQueryBuilder('Permission')
+
+        info = ({
+            fieldNodes: [
+                {
+                    selectionSet: {
+                        selections: [
+                            {
+                                kind: 'Field',
+                                name: {
+                                    value: 'totalCount',
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+        } as unknown) as GraphQLResolveInfo
+
+        ctx = ({
+            isAdmin: true,
+        } as unknown) as Context
     })
 
     context('pagination', () => {
@@ -141,13 +179,11 @@ describe('model', () => {
 
         context('when user is super admin', () => {
             it('returns permissions from all the list', async () => {
-                const result = await permissionsConnection(
-                    testClient,
-                    'FORWARD',
-                    true,
-                    { count: pageSize },
-                    { authorization: getAdminAuthToken() }
-                )
+                const result = await permissionsConnectionResolver(info, ctx, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                })
 
                 expect(result.totalCount).to.eql(permissionsCount)
 
@@ -161,36 +197,27 @@ describe('model', () => {
         })
 
         context('when user has organizationMembership', () => {
-            it('returns just the permissions related to system roles', async () => {
-                const token = generateToken(userToPayload(organizationUser))
-                const result = await permissionsConnection(
-                    testClient,
-                    'FORWARD',
-                    true,
-                    { count: pageSize },
-                    { authorization: token }
-                )
+            let ctxNonAdmin: Context
 
-                expect(result.totalCount).to.eql(systemRolesPermissionsCount)
+            beforeEach(() => {
+                scope
+                    .innerJoin('Permission.roles', 'Role')
+                    .where('Role.system_role = true')
 
-                expect(result.pageInfo.hasNextPage).to.be.true
-                expect(result.pageInfo.hasPreviousPage).to.be.false
-                expect(result.pageInfo.startCursor).to.be.string
-                expect(result.pageInfo.endCursor).to.be.string
-
-                expect(result.edges.length).eq(10)
+                ctxNonAdmin = ({
+                    isAdmin: false,
+                } as unknown) as Context
             })
-        })
 
-        context('when user has schoolMembership', () => {
             it('returns just the permissions related to system roles', async () => {
-                const token = generateToken(userToPayload(schoolUser))
-                const result = await permissionsConnection(
-                    testClient,
-                    'FORWARD',
-                    true,
-                    { count: pageSize },
-                    { authorization: token }
+                const result = await permissionsConnectionResolver(
+                    info,
+                    ctxNonAdmin,
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: pageSize },
+                        scope,
+                    }
                 )
 
                 expect(result.totalCount).to.eql(systemRolesPermissionsCount)

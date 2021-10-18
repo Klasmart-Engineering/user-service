@@ -576,9 +576,7 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     if (orgMembership) {
         scope
             .innerJoin('Permission.roles', 'Role')
-            .where('Role.system_role = :truthyValue', {
-                truthyValue: true,
-            })
+            .where('Role.system_role = true')
         return
     }
 
