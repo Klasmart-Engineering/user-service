@@ -10,7 +10,7 @@ import {
 import { PermissionConnectionNode } from '../../../src/types/graphQL/permissionConnectionNode'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
-import { createUser } from '../../factories/user.factory'
+import { createAdminUser, createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -37,6 +37,7 @@ import { userToPayload } from '../../utils/operations/userOps'
 import { GraphQLResolveInfo } from 'graphql'
 import { Context } from '../../../src/main'
 import { SelectQueryBuilder } from 'typeorm'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
 
 type PermissionConnectionNodeKey = keyof Pick<
     PermissionConnectionNode,
@@ -48,6 +49,7 @@ use(chaiAsPromised)
 describe('model', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
+    let adminUser: User
     let organizationUser: User
     let schoolUser: User
     let noMembershipUser: User
@@ -69,15 +71,12 @@ describe('model', () => {
         field: PermissionConnectionNodeKey,
         order: 'ASC' | 'DESC'
     ) => {
-        const result = await permissionsConnection(
-            testClient,
-            'FORWARD',
-            true,
-            { count: pageSize },
-            { authorization: getAdminAuthToken() },
-            undefined,
-            { field, order }
-        )
+        const result = await permissionsConnectionResolver(info, ctx, {
+            direction: 'FORWARD',
+            directionArgs: { count: pageSize },
+            scope,
+            sort: { field, order },
+        })
 
         expect(result.totalCount).to.eql(permissionsCount)
         expect(result.edges.length).eq(pageSize)
@@ -98,6 +97,7 @@ describe('model', () => {
     })
 
     beforeEach(async () => {
+        adminUser = await connection.manager.save(createAdminUser())
         permissionsCount = await Permission.count()
         systemRolesPermissionsCount = await Permission.createQueryBuilder(
             'Permission'
@@ -128,7 +128,7 @@ describe('model', () => {
         } as unknown) as GraphQLResolveInfo
 
         ctx = ({
-            isAdmin: true,
+            permissions: new UserPermissions(userToPayload(adminUser)),
         } as unknown) as Context
     })
 
@@ -197,28 +197,24 @@ describe('model', () => {
         })
 
         context('when user has organizationMembership', () => {
-            let ctxNonAdmin: Context
-
             beforeEach(() => {
                 scope
                     .innerJoin('Permission.roles', 'Role')
                     .where('Role.system_role = true')
 
-                ctxNonAdmin = ({
-                    isAdmin: false,
+                ctx = ({
+                    permissions: new UserPermissions(
+                        userToPayload(organizationUser)
+                    ),
                 } as unknown) as Context
             })
 
             it('returns just the permissions related to system roles', async () => {
-                const result = await permissionsConnectionResolver(
-                    info,
-                    ctxNonAdmin,
-                    {
-                        direction: 'FORWARD',
-                        directionArgs: { count: pageSize },
-                        scope,
-                    }
-                )
+                const result = await permissionsConnectionResolver(info, ctx, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                })
 
                 expect(result.totalCount).to.eql(systemRolesPermissionsCount)
 
@@ -232,15 +228,22 @@ describe('model', () => {
         })
 
         context('when user has not any memberships', () => {
+            beforeEach(() => {
+                scope.innerJoin('Permission.roles', 'Role').where('false')
+
+                ctx = ({
+                    permissions: new UserPermissions(
+                        userToPayload(noMembershipUser)
+                    ),
+                } as unknown) as Context
+            })
+
             it('should not have access to any permission', async () => {
-                const token = generateToken(userToPayload(noMembershipUser))
-                const result = await permissionsConnection(
-                    testClient,
-                    'FORWARD',
-                    true,
-                    { count: pageSize },
-                    { authorization: token }
-                )
+                const result = await permissionsConnectionResolver(info, ctx, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                })
 
                 expect(result.totalCount).to.eql(0)
 
@@ -311,14 +314,12 @@ describe('model', () => {
                 roleId: { operator: 'eq', value: studentRoleId },
             }
 
-            const result = await permissionsConnection(
-                testClient,
-                'FORWARD',
-                true,
-                { count: pageSize },
-                { authorization: getAdminAuthToken() },
-                filter
-            )
+            const result = await permissionsConnectionResolver(info, ctx, {
+                direction: 'FORWARD',
+                directionArgs: { count: pageSize },
+                scope,
+                filter,
+            })
 
             const studentPermissions = await Permission.createQueryBuilder(
                 'Permission'
@@ -362,14 +363,12 @@ describe('model', () => {
                 name: { operator: 'contains', value: searching },
             }
 
-            const result = await permissionsConnection(
-                testClient,
-                'FORWARD',
-                true,
-                { count: pageSize },
-                { authorization: getAdminAuthToken() },
-                filter
-            )
+            const result = await permissionsConnectionResolver(info, ctx, {
+                direction: 'FORWARD',
+                directionArgs: { count: pageSize },
+                scope,
+                filter,
+            })
 
             expect(result.totalCount).to.eql(5)
 
@@ -384,14 +383,12 @@ describe('model', () => {
                 allow: { operator: 'eq', value: allowValue },
             }
 
-            const result = await permissionsConnection(
-                testClient,
-                'FORWARD',
-                true,
-                { count: pageSize },
-                { authorization: getAdminAuthToken() },
-                filter
-            )
+            const result = await permissionsConnectionResolver(info, ctx, {
+                direction: 'FORWARD',
+                directionArgs: { count: pageSize },
+                scope,
+                filter,
+            })
 
             expect(result.totalCount).to.eql(1)
 
@@ -402,16 +399,33 @@ describe('model', () => {
     })
 
     context('when totalCount is not requested', () => {
+        beforeEach(() => {
+            info = ({
+                fieldNodes: [
+                    {
+                        selectionSet: {
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: {
+                                        value: 'edges',
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            } as unknown) as GraphQLResolveInfo
+        })
+
         it('makes just one call to the database', async () => {
             connection.logger.reset()
 
-            await permissionsConnection(
-                testClient,
-                'FORWARD',
-                false,
-                { count: pageSize },
-                { authorization: getAdminAuthToken() }
-            )
+            await permissionsConnectionResolver(info, ctx, {
+                direction: 'FORWARD',
+                directionArgs: { count: pageSize },
+                scope,
+            })
 
             expect(connection.logger.count).to.be.eq(1)
         })
