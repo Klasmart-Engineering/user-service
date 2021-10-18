@@ -10,7 +10,7 @@ Should they return Typeorm Entitie(s), Summary Node()s, boolean()s or ID(s)?
 
 Currently the User Service generally returns GraphQL versions of the Typeorm Entities as the results of mutations.
 
-Typeorm entities at first glance seem the obvious things to return if say we are creating them or editing them. However, say in the case of Program entities we can easily create and innocent looking but spectacularly vast and inefficient series of SQL queries to return this information on the back of a mutations. 
+Typeorm entities at first glance seem the obvious things to return if say we are creating them or editing them. However, say in the case of Program entities we can easily create and innocent looking but spectacularly vast and inefficient series of SQL queries to return this information on the back of a mutation. 
 
 ## Analysis
 
