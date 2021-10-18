@@ -17,6 +17,8 @@ import httpMocks, {
     ResponseOptions,
     Headers,
 } from 'node-mocks-http'
+import logger from '../../src/logging'
+import { loggerMiddlewareFactory } from '../../src/middlewares'
 
 type StringOrAst = string | DocumentNode
 
@@ -125,6 +127,7 @@ export const createTestClient = async (
 ): Promise<ApolloServerTestClient> => {
     const app = express()
     app.use(graphqlUploadExpress({ maxFileSize: 2000000, maxFiles: 1 }))
+    app.use(loggerMiddlewareFactory(logger))
     await server.start()
     server.applyMiddleware({ app })
 
