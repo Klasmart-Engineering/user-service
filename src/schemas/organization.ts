@@ -4,6 +4,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { School } from '../entities/school'
 import { User } from '../entities/user'
 import { ownersForOrgs } from '../loaders/organizationsConnection'
 import {
@@ -322,7 +323,7 @@ export default function getDefault(
                 },
                 schoolsConnection: async (
                     organization: OrganizationConnectionNode,
-                    args: IPaginationArgs<User>,
+                    args: IPaginationArgs<School>,
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
