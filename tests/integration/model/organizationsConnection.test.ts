@@ -43,6 +43,7 @@ import {
     TestConnection,
 } from '../../utils/testConnection'
 import { generateShortCode } from '../../../src/utils/shortcode'
+import { createSchool } from '../../factories/school.factory'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -744,6 +745,52 @@ describe('organizationsConnection', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('child connections', () => {
+        it('.usersConnection', async () => {
+            const orgs = [createOrganization(), createOrganization()]
+            await connection.manager.save(orgs)
+            for (let i = 0; i < 10; i++) {
+                for (const org of orgs) {
+                    const user = await createUser().save()
+                    await createOrganizationMembership({
+                        user,
+                        organization: org,
+                    }).save()
+                }
+            }
+            const usersPerOrg = await organizationsConnection(
+                testClient,
+                direction,
+                { count: 5 },
+                { authorization: getAdminAuthToken() }
+            )
+            expect(usersPerOrg.edges.length).to.eq(2)
+            for (const orgUsers of usersPerOrg.edges) {
+                expect(orgUsers.node.usersConnection?.totalCount).to.eq(10)
+            }
+        })
+
+        it('.schoolsConnection', async () => {
+            const orgs = [createOrganization(), createOrganization()]
+            await connection.manager.save(orgs)
+            for (let i = 0; i < 10; i++) {
+                for (const org of orgs) {
+                    await createSchool(org).save()
+                }
+            }
+            const schoolsPerOrg = await organizationsConnection(
+                testClient,
+                direction,
+                { count: 5 },
+                { authorization: getAdminAuthToken() }
+            )
+            expect(schoolsPerOrg.edges.length).to.eq(2)
+            for (const orgUsers of schoolsPerOrg.edges) {
+                expect(orgUsers.node.schoolsConnection?.totalCount).to.eq(10)
+            }
         })
     })
 })

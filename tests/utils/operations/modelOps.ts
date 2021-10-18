@@ -702,6 +702,12 @@ export const ORGANIZATIONS_CONNECTION = `
                     owners {
                         id
                     }
+                    usersConnection(direction: FORWARD) {
+                        totalCount
+                    }
+                    schoolsConnection(direction: FORWARD) {
+                        totalCount
+                    }
                 }
             }
             pageInfo{
