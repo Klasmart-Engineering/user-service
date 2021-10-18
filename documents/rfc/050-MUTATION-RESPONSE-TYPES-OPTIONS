@@ -1,0 +1,100 @@
+# RFC-050-Response-Types-Options-and-Proposal
+
+## Synopsis
+
+What response types should the new base level Mutations return? 
+
+Should they return Typeorm Entitie(s), Summary Node()s, boolean()s or ID(s)?
+
+## Background
+
+Currently the User Service generally returns GraphQL versions of the Typeorm Entities as the results of mutations.
+
+Typeorm entities at first glance seem the obvious things to return if say we are creating them or editing them. However, say in the case of Program entities we can easily create and innocent looking but spectacularly vast and inefficient series of SQL queries to return this information on the back of a mutations. 
+
+## Analysis
+
+An example of the possible issues
+
+```typescript
+   createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]
+```
+In normal use we might imagine it being called like this
+
+```graphql
+    mutation(
+            $organization_id: ID!,
+            $programs: [ProgramDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdatePrograms(programs: $programs) {
+                 id
+                 name
+                 system
+            }
+        }
+    }
+```
+
+However it would be quite legitimate to call it like this:
+
+```graphql
+mutation(
+            $organization_id: ID!,
+            $programs: [ProgramDetail]!) {
+        organization(organization_id: $organization_id) {
+            createOrUpdatePrograms(programs: $programs) {
+                 id
+                 name
+                 system
+                 age_ranges{
+                     id
+                     name
+                  	system
+                }
+                 grades{
+                    id
+                    name
+                  	system
+                }
+                 subjects{
+                    id
+                    name
+                    system
+                    categories{
+                        id
+                        name
+                        system
+                        subcategories
+                        {
+                             id
+                             name
+                             system
+                        }
+                    }               
+                }
+            }
+        }
+    }
+```
+
+With the nesting even a fairly modest count of 4 subcategories per category and 4 categories per subject and 4 subjects per program, leads to a massive ballooning in the query count. With a mere 18 Programs (including system ones) in an organization, 10 queries with addition of nesting become 946 queries.
+
+
+## Proposal
+
+If we return Ids or Booleans then keep them however if we return typeorm entities we should switch to
+summary or node types rather than the Typeorm entities. Then if clients wish to get more information they can use the returned ids as filters for a connection request on the types that they are interested in. Then the full power of dataloaders can be used to do a limited number of reasonably efficient queries
+
+## Decision
+
+|     Reviewer     |  Status  | Color  |
+|------------------|----------|-------:|
+| Enrique          | Pending  |   🟡   |
+| Oliver           | Pending  |   🟡   |
+| Max              | Pending  |   🟡   |
+| Richard          | Pending  |   🟡   |
+| Matt             | Pending  |   🟡   |
+| Sam              | Pending  |   🟡   | 
+| Raphael          | Pending  |   🟡   |
+| Marlon           | Pending  |   🟡   |
+| Nicholas         | Pending  |   🟡   |
