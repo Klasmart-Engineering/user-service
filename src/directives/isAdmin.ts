@@ -569,11 +569,11 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     permissions
 ) => {
     const userId = permissions.getUserId() || ''
-    const user = await User.findOneOrFail(userId)
-    const orgMemberships = await user.memberships
-    const schoolMemberships = await user.school_memberships
+    const orgMembership = await OrganizationMembership.findOne({
+        where: { user_id: userId },
+    })
 
-    if (orgMemberships?.length || schoolMemberships?.length) {
+    if (orgMembership) {
         scope
             .innerJoin('Permission.roles', 'Role')
             .where('Role.system_role = :truthyValue', {

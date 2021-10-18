@@ -107,8 +107,7 @@ export function getWhereClauseFromFilter(
                 if (
                     (columnAliasValue as IMultipleColumn).aliases?.length === 0
                 ) {
-                    qb.andWhere('false')
-                    continue // avoid returning empty brackets
+                    throw new Error('Aliases array must not be empty')
                 }
 
                 aliases = (columnAliasValue as IMultipleColumn).aliases || [
