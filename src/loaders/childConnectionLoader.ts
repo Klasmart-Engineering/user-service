@@ -34,13 +34,12 @@ export const childConnectionLoader = async <
     ) => ConnectionNode | Promise<ConnectionNode>,
     sort: ISortingConfig
 ): Promise<IPaginatedResponse<ConnectionNode>[]> => {
+    if (items.length === 0) {
+        return []
+    }
     // extract query info that was added to each Dataloader key
     const parentIds = items.map((i) => i.parent.id)
 
-    if (items.length < 1) {
-        // no thanks
-        // TODO
-    }
     const args = items[0]?.args as IChildPaginationArgs<SourceEntity>
     const parent = items[0]?.parent
     const includeTotalCount = items[0]?.includeTotalCount
@@ -48,7 +47,6 @@ export const childConnectionLoader = async <
 
     // not allowed to filter by the parent entity
     if (args.filter && filterHasProperty(parent.filterKey, args.filter)) {
-        // TODO
         throw new Error(
             `Cannot filter by parent ID ${parent.filterKey} in a child connection.`
         )
@@ -173,11 +171,6 @@ export const childConnectionLoader = async <
     const parentToRawChildMap = new Map<string, any[]>(
         parentIds.map((id) => [id, []])
     )
-
-    if (childParentIds.length !== entities.length) {
-        // big problemo
-        // TODO
-    }
 
     childParentIds.forEach((parentId, index) => {
         const child = entities[index]
