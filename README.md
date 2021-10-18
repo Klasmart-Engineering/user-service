@@ -40,7 +40,18 @@ Optionally, install the [Mocha Test Explorer](https://marketplace.visualstudio.c
 
 Stop the `postgres` container, then start the `kidsloop-user-service` container stack. If you don't have this in your Docker view yet, run `docker-compose up` to pull it.
 
--   `npm run test:acceptance`
+- `npm run test:acceptance`
+
+With docker-compose a volume maps the your `./dist` to the code directory of the image.
+This allows you to update the code running without rebuilding the image, just rebuild the code and restart the container:
+
+```bash
+npm run-script build
+# get the container ID:
+# $sudo docker ps --format "table {{.ID}}\t{{.Image}}"| grep kidsloop
+# 1786e6713dac   kidsloop-user-service_kidsloop-user-service
+sudo docker restart 1786e6713dac
+```
 
 # Connecting to a locally running frontend
 
