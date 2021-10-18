@@ -4,10 +4,11 @@ import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { BrandingImageTag } from '../types/graphQL/brandingImageTag'
 import { Status } from '../entities/status'
+import { Lazy } from '../utils/lazyLoading'
 
 export interface IOrganizationLoaders {
-    branding: DataLoader<string, BrandingResult | undefined>
-    organization: DataLoader<string, Organization | undefined>
+    branding: Lazy<DataLoader<string, BrandingResult | undefined>>
+    organization: Lazy<DataLoader<string, Organization | undefined>>
 }
 
 export const brandingForOrganizations = async (
