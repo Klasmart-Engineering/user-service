@@ -1,4 +1,10 @@
-import { IUsersConnectionLoaders } from './usersConnection'
+import Dataloader from 'dataloader'
+import {
+    IUsersConnectionLoaders,
+    orgsForUsers,
+    rolesForUsers,
+    schoolsForUsers,
+} from './usersConnection'
 import { IProgramsConnectionLoaders } from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
@@ -16,6 +22,8 @@ import {
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
+import { NodeDataLoader } from './genericNode'
+import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import DataLoader from 'dataloader'
 import { User } from '../entities/user'
 import { Lazy } from '../utils/lazyLoading'
@@ -25,6 +33,10 @@ import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 
+interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
+    node?: NodeDataLoader<User, CoreUserConnectionNode>
+}
+
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection?: IProgramsConnectionLoaders
@@ -33,6 +45,7 @@ export interface IDataLoaders {
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection?: IOrganizationsConnectionLoaders
     user: IUsersLoaders
+    userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 }
@@ -65,6 +78,11 @@ export function createContextLazyLoaders(): IDataLoaders {
             schoolById: new Lazy<DataLoader<string, School | undefined>>(
                 () => new DataLoader(schoolsByIds)
             ),
+        },
+        userNode: {
+            organizations: new Dataloader((keys) => orgsForUsers(keys)),
+            schools: new Dataloader((keys) => schoolsForUsers(keys)),
+            roles: new Dataloader((keys) => rolesForUsers(keys)),
         },
     }
 }

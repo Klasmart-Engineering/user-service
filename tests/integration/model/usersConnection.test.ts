@@ -63,6 +63,7 @@ import {
     TestConnection,
 } from '../../utils/testConnection'
 import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
+import { expectUserConnectionNode } from '../../utils/userConnectionNode'
 
 use(deepEqualInAnyOrder)
 
@@ -81,29 +82,6 @@ describe('usersConnection', () => {
     after(async () => {
         await connection?.close()
     })
-
-    const expectUserConnectionEdge = (
-        edge: IEdge<UserConnectionNode>,
-        user: User
-    ) => {
-        expect(edge.node).to.deep.equal({
-            id: user.user_id,
-            givenName: user.given_name,
-            familyName: user.family_name,
-            avatar: user.avatar,
-            status: user.status,
-            dateOfBirth: user.date_of_birth,
-            gender: user.gender,
-            contactInfo: {
-                email: user.email,
-                phone: user.phone,
-            },
-            alternateContactInfo: {
-                email: user.alternate_email,
-                phone: user.alternate_phone,
-            },
-        } as Required<CoreUserConnectionNode>)
-    }
 
     context('data', () => {
         beforeEach(async () => {
@@ -130,7 +108,7 @@ describe('usersConnection', () => {
 
             expect(userConnectionResponse.edges).to.have.length(2)
             userConnectionResponse.edges.forEach((edge, i) =>
-                expectUserConnectionEdge(edge, usersList[i])
+                expectUserConnectionNode(edge.node, usersList[i])
             )
         })
     })

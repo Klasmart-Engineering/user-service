@@ -10,6 +10,11 @@ import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 import { User } from '../entities/user'
+import {
+    mapUserToUserConnectionNode,
+    coreUserConnectionNodeFields,
+} from '../pagination/usersConnection'
+import { NodeDataLoader } from '../loaders/genericNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -135,8 +140,8 @@ const typeDefs = gql`
 
     extend type Query {
         me: User
-        user(user_id: ID!): User
-            @deprecated(reason: "Use 'usersConnection' with 'userId' filter.")
+        user(user_id: ID!): User @deprecated(reason: "Use 'userNode'")
+        userNode(id: ID!): UserConnectionNode @isAdmin(entity: "user")
         usersConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -229,25 +234,34 @@ export default function getDefault(
                 organizations: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.usersConnection?.organizations?.load(
-                        user.id
-                    )
+                    return info.path.prev?.key === 'userNode'
+                        ? ctx.loaders.userNode.organizations.load(user.id)
+                        : ctx.loaders.usersConnection?.organizations?.load(
+                              user.id
+                          )
                 },
                 schools: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.usersConnection?.schools?.load(user.id)
+                    return info.path.prev?.key === 'userNode'
+                        ? ctx.loaders.userNode.schools.load(user.id)
+                        : ctx.loaders.usersConnection?.schools?.load(user.id)
                 },
                 roles: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
-                    ctx: Context
+                    ctx: Context,
+                    info
                 ) => {
-                    return ctx.loaders.usersConnection?.roles?.load(user.id)
+                    return info.path.prev?.key === 'userNode'
+                        ? ctx.loaders.userNode.roles.load(user.id)
+                        : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
             },
             Mutation: {
@@ -265,6 +279,9 @@ export default function getDefault(
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
                 usersConnection: (_parent, args, ctx: Context, info) => {
+                    // Regenerate the loaders on every resolution, because the `args.filter`
+                    // may be different
+                    // In theory we could store `args.filter` and check for deep equality, but this is overcomplicating things
                     ctx.loaders.usersConnection = {
                         organizations: new Dataloader((keys) =>
                             orgsForUsers(keys, args.filter)
@@ -277,6 +294,18 @@ export default function getDefault(
                         ),
                     }
                     return model.usersConnection(ctx, info, args)
+                },
+                userNode: (_parent, args, ctx: Context) => {
+                    if (typeof ctx.loaders.userNode.node === 'undefined') {
+                        ctx.loaders.userNode.node = new NodeDataLoader(
+                            args.scope,
+                            User,
+                            'UserConnectionNode',
+                            mapUserToUserConnectionNode,
+                            coreUserConnectionNodeFields
+                        )
+                    }
+                    return ctx.loaders.userNode.node?.load(args.id)
                 },
                 users: (_parent, _args, ctx, _info) => [],
                 user: (_parent, { user_id }, ctx: Context, _info) => {
