@@ -26,6 +26,7 @@ pipelines:
            - npm install
            - npm run prettier-check
            - npm run lint
+           - npm run commitlint-check -- --from=origin/master
            - npm test
     - step:
         name: "Acceptance tests"
@@ -80,6 +81,7 @@ pipelines:
             - npm install
             - npm run prettier-check
             - npm run lint
+            - npm run commitlint-check -- --from=HEAD~1
             - npm test
       - step:
           name: "Acceptance tests"

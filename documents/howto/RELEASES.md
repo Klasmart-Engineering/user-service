@@ -55,23 +55,19 @@ git checkout -b v2.1.1 v2.1.0
 
 ### Common Steps
 
-2. Update the `package.json` to contain the correct VERSION
-
-For versioning make sure you are not re-inventing the wheel. We use semver, read more [here](https://semver.org/)
-
-3. Make sure there is nothing else to add to that release, if there is anything else that needs to be added
+2. Make sure there is nothing else to add to that release, if there is anything else that needs to be added
 (e.g. a critical bug) add it on the branch.
 
-4. Create the changelog. This is done automatically with a script:
+3. Create the changelog. This is done automatically with a script:
 ```bash
-npm run version
+npm run release
 ```
 
-5. Tag and push your release:
+4. Tag and push your release:
 ```bash
-./scripts/generate_tag.sh
+./scripts/push_tag.sh
 ```
 
-6. Finally update the release document according to that sprint. An [example](https://calmisland.atlassian.net/l/c/S8dgrLWg)
+5. Finally update the release document according to that sprint. An [example](https://calmisland.atlassian.net/l/c/S8dgrLWg)
 
-7. Merge the release branch back into master
+6. Merge the release branch back into master

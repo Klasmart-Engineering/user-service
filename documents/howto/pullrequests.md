@@ -66,7 +66,7 @@ Your pull request is ready to be merged when:
 
 
 ### Squash commits
-Merge your commits into a single commit when merging to master.  You can use the auto-generated commit message.
+Merge your commits into a single commit when merging to master.  Make sure that you use the conventional commit standard otherwise when merged the CI will break and your code won't be deployed.
 
 ### Update the PR title
 
