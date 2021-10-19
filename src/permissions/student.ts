@@ -13,6 +13,8 @@ export const studentRole = {
         PermissionName.student_reports_605,
         PermissionName.report_learning_summary_student_649,
         PermissionName.learning_summary_report_653,
+        PermissionName.report_student_progress_student_661,
+        PermissionName.student_progress_report_662,
         PermissionName.view_teacher_feedback_670,
         PermissionName.view_my_organization_profile_10111,
         PermissionName.create_own_organization_10220,
