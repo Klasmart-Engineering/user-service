@@ -41,6 +41,13 @@ pipelines:
           - docker-compose up -d && sleep 20
           - npm run test:acceptance
     - step:
+        name: "Check PR title format"
+        caches:
+          - node
+        script:
+           - npm install
+           - node scripts/check_pr_title.js
+    - step:
         name: "Build and publish docker image"
         services:
           - docker

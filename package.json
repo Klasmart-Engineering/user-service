@@ -38,6 +38,8 @@
   "devDependencies": {
     "@commitlint/cli": "13.2.1",
     "@commitlint/config-conventional": "13.2.0",
+    "@commitlint/lint": "^13.2.0",
+    "@commitlint/load": "^13.2.1",
     "@types/chai": "4.2.21",
     "@types/chai-as-promised": "7.1.4",
     "@types/cookie-parser": "1.4.2",
