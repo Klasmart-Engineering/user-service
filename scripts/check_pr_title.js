@@ -3,9 +3,9 @@ const lint = require('@commitlint/lint').default;
 const load = require('@commitlint/load').default;
 const lintConfig = require("../commitlint.config")
 
-const bitbucketPRId = process.env.BITBUCKET_PR_ID ?? 619
-const bitbucketUser = process.env.BITBUCKET_USER ?? 'pr-title-read-test-2'
-const bitbucketPassword = process.env.BITBUCKET_PASSWORD ?? 'QtMGpLxjeGqU5KuJQZ9M'
+const bitbucketPRId = process.env.BITBUCKET_PR_ID
+const bitbucketUser = process.env.BITBUCKET_USER
+const bitbucketPassword = process.env.BITBUCKET_PASSWORD
 
 const bitBucketRequestConfig = {
     method: 'get',
