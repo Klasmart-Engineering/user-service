@@ -21,6 +21,7 @@ export const genericErrorCodes = [
     'invalid_format',
     'inactive_status',
     'invalid_operation_type',
+    'delete_rejected_entity_in_use',
 ] as const
 
 export type GenericErrorCode = typeof genericErrorCodes[number]
@@ -169,5 +170,11 @@ export const customErrors = {
     // see messages.ts
     invalid_format: {
         code: 'ERR_INVALID_FORMAT',
+    },
+
+    // validation on database operations
+    delete_rejected_entity_in_use: {
+        code: 'ERR_DELETE_REJECTED_ENTITY_IN_USE',
+        message: 'Cannot delete {entity} {entityName} since it is being used',
     },
 }

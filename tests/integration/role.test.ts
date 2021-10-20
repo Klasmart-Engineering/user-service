@@ -6,7 +6,10 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
+import {
+    addRoleToOrganizationMembership,
+    removeRoleToOrganizationMembership,
+} from '../utils/operations/organizationMembershipOps'
 import {
     addUserToOrganizationAndValidate,
     createRole,
@@ -30,6 +33,8 @@ import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
+import { expectAPIError } from '../utils/apiError'
+import _ from 'lodash'
 chai.use(chaiAsPromised)
 
 describe('role', () => {
@@ -47,7 +52,7 @@ describe('role', () => {
         await connection?.close()
     })
 
-    describe('set', () => {
+    describe('#set', () => {
         const originalRoleName = 'Original Role Name'
         const newRoleName = 'New Role Name'
         const roleDescription = 'Some description'
@@ -216,7 +221,7 @@ describe('role', () => {
         })
     })
 
-    describe('permission', () => {
+    describe('#permission', () => {
         const nameOfPermissionToGet = PermissionName.create_school_20220
         let organizationId: string
         let userId: string
@@ -353,7 +358,7 @@ describe('role', () => {
         })
     })
 
-    describe('grant', () => {
+    describe('#grant', () => {
         const roleInfo = (role: Role) => {
             return role.role_id
         }
@@ -730,7 +735,7 @@ describe('role', () => {
         })
     })
 
-    describe('editPermissions', () => {
+    describe('#editPermissions', () => {
         const nameOfPermission = PermissionName.view_roles_and_permissions_30110
         let permission: Permission
         let organizationId: string
@@ -1016,7 +1021,7 @@ describe('role', () => {
         })
     })
 
-    describe('revoke', () => {
+    describe('#revoke', () => {
         const roleInfo = (role: Role) => {
             return role.role_id
         }
@@ -1208,10 +1213,34 @@ describe('role', () => {
         })
     })
 
-    describe('delete_role', () => {
+    describe('#delete_role', () => {
         let organizationId: string
         let userId: string
         let roleId: string
+        let roleToDeleteId: string
+
+        function delRole(token: string | undefined) {
+            return deleteRole(testClient, roleToDeleteId, {
+                authorization: token,
+            })
+        }
+
+        async function checkRoleRemoved(isRemoved: boolean) {
+            const dbRole = await Role.findOneOrFail(roleToDeleteId)
+            if (isRemoved) {
+                expect(dbRole.status).to.eq(Status.INACTIVE)
+                expect(dbRole.deleted_at).to.not.be.null
+            } else {
+                expect(dbRole.status).to.eq(Status.ACTIVE)
+                expect(dbRole.deleted_at).to.be.null
+            }
+        }
+
+        async function deleteSucceeds(token: string) {
+            const gqlDeleteRole = await expect(delRole(token)).to.be.fulfilled
+            expect(gqlDeleteRole).to.be.true
+            await checkRoleRemoved(true)
+        }
 
         beforeEach(async () => {
             const orgOwner = await createAdminUser(testClient)
@@ -1238,173 +1267,110 @@ describe('role', () => {
                 roleId,
                 { authorization: getAdminAuthToken() }
             )
+
+            roleToDeleteId = (
+                await createRole(testClient, organizationId, 'Role To Delete')
+            ).role_id
+            await addRoleToOrganizationMembership(
+                testClient,
+                userId,
+                organizationId,
+                roleToDeleteId,
+                { authorization: getAdminAuthToken() }
+            )
         })
 
-        context('when is a system role', () => {
+        context('when the user has delete role permissions', () => {
             beforeEach(async () => {
-                await updateRole(
+                await grantPermission(
                     testClient,
-                    { roleId, systemRole: true },
+                    roleId,
+                    PermissionName.delete_role_30440,
                     { authorization: getAdminAuthToken() }
                 )
             })
 
-            context('and the user is not an admin', () => {
-                it('raises a permission exception', async () => {
-                    await expect(
-                        deleteRole(testClient, roleId, {
-                            authorization: getNonAdminAuthToken(),
-                        })
-                    ).to.be.rejected
-
-                    const dbRole = await Role.findOneOrFail(roleId)
-                    expect(dbRole.status).to.eq(Status.ACTIVE)
-                    expect(dbRole.deleted_at).to.be.null
-                })
+            it('fails to delete the role with a role-in-use error', async () => {
+                expectAPIError.delete_rejected_entity_in_use(
+                    await expect(delRole(getNonAdminAuthToken())).to.be
+                        .rejected,
+                    {
+                        entity: 'Role',
+                        entityName: roleToDeleteId,
+                    },
+                    ['role_id']
+                )
+                await checkRoleRemoved(false)
             })
 
-            context('and the user is an admin', () => {
-                context(
-                    'and the user does not have delete role permissions',
-                    () => {
-                        it('deletes the database entry', async () => {
-                            await expect(
-                                deleteRole(testClient, roleId, {
-                                    authorization: getAdminAuthToken(),
-                                })
-                            ).to.be.fulfilled
+            context('and the role is not being used', () => {
+                beforeEach(async () => {
+                    await removeRoleToOrganizationMembership(
+                        testClient,
+                        userId,
+                        organizationId,
+                        roleToDeleteId,
+                        { authorization: getAdminAuthToken() }
+                    )
+                })
 
-                            const dbRole = await Role.findOneOrFail(roleId)
-                            expect(dbRole.status).to.eq(Status.INACTIVE)
-                            expect(dbRole.deleted_at).to.not.be.null
-                        })
-                    }
-                )
+                it('deletes the role', async () => {
+                    await deleteSucceeds(getNonAdminAuthToken())
+                })
 
-                context('and the user has all the permissions', () => {
+                context('but the role is a system role', () => {
                     beforeEach(async () => {
-                        await grantPermission(
+                        await updateRole(
                             testClient,
-                            roleId,
-                            PermissionName.delete_role_30440,
+                            { roleId: roleToDeleteId, systemRole: true },
                             { authorization: getAdminAuthToken() }
                         )
                     })
 
-                    it('deletes the role', async () => {
-                        const gqlDeleteRole = await deleteRole(
-                            testClient,
-                            roleId,
-                            { authorization: getAdminAuthToken() }
+                    it('fails to delete the role with a permission error', async () => {
+                        await expect(
+                            delRole(getNonAdminAuthToken())
+                        ).to.be.rejectedWith(
+                            `User(${userId}) does not have Admin permissions`
                         )
-                        expect(gqlDeleteRole).to.be.true
-
-                        const dbRole = await Role.findOneOrFail(roleId)
-                        expect(dbRole.status).to.eq(Status.INACTIVE)
-                        expect(dbRole.deleted_at).not.to.be.null
+                        await checkRoleRemoved(false)
                     })
 
-                    context('and the role is marked as inactive', () => {
-                        beforeEach(async () => {
-                            await deleteRole(testClient, roleId, {
-                                authorization: getAdminAuthToken(),
-                            })
+                    context('however the user is an admin', () => {
+                        it('deletes the role', async () => {
+                            await deleteSucceeds(getAdminAuthToken())
                         })
+                    })
+                })
 
-                        it('fails to delete the role', async () => {
-                            const gqlDeleteRole = await deleteRole(
-                                testClient,
-                                roleId,
-                                { authorization: getAdminAuthToken() }
-                            )
-                            expect(gqlDeleteRole).to.be.null
-
-                            const dbRole = await Role.findOneOrFail(roleId)
-                            expect(dbRole.status).to.eq(Status.INACTIVE)
-                            expect(dbRole.deleted_at).not.to.be.null
-                        })
+                context('but the role is already inactive', () => {
+                    beforeEach(async () => {
+                        await delRole(getAdminAuthToken())
+                    })
+                    it('fails to delete the role with an inactive-status error', async () => {
+                        expectAPIError.inactive_status(
+                            await expect(delRole(getNonAdminAuthToken())).to.be
+                                .rejected,
+                            {
+                                entity: 'Role',
+                                entityName: roleToDeleteId,
+                            },
+                            ['role_id']
+                        )
+                        await checkRoleRemoved(true)
                     })
                 })
             })
         })
 
-        context('when is not a system role', () => {
-            context('when not authenticated', () => {
-                it('throws a permission exception, and not delete the database entry', async () => {
-                    await expect(
-                        deleteRole(testClient, roleId, {
-                            authorization: undefined,
-                        })
-                    ).to.be.rejected
-
-                    const dbRole = await Role.findOneOrFail(roleId)
-                    expect(dbRole.status).to.eq(Status.ACTIVE)
-                    expect(dbRole.deleted_at).to.be.null
-                })
-            })
-
-            context('when authenticated', () => {
-                context(
-                    'and the user does not have delete role permissions',
-                    () => {
-                        it('throws a permission exception, and not delete the database entry', async () => {
-                            await expect(
-                                deleteRole(testClient, roleId, {
-                                    authorization: getNonAdminAuthToken(),
-                                })
-                            ).to.be.rejected
-
-                            const dbRole = await Role.findOneOrFail(roleId)
-                            expect(dbRole.status).to.eq(Status.ACTIVE)
-                            expect(dbRole.deleted_at).to.be.null
-                        })
-                    }
+        context('when the user does not have delete role permissions', () => {
+            it('fails to delete the role with a permission error', async () => {
+                await expect(
+                    delRole(getNonAdminAuthToken())
+                ).to.be.rejectedWith(
+                    `User(${userId}) does not have Permission(${PermissionName.delete_role_30440}) in Organization(${organizationId})`
                 )
-
-                context('and the user has all the permissions', () => {
-                    beforeEach(async () => {
-                        await grantPermission(
-                            testClient,
-                            roleId,
-                            PermissionName.delete_role_30440,
-                            { authorization: getAdminAuthToken() }
-                        )
-                    })
-
-                    it('deletes the role', async () => {
-                        const gqlDeleteRole = await deleteRole(
-                            testClient,
-                            roleId,
-                            { authorization: getNonAdminAuthToken() }
-                        )
-                        expect(gqlDeleteRole).to.be.true
-
-                        const dbRole = await Role.findOneOrFail(roleId)
-                        expect(dbRole.status).to.eq(Status.INACTIVE)
-                        expect(dbRole.deleted_at).not.to.be.null
-                    })
-
-                    context('and the role is marked as inactive', () => {
-                        beforeEach(async () => {
-                            await deleteRole(testClient, roleId, {
-                                authorization: getAdminAuthToken(),
-                            })
-                        })
-
-                        it('fails to delete the role', async () => {
-                            const gqlDeleteRole = await deleteRole(
-                                testClient,
-                                roleId,
-                                { authorization: getNonAdminAuthToken() }
-                            )
-                            expect(gqlDeleteRole).to.be.null
-
-                            const dbRole = await Role.findOneOrFail(roleId)
-                            expect(dbRole.status).to.eq(Status.INACTIVE)
-                            expect(dbRole.deleted_at).not.to.be.null
-                        })
-                    })
-                })
+                await checkRoleRemoved(false)
             })
         })
     })

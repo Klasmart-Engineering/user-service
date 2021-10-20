@@ -88,6 +88,7 @@ type ExpectAPIErrors = Implements<
         invalid_format: ExpectAPIError<'entity' | 'attribute'>
         invalid_operation_type: ExpectAPIError<'attribute' | 'otherAttribute'>
         inactive_status: ExpectAPIError<'entity' | 'entityName'>
+        delete_rejected_entity_in_use: ExpectAPIError<'entity' | 'entityName'>
     }
 >
 

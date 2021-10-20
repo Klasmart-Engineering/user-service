@@ -746,7 +746,7 @@ export class User extends CustomBaseEntity {
 }
 
 if (!process.env.DOMAIN) {
-    logger.warn('DOMAIN env varible not set, defaulting to kidsloop.net')
+    logger.warn('DOMAIN env variable not set, defaulting to kidsloop.net')
 }
 const domain = process.env.DOMAIN || 'kidsloop.net'
 const accountNamespace = v5(domain, v5.DNS)

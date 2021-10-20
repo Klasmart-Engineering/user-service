@@ -7,6 +7,7 @@ import {
     JoinTable,
     ManyToOne,
     getRepository,
+    Brackets,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from './organizationMembership'
@@ -17,6 +18,8 @@ import { Status } from './status'
 import { Context } from '../main'
 import { PermissionName } from '../permissions/permissionNames'
 import { CustomBaseEntity } from './customBaseEntity'
+import { APIError, APIErrorCollection } from '../types/errors/apiError'
+import { customErrors } from '../types/errors/customError'
 
 @Entity()
 export class Role extends CustomBaseEntity {
@@ -278,29 +281,82 @@ export class Role extends CustomBaseEntity {
         info: GraphQLResolveInfo
     ) {
         const organization_id = (await this.organization)?.organization_id
-        if (
-            info.operation.operation !== 'mutation' ||
-            !organization_id ||
-            this.status == Status.INACTIVE
-        ) {
-            return null
-        }
-
-        if (this.system_role) {
-            context.permissions.rejectIfNotAdmin()
-        }
-
+        if (this.system_role) context.permissions.rejectIfNotAdmin()
         const permisionContext = { organization_id: organization_id }
         await context.permissions.rejectIfNotAllowed(
             permisionContext,
             PermissionName.delete_role_30440
         )
 
+        const errors: APIError[] = []
+
+        if (!organization_id)
+            errors.push(
+                new APIError({
+                    code: customErrors.missing_required_entity_attribute.code,
+                    message:
+                        customErrors.missing_required_entity_attribute.message,
+                    variables: ['role_id', 'organization_id'],
+                    entity: 'Role',
+                    attribute: 'organization_id',
+                })
+            )
+
+        if (info.operation.operation !== 'mutation')
+            errors.push(
+                new APIError({
+                    code: customErrors.invalid_operation_type.code,
+                    message: customErrors.invalid_operation_type.message,
+                    variables: [],
+                    attribute: info.operation.operation,
+                    otherAttribute: 'mutation',
+                })
+            )
+
+        if (this.status == Status.INACTIVE)
+            errors.push(
+                new APIError({
+                    code: customErrors.inactive_status.code,
+                    message: customErrors.inactive_status.message,
+                    variables: ['role_id'],
+                    entity: 'Role',
+                    entityName: this.role_id,
+                })
+            )
+
+        const hasMembership =
+            (await getRepository(Role)
+                .createQueryBuilder()
+                .where('Role.role_id = :role_id', {
+                    role_id: this.role_id,
+                })
+                .leftJoin('Role.memberships', 'OrganisationMembership')
+                .leftJoin('Role.schoolMemberships', 'SchoolMembership')
+                .andWhere(
+                    new Brackets((qb) => {
+                        qb.where('OrganisationMembership.user_id IS NOT NULL')
+                        qb.orWhere('SchoolMembership.user_id IS NOT NULL')
+                    })
+                )
+                .getCount()) > 0
+        if (hasMembership) {
+            errors.push(
+                new APIError({
+                    code: customErrors.delete_rejected_entity_in_use.code,
+                    message: customErrors.delete_rejected_entity_in_use.message,
+                    variables: ['role_id'],
+                    entity: 'Role',
+                    entityName: this.role_id,
+                })
+            )
+        }
+
+        if (errors.length > 0) throw new APIErrorCollection(errors)
+
         try {
             await getManager().transaction(async (manager) => {
                 await this.inactivate(manager)
             })
-
             return true
         } catch (e) {
             context.logger.error(e)

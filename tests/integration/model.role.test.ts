@@ -67,7 +67,7 @@ describe('model.role', () => {
         await connection?.close()
     })
 
-    describe('.getRoles', () => {
+    describe('#getRoles', () => {
         context('when none', () => {
             it('returns only the system roles', async () => {
                 await createNonAdminUser(testClient)
@@ -124,7 +124,7 @@ describe('model.role', () => {
         })
     })
 
-    describe('.getRole', () => {
+    describe('#getRole', () => {
         context('when none', () => {
             it('should return null', async () => {
                 const { query } = testClient
@@ -176,12 +176,13 @@ describe('model.role', () => {
         })
     })
 
-    describe('.replaceRole', () => {
+    describe('#replaceRole', () => {
         let organization: Organization
         let otherOrganization: Organization
         let school: School
         let oldRole: Role
         let newRole: Role
+        let controlRole: Role
         let defaultRole: Role
         let userOne: User
         let userTwo: User
@@ -218,6 +219,7 @@ describe('model.role', () => {
             school = createSchool(organization)
             oldRole = createRole('Old Role', organization)
             newRole = createRole('New Role', organization)
+            controlRole = createRole('Control Role', organization)
             defaultRole = createRole('Default Role', undefined)
             defaultRole.system_role = true
             return connection.manager.save([
@@ -226,6 +228,7 @@ describe('model.role', () => {
                 school,
                 oldRole,
                 newRole,
+                controlRole,
                 defaultRole,
             ])
         }
@@ -240,32 +243,32 @@ describe('model.role', () => {
                 createOrganizationMembership({
                     user: userOne,
                     organization,
-                    roles: [oldRole],
+                    roles: [oldRole, controlRole],
                 }),
                 createOrganizationMembership({
                     user: userTwo,
                     organization,
-                    roles: [oldRole, newRole],
+                    roles: [oldRole, newRole, controlRole],
                 }),
                 createOrganizationMembership({
                     user: userThree,
                     organization,
-                    roles: [newRole],
+                    roles: [newRole, controlRole],
                 }),
                 createSchoolMembership({
                     user: userOne,
                     school,
-                    roles: [oldRole],
+                    roles: [oldRole, controlRole],
                 }),
                 createSchoolMembership({
                     user: userTwo,
                     school,
-                    roles: [oldRole, newRole],
+                    roles: [oldRole, newRole, controlRole],
                 }),
                 createSchoolMembership({
                     user: userThree,
                     school,
-                    roles: [newRole],
+                    roles: [newRole, controlRole],
                 }),
             ])
         }
@@ -374,7 +377,10 @@ describe('model.role', () => {
                 const newDbRole = await Role.findOneOrFail({
                     where: { role_id: newRole.role_id },
                 })
-                return [oldDbRole, newDbRole]
+                const controlDbRole = await Role.findOneOrFail({
+                    where: { role_id: controlRole.role_id },
+                })
+                return [oldDbRole, newDbRole, controlDbRole]
             }
 
             async function checkMemberships(
@@ -401,41 +407,53 @@ describe('model.role', () => {
                 expect(updatedRole.role_id).to.equal(newRole.role_id)
                 const updatedRoleOrgMembs = await updatedRole.memberships
                 if (!updatedRoleOrgMembs) return expect(false).to.be.true
-                checkMemberships(updatedRoleOrgMembs)
+                await checkMemberships(updatedRoleOrgMembs)
                 const updatedRoleSchMembs = await updatedRole.schoolMemberships
                 if (!updatedRoleSchMembs)
                     return expect(hasSchoolMemberships).to.be.false
-                checkMemberships(updatedRoleSchMembs)
+                await checkMemberships(updatedRoleSchMembs)
             }
 
             beforeEach(async () => {
                 await setupMemberships()
             })
 
-            it('checks return value is valid', async () => {
-                const updatedRole: Role = await expectReplacementSuccess()
-                await checkUpdatedRole(updatedRole, false)
-            })
-            it('replaces the old role with the new one', async () => {
-                await expectReplacementSuccess()
-                const [oldDbRole, newDbRole] = await getDbRoles()
-                expect(await oldDbRole.memberships).to.be.empty
-                expect(await oldDbRole.schoolMemberships).to.be.empty
-                await checkUpdatedRole(newDbRole, true)
-            })
-            it('does not leave duplicates in organisations', async () => {
-                await expectReplacementSuccess()
-                const [_, newDbRole] = await getDbRoles()
-                const orgMembs = await newDbRole.memberships
-                const uniqueOrgMembs = [...new Set(orgMembs)]
-                expect(orgMembs?.length).to.equal(uniqueOrgMembs.length)
-            })
-            it('does not leave duplicates in schools', async () => {
-                await expectReplacementSuccess()
-                const [_, newDbRole] = await getDbRoles()
-                const schoolMembs = await newDbRole.schoolMemberships
-                const uniqueSchoolMembs = [...new Set(schoolMembs)]
-                expect(schoolMembs?.length).to.equal(uniqueSchoolMembs.length)
+            context('and the organisation is active', () => {
+                let updatedRole: Role
+                beforeEach(async () => {
+                    updatedRole = await expectReplacementSuccess()
+                })
+
+                it('checks return value is valid', async () => {
+                    await checkUpdatedRole(updatedRole, false)
+                })
+                it('replaces the old role with the new one', async () => {
+                    const [oldDbRole, newDbRole] = await getDbRoles()
+                    expect(await oldDbRole.memberships).to.be.empty
+                    expect(await oldDbRole.schoolMemberships).to.be.empty
+                    await checkUpdatedRole(newDbRole, true)
+                })
+                it('does not leave duplicates in organisations', async () => {
+                    const [, newDbRole] = await getDbRoles()
+                    const orgMembs = await newDbRole.memberships
+                    const uniqueOrgMembs = [...new Set(orgMembs)]
+                    expect(orgMembs?.length).to.equal(uniqueOrgMembs.length)
+                })
+                it('does not leave duplicates in schools', async () => {
+                    const [, newDbRole] = await getDbRoles()
+                    const schoolMembs = await newDbRole.schoolMemberships
+                    const uniqueSchoolMembs = [...new Set(schoolMembs)]
+                    expect(schoolMembs?.length).to.equal(
+                        uniqueSchoolMembs.length
+                    )
+                })
+                it('does not affect other roles', async () => {
+                    const [, , controlDbRole] = await getDbRoles()
+                    const orgMembs = await controlDbRole.memberships
+                    const schoolMembs = await controlDbRole.schoolMemberships
+                    await checkMemberships(orgMembs || [])
+                    await checkMemberships(schoolMembs || [])
+                })
             })
 
             context('and the organisation is deactivated', () => {

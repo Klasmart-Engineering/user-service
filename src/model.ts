@@ -905,29 +905,51 @@ export class Model {
             )
         if (errors.length > 0) throw new APIErrorCollection(errors)
 
-        const orgMembs = await getRepository(OrganizationMembership)
-            .createQueryBuilder()
-            .innerJoinAndSelect('OrganizationMembership.roles', 'Role')
-            .where(
-                'OrganizationMembership.organization_id = :organization_id',
-                { organization_id: organization_id }
-            )
+        const orgMembIds = getRepository(OrganizationMembership)
+            .createQueryBuilder('OM') // alias for OrganizationMembership table
+            .select('OM.user_id, OM.organization_id')
+            .innerJoin('OM.roles', 'Role')
+            .where('OM.organization_id = :organization_id', {
+                organization_id,
+            })
             .andWhere('Role.role_id = :role_id', {
                 role_id: old_role_id,
             })
+        const orgMembsWithRoles = await getRepository(OrganizationMembership)
+            .createQueryBuilder('OM1') // alias for main OrganizationMembership table
+            .setParameters(orgMembIds.getParameters())
+            .innerJoin(
+                '(' + orgMembIds.getQuery() + ')',
+                'OM2', // alias for filtered table of OrganizationMemberships
+                '"OM2"."user_id" = OM1.user_id AND "OM2"."organization_id" = OM1.organization_id'
+            )
+            .innerJoinAndSelect('OM1.roles', 'Role')
             .getMany()
-        const schoolMembs = await getRepository(SchoolMembership)
-            .createQueryBuilder()
-            .innerJoinAndSelect('SchoolMembership.roles', 'Role')
-            .innerJoin('SchoolMembership.school', 'School')
+
+        const schoolMembsIds = getRepository(SchoolMembership)
+            .createQueryBuilder('SM') // alias for SchoolMembership table
+            .select('SM.user_id, SM.school_id')
+            .innerJoin('SM.roles', 'Role')
+            .innerJoin('SM.school', 'School')
             .where(`School.organization = :organization_id`, {
                 organization_id,
             })
             .andWhere('Role.role_id = :role_id', {
                 role_id: old_role_id,
             })
+        const schoolMembsWithRoles = await getRepository(SchoolMembership)
+            .createQueryBuilder('SM1') // alias for main SchoolMembership table
+            .setParameters(schoolMembsIds.getParameters())
+            .innerJoin(
+                '(' + schoolMembsIds.getQuery() + ')',
+                'SM2', // alias for filtered table of SchoolMemberships
+                '"SM2"."user_id" = SM1.user_id AND "SM2"."school_id" = SM1.school_id'
+            )
+            .innerJoinAndSelect('SM1.roles', 'Role')
             .getMany()
-        if (!orgMembs.length && !schoolMembs.length) return null
+
+        if (!orgMembsWithRoles.length && !schoolMembsWithRoles.length)
+            return null
 
         const roleUpdate = async (
             memb: OrganizationMembership | SchoolMembership
@@ -939,10 +961,10 @@ export class Model {
                 roles.push(newRole)
             memb.roles = Promise.resolve(roles)
         }
-        await Promise.all(orgMembs.map(roleUpdate))
-        await Promise.all(schoolMembs.map(roleUpdate))
+        await Promise.all(orgMembsWithRoles.map(roleUpdate))
+        await Promise.all(schoolMembsWithRoles.map(roleUpdate))
 
-        await this.manager.save([...orgMembs, ...schoolMembs])
+        await this.manager.save([...orgMembsWithRoles, ...schoolMembsWithRoles])
         return newRole
     }
 
