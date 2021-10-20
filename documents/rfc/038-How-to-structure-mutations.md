@@ -103,6 +103,7 @@ The main idea is to explicitly wrap inputs and outputs in types, which allows ad
 Inputs and outputs should be focused on mutating one entity.
 * Other entity fields may still be part of the mutation if they're needed for the operation. For example, `organizationId` is not part of `Grade` but is needed when `create`-ing a `Grade`
 * Continuing the above, these considerations should happen when a Use Case would commonly require 2+ mutations - a single mutation would allow us to reduce the number of DB queries needed. See the single `updateClasses` mutation below, as opposed to `updateClassStatuses`, `updateClassNames`, etc.
+* The `addXsToYs` and `removeXsFromYs` scenarios are focused on mutating the `Y` entity, therefore I/O type fields should be related to `Y` (although input fields would include necessary `X` fields as well)
 
 Should use unique input/output types per mutation, i.e. explicitly defined types. Therefore, for an entity `X`, a mutation method signature should take the form `operationXs(input: [OperationXInput!]!): OperationXsOutput`.
 * The same applies to mutations involving adding or removing `X`s from `Y`s: `operationXs[To/From]Ys(input: [OperationXsToYInput!]!): OperationXsToYsOutput`
@@ -120,9 +121,9 @@ Input type/object fields are specific to the Use Case.
 
 Output type/object fields are specific to the mutated entity and must consider result query limitation standards.
 * Put returned mutations in a field of the returned type object, as a list. This way it's easier to include metadata in responses if we ever want to
-* E.g. response is of `type CreateGradesOutput {grades: [GradeNode]}`
-* Returned mutation entity type should be an *existing* connection node, e.g. `ClassNode`, `ProgramNode`
-* For add/remove cases (e.g. `addXsToYs`), return  `Y` as per the guidelines above
+* Return entity type is of form `${Entity}ConnectionNode` (at the time of RFC writing, these types may not exist yet). In general, these return entity types should exist, don't create new types
+* Consolidate all output types into a single output type of the form: `type ${Entity}sMutationResult { entities: [EntityConnectionNode] }`. E.g. `type GradesMutationResult { grades: [GradeConnectionNode] }`. Any possible future additional fields can be made optional and feature-flagged to provide backwards compatibility and flexibility on which operations we desire additional output with. Consolidating into a single output type presents benefits in readability, reducing the number of output types to maintain, and follows the YAGNI principle
+* For add/remove cases (e.g. `addXsToYs`), return  `[Y]` as per the guidelines above
 * Clients may need to perform followup read-only queries on the mutation output. At the time of writing (Oct 18, 2021), `user-service` has agreed to temporarily limit query depth of output types to `1`. Therefore, ensure the mutation output adheres to this rule. Limiting return query depth to `1` mitigates risk of dataloaders behaving differently to what we expect in mutation responses. Root-level mutations are run sequentially (not parallel). For example, the mutation below runs `createPrograms` twice, in sequence, such that we can take advantage of dataloaders per `createPrograms` response but NOT across `createPrograms` responses. Therefore, *each* `ageRangesConnection` is one dataloaded query
 ```ts
 mutation {
@@ -206,16 +207,8 @@ input UpdateClassInput {
   students: [ID!]
 }
 
-type UpdateClassesOutput {
-  classes: [ClassConnectionNode!]!
-}
-
 input DeleteClassInput {
-  id: [ID!]
-}
-
-type DeleteClassesOutput {
-  classes: [ClassConnectionNode!]!
+  id: ID!
 }
 
 input AddTeachersToClassInput {
@@ -223,32 +216,28 @@ input AddTeachersToClassInput {
   teachers: [ID!]!
 }
 
-type AddTeachersToClassesOutput {
-  classes: [ClassConnectionNode!]!
-}
-
 input RemoveTeachersFromClassInput {
   id: ID!
   teachers: [ID!]!
 }
 
-type RemoveTeachersFromClassesOutput {
+type ClassesMutationResult {
   classes: [ClassConnectionNode!]!
 }
 
 extend type Mutation {
 
   # multiple updates at once
-  updateClasses(input: [UpdateClassInput!]!): UpdateClassesOutput
+  updateClasses(input: [UpdateClassInput!]!): ClassesMutationResult
   
   # multiple deletes at once
-  deleteClasses(input: [DeleteClassInput!]!): DeleteClassesOutput
+  deleteClasses(input: [DeleteClassInput!]!): ClassesMutationResult
 
   # add many teachers to one or more classes
-  addTeachersToClasses(input: [AddTeachersToClassInput!]!): AddTeachersToClassesOutput
+  addTeachersToClasses(input: [AddTeachersToClassInput!]!): ClassesMutationResult
 
    # remove many teachers from one or more classes
-  removeTeachersFromClasses(input: [RemoveTeachersFromClassInput!]!): RemoveTeachersFromClassesOutput
+  removeTeachersFromClasses(input: [RemoveTeachersFromClassInput!]!): ClassesMutationResult
 
   # would be better with Objects for input/output
   # but not really worth the breaking change on its own
@@ -328,10 +317,6 @@ input CreateProgramInput {
   sharedWith: [ID] # new
 }
 
-type CreateProgramsOutput {
-  programs: [ProgramConnectionNode!]!
-}
-
 input UpdateProgramInput {
   id: ID
   name: String
@@ -343,16 +328,8 @@ input UpdateProgramInput {
   sharedWith: [ID] # new
 }
 
-type UpdateProgramsOutput {
-  programs: [ProgramConnectionNode!]!
-}
-
 input DeleteProgramInput {
-  ids: [ID!]
-}
-
-type DeleteProgramsOutput {
-  programs: [ProgramConnectionNode!]!
+  ids: ID!
 }
 
 # Types below do not fall under list of allowed operations but are natural extensions for this problem
@@ -362,30 +339,26 @@ input ShareProgramsWithOrganizationInput {
   organizationIds: [ID!]!
 }
 
-type ShareProgramsWithOrganizationsOutput {
-  programs: [ProgramConnectionNode!]!
-}
-
 input UnshareProgramsWithOrganizationInput {
   programId: ID!
   organizationIds: [ID!]!
 }
 
-type UnshareProgramsWithOrganizationsOutput {
+type ProgramsMutationResult {
   programs: [ProgramConnectionNode!]!
 }
 
 extend type Mutation {
 
-  createPrograms(input: [CreateProgramInput!]!): CreateProgramsOutput
+  createPrograms(input: [CreateProgramInput!]!): ProgramsMutationResult
 
-  updatePrograms(input: [UpdateProgramInput!]!): UpdateProgramsOutput
+  updatePrograms(input: [UpdateProgramInput!]!): ProgramsMutationResult
 
-  deletePrograms(input: [DeleteProgramInput!]!): DeleteProgramsOutput
+  deletePrograms(input: [DeleteProgramInput!]!): ProgramsMutationResult
 
-  shareProgramsWithOrganziations(input: [ShareProgramsWithOrganizationInput!]!): ShareProgramsWithOrganizationsOutput
+  shareProgramsWithOrganziations(input: [ShareProgramsWithOrganizationInput!]!): ProgramsMutationResult
 
-  UnshareProgramsWithOrganziations(input: [UnshareProgramsWithOrganizationInput!]!): UnshareProgramsWithOrganizationsOutput
+  UnshareProgramsWithOrganziations(input: [UnshareProgramsWithOrganizationInput!]!): ProgramsMutationResult
 }
 ```
 
