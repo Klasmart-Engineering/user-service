@@ -94,7 +94,37 @@ query getSchoolTeacher {
 }
 `
 
-describe('acceptance.complexity', () => {
+const CONNECTIONS_FILTER_QUERY = `
+query getSchoolTeacher($user_id: UUID!) { # doesn't add to depth
+    usersConnection(
+        direction:FORWARD,
+        filter: {
+            userId: {
+                operator: eq, value: $user_id
+            },
+            OR: [
+                {
+                    userId: {
+                        operator: eq, value: $user_id
+                    }
+                },
+                {
+                    userId: {
+                        operator: eq, value: $user_id
+                    }
+                }
+            ]
+        },
+        directionArgs: {count: 50}
+    ) {
+        edges {
+            cursor
+        }
+    }
+}
+`
+
+describe.only('acceptance.complexity', () => {
     let connection: Connection
     let userId: string
 
@@ -170,6 +200,25 @@ describe('acceptance.complexity', () => {
             expect(response.body.errors).have.length(1)
             expect(response.body.errors[0].message).to.eq(
                 'Query too complex. Value of 550 is over the maximum 51.'
+            )
+        })
+        it('exceeds complexity limit with filter', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: CONNECTIONS_FILTER_QUERY,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).have.length(1)
+            expect(response.body.errors[0].message).to.eq(
+                'Query too complex. Value of 750 is over the maximum 51.'
             )
         })
     })

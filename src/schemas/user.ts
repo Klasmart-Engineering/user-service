@@ -72,10 +72,18 @@ const typeDefs = gql`
         order: SortOrder!
     }
 
+    directive @inputComplexity(
+        # The complexity value for the field
+        value: Int!
+    ) on INPUT_FIELD_DEFINITION
+
     input UserFilter {
         # table columns
-        userId: UUIDFilter
-        userStatus: StringFilter
+        # arbitary values
+        # main point is to show userStatus is not getting counted in tests
+        # that don't supply it
+        userId: UUIDFilter @inputComplexity(value: 5)
+        userStatus: StringFilter @inputComplexity(value: 30000)
         givenName: StringFilter
         familyName: StringFilter
         avatar: StringFilter

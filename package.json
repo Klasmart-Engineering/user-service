@@ -19,7 +19,7 @@
     "commitlint-check": "commitlint",
     "test:unit": "NODE_ENV=development mocha --require ts-node/register --file tests/unit/hooks.ts \"tests/unit/**/*.test.ts\" | pino-pretty",
     "test:integration": "NODE_ENV=development mocha --require ts-node/register --file tests/integration/hooks.ts \"tests/integration/**/*.test.ts\" --timeout 8000 | pino-pretty",
-    "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 mocha --require ts-node/register --file tests/acceptance/hooks.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000 | pino-pretty",
+    "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 mocha --require ts-node/register --file tests/acceptance/hooks.ts \"tests/acceptance/**/complexity.test.ts\" --timeout 8000 | pino-pretty",
     "test:migrations": "NODE_ENV=development mocha --require ts-node/register \"tests/migrations/**/*.test.ts\" --timeout 8000 | pino-pretty",
     "test": "npm run test:unit && npm run test:integration && npm run test:migrations",
     "coverage": "nyc -r lcov -e .ts -x tests --reporter=json-summary npm run test",
