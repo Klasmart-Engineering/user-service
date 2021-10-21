@@ -13,6 +13,7 @@ import {
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 
 /**
@@ -31,12 +32,58 @@ export type CoreUserConnectionNode = Pick<
     | 'gender'
 >
 
+export const userConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'user_id',
+    aliases: {
+        givenName: 'given_name',
+        familyName: 'family_name',
+    },
+}
+
 export async function usersConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
 ): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
+    const newScope = await usersConnectionQuery({
+        direction,
+        directionArgs,
+        scope,
+        filter,
+        sort,
+    })
+
+    const data = await paginateData<User>({
+        direction,
+        directionArgs,
+        scope: newScope,
+        sort: {
+            ...userConnectionSortingConfig,
+            sort,
+        },
+        includeTotalCount,
+    })
+
+    return {
+        totalCount: data.totalCount,
+        pageInfo: data.pageInfo,
+        edges: data.edges.map((edge) => {
+            return {
+                node: mapUserToUserConnectionNode(edge.node),
+                cursor: edge.cursor,
+            }
+        }),
+    }
+}
+
+export async function usersConnectionQuery({
+    direction,
+    directionArgs,
+    scope,
+    filter,
+    sort,
+}: IPaginationArgs<User>) {
     if (filter) {
         if (
             (filterHasProperty('organizationId', filter) ||
@@ -85,31 +132,7 @@ export async function usersConnectionResolver(
 
     scope.select(coreUserConnectionNodeFields)
 
-    const data = await paginateData<User>({
-        direction,
-        directionArgs,
-        scope,
-        sort: {
-            primaryKey: 'user_id',
-            aliases: {
-                givenName: 'given_name',
-                familyName: 'family_name',
-            },
-            sort,
-        },
-        includeTotalCount,
-    })
-
-    return {
-        totalCount: data.totalCount,
-        pageInfo: data.pageInfo,
-        edges: data.edges.map((edge) => {
-            return {
-                node: mapUserToUserConnectionNode(edge.node),
-                cursor: edge.cursor,
-            }
-        }),
-    }
+    return scope
 }
 
 export function mapUserToUserConnectionNode(

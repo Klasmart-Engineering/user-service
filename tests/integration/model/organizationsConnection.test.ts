@@ -3,9 +3,9 @@ import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { sortBy } from 'lodash'
-import { OrganizationOwnership } from '../../../src/entities/organizationOwnership'
-import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { Organization } from '../../../src/entities/organization'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { OrganizationOwnership } from '../../../src/entities/organizationOwnership'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
@@ -13,36 +13,46 @@ import {
     CoreOrganizationConnectionNode,
     mapOrganizationToOrganizationConnectionNode,
 } from '../../../src/pagination/organizationsConnection'
+import { PermissionName } from '../../../src/permissions/permissionNames'
 import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import {
-    IEdge,
     convertDataToCursor,
+    IEdge,
+    IPaginatedResponse,
 } from '../../../src/utils/pagination/paginate'
+import { generateShortCode } from '../../../src/utils/shortcode'
 import {
-    createOrganizations,
     createOrganization,
+    createOrganizations,
 } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
-import { ADMIN_EMAIL, createUser } from '../../factories/user.factory'
 import { createOrganizationOwnership } from '../../factories/organizationOwnership.factory'
+import { createRole } from '../../factories/role.factory'
+import { createSchool } from '../../factories/school.factory'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import { ADMIN_EMAIL, createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
 import {
-    organizationsConnectionNodes,
     organizationsConnection,
     organizationsConnectionMainData,
+    organizationsConnectionNodes,
 } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
-import { getAdminAuthToken, generateToken } from '../../utils/testConfig'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
 import {
     createTestConnection,
     TestConnection,
 } from '../../utils/testConnection'
-import { generateShortCode } from '../../../src/utils/shortcode'
+import { createNonAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -744,6 +754,170 @@ describe('organizationsConnection', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('child connections', () => {
+        const numUsersPerOrg = 10
+        const numSchoolsPerOrg = 10
+        let orgs: Organization[]
+
+        beforeEach(async () => {
+            orgs = [createOrganization(), createOrganization()]
+            await connection.manager.save(orgs)
+            for (let i = 0; i < numUsersPerOrg; i++) {
+                for (const org of orgs) {
+                    const user = await createUser().save()
+                    await createOrganizationMembership({
+                        user,
+                        organization: org,
+                    }).save()
+                }
+            }
+            for (let i = 0; i < numSchoolsPerOrg; i++) {
+                for (const org of orgs) {
+                    await createSchool(org).save()
+                }
+            }
+        })
+        context('.usersConnection', () => {
+            it('returns organization users', async () => {
+                const usersPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(usersPerOrg.edges.length).to.eq(2)
+                for (const orgUsers of usersPerOrg.edges) {
+                    expect(orgUsers.node.usersConnection?.totalCount).to.eq(10)
+                }
+            })
+            it('uses the isAdmin scope for permissions', async () => {
+                // create a non-admin user and add to org1
+                const nonAdmin = await createNonAdminUser(testClient)
+                const membership = await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization: orgs[0],
+                }).save()
+
+                // can't see any other users without permissions
+                let usersPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() }
+                )
+                expect(usersPerOrg.totalCount).to.eq(1)
+                expect(
+                    usersPerOrg.edges[0].node.usersConnection?.totalCount
+                ).to.eq(1)
+
+                // can see all other users with required permissions
+                const role = await createRole('role', orgs[0], {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                membership.roles = Promise.resolve([role])
+                await membership.save()
+                usersPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() }
+                )
+                expect(usersPerOrg.totalCount).to.eq(1)
+                expect(
+                    usersPerOrg.edges[0].node.usersConnection?.totalCount
+                ).to.eq(numUsersPerOrg + 1)
+            })
+            it('returns the child connection relations', async () => {
+                const usersPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(usersPerOrg.edges.length).to.eq(2)
+                for (const orgUsers of usersPerOrg.edges) {
+                    expect(
+                        orgUsers.node.usersConnection?.edges
+                    ).to.have.lengthOf(10)
+                    for (const user of orgUsers.node.usersConnection?.edges ??
+                        []) {
+                        const userOrgs = user.node.organizations
+                        expect(userOrgs).to.have.lengthOf(1)
+                        expect(userOrgs[0].id).to.eq(orgUsers.node.id)
+                    }
+                }
+            })
+            it('dataloads child relations', async () => {
+                connection.logger.reset()
+                const usersPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(connection.logger.count).to.be.eq(8)
+            })
+        })
+
+        context('.schoolsConnection', async () => {
+            it('returns school users', async () => {
+                const schoolsPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(schoolsPerOrg.edges.length).to.eq(2)
+                for (const orgUsers of schoolsPerOrg.edges) {
+                    expect(orgUsers.node.schoolsConnection?.totalCount).to.eq(
+                        numSchoolsPerOrg
+                    )
+                }
+            })
+            it('uses the isAdmin scope for permissions', async () => {
+                // create a non-admin user and add to a school in org1
+                const nonAdmin = await createNonAdminUser(testClient)
+                const membership = await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization: orgs[0],
+                }).save()
+                await createSchoolMembership({
+                    user: nonAdmin,
+                    school: (await orgs[0].schools)![0],
+                })
+
+                // can't see any schools without permissions
+                let schoolsPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() }
+                )
+                expect(schoolsPerOrg.totalCount).to.eq(1)
+                expect(
+                    schoolsPerOrg.edges[0].node.schoolsConnection?.totalCount
+                ).to.eq(0)
+
+                // can see all other schools with required permissions
+                const role = await createRole('role', orgs[0], {
+                    permissions: [PermissionName.view_school_20110],
+                }).save()
+                membership.roles = Promise.resolve([role])
+                await membership.save()
+                schoolsPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() }
+                )
+                expect(schoolsPerOrg.totalCount).to.eq(1)
+                expect(
+                    schoolsPerOrg.edges[0].node.schoolsConnection?.totalCount
+                ).to.eq(numSchoolsPerOrg)
+            })
         })
     })
 })
