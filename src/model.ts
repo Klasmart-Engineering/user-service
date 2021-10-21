@@ -88,7 +88,6 @@ import { PermissionName } from './permissions/permissionNames'
 import { APIError, APIErrorCollection } from './types/errors/apiError'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 import { CLASS_NODE_COLUMNS } from './nodes/classNode'
-import { INodeArgs } from './types/node'
 
 export class Model {
     public static async create() {
