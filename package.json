@@ -114,6 +114,7 @@
     "express": "4.17.1",
     "graphql": "15.5.3",
     "graphql-depth-limit": "^1.1.0",
+    "graphql-query-complexity": "^0.9.0",
     "graphql-tag": "2.12.5",
     "graphql-type-uuid": "0.2.0",
     "graphql-upload": "12.0.0",

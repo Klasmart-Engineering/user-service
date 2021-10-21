@@ -93,6 +93,8 @@ const typeDefs = gql`
         OR: [UserFilter!]
     }
 
+    directive @complexity(value: Int!) on FIELD_DEFINITION
+
     type UserConnectionNode {
         id: ID!
         givenName: String
@@ -102,7 +104,7 @@ const typeDefs = gql`
         alternateContactInfo: ContactInfo
         organizations: [OrganizationSummaryNode!]!
         roles: [RoleSummaryNode!]!
-        schools: [SchoolSummaryNode!]!
+        schools: [SchoolSummaryNode!]! @complexity(value: 10)
         status: Status!
         dateOfBirth: String
         gender: String

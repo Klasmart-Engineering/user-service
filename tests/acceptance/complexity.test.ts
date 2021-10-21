@@ -75,6 +75,25 @@ query getSchoolTeacher($user_id: ID!) { # doesn't add to depth
 }
 `
 
+// todo: use a real nest connection once we have on implemented
+const NESTED_CONNECTIONS_QUERY = `
+query getSchoolTeacher {
+    usersConnection(
+        direction:FORWARD,
+        directionArgs: {count: 50}
+    ) { # depth: 0
+        edges {
+            node {
+                # in the schema we've given this a complexity directive
+                schools {
+                    id
+                }
+            }
+        }
+    }
+}
+`
+
 describe('acceptance.complexity', () => {
     let connection: Connection
     let userId: string
@@ -130,6 +149,28 @@ describe('acceptance.complexity', () => {
                     },
                 })
             expect(response.status).to.eq(200)
+        })
+    })
+
+    context('query complexity', () => {
+        it('exceeds complexity limit', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: NESTED_CONNECTIONS_QUERY,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).have.length(1)
+            expect(response.body.errors[0].message).to.eq(
+                'Query too complex. Value of 550 is over the maximum 51.'
+            )
         })
     })
 })
