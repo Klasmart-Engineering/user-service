@@ -2,6 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
+import { permissionsConnectionResolver } from '../pagination/permissionsConnection'
 
 const typeDefs = gql`
     type Permission {
@@ -26,22 +27,31 @@ const typeDefs = gql`
     }
 
     type PermissionsConnectionNode {
-        permission_id: ID
-        permission_name: ID!
-        permission_category: String
-        permission_group: String
-        permission_level: String
-        permission_description: String
-        allow: Boolean
+        id: ID!
+        name: String!
+        category: String
+        group: String
+        level: String
+        description: String
+        allow: Boolean!
+    }
+
+    enum PermissionSortBy {
+        id
+        name
+        category
+        group
+        level
+    }
+
+    input PermissionSortInput {
+        field: PermissionSortBy!
+        order: SortOrder!
     }
 
     input PermissionFilter {
-        permission_id: StringFilter
-        permission_name: StringFilter
-        permission_category: StringFilter
-        permission_group: StringFilter
-        permission_level: StringFilter
-        permission_description: StringFilter
+        roleId: UUIDFilter
+        name: StringFilter
         allow: BooleanFilter
 
         AND: [PermissionFilter!]
@@ -52,8 +62,9 @@ const typeDefs = gql`
         permissionsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
+            sort: PermissionSortInput
             filter: PermissionFilter
-        ): PermissionsConnectionResponse @isAuthenticated
+        ): PermissionsConnectionResponse @isAdmin(entity: "permission")
     }
 `
 export default function getDefault(
@@ -65,7 +76,7 @@ export default function getDefault(
         resolvers: {
             Query: {
                 permissionsConnection: (_parent, args, ctx, info) =>
-                    model.permissionsConnection(ctx, info, args),
+                    permissionsConnectionResolver(info, ctx, args),
             },
         },
     }

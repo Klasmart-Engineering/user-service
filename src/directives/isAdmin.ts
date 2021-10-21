@@ -24,6 +24,7 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
+import { Permission } from '../entities/permission'
 
 interface IsAdminDirectiveArgs {
     entity?: string
@@ -88,6 +89,9 @@ export function isAdminTransformer(schema: GraphQLSchema) {
                     case 'school':
                         scope = getRepository(School).createQueryBuilder()
                         break
+                    case 'permission':
+                        scope = getRepository(Permission).createQueryBuilder()
+                        break
                     default:
                         permissions.rejectIfNotAdmin()
                 }
@@ -150,6 +154,12 @@ export function isAdminTransformer(schema: GraphQLSchema) {
                         case 'school':
                             await nonAdminSchoolScope(
                                 scope as SelectQueryBuilder<School>,
+                                permissions
+                            )
+                            break
+                        case 'permission':
+                            await nonAdminPermissionScope(
+                                scope as SelectQueryBuilder<Permission>,
                                 permissions
                             )
                             break
@@ -548,6 +558,23 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
                 { user_id: userId }
             )
             .where('Class.organization IN (:...schoolOrgs)', { schoolOrgs })
+        return
+    }
+
+    scope.where('false')
+}
+
+export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
+    scope,
+    permissions
+) => {
+    const userId = permissions.getUserId() || ''
+    const orgMembership = await OrganizationMembership.findOne({
+        where: { user_id: userId },
+    })
+
+    if (orgMembership) {
+        scope.innerJoin('Permission.roles', 'Role')
         return
     }
 
