@@ -16,7 +16,11 @@ import { loadPlugins } from './plugins'
 import { Request, Response } from 'express'
 import depthLimit from 'graphql-depth-limit'
 
-import { createComplexityPlugin, makeComplexityEstimator } from './complexity'
+import {
+    createComplexityPlugin,
+    createMutationValidationPlugin,
+    makeComplexityEstimator,
+} from './complexity'
 import { MAX_PAGE_SIZE } from '../schemas/scalars/page_size'
 
 /* accessing a child via a connection field takes 3 depth
@@ -86,6 +90,10 @@ export const createServer = async (model: Model) => {
         makeExecutableSchema(getSchema(model))
     )
 
+    const depthPlugin = createMutationValidationPlugin({
+        schema,
+    })
+
     const complexityPlugin = createComplexityPlugin({
         schema,
         // not the real limit we'd use, just enough to pass tests
@@ -94,6 +102,7 @@ export const createServer = async (model: Model) => {
     })
 
     const plugins = await loadPlugins()
+    plugins.push(depthPlugin)
     plugins.push(complexityPlugin)
 
     return new ApolloServer({

@@ -6,6 +6,7 @@ import {
 } from 'graphql-query-complexity'
 import {
     ArgumentNode,
+    DefinitionNode,
     DirectiveLocation,
     DocumentNode,
     getDirectiveValues,
@@ -20,9 +21,108 @@ import {
     ObjectFieldNode,
     ObjectValueNode,
     separateOperations,
+    TypeInfo,
+    ValidationContext,
 } from 'graphql'
-import { PluginDefinition } from 'apollo-server-core'
 import { MAX_PAGE_SIZE } from '../schemas/scalars/page_size'
+import { PluginDefinition } from 'apollo-server-core'
+import depthLimit from 'graphql-depth-limit'
+
+// graphql-depth-limit does not allow custom depths for mutations
+// so we wrap it in a plugin and call it manually when we see a mutation
+// todo: if dataloaders work on mutation responses - do we need this?
+// we also need the plugin for checking top-level operation width
+// as I haven't found a package that does that
+export const createMutationValidationPlugin = ({
+    schema,
+}: {
+    schema: GraphQLSchema
+}): PluginDefinition => {
+    return {
+        requestDidStart: () =>
+            new Promise((resolve, reject) => {
+                return resolve({
+                    didResolveOperation: ({
+                        request,
+                        document,
+                    }: {
+                        // todo: what is this type meant to be?
+                        request: any
+                        document: DocumentNode
+                    }) => {
+                        return new Promise<void>((resolve, reject) => {
+                            const query = <DocumentNode>(
+                                (request.operationName
+                                    ? separateOperations(document)[
+                                          request.operationName
+                                      ]
+                                    : document)
+                            )
+
+                            // checking depth
+
+                            const mutations = query.definitions?.find(
+                                (def: DefinitionNode) => {
+                                    if (def.kind == 'OperationDefinition') {
+                                        return def.operation === 'mutation'
+                                    } else {
+                                        return false
+                                    }
+                                }
+                            )
+                            // if there are no mutations, skip the validation logic
+                            // todo: this breaks if you pass mutations AND queries in the same document
+                            // and don't pick one to execute (used for validating a document but not executing anything)
+                            // "breaks" here means - validates the queries as if they were mutations
+                            // I'm not sure it's possible to fix this without breakiing open the graphql-depth-limit package
+                            // todo: could we construct a new "query" with the query definitions stripped out and pass that in?
+                            if (mutations !== undefined) {
+                                const typeInfo = new TypeInfo(schema)
+                                const context = new ValidationContext(
+                                    schema,
+                                    query,
+                                    typeInfo,
+                                    (err) => {
+                                        throw err
+                                    }
+                                )
+                                context.getDocument()
+                                depthLimit(1)(context)
+                            }
+
+                            // checking the size of top level selection sets in operations
+                            for (const definition of query.definitions) {
+                                if (definition.kind == 'OperationDefinition') {
+                                    const selectionSetLength =
+                                        definition.selectionSet.selections
+                                            .length
+                                    const mutationMax = 5
+                                    const queryMax = 6
+                                    if (
+                                        definition.operation === 'mutation' &&
+                                        selectionSetLength > mutationMax
+                                    ) {
+                                        throw new GraphQLError(
+                                            `Too many top-level fields for mutation operation, found ${selectionSetLength}, must be less then ${mutationMax}`
+                                        )
+                                    } else if (
+                                        definition.operation === 'query' &&
+                                        selectionSetLength > queryMax
+                                    ) {
+                                        throw new GraphQLError(
+                                            `Too many top-level fields for query operation, found ${selectionSetLength}, must be less then ${queryMax}`
+                                        )
+                                    }
+                                }
+                            }
+
+                            resolve()
+                        })
+                    },
+                })
+            }),
+    }
+}
 
 // based on https://github.com/MichalLytek/type-graphql/blob/4501867fffe3e6f5b3e71af0b71651efcd48d9c3/examples/query-complexity/index.ts#L16-L64
 // from https://github.com/slicknode/graphql-query-complexity/issues/7

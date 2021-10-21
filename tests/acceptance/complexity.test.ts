@@ -124,6 +124,73 @@ query getSchoolTeacher($user_id: UUID!) { # doesn't add to depth
 }
 `
 
+const MUTATION_TOO_DEEP = `
+mutation switch_user($user_id: ID!){
+    switch_user(user_id: $user_id){
+      organization_ownerships{
+        user_id
+      }
+    }
+  }
+`
+
+const MUTATION_NOT_TOO_DEEP = `
+mutation switch_user($user_id: ID!){
+    switch_user(user_id: $user_id){
+      user_id
+    }
+  }
+`
+
+const MUTATION_TOO_BROAD = `
+mutation switch_user($user_id: ID!) {
+  switch_user(user_id: $user_id) {
+    user_id
+  }
+  b: switch_user(user_id: $user_id) {
+    user_id
+  }
+  c: switch_user(user_id: $user_id) {
+    user_id
+  }
+  d: switch_user(user_id: $user_id) {
+    user_id
+  }
+  e: switch_user(user_id: $user_id) {
+    user_id
+  }
+  f: switch_user(user_id: $user_id) {
+    user_id
+  }
+}
+`
+
+const QUERY_TOO_BROAD = `
+{
+  me {
+    user_id
+  }
+  b: me {
+    user_id
+  }
+  c: me {
+    user_id
+  }
+  d: me {
+    user_id
+  }
+  e: me {
+    user_id
+  }
+  f: me {
+    user_id
+  }
+  g: me {
+    user_id
+  }
+}
+`
+
 describe.only('acceptance.complexity', () => {
     let connection: Connection
     let userId: string
@@ -219,6 +286,84 @@ describe.only('acceptance.complexity', () => {
             expect(response.body.errors).have.length(1)
             expect(response.body.errors[0].message).to.eq(
                 'Query too complex. Value of 750 is over the maximum 51.'
+            )
+        })
+    })
+
+    context('mutation depth limit', () => {
+        it('exceeds depth limit', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: MUTATION_TOO_DEEP,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).have.length(1)
+            expect(response.body.errors[0].message).to.eq(
+                "'switch_user' exceeds maximum operation depth of 1"
+            )
+        })
+        it('does not exceed depth limit', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: MUTATION_NOT_TOO_DEEP,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(200)
+        })
+    })
+
+    context('top-level selection set size', () => {
+        it('exceeds limit, mutation', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: MUTATION_TOO_BROAD,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).have.length(1)
+            expect(response.body.errors[0].message).to.eq(
+                'Too many top-level fields for mutation operation, found 6, must be less then 5'
+            )
+        })
+        it('exceeds limit, query', async () => {
+            const response = await request
+                .post('/graphql')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: QUERY_TOO_BROAD,
+                    variables: {
+                        user_id: userId,
+                    },
+                })
+            expect(response.status).to.eq(400)
+            expect(response.body.errors).have.length(1)
+            expect(response.body.errors[0].message).to.eq(
+                'Too many top-level fields for query operation, found 7, must be less then 6'
             )
         })
     })
