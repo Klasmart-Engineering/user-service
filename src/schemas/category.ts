@@ -9,8 +9,43 @@ const typeDefs = gql`
         uploadCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
     }
+    type CategoriesConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [CategoriesConnectionEdge]
+    }
+    type CategoriesConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: CategoryConnectionNode
+    }
+    enum CategorySortBy {
+        id
+        name
+    }
+    input CategorySortInput {
+        field: CategorySortBy!
+        order: SortOrder!
+    }
+    input CategoryFilter {
+        status: StringFilter
+        system: BooleanFilter
+        AND: [CategoryFilter]
+        OR: [CategoryFilter]
+    }
+    type CategoryConnectionNode {
+        id: ID!
+        name: String
+        status: Status!
+        system: Boolean!
+    }
     extend type Query {
         category(id: ID!): Category @isAdmin(entity: "category")
+        categoriesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: CategoryFilter
+            sort: CategorySortInput
+        ): CategoriesConnectionResponse @isAdmin(entity: "category")
     }
     type Category {
         id: ID!
@@ -46,6 +81,9 @@ export default function getDefault(
             Query: {
                 category: (_parent, args, ctx, _info) =>
                     model.getCategory(args, ctx),
+                categoriesConnection: (_parent, args, ctx: Context, info) => {
+                    return model.categoriesConnection(ctx, info, args)
+                },
             },
         },
     }

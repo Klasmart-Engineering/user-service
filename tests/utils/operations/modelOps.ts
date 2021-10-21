@@ -27,6 +27,7 @@ import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnect
 import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
 import { gql } from 'apollo-server-express'
 import { Role } from '../../../src/entities/role'
+import { CategorySummaryNode } from '../../../src/types/graphQL/categorySummaryNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -535,6 +536,29 @@ const GRADES_CONNECTION_MAIN_DATA = `
                 }
             }
 
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export const CATEGORIES_CONNECTION = `
+    query categoriesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: CategoryFilter, $sortArgs: CategorySortInput) {
+        categoriesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+            totalCount
+            edges {
+                cursor
+                node {
+                    id
+                    name
+                    status
+                    system
+                }
+            }
             pageInfo {
                 hasNextPage
                 hasPreviousPage
@@ -1624,6 +1648,30 @@ export async function subjectsConnectionMainData(
 
     const res = await gqlTry(operation)
     return res.data?.subjectsConnection
+}
+
+export async function categoriesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    headers?: Headers,
+    filter?: IEntityFilter,
+    sort?: ISortField
+): Promise<IPaginatedResponse<CategorySummaryNode>> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: CATEGORIES_CONNECTION,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs: filter,
+                sortArgs: sort,
+            },
+            headers: headers,
+        })
+    const res = await gqlTry(operation)
+    return res.data?.categoriesConnection
 }
 
 export async function organizationsConnection(

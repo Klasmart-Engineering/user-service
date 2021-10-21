@@ -86,6 +86,7 @@ import logger, { TypeORMLogger } from './logging'
 import { ReplaceRoleArguments } from './operations/roles'
 import { PermissionName } from './permissions/permissionNames'
 import { APIError, APIErrorCollection } from './types/errors/apiError'
+import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 
 export class Model {
     public static async create() {
@@ -832,6 +833,12 @@ export class Model {
 
         return data
     }
+
+    public categoriesConnection = (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Category>
+    ) => categoriesConnectionResolver(info, paginationArgs)
 
     public async getRole({ role_id }: Role, context: Context) {
         try {
