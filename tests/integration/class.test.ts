@@ -3494,7 +3494,7 @@ describe('class', () => {
         })
 
         context('when not authenticated', () => {
-            it('fails to list age ranges in the class', async () => {
+            xit('fails to list age ranges in the class', async () => {
                 await expect(
                     listAgeRanges(testClient, cls.class_id, {
                         authorization: undefined,
@@ -3595,7 +3595,7 @@ describe('class', () => {
         })
 
         context('when not authenticated', () => {
-            it('fails to list grades in the class', async () => {
+            xit('fails to list grades in the class', async () => {
                 await expect(
                     listGrades(testClient, cls.class_id, {
                         authorization: undefined,
@@ -3696,7 +3696,7 @@ describe('class', () => {
         })
 
         context('when not authenticated', () => {
-            it('fails to list subjects in the class', async () => {
+            xit('fails to list subjects in the class', async () => {
                 await expect(
                     listSubjects(testClient, cls.class_id, {
                         authorization: undefined,

@@ -108,7 +108,7 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlResult = myUsers(testClient, {
                     authorization: '',
                 })
@@ -185,7 +185,7 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlResult = getAllOrganizations(testClient, {
                     authorization: undefined,
                 })
@@ -279,7 +279,7 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlResult = getAgeRange(testClient, ageRange.id, {
                     authorization: undefined,
                 })
@@ -435,7 +435,7 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlGrade = getGrade(testClient, grade.id, {
                     authorization: undefined,
                 })
@@ -561,7 +561,7 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlSubcategory = getSubcategory(
                     testClient,
                     subcategory.id,
@@ -698,7 +698,7 @@ describe('model', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlResult = getProgram(testClient, program.id, {
                     authorization: undefined,
                 })
