@@ -1,11 +1,10 @@
 import { check } from 'k6';
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import { getOrganizationUserQuery } from './queries/users';
+import { getOrganizationUserQuery } from '../queries/users';
 
 export const options:Options = {
     vus: 1,
-    duration: `5s`,
 };
 
 const params = {

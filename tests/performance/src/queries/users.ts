@@ -145,3 +145,160 @@ export const getOrganizationUserQuery = `
         }
     }
 `;
+
+export const getUserQuery = `
+    query user($user_id: ID!) {
+        user(user_id: $user_id) {
+        user_id
+        user_name
+        given_name
+        family_name
+        email
+        phone
+        avatar
+        memberships {
+            user_id
+            organization_id
+            join_timestamp
+            roles {
+            role_id
+            role_name
+            }
+            organization {
+            organization_id
+            organization_name
+            address1
+            shortCode
+            phone
+            roles {
+                role_id
+                role_name
+            }
+            students {
+                user_id
+                user {
+                user_id
+                }
+            }
+            owner {
+                user_id
+                user_name
+                email
+            }
+            }
+        }
+        my_organization {
+            organization_id
+            organization_name
+            phone
+        }
+        }
+    }
+`;
+
+export const userFields = `
+    fragment UserFields on User {
+        user_id
+        full_name
+        given_name
+        family_name
+        email
+        phone
+        date_of_birth
+        avatar
+        username
+        alternate_phone
+        membership(organization_id: $organization_id) {
+            status
+            roles {
+                role_id
+                role_name
+                status
+            }
+        }
+        subjectsTeaching {
+            id
+            name
+        }
+    }
+`;
+
+export const getClassRoster = `
+    ${userFields}
+
+    query class($class_id: ID!, $organization_id: ID!) {
+        class(class_id: $class_id) {
+            class_name
+            students {
+                ...UserFields
+            }
+            teachers {
+                ...UserFields
+            }
+        }
+    }
+`;
+
+export const roleSummaryNodeFields = `
+    fragment RoleSummaryNodeFields on RoleSummaryNode {
+        id
+        organizationId
+        schoolId
+        name
+        status
+    }
+`;
+
+export const getPaginatedOrganizationUsers = `
+    ${roleSummaryNodeFields}
+    
+    query getOrganizationUsers(
+        $direction: ConnectionDirection!
+            $count: PageSize
+            $cursor: String
+            $order: SortOrder!
+            $orderBy: UserSortBy!
+            $filter: UserFilter
+        ) {
+            usersConnection(
+                direction: $direction
+                directionArgs: { count: $count, cursor: $cursor }
+                sort: { field: [$orderBy], order: $order }
+                filter: $filter
+            ) {
+                totalCount
+                pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+            edges {
+                node {
+                    id
+                    givenName
+                    familyName
+                    avatar
+                    status
+                    organizations {
+                        name
+                        userStatus
+                        joinDate
+                    }
+                    schools {
+                        id
+                        name
+                        status
+                    }
+                    roles {
+                        ...RoleSummaryNodeFields
+                    }
+                    contactInfo {
+                        email
+                        phone
+                    }
+                }
+            }
+        }
+    }
+`;

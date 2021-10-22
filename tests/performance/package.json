@@ -3,7 +3,9 @@
     "version": "1.0.0",
     "scripts": {
       "test:build": "webpack",
-      "test:login": "k6 run --out csv=my_test_result.csv ./dist/mainMultiUserLogin.js"
+      "test:login:sequential": "k6 run --out csv=sequential_login_result.csv ./dist/sequentialLogin.js",
+      "test:login:parallel": "k6 run --out csv=parallel_login_result.csv ./dist/parallelLogin.js",
+      "test:create:user-basic": "k6 run --out csv=create_user_basic_result.csv ./dist/createUserBasic.js"
     },
     "dependencies": {
       "@babel/core": "7.13.16",

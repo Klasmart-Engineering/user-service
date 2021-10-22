@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, fail, sleep } from 'k6';
-import { myUsersQuery } from './queries/users';
+import { myUsersQuery } from '../queries/users';
 
 const params = {
     headers: {
@@ -36,15 +36,16 @@ export default function () {
     }
     
     const myUsersData = JSON.parse(resMyUsers?.body as string);
+
     const switchPayload = JSON.stringify({
         user_id: myUsersData?.data.my_users[0].user_id,
     });
 
-    const switchRes = http.post("https://auth.alpha.kidsloop.net/switch", switchPayload, switchParams);
+    const switchRes = http.post(`${process.env.AUTH_URL}switch`, switchPayload, switchParams);
 
     if (
         ! check(switchRes, {
-            'status is 200': (r) => r.status === 200,
+            '"My users" status is 200': (r) => r.status === 200,
         })
     ) {
         fail('failed to switch user in login');

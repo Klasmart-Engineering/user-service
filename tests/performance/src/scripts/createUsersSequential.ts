@@ -1,12 +1,11 @@
 import { check } from 'k6';
 import http from 'k6/http';
 import { Options } from 'k6/options';
-import { createUserQuery } from './queries/users';
-import { accountFormFiller } from './utils/accountFormFiller';
+import { createUserQuery } from '../queries/users';
+import { accountFormFiller } from '../utils/accountFormFiller';
 
 export const options: Options = {
     vus: 1,
-    duration: `10s`,
     batch: 1,
 };
 
@@ -21,13 +20,13 @@ export default function () {
     const payload = JSON.stringify({
         operationName: 'organizationInviteUser',
         variables: {},
-        query: createUserQuery(accounts[0]), // in progress, change to edit query.
+        query: createUserQuery(accounts[0]),
     });
     
     const res = http.post(process.env.SERVICE_URL as string, payload, params);
 
     check(res, {
-        'edit user status is 200': () => res.status === 200,
-        'edit user returned edited data': (r) => JSON.parse(r.body as string).data?.organization?.inviteUser.user?.user_id ?? false,
+        'create user status is 200': () => res.status === 200,
+        'create user returned newly created account': (r) => JSON.parse(r.body as string).data?.organization?.inviteUser.user?.user_id ?? false,
     });
 }

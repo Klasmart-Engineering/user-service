@@ -1,11 +1,11 @@
 import { check } from 'k6';
 import http from 'k6/http';
 import { Options } from 'k6/options';
+import { meQuery } from '../queries/users';
 
 
 export const options:Options = {
-    vus: 2,
-    duration: `5s`,
+    vus: 1,
 };
 
 const params = {
@@ -14,28 +14,18 @@ const params = {
     },
 };
 
-export default function () {
+export default function (roleType?: string) {
     const userPayload = JSON.stringify({
         variables: {},
-        query: `query {
-            my_users {
-                user_id
-                full_name
-                given_name
-                family_name
-                email
-                phone
-                date_of_birth
-                avatar
-                username
-            }
-        }`,
+        query: meQuery,
     });
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
     check(res, {
         'status is 200': () => res.status === 200,
-        'my users query returns data': (r) => JSON.parse(r.body as string).data ?? false,
+        '"me" query returns data': (r) => JSON.parse(r.body as string).data?.me ?? false,
+    }, {
+        userRoleType: roleType
     });
 }

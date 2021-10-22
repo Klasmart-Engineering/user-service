@@ -6,9 +6,9 @@ module.exports = {
     mode: `production`,
     context: path.join(__dirname, `src`),
     entry: {
-        createSingleUser: `./createSingleUser.ts`,
-        mainCreateSingleUserTest: `./mainCreateSingleUserTest.ts`,
-        mainMultiUserLogin: `./mainMultiUserLogin.ts`,
+        sequentialLogin: `./sequentialLogin.ts`,
+        parallelLogin: `./parallelLogin.ts`,
+        createUserBasic: `./createUserBasic`,
     },
     output: {
         path: path.join(__dirname, `dist`),
