@@ -72,9 +72,18 @@ const getDataFromCursor = (cursor: string) => {
 
 export function shouldIncludeTotalCount(
     info: GraphQLResolveInfo,
-    direction: Direction
+    args: IPaginationArgs<BaseEntity>
 ) {
-    return direction === 'BACKWARD' || findTotalCountInPaginationEndpoints(info)
+    return (
+        findTotalCountInPaginationEndpoints(info) ||
+        isFirstPageBackwards(args.direction, args.directionArgs.cursor)
+    )
+}
+
+// if the first page is requested while paginating backwards, the return
+// count will be adjusted to mimick offet pagination
+export function isFirstPageBackwards(direction: Direction, cursor?: unknown) {
+    return direction === 'BACKWARD' && !cursor
 }
 
 export const getEdges = (
@@ -101,26 +110,24 @@ export const getEdges = (
     })
 }
 
+// this is to make the first page going backwards look like offset pagination
+// by not fetching the total pageSize
 export const adjustPageSize = (
     pageSize: number,
     cursorData: unknown,
     totalCount?: number,
     direction: Direction = 'FORWARD'
 ) => {
-    if (direction === 'FORWARD') {
-        return pageSize
-    } else if (totalCount === undefined) {
+    if (
+        !isFirstPageBackwards(direction, cursorData) ||
+        totalCount === undefined
+    ) {
         return pageSize
     }
 
-    let newPageSize = pageSize
-    // this is to make the first page going backwards look like offset pagination
-    if (!cursorData) {
-        newPageSize = totalCount % pageSize
-
-        if (newPageSize === 0) {
-            newPageSize = pageSize
-        }
+    let newPageSize = totalCount % pageSize
+    if (newPageSize === 0) {
+        newPageSize = pageSize
     }
 
     return newPageSize
@@ -267,17 +274,27 @@ export const paginateData = async <T = unknown>({
     sort,
     includeTotalCount,
 }: IPaginateData): Promise<IPaginatedResponse<T>> => {
-    const { pageSize, cursorData, primaryColumns } = await getPaginationQuery({
+    const {
+        pageSize,
+        cursorData,
+        primaryColumns,
+        scope: paginationScope,
+    } = await getPaginationQuery({
         direction,
         directionArgs,
-        scope,
+        scope: scope.clone(),
         sort,
         includeTotalCount,
     })
 
+    // conditionally get the totalCount and adjust the
+    // page size if paginating backwards
     let adjustedPageSize = pageSize
     let totalCount
-    if (direction === 'BACKWARD' || includeTotalCount) {
+    if (
+        includeTotalCount ||
+        isFirstPageBackwards(direction, directionArgs?.cursor)
+    ) {
         totalCount = await scope.getCount()
         adjustedPageSize = adjustPageSize(
             pageSize,
@@ -287,23 +304,23 @@ export const paginateData = async <T = unknown>({
         )
     }
 
+    // finally, let's get some data!
     const seekPageSize = adjustedPageSize + 1
-    scope.take(seekPageSize)
-
-    const data = (await scope.getMany()) as T[]
+    paginationScope.take(seekPageSize)
+    const data = (await paginationScope.getMany()) as T[]
 
     const { edges, pageInfo } = getPageInfoAndEdges<T>(
         data,
         pageSize,
         sort.primaryKey,
         primaryColumns,
-        undefined,
         cursorData,
+        totalCount,
         direction
     )
 
     return {
-        totalCount,
+        totalCount: includeTotalCount ? totalCount : undefined,
         edges,
         pageInfo,
     }

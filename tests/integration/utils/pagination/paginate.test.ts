@@ -383,16 +383,15 @@ describe('paginate', () => {
 
         context('when totalCount is not requested', () => {
             it('should not send it', async () => {
-                const directionArgs = {
-                    count: 3,
-                    cursor: convertDataToCursor({
-                        user_id: usersList[9].user_id,
-                    }),
-                }
-
-                const data = await paginateData<User>({
+                // when cursor is included
+                let data = await paginateData<User>({
                     direction,
-                    directionArgs,
+                    directionArgs: {
+                        count: 3,
+                        cursor: convertDataToCursor({
+                            user_id: usersList[9].user_id,
+                        }),
+                    },
                     scope,
                     sort: {
                         primaryKey: sortColumn,
@@ -402,6 +401,22 @@ describe('paginate', () => {
 
                 expect(data.totalCount).to.be.undefined
                 expect(data.edges.length).to.equal(3)
+
+                // when no cursor is included
+                data = await paginateData<User>({
+                    direction,
+                    directionArgs: {
+                        count: 3,
+                    },
+                    scope,
+                    sort: {
+                        primaryKey: sortColumn,
+                    },
+                    includeTotalCount: false,
+                })
+
+                expect(data.totalCount).to.be.undefined
+                expect(data.edges.length).to.equal(usersList.length % 3)
             })
         })
     })
