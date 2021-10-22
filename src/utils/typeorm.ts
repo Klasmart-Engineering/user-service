@@ -20,6 +20,10 @@ export function scopeHasJoin<E extends BaseEntity>(
     )
 }
 
+// TypeORM doesn't provide a way to convert raw results to entities,
+// but we can reuse some of its internals to achieve this.
+// This solution is based on a suggestion in this GitHub issue:
+// https://github.com/typeorm/typeorm/issues/6803
 export async function convertRawToEntities<Entity = unknown>(
     raw: unknown[],
     queryBuilder: SelectQueryBuilder<Entity>
