@@ -118,7 +118,7 @@ export function getWhereClauseFromFilter(
 
             // a value of type object is considered as a compound value
             // deprecated, just common type values will be allowed
-            if (typeof data.value === 'object') {
+            if (typeof data.value === 'object' && !Array.isArray(data.value)) {
                 for (const alias of aliases) {
                     let currentOperator = data.operator
                     let currentValue: FilteringValue = data.value
@@ -133,7 +133,7 @@ export function getWhereClauseFromFilter(
 
                     // resetting value and operator to work properly with the given compound value
                     currentValue = processComposedValue(
-                        currentValue as ComposedValue,
+                        currentValue,
                         alias
                     ) as CommonValue
 
@@ -299,8 +299,6 @@ function parseValueForSQLOperator(operator: string, value?: CommonValue) {
     switch (operator) {
         case 'LIKE':
             return `%${value}%`
-        case 'IN':
-            return value
         default:
             return value
     }
