@@ -72,11 +72,11 @@ const getDataFromCursor = (cursor: string) => {
 
 export function shouldIncludeTotalCount(
     info: GraphQLResolveInfo,
-    args: IPaginationArgs<BaseEntity>
+    args: IChildPaginationArgs<BaseEntity>
 ) {
     return (
         findTotalCountInPaginationEndpoints(info) ||
-        isFirstPageBackwards(args.direction, args.directionArgs.cursor)
+        isFirstPageBackwards(args.direction || 'FORWARD', args.cursor)
     )
 }
 
