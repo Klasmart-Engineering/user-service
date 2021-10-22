@@ -1,4 +1,3 @@
-import { AuthenticationError } from 'apollo-server-express'
 import express, { NextFunction, Request, Response } from 'express'
 import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
@@ -78,36 +77,40 @@ export interface TokenPayload {
 }
 
 async function checkTokenAMS(req: Request): Promise<TokenPayload> {
-    const token = req.headers.authorization || req.cookies.access
-    if (!token) {
-        throw new AuthenticationError('No authentication token')
-    }
-    const payload = decode(token)
-    if (!payload || typeof payload === 'string') {
-        throw new AuthenticationError('Malformed authentication token')
-    }
-    const issuer = payload['iss']
-    if (!issuer || typeof issuer !== 'string') {
-        throw new AuthenticationError('Malformed authentication token issuer')
-    }
-    const issuerOptions = issuers.get(issuer)
-    if (!issuerOptions) {
-        throw new AuthenticationError('Unknown authentication token issuer')
-    }
-    const { options, secretOrPublicKey } = issuerOptions
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const verifiedToken = await new Promise<any>((resolve, reject) => {
-        verify(token, secretOrPublicKey, options, (err, decoded) => {
-            if (err) {
-                reject(err)
-            }
-            if (decoded) {
-                resolve(decoded)
-            }
-            reject(new AuthenticationError('Unexpected authorization error'))
+    try {
+        const token = req.headers.authorization || req.cookies.access
+        if (!token) {
+            return (undefined as unknown) as TokenPayload
+        }
+        const payload = decode(token)
+        if (!payload || typeof payload === 'string') {
+            return (undefined as unknown) as TokenPayload
+        }
+        const issuer = payload['iss']
+        if (!issuer || typeof issuer !== 'string') {
+            return (undefined as unknown) as TokenPayload
+        }
+        const issuerOptions = issuers.get(issuer)
+        if (!issuerOptions) {
+            return (undefined as unknown) as TokenPayload
+        }
+        const { options, secretOrPublicKey } = issuerOptions
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const verifiedToken = await new Promise<any>((resolve, reject) => {
+            verify(token, secretOrPublicKey, options, (err, decoded) => {
+                if (err) {
+                    reject(err)
+                }
+                if (decoded) {
+                    resolve(decoded)
+                }
+                reject(new Error('Unexpected authorization error'))
+            })
         })
-    })
-    return verifiedToken
+        return verifiedToken
+    } catch (e) {
+        return (undefined as unknown) as TokenPayload
+    }
 }
 
 export async function checkToken(req: Request): Promise<TokenPayload> {
