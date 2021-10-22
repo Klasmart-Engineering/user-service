@@ -105,16 +105,10 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
             count: string
         }[] = await countScope.getRawMany()
         for (const parentCount of parentCounts) {
-            parentMap.set(parentCount[pivotColumn], {
-                totalCount: parseInt(parentCount.count),
-                pageInfo: {
-                    hasPreviousPage: true,
-                    hasNextPage: true,
-                    startCursor: '',
-                    endCursor: '',
-                },
-                edges: [],
-            })
+            const children = parentMap.get(parentCount[pivotColumn])
+            if (children) {
+                children.totalCount = parseInt(parentCount.count)
+            }
         }
     }
 
