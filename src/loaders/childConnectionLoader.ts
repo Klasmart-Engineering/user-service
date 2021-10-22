@@ -37,16 +37,15 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     // extract query info that was added to each Dataloader key
     //
 
+    // there may be duplicate parentIds, so use a unique set to create maps
     const parentIds = items.map((i) => i.parent.id)
-    // there may be duplicate parentIds, so use a unique set to create maps,
-    // but use the full set to return an array of equal length to <items>
-    // as per the dataloader constraint
     const uniqueParentIds = [...new Set(parentIds)]
 
     const args = items[0]?.args as IChildPaginationArgs<Entity>
     const parent = items[0]?.parent
     const includeTotalCount = items[0]?.includeTotalCount
     const groupByProperty = parent.pivot
+    const pivotColumn = 'pivot'
 
     // not allowed to filter by the parent entity
     if (args.filter && filterHasProperty(parent.filterKey, args.filter)) {
@@ -93,24 +92,20 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     // Get the total counts per parent and update the dataloader map
     //
     if (includeTotalCount) {
-        // select the parentId to group by
-        baseScope.addSelect(`${groupByProperty} as "parentId"`)
-
         // Create the query to get total children counts per parent (ignores pagination filters etc)
-        const countScope = getManager()
-            .createQueryBuilder()
-            .select(['"parentId"', 'count(*)'])
-            .from(`(${baseScope.getQuery()})`, 'subquery')
-            .groupBy('"parentId"')
-            .setParameters(baseScope.getParameters())
+        const countScope = baseScope
+            .clone()
+            .select([`${groupByProperty} as "${pivotColumn}"`, 'count(*)'])
+            .addSelect('count(*)')
+            .groupBy(`"${pivotColumn}"`)
 
         // Get the counts and update the dataloader map
         const parentCounts: {
-            parentId: string
+            [pivotColumn]: string
             count: string
         }[] = await countScope.getRawMany()
         for (const parentCount of parentCounts) {
-            parentMap.set(parentCount.parentId, {
+            parentMap.set(parentCount[pivotColumn], {
                 totalCount: parseInt(parentCount.count),
                 pageInfo: {
                     hasPreviousPage: true,
@@ -149,14 +144,13 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     // get one more item to determine if there is another page
     const seekPageSize = pageSize + 1
 
-    // Select the parentId for grouping children
-    paginationScope.addSelect(`${groupByProperty} as "parentId"`)
-
     // Select the row number to select n _sorted_ children per parent,
     // respecting the requested order
     const filterQuery = paginationScope.getQuery()
     // TODO a better way of extracting the ORDER BY clause
     const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY'))
+
+    paginationScope.addSelect(`${groupByProperty} as "${pivotColumn}"`)
     paginationScope.addSelect(
         `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty} ${orderBy})`,
         'row_num'
@@ -171,18 +165,20 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
         .setParameters(paginationScope.getParameters())
 
     // get raw SQL results and create a map of parentId:childEntity
-    const childrenRaw = await childScope.getRawMany()
-    const childParentIds = childrenRaw.map((c) => c.parentId)
+    const childrenRaw: {
+        [pivotColumn]: string
+    }[] = await childScope.getRawMany()
     const entities = await convertRawToEntities(childrenRaw, baseScope)
+
     const parentToChildMap = new Map<string, Entity[]>(
         uniqueParentIds.map((id) => [id, []])
     )
-
-    childParentIds.forEach((parentId, index) => {
-        const child = entities[index]
-        if (child) {
+    childrenRaw.forEach((childRaw, index) => {
+        const entity = entities[index]
+        if (entity) {
+            const parentId = childRaw[pivotColumn]
             const children = parentToChildMap.get(parentId)
-            children?.push(child)
+            children?.push(entity)
             parentToChildMap.set(parentId, children || [])
         }
     })
@@ -212,6 +208,8 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
         }
     }
 
+    // use the full set to return an array of equal length to <items>
+    // as per the dataloader constraint
     const result = []
     for (const parentId of parentIds) {
         result.push(parentMap.get(parentId)!)
