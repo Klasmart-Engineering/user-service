@@ -16,6 +16,7 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
 import {
+    IChildPaginationArgs,
     IPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
@@ -304,7 +305,7 @@ export default function getDefault(
                 },
                 usersConnection: async (
                     organization: OrganizationConnectionNode,
-                    args: IPaginationArgs<User>,
+                    args: IChildPaginationArgs<User>,
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
@@ -320,7 +321,7 @@ export default function getDefault(
                 },
                 schoolsConnection: async (
                     organization: OrganizationConnectionNode,
-                    args: IPaginationArgs<School>,
+                    args: IChildPaginationArgs<School>,
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {

@@ -247,4 +247,28 @@ describe('child connections', () => {
             expect(response).to.have.lengthOf(2)
         })
     })
+
+    context('multiple requests', () => {
+        it('identifies separate requests via differing keys and groups accordingly', async () => {
+            const request1Keys = getDataloaderKeys([orgs[0]], {
+                ...args,
+                count: 1,
+            })
+            const request2Keys = getDataloaderKeys([orgs[0]], {
+                ...args,
+                count: 2,
+            })
+
+            const keys = [...request1Keys, ...request2Keys]
+            const response = await childConnectionLoader(
+                keys,
+                usersConnectionQuery,
+                mapFunc,
+                sort
+            )
+
+            expect(response[0].edges).to.have.lengthOf(1)
+            expect(response[1].edges).to.have.lengthOf(2)
+        })
+    })
 })
