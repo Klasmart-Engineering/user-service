@@ -65,8 +65,6 @@ export default function () {
 
     const res = http.post(process.env.SERVICE_URL as string, userPayload, params);
 
-    console.log(JSON.stringify(res));
-
     check(res, {
         '"Get paginated organization users" status is 200': () => res.status === 200,
         '"Get paginated organization users" query returns data': (r) => JSON.parse(r.body as string).data?.usersConnection ?? false,

@@ -11,6 +11,7 @@ module.exports = {
         createUserBasic: `./createUserBasic`,
         createUsersAllRoles: `./createUsersAllRoles`,
         create1kUsers: `./create1kUsers`,
+        createUsersParallel: `./createUsersParallel`,
     },
     output: {
         path: path.join(__dirname, `dist`),

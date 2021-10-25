@@ -7,6 +7,7 @@
       "test:login:parallel": "k6 run --out csv=parallel_login_result.csv ./dist/parallelLogin.js",
       "test:create:user-basic": "k6 run --out csv=create_user_basic_result.csv ./dist/createUserBasic.js",
       "test:create:user-all-roles": "k6 run --out csv=create_user_all_roles_result.csv ./dist/createUsersAllRoles.js",
+      "test:create:user-parallel": "k6 run --out csv=create_users_parallel_result.csv ./dist/createUsersParallel.js",
       "setup:create-1k-students": "k6 run ./dist/create1kUsers.js"
     },
     "dependencies": {
