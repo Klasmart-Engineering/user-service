@@ -105,6 +105,10 @@ describe('model', () => {
         testClient = await createTestClient(server)
     })
 
+    after(async () => {
+        await connection?.close()
+    })
+
     beforeEach(async () => {
         scope = Permission.createQueryBuilder('Permission')
         adminUser = await createAdminUser().save()

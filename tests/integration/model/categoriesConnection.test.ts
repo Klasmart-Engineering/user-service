@@ -107,7 +107,7 @@ describe('model', () => {
                 scope,
             })
 
-            expect(result.pageInfo.hasNextPage).to.be.true
+            expect(result.pageInfo.hasNextPage).to.be.false
             expect(result.pageInfo.hasPreviousPage).to.be.false
             expect(result.pageInfo.startCursor).to.be.string
             expect(result.pageInfo.endCursor).to.be.string
@@ -130,11 +130,6 @@ describe('model', () => {
             expect(result.totalCount).to.eq(
                 systemCategoriesCount + ownedCategoriesCount
             )
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-            expect(result.edges.length).eq(pageSize)
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedAscending(ids)
             expect(isSorted).to.be.true
@@ -151,11 +146,6 @@ describe('model', () => {
             expect(result.totalCount).to.eq(
                 systemCategoriesCount + ownedCategoriesCount
             )
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-            expect(result.edges.length).eq(pageSize)
             const ids = result.edges.map((edge) => edge.node.id)
             const isSorted = isStringArraySortedDescending(ids)
             expect(isSorted).to.be.true
@@ -172,11 +162,6 @@ describe('model', () => {
             expect(result.totalCount).to.eq(
                 systemCategoriesCount + ownedCategoriesCount
             )
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-            expect(result.edges.length).eq(pageSize)
             const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedAscending(names)
             expect(isSorted).to.be.true
@@ -192,11 +177,6 @@ describe('model', () => {
             expect(result.totalCount).to.eq(
                 systemCategoriesCount + ownedCategoriesCount
             )
-            expect(result.pageInfo.hasNextPage).to.be.true
-            expect(result.pageInfo.hasPreviousPage).to.be.false
-            expect(result.pageInfo.startCursor).to.be.string
-            expect(result.pageInfo.endCursor).to.be.string
-            expect(result.edges.length).eq(pageSize)
             const names = result.edges.map((edge) => edge.node.name) as string[]
             const isSorted = isStringArraySortedDescending(names)
             expect(isSorted).to.be.true

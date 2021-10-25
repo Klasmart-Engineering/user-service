@@ -822,7 +822,7 @@ export class Model {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -831,7 +831,7 @@ export class Model {
             const roles = await this.roleRepository.find()
             return roles
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -959,7 +959,7 @@ export class Model {
             })
             return _class
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -968,7 +968,7 @@ export class Model {
             const classes = await this.classRepository.find()
             return classes
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -979,7 +979,7 @@ export class Model {
             })
             return school
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 

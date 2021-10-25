@@ -17,8 +17,6 @@ services:
             - STORAGE_SECRET_ACCESS_KEY=""
             - STORAGE_REGION=eu-west-1
             - ROUTE_PREFIX=/user
-        volumes:
-           - ./dist/src:/usr/src/app/src
         expose:
             - '8080'
         ports:

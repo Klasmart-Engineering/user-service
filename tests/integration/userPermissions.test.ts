@@ -27,7 +27,7 @@ import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
-import { grantPermission, deleteRole } from '../utils/operations/roleOps'
+import { grantPermission } from '../utils/operations/roleOps'
 import { addRoleToSchoolMembership } from '../utils/operations/schoolMembershipOps'
 import { addUserToSchool } from '../utils/operations/schoolOps'
 import { addRoleToOrganizationMembership } from '../utils/operations/organizationMembershipOps'
@@ -277,57 +277,6 @@ describe('userPermissions', () => {
                 })
 
                 it('should throw error when organization ID is provided', async () => {
-                    const permissionContext = {
-                        school_id: undefined,
-                        school_ids: undefined,
-                        organization_id: organizationId,
-                    }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.rejected
-                })
-            })
-
-            context('and the role is inactive', () => {
-                beforeEach(async () => {
-                    await grantPermission(
-                        testClient,
-                        testOrgRoleId,
-                        PermissionName.edit_class_20334,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    await grantPermission(
-                        testClient,
-                        testSchoolRoleId,
-                        PermissionName.edit_class_20334,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    await deleteRole(testClient, testOrgRoleId, {
-                        authorization: getAdminAuthToken(),
-                    })
-                    await deleteRole(testClient, testSchoolRoleId, {
-                        authorization: getAdminAuthToken(),
-                    })
-                })
-
-                it('throws an error when school ID array is provided', async () => {
-                    const permissionContext = {
-                        school_id: undefined,
-                        school_ids: [schoolId],
-                        organization_id: undefined,
-                    }
-                    await expect(
-                        userPermissions.rejectIfNotAllowed(
-                            permissionContext,
-                            PermissionName.edit_class_20334
-                        )
-                    ).to.be.rejected
-                })
-
-                it('throws an error when organization ID is provided', async () => {
                     const permissionContext = {
                         school_id: undefined,
                         school_ids: undefined,
