@@ -14,17 +14,17 @@ const params = {
     },
 };
 
-export default function (roleId: string) {
+export default function (roleId: string, email?: string) {
     const random = randomNumber(1000000);
     const account = {
         alternate_email: "",
         alternate_phone: "",
         date_of_birth: "01-1990",
-        email: `ismaelp+k6+${random}@bluetrailsoft.com`,
+        email: email ?? `${process.env.EMAIL_USER_NAME_1K}_k6-single_${random}@${process.env.EMAIL_DOMAIN}`,
         phone: "",
         family_name: `K6-${random}`,
         gender: 'male',
-        given_name: `Test`,
+        given_name: `Test-${random}`,
         organization_id: process.env.ORG_ID as string,
         organization_role_ids: [roleId],
         school_ids: [],

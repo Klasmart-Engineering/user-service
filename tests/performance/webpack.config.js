@@ -9,6 +9,8 @@ module.exports = {
         sequentialLogin: `./sequentialLogin.ts`,
         parallelLogin: `./parallelLogin.ts`,
         createUserBasic: `./createUserBasic`,
+        createUsersAllRoles: `./createUsersAllRoles`,
+        create1kUsers: `./create1kUsers`,
     },
     output: {
         path: path.join(__dirname, `dist`),

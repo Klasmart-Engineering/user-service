@@ -7,20 +7,10 @@ import { sleep } from 'k6';
 import { Options } from 'k6/options';
 
 export const options: Options = {
-    scenarios: {
-        orgAdmin: {
-            executor: 'per-vu-iterations',
-            exec: 'sequentialLogin',
-            startTime: '0s',
-            gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '3m',
-        },
-    }
-}
+    vus: 1,
+};
 
-export function sequentialLogin() {
+export default function() {
     userOrgAdminLogin();
     sleep(3);
     userSchoolAdminLogin();
