@@ -17,7 +17,6 @@ import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
 import {
     IChildPaginationArgs,
-    IPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 
