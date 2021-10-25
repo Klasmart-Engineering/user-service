@@ -394,29 +394,6 @@ export class Model {
         paginationArgs: IPaginationArgs<User>
     ) => usersConnectionResolver(info, paginationArgs)
 
-    public async permissionsConnection(
-        _context: Context,
-        info: GraphQLResolveInfo,
-        { direction, directionArgs, filter }: IPaginationArgs<Permission>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-        const scope = this.permissionRepository.createQueryBuilder()
-
-        if (filter) {
-            scope.andWhere(getWhereClauseFromFilter(filter))
-        }
-
-        return paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'permission_id',
-            },
-            includeTotalCount,
-        })
-    }
-
     public schoolsConnection = async (
         _context: Context,
         info: GraphQLResolveInfo,
@@ -845,7 +822,7 @@ export class Model {
             const role = await this.roleRepository.findOneOrFail({ role_id })
             return role
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -854,7 +831,7 @@ export class Model {
             const roles = await this.roleRepository.find()
             return roles
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -982,7 +959,7 @@ export class Model {
             })
             return _class
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -991,7 +968,7 @@ export class Model {
             const classes = await this.classRepository.find()
             return classes
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -1002,7 +979,7 @@ export class Model {
             })
             return school
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 

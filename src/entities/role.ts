@@ -86,7 +86,7 @@ export class Role extends CustomBaseEntity {
 
             return this
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -112,7 +112,7 @@ export class Role extends CustomBaseEntity {
             })
             return permission
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -154,7 +154,7 @@ export class Role extends CustomBaseEntity {
 
             return permission
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
     public async revoke(
@@ -194,7 +194,7 @@ export class Role extends CustomBaseEntity {
 
             return true
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
         return false
     }
@@ -226,7 +226,7 @@ export class Role extends CustomBaseEntity {
 
             return permission
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -271,7 +271,7 @@ export class Role extends CustomBaseEntity {
 
             return permissionEntities
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
     }
 
@@ -359,7 +359,7 @@ export class Role extends CustomBaseEntity {
             })
             return true
         } catch (e) {
-            context.logger.error(e)
+            context.logger?.error(e)
         }
         return false
     }

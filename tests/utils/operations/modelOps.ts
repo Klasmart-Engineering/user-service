@@ -1,5 +1,3 @@
-import { ReadStream } from 'fs'
-
 import { AgeRange } from '../../../src/entities/ageRange'
 import { Grade } from '../../../src/entities/grade'
 import { User } from '../../../src/entities/user'
@@ -27,6 +25,8 @@ import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnect
 import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
 import { gql } from 'apollo-server-express'
 import { Role } from '../../../src/entities/role'
+import { print } from 'graphql'
+import { PermissionConnectionNode } from '../../../src/types/graphQL/permissionConnectionNode'
 import { CategorySummaryNode } from '../../../src/types/graphQL/categorySummaryNode'
 
 const NEW_USER = `
@@ -367,21 +367,39 @@ const USER_NODE_QUERY_2_NODES = gql`
     }
 `
 
-const PERMISSIONS_CONNECTION = `
-    query permissionsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: PermissionFilter) {
-        permissionsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs){
+export const PERMISSIONS_CONNECTION = gql`
+    query(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: PermissionFilter
+        $sortArgs: PermissionSortInput
+    ) {
+        permissionsConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
+
             edges {
                 cursor
                 node {
-                    permission_id
+                    id
+                    name
+                    category
+                    group
+                    level
+                    description
+                    allow
                 }
             }
-            pageInfo{
-              hasNextPage
-              hasPreviousPage
-              startCursor
-              endCursor
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
             }
         }
     }
@@ -1357,18 +1375,19 @@ export async function permissionsConnection(
     includeTotalCount: boolean,
     directionArgs?: any,
     headers?: Headers,
-    filter?: IEntityFilter
-) {
+    filterArgs?: IEntityFilter,
+    sortArgs?: ISortField
+): Promise<IPaginatedResponse<PermissionConnectionNode>> {
     const { query } = testClient
     const paginationQuery = buildPaginationQuery(
-        PERMISSIONS_CONNECTION,
+        print(PERMISSIONS_CONNECTION),
         includeTotalCount
     )
 
     const operation = () =>
         query({
             query: paginationQuery,
-            variables: { direction, directionArgs, filter },
+            variables: { direction, directionArgs, filterArgs, sortArgs },
             headers: headers,
         })
 

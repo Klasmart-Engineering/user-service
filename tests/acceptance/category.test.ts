@@ -86,6 +86,7 @@ describe('acceptance.category', () => {
                     },
                 })
         }
+
         it('queries paginated categories', async () => {
             const pageSize = 5
 
@@ -95,10 +96,11 @@ describe('acceptance.category', () => {
 
             expect(response.status).to.eq(200)
             expect(categoriesConnection.totalCount).to.equal(
-                categoriesCount * 2 + systemcategoriesCount
+                systemcategoriesCount
             )
             expect(categoriesConnection.edges.length).to.equal(pageSize)
         })
+
         it('fails validation', async () => {
             const pageSize = 'not_a_number'
             const response = await makeQuery(pageSize)

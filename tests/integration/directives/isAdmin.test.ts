@@ -15,6 +15,7 @@ import {
 import {
     classesConnection,
     getAllOrganizations,
+    permissionsConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
 import {
@@ -48,6 +49,7 @@ import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionN
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { Permission } from '../../../src/entities/permission'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -806,6 +808,76 @@ describe('isAdmin', () => {
                         ])
                     })
                 })
+            })
+        })
+    })
+
+    describe('permissions', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let allPermissionsCount: number
+        let roleRelatedPermissionsCount: number
+
+        const queryVisiblePermissions = async (token: string) => {
+            const response = await permissionsConnection(
+                testClient,
+                'FORWARD',
+                true,
+                {},
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+
+            organization = await createOrganization(memberUser).save()
+
+            await connection.manager.save(
+                createOrganizationMembership({
+                    user: memberUser,
+                    organization,
+                })
+            )
+
+            allPermissionsCount = await Permission.count()
+            roleRelatedPermissionsCount = await Permission.createQueryBuilder(
+                'Permission'
+            )
+                .innerJoin('Permission.roles', 'Role')
+                .getCount()
+        })
+
+        context('admin', () => {
+            it('allows access to all the permissions', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    allPermissionsCount
+                )
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access just to role related permissions', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    roleRelatedPermissionsCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('deny access to any permission', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(0)
             })
         })
     })

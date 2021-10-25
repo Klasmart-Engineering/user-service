@@ -23,6 +23,7 @@ pipelines:
         caches:
           - node
         script:
+           - npm install -g npm@7.22.0
            - npm install
            - npm run prettier-check
            - npm run lint
@@ -37,8 +38,10 @@ pipelines:
         script:
           - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           - chmod +x /usr/local/bin/docker-compose
+          - npm install -g npm@7.22.0
           - npm install
           - docker-compose up -d && sleep 20
+          - docker-compose ps
           - npm run test:acceptance
     - step:
         name: "Check PR title format"
@@ -85,6 +88,7 @@ pipelines:
           caches:
             - node
           script:
+            - npm install -g npm@7.22.0
             - npm install
             - npm run prettier-check
             - npm run lint
@@ -99,6 +103,7 @@ pipelines:
           script:
             - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             - chmod +x /usr/local/bin/docker-compose
+            - npm install -g npm@7.22.0
             - npm install
             - docker-compose up -d && sleep 20
             - npm run test:acceptance
