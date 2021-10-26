@@ -4,6 +4,12 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
+import { NodeDataLoader } from '../loaders/genericNode'
+import {
+    mapSchoolToSchoolConnectionNode,
+    schoolConnectionNodeFields,
+} from '../pagination/schoolsConnection'
+import { Lazy } from '../utils/lazyLoading'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -13,10 +19,8 @@ const typeDefs = gql`
     }
     extend type Query {
         school(school_id: ID!): School
-            @deprecated(
-                reason: "Use 'schoolNode' with 'schoolId' filter."
-            )
-        schooolNode(id: ID!): SchooolConnectionNode @isAdmin(entity: "schoool")
+            @deprecated(reason: "Use 'schoolNode' with 'schoolId' filter.")
+        schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
         schoolsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -137,8 +141,19 @@ export default function getDefault(
                     return model.schoolsConnection(ctx, info, args)
                 },
                 schoolNode: (_parent, args, ctx, _info) => {
-                    return ctx.loaders.schoolNode?.node.load(args.id)
-                }
+                    if (typeof ctx.loaders.schoolNode.node === 'undefined') {
+                        ctx.loaders.schoolNode.node = new Lazy(
+                            () =>
+                                new NodeDataLoader(
+                                    args.scope,
+                                    School,
+                                    'ISchoolsConnectionNode',
+                                    mapSchoolToSchoolConnectionNode,
+                                    schoolConnectionNodeFields
+                                )
+                        )
+                    }
+                },
             },
             SchoolMembership: {
                 school: (

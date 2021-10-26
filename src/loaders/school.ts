@@ -2,10 +2,16 @@ import DataLoader from 'dataloader'
 import { School } from '../entities/school'
 import { Organization } from '../entities/organization'
 import { Lazy } from '../utils/lazyLoading'
+import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
+import { NodeDataLoader } from './genericNode'
 
 export interface ISchoolLoaders {
     organization: Lazy<DataLoader<string, Organization | undefined>>
     schoolById: Lazy<DataLoader<string, School | undefined>>
+}
+
+export interface ISchoolNodeDataLoaders {
+    node: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
 
 export const organizationsForSchools = async (

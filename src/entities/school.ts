@@ -57,6 +57,9 @@ export class School extends CustomBaseEntity {
         }
     }
 
+    @Column({ nullable: true })
+    public organizationOrganizationId?: string
+
     @ManyToOne(() => Organization, (organization) => organization.schools)
     @JoinColumn()
     public organization?: Promise<Organization>

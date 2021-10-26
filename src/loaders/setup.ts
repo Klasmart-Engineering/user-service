@@ -42,6 +42,7 @@ import {
     mapSchoolToSchoolConnectionNode,
     schoolConnectionQuery,
     schoolsConnectionSortingConfig,
+    schoolConnectionNodeFields,
 } from '../pagination/schoolsConnection'
 import {
     CoreUserConnectionNode,
@@ -99,13 +100,18 @@ import {
 } from './organizationsConnection'
 import { NodeDataLoader } from './genericNode'
 import {
+    ISchoolLoaders,
+    ISchoolNodeDataLoaders,
+    organizationsForSchools,
+    schoolsByIds,
+} from './school'
+import {
     ageRangesForPrograms,
     gradesForPrograms,
     IProgramNodeDataLoaders,
     IProgramsConnectionLoaders,
     subjectsForPrograms,
 } from './programsConnection'
-import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { ProgramSummaryNode } from '../types/graphQL/program'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
@@ -178,6 +184,8 @@ export interface IDataLoaders {
         >
     >
     categoryNode: ICategoryNodeDataLoader
+    classNode: IClassNodeDataLoaders
+    schoolNode: ISchoolNodeDataLoaders
 }
 
 export function createContextLazyLoaders(
@@ -311,6 +319,17 @@ export function createContextLazyLoaders(
                         'OrganizationConnectionNode',
                         mapOrganizationToOrganizationConnectionNode,
                         organizationSummaryNodeFields
+                    )
+            ),
+        },
+        schoolNode: {
+            node: new Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>(
+                () =>
+                    new NodeDataLoader(
+                        School,
+                        'ISchoolsConnectionNode',
+                        mapSchoolToSchoolConnectionNode,
+                        schoolConnectionNodeFields
                     )
             ),
         },

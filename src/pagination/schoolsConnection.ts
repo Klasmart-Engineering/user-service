@@ -76,41 +76,40 @@ export async function schoolConnectionQuery(
         )
     }
 
-    const selects = ([
-        'school_id',
-        'school_name',
-        'shortcode',
-        'status',
-    ] as (keyof School)[]).map((field) => `School.${field}`)
-
-    selects.push(
-        ...(['organization_id'] as (keyof Organization)[]).map(
-            (field) => `Organization.${field}`
-        )
-    )
-
-    scope.select(selects)
+    scope.select(schoolConnectionNodeFields)
 
     return scope
 }
 
-async function mapSchoolEdgeToSchoolConnectionEdge(
+function mapSchoolEdgeToSchoolConnectionEdge(
     edge: IEdge<School>
-): Promise<IEdge<ISchoolsConnectionNode>> {
+): IEdge<ISchoolsConnectionNode> {
     return {
-        node: await mapSchoolToSchoolConnectionNode(edge.node),
+        node: mapSchoolToSchoolConnectionNode(edge.node),
         cursor: edge.cursor,
     }
 }
 
-export async function mapSchoolToSchoolConnectionNode(
+export function mapSchoolToSchoolConnectionNode(
     school: School
-): Promise<ISchoolsConnectionNode> {
+): ISchoolsConnectionNode {
     return {
         id: school.school_id,
         name: school.school_name,
         status: school.status,
         shortCode: school.shortcode,
-        organizationId: (await school.organization)?.organization_id || '',
+        organizationId: school.organizationOrganizationId,
     }
 }
+
+export const schoolConnectionNodeFields = [
+    ...([
+        'school_id',
+        'school_name',
+        'shortcode',
+        'status',
+    ] as (keyof School)[]).map((field) => `School.${field}`),
+    ...(['organization_id'] as (keyof Organization)[]).map(
+        (field) => `Organization.${field}`
+    ),
+]
