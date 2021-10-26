@@ -8,11 +8,12 @@ import { OrganizationSummaryNode } from '../types/graphQL/organizationSummaryNod
 import { SchoolSummaryNode } from '../types/graphQL/schoolSummaryNode'
 import DataLoader from 'dataloader'
 import { RoleSummaryNode } from '../types/graphQL/roleSummaryNode'
+import { Lazy } from '../utils/lazyLoading'
 
 export interface IUsersConnectionLoaders {
-    organizations?: DataLoader<string, OrganizationSummaryNode[]>
-    schools?: DataLoader<string, SchoolSummaryNode[]>
-    roles?: DataLoader<string, RoleSummaryNode[]>
+    organizations?: Lazy<DataLoader<string, OrganizationSummaryNode[]>>
+    schools?: Lazy<DataLoader<string, SchoolSummaryNode[]>>
+    roles?: Lazy<DataLoader<string, RoleSummaryNode[]>>
 }
 
 export const orgsForUsers = async (

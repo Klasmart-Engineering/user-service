@@ -32,6 +32,9 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
+import { OrganizationSummaryNode } from '../types/graphQL/organizationSummaryNode'
+import { SchoolSummaryNode } from '../types/graphQL/schoolSummaryNode'
+import { RoleSummaryNode } from '../types/graphQL/roleSummaryNode'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
@@ -80,9 +83,15 @@ export function createContextLazyLoaders(): IDataLoaders {
             ),
         },
         userNode: {
-            organizations: new Dataloader((keys) => orgsForUsers(keys)),
-            schools: new Dataloader((keys) => schoolsForUsers(keys)),
-            roles: new Dataloader((keys) => rolesForUsers(keys)),
+            organizations: new Lazy<
+                DataLoader<string, OrganizationSummaryNode[]>
+            >(() => new Dataloader(orgsForUsers)),
+            schools: new Lazy<DataLoader<string, SchoolSummaryNode[]>>(
+                () => new Dataloader(schoolsForUsers)
+            ),
+            roles: new Lazy<DataLoader<string, RoleSummaryNode[]>>(
+                () => new Dataloader(rolesForUsers)
+            ),
         },
     }
 }
