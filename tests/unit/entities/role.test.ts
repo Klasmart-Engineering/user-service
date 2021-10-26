@@ -31,7 +31,6 @@ describe('Role', () => {
     describe('.new', () => {
         context('when system_role is not defined', () => {
             beforeEach(async () => {
-                role.system_role = undefined
                 await manager.save(role)
             })
 
@@ -46,7 +45,6 @@ describe('Role', () => {
 
         context('when role description is undefined', () => {
             beforeEach(async () => {
-                role.role_description = undefined
                 await manager.save(role)
             })
 

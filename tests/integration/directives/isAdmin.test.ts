@@ -50,6 +50,8 @@ import { OrganizationMembership } from '../../../src/entities/organizationMember
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
+import { nonAdminRoleScope } from '../../../src/directives/isAdmin'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -878,6 +880,126 @@ describe('isAdmin', () => {
                 const token = generateToken(userToPayload(noMemberUser))
                 const visiblePermissions = await queryVisiblePermissions(token)
                 expect(visiblePermissions.totalCount).to.eql(0)
+            })
+        })
+    })
+
+    describe('roles', async () => {
+        let usersList: User[] = []
+        let user: User
+        let roleList: Role[] = []
+        let organizations: Organization[] = []
+        let userPermissions: UserPermissions
+        let orgMemberships: OrganizationMembership[]
+
+        beforeEach(async () => {
+            usersList = []
+            roleList = []
+            organizations = []
+            orgMemberships = []
+
+            const superAdmin = await createAdminUser(testClient)
+
+            // create two orgs and one role per org
+            for (let i = 0; i < 2; i++) {
+                const org = await createOrganization(superAdmin).save()
+                organizations.push(org)
+                const role = createRole('role ' + i, org)
+                await connection.manager.save(role)
+                roleList.push(role)
+            }
+            const anotherRole = createRole('role 0b', organizations[0])
+            await connection.manager.save(anotherRole)
+            roleList.push(anotherRole)
+
+            for (let i = 0; i < 10; i++) {
+                usersList.push(createUser())
+            }
+            await connection.manager.save(usersList)
+
+            for (let j = 0; j < 5; j++) {
+                orgMemberships.push(
+                    createOrganizationMembership({
+                        user: usersList[j],
+                        organization: organizations[0],
+                        roles: [roleList[0], roleList[2]],
+                    })
+                )
+            }
+            for (let j = 5; j < usersList.length; j++) {
+                orgMemberships.push(
+                    createOrganizationMembership({
+                        user: usersList[j],
+                        organization: organizations[1],
+                        roles: [roleList[1]],
+                    })
+                )
+            }
+            await OrganizationMembership.save(orgMemberships)
+        })
+
+        context('non admin', () => {
+            it('can see its roles or the system ones', async () => {
+                user = usersList[9]
+                userPermissions = new UserPermissions({
+                    id: user.user_id,
+                    email: user.email || '',
+                })
+                user.organization_ownerships
+                const scope = Role.createQueryBuilder()
+                await nonAdminRoleScope(scope, userPermissions)
+
+                const results = await scope.getMany()
+                const ownedRoles = results.filter(
+                    (r) => r.system_role === false
+                )
+                const systemRoles = results.filter(
+                    (r) => r.system_role === true
+                )
+
+                expect(results).to.have.lengthOf(6)
+                expect(ownedRoles).to.have.lengthOf(1)
+                expect(systemRoles).to.have.lengthOf(5)
+            })
+
+            it('can not see roles from other orgs', async () => {
+                user = usersList[9]
+                userPermissions = new UserPermissions({
+                    id: user.user_id,
+                    email: user.email || '',
+                })
+                const scope = Role.createQueryBuilder()
+                await nonAdminRoleScope(scope, userPermissions)
+
+                const results = await scope.getMany()
+                const rolesFromOtherOrgs = results.find(
+                    (r) => r.role_name === roleList[0].role_name
+                )
+
+                expect(rolesFromOtherOrgs).to.be.an('undefined')
+            })
+
+            it('nonAdminRoleScope works even with filter applied', async () => {
+                user = usersList[0]
+                userPermissions = new UserPermissions({
+                    id: user.user_id,
+                    email: user.email || '',
+                })
+                const scope = Role.createQueryBuilder()
+                const filteredName = roleList[2].role_name
+                scope.andWhere('Role.role_name = :filteredName', {
+                    filteredName,
+                })
+                await nonAdminRoleScope(scope, userPermissions)
+
+                const results = await scope.getMany()
+                const ownedRoles = results.filter(
+                    (r) => r.system_role === false
+                )
+
+                expect(results).to.have.lengthOf(1)
+                expect(ownedRoles).to.have.lengthOf(1)
+                expect(results[0].role_name).to.equal(filteredName)
             })
         })
     })

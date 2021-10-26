@@ -163,6 +163,12 @@ export function isAdminTransformer(schema: GraphQLSchema) {
                                 permissions
                             )
                             break
+                        case 'role':
+                            await nonAdminRoleScope(
+                                scope as SelectQueryBuilder<Role>,
+                                permissions
+                            )
+                            break
                         default:
                         // do nothing
                     }
@@ -579,4 +585,19 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
     }
 
     scope.where('false')
+}
+export const nonAdminRoleScope: NonAdminScope<Role> = (scope, permissions) => {
+    scope
+        .leftJoin(
+            OrganizationMembership,
+            'OrganizationMembership',
+            'OrganizationMembership.organization = Role.organization'
+        )
+        .andWhere(
+            '(OrganizationMembership.user_id = :d_user_id OR Role.system_role = :system)',
+            {
+                d_user_id: permissions.getUserId(),
+                system: true,
+            }
+        )
 }

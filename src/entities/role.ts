@@ -30,10 +30,10 @@ export class Role extends CustomBaseEntity {
     public role_name?: string
 
     @Column({ nullable: false, default: 'System Default Role' })
-    public role_description?: string
+    public role_description!: string
 
     @Column({ nullable: false, default: false })
-    public system_role?: boolean
+    public system_role!: boolean
 
     @ManyToOne(() => Organization, (organization) => organization.roles)
     public organization?: Promise<Organization>

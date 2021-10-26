@@ -15,9 +15,60 @@ const typeDefs = gql`
             organization_id: ID!
         ): Role
     }
+
+    # pagination extension types start here
+    type RolesConnectionResponse implements iConnectionResponse {
+        totalCount: Int
+        pageInfo: ConnectionPageInfo
+        edges: [RolesConnectionEdge]
+    }
+
+    type RolesConnectionEdge implements iConnectionEdge {
+        cursor: String
+        node: RoleConnectionNode
+    }
+
+    # pagination extension types end here
+
+    enum RoleSortBy {
+        id
+        name
+    }
+
+    input RoleSortInput {
+        field: RoleSortBy!
+        order: SortOrder!
+    }
+
+    input RoleFilter {
+        # table columns
+        name: StringFilter
+        status: StringFilter
+        system: BooleanFilter
+        organizationId: UUIDFilter
+
+        #joined columns
+        AND: [RoleFilter]
+        OR: [RoleFilter]
+    }
+
+    type RoleConnectionNode {
+        id: ID!
+        name: String
+        description: String!
+        status: Status!
+        system: Boolean!
+    }
+
     extend type Query {
         role(role_id: ID!): Role
         roles: [Role]
+        rolesConnection(
+            direction: ConnectionDirection!
+            directionArgs: ConnectionsDirectionArgs
+            filter: RoleFilter
+            sort: RoleSortInput
+        ): RolesConnectionResponse @isAdmin(entity: "role")
     }
     type Role {
         role_id: ID!
@@ -66,6 +117,9 @@ export default function getDefault(
             Query: {
                 roles: (_parent, _args, ctx) => model.getRoles(ctx),
                 role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
+                rolesConnection: (_parent, args, ctx: Context, info) => {
+                    return model.rolesConnection(ctx, info, args)
+                },
             },
         },
     }

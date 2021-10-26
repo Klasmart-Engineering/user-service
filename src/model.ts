@@ -86,6 +86,7 @@ import logger, { TypeORMLogger } from './logging'
 import { ReplaceRoleArguments } from './operations/roles'
 import { PermissionName } from './permissions/permissionNames'
 import { APIError, APIErrorCollection } from './types/errors/apiError'
+import { rolesConnectionResolver } from './pagination/rolesConnection'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 
 export class Model {
@@ -502,6 +503,12 @@ export class Model {
 
         return data
     }
+
+    public rolesConnection = (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Role>
+    ) => rolesConnectionResolver(info, paginationArgs)
 
     public async gradesConnection(
         _context: Context,
