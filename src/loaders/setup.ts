@@ -5,9 +5,16 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
-import { IProgramsConnectionLoaders } from './programsConnection'
+import {
+    IProgramsConnectionLoaders,
+    IProgramNodeDataLoaders,
+    ageRangesForPrograms,
+    gradesForPrograms,
+    subjectsForPrograms,
+} from './programsConnection'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
+    IUserNodeDataLoaders,
     IUsersLoaders,
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
@@ -23,7 +30,11 @@ import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { NodeDataLoader } from './genericNode'
-import { CoreUserConnectionNode } from '../pagination/usersConnection'
+import {
+    CoreUserConnectionNode,
+    coreUserConnectionNodeFields,
+    mapUserToUserConnectionNode,
+} from '../pagination/usersConnection'
 import DataLoader from 'dataloader'
 import { User } from '../entities/user'
 import { Lazy } from '../utils/lazyLoading'
@@ -32,14 +43,20 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
-
-interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
-    node?: NodeDataLoader<User, CoreUserConnectionNode>
-}
+import { Program } from '../entities/program'
+import {
+    mapProgramToProgramConnectionNode,
+    programSummaryNodeFields,
+} from '../pagination/programsConnection'
+import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
+import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
+import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
-    programsConnection?: IProgramsConnectionLoaders
+    programsConnection: IProgramsConnectionLoaders
+    programNode: IProgramNodeDataLoaders
     gradesConnection?: IGradesConnectionLoaders
     classesConnection?: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
@@ -80,9 +97,40 @@ export function createContextLazyLoaders(): IDataLoaders {
             ),
         },
         userNode: {
+            node: new Lazy<NodeDataLoader<User, CoreUserConnectionNode>>(
+                () =>
+                    new NodeDataLoader(
+                        User,
+                        'UserConnectionNode',
+                        mapUserToUserConnectionNode,
+                        coreUserConnectionNodeFields
+                    )
+            ),
             organizations: new Dataloader((keys) => orgsForUsers(keys)),
             schools: new Dataloader((keys) => schoolsForUsers(keys)),
             roles: new Dataloader((keys) => rolesForUsers(keys)),
+        },
+        programsConnection: {
+            ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(
+                () => new DataLoader(ageRangesForPrograms)
+            ),
+            grades: new Lazy<DataLoader<string, GradeSummaryNode[]>>(
+                () => new DataLoader(gradesForPrograms)
+            ),
+            subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
+                () => new DataLoader(subjectsForPrograms)
+            ),
+        },
+        programNode: {
+            node: new Lazy<NodeDataLoader<Program, ProgramSummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Program,
+                        'ProgramConnectionNode',
+                        mapProgramToProgramConnectionNode,
+                        programSummaryNodeFields
+                    )
+            ),
         },
     }
 }

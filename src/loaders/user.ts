@@ -2,12 +2,20 @@ import DataLoader from 'dataloader'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
+import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import { Lazy } from '../utils/lazyLoading'
+import { NodeDataLoader } from './genericNode'
+import { IUsersConnectionLoaders } from './usersConnection'
 
 export interface IUsersLoaders {
     user: Lazy<DataLoader<string, User | Error>>
     orgMemberships: Lazy<DataLoader<string, OrganizationMembership[]>>
     schoolMemberships: Lazy<DataLoader<string, SchoolMembership[]>>
+}
+
+export interface IUserNodeDataLoaders
+    extends Required<IUsersConnectionLoaders> {
+    node: Lazy<NodeDataLoader<User, CoreUserConnectionNode>>
 }
 
 export const orgMembershipsForUsers = async (

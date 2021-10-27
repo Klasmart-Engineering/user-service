@@ -27,22 +27,28 @@ interface Node {
 export class NodeDataLoader<
     Entity extends CustomBaseEntity,
     ReturnEntity extends Node
-> extends DataLoader<string, ReturnEntity | APIError> {
+> extends DataLoader<
+    { id: string; scope: SelectQueryBuilder<Entity> },
+    ReturnEntity | APIError
+> {
     constructor(
-        scope: SelectQueryBuilder<Entity>,
         entityClass: EntityTarget<Entity>,
         nodeType: string,
         entityMapper: (entity: Entity) => ReturnEntity,
         selectFields: string[]
     ) {
         super(async function (
-            ids: readonly string[]
+            keys: readonly { id: string; scope: SelectQueryBuilder<Entity> }[]
         ): Promise<(ReturnEntity | APIError)[]> {
             const connection = getConnection()
             const metadata = connection.getMetadata(entityClass)
             const primaryKeyColumn = metadata.primaryColumns[0]
             const primaryKeyLabel = primaryKeyColumn.propertyName
-
+            const ids = []
+            const scope = keys[0].scope
+            for (const key of keys) {
+                ids.push(key.id)
+            }
             scope
                 .select(selectFields)
                 .andWhere(

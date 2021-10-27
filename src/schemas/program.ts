@@ -3,12 +3,6 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { ProgramConnectionNode } from '../types/graphQL/programConnectionNode'
 import { Context } from '../main'
-import {
-    ageRangesForPrograms,
-    gradesForPrograms,
-    subjectsForPrograms,
-} from '../loaders/programsConnection'
-import Dataloader from 'dataloader'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -89,7 +83,8 @@ const typeDefs = gql`
     extend type Query {
         program(id: ID!): Program
             @isAdmin(entity: "program")
-            @deprecated(reason: "Use 'programsConnection' with 'id' filter.")
+            @deprecated(reason: "Use 'programNode'")
+        programNode(id: ID!): ProgramConnectionNode @isAdmin(entity: "program")
         programsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -138,7 +133,7 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.programsConnection?.ageRanges?.load(
+                    return ctx.loaders.programsConnection.ageRanges.instance.load(
                         program.id
                     )
                 },
@@ -147,7 +142,7 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.programsConnection?.grades?.load(
+                    return ctx.loaders.programsConnection.grades.instance.load(
                         program.id
                     )
                 },
@@ -156,7 +151,7 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.programsConnection?.subjects?.load(
+                    return ctx.loaders.programsConnection.subjects.instance.load(
                         program.id
                     )
                 },
@@ -171,21 +166,10 @@ export default function getDefault(
                 program: (_parent, args, ctx, _info) =>
                     model.getProgram(args, ctx),
                 programsConnection: (_parent, args, ctx: Context, info) => {
-                    ctx.loaders.programsConnection = {
-                        ageRanges: new Dataloader((keys) =>
-                            ageRangesForPrograms(keys)
-                        ),
-
-                        grades: new Dataloader((keys) =>
-                            gradesForPrograms(keys)
-                        ),
-
-                        subjects: new Dataloader((keys) =>
-                            subjectsForPrograms(keys)
-                        ),
-                    }
-
-                    return model.programsConnection(ctx, info, args)
+                    return model.programsConnection(info, args)
+                },
+                programNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.programNode.node.instance.load(args)
                 },
             },
         },

@@ -368,6 +368,28 @@ const USER_NODE_QUERY_2_NODES = gql`
     }
 `
 
+const PROGRAM_NODE_QUERY_2_NODES = gql`
+    query($id: ID!, $id2: ID!) {
+        programNode(id: $id) {
+            name
+        }
+        programNode2: programNode(id: $id2) {
+            name
+        }
+    }
+`
+
+const PROGRAM_NODE_QUERY = gql`
+    query($id: ID!) {
+        programNode(id: $id) {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
 export const PERMISSIONS_CONNECTION = gql`
     query(
         $direction: ConnectionDirection!
@@ -1460,6 +1482,44 @@ export async function programsConnectionMainData(
 
     const res = await gqlTry(operation)
     return res.data?.programsConnection
+}
+
+export async function programNode(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string
+): Promise<ProgramConnectionNode> {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: PROGRAM_NODE_QUERY,
+            variables: {
+                id,
+            },
+            headers,
+        })
+    const res = await gqlTry(operation)
+    return res.data?.programNode
+}
+
+export async function program2Nodes(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string,
+    id2: string
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: PROGRAM_NODE_QUERY_2_NODES,
+            variables: {
+                id,
+                id2,
+            },
+            headers,
+        })
+
+    await gqlTry(operation)
 }
 
 export async function schoolsConnection(
