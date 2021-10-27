@@ -1882,6 +1882,18 @@ export async function school2Nodes(
     await gqlTry(operation)
 }
 
+export const SCHOOL_NODE = gql`
+    query SchoolNode($id: ID!) {
+        schoolNode(id: $id) {
+            id
+            name
+            status
+            shortCode
+            organizationId
+        }
+    }
+`
+
 export async function schoolsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
