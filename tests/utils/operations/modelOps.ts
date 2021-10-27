@@ -29,6 +29,7 @@ import { print } from 'graphql'
 import { PermissionConnectionNode } from '../../../src/types/graphQL/permissionConnectionNode'
 import { CategorySummaryNode } from '../../../src/types/graphQL/categorySummaryNode'
 import { RoleConnectionNode } from '../../../src/types/graphQL/roleConnectionNode'
+import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategoryConnectionNode'
 
 const NEW_USER = `
     mutation myMutation(
@@ -901,6 +902,41 @@ const REPLACE_ROLE = `
                 permission_name
                 permission_id
                 allow
+            }
+        }
+    }
+`
+export const SUBCATEGORIES_CONNECTION = gql`
+    query(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: SubcategoryFilter
+        $sortArgs: SubcategorySortInput
+    ) {
+        subcategoriesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+
+                node {
+                    id
+                    name
+                    status
+                    system
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
             }
         }
     }
@@ -1876,6 +1912,36 @@ export async function organizationsConnectionNodes(
 
     const res = await gqlTry(operation)
     return res.data?.organizationsConnection
+}
+
+export async function subcategoriesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filterArgs?: IEntityFilter,
+    sortArgs?: ISortField
+): Promise<IPaginatedResponse<SubcategoryConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        print(SUBCATEGORIES_CONNECTION),
+        includeTotalCount
+    )
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs,
+                sortArgs,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.subcategoriesConnection
 }
 
 function buildPaginationQuery(

@@ -16,6 +16,7 @@ import {
     classesConnection,
     getAllOrganizations,
     permissionsConnection,
+    subcategoriesConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
 import {
@@ -52,6 +53,8 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
 import { nonAdminRoleScope } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { Subcategory } from '../../../src/entities/subcategory'
+import { createSubcategory } from '../../factories/subcategory.factory'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -1000,6 +1003,87 @@ describe('isAdmin', () => {
                 expect(results).to.have.lengthOf(1)
                 expect(ownedRoles).to.have.lengthOf(1)
                 expect(results[0].role_name).to.equal(filteredName)
+            })
+        })
+    })
+
+    describe('subcategories', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let organization2: Organization
+        let allSubcategoriesCount: number
+        let systemSubcategoriesCount: number
+        const organizationSubcategoriesCount = 10
+
+        const queryVisiblePermissions = async (token: string) => {
+            const response = await subcategoriesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization = await createOrganization(memberUser).save()
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization)
+                )
+            )
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization2)
+                )
+            )
+
+            await createOrganizationMembership({
+                user: memberUser,
+                organization,
+            }).save()
+
+            allSubcategoriesCount = await Subcategory.count()
+            systemSubcategoriesCount = await Subcategory.count({
+                where: { system: true },
+            })
+        })
+
+        context('admin', () => {
+            it('allows access to all the subcategories', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    allSubcategoriesCount
+                )
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access to system subcategories and owns', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    systemSubcategoriesCount + organizationSubcategoriesCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('alows access just to system subcategories', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    systemSubcategoriesCount
+                )
             })
         })
     })
