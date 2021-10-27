@@ -89,17 +89,14 @@ GraphQL definitions:
     input CreateSchoolsInput{
         organizationId: ID!
         schoolName: String!
-        shortcode: String
-        programs: [ID!]
-        classes: [ID!]
-        users: [ID!]     
+        shortcode: String    
     }
 ```
 
 ### Output
 ```graphql
     type SchoolsMutationResult{
-        schools: [SchoolConnectionNode]
+        schools: [SchoolConnectionNode!]!
     }
 ```
 ### Output (actually defined elsewhere)
@@ -129,12 +126,19 @@ GraphQL definitions:
 ```
 
 ### Input
+
 ```graphql
-     input AddUserToSchoolInput{
+     """
+     Note:  
+     Every user in the userIDs list is assigned all the schoolRoles in 
+     the schoolRoleIds list
+     """
+    input AddUsersToSchoolInput {
         schoolId: ID!
-        userId: ID!
-        roles: [ID!] 
-     }
+        schoolRoleIds: [ID!]!
+        userIds: [ID!]!
+    }
+
 ```
 ### Mutation
 ```graphql
@@ -142,30 +146,29 @@ GraphQL definitions:
 ```
 ### Input
 ```graphql
-    input RemoveUserFromSchoolInput {
+    input RemoveUsersFromSchoolInput {
         schoolId: ID!
-        userId: ID!
+        userIds: [ID!]!
     }
 ```
 ### Mutation
 ```graphql
-    removeUsersFromSchools(input: [RemoveUserFromSchoolInput!]!): SchoolsMutationResult
+    removeUsersFromSchools(input: [RemoveUsersFromSchoolInput!]!): SchoolsMutationResult
 ```
 ### Input
 ```graphql
-    input UpdateSchoolsInput{
+    input UpdateSchoolInput{
         organizationId: ID!
         school_id: ID!
         name: String
         shortcode: String
         programs: [ID!]
         classes: [ID!]
-        users: [ID!]
     }
 ```
 ### Mutation
 ```graphql
-    UpdateSchools(input: [UpdateSchoolsInput!]!): SchoolsMutationResult
+    UpdateSchools(input: [UpdateSchoolInput!]!): SchoolsMutationResult
 ```
 
 ### Input
@@ -195,7 +198,7 @@ GraphQL definitions:
 ```graphql
     input addClassesToSchoolInput{
         schoolId: ID!
-        classIds: [ID]!
+        classIds: [ID!]!
     }
 ```
 ### Mutation
@@ -204,7 +207,7 @@ GraphQL definitions:
 ```
 ### Input
 ```graphql
-    input RemoveSchoolClassesInput{
+    input RemoveClassesFromSchoolInput{
         schoolId: ID!
         classIds: [ID!]!
     }
