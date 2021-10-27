@@ -413,6 +413,17 @@ export const PERMISSION_NODE_FIELDS = gql`
     }
 `
 
+const SCHOOL_NODE_QUERY_2_NODES = gql`
+    query($id: ID!, $id2: ID!) {
+        schoolNode(id: $id) {
+            name
+        }
+        schoolNode2: schoolNode(id: $id2) {
+            name
+        }
+    }
+`
+
 export const PERMISSIONS_CONNECTION = gql`
     ${PERMISSION_NODE_FIELDS}
 
@@ -1841,6 +1852,26 @@ export async function program2Nodes(
     const operation = () =>
         query({
             query: PROGRAM_NODE_QUERY_2_NODES,
+            variables: {
+                id,
+                id2,
+            },
+            headers,
+        })
+
+    await gqlTry(operation)
+}
+
+export async function school2Nodes(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string,
+    id2: string
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: SCHOOL_NODE_QUERY_2_NODES,
             variables: {
                 id,
                 id2,

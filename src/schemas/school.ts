@@ -4,12 +4,6 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
-import { NodeDataLoader } from '../loaders/genericNode'
-import {
-    mapSchoolToSchoolConnectionNode,
-    schoolConnectionNodeFields,
-} from '../pagination/schoolsConnection'
-import { Lazy } from '../utils/lazyLoading'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -141,18 +135,7 @@ export default function getDefault(
                     return model.schoolsConnection(ctx, info, args)
                 },
                 schoolNode: (_parent, args, ctx, _info) => {
-                    if (typeof ctx.loaders.schoolNode.node === 'undefined') {
-                        ctx.loaders.schoolNode.node = new Lazy(
-                            () =>
-                                new NodeDataLoader(
-                                    args.scope,
-                                    School,
-                                    'ISchoolsConnectionNode',
-                                    mapSchoolToSchoolConnectionNode,
-                                    schoolConnectionNodeFields
-                                )
-                        )
-                    }
+                    return ctx.loaders.schoolNode.node.instance.load(args)
                 },
             },
             SchoolMembership: {

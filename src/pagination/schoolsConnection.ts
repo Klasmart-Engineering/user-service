@@ -1,6 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
-import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -57,14 +56,10 @@ export async function schoolConnectionQuery(
     scope: SelectQueryBuilder<School>,
     filter?: IEntityFilter
 ) {
-    // Required for building SchoolConnectionNode
-    // TODO remove once School.organization_id FK is exposed on the Entity
-    scope.innerJoin('School.organization', 'Organization')
-
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'School.organization',
+                organizationId: 'School.organizationOrganizationId',
                 // Could also refer to SchoolMembership.school_id
                 schoolId: 'School.school_id',
                 name: 'school_name',
@@ -102,14 +97,9 @@ export function mapSchoolToSchoolConnectionNode(
     }
 }
 
-export const schoolConnectionNodeFields = [
-    ...([
-        'school_id',
-        'school_name',
-        'shortcode',
-        'status',
-    ] as (keyof School)[]).map((field) => `School.${field}`),
-    ...(['organization_id'] as (keyof Organization)[]).map(
-        (field) => `Organization.${field}`
-    ),
-]
+export const schoolConnectionNodeFields = ([
+    'school_id',
+    'school_name',
+    'shortcode',
+    'status',
+] as (keyof School)[]).map((field) => `School.${field}`)
