@@ -278,7 +278,6 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     for (const key of keys) {
         // find the request
         const id = getRequestIdentifier(key)
-        // const request = requests.find((r) => r.stringId === id)
         const request = requests.get(id)
 
         // get the result for the requested parentId
