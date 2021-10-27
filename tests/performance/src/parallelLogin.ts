@@ -7,52 +7,102 @@ import { Options } from 'k6/options';
 
 export const options: Options = {
     scenarios: {
-        orgAdmin: {
-            executor: 'per-vu-iterations',
-            exec: 'userOrgAdminLogin',
-            startTime: '0s',
-            gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '4m',
-        },
-        schoolAdmin: {
-            executor: 'per-vu-iterations',
-            exec: 'userSchoolAdminLogin',
-            startTime: '0s',
-            gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '4m',
-        },
+        // orgAdmin: {
+        //     executor: 'ramping-vus',
+        //     exec: 'userOrgAdminLogin',
+        //     startTime: '0s',
+        //     gracefulStop: '5s',
+        //     stages: [
+        //         {
+        //             duration: '10s',
+        //             target: 10
+        //         },
+        //         {
+        //             duration: '20s',
+        //             target: 30
+        //         },
+        //         {
+        //             duration: '40s',
+        //             target: 40
+        //         },
+        //         {
+        //             duration: '20s',
+        //             target: 30
+        //         },
+        //         {
+        //             duration: '10s',
+        //             target: 10
+        //         },
+        //         {
+        //             duration: '20s',
+        //             target: 30
+        //         },
+        //     ],
+        // },
+        // schoolAdmin: {
+        //     executor: 'shared-iterations',
+        //     exec: 'userSchoolAdminLogin',
+        //     startTime: '0s',
+        //     gracefulStop: '5s',
+        //     vus: 10,
+        //     iterations: 20,
+        //     maxDuration: '4m',
+        // },
         teacher: {
-            executor: 'per-vu-iterations',
+            executor: 'ramping-vus',
             exec: 'userTeacherLogin',
             startTime: '0s',
             gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '4m',
+            stages: [
+                // Ramp up               
+                {
+                    duration: '20s',
+                    target: 20
+                },
+                // Hold
+                {
+                    duration: '2m',
+                    target: 20
+                },
+                // Ramp down
+                {
+                    duration: '20s',
+                    target: 5
+                },
+            ],
         },
         student: {
-            executor: 'per-vu-iterations',
+            executor: 'ramping-vus',
             exec: 'userStudentLogin',
             startTime: '0s',
             gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '4m',
+            stages: [
+                // Ramp up          
+                {
+                    duration: '20s',
+                    target: 30
+                },
+                // Hold
+                {
+                    duration: '2m',
+                    target: 235
+                },
+                // Ramp down
+                {
+                    duration: '20s',
+                    target: 20
+                },
+            ],
         },
-        parent: {
-            executor: 'per-vu-iterations',
-            exec: 'userParentLogin',
-            startTime: '0s',
-            gracefulStop: '5s',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '4m',
-        },
-    }
+        // parent: {
+        //     executor: 'constant-vus',
+        //     exec: 'userParentLogin',
+        //     startTime: '0s',
+        //     gracefulStop: '5s',
+        //     vus: 10,
+        //     duration: '25s',
+        // },
+    },
 }
 
 export {

@@ -12,12 +12,12 @@ export const options: Options = {
 
 export default function() {
     userOrgAdminLogin();
-    sleep(3);
+    sleep(1);
     userSchoolAdminLogin();
-    sleep(3);
+    sleep(1);
     userTeacherLogin();
-    sleep(3);
+    sleep(1);
     userStudentLogin();
-    sleep(3);
+    sleep(1);
     userParentLogin();
 }
