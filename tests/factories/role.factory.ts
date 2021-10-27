@@ -17,8 +17,6 @@ export function createRole(
     if (org) {
         role.organization = Promise.resolve(org)
     }
-    role.role_description = faker.random.words()
-    role.system_role = false
     if (permissions) {
         const permissionEntities = permissions.map((name) => {
             const perm = new Permission()

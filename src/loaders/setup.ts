@@ -1,9 +1,14 @@
 import DataLoader from 'dataloader'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { Program } from '../entities/program'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
+import {
+    mapProgramToProgramConnectionNode,
+    programSummaryNodeFields,
+} from '../pagination/programsConnection'
 import {
     mapSchoolToSchoolConnectionNode,
     schoolConnectionQuery,
@@ -11,12 +16,17 @@ import {
 } from '../pagination/schoolsConnection'
 import {
     CoreUserConnectionNode,
+    coreUserConnectionNodeFields,
     mapUserToUserConnectionNode,
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../pagination/usersConnection'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
 import { BrandingResult } from '../types/graphQL/branding'
+import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
+import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
+import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
@@ -32,10 +42,17 @@ import {
     organizationForMemberships,
 } from './organization'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
-import { IProgramsConnectionLoaders } from './programsConnection'
+import {
+    ageRangesForPrograms,
+    gradesForPrograms,
+    IProgramNodeDataLoaders,
+    IProgramsConnectionLoaders,
+    subjectsForPrograms,
+} from './programsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import {
+    IUserNodeDataLoaders,
     IUsersLoaders,
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
@@ -48,13 +65,10 @@ import {
     schoolsForUsers,
 } from './usersConnection'
 
-interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
-    node?: NodeDataLoader<User, CoreUserConnectionNode>
-}
-
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
-    programsConnection?: IProgramsConnectionLoaders
+    programsConnection: IProgramsConnectionLoaders
+    programNode: IProgramNodeDataLoaders
     gradesConnection?: IGradesConnectionLoaders
     classesConnection?: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
@@ -130,9 +144,40 @@ export function createContextLazyLoaders(): IDataLoaders {
                 })
         ),
         userNode: {
+            node: new Lazy<NodeDataLoader<User, CoreUserConnectionNode>>(
+                () =>
+                    new NodeDataLoader(
+                        User,
+                        'UserConnectionNode',
+                        mapUserToUserConnectionNode,
+                        coreUserConnectionNodeFields
+                    )
+            ),
             organizations: new DataLoader((keys) => orgsForUsers(keys)),
             schools: new DataLoader((keys) => schoolsForUsers(keys)),
             roles: new DataLoader((keys) => rolesForUsers(keys)),
+        },
+        programsConnection: {
+            ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(
+                () => new DataLoader(ageRangesForPrograms)
+            ),
+            grades: new Lazy<DataLoader<string, GradeSummaryNode[]>>(
+                () => new DataLoader(gradesForPrograms)
+            ),
+            subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
+                () => new DataLoader(subjectsForPrograms)
+            ),
+        },
+        programNode: {
+            node: new Lazy<NodeDataLoader<Program, ProgramSummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Program,
+                        'ProgramConnectionNode',
+                        mapProgramToProgramConnectionNode,
+                        programSummaryNodeFields
+                    )
+            ),
         },
     }
 }

@@ -40,7 +40,6 @@ context('loaders.genericNode', () => {
             users = await User.save(createUsers(3))
             scope = createQueryBuilder('user')
             loader = new NodeDataLoader(
-                scope,
                 User,
                 'UserConnectionNode',
                 mapUserToUserConnectionNode,
@@ -57,7 +56,10 @@ context('loaders.genericNode', () => {
         })
 
         it('returns an array of the same length as the keys', async () => {
-            const keys = [faker.datatype.uuid(), users[0].user_id]
+            const keys = [
+                { id: faker.datatype.uuid(), scope },
+                { id: users[0].user_id, scope },
+            ]
 
             const data = await loader.loadMany(keys)
 
@@ -66,10 +68,13 @@ context('loaders.genericNode', () => {
 
         it('returns an array with the same order as the keys', async () => {
             // Reverse order UUIDs (which will be opposite to the default order from the DB)
-            const keys = users
+            const ids = users
                 .map((u) => u.user_id)
                 .sort((a, b) => -a.localeCompare(b))
-
+            const keys = []
+            for (const id of ids) {
+                keys.push({ id, scope })
+            }
             const data = await loader.loadMany(keys)
 
             expect(
@@ -78,7 +83,10 @@ context('loaders.genericNode', () => {
         })
 
         it('returns an Entity object for an existing key', async () => {
-            const entity = await loader.load(users[0].user_id)
+            const entity = await loader.load({
+                id: users[0].user_id,
+                scope: createQueryBuilder('user'),
+            })
             const properties = [
                 'id',
                 'givenName',
@@ -99,7 +107,9 @@ context('loaders.genericNode', () => {
         it('returns a ERR_NON_EXISTENT_ENTITY APIError for a non-existent key', async () => {
             const key = faker.datatype.uuid()
 
-            await expect(loader.load(key)).to.be.rejected.then((error) => {
+            await expect(
+                loader.load({ id: key, scope: createQueryBuilder('user') })
+            ).to.be.rejected.then((error) => {
                 expect(error).to.be.instanceOf(APIError)
                 expect(
                     pick(error, [

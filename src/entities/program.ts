@@ -30,7 +30,7 @@ export class Program extends CustomBaseEntity {
     public name?: string
 
     @Column({ nullable: false, default: false })
-    public system?: boolean
+    public system!: boolean
 
     @Column({ type: 'enum', enum: Status, default: Status.ACTIVE })
     public status!: Status
