@@ -20,11 +20,22 @@ describe('convertRawToEntities', () => {
         const userQuery = createQueryBuilder(User)
 
         const rawResult = await userQuery.getRawMany()
-        const entities = await convertRawToEntities(rawResult, userQuery)
+        const convertedEntities = await convertRawToEntities(
+            rawResult,
+            userQuery
+        )
+        const typeormEntities = await userQuery.getMany()
 
-        expect(entities).to.have.lengthOf(1)
-        for (const user of entities) {
+        expect(convertedEntities).to.have.lengthOf(1)
+        for (const user of convertedEntities) {
             expect(user).to.be.instanceOf(User)
+
+            const typeormEntity = typeormEntities.find(
+                (e) => e.user_id === user?.user_id
+            )
+            expect(typeormEntity).to.exist
+            expect(JSON.stringify(typeormEntity)).to.eq(JSON.stringify(user))
+            expect(JSON.stringify(user)).to.eq(JSON.stringify(typeormEntity))
         }
     })
 
