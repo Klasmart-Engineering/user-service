@@ -93,33 +93,16 @@ GraphQL definitions:
     }
 ```
 
+
 ### Output
+#### Note: SchoolConnectionNode is defined elsewhere
+
 ```graphql
     type SchoolsMutationResult{
         schools: [SchoolConnectionNode!]!
     }
 ```
-### Output (actually defined elsewhere)
-#### Shown here for the purposes of context
-```graphql
-    type SchoolConnectionNode {
-        """
-        Existing
-        """
-        id: ID!
-        name: String!
-        status: Status!
-        shortCode: String
-        organizationId: ID!
-        """
-        New
-        """
-        programs: [ProgramConnectionNode]
-        roles: [RolesConnectionNode]
-        users: [UserConnectionNode]
-        classes: [ClassConnectionNode]
-    }
-```
+
 ### Mutation
 ```graphql
      createSchools(input: [CreateSchoolsInput!]!) SchoolsMutationResult
