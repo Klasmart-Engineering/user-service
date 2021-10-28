@@ -88,6 +88,7 @@ import { APIError, APIErrorCollection } from './types/errors/apiError'
 import { rolesConnectionResolver } from './pagination/rolesConnection'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 import { programsConnectionResolver } from './pagination/programsConnection'
+import { classesConnectionResolver } from './pagination/classesConnection'
 
 export class Model {
     public static async create() {
@@ -401,6 +402,12 @@ export class Model {
         paginationArgs: IPaginationArgs<School>
     ) => schoolsConnectionResolver(info, paginationArgs)
 
+    public classesConnection = (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Class>
+    ) => classesConnectionResolver(info, paginationArgs)
+
     public programsConnection = async (
         info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<Program>
@@ -543,109 +550,6 @@ export class Model {
                 lowValueUnit: ageRange.low_value_unit,
                 highValue: ageRange.high_value,
                 highValueUnit: ageRange.high_value_unit,
-            }
-
-            edge.node = newNode
-        }
-
-        return data
-    }
-
-    public async classesConnection(
-        _context: Context,
-        info: GraphQLResolveInfo,
-        {
-            direction,
-            directionArgs,
-            scope,
-            filter,
-            sort,
-        }: IPaginationArgs<Class>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-        // Select only the ClassConnectionNode fields
-        scope.select([
-            'Class.class_id',
-            'Class.class_name',
-            'Class.status',
-            'Class.shortcode',
-        ])
-
-        if (filter) {
-            if (
-                filterHasProperty('ageRangeValueFrom', filter) ||
-                filterHasProperty('ageRangeUnitFrom', filter) ||
-                filterHasProperty('ageRangeValueTo', filter) ||
-                filterHasProperty('ageRangeUnitTo', filter)
-            ) {
-                scope
-                    .innerJoin('Class.age_ranges', 'AgeRange')
-                    .where(AVOID_NONE_SPECIFIED_BRACKETS)
-            }
-
-            if (
-                filterHasProperty('schoolId', filter) &&
-                // nonAdminClassScope may have already joined on Schools
-                !scopeHasJoin(scope, School)
-            ) {
-                scope.leftJoin('Class.schools', 'School')
-            }
-
-            if (filterHasProperty('gradeId', filter)) {
-                scope.innerJoin('Class.grades', 'Grade')
-            }
-
-            if (filterHasProperty('subjectId', filter)) {
-                scope.innerJoin('Class.subjects', 'Subject')
-            }
-
-            if (filterHasProperty('programId', filter)) {
-                scope.innerJoin('Class.programs', 'Program')
-            }
-
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    id: 'Class.class_id',
-                    name: 'Class.class_name',
-                    status: 'Class.status',
-                    // No need to join, use the Foreign Key on the Class entity
-                    organizationId: 'Class.organization',
-                    ageRangeValueFrom: 'AgeRange.low_value',
-                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
-                    ageRangeValueTo: 'AgeRange.high_value',
-                    ageRangeUnitTo: 'AgeRange.high_value_unit',
-                    schoolId: 'School.school_id',
-                    gradeId: 'Grade.id',
-                    subjectId: 'Subject.id',
-                    programId: 'Program.id',
-                })
-            )
-        }
-
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'class_id',
-                aliases: {
-                    id: 'class_id',
-                    name: 'class_name',
-                },
-                sort,
-            },
-            includeTotalCount,
-        })
-
-        for (const edge of data.edges) {
-            const class_ = edge.node as Class
-            const newNode: Partial<ClassConnectionNode> = {
-                id: class_.class_id,
-                name: class_.class_name,
-                status: class_.status,
-                shortCode: class_.shortcode,
-                // other properties have dedicated resolvers that use Dataloader
             }
 
             edge.node = newNode
