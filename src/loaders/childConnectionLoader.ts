@@ -128,7 +128,7 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
                 uniqueParentIds.map((parentId) => [
                     parentId,
                     {
-                        totalCount: 0,
+                        totalCount: includeTotalCount ? 0 : undefined,
                         pageInfo: {
                             hasPreviousPage: true,
                             hasNextPage: true,

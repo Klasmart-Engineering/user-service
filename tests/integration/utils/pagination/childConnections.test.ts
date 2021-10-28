@@ -31,7 +31,11 @@ import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
-function getDataloaderKeys(orgs: Organization[], args: IChildPaginationArgs) {
+function getDataloaderKeys(
+    orgs: Organization[],
+    args: IChildPaginationArgs,
+    includeTotalCount = true
+) {
     const items: IChildConnectionDataloaderKey[] = []
     for (const org of orgs) {
         items.push({
@@ -41,7 +45,7 @@ function getDataloaderKeys(orgs: Organization[], args: IChildPaginationArgs) {
                 pivot: '"OrganizationMembership"."organization_id"',
             },
             args,
-            includeTotalCount: true,
+            includeTotalCount,
         })
     }
     return items
@@ -155,6 +159,36 @@ describe('child connections', () => {
                 count += response[0].edges.length
             }
             expect(count).to.eq(usersPerOrg)
+        })
+    })
+
+    context('counting', () => {
+        it('returns the totalCount when requested', async () => {
+            const results = await childConnectionLoader(
+                getDataloaderKeys(orgs, args, false),
+                usersConnectionQuery,
+                mapFunc,
+                sort,
+                scopeArgs
+            )
+            expect(results).to.have.lengthOf(orgs.length)
+            for (const r of results) {
+                expect(r.totalCount).to.eq(usersPerOrg)
+            }
+        })
+        it('does not return the totalCount when not requested', async () => {
+            const results = await childConnectionLoader(
+                getDataloaderKeys(orgs, args, false),
+                usersConnectionQuery,
+                mapFunc,
+                sort,
+                scopeArgs
+            )
+            expect(results).to.have.lengthOf(orgs.length)
+            for (const r of results) {
+                expect(r.totalCount).to.be.undefined
+                expect(r.edges).to.exist
+            }
         })
     })
 
