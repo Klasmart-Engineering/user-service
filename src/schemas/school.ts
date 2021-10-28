@@ -6,11 +6,13 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import {
+    IChildPaginationArgs,
     IPaginationArgs,
-    shouldIncludeTotalCount,
+    shouldIncludeTotalCount
 } from '../utils/pagination/paginate'
 import { Class } from '../entities/class'
 import { GraphQLResolveInfo } from 'graphql/type/definition'
+import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -96,6 +98,14 @@ const typeDefs = gql`
         status: Status!
         shortCode: String
         organizationId: ID!
+        
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassesFilter
+            sort: ClassesSortInput
+        ): [ClassesConnectionResponse!]!
     }
 
     input SchoolFilter {
@@ -123,6 +133,7 @@ const typeDefs = gql`
         order: SortOrder!
     }
 `
+
 export default function getDefault(
     model: Model,
     context?: Context

@@ -105,13 +105,14 @@ async function mapClassEdgeToClassConnectionEdge(
 }
 
 export async function mapClassToClassConnectionNode(
-    class: Class
+    classObj: Class
 ): Promise<ClassConnectionNode> {
     return {
-        id: class.class_id,
-        name: class.class_name,
-        status: class.status,
-        shortCode: class.shortcode,
-        schools: (await class.organization)?.organization_id || '',
+        id: classObj.class_id,
+        name: classObj.class_name,
+        status: classObj.status,
+        shortCode: classObj.shortcode,
+        // TODO: wtf
+       // schools: (await classObj.schools.map(()=> school.school_id)) || '',
     }
 }
