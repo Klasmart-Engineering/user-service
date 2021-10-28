@@ -6,12 +6,12 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
     filterHasProperty,
-    getWhereClauseFromFilter,
+    getWhereClauseFromFilter
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
-    paginateData,
+    paginateData
 } from '../utils/pagination/paginate'
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
@@ -39,7 +39,7 @@ export async function classesConnectionResolver(
         sort,
     })
 
-    const data = await paginateData<Class>({
+    const data = await paginateData<ClassConnectionNode>({
         direction,
         directionArgs,
         scope: newScope,
@@ -55,16 +55,14 @@ export async function classesConnectionResolver(
     })
 
     for (const edge of data.edges) {
-        const class_ = edge.node as Class
-        const newNode: Partial<ClassConnectionNode> = {
-            id: class_.class_id,
-            name: class_.class_name,
+        const class_ = edge.node as ClassConnectionNode
+        edge.node = {
+            id: class_.id,
+            name: class_.name,
             status: class_.status,
-            shortCode: class_.shortcode,
+            shortCode: class_.shortCode,
             // other properties have dedicated resolvers that use Dataloader
         }
-
-        edge.node = newNode
     }
 
     return data
