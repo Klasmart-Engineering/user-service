@@ -49,6 +49,10 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
+import {
+    classConnectionQuery,
+    classesConnectionSortingConfig, mapClassToClassConnectionNode
+} from '../pagination/classesConnection'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
