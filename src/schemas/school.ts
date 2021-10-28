@@ -5,7 +5,10 @@ import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
-import { IPaginationArgs } from '../utils/pagination/paginate'
+import {
+    IPaginationArgs,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
 import { Class } from '../entities/class'
 import { GraphQLResolveInfo } from 'graphql/type/definition'
 
@@ -139,8 +142,8 @@ export default function getDefault(
                         includeTotalCount: shouldIncludeTotalCount(info, args),
                         parent: {
                             id: school.id,
-                            filterKey: 'organizationId', //CHANGE TO SCHOOL
-                            pivot: '"OrganizationMembership"."organization_id"', //CHANGE TO SCHOOL/CLASS PIVOT
+                            filterKey: 'schoolId',
+                            pivot: '"School"."school_id"',
                         },
                     })
                 },
