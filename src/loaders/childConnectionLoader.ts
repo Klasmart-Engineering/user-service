@@ -1,13 +1,12 @@
 import crypto from 'crypto'
 import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
 import { createEntityScope, ICreateScopeArgs } from '../directives/isAdmin'
-import { filterHasProperty } from '../utils/pagination/filtering'
+import { filterHasProperty, IEntityFilter } from '../utils/pagination/filtering'
 import {
     getPageInfoAndEdges,
     getPaginationQuery,
     IChildPaginationArgs,
     IPaginatedResponse,
-    IPaginationArgs,
 } from '../utils/pagination/paginate'
 import { ISortingConfig } from '../utils/pagination/sorting'
 import { convertRawToEntities } from '../utils/typeorm'
@@ -69,7 +68,8 @@ interface IChildConnectionRequest<Node> {
 export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     keys: readonly IChildConnectionDataloaderKey[],
     connectionQuery: (
-        args: IPaginationArgs<Entity>
+        scope: SelectQueryBuilder<Entity>,
+        filter?: IEntityFilter
     ) => Promise<SelectQueryBuilder<Entity>>,
     entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>,
     sort: ISortingConfig,
@@ -142,19 +142,12 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
 
             // Create the base scope with necessary joins, filters, and selects
             // Sorting and pagination is done separately in the paginationScope
-            const baseScope = await connectionQuery({
-                direction: args.direction || 'FORWARD',
-                directionArgs: {
-                    cursor: args.cursor,
+            const baseScope = await connectionQuery(scope, {
+                [parent.filterKey]: {
+                    operator: 'in',
+                    value: uniqueParentIds,
                 },
-                scope,
-                filter: {
-                    [parent.filterKey]: {
-                        operator: 'in',
-                        value: uniqueParentIds,
-                    },
-                    ...args.filter,
-                },
+                ...args.filter,
             })
 
             //

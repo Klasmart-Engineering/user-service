@@ -1,4 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
@@ -7,6 +8,7 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
@@ -46,13 +48,7 @@ export async function usersConnectionResolver(
 ): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    const newScope = await usersConnectionQuery({
-        direction,
-        directionArgs,
-        scope,
-        filter,
-        sort,
-    })
+    const newScope = await usersConnectionQuery(scope, filter)
 
     const data = await paginateData<User>({
         direction,
@@ -77,13 +73,10 @@ export async function usersConnectionResolver(
     }
 }
 
-export async function usersConnectionQuery({
-    direction,
-    directionArgs,
-    scope,
-    filter,
-    sort,
-}: IPaginationArgs<User>) {
+export async function usersConnectionQuery(
+    scope: SelectQueryBuilder<User>,
+    filter?: IEntityFilter
+) {
     if (filter) {
         if (
             (filterHasProperty('organizationId', filter) ||
