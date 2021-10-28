@@ -1,5 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
-import { Organization } from '../entities/organization'
+import { School } from '../entities/school'
 import { Class } from '../entities/class'
 import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -63,7 +63,7 @@ export async function classConnectionQuery({
     sort = undefined,
 }: IPaginationArgs<Class>) {
     // Required for building ClassConnectionNode
-    scope.innerJoin('Class.school', 'School')
+    scope.innerJoin('Class.schools', 'School')
 
     if (filter) {
         scope.andWhere(
@@ -85,8 +85,8 @@ export async function classConnectionQuery({
     ] as (keyof Class)[]).map((field) => `Class.${field}`)
 
     selects.push(
-        ...(['organization_id'] as (keyof Organization)[]).map(
-            (field) => `Organization.${field}`
+        ...(['school_id'] as (keyof School)[]).map(
+            (field) => `School.${field}`
         )
     )
 
@@ -112,6 +112,6 @@ export async function mapClassToClassConnectionNode(
         name: class.class_name,
         status: class.status,
         shortCode: class.shortcode,
-        organizationId: (await class.organization)?.organization_id || '',
+        schools: (await class.organization)?.organization_id || '',
     }
 }
