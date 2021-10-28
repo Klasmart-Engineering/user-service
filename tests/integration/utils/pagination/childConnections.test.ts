@@ -165,7 +165,7 @@ describe('child connections', () => {
     context('counting', () => {
         it('returns the totalCount when requested', async () => {
             const results = await childConnectionLoader(
-                getDataloaderKeys(orgs, args, false),
+                getDataloaderKeys(orgs, args, true),
                 usersConnectionQuery,
                 mapFunc,
                 sort,
