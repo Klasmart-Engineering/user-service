@@ -3,7 +3,7 @@ import { School } from '../entities/school'
 import { Class } from '../entities/class'
 import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
+import { AVOID_NONE_SPECIFIED_BRACKETS, filterHasProperty, getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {
     IEdge,
     IPaginatedResponse,
@@ -11,6 +11,8 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import { scopeHasJoin } from '../utils/typeorm'
+import { mapOrganizationToOrganizationConnectionNode } from './organizationsConnection'
 
 export const classesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'class_id',
@@ -35,23 +37,44 @@ export async function classesConnectionResolver(
         sort,
     })
 
-    const data = await paginateData<Class>({
+    const data = await paginateData({
         direction,
         directionArgs,
-        scope: newScope,
+        scope,
         sort: {
-            ...classesConnectionSortingConfig,
+            primaryKey: 'class_id',
+            aliases: {
+                id: 'class_id',
+                name: 'class_name',
+            },
             sort,
         },
         includeTotalCount,
     })
 
-    return {
+    //
+    for (const edge of data.edges) {
+        const class_ = edge.node as Class
+        const newNode: Partial<ClassConnectionNode> = {
+            id: class_.class_id,
+            name: class_.class_name,
+            status: class_.status,
+            shortCode: class_.shortcode,
+                // other properties have dedicated resolvers that use Dataloader
+        }
+
+        edge.node = newNode
+    }
+
+     return {
         totalCount: data.totalCount,
         pageInfo: data.pageInfo,
-        edges: await Promise.all(
-            data.edges.map(mapClassEdgeToClassConnectionEdge)
-        ),
+        edges: data.edges.map((edge) => {
+            return {
+                node: mapClassEdgeToClassConnectionEdge(edge),
+                cursor: edge.cursor,
+            }
+        }),
     }
 }
 
@@ -62,35 +85,62 @@ export async function classConnectionQuery({
     filter,
     sort = undefined,
 }: IPaginationArgs<Class>) {
-    // Required for building ClassConnectionNode
-    scope.innerJoin('Class.schools', 'School')
+     scope.select([
+            'Class.class_id',
+            'Class.class_name',
+            'Class.status',
+            'Class.shortcode',
+        ])
 
     if (filter) {
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                schoolId: 'Class.school',
-                classId: 'Class.class_id',
-                name: 'class_name', //Why does this not require Class.class_name (Class table)?
-                shortCode: 'Class.shortcode',
-                status: 'Class.status',
-            })
-        )
-    }
+            if (
+                filterHasProperty('ageRangeValueFrom', filter) ||
+                filterHasProperty('ageRangeUnitFrom', filter) ||
+                filterHasProperty('ageRangeValueTo', filter) ||
+                filterHasProperty('ageRangeUnitTo', filter)
+            ) {
+                scope
+                    .innerJoin('Class.age_ranges', 'AgeRange')
+                    .where(AVOID_NONE_SPECIFIED_BRACKETS)
+            }
 
-    const selects = ([
-        'class_id',
-        'class_name',
-        'shortcode',
-        'status',
-    ] as (keyof Class)[]).map((field) => `Class.${field}`)
+            if (
+                filterHasProperty('schoolId', filter) &&
+                // nonAdminClassScope may have already joined on Schools
+                !scopeHasJoin(scope, School)
+            ) {
+                scope.leftJoin('Class.schools', 'School')
+            }
 
-    selects.push(
-        ...(['school_id'] as (keyof School)[]).map(
-            (field) => `School.${field}`
-        )
-    )
+            if (filterHasProperty('gradeId', filter)) {
+                scope.innerJoin('Class.grades', 'Grade')
+            }
 
-    scope.select(selects)
+            if (filterHasProperty('subjectId', filter)) {
+                scope.innerJoin('Class.subjects', 'Subject')
+            }
+
+            if (filterHasProperty('programId', filter)) {
+                scope.innerJoin('Class.programs', 'Program')
+            }
+
+         scope.andWhere(
+                getWhereClauseFromFilter(filter, {
+                    id: 'Class.class_id',
+                    name: 'Class.class_name',
+                    status: 'Class.status',
+                    // No need to join, use the Foreign Key on the Class entity
+                    organizationId: 'Class.organization',
+                    ageRangeValueFrom: 'AgeRange.low_value',
+                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
+                    ageRangeValueTo: 'AgeRange.high_value',
+                    ageRangeUnitTo: 'AgeRange.high_value_unit',
+                    schoolId: 'School.school_id',
+                    gradeId: 'Grade.id',
+                    subjectId: 'Subject.id',
+                    programId: 'Program.id',
+                })
+            )
 
     return scope
 }
