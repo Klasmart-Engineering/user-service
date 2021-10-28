@@ -3,7 +3,11 @@ import { School } from '../entities/school'
 import { Class } from '../entities/class'
 import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { AVOID_NONE_SPECIFIED_BRACKETS, filterHasProperty, getWhereClauseFromFilter } from '../utils/pagination/filtering'
+import {
+    AVOID_NONE_SPECIFIED_BRACKETS,
+    filterHasProperty,
+    getWhereClauseFromFilter,
+} from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
@@ -35,10 +39,10 @@ export async function classesConnectionResolver(
         sort,
     })
 
-    const data = await paginateData({
+    const data = await paginateData<Class>({
         direction,
         directionArgs,
-        newScope,
+        scope: newScope,
         sort: {
             primaryKey: 'class_id',
             aliases: {
@@ -50,28 +54,35 @@ export async function classesConnectionResolver(
         includeTotalCount,
     })
 
-     for (const edge of data.edges) {
-            const class_ = edge.node as Class
-            const newNode: Partial<ClassConnectionNode> = {
-                id: class_.class_id,
-                name: class_.class_name,
-                status: class_.status,
-                shortCode: class_.shortcode,
-                // other properties have dedicated resolvers that use Dataloader
-            }
+    for (const edge of data.edges) {
+        const class_ = edge.node as Class
+        const newNode: Partial<ClassConnectionNode> = {
+            id: class_.class_id,
+            name: class_.class_name,
+            status: class_.status,
+            shortCode: class_.shortcode,
+            // other properties have dedicated resolvers that use Dataloader
+        }
 
-            edge.node = newNode
-     }
-     return data
+        edge.node = newNode
+    }
+
+    return data
 }
 
 export async function classConnectionQuery({
-    direction = "FORWARD",
+    direction = 'FORWARD',
     directionArgs = {},
     scope,
     filter,
-    sort,
+    sort = undefined,
 }: IPaginationArgs<Class>) {
+    scope.select([
+        'Class.class_id',
+        'Class.class_name',
+        'Class.status',
+        'Class.shortcode',
+    ])
 
     if (filter) {
         if (
@@ -122,23 +133,9 @@ export async function classConnectionQuery({
                 programId: 'Program.id',
             })
         )
-        const selects = ([
-        'school_id',
-        'school_name',
-        'shortcode',
-        'status',
-    ] as (keyof School)[]).map((field) => `School.${field}`)
-
-    selects.push(
-        ...(['organization_id'] as (keyof Organization)[]).map(
-            (field) => `Organization.${field}`
-        )
-    )
-
-    scope.select(selects)
-
-        return scope
     }
+
+    return scope
 }
 
 export function mapClassToClassConnectionNode(
@@ -149,5 +146,7 @@ export function mapClassToClassConnectionNode(
         name: classObj.class_name,
         status: classObj.status,
         shortCode: classObj.shortcode,
+        // TODO: wtf
+        // schools: (await classObj.schools.map(()=> school.school_id)) || '',
     }
 }
