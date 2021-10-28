@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
+import { createEntityScope, ICreateScopeArgs } from '../directives/isAdmin'
 import { filterHasProperty } from '../utils/pagination/filtering'
 import {
     getPageInfoAndEdges,
@@ -20,15 +21,13 @@ import { convertRawToEntities } from '../utils/typeorm'
 // In order to pass request specific context to the batch function,
 // dataloader keys are objects contain the keyId as well as
 // request specific information, like pagination arguments
-export interface IChildConnectionDataloaderKey<
-    SourceEntity extends BaseEntity
-> {
+export interface IChildConnectionDataloaderKey {
     readonly parent: {
         id: string
         filterKey: string
         pivot: string
     }
-    readonly args: IChildPaginationArgs<SourceEntity>
+    readonly args: IChildPaginationArgs
     readonly includeTotalCount: boolean
 }
 
@@ -40,7 +39,7 @@ export interface IChildConnectionDataloaderKey<
 //     usersConnection(count: 1) {} # request A
 //     usersConnection(count: 2) {} # request B
 // }
-function getRequestIdentifier(key: IChildConnectionDataloaderKey<BaseEntity>) {
+function getRequestIdentifier(key: IChildConnectionDataloaderKey) {
     // flatten the object and discard the scope property and unique parentId
     const flatObj = {
         direction: key.args.direction,
@@ -60,7 +59,7 @@ function getRequestIdentifier(key: IChildConnectionDataloaderKey<BaseEntity>) {
 
 interface IChildConnectionRequest<Node> {
     // the unique request properties
-    key: IChildConnectionDataloaderKey<BaseEntity>
+    key: IChildConnectionDataloaderKey
     // the list of parent Ids to filter by (e.g. orgIds in this case)
     parentIds: string[]
     // the final parentId:childConnections map for this unique request
@@ -68,12 +67,13 @@ interface IChildConnectionRequest<Node> {
     result: Map<string, IPaginatedResponse<Node>>
 }
 export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
-    keys: readonly IChildConnectionDataloaderKey<Entity>[],
+    keys: readonly IChildConnectionDataloaderKey[],
     connectionQuery: (
         args: IPaginationArgs<Entity>
     ) => Promise<SelectQueryBuilder<Entity>>,
     entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>,
-    sort: ISortingConfig
+    sort: ISortingConfig,
+    scopeArgs: ICreateScopeArgs
 ): Promise<IPaginatedResponse<Node>[]> => {
     if (keys.length === 0) {
         return []
@@ -98,11 +98,16 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     // resolve all child connections independently per request, in parallel
     await Promise.all(
         Array.from(requests.entries()).map(async ([id, request]) => {
+            // create a new scope per request
+            const scope = (await createEntityScope(
+                scopeArgs
+            )) as SelectQueryBuilder<Entity>
+
             // there may be duplicate parentIds, so use a unique set to create maps
             const parentIds = request.parentIds
             const uniqueParentIds = [...new Set(parentIds)]
 
-            const args = request.key.args as IChildPaginationArgs<Entity>
+            const args = request.key.args as IChildPaginationArgs
             const parent = request.key.parent
             const includeTotalCount = request.key.includeTotalCount
             const groupByProperty = parent.pivot
@@ -142,7 +147,7 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
                 directionArgs: {
                     cursor: args.cursor,
                 },
-                scope: args.scope,
+                scope,
                 filter: {
                     [parent.filterKey]: {
                         operator: 'in',

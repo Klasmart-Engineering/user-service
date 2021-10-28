@@ -21,6 +21,7 @@ import {
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../pagination/usersConnection'
+import { UserPermissions } from '../permissions/userPermissions'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
 import { BrandingResult } from '../types/graphQL/branding'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
@@ -80,19 +81,21 @@ export interface IDataLoaders {
 
     usersConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey<User>,
+            IChildConnectionDataloaderKey,
             IPaginatedResponse<CoreUserConnectionNode>
         >
     >
     schoolsConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey<School>,
+            IChildConnectionDataloaderKey,
             IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
 }
 
-export function createContextLazyLoaders(): IDataLoaders {
+export function createContextLazyLoaders(
+    permissions: UserPermissions
+): IDataLoaders {
     return {
         user: {
             user: new Lazy<DataLoader<string, User | Error>>(
@@ -128,7 +131,8 @@ export function createContextLazyLoaders(): IDataLoaders {
                         items,
                         usersConnectionQuery,
                         mapUserToUserConnectionNode,
-                        userConnectionSortingConfig
+                        userConnectionSortingConfig,
+                        { permissions, entity: 'user' }
                     )
                 })
         ),
@@ -139,7 +143,8 @@ export function createContextLazyLoaders(): IDataLoaders {
                         items,
                         schoolConnectionQuery,
                         mapSchoolToSchoolConnectionNode,
-                        schoolsConnectionSortingConfig
+                        schoolsConnectionSortingConfig,
+                        { permissions, entity: 'school' }
                     )
                 })
         ),

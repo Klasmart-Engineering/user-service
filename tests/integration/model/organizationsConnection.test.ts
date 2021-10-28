@@ -41,6 +41,7 @@ import {
     organizationsConnection,
     organizationsConnectionMainData,
     organizationsConnectionNodes,
+    runQuery,
 } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import {
@@ -850,16 +851,6 @@ describe('organizationsConnection', () => {
                     }
                 }
             })
-            it('dataloads child relations', async () => {
-                connection.logger.reset()
-                const usersPerOrg = await organizationsConnection(
-                    testClient,
-                    direction,
-                    { count: 5 },
-                    { authorization: getAdminAuthToken() }
-                )
-                expect(connection.logger.count).to.be.eq(8)
-            })
         })
 
         context('.schoolsConnection', async () => {
@@ -918,6 +909,67 @@ describe('organizationsConnection', () => {
                     schoolsPerOrg.edges[0].node.schoolsConnection?.totalCount
                 ).to.eq(numSchoolsPerOrg)
             })
+        })
+        it('dataloads child connections', async () => {
+            const expectedCount = 5
+
+            const query = `
+                query {
+                    organizationsConnection(direction: FORWARD) {   # 1
+                        edges {
+                            node {
+                                usersConnection {                   
+                                    totalCount                      # 2 
+                                    edges {                         # 3
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                                schoolsConnection {
+                                    totalCount                      # 4
+                                    edges {                         # 5
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(expectedCount)
+
+            // async isAdmin directives break dataloading
+            // so ensure that is not happening
+            const nonAdmin = await createNonAdminUser(testClient)
+            const role = await createRole('role', orgs[0], {
+                permissions: [
+                    PermissionName.view_users_40110,
+                    PermissionName.view_school_20110,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdmin,
+                organization: orgs[0],
+                roles: [role],
+            }).save()
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getNonAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(
+                expectedCount + 2,
+                `one for permission checks
+                one for additional select distinct from organizationsConnection scope.getMany()`
+            )
         })
     })
 })

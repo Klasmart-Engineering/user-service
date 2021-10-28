@@ -29,11 +29,10 @@ export interface IPaginationArgs<Entity extends BaseEntity> {
     sort?: ISortField
 }
 
-export interface IChildPaginationArgs<Entity extends BaseEntity> {
+export interface IChildPaginationArgs {
     direction?: Direction
     count?: number
     cursor?: string
-    scope: SelectQueryBuilder<Entity>
     filter?: IEntityFilter
     sort?: ISortField
 }
@@ -72,7 +71,7 @@ const getDataFromCursor = (cursor: string) => {
 
 export function shouldIncludeTotalCount(
     info: GraphQLResolveInfo,
-    args: IChildPaginationArgs<BaseEntity>
+    args: IChildPaginationArgs
 ) {
     return (
         findTotalCountInPaginationEndpoints(info) ||

@@ -26,8 +26,22 @@ import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
 
+type IEntityString =
+    | 'organization'
+    | 'user'
+    | 'role'
+    | 'class'
+    | 'ageRange'
+    | 'grade'
+    | 'category'
+    | 'subcategory'
+    | 'subject'
+    | 'program'
+    | 'school'
+    | 'permission'
+
 interface IsAdminDirectiveArgs {
-    entity?: string
+    entity?: IEntityString
 }
 
 type NonAdminScope<Entity extends BaseEntity> = (
@@ -53,132 +67,147 @@ export function isAdminTransformer(schema: GraphQLSchema) {
                 context: Context,
                 info
             ) => {
-                const permissions = context.permissions
-                let scope: SelectQueryBuilder<BaseEntity> | undefined
-                switch (entity) {
-                    case 'organization':
-                        scope = getRepository(Organization).createQueryBuilder()
-                        break
-                    case 'user':
-                        scope = getRepository(User).createQueryBuilder()
-                        break
-                    case 'role':
-                        scope = getRepository(Role).createQueryBuilder()
-                        break
-                    case 'class':
-                        scope = getRepository(Class).createQueryBuilder()
-                        break
-                    case 'ageRange':
-                        scope = getRepository(AgeRange).createQueryBuilder()
-                        break
-                    case 'grade':
-                        scope = getRepository(Grade).createQueryBuilder()
-                        break
-                    case 'category':
-                        scope = getRepository(Category).createQueryBuilder()
-                        break
-                    case 'subcategory':
-                        scope = getRepository(Subcategory).createQueryBuilder()
-                        break
-                    case 'subject':
-                        scope = getRepository(Subject).createQueryBuilder()
-                        break
-                    case 'program':
-                        scope = getRepository(Program).createQueryBuilder()
-                        break
-                    case 'school':
-                        scope = getRepository(School).createQueryBuilder()
-                        break
-                    case 'permission':
-                        scope = getRepository(Permission).createQueryBuilder()
-                        break
-                    default:
-                        permissions.rejectIfNotAdmin()
-                }
-                if (!permissions.isAdmin && scope) {
-                    switch (entity) {
-                        case 'organization':
-                            nonAdminOrganizationScope(
-                                scope as SelectQueryBuilder<Organization>,
-                                permissions
-                            )
-                            break
-                        case 'user':
-                            await nonAdminUserScope(
-                                scope as SelectQueryBuilder<User>,
-                                permissions
-                            )
-                            break
-                        case 'ageRange':
-                            nonAdminAgeRangeScope(
-                                scope as SelectQueryBuilder<AgeRange>,
-                                permissions
-                            )
-                            break
-                        case 'grade':
-                            nonAdminGradeScope(
-                                scope as SelectQueryBuilder<Grade>,
-                                permissions
-                            )
-                            break
-                        case 'category':
-                            nonAdminCategoryScope(
-                                scope as SelectQueryBuilder<Category>,
-                                permissions
-                            )
-                            break
-                        case 'subcategory':
-                            nonAdminSubcategoryScope(
-                                scope as SelectQueryBuilder<Subcategory>,
-                                permissions
-                            )
-                            break
-                        case 'subject':
-                            nonAdminSubjectScope(
-                                scope as SelectQueryBuilder<Subject>,
-                                permissions
-                            )
-                            break
-                        case 'program':
-                            nonAdminProgramScope(
-                                scope as SelectQueryBuilder<Program>,
-                                permissions
-                            )
-                            break
-                        case 'class':
-                            await nonAdminClassScope(
-                                scope as SelectQueryBuilder<Class>,
-                                permissions
-                            )
-                            break
-                        case 'school':
-                            await nonAdminSchoolScope(
-                                scope as SelectQueryBuilder<School>,
-                                permissions
-                            )
-                            break
-                        case 'permission':
-                            await nonAdminPermissionScope(
-                                scope as SelectQueryBuilder<Permission>,
-                                permissions
-                            )
-                            break
-                        case 'role':
-                            await nonAdminRoleScope(
-                                scope as SelectQueryBuilder<Role>,
-                                permissions
-                            )
-                            break
-                        default:
-                        // do nothing
-                    }
-                }
+                const scope = await createEntityScope({
+                    permissions: context.permissions,
+                    entity,
+                })
                 args.scope = scope
                 return resolve(source, args, context, info)
             }
             return fieldConfig
         },
     })
+}
+
+export interface ICreateScopeArgs {
+    permissions: UserPermissions
+    entity?: IEntityString
+}
+
+export const createEntityScope = async ({
+    permissions,
+    entity,
+}: ICreateScopeArgs) => {
+    let scope: SelectQueryBuilder<BaseEntity> | undefined
+    switch (entity) {
+        case 'organization':
+            scope = getRepository(Organization).createQueryBuilder()
+            break
+        case 'user':
+            scope = getRepository(User).createQueryBuilder()
+            break
+        case 'role':
+            scope = getRepository(Role).createQueryBuilder()
+            break
+        case 'class':
+            scope = getRepository(Class).createQueryBuilder()
+            break
+        case 'ageRange':
+            scope = getRepository(AgeRange).createQueryBuilder()
+            break
+        case 'grade':
+            scope = getRepository(Grade).createQueryBuilder()
+            break
+        case 'category':
+            scope = getRepository(Category).createQueryBuilder()
+            break
+        case 'subcategory':
+            scope = getRepository(Subcategory).createQueryBuilder()
+            break
+        case 'subject':
+            scope = getRepository(Subject).createQueryBuilder()
+            break
+        case 'program':
+            scope = getRepository(Program).createQueryBuilder()
+            break
+        case 'school':
+            scope = getRepository(School).createQueryBuilder()
+            break
+        case 'permission':
+            scope = getRepository(Permission).createQueryBuilder()
+            break
+        default:
+            permissions.rejectIfNotAdmin()
+    }
+    if (!permissions.isAdmin && scope) {
+        switch (entity) {
+            case 'organization':
+                nonAdminOrganizationScope(
+                    scope as SelectQueryBuilder<Organization>,
+                    permissions
+                )
+                break
+            case 'user':
+                await nonAdminUserScope(
+                    scope as SelectQueryBuilder<User>,
+                    permissions
+                )
+                break
+            case 'ageRange':
+                nonAdminAgeRangeScope(
+                    scope as SelectQueryBuilder<AgeRange>,
+                    permissions
+                )
+                break
+            case 'grade':
+                nonAdminGradeScope(
+                    scope as SelectQueryBuilder<Grade>,
+                    permissions
+                )
+                break
+            case 'category':
+                nonAdminCategoryScope(
+                    scope as SelectQueryBuilder<Category>,
+                    permissions
+                )
+                break
+            case 'subcategory':
+                nonAdminSubcategoryScope(
+                    scope as SelectQueryBuilder<Subcategory>,
+                    permissions
+                )
+                break
+            case 'subject':
+                nonAdminSubjectScope(
+                    scope as SelectQueryBuilder<Subject>,
+                    permissions
+                )
+                break
+            case 'program':
+                nonAdminProgramScope(
+                    scope as SelectQueryBuilder<Program>,
+                    permissions
+                )
+                break
+            case 'class':
+                await nonAdminClassScope(
+                    scope as SelectQueryBuilder<Class>,
+                    permissions
+                )
+                break
+            case 'school':
+                await nonAdminSchoolScope(
+                    scope as SelectQueryBuilder<School>,
+                    permissions
+                )
+                break
+            case 'permission':
+                await nonAdminPermissionScope(
+                    scope as SelectQueryBuilder<Permission>,
+                    permissions
+                )
+                break
+            case 'role':
+                await nonAdminRoleScope(
+                    scope as SelectQueryBuilder<Role>,
+                    permissions
+                )
+                break
+            default:
+            // do nothing
+        }
+    }
+    return scope
 }
 
 /**

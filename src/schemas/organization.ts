@@ -4,8 +4,6 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { School } from '../entities/school'
-import { User } from '../entities/user'
 import { ownersForOrgs } from '../loaders/organizationsConnection'
 import {
     orgsForUsers,
@@ -266,7 +264,7 @@ const typeDefs = gql`
             filter: UserFilter
             sort: UserSortInput
             direction: ConnectionDirection
-        ): UsersConnectionResponse @isAdmin(entity: "user")
+        ): UsersConnectionResponse
 
         schoolsConnection(
             count: PageSize
@@ -274,7 +272,7 @@ const typeDefs = gql`
             filter: SchoolFilter
             sort: SchoolSortInput
             direction: ConnectionDirection
-        ): SchoolsConnectionResponse @isAdmin(entity: "school")
+        ): SchoolsConnectionResponse
     }
 `
 export default function getDefault(
@@ -304,7 +302,7 @@ export default function getDefault(
                 },
                 usersConnection: async (
                     organization: OrganizationConnectionNode,
-                    args: IChildPaginationArgs<User>,
+                    args: IChildPaginationArgs,
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
@@ -320,7 +318,7 @@ export default function getDefault(
                 },
                 schoolsConnection: async (
                     organization: OrganizationConnectionNode,
-                    args: IChildPaginationArgs<School>,
+                    args: IChildPaginationArgs,
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {

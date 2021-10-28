@@ -67,7 +67,7 @@ async function createContext({
         res,
         req,
         logger: req.logger,
-        loaders: createContextLazyLoaders(),
+        loaders: createContextLazyLoaders(permissions),
     }
 }
 

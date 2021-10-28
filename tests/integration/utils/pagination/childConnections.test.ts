@@ -1,6 +1,7 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Connection, createQueryBuilder } from 'typeorm'
+import { ICreateScopeArgs } from '../../../../src/directives/isAdmin'
 import { Organization } from '../../../../src/entities/organization'
 import { User } from '../../../../src/entities/user'
 import {
@@ -12,6 +13,7 @@ import {
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../../../../src/pagination/usersConnection'
+import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createServer } from '../../../../src/utils/createServer'
 import { IChildPaginationArgs } from '../../../../src/utils/pagination/paginate'
 import { ISortingConfig } from '../../../../src/utils/pagination/sorting'
@@ -23,15 +25,14 @@ import {
     createTestClient,
 } from '../../../utils/createTestClient'
 import { isStringArraySortedAscending } from '../../../utils/sorting'
+import { getAdminAuthToken } from '../../../utils/testConfig'
 import { createTestConnection } from '../../../utils/testConnection'
+import { createAdminUser } from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
-function getDataloaderKeys(
-    orgs: Organization[],
-    args: IChildPaginationArgs<User>
-) {
-    const items: IChildConnectionDataloaderKey<User>[] = []
+function getDataloaderKeys(orgs: Organization[], args: IChildPaginationArgs) {
+    const items: IChildConnectionDataloaderKey[] = []
     for (const org of orgs) {
         items.push({
             parent: {
@@ -54,17 +55,25 @@ describe('child connections', () => {
     const usersPerOrg = 20
     const pageSize = 5
 
-    let args: IChildPaginationArgs<User>
+    let args: IChildPaginationArgs
 
     const mapFunc = (user: User) => {
         return { userId: user.user_id, givenName: user.given_name }
     }
     const sort: ISortingConfig = userConnectionSortingConfig
+    let scopeArgs: ICreateScopeArgs
 
     before(async () => {
         connection = await createTestConnection()
         const server = await createServer(new Model(connection))
         testClient = await createTestClient(server)
+        const adminUser = await createAdminUser(testClient)
+        const adminPermissions = new UserPermissions({
+            id: adminUser.user_id,
+            email: adminUser.email || '',
+        })
+
+        scopeArgs = { permissions: adminPermissions, entity: 'user' }
     })
 
     after(async () => {
@@ -73,7 +82,6 @@ describe('child connections', () => {
 
     beforeEach(async () => {
         args = {
-            scope: createQueryBuilder(User),
             count: pageSize,
         }
 
@@ -98,7 +106,8 @@ describe('child connections', () => {
                 getDataloaderKeys(orgs, args),
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
 
             let count = response[0].edges.length
@@ -111,7 +120,8 @@ describe('child connections', () => {
                     getDataloaderKeys(orgs, { ...args, cursor }),
                     usersConnectionQuery,
                     mapFunc,
-                    sort
+                    sort,
+                    scopeArgs
                 )
                 count += response[0].edges.length
             }
@@ -123,7 +133,8 @@ describe('child connections', () => {
                 getDataloaderKeys(orgs, { ...args, direction: 'BACKWARD' }),
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
             let count = response[0].edges.length
 
@@ -138,7 +149,8 @@ describe('child connections', () => {
                     }),
                     usersConnectionQuery,
                     mapFunc,
-                    sort
+                    sort,
+                    scopeArgs
                 )
                 count += response[0].edges.length
             }
@@ -155,7 +167,8 @@ describe('child connections', () => {
                 }),
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
             expect(response).to.have.lengthOf(2)
             for (const orgUsers of response) {
@@ -194,7 +207,8 @@ describe('child connections', () => {
                 }),
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
             expect(response).to.have.lengthOf(2)
             for (const orgUsers of response) {
@@ -221,7 +235,8 @@ describe('child connections', () => {
                 }),
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
             await expect(query).to.be.rejectedWith(
                 Error,
@@ -233,7 +248,8 @@ describe('child connections', () => {
                 [],
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
             expect(result).to.have.lengthOf(0)
         })
@@ -242,7 +258,8 @@ describe('child connections', () => {
                 getDataloaderKeys([orgs[0], orgs[0]], args),
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
             expect(response).to.have.lengthOf(2)
         })
@@ -264,7 +281,8 @@ describe('child connections', () => {
                 keys,
                 usersConnectionQuery,
                 mapFunc,
-                sort
+                sort,
+                scopeArgs
             )
 
             expect(response[0].edges).to.have.lengthOf(1)
