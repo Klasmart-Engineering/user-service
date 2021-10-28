@@ -4,6 +4,10 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
+import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
+import { IPaginationArgs } from '../utils/pagination/paginate'
+import { Class } from '../entities/class'
+import { GraphQLResolveInfo } from 'graphql/type/definition'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -123,6 +127,24 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            SchoolsConnectionNode: {
+                classesConnection: async (
+                    school: ISchoolsConnectionNode,
+                    args: IPaginationArgs<Class>,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    return ctx.loaders.classesConnectionChild.instance.load({
+                        args,
+                        includeTotalCount: shouldIncludeTotalCount(info, args),
+                        parent: {
+                            id: school.id,
+                            filterKey: 'organizationId', //CHANGE TO SCHOOL
+                            pivot: '"OrganizationMembership"."organization_id"', //CHANGE TO SCHOOL/CLASS PIVOT
+                        },
+                    })
+                },
+            },
             Mutation: {
                 school: (_parent, args, ctx, _info) =>
                     model.getSchool(args, ctx),

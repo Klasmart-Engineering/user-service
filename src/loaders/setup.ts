@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader'
+import { Class } from '../entities/class'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { School } from '../entities/school'
@@ -16,6 +17,7 @@ import {
     usersConnectionQuery,
 } from '../pagination/usersConnection'
 import { BrandingResult } from '../types/graphQL/branding'
+import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
@@ -76,6 +78,12 @@ export interface IDataLoaders {
             IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
+    classesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<Class>,
+            IPaginatedResponse<ClassConnectionNode>
+        >
+    >
 }
 
 export function createContextLazyLoaders(): IDataLoaders {
@@ -126,6 +134,17 @@ export function createContextLazyLoaders(): IDataLoaders {
                         schoolConnectionQuery,
                         mapSchoolToSchoolConnectionNode,
                         schoolsConnectionSortingConfig
+                    )
+                })
+        ),
+        classesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        classConnectionQuery,
+                        mapClassToClassConnectionNode,
+                        classesConnectionSortingConfig
                     )
                 })
         ),
