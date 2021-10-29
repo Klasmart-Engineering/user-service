@@ -6,11 +6,13 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import {
+    IChildPaginationArgs,
     IPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 import { Class } from '../entities/class'
-import { GraphQLResolveInfo } from 'graphql/type/definition'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { GraphQLResolveInfo } from 'graphql'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -132,6 +134,36 @@ const typeDefs = gql`
     }
 `
 
+// This is a workaround to needing to mock total count AST check in tests
+// Remove this wrapper and associated methods when total count has been removed from the core resolver logic
+// Total count will be made either a directive, a middleware plugin calculation, or something
+export async function classesConnectionWrapper(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesConnection(school, args, ctx, includeTotalCount)
+}
+
+export function classesConnection(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    return ctx.loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: shouldIncludeTotalCount(info, args),
+        parent: {
+            id: school.id,
+            filterKey: 'schoolId',
+            pivot: '"School"."school_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -146,15 +178,10 @@ export default function getDefault(
                     ctx: Context,
                     info: GraphQLResolveInfo
                 ) => {
-                    return ctx.loaders.classesConnectionChild.instance.load({
-                        args,
-                        includeTotalCount: shouldIncludeTotalCount(info, args),
-                        parent: {
-                            id: school.id,
-                            filterKey: 'schoolId',
-                            pivot: '"School"."school_id"',
-                        },
-                    })
+                    const includeTotalCount = findTotalCountInPaginationEndpoints(
+                        info
+                    )
+                    classesConnection(school, args, ctx, includeTotalCount)
                 },
             },
             Mutation: {
