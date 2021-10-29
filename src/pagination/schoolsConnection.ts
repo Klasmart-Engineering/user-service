@@ -102,4 +102,5 @@ export const schoolConnectionNodeFields = ([
     'school_name',
     'shortcode',
     'status',
+    'organizationOrganizationId',
 ] as (keyof School)[]).map((field) => `School.${field}`)

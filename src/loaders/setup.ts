@@ -327,7 +327,7 @@ export function createContextLazyLoaders(
                 () =>
                     new NodeDataLoader(
                         School,
-                        'ISchoolsConnectionNode',
+                        'SchoolConnectionNode',
                         mapSchoolToSchoolConnectionNode,
                         schoolConnectionNodeFields
                     )
