@@ -1658,7 +1658,6 @@ describe('isAdmin', () => {
         let adminPermissions: UserPermissions
         let orgOwnerPermissions: UserPermissions
         let schoolAdminPermissions: UserPermissions
-        let orgMemberPermissions: UserPermissions
         let ownerAndSchoolAdminPermissions: UserPermissions
         const schoolsCount = 12
 
@@ -1801,7 +1800,7 @@ describe('isAdmin', () => {
             )
         })
 
-        it('super admin should get any school', async () => {
+        it('super admin query', async () => {
             aliases = scope.expressionMap.aliases.map((a) => a.name)
             conditions = scope.expressionMap.wheres.map((w) => w.condition)
 
@@ -1811,7 +1810,7 @@ describe('isAdmin', () => {
             expect(conditions.length).to.eq(0)
         })
 
-        it('org admin should get a school just from its organization', async () => {
+        it('org admin query', async () => {
             await buildScopeAndContext(orgOwnerPermissions)
 
             aliases = scope.expressionMap.aliases.map((a) => a.name)
@@ -1826,7 +1825,7 @@ describe('isAdmin', () => {
             expect(conditions.length).to.eq(0)
         })
 
-        it('school admin should get his/her schools', async () => {
+        it('school admin query', async () => {
             await buildScopeAndContext(schoolAdminPermissions)
 
             aliases = scope.expressionMap.aliases.map((a) => a.name)
@@ -1841,7 +1840,7 @@ describe('isAdmin', () => {
             expect(conditions.length).to.eq(0)
         })
 
-        it('owner and school admin should get a school of them or its organisation', async () => {
+        it('owner and school admin query', async () => {
             await buildScopeAndContext(ownerAndSchoolAdminPermissions)
 
             aliases = scope.expressionMap.aliases.map((a) => a.name)
@@ -1852,29 +1851,5 @@ describe('isAdmin', () => {
             ])
         })
 
-        context('permissons error handling', () => {
-            it('throws an error if an org admin tries to get a school out of its organisation', async () => {
-                await buildScopeAndContext(orgOwnerPermissions)
-                const schoolToTest = org1Schools[0]
-                await expect(
-                    ctx.loaders.schoolNode.node.instance.load({
-                        scope,
-                        id: schoolToTest.school_id,
-                    })
-                ).to.be.rejected
-            })
-
-            it('throws an error if a non admin user tries to get a school', async () => {
-                await buildScopeAndContext(orgMemberPermissions)
-                const schoolToTest = org1Schools[0]
-
-                await expect(
-                    ctx.loaders.schoolNode.node.instance.load({
-                        scope,
-                        id: schoolToTest.school_id,
-                    })
-                ).to.be.rejected
-            })
-        })
     })
 })
