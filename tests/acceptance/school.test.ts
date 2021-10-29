@@ -82,30 +82,5 @@ describe('acceptance.school', () => {
                 expect(schoolNode.id).to.equal(schoolId)
             })
         })
-
-        context('when data is not requested in a correct way', () => {
-            it('should respond with status 400', async () => {
-                const schoolId = '7h15-15-n07-4n-1d'
-                const response = await request
-                    .post('/user')
-                    .set({
-                        ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
-                    })
-                    .send({
-                        query: print(SCHOOL_NODE),
-                        variables: {
-                            schoolId,
-                        },
-                    })
-
-                const errors = response.body.errors
-                const data = response.body.data
-
-                expect(response.status).to.eq(400)
-                expect(errors).to.exist
-                expect(data).to.be.undefined
-            })
-        })
     })
 })
