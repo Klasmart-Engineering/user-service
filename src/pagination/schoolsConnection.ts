@@ -78,16 +78,16 @@ export async function schoolConnectionQuery(
 
 function mapSchoolEdgeToSchoolConnectionEdge(
     edge: IEdge<School>
-): IEdge<ISchoolsConnectionNode> {
+): Promise<IEdge<ISchoolsConnectionNode>> {
     return {
-        node: mapSchoolToSchoolConnectionNode(edge.node),
+        node: await mapSchoolToSchoolConnectionNode(edge.node),
         cursor: edge.cursor,
     }
 }
 
-export function mapSchoolToSchoolConnectionNode(
+async function mapSchoolToSchoolConnectionNode(
     school: School
-): ISchoolsConnectionNode {
+): Promise<ISchoolsConnectionNode> {
     return {
         id: school.school_id,
         name: school.school_name,
@@ -97,10 +97,14 @@ export function mapSchoolToSchoolConnectionNode(
     }
 }
 
-export const schoolConnectionNodeFields = ([
-    'school_id',
-    'school_name',
-    'shortcode',
-    'status',
-    'organizationOrganizationId',
-] as (keyof School)[]).map((field) => `School.${field}`)
+const select = [
+    ...([
+        'school_id',
+        'school_name',
+        'shortcode',
+        'status',
+    ] as (keyof School)[]).map((field) => `School.${field}`),
+    ...(['organization_id'] as (keyof Organization)[]).map(
+        (field) => `Organization.${field}`
+    ),
+]

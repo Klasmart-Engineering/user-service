@@ -45,3 +45,23 @@ export const schoolsByIds = async (
     )
     return schoolIds.map((id) => schools.get(id))
 }
+
+export const schoolConnectionNodeFields = ([
+    'school_id',
+    'school_name',
+    'shortcode',
+    'status',
+    'organizationOrganizationId',
+] as (keyof School)[]).map((field) => `School.${field}`)
+
+export function mapSchoolToSchoolConnectionNode(
+    school: School
+): ISchoolsConnectionNode {
+    return {
+        id: school.school_id,
+        name: school.school_name,
+        status: school.status,
+        shortCode: school.shortcode,
+        organizationId: school.organizationOrganizationId,
+    }
+}

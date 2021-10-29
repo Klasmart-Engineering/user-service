@@ -102,7 +102,9 @@ import { NodeDataLoader } from './genericNode'
 import {
     ISchoolLoaders,
     ISchoolNodeDataLoaders,
+    mapSchoolToSchoolConnectionNode,
     organizationsForSchools,
+    schoolConnectionNodeFields,
     schoolsByIds,
 } from './school'
 import {
