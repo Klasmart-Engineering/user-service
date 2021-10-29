@@ -20,7 +20,15 @@ import {
     schoolMembershipsForUsers,
     usersByIds,
 } from './user'
-import { IClassesConnectionLoaders } from './classesConnection'
+import {
+    ageRangesForClasses,
+    gradesForClasses,
+    IClassesConnectionLoaders,
+    IClassNodeDataLoaders,
+    programsForClasses,
+    schoolsForClasses,
+    subjectsForClasses,
+} from './classesConnection'
 import {
     brandingForOrganizations,
     IOrganizationLoaders,
@@ -43,6 +51,7 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { BrandingResult } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
+import { Class } from '../entities/class'
 import { Program } from '../entities/program'
 import {
     mapProgramToProgramConnectionNode,
@@ -52,19 +61,26 @@ import { ProgramSummaryNode } from '../types/graphQL/program'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { SubjectSummaryNode } from '../types/graphQL/subject'
+import {
+    classSummaryNodeFields,
+    mapClassToClassNode,
+} from '../pagination/classesConnection'
+import { SchoolSimplifiedSummaryNode } from '../types/graphQL/school'
+import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection: IProgramsConnectionLoaders
     programNode: IProgramNodeDataLoaders
     gradesConnection?: IGradesConnectionLoaders
-    classesConnection?: IClassesConnectionLoaders
+    classesConnection: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection?: IOrganizationsConnectionLoaders
     user: IUsersLoaders
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    classNode: IClassNodeDataLoaders
 }
 
 export function createContextLazyLoaders(): IDataLoaders {
@@ -129,6 +145,34 @@ export function createContextLazyLoaders(): IDataLoaders {
                         'ProgramConnectionNode',
                         mapProgramToProgramConnectionNode,
                         programSummaryNodeFields
+                    )
+            ),
+        },
+        classesConnection: {
+            schools: new Lazy<
+                DataLoader<string, SchoolSimplifiedSummaryNode[]>
+            >(() => new DataLoader(schoolsForClasses)),
+            ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(
+                () => new DataLoader(ageRangesForClasses)
+            ),
+            grades: new Lazy<DataLoader<string, GradeSummaryNode[]>>(
+                () => new DataLoader(gradesForClasses)
+            ),
+            subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
+                () => new DataLoader(subjectsForClasses)
+            ),
+            programs: new Lazy<DataLoader<string, ProgramSummaryNode[]>>(
+                () => new DataLoader(programsForClasses)
+            ),
+        },
+        classNode: {
+            node: new Lazy<NodeDataLoader<Class, ClassSummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Class,
+                        'ClassConnectionNode',
+                        mapClassToClassNode,
+                        classSummaryNodeFields
                     )
             ),
         },

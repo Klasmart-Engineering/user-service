@@ -368,6 +368,17 @@ const USER_NODE_QUERY_2_NODES = gql`
     }
 `
 
+const CLASS_NODE_QUERY_2_NODES = gql`
+    query($id: ID!, $id2: ID!) {
+        classNode(id: $id) {
+            id
+        }
+        classNode2: classNode(id: $id2) {
+            name
+        }
+    }
+`
+
 const PROGRAM_NODE_QUERY_2_NODES = gql`
     query($id: ID!, $id2: ID!) {
         programNode(id: $id) {
@@ -662,56 +673,82 @@ export const AGE_RANGES_CONNECTION = `
     }
 `
 
-export const CLASSES_CONNECTION = `
-    query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
-        classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+const CLASS_MAIN_FIELDS = gql`
+    fragment classMainFields on ClassConnectionNode {
+        id
+        name
+        status
+        shortCode
+    }
+`
+
+const CLASS_FIELDS = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    fragment classFields on ClassConnectionNode {
+        ...classMainFields
+
+        schools {
+            id
+            name
+            status
+        }
+
+        ageRanges {
+            id
+            name
+            lowValue
+            lowValueUnit
+            highValue
+            highValueUnit
+            status
+            system
+        }
+
+        grades {
+            id
+            name
+            status
+            system
+        }
+
+        subjects {
+            id
+            name
+            status
+            system
+        }
+
+        programs {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
+export const CLASSES_CONNECTION = gql`
+    ${CLASS_FIELDS}
+
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
 
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    status
-                    shortCode
-
-                    schools {
-                        id
-                        name
-                        status
-                    }
-
-                    ageRanges {
-                        id
-                        name
-                        lowValue
-                        lowValueUnit
-                        highValue
-                        highValueUnit
-                        status
-                        system
-                    }
-
-                    grades {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    subjects {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    programs {
-                        id
-                        name
-                        status
-                        system
-                    }
+                    ...classFields
                 }
             }
 
@@ -725,29 +762,58 @@ export const CLASSES_CONNECTION = `
     }
 `
 
-export const CLASSES_CONNECTION_MAIN_DATA = `
-query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
-    classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
-        totalCount
+export const CLASSES_CONNECTION_MAIN_DATA = gql`
+    ${CLASS_MAIN_FIELDS}
 
-        edges {
-            cursor
-            node {
-                id
-                name
-                status
-                shortCode
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    ...classMainFields
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
             }
         }
+    }
+`
 
-        pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
+export const CLASS_NODE = gql`
+    ${CLASS_FIELDS}
+
+    query ClassNode($id: ID!) {
+        classNode(id: $id) {
+            ...classFields
         }
     }
-}
+`
+
+export const CLASS_NODE_MAIN_DATA = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    query ClassNode($id: ID!) {
+        classNode(id: $id) {
+            ...classMainFields
+        }
+    }
 `
 
 export const SUBJECTS_CONNECTION = `
@@ -1437,6 +1503,26 @@ export async function user2Nodes(
     await gqlTry(operation)
 }
 
+export async function class2Nodes(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string,
+    id2: string
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: CLASS_NODE_QUERY_2_NODES,
+            variables: {
+                id,
+                id2,
+            },
+            headers,
+        })
+
+    await gqlTry(operation)
+}
+
 export async function permissionsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
@@ -1737,7 +1823,7 @@ export async function classesConnectionMainData(
 ): Promise<IPaginatedResponse<ClassConnectionNode>> {
     const { query } = testClient
     const paginationQuery = buildPaginationQuery(
-        CLASSES_CONNECTION_MAIN_DATA,
+        print(CLASSES_CONNECTION_MAIN_DATA),
         includeTotalCount
     )
 

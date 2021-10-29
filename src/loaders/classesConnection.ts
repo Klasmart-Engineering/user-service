@@ -12,13 +12,20 @@ import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
 import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
+import { Lazy } from '../utils/lazyLoading'
+import { NodeDataLoader } from './genericNode'
+import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 
 export interface IClassesConnectionLoaders {
-    schools?: DataLoader<string, SchoolSimplifiedSummaryNode[]>
-    ageRanges?: DataLoader<string, AgeRangeConnectionNode[]>
-    grades?: DataLoader<string, GradeSummaryNode[]>
-    subjects?: DataLoader<string, SubjectSummaryNode[]>
-    programs?: DataLoader<string, ProgramSummaryNode[]>
+    schools: Lazy<DataLoader<string, SchoolSimplifiedSummaryNode[]>>
+    ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
+    grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
+    subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
+    programs: Lazy<DataLoader<string, ProgramSummaryNode[]>>
+}
+
+export interface IClassNodeDataLoaders {
+    node: Lazy<NodeDataLoader<Class, ClassSummaryNode>>
 }
 
 type ClassEntities =
