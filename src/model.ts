@@ -47,7 +47,6 @@ import {
 import {
     getWhereClauseFromFilter,
     filterHasProperty,
-    AVOID_NONE_SPECIFIED_BRACKETS,
 } from './utils/pagination/filtering'
 import { isDOB, isEmail, isPhone } from './utils/validations'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
