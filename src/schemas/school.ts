@@ -139,7 +139,7 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
-            SchoolsConnectionNode: {
+            SchoolConnectionNode: {
                 classesConnection: async (
                     school: ISchoolsConnectionNode,
                     args: IPaginationArgs<Class>,
