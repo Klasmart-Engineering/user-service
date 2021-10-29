@@ -101,8 +101,8 @@ const typeDefs = gql`
             count: PageSize
             cursor: String
             direction: ConnectionDirection
-            filter: ClassesFilter
-            sort: ClassesSortInput
+            filter: ClassFilter
+            sort: ClassSortInput
         ): [ClassesConnectionResponse!]!
     }
 
