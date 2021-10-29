@@ -28,7 +28,7 @@ import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
 import { ImageMimeType } from '../../src/types/imageMimeTypes'
 import { Status } from '../../src/entities/status'
-import { BrandingImageTag } from '../../src/types/graphQL/brandingImageTag'
+import { BrandingImageTag } from '../../src/types/graphQL/branding'
 import { Organization } from '../../src/entities/organization'
 import { getNonAdminAuthToken } from '../utils/testConfig'
 

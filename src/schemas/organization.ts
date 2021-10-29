@@ -6,7 +6,7 @@ import Dataloader from 'dataloader'
 import { Context } from '../main'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
+import { OrganizationConnectionNode } from '../types/graphQL/organization'
 
 const typeDefs = gql`
     scalar HexColor

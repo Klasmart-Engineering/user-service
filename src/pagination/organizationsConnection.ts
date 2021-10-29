@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from '../entities/organization'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
-import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
+import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,

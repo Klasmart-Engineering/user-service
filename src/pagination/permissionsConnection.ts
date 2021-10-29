@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Permission } from '../entities/permission'
 import { Context } from '../main'
-import { PermissionConnectionNode } from '../types/graphQL/permissionConnectionNode'
+import { PermissionConnectionNode } from '../types/graphQL/permission'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,

@@ -46,7 +46,7 @@ import {
 import { Class } from '../../../src/entities/class'
 import { pick } from 'lodash'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
-import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { ClassConnectionNode } from '../../../src/types/graphQL/class'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'

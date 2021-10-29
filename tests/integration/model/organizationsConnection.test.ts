@@ -13,7 +13,7 @@ import {
     CoreOrganizationConnectionNode,
     mapOrganizationToOrganizationConnectionNode,
 } from '../../../src/pagination/organizationsConnection'
-import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
+import { OrganizationConnectionNode } from '../../../src/types/graphQL/organization'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import {

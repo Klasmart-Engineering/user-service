@@ -5,7 +5,7 @@ import {
     ManyToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm'
-import { BrandingImageTag } from '../types/graphQL/brandingImageTag'
+import { BrandingImageTag } from '../types/graphQL/branding'
 import { Branding } from './branding'
 import { CustomBaseEntity } from './customBaseEntity'
 

@@ -1,4 +1,4 @@
-import { BrandingImageTag } from './brandingImageTag'
+import { FileUpload } from 'graphql-upload'
 
 export interface BrandingResult {
     iconImageURL?: string
@@ -8,4 +8,25 @@ export interface BrandingResult {
 export interface BrandingImageInfo {
     imageUrl: string
     tag: BrandingImageTag
+}
+
+export enum BrandingImageTag {
+    ICON = 'ICON',
+}
+export interface deleteBrandingImageInput {
+    organizationId: string
+    type: BrandingImageTag
+}
+
+export interface BrandingInput {
+    primaryColor: string
+    iconImage: Promise<Uploader>
+}
+
+export interface Uploader {
+    file: FileUpload
+}
+
+export interface setBrandingInput extends BrandingInput {
+    organizationId: string
 }

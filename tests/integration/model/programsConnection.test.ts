@@ -34,9 +34,9 @@ import {
     isStringArraySortedDescending,
 } from '../../utils/sorting'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
-import { GradeSummaryNode } from '../../../src/types/graphQL/gradeSummaryNode'
-import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
-import { SubjectSummaryNode } from '../../../src/types/graphQL/subjectSummaryNode'
+import { GradeSummaryNode } from '../../../src/types/graphQL/grade'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
+import { SubjectSummaryNode } from '../../../src/types/graphQL/subject'
 import { School } from '../../../src/entities/school'
 import { createSchool } from '../../factories/school.factory'
 import { Class } from '../../../src/entities/class'

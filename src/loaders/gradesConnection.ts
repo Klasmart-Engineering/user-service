@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader'
 import { Grade } from '../entities/grade'
-import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
+import { GradeSummaryNode } from '../types/graphQL/grade'
 
 export interface IGradesConnectionLoaders {
     fromGrade?: DataLoader<string, GradeSummaryNode | undefined>

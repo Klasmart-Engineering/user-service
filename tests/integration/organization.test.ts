@@ -1007,7 +1007,7 @@ describe('organization', () => {
         return context('common membership tests', () => {
             context('given_name', () => {
                 it('is required by the schema', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             given_name: undefined,
                         })
@@ -1018,7 +1018,7 @@ describe('organization', () => {
             })
             context('family_name', () => {
                 it('is required by the schema', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             family_name: undefined,
                         })
@@ -1029,7 +1029,7 @@ describe('organization', () => {
             })
             context('gender', () => {
                 it('is required by the schema', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             gender: undefined,
                         })
@@ -1079,7 +1079,7 @@ describe('organization', () => {
                 })
 
                 it('throws an APIError if not alphanumeric', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             shortcode: 'not_alphanumeric',
                         })
@@ -1110,7 +1110,7 @@ describe('organization', () => {
                 }
 
                 it('is required by the schema', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             organization_role_ids: undefined,
                         })
@@ -1120,7 +1120,7 @@ describe('organization', () => {
                 })
 
                 it('if is an empty array, throws ERR_MISSING_REQUIRED_ENTITY_ATTRIBUTE', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             organization_role_ids: [],
                         })
@@ -1189,7 +1189,7 @@ describe('organization', () => {
 
                 it("returns an APIError if the Role doesn't exist", async () => {
                     const nonexistentRoleId = faker.datatype.uuid()
-                    return expect(
+                    return await expect(
                         api({
                             organization_role_ids: [nonexistentRoleId],
                         })
@@ -1214,7 +1214,7 @@ describe('organization', () => {
                         'New Custom Role',
                         otherOrg
                     ).save()
-                    return expect(
+                    return await expect(
                         api({
                             organization_role_ids: [otherRole.role_id],
                         })
@@ -1244,7 +1244,7 @@ describe('organization', () => {
                     })
 
                     expect(user).to.exist
-                    return expect(
+                    return await expect(
                         findSchoolMembership({
                             user_id: user.user_id,
                             school_id: school.school_id,
@@ -1309,7 +1309,7 @@ describe('organization', () => {
 
                 it("returns an APIError if the Role doesn't exist", async () => {
                     const nonexistentRoleId = faker.datatype.uuid()
-                    return expect(
+                    return await expect(
                         api({
                             school_role_ids: [nonexistentRoleId],
                             school_ids: [school.school_id],
@@ -1335,7 +1335,7 @@ describe('organization', () => {
                         'New Custom Role',
                         otherOrg
                     ).save()
-                    return expect(
+                    return await expect(
                         api({
                             school_role_ids: [otherRole.role_id],
                             school_ids: [school.school_id],
@@ -1388,7 +1388,7 @@ describe('organization', () => {
 
             context('alternate_email', () => {
                 it('if invalid throws an ERR_INVALID_EMAIL APIError', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             alternate_email: 'not-a-valid-email',
                         })
@@ -1460,7 +1460,7 @@ describe('organization', () => {
             })
             context('alternate_phone', () => {
                 it('if invalid throws an ERR_INVALID_PHONE APIError', async () => {
-                    return expect(
+                    return await expect(
                         api({
                             alternate_phone: 'not-a-valid-phone',
                         })
@@ -1503,7 +1503,6 @@ describe('organization', () => {
         let userId: string
         let organizationId: string
         let oldSchoolId: string
-        let roleId: string
         let adminToken: string
         let defaultArguments: InviteUserArguments
 
@@ -1516,7 +1515,7 @@ describe('organization', () => {
                 ...defaultArguments,
                 ...overrideArguments,
             }
-            return inviteUser(
+            return await inviteUser(
                 testClient,
                 organization_id ?? organizationId,
                 args.email,
@@ -1549,7 +1548,6 @@ describe('organization', () => {
             role = await Role.findOneOrFail({
                 where: { role_name: 'Student' },
             })
-            roleId = role.role_id
             oldSchoolId = (
                 await createSchool(
                     testClient,
@@ -2011,12 +2009,12 @@ describe('organization', () => {
 
             role = await roleFactory(undefined, organization).save()
 
-            createQueryBuilder(Role)
+            await createQueryBuilder(Role)
                 .relation('permissions')
                 .of(role)
                 .add(PermissionName.edit_users_40330)
 
-            createQueryBuilder(OrganizationMembership)
+            await createQueryBuilder(OrganizationMembership)
                 .relation('roles')
                 .of(existingMembership)
                 .add(role)
@@ -2045,7 +2043,7 @@ describe('organization', () => {
                 ...defaultArguments,
                 ...overrideArguments,
             }
-            return editMembership(
+            return await editMembership(
                 testClient,
                 organization_id ?? organization.organization_id,
                 args,

@@ -1,6 +1,6 @@
 import faker from 'faker'
 import { BrandingImage } from '../../src/entities/brandingImage'
-import { BrandingImageTag } from '../../src/types/graphQL/brandingImageTag'
+import { BrandingImageTag } from '../../src/types/graphQL/branding'
 
 export function createBrandingImage() {
     const brandingImage = new BrandingImage()

@@ -48,10 +48,10 @@ import {
     mapProgramToProgramConnectionNode,
     programSummaryNodeFields,
 } from '../pagination/programsConnection'
-import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
-import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
-import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
+import { ProgramSummaryNode } from '../types/graphQL/program'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { SubjectSummaryNode } from '../types/graphQL/subject'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders

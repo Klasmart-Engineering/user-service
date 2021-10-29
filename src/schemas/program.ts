@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { ProgramConnectionNode } from '../types/graphQL/programConnectionNode'
+import { ProgramConnectionNode } from '../types/graphQL/program'
 import { Context } from '../main'
 
 const typeDefs = gql`

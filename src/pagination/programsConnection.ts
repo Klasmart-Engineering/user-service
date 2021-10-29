@@ -1,6 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Program } from '../entities/program'
-import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
+import { ProgramSummaryNode } from '../types/graphQL/program'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,

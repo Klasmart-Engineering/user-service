@@ -4,8 +4,10 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 import { Headers } from 'node-mocks-http'
 import { ImageMimeType } from '../../../src/types/imageMimeTypes'
-import { BrandingImageTag } from '../../../src/types/graphQL/brandingImageTag'
-import { BrandingResult } from '../../../src/types/graphQL/branding'
+import {
+    BrandingResult,
+    BrandingImageTag,
+} from '../../../src/types/graphQL/branding'
 
 const SET_BRANDING_MUTATION = `
 mutation SetBranding($organizationId: ID!, $iconImage: Upload,$primaryColor:HexColor) {

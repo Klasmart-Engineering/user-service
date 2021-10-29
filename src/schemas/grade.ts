@@ -2,7 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
-import { GradeConnectionNode } from '../types/graphQL/gradeConnectionNode'
+import { GradeConnectionNode } from '../types/graphQL/grade'
 import {
     fromGradeForGrades,
     toGradeForGrades,

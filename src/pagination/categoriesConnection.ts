@@ -1,6 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Category } from '../entities/category'
-import { CategorySummaryNode } from '../types/graphQL/categorySummaryNode'
+import { CategorySummaryNode } from '../types/graphQL/category'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {

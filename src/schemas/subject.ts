@@ -2,7 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
-import { SubjectConnectionNode } from '../types/graphQL/subjectConnectionNode'
+import { SubjectConnectionNode } from '../types/graphQL/subject'
 import DataLoader from 'dataloader'
 import { categoriesForSubjects } from '../loaders/subjectsConnection'
 

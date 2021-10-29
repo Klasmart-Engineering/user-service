@@ -2,7 +2,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
-import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
+import { UserConnectionNode } from '../types/graphQL/user'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,

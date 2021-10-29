@@ -2,7 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
-import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
+import { ClassConnectionNode } from '../types/graphQL/class'
 import DataLoader from 'dataloader'
 import {
     ageRangesForClasses,

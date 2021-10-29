@@ -1,8 +1,7 @@
 import DataLoader from 'dataloader'
 import { Branding } from '../entities/branding'
-import { BrandingResult } from '../types/graphQL/branding'
+import { BrandingResult, BrandingImageTag } from '../types/graphQL/branding'
 import { Organization } from '../entities/organization'
-import { BrandingImageTag } from '../types/graphQL/brandingImageTag'
 import { Status } from '../entities/status'
 import { Lazy } from '../utils/lazyLoading'
 

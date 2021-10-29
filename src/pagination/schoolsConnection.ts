@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
-import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
+import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {

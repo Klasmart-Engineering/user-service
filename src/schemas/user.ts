@@ -8,7 +8,7 @@ import {
 } from '../loaders/usersConnection'
 import Dataloader from 'dataloader'
 import { Context } from '../main'
-import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
+import { UserConnectionNode } from '../types/graphQL/user'
 import { User } from '../entities/user'
 
 const typeDefs = gql`

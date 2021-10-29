@@ -1,9 +1,9 @@
 import { Status } from '../../entities/status'
-import { AgeRangeConnectionNode } from './ageRangeConnectionNode'
-import { GradeSummaryNode } from './gradeSummaryNode'
-import { ProgramSummaryNode } from './programSummaryNode'
-import { SchoolSimplifiedSummaryNode } from './schoolSimplifiedSummaryNode'
-import { SubjectSummaryNode } from './subjectSummaryNode'
+import { AgeRangeConnectionNode } from './ageRange'
+import { GradeSummaryNode } from './grade'
+import { ProgramSummaryNode } from './program'
+import { SchoolSimplifiedSummaryNode } from './school'
+import { SubjectSummaryNode } from './subject'
 
 export interface ClassConnectionNode {
     id: string

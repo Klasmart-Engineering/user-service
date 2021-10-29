@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Subcategory } from '../entities/subcategory'
 import { Context } from '../main'
-import { SubcategoryConnectionNode } from '../types/graphQL/subcategoryConnectionNode'
+import { SubcategoryConnectionNode } from '../types/graphQL/subcategory'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
