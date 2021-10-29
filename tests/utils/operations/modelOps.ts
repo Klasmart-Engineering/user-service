@@ -1862,26 +1862,6 @@ export async function program2Nodes(
     await gqlTry(operation)
 }
 
-export async function school2Nodes(
-    testClient: ApolloServerTestClient,
-    headers: Headers,
-    id: string,
-    id2: string
-) {
-    const { query } = testClient
-    const operation = () =>
-        query({
-            query: SCHOOL_NODE_QUERY_2_NODES,
-            variables: {
-                id,
-                id2,
-            },
-            headers,
-        })
-
-    await gqlTry(operation)
-}
-
 export const SCHOOL_NODE = gql`
     query SchoolNode($id: ID!) {
         schoolNode(id: $id) {

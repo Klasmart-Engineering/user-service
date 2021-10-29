@@ -53,6 +53,8 @@ import { Permission } from '../../../src/entities/permission'
 import {
     createEntityScope,
     nonAdminOrganizationScope,
+    nonAdminRoleScope,
+    nonAdminSchoolScope,
 } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
@@ -64,6 +66,10 @@ import { AgeRange } from '../../../src/entities/ageRange'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
+import { Context } from '../../../src/main'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { ISchoolsConnectionNode } from '../../../src/types/graphQL/schoolsConnectionNode'
+
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -1633,6 +1639,241 @@ describe('isAdmin', () => {
                 expect(visibleCategories.totalCount).to.eql(
                     systemCategoriesCount
                 )
+            })
+        })
+    })
+
+    context('schools', () => {
+        let aliases: string[]
+        let conditions: string[]
+        let admin: User
+        let org1: Organization
+        let org2: Organization
+        let org3: Organization
+        let org1Schools: School[] = []
+        let org2Schools: School[] = []
+        let org3Schools: School[] = []
+        const schools: School[] = []
+        let scope: SelectQueryBuilder<School>
+        let adminPermissions: UserPermissions
+        let orgOwnerPermissions: UserPermissions
+        let schoolAdminPermissions: UserPermissions
+        let orgMemberPermissions: UserPermissions
+        let ownerAndSchoolAdminPermissions: UserPermissions
+        const schoolsCount = 12
+
+        let ctx: Context
+
+        const buildScopeAndContext = async (permissions: UserPermissions) => {
+            if (!permissions.isAdmin) {
+                await nonAdminSchoolScope(scope, permissions)
+            }
+
+            ctx = ({
+                permissions,
+                loaders: createContextLazyLoaders(),
+            } as unknown) as Context
+        }
+
+        beforeEach(async () => {
+            scope = School.createQueryBuilder('School')
+
+            admin = await createAdminUser(testClient)
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            org3 = await createOrganization().save()
+
+            // creating org1 schools
+            org1Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const s = createSchool(org1)
+                    s.school_name = `school ${i}`
+                    return s
+                })
+            )
+
+            // creating org2 schools
+            org2Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const c = createSchool(org2)
+                    c.school_name = `school ${i}`
+                    return c
+                })
+            )
+
+            // creating org3 schools
+            org3Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const s = createSchool(org3)
+                    s.school_name = `school ${i}`
+                    return s
+                })
+            )
+
+            schools.push(...org1Schools, ...org2Schools, ...org3Schools)
+
+            adminPermissions = new UserPermissions(userToPayload(admin))
+
+            // Emulating context
+            await buildScopeAndContext(adminPermissions)
+
+            const orgOwner = await createUser().save()
+            const schoolAdmin = await createUser().save()
+            const orgMember = await createUser().save()
+            const ownerAndSchoolAdmin = await createUser().save()
+
+            const viewAllSchoolsRoleOrg3 = await createRole(
+                'View Schools',
+                org3,
+                {
+                    permissions: [PermissionName.view_school_20110],
+                }
+            ).save()
+
+            const viewAllSchoolsFromTheOrgRole = await createRole(
+                'View Schools',
+                org2,
+                {
+                    permissions: [PermissionName.view_school_20110],
+                }
+            ).save()
+
+            const viewMySchoolRole = await createRole('View My School', org3, {
+                permissions: [PermissionName.view_my_school_20119],
+            }).save()
+
+            // adding orgOwner to org3 with orgAdminRole¿
+            await createOrganizationMembership({
+                user: orgOwner,
+                organization: org3,
+                roles: [viewAllSchoolsRoleOrg3],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to org2 with orgAdminRole
+            await createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org2,
+                roles: [viewAllSchoolsFromTheOrgRole],
+            }).save()
+
+            // adding schoolAdmin to org3 with schoolAdminRole
+            await createOrganizationMembership({
+                user: schoolAdmin,
+                organization: org3,
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding schoolAdmin to first org3School
+            await createSchoolMembership({
+                user: schoolAdmin,
+                school: org3Schools[0],
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to org3 with schoolAdminRole
+            await createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org3,
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to second org3School
+            await createSchoolMembership({
+                user: ownerAndSchoolAdmin,
+                school: org3Schools[1],
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding orgMember to org3
+            await createOrganizationMembership({
+                user: orgMember,
+                organization: org3,
+                roles: [],
+            }).save()
+
+            orgOwnerPermissions = new UserPermissions(userToPayload(orgOwner))
+            schoolAdminPermissions = new UserPermissions(
+                userToPayload(schoolAdmin)
+            )
+            orgMemberPermissions = new UserPermissions(userToPayload(orgMember))
+            ownerAndSchoolAdminPermissions = new UserPermissions(
+                userToPayload(ownerAndSchoolAdmin)
+            )
+        })
+
+        it('super admin should get any school', async () => {
+            aliases = scope.expressionMap.aliases.map((a) => a.name)
+            conditions = scope.expressionMap.wheres.map((w) => w.condition)
+
+            expect(aliases.length).to.eq(1)
+            expect(aliases).to.deep.equalInAnyOrder(['School'])
+
+            expect(conditions.length).to.eq(0)
+        })
+
+        it('org admin should get a school just from its organization', async () => {
+            await buildScopeAndContext(orgOwnerPermissions)
+
+            aliases = scope.expressionMap.aliases.map((a) => a.name)
+            conditions = scope.expressionMap.wheres.map((w) => w.condition)
+
+            expect(aliases.length).to.eq(2)
+            expect(aliases).to.deep.equalInAnyOrder([
+                'School',
+                'OrganizationMembership',
+            ])
+
+            expect(conditions.length).to.eq(0)
+        })
+
+        it('school admin should get his/her schools', async () => {
+            await buildScopeAndContext(schoolAdminPermissions)
+
+            aliases = scope.expressionMap.aliases.map((a) => a.name)
+            conditions = scope.expressionMap.wheres.map((w) => w.condition)
+
+            expect(aliases.length).to.eq(2)
+            expect(aliases).to.deep.equalInAnyOrder([
+                'School',
+                'SchoolMembership',
+            ])
+
+            expect(conditions.length).to.eq(0)
+        })
+
+        it('owner and school admin should get a school of them or its organisation', async () => {
+            await buildScopeAndContext(ownerAndSchoolAdminPermissions)
+
+            aliases = scope.expressionMap.aliases.map((a) => a.name)
+            conditions = scope.expressionMap.wheres.map((w) => w.condition)
+            expect(conditions.length).to.eq(1)
+            expect(conditions).to.deep.equalInAnyOrder([
+                '(OrganizationMembership.user IS NOT NULL OR SchoolMembership.user IS NOT NULL)',
+            ])
+        })
+
+        context('permissons error handling', () => {
+            it('throws an error if an org admin tries to get a school out of its organisation', async () => {
+                await buildScopeAndContext(orgOwnerPermissions)
+                const schoolToTest = org1Schools[0]
+                await expect(
+                    ctx.loaders.schoolNode.node.instance.load({
+                        scope,
+                        id: schoolToTest.school_id,
+                    })
+                ).to.be.rejected
+            })
+
+            it('throws an error if a non admin user tries to get a school', async () => {
+                await buildScopeAndContext(orgMemberPermissions)
+                const schoolToTest = org1Schools[0]
+
+                await expect(
+                    ctx.loaders.schoolNode.node.instance.load({
+                        scope,
+                        id: schoolToTest.school_id,
+                    })
+                ).to.be.rejected
             })
         })
     })
