@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.2.1](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/compare/v2.2.0...v2.2.1) (2021-10-29)
+
+
+### Bug Fixes
+
+* **permissions:** update permissions to latest ([cdd7e46](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/cdd7e465cde599589e75f22f177a1428305d5f54))
+
 ## 2.2.0 (2021-10-26)
 
 
