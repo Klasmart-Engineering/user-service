@@ -22,6 +22,9 @@ export const studentRole = {
         PermissionName.leave_organization_10882,
         PermissionName.view_program_20111,
         PermissionName.view_subjects_20115,
+        PermissionName.view_school_classes_20117,
+        PermissionName.view_my_classes_20118,
+        PermissionName.view_my_school_20119,
         PermissionName.use_free_as_recommended_content_for_study_81008,
     ],
 }
