@@ -6,41 +6,46 @@ import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import {
+    classConnectionQuery,
+    classesConnectionSortingConfig,
+    mapClassToClassConnectionNode,
+} from '../pagination/classesConnection'
+import {
     mapProgramToProgramConnectionNode,
     programSummaryNodeFields,
 } from '../pagination/programsConnection'
 import {
-    mapSchoolToSchoolConnectionNode,
     schoolConnectionQuery,
+    mapSchoolToSchoolConnectionNode,
     schoolsConnectionSortingConfig,
 } from '../pagination/schoolsConnection'
 import {
     CoreUserConnectionNode,
-    coreUserConnectionNodeFields,
+    usersConnectionQuery,
     mapUserToUserConnectionNode,
     userConnectionSortingConfig,
-    usersConnectionQuery,
+    coreUserConnectionNodeFields,
 } from '../pagination/usersConnection'
 import { UserPermissions } from '../permissions/userPermissions'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
 import { BrandingResult } from '../types/graphQL/branding'
+import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
 import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
-import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
-    childConnectionLoader,
     IChildConnectionDataloaderKey,
+    childConnectionLoader,
 } from './childConnectionLoader'
 import { IClassesConnectionLoaders } from './classesConnection'
 import { NodeDataLoader } from './genericNode'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
-    brandingForOrganizations,
     IOrganizationLoaders,
+    brandingForOrganizations,
     organizationForMemberships,
 } from './organization'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
@@ -54,11 +59,11 @@ import {
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import {
-    IUserNodeDataLoaders,
     IUsersLoaders,
+    IUserNodeDataLoaders,
+    usersByIds,
     orgMembershipsForUsers,
     schoolMembershipsForUsers,
-    usersByIds,
 } from './user'
 import {
     IUsersConnectionLoaders,
@@ -66,11 +71,6 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
-import {
-    classConnectionQuery,
-    classesConnectionSortingConfig,
-    mapClassToClassConnectionNode,
-} from '../pagination/classesConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
