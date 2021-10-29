@@ -22,14 +22,21 @@ export interface IChildConnectionDataloaderKey<
     readonly includeTotalCount: boolean
 }
 
-export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
-    items: readonly IChildConnectionDataloaderKey<Entity>[],
+export interface IChildConnectionLoaderArgs<Entity extends BaseEntity, Node> {
+    items: readonly IChildConnectionDataloaderKey<Entity>[]
     connectionQuery: (
         args: IPaginationArgs<Entity>
-    ) => Promise<SelectQueryBuilder<Entity>>,
-    entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>,
+    ) => Promise<SelectQueryBuilder<Entity>>
+    entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>
     sort: ISortingConfig
-): Promise<IPaginatedResponse<Node>[]> => {
+}
+
+export const childConnectionLoader = async <Entity extends BaseEntity, Node>({
+    items,
+    connectionQuery,
+    entityToNodeMapFunction,
+    sort,
+}: IChildConnectionLoaderArgs<Entity, Node>): Promise<IPaginatedResponse<Node>[]> => {
     if (items.length === 0) {
         return []
     }

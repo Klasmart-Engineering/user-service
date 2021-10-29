@@ -3,7 +3,10 @@ import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
+import {
+    getWhereClauseFromFilter,
+    IEntityFilter,
+} from '../utils/pagination/filtering'
 import {
     IEdge,
     IPaginatedResponse,
@@ -11,6 +14,7 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import { SelectQueryBuilder } from 'typeorm'
 
 export const schoolsConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'school_id',
@@ -25,25 +29,15 @@ export async function schoolsConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<School>
 ): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-    const newScope = await schoolConnectionQuery({
-        direction,
-        directionArgs,
-        scope,
-        filter,
-        sort,
-    })
-
     const data = await paginateData<School>({
         direction,
         directionArgs,
-        scope: newScope,
+        scope: await schoolConnectionQuery(scope, filter),
         sort: {
             ...schoolsConnectionSortingConfig,
             sort,
         },
-        includeTotalCount,
+        includeTotalCount: findTotalCountInPaginationEndpoints(info),
     })
 
     return {
@@ -55,32 +49,25 @@ export async function schoolsConnectionResolver(
     }
 }
 
-export async function schoolConnectionQuery({
-    direction,
-    directionArgs,
-    scope,
-    filter,
-    sort,
-}: IPaginationArgs<School>) {
+export async function schoolConnectionQuery(
+    scope: SelectQueryBuilder<School>,
+    filter: IEntityFilter | undefined
+) {
+
+    schoolConnectionSelect(scope)
+
     // Required for building SchoolConnectionNode
     // TODO remove once School.organization_id FK is exposed on the Entity
     scope.innerJoin('School.organization', 'Organization')
 
     if (filter) {
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                organizationId: 'School.organization',
-                // Could also refer to SchoolMembership.school_id
-                schoolId: 'School.school_id',
-                name: 'school_name',
-                // Could also refer to OrganizationMembership.shortcode
-                shortCode: 'School.shortcode',
-                // Could also refer to [Organization/School]Membership.status
-                status: 'School.status',
-            })
-        )
+        schoolConnectionWhere(scope, filter)
     }
 
+    return scope
+}
+
+function schoolConnectionSelect(scope: SelectQueryBuilder<School>) {
     const selects = ([
         'school_id',
         'school_name',
@@ -95,8 +82,24 @@ export async function schoolConnectionQuery({
     )
 
     scope.select(selects)
+}
 
-    return scope
+function schoolConnectionWhere(
+    scope: SelectQueryBuilder<School>,
+    filter: IEntityFilter
+) {
+    scope.andWhere(
+        getWhereClauseFromFilter(filter, {
+            organizationId: 'School.organization',
+            // Could also refer to SchoolMembership.school_id
+            schoolId: 'School.school_id',
+            name: 'school_name',
+            // Could also refer to OrganizationMembership.shortcode
+            shortCode: 'School.shortcode',
+            // Could also refer to [Organization/School]Membership.status
+            status: 'School.status',
+        })
+    )
 }
 
 async function mapSchoolEdgeToSchoolConnectionEdge(

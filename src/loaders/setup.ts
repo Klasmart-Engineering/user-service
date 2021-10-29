@@ -51,8 +51,12 @@ import {
 } from './usersConnection'
 import {
     classConnectionQuery,
-    classesConnectionSortingConfig, mapClassToClassConnectionNode
+    classesConnectionSortingConfig,
+    mapClassToClassConnectionNode,
 } from '../pagination/classesConnection'
+import { SelectQueryBuilder, BaseEntity } from 'typeorm'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import { IEntityFilter } from '../utils/pagination/filtering'
 
 interface IUserNodeDataLoaders extends Required<IUsersConnectionLoaders> {
     node?: NodeDataLoader<User, CoreUserConnectionNode>
@@ -91,6 +95,32 @@ export interface IDataLoaders {
 }
 
 export function createContextLazyLoaders(): IDataLoaders {
+    const childDataLoader = <Entity extends BaseEntity, Node>(
+        connectionQuery: (
+            scope: SelectQueryBuilder<Entity>,
+            filter: IEntityFilter | undefined
+        ) => Promise<SelectQueryBuilder<Entity>>,
+        entityToNodeMapFunction: (entity: Entity) => Node,
+        sort: IConnectionSortingConfig
+    ) =>
+        new Lazy(
+            () =>
+                new DataLoader(
+                    (items: readonly IChildConnectionDataloaderKey<Entity>[]) =>
+                        childConnectionLoader({
+                            items,
+                            connectionQuery,
+                            entityToNodeMapFunction,
+                            sort,
+                        })
+                )
+        )
+
+    //
+    // new DataLoader((items) =>
+    //     childConnectionLoader({items, query, map, sort})
+    // )
+
     return {
         user: {
             user: new Lazy<DataLoader<string, User | Error>>(
@@ -119,38 +149,20 @@ export function createContextLazyLoaders(): IDataLoaders {
                 () => new DataLoader(schoolsByIds)
             ),
         },
-        usersConnectionChild: new Lazy(
-            () =>
-                new DataLoader((items) => {
-                    return childConnectionLoader(
-                        items,
-                        usersConnectionQuery,
-                        mapUserToUserConnectionNode,
-                        userConnectionSortingConfig
-                    )
-                })
+        usersConnectionChild: childDataLoader(
+            usersConnectionQuery,
+            mapUserToUserConnectionNode,
+            userConnectionSortingConfig
         ),
-        schoolsConnectionChild: new Lazy(
-            () =>
-                new DataLoader((items) => {
-                    return childConnectionLoader(
-                        items,
-                        schoolConnectionQuery,
-                        mapSchoolToSchoolConnectionNode,
-                        schoolsConnectionSortingConfig
-                    )
-                })
+        schoolsConnectionChild: childDataLoader(
+            schoolConnectionQuery,
+            mapSchoolToSchoolConnectionNode,
+            schoolsConnectionSortingConfig
         ),
-        classesConnectionChild: new Lazy(
-            () =>
-                new DataLoader((items) => {
-                    return childConnectionLoader(
-                        items,
-                        classConnectionQuery,
-                        mapClassToClassConnectionNode,
-                        classesConnectionSortingConfig
-                    )
-                })
+        classesConnectionChild: childDataLoader(
+            classConnectionQuery,
+            mapClassToClassConnectionNode,
+            classesConnectionSortingConfig
         ),
         userNode: {
             organizations: new DataLoader((keys) => orgsForUsers(keys)),

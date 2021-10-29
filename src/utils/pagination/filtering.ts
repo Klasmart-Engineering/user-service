@@ -1,4 +1,4 @@
-import { Brackets } from 'typeorm'
+import { Brackets, SelectQueryBuilder } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
 
 export interface IEntityFilter {
@@ -7,6 +7,47 @@ export interface IEntityFilter {
     OR?: IEntityFilter[]
     AND?: IEntityFilter[]
 }
+
+export interface IConditionalJoin {
+    ifFilterOn(filterProperties: string[]): string[]
+
+    conditionalFilterProperties: ['gradeId']
+}
+
+export class ConditionalJoinCmd<Entity> {
+    scope: SelectQueryBuilder<Entity>
+    filter: IEntityFilter
+
+    constructor(scope:  SelectQueryBuilder<Entity>, filter:  IEntityFilter) {
+        this.scope = scope
+        this.filter = filter
+    }
+
+
+    joinIfFilter(properties: string[], addJoin: () => void): this {
+        if (!filterHasProperties(
+            properties,
+            this.filter)) {
+            return this
+        }
+        addJoin()
+
+        return this
+    }
+}
+
+    // and(extraChecks: () => void) {}
+
+
+
+
+//     conitionalJoins.forEach(
+//     (conditionalJoin) =>
+//         filterHasProperties(
+//             conditionalJoin.conditionalFilterProperties,
+//             filter
+//         ) && conditionalJoin.addJoin()
+// )
 
 type FilteringOperator =
     | 'eq'
@@ -252,6 +293,20 @@ export function filterHasProperty(
     }
 
     return hasProperty
+}
+
+// call's the above function for each property in an array
+export function filterHasProperties(
+    properties: string[],
+    filter: IEntityFilter
+): boolean {
+    for (const property of properties) {
+        if (filterHasProperty(property, filter)) {
+            return true
+        }
+    }
+
+    return false
 }
 
 function logicalOperationFilter(

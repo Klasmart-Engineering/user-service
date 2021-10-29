@@ -5,8 +5,9 @@ import { User } from '../entities/user'
 import { UserConnectionNode } from '../types/graphQL/userConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
-    filterHasProperty,
+    ConditionalJoinCmd,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
@@ -15,6 +16,7 @@ import {
 } from '../utils/pagination/paginate'
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
+import { SelectQueryBuilder } from 'typeorm'
 
 /**
  * Core fields on `UserConnectionNode` not populated by a DataLoader
@@ -44,25 +46,15 @@ export async function usersConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<User>
 ): Promise<IPaginatedResponse<CoreUserConnectionNode>> {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-    const newScope = await usersConnectionQuery({
-        direction,
-        directionArgs,
-        scope,
-        filter,
-        sort,
-    })
-
     const data = await paginateData<User>({
         direction,
         directionArgs,
-        scope: newScope,
+        scope: await usersConnectionQuery(scope, filter),
         sort: {
             ...userConnectionSortingConfig,
             sort,
         },
-        includeTotalCount,
+        includeTotalCount: findTotalCountInPaginationEndpoints(info),
     })
 
     return {
@@ -77,62 +69,73 @@ export async function usersConnectionResolver(
     }
 }
 
-export async function usersConnectionQuery({
-    direction,
-    directionArgs,
-    scope,
-    filter,
-    sort,
-}: IPaginationArgs<User>) {
+export async function usersConnectionQuery(
+    scope: SelectQueryBuilder<User>,
+    filter: IEntityFilter | undefined
+) {
+    UserConnectionSelect(scope)
+
     if (filter) {
-        if (
-            (filterHasProperty('organizationId', filter) ||
-                filterHasProperty('organizationUserStatus', filter) ||
-                filterHasProperty('roleId', filter)) &&
-            !scopeHasJoin(scope, OrganizationMembership)
-        ) {
-            scope.innerJoin('User.memberships', 'OrganizationMembership')
-        }
-        if (filterHasProperty('roleId', filter)) {
+        UserConnectionFilter(scope, filter)
+        UserConnectionWhere(scope, filter)
+    }
+
+    return scope
+}
+
+function UserConnectionSelect(scope: SelectQueryBuilder<User>) {
+    scope.select(coreUserConnectionNodeFields)
+}
+
+function UserConnectionFilter(
+    scope: SelectQueryBuilder<User>,
+    filter: IEntityFilter
+) {
+    new ConditionalJoinCmd<User>(scope, filter)
+        .joinIfFilter(
+            ['organizationId', 'organizationUserStatus', 'roleId'],
+            () =>
+                !scopeHasJoin(scope, OrganizationMembership) &&
+                scope.innerJoin('User.memberships', 'OrganizationMembership')
+        )
+        .joinIfFilter(['roleId'], () => {
             scope.innerJoin(
                 'OrganizationMembership.roles',
                 'RoleMembershipsOrganizationMembership'
             )
-        }
-        if (
-            filterHasProperty('schoolId', filter) &&
-            !scopeHasJoin(scope, SchoolMembership)
-        ) {
-            scope.leftJoin('User.school_memberships', 'SchoolMembership')
-        }
-        if (filterHasProperty('classId', filter)) {
-            scope.leftJoin('User.classesStudying', 'ClassStudying')
-            scope.leftJoin('User.classesTeaching', 'ClassTeaching')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                organizationId: 'OrganizationMembership.organization_id',
-                organizationUserStatus: 'OrganizationMembership.status',
-                userStatus: 'User.status',
-                userId: 'User.user_id',
-                phone: 'User.phone',
-                email: 'User.email',
-                schoolId: 'SchoolMembership.school_id',
-                classId: {
-                    operator: 'OR',
-                    aliases: [
-                        'ClassStudying.class_id',
-                        'ClassTeaching.class_id',
-                    ],
-                },
-            })
+        })
+        .joinIfFilter(
+            ['schoolId'],
+            () =>
+                !scopeHasJoin(scope, SchoolMembership) &&
+                scope.leftJoin('User.school_memberships', 'SchoolMembership')
         )
-    }
+        .joinIfFilter(['classId'], () =>
+            scope
+                .leftJoin('User.classesStudying', 'ClassStudying')
+                .leftJoin('User.classesTeaching', 'ClassTeaching')
+        )
+}
 
-    scope.select(coreUserConnectionNodeFields)
-
-    return scope
+function UserConnectionWhere(
+    scope: SelectQueryBuilder<User>,
+    filter: IEntityFilter
+) {
+    scope.andWhere(
+        getWhereClauseFromFilter(filter, {
+            organizationId: 'OrganizationMembership.organization_id',
+            organizationUserStatus: 'OrganizationMembership.status',
+            userStatus: 'User.status',
+            userId: 'User.user_id',
+            phone: 'User.phone',
+            email: 'User.email',
+            schoolId: 'SchoolMembership.school_id',
+            classId: {
+                operator: 'OR',
+                aliases: ['ClassStudying.class_id', 'ClassTeaching.class_id'],
+            },
+        })
+    )
 }
 
 export function mapUserToUserConnectionNode(
