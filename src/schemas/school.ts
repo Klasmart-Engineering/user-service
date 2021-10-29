@@ -8,7 +8,6 @@ import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import {
     IChildPaginationArgs,
     IPaginationArgs,
-    shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 import { Class } from '../entities/class'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -151,11 +150,11 @@ export function classesConnection(
     school: Pick<ISchoolsConnectionNode, 'id'>,
     args: IChildPaginationArgs,
     ctx: Pick<Context, 'loaders'>,
-    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+    includeTotalCount: boolean
 ) {
     return ctx.loaders.classesConnectionChild.instance.load({
         args,
-        includeTotalCount: shouldIncludeTotalCount(info, args),
+        includeTotalCount: includeTotalCount,
         parent: {
             id: school.id,
             filterKey: 'schoolId',
