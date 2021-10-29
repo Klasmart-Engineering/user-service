@@ -1,4 +1,4 @@
-# Onboarding
+# Releases
 
 This document shows you all the steps you need to follow in order to generate a release.
 
