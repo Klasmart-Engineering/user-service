@@ -1794,7 +1794,6 @@ describe('isAdmin', () => {
             schoolAdminPermissions = new UserPermissions(
                 userToPayload(schoolAdmin)
             )
-            orgMemberPermissions = new UserPermissions(userToPayload(orgMember))
             ownerAndSchoolAdminPermissions = new UserPermissions(
                 userToPayload(ownerAndSchoolAdmin)
             )
@@ -1850,6 +1849,5 @@ describe('isAdmin', () => {
                 '(OrganizationMembership.user IS NOT NULL OR SchoolMembership.user IS NOT NULL)',
             ])
         })
-
     })
 })
