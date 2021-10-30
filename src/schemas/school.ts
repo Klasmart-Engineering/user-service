@@ -13,7 +13,7 @@ const typeDefs = gql`
     }
     extend type Query {
         school(school_id: ID!): School
-            @deprecated(reason: "Use 'schoolNode' with 'schoolId' filter.")
+            @deprecated(reason: "Use 'schoolNode")
         schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
         schoolsConnection(
             direction: ConnectionDirection!
