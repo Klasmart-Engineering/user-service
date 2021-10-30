@@ -85,9 +85,9 @@ function mapSchoolEdgeToSchoolConnectionEdge(
     }
 }
 
-export async function mapSchoolToSchoolConnectionNode(
+export function mapSchoolToSchoolConnectionNode(
     school: School
-): Promise<ISchoolsConnectionNode> {
+): ISchoolsConnectionNode {
     return {
         id: school.school_id,
         name: school.school_name,
@@ -96,3 +96,11 @@ export async function mapSchoolToSchoolConnectionNode(
         organizationId: school.organizationOrganizationId,
     }
 }
+
+export const schoolConnectionNodeFields = ([
+    'school_id',
+    'school_name',
+    'shortcode',
+    'status',
+    'organizationOrganizationId',
+] as (keyof School)[]).map((field) => `School.${field}`)

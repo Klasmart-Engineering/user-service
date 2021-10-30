@@ -2,8 +2,8 @@ import DataLoader from 'dataloader'
 import { School } from '../entities/school'
 import { Organization } from '../entities/organization'
 import { Lazy } from '../utils/lazyLoading'
-import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import { NodeDataLoader } from './genericNode'
+import { ISchoolsConnectionNode } from '../types/graphQL/school'
 
 export interface ISchoolLoaders {
     organization: Lazy<DataLoader<string, Organization | undefined>>
@@ -44,24 +44,4 @@ export const schoolsByIds = async (
         ])
     )
     return schoolIds.map((id) => schools.get(id))
-}
-
-export const schoolConnectionNodeFields = ([
-    'school_id',
-    'school_name',
-    'shortcode',
-    'status',
-    'organizationOrganizationId',
-] as (keyof School)[]).map((field) => `School.${field}`)
-
-export function mapSchoolToSchoolConnectionNode(
-    school: School
-): ISchoolsConnectionNode {
-    return {
-        id: school.school_id,
-        name: school.school_name,
-        status: school.status,
-        shortCode: school.shortcode,
-        organizationId: school.organizationOrganizationId,
-    }
 }

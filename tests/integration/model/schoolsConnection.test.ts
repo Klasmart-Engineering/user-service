@@ -97,13 +97,13 @@ describe('schoolsConnection', () => {
                 organizationId: (await school?.organization)?.organization_id,
             })
         })
-        it('makes 3 DB queries', async () => {
+        it('makes 2 DB queries', async () => {
             connection.logger.reset()
             await schoolsConnection(testClient, 'FORWARD', { count: 5 }, true, {
                 authorization: getAdminAuthToken(),
             })
             expect(connection.logger.count).to.equal(
-                3,
+                2,
                 '1. COUNT, 2. DISTINCT ids, 3. SchoolConnectionNode data'
             )
         })
@@ -733,7 +733,7 @@ describe('schoolsConnection', () => {
             )
 
             expect(connection.logger.count).to.be.eq(
-                2,
+                1,
                 '1. DISTINCT ids, 2. SchoolConnectionNode data'
             )
         })

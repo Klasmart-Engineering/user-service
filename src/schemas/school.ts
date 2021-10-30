@@ -12,7 +12,7 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
     }
     extend type Query {
-        school(school_id: ID!): School @deprecated(reason: "Use 'schoolNode")
+        school(school_id: ID!): School @deprecated(reason: "Use 'schoolNode'")
         schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
         schoolsConnection(
             direction: ConnectionDirection!

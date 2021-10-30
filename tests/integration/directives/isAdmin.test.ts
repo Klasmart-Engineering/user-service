@@ -68,7 +68,6 @@ import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
 import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
-import { ISchoolsConnectionNode } from '../../../src/types/graphQL/schoolsConnectionNode'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
