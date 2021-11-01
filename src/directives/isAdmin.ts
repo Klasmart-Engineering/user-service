@@ -271,7 +271,7 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
             PermissionName.view_my_school_users_40111,
         ]),
     ])
-    if (userOrgSchools.length > 0 && schoolMemberships) {
+    if (userOrgSchools.length > 0 && schoolMemberships?.length) {
         // you can view all users in the schools you belong to
         // Must be LEFT JOIN to support `isNull` operator
         scope.leftJoin(
