@@ -1669,7 +1669,7 @@ describe('isAdmin', () => {
 
             ctx = ({
                 permissions,
-                loaders: createContextLazyLoaders(),
+                loaders: createContextLazyLoaders(permissions),
             } as unknown) as Context
         }
 

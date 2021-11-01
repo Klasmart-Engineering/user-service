@@ -90,7 +90,7 @@ describe('scholNode', () => {
 
         const ctxObject = ({
             permissions,
-            loaders: createContextLazyLoaders(),
+            loaders: createContextLazyLoaders(permissions),
         } as unknown) as Context
 
         return { scope: scopeObject, ctx: ctxObject }
