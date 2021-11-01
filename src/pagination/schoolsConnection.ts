@@ -46,9 +46,7 @@ export async function schoolsConnectionResolver(
     return {
         totalCount: data.totalCount,
         pageInfo: data.pageInfo,
-        edges: await Promise.all(
-            data.edges.map(mapSchoolEdgeToSchoolConnectionEdge)
-        ),
+        edges: data.edges.map(mapSchoolEdgeToSchoolConnectionEdge),
     }
 }
 
@@ -78,9 +76,9 @@ export async function schoolConnectionQuery(
 
 function mapSchoolEdgeToSchoolConnectionEdge(
     edge: IEdge<School>
-): Promise<IEdge<ISchoolsConnectionNode>> {
+): IEdge<ISchoolsConnectionNode> {
     return {
-        node: await mapSchoolToSchoolConnectionNode(edge.node),
+        node: mapSchoolToSchoolConnectionNode(edge.node),
         cursor: edge.cursor,
     }
 }
