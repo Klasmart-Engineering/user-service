@@ -1,0 +1,10 @@
+# ~/.huskyrc
+# This loads nvm.sh and sets the correct PATH before running hook
+
+# If you're using a git app, you'll need to move this to ~/.huskyrc for pre-commits to work.
+# cp .huskyrc ~/.huskyrc
+# https://typicode.github.io/husky/#/?id=command-not-found
+# You may need to edit this file if not using nvm
+
+export nvm_DIR="$HOME/.nvm"
+[ -s "$nvm_DIR/nvm.sh" ] && \. "$nvm_DIR/nvm.sh"

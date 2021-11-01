@@ -1,0 +1,6 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running pre-commit hook."
+echo "If you get the error 'nvm: command not found', see /.huskyrc in this repository."
+npm --no-install run commitlint-check -- --edit "$1"
