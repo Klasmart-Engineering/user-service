@@ -132,7 +132,6 @@ export const schoolsForUsers = async (
                         name: school?.school_name,
                         organizationId:
                             (await school?.organization)?.organization_id ?? '',
-                        userStatus: membership.status,
                         status: school?.status,
                     }
                 })

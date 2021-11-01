@@ -13,11 +13,4 @@ export interface SchoolSummaryNode {
     name?: string
     organizationId: string
     status?: Status
-    userStatus: Status
-}
-
-export interface SchoolSimplifiedSummaryNode {
-    id: string
-    name?: string
-    status: Status
 }

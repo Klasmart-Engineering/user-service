@@ -3,7 +3,7 @@ import { Class } from '../entities/class'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { ProgramSummaryNode } from '../types/graphQL/program'
-import { SchoolSimplifiedSummaryNode } from '../types/graphQL/school'
+import { SchoolSummaryNode } from '../types/graphQL/school'
 import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
 import { SelectQueryBuilder } from 'typeorm'
@@ -17,7 +17,7 @@ import { NodeDataLoader } from './genericNode'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 
 export interface IClassesConnectionLoaders {
-    schools: Lazy<DataLoader<string, SchoolSimplifiedSummaryNode[]>>
+    schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
     grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
     subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
@@ -45,7 +45,7 @@ const baseClassQuery = (ids: readonly string[]) => {
 
 export const schoolsForClasses = async (
     classIds: readonly string[]
-): Promise<SchoolSimplifiedSummaryNode[][]> => {
+): Promise<SchoolSummaryNode[][]> => {
     const scope = baseClassQuery(classIds)
         .leftJoin('Class.schools', 'School')
         .addSelect(['School.school_id', 'School.school_name', 'School.status'])
@@ -54,7 +54,7 @@ export const schoolsForClasses = async (
         scope,
         classIds,
         'schools'
-    ) as Promise<SchoolSimplifiedSummaryNode[][]>
+    ) as Promise<SchoolSummaryNode[][]>
 
     return classSchools
 }
@@ -141,7 +141,7 @@ export const programsForClasses = async (
 }
 
 type ClassEntitySummaryTypes =
-    | SchoolSimplifiedSummaryNode
+    | SchoolSummaryNode
     | AgeRangeConnectionNode
     | GradeSummaryNode
     | SubjectSummaryNode
@@ -198,7 +198,7 @@ function buildEntityProps(
                 id: typedEntity.school_id,
                 name: typedEntity.school_name,
                 status: typedEntity.status,
-            } as SchoolSimplifiedSummaryNode
+            } as SchoolSummaryNode
 
         case 'age_ranges':
             typedEntity = entity as AgeRange

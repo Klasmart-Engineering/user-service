@@ -48,7 +48,7 @@ import { BrandingResult } from '../types/graphQL/branding'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import {
     ISchoolsConnectionNode,
-    SchoolSimplifiedSummaryNode,
+    SchoolSummaryNode,
 } from '../types/graphQL/school'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
@@ -270,9 +270,9 @@ export function createContextLazyLoaders(
             ),
         },
         classesConnection: {
-            schools: new Lazy<
-                DataLoader<string, SchoolSimplifiedSummaryNode[]>
-            >(() => new DataLoader(schoolsForClasses)),
+            schools: new Lazy<DataLoader<string, SchoolSummaryNode[]>>(
+                () => new DataLoader(schoolsForClasses)
+            ),
             ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(
                 () => new DataLoader(ageRangesForClasses)
             ),

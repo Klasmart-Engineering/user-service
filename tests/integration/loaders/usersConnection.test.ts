@@ -224,7 +224,6 @@ describe('usersConnection loaders', async () => {
                             org1.organization_id
                         )
                         expect(school.status).to.equal(school1.status)
-                        expect(school.userStatus).to.equal(membership.status)
                     }
                 })
             )
