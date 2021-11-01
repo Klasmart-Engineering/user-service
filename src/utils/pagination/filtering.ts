@@ -17,6 +17,7 @@ type FilteringOperator =
     | 'gte'
     | 'contains'
     | 'isNull'
+    | 'in'
 
 interface IFilter {
     operator: FilteringOperator
@@ -30,7 +31,7 @@ interface IMultipleColumn {
 }
 
 type ColumnAliasValue = string | IMultipleColumn
-type CommonValue = string | number | boolean
+type CommonValue = string | number | boolean | string[]
 type ComposedValue = Record<string, CommonValue>
 type FilteringValue = CommonValue | ComposedValue
 type ColumnAliases = Record<string, ColumnAliasValue> // use empty string to ignore
@@ -117,7 +118,7 @@ export function getWhereClauseFromFilter(
 
             // a value of type object is considered as a compound value
             // deprecated, just common type values will be allowed
-            if (typeof data.value === 'object') {
+            if (typeof data.value === 'object' && !Array.isArray(data.value)) {
                 for (const alias of aliases) {
                     let currentOperator = data.operator
                     let currentValue: FilteringValue = data.value
@@ -287,6 +288,7 @@ function getSQLOperatorFromFilterOperator(op: FilteringOperator) {
         lte: '<=',
         contains: 'LIKE',
         isNull: 'IS NULL',
+        in: 'IN',
     }
 
     return operators[op]
@@ -342,6 +344,9 @@ function createWhereCondition(
 ) {
     if (sqlOperator === 'IS NULL') {
         return `${alias} ${sqlOperator}`
+    }
+    if (sqlOperator === 'IN') {
+        return `${alias} ${sqlOperator} (:...${uniqueId})`
     }
     if (caseInsensitive) {
         return `lower(${alias}) ${sqlOperator} lower(:${uniqueId})`

@@ -1,6 +1,6 @@
+import DataLoader from 'dataloader'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
 import { UserSummaryNode } from '../types/graphQL/user'
-import DataLoader from 'dataloader'
 
 export interface IOrganizationsConnectionLoaders {
     owners?: DataLoader<string, UserSummaryNode[]>

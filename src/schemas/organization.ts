@@ -1,12 +1,22 @@
-import gql from 'graphql-tag'
-import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { ownersForOrgs } from '../loaders/organizationsConnection'
 import Dataloader from 'dataloader'
-import { Context } from '../main'
+import { GraphQLResolveInfo } from 'graphql'
+import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { ownersForOrgs } from '../loaders/organizationsConnection'
+import {
+    orgsForUsers,
+    rolesForUsers,
+    schoolsForUsers,
+} from '../loaders/usersConnection'
+import { Context } from '../main'
+import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
+import {
+    IChildPaginationArgs,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     scalar HexColor
@@ -247,6 +257,22 @@ const typeDefs = gql`
         # connections
         owners: [UserSummaryNode]
         branding: Branding
+
+        usersConnection(
+            count: PageSize
+            cursor: String
+            filter: UserFilter
+            sort: UserSortInput
+            direction: ConnectionDirection
+        ): UsersConnectionResponse
+
+        schoolsConnection(
+            count: PageSize
+            cursor: String
+            filter: SchoolFilter
+            sort: SchoolSortInput
+            direction: ConnectionDirection
+        ): SchoolsConnectionResponse
     }
 `
 export default function getDefault(
@@ -273,6 +299,38 @@ export default function getDefault(
                     ctx.loaders.organization.branding.instance.load(
                         organization.id
                     )
+                },
+                usersConnection: async (
+                    organization: OrganizationConnectionNode,
+                    args: IChildPaginationArgs,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    return ctx.loaders.usersConnectionChild.instance.load({
+                        args,
+                        includeTotalCount: shouldIncludeTotalCount(info, args),
+                        parent: {
+                            id: organization.id,
+                            filterKey: 'organizationId',
+                            pivot: '"OrganizationMembership"."organization_id"',
+                        },
+                    })
+                },
+                schoolsConnection: async (
+                    organization: OrganizationConnectionNode,
+                    args: IChildPaginationArgs,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    return ctx.loaders.schoolsConnectionChild.instance.load({
+                        args,
+                        includeTotalCount: shouldIncludeTotalCount(info, args),
+                        parent: {
+                            id: organization.id,
+                            filterKey: 'organizationId',
+                            pivot: '"Organization"."organization_id"',
+                        },
+                    })
                 },
             },
             Mutation: {
@@ -302,6 +360,17 @@ export default function getDefault(
                 ) => {
                     ctx.loaders.organizationsConnection = {
                         owners: new Dataloader((keys) => ownersForOrgs(keys)),
+                    }
+                    // Add dataloaders for the usersConnection
+                    // TODO remove once corresponding child connections have been created
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys)
+                        ),
+                        roles: new Dataloader((keys) => rolesForUsers(keys)),
                     }
                     return model.organizationsConnection(ctx, info, args)
                 },

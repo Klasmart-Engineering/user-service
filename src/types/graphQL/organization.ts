@@ -1,7 +1,9 @@
 import { BrandingInput } from './branding'
 import { Status } from '../../entities/status'
 import { Branding } from '../../entities/branding'
-import { UserSummaryNode } from './user'
+import { UserConnectionNode, UserSummaryNode } from './user'
+import { IPaginatedResponse } from '../../utils/pagination/paginate'
+import { ISchoolsConnectionNode } from './school'
 
 export interface CreateOrganizationInput {
     userId: string
@@ -22,6 +24,9 @@ export interface OrganizationConnectionNode {
 
     owners: UserSummaryNode[]
     branding: Branding
+
+    usersConnection?: IPaginatedResponse<UserConnectionNode>
+    schoolsConnection?: IPaginatedResponse<ISchoolsConnectionNode>
 }
 
 export interface OrganizationContactInfo {

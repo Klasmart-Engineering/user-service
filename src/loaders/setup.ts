@@ -1,25 +1,48 @@
-import Dataloader from 'dataloader'
+import DataLoader from 'dataloader'
+import { Class } from '../entities/class'
+import { Organization } from '../entities/organization'
+import { OrganizationMembership } from '../entities/organizationMembership'
+import { Program } from '../entities/program'
+import { School } from '../entities/school'
+import { SchoolMembership } from '../entities/schoolMembership'
+import { User } from '../entities/user'
 import {
-    IUsersConnectionLoaders,
-    orgsForUsers,
-    rolesForUsers,
-    schoolsForUsers,
-} from './usersConnection'
+    classSummaryNodeFields,
+    mapClassToClassNode,
+} from '../pagination/classesConnection'
 import {
-    IProgramsConnectionLoaders,
-    IProgramNodeDataLoaders,
-    ageRangesForPrograms,
-    gradesForPrograms,
-    subjectsForPrograms,
-} from './programsConnection'
-import { IGradesConnectionLoaders } from './gradesConnection'
+    mapProgramToProgramConnectionNode,
+    programSummaryNodeFields,
+} from '../pagination/programsConnection'
 import {
-    IUserNodeDataLoaders,
-    IUsersLoaders,
-    orgMembershipsForUsers,
-    schoolMembershipsForUsers,
-    usersByIds,
-} from './user'
+    mapSchoolToSchoolConnectionNode,
+    schoolConnectionQuery,
+    schoolsConnectionSortingConfig,
+} from '../pagination/schoolsConnection'
+import {
+    CoreUserConnectionNode,
+    coreUserConnectionNodeFields,
+    mapUserToUserConnectionNode,
+    userConnectionSortingConfig,
+    usersConnectionQuery,
+} from '../pagination/usersConnection'
+import { UserPermissions } from '../permissions/userPermissions'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
+import { BrandingResult } from '../types/graphQL/branding'
+import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { ProgramSummaryNode } from '../types/graphQL/program'
+import {
+    ISchoolsConnectionNode,
+    SchoolSimplifiedSummaryNode,
+} from '../types/graphQL/school'
+import { SubjectSummaryNode } from '../types/graphQL/subject'
+import { Lazy } from '../utils/lazyLoading'
+import { IPaginatedResponse } from '../utils/pagination/paginate'
+import {
+    childConnectionLoader,
+    IChildConnectionDataloaderKey,
+} from './childConnectionLoader'
 import {
     ageRangesForClasses,
     gradesForClasses,
@@ -29,44 +52,36 @@ import {
     schoolsForClasses,
     subjectsForClasses,
 } from './classesConnection'
+import { NodeDataLoader } from './genericNode'
+import { IGradesConnectionLoaders } from './gradesConnection'
 import {
     brandingForOrganizations,
     IOrganizationLoaders,
     organizationForMemberships,
 } from './organization'
-import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
+import {
+    ageRangesForPrograms,
+    gradesForPrograms,
+    IProgramNodeDataLoaders,
+    IProgramsConnectionLoaders,
+    subjectsForPrograms,
+} from './programsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
-import { NodeDataLoader } from './genericNode'
+import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import {
-    CoreUserConnectionNode,
-    coreUserConnectionNodeFields,
-    mapUserToUserConnectionNode,
-} from '../pagination/usersConnection'
-import DataLoader from 'dataloader'
-import { User } from '../entities/user'
-import { Lazy } from '../utils/lazyLoading'
-import { OrganizationMembership } from '../entities/organizationMembership'
-import { SchoolMembership } from '../entities/schoolMembership'
-import { BrandingResult } from '../types/graphQL/branding'
-import { Organization } from '../entities/organization'
-import { School } from '../entities/school'
-import { Class } from '../entities/class'
-import { Program } from '../entities/program'
+    IUserNodeDataLoaders,
+    IUsersLoaders,
+    orgMembershipsForUsers,
+    schoolMembershipsForUsers,
+    usersByIds,
+} from './user'
 import {
-    mapProgramToProgramConnectionNode,
-    programSummaryNodeFields,
-} from '../pagination/programsConnection'
-import { ProgramSummaryNode } from '../types/graphQL/program'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
-import { GradeSummaryNode } from '../types/graphQL/grade'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
-import {
-    classSummaryNodeFields,
-    mapClassToClassNode,
-} from '../pagination/classesConnection'
-import { SchoolSimplifiedSummaryNode } from '../types/graphQL/school'
-import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
+    IUsersConnectionLoaders,
+    orgsForUsers,
+    rolesForUsers,
+    schoolsForUsers,
+} from './usersConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -80,10 +95,25 @@ export interface IDataLoaders {
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+
+    usersConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<CoreUserConnectionNode>
+        >
+    >
+    schoolsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<ISchoolsConnectionNode>
+        >
+    >
     classNode: IClassNodeDataLoaders
 }
 
-export function createContextLazyLoaders(): IDataLoaders {
+export function createContextLazyLoaders(
+    permissions: UserPermissions
+): IDataLoaders {
     return {
         user: {
             user: new Lazy<DataLoader<string, User | Error>>(
@@ -112,6 +142,30 @@ export function createContextLazyLoaders(): IDataLoaders {
                 () => new DataLoader(schoolsByIds)
             ),
         },
+        usersConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        usersConnectionQuery,
+                        mapUserToUserConnectionNode,
+                        userConnectionSortingConfig,
+                        { permissions, entity: 'user' }
+                    )
+                })
+        ),
+        schoolsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        schoolConnectionQuery,
+                        mapSchoolToSchoolConnectionNode,
+                        schoolsConnectionSortingConfig,
+                        { permissions, entity: 'school' }
+                    )
+                })
+        ),
         userNode: {
             node: new Lazy<NodeDataLoader<User, CoreUserConnectionNode>>(
                 () =>
@@ -122,9 +176,9 @@ export function createContextLazyLoaders(): IDataLoaders {
                         coreUserConnectionNodeFields
                     )
             ),
-            organizations: new Dataloader((keys) => orgsForUsers(keys)),
-            schools: new Dataloader((keys) => schoolsForUsers(keys)),
-            roles: new Dataloader((keys) => rolesForUsers(keys)),
+            organizations: new DataLoader((keys) => orgsForUsers(keys)),
+            schools: new DataLoader((keys) => schoolsForUsers(keys)),
+            roles: new DataLoader((keys) => rolesForUsers(keys)),
         },
         programsConnection: {
             ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(
