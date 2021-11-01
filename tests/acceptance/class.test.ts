@@ -9,7 +9,7 @@ import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import { ClassConnectionNode } from '../../src/types/graphQL/class'
 import { GradeSummaryNode } from '../../src/types/graphQL/grade'
 import { ProgramSummaryNode } from '../../src/types/graphQL/program'
-import { SchoolSimplifiedSummaryNode } from '../../src/types/graphQL/school'
+import { SchoolSummaryNode } from '../../src/types/graphQL/school'
 import { SubjectSummaryNode } from '../../src/types/graphQL/subject'
 import { loadFixtures } from '../utils/fixtures'
 import {
@@ -640,7 +640,7 @@ describe('acceptance.class', () => {
                 (edge: IClassEdge) => edge.node.schools
             )
 
-            classSchools.every((schools: SchoolSimplifiedSummaryNode[]) => {
+            classSchools.every((schools: SchoolSummaryNode[]) => {
                 const schoolIds = schools.map((school) => school.id)
                 expect(schoolIds).includes(schoolId)
             })

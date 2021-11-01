@@ -16,7 +16,7 @@ import AgeRangesInitializer from '../../../src/initializers/ageRanges'
 import { Model } from '../../../src/model'
 import { PermissionName } from '../../../src/permissions/permissionNames'
 import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
-import { SchoolSimplifiedSummaryNode } from '../../../src/types/graphQL/school'
+import { SchoolSummaryNode } from '../../../src/types/graphQL/school'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createAgeRange } from '../../factories/ageRange.factory'
@@ -445,9 +445,7 @@ describe('classesConnection', () => {
             expect(result.edges.length).eq(classesCount / schoolsCount)
 
             const schoolIds = result.edges.map((edge) =>
-                edge.node.schools?.map(
-                    (school: SchoolSimplifiedSummaryNode) => school.id
-                )
+                edge.node.schools?.map((school: SchoolSummaryNode) => school.id)
             )
 
             schoolIds.every((ids) => ids?.includes(org3Schools[0].school_id))
