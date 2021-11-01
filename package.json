@@ -28,7 +28,7 @@
     "test:file": "mocha --require ts-node/register --file tests/testHelper.ts tests/integration/directives/isMIMEType.test.ts --timeout 5000",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm",
     "release": "standard-version",
-    "prepare": "yarn husky install"
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
