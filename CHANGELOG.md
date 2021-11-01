@@ -2,35 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [2.2.1](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/compare/v2.2.0...v2.2.1) (2021-10-29)
+### [2.2.1](https://bitbucket.org/calmisland/kidsloop-user-service/compare/v2.2.0...v2.2.1) (2021-10-29)
 
 
 ### Bug Fixes
 
-* **permissions:** update permissions to latest ([cdd7e46](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/cdd7e465cde599589e75f22f177a1428305d5f54))
+* **permissions:** update permissions to latest ([cdd7e46](https://bitbucket.org/calmisland/kidsloop-user-service/commits/cdd7e465cde599589e75f22f177a1428305d5f54))
 
 ## 2.2.0 (2021-10-26)
 
 
 ### Features
 
-* organizations pagination & filtering (UD-987) ([c699a2c](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/c699a2cd72dbd6cd96cfedb1df5ebfbe907082b0))
-* **UD-1310:** categories connections query ([75e0e9b](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/75e0e9b89b8ee2156e71a2d0c54293ad11a74d37))
-* **UD-1313:** permissionsConnection query ([d0b9470](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/d0b9470401d041615bb137797192d44ce9432182))
+* organizations pagination & filtering (UD-987) ([c699a2c](https://bitbucket.org/calmisland/kidsloop-user-service/commits/c699a2cd72dbd6cd96cfedb1df5ebfbe907082b0))
+* **UD-1310:** categories connections query ([75e0e9b](https://bitbucket.org/calmisland/kidsloop-user-service/commits/75e0e9b89b8ee2156e71a2d0c54293ad11a74d37))
+* **UD-1313:** permissionsConnection query ([d0b9470](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d0b9470401d041615bb137797192d44ce9432182))
 
 
 ### Bug Fixes
 
-* add organization to user not working ([260ab98](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/260ab987090b1674ed709af45f4b52944a7e59f3))
-* can add user to school w/o being part of org ([3ea39ea](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/3ea39ea090860932854fdbdc658af1ae69a6f2a6))
-* deploy fails ([0d58e02](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/0d58e02196985cec5bc8e6dfc18d32bc16407948))
-* organizationMembership.schoolMemberships ([8623baa](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/8623baa79ed5f65963ebef56920715f393d6bce5))
-* school_membership returning null ([0bc8f92](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/0bc8f92c82a71523058bbb25a83d377663e142e8))
-* schools from other users returned ([8e0c014](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/8e0c01432c4847b5875fc8e751d336e975d336e7))
-* **tests:** fix ci pipeline ([de6612f](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/de6612f47aee0f062a7c7a22d5aeaa544bb34d27))
-* **User CSV:** UD-844 - don't overwrite shortcode ([d47b925](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/d47b9254c7098504b01c31739317d6e21e19bcf7))
-* user.schoolsWithPermission ([7d1328e](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/7d1328e3a793dccab73617f07a8383b73709803f))
-* Version endpoint (UD-1213) ([b0839f6](https://bitbucket.org/calmisland/kidsloop-live-webrtc-service/commit/b0839f639e5bdb79a6791fed2adab591fee3a595))
+* add organization to user not working ([260ab98](https://bitbucket.org/calmisland/kidsloop-user-service/commits/260ab987090b1674ed709af45f4b52944a7e59f3))
+* can add user to school w/o being part of org ([3ea39ea](https://bitbucket.org/calmisland/kidsloop-user-service/commits/3ea39ea090860932854fdbdc658af1ae69a6f2a6))
+* deploy fails ([0d58e02](https://bitbucket.org/calmisland/kidsloop-user-service/commits/0d58e02196985cec5bc8e6dfc18d32bc16407948))
+* organizationMembership.schoolMemberships ([8623baa](https://bitbucket.org/calmisland/kidsloop-user-service/commits/8623baa79ed5f65963ebef56920715f393d6bce5))
+* school_membership returning null ([0bc8f92](https://bitbucket.org/calmisland/kidsloop-user-service/commits/0bc8f92c82a71523058bbb25a83d377663e142e8))
+* schools from other users returned ([8e0c014](https://bitbucket.org/calmisland/kidsloop-user-service/commits/8e0c01432c4847b5875fc8e751d336e975d336e7))
+* **tests:** fix ci pipeline ([de6612f](https://bitbucket.org/calmisland/kidsloop-user-service/commits/de6612f47aee0f062a7c7a22d5aeaa544bb34d27))
+* **User CSV:** UD-844 - don't overwrite shortcode ([d47b925](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d47b9254c7098504b01c31739317d6e21e19bcf7))
+* user.schoolsWithPermission ([7d1328e](https://bitbucket.org/calmisland/kidsloop-user-service/commits/7d1328e3a793dccab73617f07a8383b73709803f))
+* Version endpoint (UD-1213) ([b0839f6](https://bitbucket.org/calmisland/kidsloop-user-service/commits/b0839f639e5bdb79a6791fed2adab591fee3a595))
 
 ### Changelog
 

@@ -32,11 +32,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/calmisland/kidsloop-live-webrtc-service.git"
+    "url": "git+ssh://git@bitbucket.org/calmisland/kidsloop-user-service.git"
   },
   "author": "",
   "license": "ISC",
-  "homepage": "https://bitbucket.org/calmisland/kidsloop-live-webrtc-service#readme",
+  "homepage": "https://bitbucket.org/calmisland/kidsloop-user-service#readme",
   "devDependencies": {
     "@commitlint/cli": "13.2.1",
     "@commitlint/config-conventional": "13.2.0",
