@@ -73,7 +73,6 @@ import BrandingErrorConstants from './types/errors/branding/brandingErrorConstan
 import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
 import { Status } from './entities/status'
-import { AgeRangeConnectionNode } from './types/graphQL/ageRange'
 import { SubjectConnectionNode } from './types/graphQL/subject'
 import { runMigrations } from './initializers/migrations'
 import { usersConnectionResolver } from './pagination/usersConnection'
