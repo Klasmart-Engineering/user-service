@@ -73,7 +73,7 @@ export async function school2Nodes(
     await gqlTry(operation)
 }
 
-describe('scholNode', () => {
+describe('schoolNode', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
