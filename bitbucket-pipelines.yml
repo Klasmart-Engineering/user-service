@@ -56,7 +56,7 @@ definitions:
             - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
             - export REPO=$DOCKER_REPO_URL/kidsloop-user
             - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
-            - if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
+            - if test -n "$BITBUCKET_TAG"; then export TAG=$BITBUCKET_TAG; else export TAG=$BRANCH_TAG;fi
 
             # build image
             - docker build -t kidsloop-user .
@@ -83,6 +83,11 @@ pipelines:
            - node scripts/check_pr_title.js
     - step: *docker
 
+  tags:
+      v*:
+        - step: *tests
+        - step: *acceptance
+        - step: *docker
   branches:
     master:
       - step: *tests
