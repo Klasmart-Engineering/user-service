@@ -13,6 +13,16 @@ definitions:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
   steps:
+      - step: &checks
+          name: "static checks"
+          caches:
+            - node
+          script:
+            - npm install -g npm@7.22.0
+            - npm install
+            - npm run prettier-check
+            - npm run lint
+            - if test $BITBUCKET_BRANCH -eq "master";  then npm run commitlint-check -- --from=HEAD~1; else npm run commitlint-check -- --from=origin/master; fi
       - step: &tests
           name: "Unit and integration tests"
           services:
@@ -22,9 +32,6 @@ definitions:
           script:
             - npm install -g npm@7.22.0
             - npm install
-            - npm run prettier-check
-            - npm run lint
-            - if test $BITBUCKET_BRANCH -eq "master";  then npm run commitlint-check -- --from=HEAD~1; else npm run commitlint-check -- --from=origin/master; fi
             - npm test
       - step: &acceptance
           name: "Acceptance tests"
@@ -72,6 +79,7 @@ definitions:
 pipelines:
   pull-requests:
     '**': # This runs as default for any branch not elsewhere defined.
+    - step: *checks
     - step: *tests
     - step: *acceptance
     - step:
@@ -79,6 +87,7 @@ pipelines:
         caches:
           - node
         script:
+           - npm install -g npm@7.22.0
            - npm install
            - node scripts/check_pr_title.js
     - step: *docker
@@ -90,6 +99,7 @@ pipelines:
         - step: *docker
   branches:
     master:
+      - step: *checks
       - step: *tests
       - step: *acceptance
       - step: *docker
