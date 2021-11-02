@@ -12,76 +12,8 @@ definitions:
         POSTGRES_DB: testdb
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
-
-pipelines:
-  pull-requests:
-    '**': # This runs as default for any branch not elsewhere defined.
-    - step:
-        name: "Unit and integration tests"
-        services:
-          - postgres
-        caches:
-          - node
-        script:
-           - npm install -g npm@7.22.0
-           - npm install
-           - npm run prettier-check
-           - npm run lint
-           - npm run commitlint-check -- --from=origin/master
-           - npm test
-    - step:
-        name: "Acceptance tests"
-        services:
-          - docker
-        caches:
-          - node
-        script:
-          - curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          - chmod +x /usr/local/bin/docker-compose
-          - npm install -g npm@7.22.0
-          - npm install
-          - docker-compose up -d && sleep 20
-          - docker-compose ps
-          - npm run test:acceptance
-    - step:
-        name: "Check PR title format"
-        caches:
-          - node
-        script:
-           - npm install
-           - node scripts/check_pr_title.js
-    - step:
-        name: "Build and publish docker image"
-        services:
-          - docker
-        caches:
-          - pip
-        image: python:3.9-alpine
-        script:
-          # auth to AWS ECR
-          - pip3 install -U awscli
-          - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
-
-          # define vars
-          - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
-          - export REPO=$DOCKER_REPO_URL/kidsloop-user
-          - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
-          - if test -z "$BRANCH_TAG"; then export TAG=commit; else export TAG=$BRANCH_TAG;fi
-
-          # build image
-          - docker build -t kidsloop-user .
-
-          # tag image
-          - docker tag kidsloop-user:latest $REPO:$TAG
-          - docker tag kidsloop-user:latest $REPO:$TAG-$COMMIT_TAG
-
-          # push images
-          - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG; fi
-          - docker push $REPO:$TAG-$COMMIT_TAG
-
-  branches:
-    master:
-      - step:
+  steps:
+      - step: &tests
           name: "Unit and integration tests"
           services:
             - postgres
@@ -92,9 +24,9 @@ pipelines:
             - npm install
             - npm run prettier-check
             - npm run lint
-            - npm run commitlint-check -- --from=HEAD~1
+            - if test $BITBUCKET_BRANCH -eq "master";  then npm run commitlint-check -- --from=HEAD~1; else npm run commitlint-check -- --from=origin/master; fi
             - npm test
-      - step:
+      - step: &acceptance
           name: "Acceptance tests"
           services:
             - docker
@@ -106,8 +38,9 @@ pipelines:
             - npm install -g npm@7.22.0
             - npm install
             - docker-compose up -d && sleep 20
+            - docker-compose ps
             - npm run test:acceptance
-      - step:
+      - step: &docker
           name: "Build and publish docker image"
           services:
             - docker
@@ -130,15 +63,31 @@ pipelines:
 
             # tag image
             - docker tag kidsloop-user:latest $REPO:$TAG
-            - docker tag kidsloop-user:latest $REPO:$TAG-latest
-            - docker tag kidsloop-user:latest $REPO:$TAG-$BITBUCKET_BUILD_NUMBER
             - docker tag kidsloop-user:latest $REPO:$TAG-$COMMIT_TAG
 
             # push images
             - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG; fi
-            - if test -n "$BRANCH_TAG"; then docker push $REPO:$TAG-latest; fi
-            - docker push $REPO:$TAG-$BITBUCKET_BUILD_NUMBER
             - docker push $REPO:$TAG-$COMMIT_TAG
+
+pipelines:
+  pull-requests:
+    '**': # This runs as default for any branch not elsewhere defined.
+    - step: *tests
+    - step: *acceptance
+    - step:
+        name: "Check PR title format"
+        caches:
+          - node
+        script:
+           - npm install
+           - node scripts/check_pr_title.js
+    - step: *docker
+
+  branches:
+    master:
+      - step: *tests
+      - step: *acceptance
+      - step: *docker
       - step:
           name: "Deploy"
           script:
