@@ -62,7 +62,11 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        age_range(id: ID!): AgeRange @isAdmin(entity: "ageRange")
+        age_range(id: ID!): AgeRange
+            @isAdmin(entity: "ageRange")
+            @deprecated(reason: "Use 'ageRangeNode'")
+        ageRangeNode(id: ID!): AgeRangeConnectionNode
+            @isAdmin(entity: "ageRange")
         ageRangesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -112,6 +116,9 @@ export default function getDefault(
                     model.getAgeRange(args, ctx),
                 ageRangesConnection: (_parent, args, ctx: Context, info) =>
                     model.ageRangesConnection(ctx, info, args),
+                ageRangeNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.ageRangeNode.node.instance.load(args)
+                },
             },
         },
     }

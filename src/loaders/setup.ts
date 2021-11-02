@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader'
+import { AgeRange } from '../entities/ageRange'
 import { Class } from '../entities/class'
 import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
@@ -7,6 +8,10 @@ import { Program } from '../entities/program'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
+import {
+    mapAgeRangeToAgeRangeConnectionNode,
+    ageRangeNodeFields,
+} from '../pagination/ageRangesConnection'
 import {
     classSummaryNodeFields,
     mapClassToClassNode,
@@ -47,6 +52,7 @@ import {
 } from '../types/graphQL/school'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
+import { IAgeRangeNodeDataLoader } from './ageRange'
 import {
     childConnectionLoader,
     IChildConnectionDataloaderKey,
@@ -119,6 +125,7 @@ export interface IDataLoaders {
     school: ISchoolLoaders
     gradeNode: IGradeNodeDataLoaders
     organizationNode: IOrganizationNodeDataLoaders
+    ageRangeNode: IAgeRangeNodeDataLoader
 
     organizationsConnectionChild: Lazy<
         DataLoader<
@@ -306,6 +313,17 @@ export function createContextLazyLoaders(
                         'GradeConnectionNode',
                         mapGradeToGradeConnectionNode,
                         gradeSummaryNodeFields
+                        )
+            ),
+        },
+        ageRangeNode: {
+            node: new Lazy<NodeDataLoader<AgeRange, AgeRangeConnectionNode>>(
+                () =>
+                    new NodeDataLoader(
+                        AgeRange,
+                        'AgeRangeConnectionNode',
+                        mapAgeRangeToAgeRangeConnectionNode,
+                        ageRangeNodeFields
                     )
             ),
         },

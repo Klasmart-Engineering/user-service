@@ -46,7 +46,7 @@ export class AgeRange extends CustomBaseEntity {
     public low_value_unit!: AgeRangeUnit
 
     @Column({ nullable: false, default: false })
-    public system?: boolean
+    public system!: boolean
 
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })

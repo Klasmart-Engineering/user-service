@@ -847,12 +847,27 @@ const GRADE_FIELDS = gql`
     }
 `
 
+export const AGE_RANGE_NODE = gql`
+    query ageRangeNode($id: ID!) {
+        ageRangeNode(id: $id) {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
 export const GRADE_NODE = gql`
     ${GRADE_FIELDS}
 
     query GradeNode($id: ID!) {
         gradeNode(id: $id) {
             ...gradeFields
+            lowValue
+            lowValueUnit
+            highValue
+            highValueUnit
         }
     }
 `

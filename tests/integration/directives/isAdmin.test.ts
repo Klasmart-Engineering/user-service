@@ -13,6 +13,7 @@ import {
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
 import {
+    ageRangesConnection,
     classesConnection,
     getAllOrganizations,
     gradesConnection,
@@ -58,7 +59,8 @@ import { createSubcategory } from '../../factories/subcategory.factory'
 import GradesInitializer from '../../../src/initializers/grades'
 import { Grade } from '../../../src/entities/grade'
 import { createGrade } from '../../factories/grade.factory'
-
+import { AgeRange } from '../../../src/entities/ageRange'
+import { createAgeRange } from '../../factories/ageRange.factory'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -1277,6 +1279,108 @@ describe('isAdmin', () => {
                     const visibleGrades = await queryVisibleGrades(token)
 
                     expect(visibleGrades.totalCount).to.eql(systemGradesCount)
+                })
+            })
+        })
+    })
+
+    describe('ageRanges', () => {
+        let adminUser: User
+        let memberUser1: User
+        let noMemberUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let allAgeRangesCount: number
+        let systemAgeRangesCount: number
+        const organizationAgeRangesCount = 6
+
+        const queryVisibleAgeRanges = async (token?: string) => {
+            const response = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+
+            return response
+        }
+
+        beforeEach(async () => {
+            systemAgeRangesCount = await AgeRange.count()
+
+            // Creating Users and Orgs
+            adminUser = await createAdminUser(testClient)
+            memberUser1 = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization1 = await createOrganization(memberUser1).save()
+            organization2 = await createOrganization().save()
+
+            // Creating Age Ranges for organization1
+            await AgeRange.save(
+                Array.from(Array(organizationAgeRangesCount), () =>
+                    createAgeRange(organization1)
+                )
+            )
+
+            // Creating Age Ranges for organization2
+            await AgeRange.save(
+                Array.from(Array(organizationAgeRangesCount), () =>
+                    createAgeRange(organization2)
+                )
+            )
+
+            // Creating membership for memberUser1 in organization1
+            await createOrganizationMembership({
+                user: memberUser1,
+                organization: organization1,
+            }).save()
+
+            allAgeRangesCount = await AgeRange.count()
+        })
+
+        context('when user is not logged in', () => {
+            it('fails authentication', async () => {
+                const visibleAgeRanges = queryVisibleAgeRanges()
+
+                await expect(visibleAgeRanges).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
+            })
+        })
+
+        context('when user is logged in', () => {
+            context('and user is an admin', () => {
+                it('should have access to all the existent age ranges', async () => {
+                    const token = generateToken(userToPayload(adminUser))
+                    const visibleAgeRanges = await queryVisibleAgeRanges(token)
+
+                    expect(visibleAgeRanges.totalCount).to.eql(
+                        allAgeRangesCount
+                    )
+                })
+            })
+
+            context('and user is an organization member', () => {
+                it('should have access to the organization and system ones', async () => {
+                    const token = generateToken(userToPayload(memberUser1))
+                    const visibleAgeRanges = await queryVisibleAgeRanges(token)
+
+                    expect(visibleAgeRanges.totalCount).to.eql(
+                        organizationAgeRangesCount + systemAgeRangesCount
+                    )
+                })
+            })
+
+            context('and user does not belongs to any organization', () => {
+                it('should have access just to the system ones', async () => {
+                    const token = generateToken(userToPayload(noMemberUser))
+                    const visibleAgeRanges = await queryVisibleAgeRanges(token)
+
+                    expect(visibleAgeRanges.totalCount).to.eql(
+                        systemAgeRangesCount
+                    )
                 })
             })
         })
