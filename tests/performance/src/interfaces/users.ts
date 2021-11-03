@@ -17,3 +17,12 @@ export interface UserAccountCreate {
 export interface UserAccount extends UserAccountCreate {
     user_id: string;
 }
+
+export interface UserPayload {
+    count: number;
+    givenName?: string;
+    familyName?: string;
+    email?: string;
+    phone?: string;
+    orderBy?: string;
+}

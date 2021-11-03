@@ -1,11 +1,8 @@
 import { check } from 'k6';
 import http from 'k6/http';
-import { Options } from 'k6/options';
+import { UserPayload } from '../interfaces/users';
 import { getPaginatedOrganizationUsers } from '../queries/users';
 
-export const options:Options = {
-    vus: 1,
-};
 
 const params = {
     headers: {
@@ -13,13 +10,19 @@ const params = {
     },
 };
 
-export default function () {
+export default function (payload: UserPayload, loginData?: { res: any, userId: string }) {
+    if (loginData) {
+        const jar = http.cookieJar();
+        jar.set(process.env.SERVICE_URL as string, 'access', loginData.res.cookies?.access[0].Value);
+        jar.set(process.env.SERVICE_URL as string, 'refresh', loginData.res.cookies?.refresh[0].Value);
+    }
+
     const userPayload = JSON.stringify({
         variables: {
             direction: 'FORWARD',
-            count: 10,
+            count: payload.count,
             order: 'ASC',
-            orderBy: 'givenName',
+            orderBy: payload.orderBy || 'givenName',
             filter: {
                 organizationId: {
                     value: process.env.ORG_ID,
@@ -30,28 +33,28 @@ export default function () {
                         {
                             givenName: {
                                 operator: 'contains',
-                                value: '',
+                                value: payload.givenName || '',
                                 caseInsensitive: true,
                             }
                         },
                         {
                             familyName: {
                                 operator: 'contains',
-                                value: '',
+                                value: payload.familyName || '',
                                 caseInsensitive: true,
                             }
                         },
                         {
                             email: {
                                 operator: 'contains',
-                                value: '',
+                                value: payload.email || '',
                                 caseInsensitive: true,
                             }
                         },
                         {
                             phone: {
                                 operator: 'contains',
-                                value: '',
+                                value: payload.phone || '',
                                 caseInsensitive: true,
                             }
                         },
@@ -67,6 +70,6 @@ export default function () {
 
     check(res, {
         '"Get paginated organization users" status is 200': () => res.status === 200,
-        '"Get paginated organization users" query returns data': (r) => JSON.parse(r.body as string).data?.usersConnection ?? false,
+        '"Get paginated organization users" query returns data': (r) => JSON.parse(r.body as string).data?.usersConnection?.edges ?? false,
     });
 }

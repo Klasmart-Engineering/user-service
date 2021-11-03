@@ -13,6 +13,7 @@ module.exports = {
         create1kUsers: `./create1kUsers`,
         createUsersParallel: `./createUsersParallel`,
         parallelLanding: `./parallelLanding.ts`,
+        getPaginatedUsers: `./getPaginatedUsers.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),

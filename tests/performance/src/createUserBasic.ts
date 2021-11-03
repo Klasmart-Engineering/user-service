@@ -21,5 +21,5 @@ export default function() {
     createSingleUser(process.env.ROLE_ID_ORG_ADMIN as string);
     optionsScript();
     sleep(2.5);
-    getOrganizationUsers();
+    getOrganizationUsers({ count: 10 });
 }

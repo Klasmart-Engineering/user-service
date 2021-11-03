@@ -2,7 +2,7 @@
     "name": "kidsloop-user-service-performance-tests",
     "version": "1.0.0",
     "scripts": {
-      "test:build": "webpack",
+      "build": "webpack",
       "test:login:sequential": "k6 run ./dist/sequentialLogin.js",
       "test:login:parallel": "k6 run ./dist/parallelLogin.js",
       "test:create:user-basic": "k6 run ./dist/createUserBasic.js",
@@ -10,7 +10,8 @@
       "test:create:user-parallel": "k6 run ./dist/createUsersParallel.js",
       "test:landing:parallel": "k6 run ./dist/parallelLanding.js",
       "test:landing:teacher": "k6 run ./dist/teacherLanding.js",
-      "setup:create-1k-students": "k6 run ./dist/create1kUsers.js"
+      "setup:create-1k-students": "k6 run ./dist/create1kUsers.js",
+      "get:users": "k6 run ./dist/getPaginatedUsers.js"
     },
     "dependencies": {
       "@babel/core": "7.13.16",

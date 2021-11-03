@@ -30,7 +30,7 @@ export default function() {
         createSingleUser(role as string);
         optionsScript();
         sleep(2.5);
-        getOrganizationUsers();
+        getOrganizationUsers({ count: 10 });
         sleep(1);
     }
 }

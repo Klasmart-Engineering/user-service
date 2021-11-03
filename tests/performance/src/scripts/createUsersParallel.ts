@@ -57,7 +57,7 @@ export default function(start: number, end: number) {
         });
         optionsScript();
         sleep(1);
-        getOrganizationUsers();
+        getOrganizationUsers({ count: 10 });
         sleep(1);
     }
 };
