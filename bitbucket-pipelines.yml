@@ -103,6 +103,8 @@ pipelines:
   branches:
     master:
       - step: *checks
+      - step: *tests
+      - step: *acceptance
       - step: *docker
       - step:
           name: "Deploy"
