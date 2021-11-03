@@ -68,16 +68,15 @@ describe('read file', () => {
                     )
                 },
             } as Upload
-            const fn = async () =>
-                await readCSVFile(
+
+            await expect(
+                readCSVFile(
                     connection.manager,
                     upload,
                     [dummyFn],
                     adminPermissions
                 )
-            expect(fn()).to.eventually.be.rejectedWith(
-                'Empty input file: ' + filename
-            )
+            ).to.eventually.be.rejectedWith(`The ${filename} file is empty`)
         })
     })
 

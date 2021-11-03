@@ -110,7 +110,7 @@ describe('model.csv', () => {
         await connection?.close()
     })
 
-    async function checkErrorsMatch(error: Error, expectedError: CSVError) {
+    function checkErrorsMatch(error: Error, expectedError: CSVError) {
         expect(error)
             .to.have.property('message')
             .equal(customErrors.csv_bad_input.message)

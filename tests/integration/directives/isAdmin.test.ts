@@ -948,7 +948,6 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                user.organization_ownerships
                 const scope = Role.createQueryBuilder()
                 await nonAdminRoleScope(scope, userPermissions)
 

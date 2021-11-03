@@ -295,11 +295,10 @@ export default function getDefault(
                     organization: OrganizationConnectionNode,
                     args: Record<string, unknown>,
                     ctx: Context
-                ) => {
+                ) =>
                     ctx.loaders.organization.branding.instance.load(
                         organization.id
-                    )
-                },
+                    ),
                 usersConnection: async (
                     organization: OrganizationConnectionNode,
                     args: IChildPaginationArgs,

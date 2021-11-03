@@ -132,7 +132,7 @@ export const createEntityScope = async ({
     if (!permissions.isAdmin && scope) {
         switch (entity) {
             case 'organization':
-                nonAdminOrganizationScope(
+                await nonAdminOrganizationScope(
                     scope as SelectQueryBuilder<Organization>,
                     permissions
                 )
@@ -144,37 +144,37 @@ export const createEntityScope = async ({
                 )
                 break
             case 'ageRange':
-                nonAdminAgeRangeScope(
+                await nonAdminAgeRangeScope(
                     scope as SelectQueryBuilder<AgeRange>,
                     permissions
                 )
                 break
             case 'grade':
-                nonAdminGradeScope(
+                await nonAdminGradeScope(
                     scope as SelectQueryBuilder<Grade>,
                     permissions
                 )
                 break
             case 'category':
-                nonAdminCategoryScope(
+                await nonAdminCategoryScope(
                     scope as SelectQueryBuilder<Category>,
                     permissions
                 )
                 break
             case 'subcategory':
-                nonAdminSubcategoryScope(
+                await nonAdminSubcategoryScope(
                     scope as SelectQueryBuilder<Subcategory>,
                     permissions
                 )
                 break
             case 'subject':
-                nonAdminSubjectScope(
+                await nonAdminSubjectScope(
                     scope as SelectQueryBuilder<Subject>,
                     permissions
                 )
                 break
             case 'program':
-                nonAdminProgramScope(
+                await nonAdminProgramScope(
                     scope as SelectQueryBuilder<Program>,
                     permissions
                 )

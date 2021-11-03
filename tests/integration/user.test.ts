@@ -1076,36 +1076,38 @@ describe('user', () => {
                             testClient,
                             organization.organization_id
                         )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'add_students_to_class_20225',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'add_teachers_to_class_20226',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'create_subjects_20227',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'edit_subjects_20337',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'edit_class_20334',
-                            { authorization: getAdminAuthToken() }
-                        )
+                        await Promise.all([
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'add_students_to_class_20225',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'add_teachers_to_class_20226',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'create_subjects_20227',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'edit_subjects_20337',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'edit_class_20334',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                        ])
                         await addOrganizationToUserAndValidate(
                             testClient,
                             otherUser.user_id,
@@ -1162,36 +1164,38 @@ describe('user', () => {
                             testClient,
                             organization.organization_id
                         )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'add_students_to_class_20225',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'add_teachers_to_class_20226',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'create_subjects_20227',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'edit_subjects_20337',
-                            { authorization: getAdminAuthToken() }
-                        )
-                        grantPermission(
-                            testClient,
-                            role.role_id,
-                            'edit_class_20334',
-                            { authorization: getAdminAuthToken() }
-                        )
+                        await Promise.all([
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'add_students_to_class_20225',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'add_teachers_to_class_20226',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'create_subjects_20227',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'edit_subjects_20337',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                            grantPermission(
+                                testClient,
+                                role.role_id,
+                                'edit_class_20334',
+                                { authorization: getAdminAuthToken() }
+                            ),
+                        ])
                         await addOrganizationToUserAndValidate(
                             testClient,
                             user.user_id,
@@ -1251,36 +1255,38 @@ describe('user', () => {
                                 organization.organization_id,
                                 getNonAdminAuthToken()
                             )
-                            grantPermission(
-                                testClient,
-                                role.role_id,
-                                'add_students_to_class_20225',
-                                { authorization: getNonAdminAuthToken() }
-                            )
-                            grantPermission(
-                                testClient,
-                                role.role_id,
-                                'add_teachers_to_class_20226',
-                                { authorization: getNonAdminAuthToken() }
-                            )
-                            grantPermission(
-                                testClient,
-                                role.role_id,
-                                'create_subjects_20227',
-                                { authorization: getNonAdminAuthToken() }
-                            )
-                            grantPermission(
-                                testClient,
-                                role.role_id,
-                                'edit_subjects_20337',
-                                { authorization: getNonAdminAuthToken() }
-                            )
-                            grantPermission(
-                                testClient,
-                                role.role_id,
-                                'edit_class_20334',
-                                { authorization: getNonAdminAuthToken() }
-                            )
+                            await Promise.all([
+                                grantPermission(
+                                    testClient,
+                                    role.role_id,
+                                    'add_students_to_class_20225',
+                                    { authorization: getNonAdminAuthToken() }
+                                ),
+                                grantPermission(
+                                    testClient,
+                                    role.role_id,
+                                    'add_teachers_to_class_20226',
+                                    { authorization: getNonAdminAuthToken() }
+                                ),
+                                grantPermission(
+                                    testClient,
+                                    role.role_id,
+                                    'create_subjects_20227',
+                                    { authorization: getNonAdminAuthToken() }
+                                ),
+                                grantPermission(
+                                    testClient,
+                                    role.role_id,
+                                    'edit_subjects_20337',
+                                    { authorization: getNonAdminAuthToken() }
+                                ),
+                                grantPermission(
+                                    testClient,
+                                    role.role_id,
+                                    'edit_class_20334',
+                                    { authorization: getNonAdminAuthToken() }
+                                ),
+                            ])
 
                             cls = await createClass(
                                 testClient,
@@ -1366,7 +1372,7 @@ describe('user', () => {
         context('when not authorized within organization', () => {
             context('and user being added is part of the organization', () => {
                 beforeEach(async () => {
-                    addUserToOrganizationAndValidate(
+                    await addUserToOrganizationAndValidate(
                         testClient,
                         idOfUserJoiningSchool,
                         organizationId,

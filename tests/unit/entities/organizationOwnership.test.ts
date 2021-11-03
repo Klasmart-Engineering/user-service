@@ -78,11 +78,10 @@ describe('OrganizationOwnership', () => {
                 const ownership = new OrganizationOwnership()
                 ownership.user_id = user.user_id
                 ownership.organization_id = organization.organization_id
-                const failFn = async () => {
-                    await manager.save(ownership)
-                }
 
-                expect(failFn()).to.eventually.be.rejectedWith(QueryFailedError)
+                await expect(
+                    manager.save(ownership)
+                ).to.eventually.be.rejectedWith(QueryFailedError)
 
                 const dbOwnerships = await OrganizationOwnership.find({
                     where: { user_id: user.user_id },
@@ -100,11 +99,10 @@ describe('OrganizationOwnership', () => {
                 const ownership = new OrganizationOwnership()
                 ownership.user_id = user.user_id
                 ownership.organization_id = organization.organization_id
-                const failFn = async () => {
-                    await manager.save(ownership)
-                }
 
-                expect(failFn()).to.eventually.be.rejectedWith(QueryFailedError)
+                await expect(
+                    manager.save(ownership)
+                ).to.eventually.be.rejectedWith(QueryFailedError)
 
                 const dbOwnerships = await OrganizationOwnership.find({
                     where: { organization_id: organization.organization_id },
