@@ -204,7 +204,7 @@ describe('acceptance.ageRange', () => {
                         Authorization: getAdminAuthToken(),
                     })
                     .send({
-                        query: print(AGE_RANGE_NODE),
+                        query: AGE_RANGE_NODE,
                         variables: {
                             id: ageRangeId,
                         },
@@ -227,7 +227,7 @@ describe('acceptance.ageRange', () => {
                         Authorization: getAdminAuthToken(),
                     })
                     .send({
-                        query: print(AGE_RANGE_NODE),
+                        query: AGE_RANGE_NODE,
                         variables: {
                             id: ageRangeId,
                         },

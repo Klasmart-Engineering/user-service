@@ -38,6 +38,7 @@ describe('AgeRange', () => {
     describe('.new', () => {
         context('when system is not defined', () => {
             beforeEach(async () => {
+                (ageRange as any).system = undefined
                 await manager.save(org)
                 await manager.save(ageRange)
             })

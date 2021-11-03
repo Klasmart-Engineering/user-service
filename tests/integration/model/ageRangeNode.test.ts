@@ -121,7 +121,7 @@ describe('ageRangeNode', () => {
     })
 
     context('data', () => {
-        it('should get the correct age ramge with its correct data', async () => {
+        it('should get the correct age range with its correct data', async () => {
             const { coreResult } = await getAgeRangeNode(ageRange1.id)
 
             expect(coreResult).to.exist
