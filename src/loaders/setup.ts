@@ -6,7 +6,7 @@ import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import {
-    classConnectionQuery,
+    classesConnectionQuery,
     classesConnectionSortingConfig,
     mapClassToClassConnectionNode,
 } from '../pagination/classesConnection'
@@ -165,7 +165,7 @@ export function createContextLazyLoaders(
                 new DataLoader((items) => {
                     return childConnectionLoader(
                         items,
-                        classConnectionQuery,
+                        classesConnectionQuery,
                         mapClassToClassConnectionNode,
                         classesConnectionSortingConfig,
                         { permissions, entity: 'class' }

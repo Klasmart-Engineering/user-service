@@ -17,6 +17,7 @@ import {
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
+import logger from '../logging'
 
 export const classesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'class_id',
@@ -31,9 +32,12 @@ export async function classesConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Class>
 ): Promise<IPaginatedResponse<ClassConnectionNode>> {
+
+    logger.info('Filter {}', filter)
+    logger.info('Sort {}', sort)
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
-    const newScope = await classConnectionQuery(scope, filter)
+    const newScope = await classesConnectionQuery(scope, filter)
 
     const data = await paginateData<Class>({
         direction,
@@ -62,10 +66,13 @@ export async function classesConnectionResolver(
     }
 }
 
-export async function classConnectionQuery(
+export async function classesConnectionQuery(
     scope: SelectQueryBuilder<Class>,
     filter?: IEntityFilter
 ) {
+    logger.info('Scope before')
+    logger.info(scope.getQuery())
+
     scope.select([
         'Class.class_id',
         'Class.class_name',
@@ -124,18 +131,18 @@ export async function classConnectionQuery(
         )
     }
 
+    logger.info('Scope after')
+    logger.info(scope.getQuery())
     return scope
 }
 
 export function mapClassToClassConnectionNode(
-    classObj: Class
+    class_: Class
 ): ClassConnectionNode {
     return {
-        id: classObj.class_id,
-        name: classObj.class_name,
-        status: classObj.status,
-        shortCode: classObj.shortcode,
-        // TODO: wtf
-        // schools: (await classObj.schools.map(()=> school.school_id)) || '',
+        id: classObj_.class_id,
+        name: classObj_.class_name,
+        status: classObj_.status,
+        shortCode: classObj_.shortcode
     }
 }
