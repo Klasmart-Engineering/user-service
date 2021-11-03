@@ -80,9 +80,14 @@ pipelines:
             - pip3 install -U awscli
             - export NEWRELIC_APP_ID=$(aws ssm get-parameter --name /newrelic/basic/app-id --query Parameter.Value --output text --region eu-west-2)
             - export NEWRELIC_API_KEY=$(aws ssm get-parameter --name /newrelic/basic/api-key --query Parameter.Value --output text --region eu-west-2)
-            - pwd
-            - ls scripts/
-            - /bin/sh scripts/monitor_deployment.sh
+            - export AUTHOR=$(git show -s --format='%ae' $BITBUCKET_COMMIT)
+            # - /bin/sh scripts/monitor_deployment.sh
+            - |
+              curl -X POST "https://api.eu.newrelic.com/v2/applications/$NEWRELIC_APP_ID/deployments.json" \
+                -H "Api-Key:$NEWRELIC_API_KEY" \
+                -i \
+                -H "Content-Type: application/json" \
+                -d "{ "deployment": { "revision": "REVISION", "description": "Added a deployments resource to the v2 API", "commit_hash": "$BITBUCKET_COMMIT", "user": "$AUTHOR" }" 
     master:
       - step:
           name: "Unit and integration tests"
