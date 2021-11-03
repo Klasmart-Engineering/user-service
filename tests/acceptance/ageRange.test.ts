@@ -17,6 +17,7 @@ import {
 } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
+import { print } from 'graphql'
 
 interface IAgeRangeEdge {
     node: AgeRangeConnectionNode
@@ -28,6 +29,36 @@ const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const ageRangesCount = 12
+
+const makeConnectionQuery = async () => {
+    return await request
+        .post('/graphql')
+        .set({
+            ContentType: 'application/json',
+            Authorization: getAdminAuthToken(),
+        })
+        .send({
+            query: AGE_RANGES_CONNECTION,
+            variables: {
+                direction: 'FORWARD',
+            },
+        })
+}
+
+const makeNodeQuery = async (id: string) => {
+    return await request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: getAdminAuthToken(),
+        })
+        .send({
+            query: print(AGE_RANGE_NODE),
+            variables: {
+                id,
+            },
+        })
+}
 
 describe('acceptance.ageRange', () => {
     let connection: Connection
@@ -85,18 +116,7 @@ describe('acceptance.ageRange', () => {
 
     context('ageRangesConnection', () => {
         it('queries paginated age ranges', async () => {
-            const response = await request
-                .post('/graphql')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
-                })
-                .send({
-                    query: AGE_RANGES_CONNECTION,
-                    variables: {
-                        direction: 'FORWARD',
-                    },
-                })
+            const response = await makeConnectionQuery()
 
             const ageRangesConnection = response.body.data.ageRangesConnection
 
@@ -190,26 +210,16 @@ describe('acceptance.ageRange', () => {
     })
 
     context('ageRangeNode', () => {
-        let ageRanges: AgeRange[]
-        before(async () => {
-            ageRanges = await AgeRange.find()
+        let ageRangesEdges: IAgeRangeEdge[]
+        beforeEach(async () => {
+            const ageRangeResponse = await makeConnectionQuery()
+            ageRangesEdges =
+                ageRangeResponse.body.data.ageRangesConnection.edges
         })
         context('when requested age range exists', () => {
             it('should respond succesfully', async () => {
-                const ageRangeId = ageRanges[0].id
-                const response = await request
-                    .post('/user')
-                    .set({
-                        ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
-                    })
-                    .send({
-                        query: AGE_RANGE_NODE,
-                        variables: {
-                            id: ageRangeId,
-                        },
-                    })
-
+                const ageRangeId = ageRangesEdges[0].node.id
+                const response = await makeNodeQuery(ageRangeId)
                 const ageRangeNode = response.body.data.ageRangeNode
 
                 expect(response.status).to.eq(200)
@@ -220,19 +230,7 @@ describe('acceptance.ageRange', () => {
         context('when requested grade does not exists', () => {
             it('should respond with errors', async () => {
                 const ageRangeId = '00000000-0000-0000-0000-000000000000'
-                const response = await request
-                    .post('/user')
-                    .set({
-                        ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
-                    })
-                    .send({
-                        query: AGE_RANGE_NODE,
-                        variables: {
-                            id: ageRangeId,
-                        },
-                    })
-
+                const response = await makeNodeQuery(ageRangeId)
                 const errors = response.body.errors
                 const ageRangeNode = response.body.data.ageRangeNode
 
