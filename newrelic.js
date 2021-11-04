@@ -35,7 +35,6 @@ exports.config = {
         attributes: {
             enabled: true,
     },
-
     record_sql: 'raw',    
     },
     slow_sql: {
