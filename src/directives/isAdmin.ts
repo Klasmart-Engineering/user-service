@@ -132,7 +132,7 @@ export const createEntityScope = async ({
     if (!permissions.isAdmin && scope) {
         switch (entity) {
             case 'organization':
-                nonAdminOrganizationScope(
+                await nonAdminOrganizationScope(
                     scope as SelectQueryBuilder<Organization>,
                     permissions
                 )
@@ -144,37 +144,37 @@ export const createEntityScope = async ({
                 )
                 break
             case 'ageRange':
-                nonAdminAgeRangeScope(
+                await nonAdminAgeRangeScope(
                     scope as SelectQueryBuilder<AgeRange>,
                     permissions
                 )
                 break
             case 'grade':
-                nonAdminGradeScope(
+                await nonAdminGradeScope(
                     scope as SelectQueryBuilder<Grade>,
                     permissions
                 )
                 break
             case 'category':
-                nonAdminCategoryScope(
+                await nonAdminCategoryScope(
                     scope as SelectQueryBuilder<Category>,
                     permissions
                 )
                 break
             case 'subcategory':
-                nonAdminSubcategoryScope(
+                await nonAdminSubcategoryScope(
                     scope as SelectQueryBuilder<Subcategory>,
                     permissions
                 )
                 break
             case 'subject':
-                nonAdminSubjectScope(
+                await nonAdminSubjectScope(
                     scope as SelectQueryBuilder<Subject>,
                     permissions
                 )
                 break
             case 'program':
-                nonAdminProgramScope(
+                await nonAdminProgramScope(
                     scope as SelectQueryBuilder<Program>,
                     permissions
                 )
@@ -271,7 +271,7 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
             PermissionName.view_my_school_users_40111,
         ]),
     ])
-    if (userOrgSchools.length > 0 && schoolMemberships) {
+    if (userOrgSchools.length > 0 && schoolMemberships?.length) {
         // you can view all users in the schools you belong to
         // Must be LEFT JOIN to support `isNull` operator
         scope.leftJoin(
@@ -341,17 +341,20 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     )
 }
 
-export const nonAdminOrganizationScope: NonAdminScope<Organization> = (
+export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
     scope,
     permissions
 ) => {
-    scope
-        .select('Organization')
-        .distinct(true)
-        .innerJoin('Organization.memberships', 'OrganizationMembership')
-        .andWhere('OrganizationMembership.user_id = :d_userId', {
-            d_userId: permissions.getUserId(),
+    const orgIds = await permissions.orgMembershipsWithPermissions([])
+    scope.select('Organization').distinct(true)
+    if (orgIds.length > 0) {
+        scope.andWhere('Organization.organization_id IN (:...orgIds)', {
+            orgIds,
         })
+    } else {
+        // postgres errors if we try to do `IN ()`
+        scope.andWhere('false')
+    }
 }
 
 export const nonAdminAgeRangeScope: NonAdminScope<AgeRange> = (

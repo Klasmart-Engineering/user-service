@@ -7,3 +7,11 @@ export interface RoleConnectionNode {
     system: boolean
     description: string
 }
+
+export interface RoleSummaryNode {
+    id: string
+    name?: string
+    organizationId?: string
+    schoolId?: string
+    status: Status
+}

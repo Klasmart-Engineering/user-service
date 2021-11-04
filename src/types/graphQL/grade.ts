@@ -1,5 +1,4 @@
 import { Status } from '../../entities/status'
-import { GradeSummaryNode } from './gradeSummaryNode'
 
 export interface GradeConnectionNode {
     id: string
@@ -8,4 +7,11 @@ export interface GradeConnectionNode {
     system: boolean
     fromGrade: GradeSummaryNode
     toGrade: GradeSummaryNode
+}
+
+export interface GradeSummaryNode {
+    id: string
+    name?: string
+    status: Status
+    system: boolean
 }

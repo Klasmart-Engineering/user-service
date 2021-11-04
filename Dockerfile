@@ -12,6 +12,10 @@ COPY src src
 RUN npm run build
 
 FROM base as deps
+
+# Disable husky git hooks
+# https://typicode.github.io/husky/#/?id=disable-husky-in-cidocker
+RUN npm set-script prepare ""
 RUN npm ci --only=production
 
 FROM base as release

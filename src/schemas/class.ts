@@ -2,15 +2,7 @@ import gql from 'graphql-tag'
 import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
-import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
-import DataLoader from 'dataloader'
-import {
-    ageRangesForClasses,
-    gradesForClasses,
-    programsForClasses,
-    schoolsForClasses,
-    subjectsForClasses,
-} from '../loaders/classesConnection'
+import { ClassConnectionNode } from '../types/graphQL/class'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -91,8 +83,8 @@ const typeDefs = gql`
 
     extend type Query {
         classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
-        class(class_id: ID!): Class
-            @deprecated(reason: "Use 'classesConnection' with 'id' filter.")
+        class(class_id: ID!): Class @deprecated(reason: "Use 'classNode'.")
+        classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
         classesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -157,7 +149,7 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.schools?.load(
+                    return ctx.loaders.classesConnection.schools.instance.load(
                         class_.id
                     )
                 },
@@ -166,7 +158,7 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.ageRanges?.load(
+                    return ctx.loaders.classesConnection.ageRanges.instance.load(
                         class_.id
                     )
                 },
@@ -175,7 +167,7 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.grades?.load(
+                    return ctx.loaders.classesConnection.grades.instance.load(
                         class_.id
                     )
                 },
@@ -184,7 +176,7 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.subjects?.load(
+                    return ctx.loaders.classesConnection.subjects.instance.load(
                         class_.id
                     )
                 },
@@ -193,7 +185,7 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.classesConnection?.programs?.load(
+                    return ctx.loaders.classesConnection.programs.instance.load(
                         class_.id
                     )
                 },
@@ -208,25 +200,10 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
-                    ctx.loaders.classesConnection = {
-                        schools: new DataLoader((keys) =>
-                            schoolsForClasses(keys)
-                        ),
-                        ageRanges: new DataLoader((keys) =>
-                            ageRangesForClasses(keys)
-                        ),
-                        grades: new DataLoader((keys) =>
-                            gradesForClasses(keys)
-                        ),
-                        subjects: new DataLoader((keys) =>
-                            subjectsForClasses(keys)
-                        ),
-                        programs: new DataLoader((keys) =>
-                            programsForClasses(keys)
-                        ),
-                    }
-
-                    return model.classesConnection(ctx, info, args)
+                    return model.classesConnection(info, args)
+                },
+                classNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.classNode.node.instance.load(args)
                 },
             },
         },

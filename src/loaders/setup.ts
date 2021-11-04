@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader'
+import { Class } from '../entities/class'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Program } from '../entities/program'
@@ -10,42 +11,62 @@ import {
     classesConnectionSortingConfig,
     mapClassToClassConnectionNode,
 } from '../pagination/classesConnection'
+    classSummaryNodeFields,
+    mapClassToClassNode,
+} from '../pagination/classesConnection'
 import {
     mapProgramToProgramConnectionNode,
     programSummaryNodeFields,
 } from '../pagination/programsConnection'
 import {
-    schoolConnectionQuery,
+    CoreOrganizationConnectionNode,
+    mapOrganizationToOrganizationConnectionNode,
+    organizationConnectionSortingConfig,
+    organizationsConnectionQuery,
+} from '../pagination/organizationsConnection'
+import {
     mapSchoolToSchoolConnectionNode,
+    schoolConnectionQuery,
     schoolsConnectionSortingConfig,
 } from '../pagination/schoolsConnection'
 import {
     CoreUserConnectionNode,
-    usersConnectionQuery,
+    coreUserConnectionNodeFields,
     mapUserToUserConnectionNode,
     userConnectionSortingConfig,
-    coreUserConnectionNodeFields,
+    usersConnectionQuery,
 } from '../pagination/usersConnection'
 import { UserPermissions } from '../permissions/userPermissions'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { BrandingResult } from '../types/graphQL/branding'
-import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
-import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
-import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
-import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
-import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
+import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { ProgramSummaryNode } from '../types/graphQL/program'
+import {
+    ISchoolsConnectionNode,
+    SchoolSimplifiedSummaryNode,
+} from '../types/graphQL/school'
+import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
-    IChildConnectionDataloaderKey,
     childConnectionLoader,
+    IChildConnectionDataloaderKey,
 } from './childConnectionLoader'
-import { IClassesConnectionLoaders } from './classesConnection'
+import {
+    ageRangesForClasses,
+    gradesForClasses,
+    IClassesConnectionLoaders,
+    IClassNodeDataLoaders,
+    programsForClasses,
+    schoolsForClasses,
+    subjectsForClasses,
+} from './classesConnection'
 import { NodeDataLoader } from './genericNode'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
-    IOrganizationLoaders,
     brandingForOrganizations,
+    IOrganizationLoaders,
     organizationForMemberships,
 } from './organization'
 import { IOrganizationsConnectionLoaders } from './organizationsConnection'
@@ -77,7 +98,7 @@ export interface IDataLoaders {
     programsConnection: IProgramsConnectionLoaders
     programNode: IProgramNodeDataLoaders
     gradesConnection?: IGradesConnectionLoaders
-    classesConnection?: IClassesConnectionLoaders
+    classesConnection: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection?: IOrganizationsConnectionLoaders
     user: IUsersLoaders
@@ -85,6 +106,12 @@ export interface IDataLoaders {
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 
+    organizationsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<CoreOrganizationConnectionNode>
+        >
+    >
     usersConnectionChild: Lazy<
         DataLoader<
             IChildConnectionDataloaderKey,
@@ -97,12 +124,7 @@ export interface IDataLoaders {
             IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
-    classesConnectionChild: Lazy<
-        DataLoader<
-            IChildConnectionDataloaderKey,
-            IPaginatedResponse<ClassConnectionNode>
-        >
-    >
+    classNode: IClassNodeDataLoaders
 }
 
 export function createContextLazyLoaders(
@@ -136,6 +158,18 @@ export function createContextLazyLoaders(
                 () => new DataLoader(schoolsByIds)
             ),
         },
+        organizationsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        organizationsConnectionQuery,
+                        mapOrganizationToOrganizationConnectionNode,
+                        organizationConnectionSortingConfig,
+                        { permissions, entity: 'organization' }
+                    )
+                })
+        ),
         usersConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {
@@ -205,6 +239,34 @@ export function createContextLazyLoaders(
                         'ProgramConnectionNode',
                         mapProgramToProgramConnectionNode,
                         programSummaryNodeFields
+                    )
+            ),
+        },
+        classesConnection: {
+            schools: new Lazy<
+                DataLoader<string, SchoolSimplifiedSummaryNode[]>
+            >(() => new DataLoader(schoolsForClasses)),
+            ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(
+                () => new DataLoader(ageRangesForClasses)
+            ),
+            grades: new Lazy<DataLoader<string, GradeSummaryNode[]>>(
+                () => new DataLoader(gradesForClasses)
+            ),
+            subjects: new Lazy<DataLoader<string, SubjectSummaryNode[]>>(
+                () => new DataLoader(subjectsForClasses)
+            ),
+            programs: new Lazy<DataLoader<string, ProgramSummaryNode[]>>(
+                () => new DataLoader(programsForClasses)
+            ),
+        },
+        classNode: {
+            node: new Lazy<NodeDataLoader<Class, ClassSummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Class,
+                        'ClassConnectionNode',
+                        mapClassToClassNode,
+                        classSummaryNodeFields
                     )
             ),
         },

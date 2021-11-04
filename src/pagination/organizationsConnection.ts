@@ -1,17 +1,22 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm'
 import { Organization } from '../entities/organization'
+import { OrganizationMembership } from '../entities/organizationMembership'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
-import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
+import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import { scopeHasJoin } from '../utils/typeorm'
 
 /**
  * Core fields on `OrganizationConnectionNode` not populated by a DataLoader
@@ -20,6 +25,13 @@ export type CoreOrganizationConnectionNode = Pick<
     OrganizationConnectionNode,
     'id' | 'name' | 'contactInfo' | 'shortCode' | 'status'
 >
+
+export const organizationConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'organization_id',
+    aliases: {
+        name: 'organization_name',
+    },
+}
 
 export async function organizationsConnectionResolver(
     info: GraphQLResolveInfo,
@@ -33,12 +45,52 @@ export async function organizationsConnectionResolver(
 ): Promise<IPaginatedResponse<CoreOrganizationConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
+    const newScope = await organizationsConnectionQuery(scope, filter)
+
+    const data = await paginateData<Organization>({
+        direction,
+        directionArgs,
+        scope: newScope,
+        sort: {
+            ...organizationConnectionSortingConfig,
+            sort,
+        },
+        includeTotalCount,
+    })
+
+    return {
+        totalCount: data.totalCount,
+        pageInfo: data.pageInfo,
+        edges: data.edges.map((edge) => {
+            return {
+                node: mapOrganizationToOrganizationConnectionNode(edge.node),
+                cursor: edge.cursor,
+            }
+        }),
+    }
+}
+
+export async function organizationsConnectionQuery(
+    scope: SelectQueryBuilder<Organization>,
+    filter?: IEntityFilter
+) {
     if (filter) {
         if (filterHasProperty('ownerUserId', filter)) {
             scope.innerJoin(
                 OrganizationOwnership,
                 'OrganizationOwnership',
                 'Organization.organization_id = OrganizationOwnership.organization_id'
+            )
+        }
+
+        if (
+            filterHasProperty('userId', filter) &&
+            !scopeHasJoin(scope, OrganizationMembership)
+        ) {
+            scope.innerJoin(
+                OrganizationMembership,
+                'OrganizationMembership',
+                'Organization.organization_id = OrganizationMembership.organizationOrganizationId'
             )
         }
 
@@ -50,6 +102,7 @@ export async function organizationsConnectionResolver(
                 status: 'Organization.status',
 
                 // connections
+                userId: 'OrganizationMembership.userUserId',
                 ownerUserId: 'OrganizationOwnership.user_id',
             })
         )
@@ -67,30 +120,7 @@ export async function organizationsConnectionResolver(
         ] as (keyof Organization)[]).map((field) => `Organization.${field}`)
     )
 
-    const data = await paginateData<Organization>({
-        direction,
-        directionArgs,
-        scope,
-        sort: {
-            primaryKey: 'organization_id',
-            aliases: {
-                name: 'organization_name',
-            },
-            sort,
-        },
-        includeTotalCount,
-    })
-
-    return {
-        totalCount: data.totalCount,
-        pageInfo: data.pageInfo,
-        edges: data.edges.map((edge) => {
-            return {
-                node: mapOrganizationToOrganizationConnectionNode(edge.node),
-                cursor: edge.cursor,
-            }
-        }),
-    }
+    return scope
 }
 
 export function mapOrganizationToOrganizationConnectionNode(

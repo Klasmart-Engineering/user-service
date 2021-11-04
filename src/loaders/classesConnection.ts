@@ -1,10 +1,10 @@
 import DataLoader from 'dataloader'
 import { Class } from '../entities/class'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
-import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
-import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
-import { SchoolSimplifiedSummaryNode } from '../types/graphQL/schoolSimplifiedSummaryNode'
-import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { ProgramSummaryNode } from '../types/graphQL/program'
+import { SchoolSimplifiedSummaryNode } from '../types/graphQL/school'
+import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
 import { SelectQueryBuilder } from 'typeorm'
 import { School } from '../entities/school'
@@ -12,13 +12,20 @@ import { AgeRange } from '../entities/ageRange'
 import { Grade } from '../entities/grade'
 import { Subject } from '../entities/subject'
 import { Program } from '../entities/program'
+import { Lazy } from '../utils/lazyLoading'
+import { NodeDataLoader } from './genericNode'
+import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 
 export interface IClassesConnectionLoaders {
-    schools?: DataLoader<string, SchoolSimplifiedSummaryNode[]>
-    ageRanges?: DataLoader<string, AgeRangeConnectionNode[]>
-    grades?: DataLoader<string, GradeSummaryNode[]>
-    subjects?: DataLoader<string, SubjectSummaryNode[]>
-    programs?: DataLoader<string, ProgramSummaryNode[]>
+    schools: Lazy<DataLoader<string, SchoolSimplifiedSummaryNode[]>>
+    ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>
+    grades: Lazy<DataLoader<string, GradeSummaryNode[]>>
+    subjects: Lazy<DataLoader<string, SubjectSummaryNode[]>>
+    programs: Lazy<DataLoader<string, ProgramSummaryNode[]>>
+}
+
+export interface IClassNodeDataLoaders {
+    node: Lazy<NodeDataLoader<Class, ClassSummaryNode>>
 }
 
 type ClassEntities =

@@ -1,4 +1,4 @@
-# Onboarding
+# Releases
 
 This document shows you all the steps you need to follow in order to generate a release.
 
@@ -36,21 +36,21 @@ Depending on what you are trying to generate a regular release or a hotfix chang
 #### Regular release
 1. Checkout a branch, from the specific commit on master, using the version number you are about to release:
 ```bash
-git checkout -b v<VERSION> <COMMIT>
+git checkout -b release/v<VERSION> <COMMIT>
 ```
 Example
 ```bash
-git checkout -b v2.1.0 d47b925
+git checkout -b release/v2.1.0 d47b925
 ```
 
 #### Hotfix
 1. Checkout a branch, from the last stable release:
 ```bash
-git checkout -b v<VERSION> <COMMIT | TAG>
+git checkout -b hotfix/v<VERSION> <COMMIT | TAG>
 ```
 Example
 ```bash
-git checkout -b v2.1.1 v2.1.0
+git checkout -b hotfix/v2.1.1 v2.1.0
 ```
 
 ### Common Steps
@@ -58,16 +58,12 @@ git checkout -b v2.1.1 v2.1.0
 2. Make sure there is nothing else to add to that release, if there is anything else that needs to be added
 (e.g. a critical bug) add it on the branch.
 
-3. Create the changelog. This is done automatically with a script:
+3. Generate your release:
 ```bash
-npm run release
+./scripts/generate_release.sh
 ```
+**Important**: This step will generate the changelog, commit and push the tag. This should be done when you are ready to generate a release
 
-4. Tag and push your release:
-```bash
-./scripts/push_tag.sh
-```
+4. Finally update the release document according to that sprint. An [example](https://calmisland.atlassian.net/l/c/S8dgrLWg)
 
-5. Finally update the release document according to that sprint. An [example](https://calmisland.atlassian.net/l/c/S8dgrLWg)
-
-6. Merge the release branch back into master
+5. Merge the release branch back into master

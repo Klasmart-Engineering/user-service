@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { Connection, createQueryBuilder, SelectQueryBuilder } from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -16,6 +16,7 @@ import {
     classesConnection,
     getAllOrganizations,
     permissionsConnection,
+    subcategoriesConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
 import {
@@ -38,27 +39,27 @@ import { createSchool } from '../../factories/school.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createUser } from '../../factories/user.factory'
 import { createClass } from '../../factories/class.factory'
-import {
-    addStudentToClass,
-    addTeacherToClass,
-} from '../../utils/operations/classOps'
 import { Class } from '../../../src/entities/class'
 import { pick } from 'lodash'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
-import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
+import { ClassConnectionNode } from '../../../src/types/graphQL/class'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { createSchoolMembership } from '../../factories/schoolMembership.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
-import { nonAdminRoleScope } from '../../../src/directives/isAdmin'
+import {
+    nonAdminOrganizationScope,
+    nonAdminRoleScope,
+} from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { Subcategory } from '../../../src/entities/subcategory'
+import { createSubcategory } from '../../factories/subcategory.factory'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('isAdmin', () => {
     let connection: Connection
     let testClient: ApolloServerTestClient
-    let originalAdmins: string[]
 
     before(async () => {
         connection = await createTestConnection()
@@ -133,6 +134,86 @@ describe('isAdmin', () => {
                         otherOrganization.organization_id,
                     ])
                 })
+            })
+        })
+
+        context('nonAdminOrganizationScope', async () => {
+            let clientUser: User
+            let clientUserOrg: Organization
+            let otherUserOrg: Organization
+            let bothUsersOrg: Organization
+            let permissions: UserPermissions
+            let memberships: Map<User, Organization[]>
+            let otherUser: User
+            let scope: SelectQueryBuilder<Organization>
+
+            beforeEach(async () => {
+                clientUser = await createUser().save()
+                otherUser = await createUser().save()
+                clientUserOrg = await createOrganization().save()
+                otherUserOrg = await createOrganization().save()
+                bothUsersOrg = await createOrganization().save()
+
+                const role = await createRole(undefined, undefined, {
+                    permissions: [
+                        PermissionName.create_an_organization_account_1,
+                    ],
+                }).save()
+
+                memberships = new Map([
+                    [clientUser, [clientUserOrg, bothUsersOrg]],
+                    [otherUser, [otherUserOrg, bothUsersOrg]],
+                ])
+
+                for (const [user, organizations] of memberships) {
+                    for (const organization of organizations) {
+                        await createOrganizationMembership({
+                            user,
+                            organization,
+                            roles: [role],
+                        }).save()
+                    }
+                }
+
+                const token = { id: clientUser.user_id }
+                permissions = new UserPermissions(token)
+
+                scope = createQueryBuilder(Organization)
+                await nonAdminOrganizationScope(scope, permissions)
+            })
+
+            it('limits scope to a users organizations', async () => {
+                const orgs = await scope.select('Organization').getMany()
+
+                expect(
+                    orgs.map((org) => org.organization_id)
+                ).deep.equalInAnyOrder(
+                    memberships
+                        .get(clientUser)!
+                        .map((org) => org.organization_id)
+                )
+            })
+
+            // use case for this is organizationConnection child on usersConnection
+            it('when filtering by another user, shows intersection of organizations both users belong to', async () => {
+                scope.select('Organization')
+                scope.innerJoin(
+                    OrganizationMembership,
+                    'OrganizationMembership',
+                    'Organization.organization_id = OrganizationMembership.organizationOrganizationId'
+                )
+
+                // if nonAdminOrganizationScope joined to OrganizationMembership itself
+                // then it would now be filtering on 2 mutually exclusive conditions
+                scope.andWhere('OrganizationMembership.userUserId = :userId', {
+                    userId: otherUser.user_id,
+                })
+
+                const orgs = await scope.getMany()
+
+                expect(
+                    orgs.map((org) => org.organization_id)
+                ).deep.equalInAnyOrder([bothUsersOrg.organization_id])
             })
         })
     })
@@ -945,7 +1026,6 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                user.organization_ownerships
                 const scope = Role.createQueryBuilder()
                 await nonAdminRoleScope(scope, userPermissions)
 
@@ -1000,6 +1080,87 @@ describe('isAdmin', () => {
                 expect(results).to.have.lengthOf(1)
                 expect(ownedRoles).to.have.lengthOf(1)
                 expect(results[0].role_name).to.equal(filteredName)
+            })
+        })
+    })
+
+    describe('subcategories', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let organization2: Organization
+        let allSubcategoriesCount: number
+        let systemSubcategoriesCount: number
+        const organizationSubcategoriesCount = 10
+
+        const queryVisiblePermissions = async (token: string) => {
+            const response = await subcategoriesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization = await createOrganization(memberUser).save()
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization)
+                )
+            )
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization2)
+                )
+            )
+
+            await createOrganizationMembership({
+                user: memberUser,
+                organization,
+            }).save()
+
+            allSubcategoriesCount = await Subcategory.count()
+            systemSubcategoriesCount = await Subcategory.count({
+                where: { system: true },
+            })
+        })
+
+        context('admin', () => {
+            it('allows access to all the subcategories', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    allSubcategoriesCount
+                )
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access to system subcategories and owns', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    systemSubcategoriesCount + organizationSubcategoriesCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('alows access just to system subcategories', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visiblePermissions = await queryVisiblePermissions(token)
+                expect(visiblePermissions.totalCount).to.eql(
+                    systemSubcategoriesCount
+                )
             })
         })
     })

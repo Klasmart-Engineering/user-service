@@ -1,7 +1,7 @@
 import { User } from '@sentry/node'
 import { expect } from 'chai'
 import { CoreUserConnectionNode } from '../../src/pagination/usersConnection'
-import { UserConnectionNode } from '../../src/types/graphQL/userConnectionNode'
+import { UserConnectionNode } from '../../src/types/graphQL/user'
 
 export const expectUserConnectionNode = (
     node: UserConnectionNode,

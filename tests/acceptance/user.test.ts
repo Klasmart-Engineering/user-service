@@ -14,18 +14,15 @@ import {
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
 import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
-import {
-    userToPayload,
-    GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
-} from '../utils/operations/userOps'
-import { leaveOrganization } from '../utils/operations/organizationMembershipOps'
+import { GET_SCHOOL_MEMBERSHIPS_WITH_ORG } from '../utils/operations/userOps'
+import { PermissionName } from '../../src/permissions/permissionNames'
 import { createSchool } from '../factories/school.factory'
+import { createRole } from '../factories/role.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { School } from '../../src/entities/school'
 import { createUser } from '../factories/user.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { Organization } from '../../src/entities/organization'
-import { INVITE_USER } from '../utils/operations/organizationOps'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
@@ -302,6 +299,92 @@ describe('acceptance.user', () => {
 
             expect(response.status).to.eq(400)
             expect(response.body).to.have.property('errors')
+        })
+
+        it('queries without errors when role is School Admin and does not belong to any schools', async () => {
+            const user = await createUser().save()
+            const org = await createOrganization().save()
+
+            const role = await createRole(undefined, org, {
+                permissions: [PermissionName.view_my_school_users_40111],
+            }).save()
+            await createOrganizationMembership({
+                user: user,
+                organization: org,
+                roles: [role],
+            }).save()
+
+            const token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query: USERS_CONNECTION,
+                    variables: {
+                        direction: 'FORWARD',
+                    },
+                })
+            expect(response.status).to.eq(200)
+        })
+
+        it('has organizationsConnection as a child', async () => {
+            const query = `
+                query usersConnection($direction: ConnectionDirection!) {
+                    usersConnection(direction:$direction){
+                        edges {
+                            node {
+                                organizationsConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const user = await createUser().save()
+            const org = await createOrganization().save()
+
+            const role = await createRole(undefined, org).save()
+            await createOrganizationMembership({
+                user: user,
+                organization: org,
+                roles: [role],
+            }).save()
+
+            const token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query,
+                    variables: {
+                        direction: 'FORWARD',
+                    },
+                })
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.usersConnection.edges[0].node
+                    .organizationsConnection.edges[0].node.id
+            ).to.eq(org.organization_id)
         })
     })
     context('my_users', async () => {

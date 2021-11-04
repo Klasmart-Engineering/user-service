@@ -579,7 +579,7 @@ export class User extends CustomBaseEntity {
 
             await otherUser.removeUser(queryRunner.manager)
 
-            queryRunner.commitTransaction()
+            await queryRunner.commitTransaction()
         } catch (err) {
             success = false
             context.logger?.error(err)

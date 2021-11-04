@@ -7,7 +7,7 @@ import {
     permissionsConnectionResolver,
     PERMISSIONS_CONNECTION_COLUMNS,
 } from '../../../src/pagination/permissionsConnection'
-import { PermissionConnectionNode } from '../../../src/types/graphQL/permissionConnectionNode'
+import { PermissionConnectionNode } from '../../../src/types/graphQL/permission'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createAdminUser, createUser } from '../../factories/user.factory'

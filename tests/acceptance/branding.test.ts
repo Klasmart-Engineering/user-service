@@ -9,7 +9,7 @@ import { before } from 'mocha'
 import { createTestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
-import { BrandingImageTag } from '../../src/types/graphQL/brandingImageTag'
+import { BrandingImageTag } from '../../src/types/graphQL/branding'
 import { User } from '../../src/entities/user'
 import { userToPayload } from '../utils/operations/userOps'
 

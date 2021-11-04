@@ -10,16 +10,9 @@ export interface IConnectionSortingConfig {
     aliases?: Record<string, string>
 }
 
-export interface ISortingConfig {
-    // primary key to sort on by default
-    // e.g. user_id for User table
-    primaryKey: string
-
+export interface ISortingConfig extends IConnectionSortingConfig {
     // optional field to sort on
     sort?: ISortField
-
-    // mapping of fields from GraphQL schema to columns for the SQL query
-    aliases?: Record<string, string>
 }
 
 export enum SortOrder {

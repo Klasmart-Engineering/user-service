@@ -107,7 +107,7 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
             const parentIds = request.parentIds
             const uniqueParentIds = [...new Set(parentIds)]
 
-            const args = request.key.args as IChildPaginationArgs
+            const args = request.key.args
             const parent = request.key.parent
             const includeTotalCount = request.key.includeTotalCount
             const groupByProperty = parent.pivot

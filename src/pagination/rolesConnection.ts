@@ -1,6 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Role } from '../entities/role'
-import { RoleConnectionNode } from '../types/graphQL/roleConnectionNode'
+import { RoleConnectionNode } from '../types/graphQL/role'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {

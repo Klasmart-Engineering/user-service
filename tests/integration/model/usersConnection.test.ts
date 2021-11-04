@@ -12,18 +12,11 @@ import { SchoolMembership } from '../../../src/entities/schoolMembership'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
-import {
-    CoreUserConnectionNode,
-    mapUserToUserConnectionNode,
-} from '../../../src/pagination/usersConnection'
+import { mapUserToUserConnectionNode } from '../../../src/pagination/usersConnection'
 import { PermissionName } from '../../../src/permissions/permissionNames'
-import { UserConnectionNode } from '../../../src/types/graphQL/userConnectionNode'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
-import {
-    IEdge,
-    convertDataToCursor,
-} from '../../../src/utils/pagination/paginate'
+import { convertDataToCursor } from '../../../src/utils/pagination/paginate'
 import { createClass } from '../../factories/class.factory'
 import {
     createOrganizations,

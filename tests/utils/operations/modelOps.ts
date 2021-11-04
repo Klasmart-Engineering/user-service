@@ -14,21 +14,21 @@ import { Stream } from 'stream'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { ISortField } from '../../../src/utils/pagination/sorting'
 import { IPaginatedResponse } from '../../../src/utils/pagination/paginate'
-import { UserConnectionNode } from '../../../src/types/graphQL/userConnectionNode'
-import { SchoolSummaryNode } from '../../../src/types/graphQL/schoolSummaryNode'
-import { ISchoolsConnectionNode } from '../../../src/types/graphQL/schoolsConnectionNode'
-import { GradeConnectionNode } from '../../../src/types/graphQL/gradeConnectionNode'
-import { ProgramConnectionNode } from '../../../src/types/graphQL/programConnectionNode'
-import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRangeConnectionNode'
-import { ClassConnectionNode } from '../../../src/types/graphQL/classConnectionNode'
-import { SubjectConnectionNode } from '../../../src/types/graphQL/subjectConnectionNode'
-import { OrganizationConnectionNode } from '../../../src/types/graphQL/organizationConnectionNode'
+import { UserConnectionNode } from '../../../src/types/graphQL/user'
+import { ISchoolsConnectionNode } from '../../../src/types/graphQL/school'
+import { GradeConnectionNode } from '../../../src/types/graphQL/grade'
+import { ProgramConnectionNode } from '../../../src/types/graphQL/program'
+import { AgeRangeConnectionNode } from '../../../src/types/graphQL/ageRange'
+import { ClassConnectionNode } from '../../../src/types/graphQL/class'
+import { SubjectConnectionNode } from '../../../src/types/graphQL/subject'
+import { OrganizationConnectionNode } from '../../../src/types/graphQL/organization'
 import { gql } from 'apollo-server-express'
 import { Role } from '../../../src/entities/role'
 import { print } from 'graphql'
-import { PermissionConnectionNode } from '../../../src/types/graphQL/permissionConnectionNode'
-import { CategorySummaryNode } from '../../../src/types/graphQL/categorySummaryNode'
-import { RoleConnectionNode } from '../../../src/types/graphQL/roleConnectionNode'
+import { PermissionConnectionNode } from '../../../src/types/graphQL/permission'
+import { CategorySummaryNode } from '../../../src/types/graphQL/category'
+import { RoleConnectionNode } from '../../../src/types/graphQL/role'
+import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategory'
 
 const NEW_USER = `
     mutation myMutation(
@@ -368,6 +368,17 @@ const USER_NODE_QUERY_2_NODES = gql`
     }
 `
 
+const CLASS_NODE_QUERY_2_NODES = gql`
+    query($id: ID!, $id2: ID!) {
+        classNode(id: $id) {
+            id
+        }
+        classNode2: classNode(id: $id2) {
+            name
+        }
+    }
+`
+
 const PROGRAM_NODE_QUERY_2_NODES = gql`
     query($id: ID!, $id2: ID!) {
         programNode(id: $id) {
@@ -662,56 +673,82 @@ export const AGE_RANGES_CONNECTION = `
     }
 `
 
-export const CLASSES_CONNECTION = `
-    query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
-        classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+const CLASS_MAIN_FIELDS = gql`
+    fragment classMainFields on ClassConnectionNode {
+        id
+        name
+        status
+        shortCode
+    }
+`
+
+const CLASS_FIELDS = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    fragment classFields on ClassConnectionNode {
+        ...classMainFields
+
+        schools {
+            id
+            name
+            status
+        }
+
+        ageRanges {
+            id
+            name
+            lowValue
+            lowValueUnit
+            highValue
+            highValueUnit
+            status
+            system
+        }
+
+        grades {
+            id
+            name
+            status
+            system
+        }
+
+        subjects {
+            id
+            name
+            status
+            system
+        }
+
+        programs {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
+export const CLASSES_CONNECTION = gql`
+    ${CLASS_FIELDS}
+
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
 
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    status
-                    shortCode
-
-                    schools {
-                        id
-                        name
-                        status
-                    }
-
-                    ageRanges {
-                        id
-                        name
-                        lowValue
-                        lowValueUnit
-                        highValue
-                        highValueUnit
-                        status
-                        system
-                    }
-
-                    grades {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    subjects {
-                        id
-                        name
-                        status
-                        system
-                    }
-
-                    programs {
-                        id
-                        name
-                        status
-                        system
-                    }
+                    ...classFields
                 }
             }
 
@@ -725,29 +762,58 @@ export const CLASSES_CONNECTION = `
     }
 `
 
-export const CLASSES_CONNECTION_MAIN_DATA = `
-query ClassesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ClassFilter, $sortArgs: ClassSortInput) {
-    classesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
-        totalCount
+export const CLASSES_CONNECTION_MAIN_DATA = gql`
+    ${CLASS_MAIN_FIELDS}
 
-        edges {
-            cursor
-            node {
-                id
-                name
-                status
-                shortCode
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+                node {
+                    ...classMainFields
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
             }
         }
+    }
+`
 
-        pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
+export const CLASS_NODE = gql`
+    ${CLASS_FIELDS}
+
+    query ClassNode($id: ID!) {
+        classNode(id: $id) {
+            ...classFields
         }
     }
-}
+`
+
+export const CLASS_NODE_MAIN_DATA = gql`
+    ${CLASS_MAIN_FIELDS}
+
+    query ClassNode($id: ID!) {
+        classNode(id: $id) {
+            ...classMainFields
+        }
+    }
 `
 
 export const SUBJECTS_CONNECTION = `
@@ -918,6 +984,59 @@ const REPLACE_ROLE = `
         }
     }
 `
+export const SUBCATEGORIES_CONNECTION = gql`
+    query(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: SubcategoryFilter
+        $sortArgs: SubcategorySortInput
+    ) {
+        subcategoriesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            totalCount
+
+            edges {
+                cursor
+
+                node {
+                    id
+                    name
+                    status
+                    system
+                }
+            }
+
+            pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+            }
+        }
+    }
+`
+
+export async function runQuery(
+    queryString: string,
+    testClient: ApolloServerTestClient,
+    headers?: Headers,
+    variables?: Record<string, unknown>
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: queryString,
+            headers,
+            variables,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data
+}
 
 export async function runQuery(
     queryString: string,
@@ -1433,6 +1552,26 @@ export async function user2Nodes(
     await gqlTry(operation)
 }
 
+export async function class2Nodes(
+    testClient: ApolloServerTestClient,
+    headers: Headers,
+    id: string,
+    id2: string
+) {
+    const { query } = testClient
+    const operation = () =>
+        query({
+            query: CLASS_NODE_QUERY_2_NODES,
+            variables: {
+                id,
+                id2,
+            },
+            headers,
+        })
+
+    await gqlTry(operation)
+}
+
 export async function permissionsConnection(
     testClient: ApolloServerTestClient,
     direction: string,
@@ -1733,7 +1872,7 @@ export async function classesConnectionMainData(
 ): Promise<IPaginatedResponse<ClassConnectionNode>> {
     const { query } = testClient
     const paginationQuery = buildPaginationQuery(
-        CLASSES_CONNECTION_MAIN_DATA,
+        print(CLASSES_CONNECTION_MAIN_DATA),
         includeTotalCount
     )
 
@@ -1907,6 +2046,36 @@ export async function organizationsConnectionNodes(
 
     const res = await gqlTry(operation)
     return res.data?.organizationsConnection
+}
+
+export async function subcategoriesConnection(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    headers?: Headers,
+    filterArgs?: IEntityFilter,
+    sortArgs?: ISortField
+): Promise<IPaginatedResponse<SubcategoryConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        print(SUBCATEGORIES_CONNECTION),
+        includeTotalCount
+    )
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs,
+                sortArgs,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.subcategoriesConnection
 }
 
 function buildPaginationQuery(

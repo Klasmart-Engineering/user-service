@@ -1,11 +1,11 @@
 import DataLoader from 'dataloader'
 import { Program } from '../entities/program'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRangeConnectionNode'
-import { GradeSummaryNode } from '../types/graphQL/gradeSummaryNode'
-import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
-import { SubjectSummaryNode } from '../types/graphQL/subjectSummaryNode'
 import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { SubjectSummaryNode } from '../types/graphQL/subject'
+import { ProgramSummaryNode } from '../types/graphQL/program'
 
 export interface IProgramsConnectionLoaders {
     ageRanges: Lazy<DataLoader<string, AgeRangeConnectionNode[]>>

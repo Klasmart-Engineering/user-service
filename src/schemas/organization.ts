@@ -12,7 +12,7 @@ import {
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
-import { OrganizationConnectionNode } from '../types/graphQL/organizationConnectionNode'
+import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
@@ -221,6 +221,7 @@ const typeDefs = gql`
 
         # joined columns
         ownerUserId: UUIDFilter
+        userId: UUIDFilter
 
         AND: [OrganizationFilter!]
         OR: [OrganizationFilter!]
@@ -295,11 +296,10 @@ export default function getDefault(
                     organization: OrganizationConnectionNode,
                     args: Record<string, unknown>,
                     ctx: Context
-                ) => {
+                ) =>
                     ctx.loaders.organization.branding.instance.load(
                         organization.id
-                    )
-                },
+                    ),
                 usersConnection: async (
                     organization: OrganizationConnectionNode,
                     args: IChildPaginationArgs,

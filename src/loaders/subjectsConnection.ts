@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader'
 import { Subject } from '../entities/subject'
-import { CategorySummaryNode } from '../types/graphQL/categorySummaryNode'
-import { ProgramSummaryNode } from '../types/graphQL/programSummaryNode'
+import { CategorySummaryNode } from '../types/graphQL/category'
+import { ProgramSummaryNode } from '../types/graphQL/program'
 import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
 
 export interface ISubjectsConnectionLoaders {

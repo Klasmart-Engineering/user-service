@@ -4,10 +4,10 @@ import {
     getWhereClauseFromFilter,
     filterHasProperty,
 } from '../utils/pagination/filtering'
-import { OrganizationSummaryNode } from '../types/graphQL/organizationSummaryNode'
-import { SchoolSummaryNode } from '../types/graphQL/schoolSummaryNode'
+import { OrganizationSummaryNode } from '../types/graphQL/organization'
+import { SchoolSummaryNode } from '../types/graphQL/school'
 import DataLoader from 'dataloader'
-import { RoleSummaryNode } from '../types/graphQL/roleSummaryNode'
+import { RoleSummaryNode } from '../types/graphQL/role'
 
 export interface IUsersConnectionLoaders {
     organizations?: DataLoader<string, OrganizationSummaryNode[]>

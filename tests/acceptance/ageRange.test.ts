@@ -4,7 +4,7 @@ import { Connection } from 'typeorm'
 import { AgeRange } from '../../src/entities/ageRange'
 import { AgeRangeUnit } from '../../src/entities/ageRangeUnit'
 import AgeRangesInitializer from '../../src/initializers/ageRanges'
-import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRangeConnectionNode'
+import { AgeRangeConnectionNode } from '../../src/types/graphQL/ageRange'
 import { loadFixtures } from '../utils/fixtures'
 import {
     createAgeRanges,

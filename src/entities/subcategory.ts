@@ -3,6 +3,7 @@ import {
     Entity,
     getManager,
     JoinColumn,
+    ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm'
@@ -13,6 +14,7 @@ import { Organization } from './organization'
 import { PermissionName } from '../permissions/permissionNames'
 import { Status } from './status'
 import { CustomBaseEntity } from './customBaseEntity'
+import { Category } from './category'
 
 @Entity()
 export class Subcategory extends CustomBaseEntity {
@@ -28,6 +30,9 @@ export class Subcategory extends CustomBaseEntity {
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })
     public organization?: Promise<Organization>
+
+    @ManyToMany(() => Category, (category) => category.subcategories)
+    public categories?: Promise<Category[]>
 
     public async delete(
         args: Record<string, unknown>,

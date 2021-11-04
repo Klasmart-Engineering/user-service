@@ -57,19 +57,22 @@ import { Category } from './entities/category'
 import { Subcategory } from './entities/subcategory'
 import { Subject } from './entities/subject'
 import { Upload } from './types/upload'
-import { setBrandingInput } from './types/graphQL/setBrandingInput'
-import { GradeConnectionNode } from './types/graphQL/gradeConnectionNode'
-import { BrandingResult, BrandingImageInfo } from './types/graphQL/branding'
+import { GradeConnectionNode } from './types/graphQL/grade'
+import {
+    BrandingResult,
+    BrandingImageInfo,
+    BrandingImageTag,
+    deleteBrandingImageInput,
+    setBrandingInput,
+} from './types/graphQL/branding'
 import { BrandingStorer } from './services/brandingStorer'
 import { CloudStorageUploader } from './services/cloudStorageUploader'
-import { BrandingImageTag } from './types/graphQL/brandingImageTag'
 import { buildFilePath } from './utils/storage'
 import { Branding } from './entities/branding'
 import { CustomError, customErrors } from './types/errors/customError'
 import BrandingErrorConstants from './types/errors/branding/brandingErrorConstants'
 import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
-import { deleteBrandingImageInput } from './types/graphQL/deleteBrandingImageInput'
 import { Status } from './entities/status'
 import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
 import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
@@ -554,6 +557,11 @@ export class Model {
 
         return data
     }
+
+    public classesConnection = async (
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Class>
+    ) => classesConnectionResolver(info, paginationArgs)
 
     public async subjectsConnection(
         _context: Context,

@@ -1,8 +1,8 @@
 import { Status } from '../../entities/status'
 
-export interface ProgramSummaryNode {
+export interface SubcategoryConnectionNode {
     id: string
-    name?: string
+    name: string
     status: Status
     system: boolean
 }
