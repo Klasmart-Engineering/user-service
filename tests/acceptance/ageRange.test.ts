@@ -227,7 +227,7 @@ describe('acceptance.ageRange', () => {
             })
         })
 
-        context('when requested grade does not exists', () => {
+        context('when requested age range does not exists', () => {
             it('should respond with errors', async () => {
                 const ageRangeId = '00000000-0000-0000-0000-000000000000'
                 const response = await makeNodeQuery(ageRangeId)
