@@ -38,7 +38,7 @@ describe('Category', () => {
     describe('.new', () => {
         context('when system is not defined', () => {
             beforeEach(async () => {
-                category.system = undefined
+                (category as any).system = undefined
                 await manager.save(org)
                 await manager.save(category)
             })
