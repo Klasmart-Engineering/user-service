@@ -12,6 +12,8 @@ import {
 import { Class } from '../entities/class'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { GraphQLResolveInfo } from 'graphql'
+import { classesConnection } from '../../tests/utils/operations/modelOps'
+import { classesConnectionResolver } from '../pagination/classesConnection'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -136,18 +138,18 @@ const typeDefs = gql`
 // This is a workaround to needing to mock total count AST check in tests
 // Remove this wrapper and associated methods when total count has been removed from the core resolver logic
 // Total count will be made either a directive, a middleware plugin calculation, or something
-export async function classesConnectionWrapper(
-    school: Pick<ISchoolsConnectionNode, 'id'>,
+export async function classesChildConnectionResolver(
+    school_id: string,
     args: IChildPaginationArgs,
     ctx: Pick<Context, 'loaders'>,
     info: Pick<GraphQLResolveInfo, 'fieldNodes'>
 ) {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-    return classesConnection(school, args, ctx, includeTotalCount)
+    return classesChildConnection(school_id, args, ctx, includeTotalCount)
 }
 
-export function classesConnection(
-    school: Pick<ISchoolsConnectionNode, 'id'>,
+export function classesChildConnection(
+    school_id: string,
     args: IChildPaginationArgs,
     ctx: Pick<Context, 'loaders'>,
     includeTotalCount: boolean
@@ -156,7 +158,7 @@ export function classesConnection(
         args,
         includeTotalCount: includeTotalCount,
         parent: {
-            id: school.id,
+            id: school_id,
             filterKey: 'schoolId',
             pivot: '"School"."school_id"',
         },
@@ -171,17 +173,7 @@ export default function getDefault(
         typeDefs: [typeDefs],
         resolvers: {
             SchoolConnectionNode: {
-                classesConnection: async (
-                    school: ISchoolsConnectionNode,
-                    args: IPaginationArgs<Class>,
-                    ctx: Context,
-                    info: GraphQLResolveInfo
-                ) => {
-                    const includeTotalCount = findTotalCountInPaginationEndpoints(
-                        info
-                    )
-                    classesConnection(school, args, ctx, includeTotalCount)
-                },
+                classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
                 school: (_parent, args, ctx, _info) =>

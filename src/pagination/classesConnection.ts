@@ -5,6 +5,8 @@ import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
+    ConditionalJoinCmd,
+    filterHasProperties,
     filterHasProperty,
     getWhereClauseFromFilter,
     IEntityFilter,
@@ -17,7 +19,7 @@ import {
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
-import logger from '../logging'
+import { BaseEntity } from 'typeorm'
 
 export const classesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'class_id',
@@ -32,26 +34,15 @@ export async function classesConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Class>
 ): Promise<IPaginatedResponse<ClassConnectionNode>> {
-
-    logger.info('Filter {}', filter)
-    logger.info('Sort {}', sort)
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-    const newScope = await classesConnectionQuery(scope, filter)
-
     const data = await paginateData<Class>({
         direction,
         directionArgs,
-        scope: newScope,
+        scope: await classesConnectionQuery(scope, filter),
         sort: {
-            primaryKey: 'class_id',
-            aliases: {
-                id: 'class_id',
-                name: 'class_name',
-            },
+            ...classesConnectionSortingConfig,
             sort,
         },
-        includeTotalCount,
+        includeTotalCount: findTotalCountInPaginationEndpoints(info),
     })
 
     return {
@@ -70,79 +61,92 @@ export async function classesConnectionQuery(
     scope: SelectQueryBuilder<Class>,
     filter?: IEntityFilter
 ) {
-    logger.info('Scope before')
-    logger.info(scope.getQuery())
+    classesConnectionSelect(scope)
 
+    if (filter) {
+        classesConnectionFilter(scope, filter)
+        classesConnectionWhere(scope, filter)
+    }
+
+    return scope
+}
+
+function classesConnectionSelect(scope: SelectQueryBuilder<Class>) {
     scope.select([
         'Class.class_id',
         'Class.class_name',
         'Class.status',
         'Class.shortcode',
     ])
+}
 
-    if (filter) {
-        if (
-            filterHasProperty('ageRangeValueFrom', filter) ||
-            filterHasProperty('ageRangeUnitFrom', filter) ||
-            filterHasProperty('ageRangeValueTo', filter) ||
-            filterHasProperty('ageRangeUnitTo', filter)
-        ) {
+function classesConnectionFilter(
+    scope: SelectQueryBuilder<Class>,
+    filter: IEntityFilter
+) {
+    const ageRangeFilters = [
+        'ageRangeValueFrom',
+        'ageRangeUnitFrom',
+        'ageRangeValueTo',
+        'ageRangeUnitTo',
+    ]
+
+    new ConditionalJoinCmd(filter)
+        .ifFilter(
+            'schoolId',
+            () =>
+                !scopeHasJoin(scope, School) &&
+                scope.innerJoin('Class.schools', 'School')
+        )
+        .ifFilter(ageRangeFilters, () => {
             scope
                 .innerJoin('Class.age_ranges', 'AgeRange')
                 .where(AVOID_NONE_SPECIFIED_BRACKETS)
-        }
-
-        if (
-            filterHasProperty('schoolId', filter) &&
+        })
+        .ifFilter('schoolId', () => {
             // nonAdminClassScope may have already joined on Schools
-            !scopeHasJoin(scope, School)
-        ) {
-            scope.leftJoin('Class.schools', 'School')
-        }
-
-        if (filterHasProperty('gradeId', filter)) {
-            scope.innerJoin('Class.grades', 'Grade')
-        }
-
-        if (filterHasProperty('subjectId', filter)) {
+            !scopeHasJoin(scope, School) &&
+                scope.leftJoin('Class.schools', 'School')
+        })
+        .ifFilter('gradeId', () => scope.innerJoin('Class.grades', 'Grade'))
+        .ifFilter('subjectId', () =>
             scope.innerJoin('Class.subjects', 'Subject')
-        }
-
-        if (filterHasProperty('programId', filter)) {
-            scope.innerJoin('Class.programs', 'Program')
-        }
-
-        scope.andWhere(
-            getWhereClauseFromFilter(filter, {
-                id: 'Class.class_id',
-                name: 'Class.class_name',
-                status: 'Class.status',
-                // No need to join, use the Foreign Key on the Class entity
-                organizationId: 'Class.organization',
-                ageRangeValueFrom: 'AgeRange.low_value',
-                ageRangeUnitFrom: 'AgeRange.low_value_unit',
-                ageRangeValueTo: 'AgeRange.high_value',
-                ageRangeUnitTo: 'AgeRange.high_value_unit',
-                schoolId: 'School.school_id',
-                gradeId: 'Grade.id',
-                subjectId: 'Subject.id',
-                programId: 'Program.id',
-            })
         )
-    }
+        .ifFilter('programId', () =>
+            scope.innerJoin('Class.programs', 'Program')
+        )
+}
 
-    logger.info('Scope after')
-    logger.info(scope.getQuery())
-    return scope
+function classesConnectionWhere(
+    scope: SelectQueryBuilder<Class>,
+    filter: IEntityFilter
+) {
+    scope.andWhere(
+        getWhereClauseFromFilter(filter, {
+            id: 'Class.class_id',
+            name: 'Class.class_name',
+            status: 'Class.status',
+            // No need to join, use the Foreign Key on the Class entity
+            organizationId: 'Class.organization',
+            ageRangeValueFrom: 'AgeRange.low_value',
+            ageRangeUnitFrom: 'AgeRange.low_value_unit',
+            ageRangeValueTo: 'AgeRange.high_value',
+            ageRangeUnitTo: 'AgeRange.high_value_unit',
+            schoolId: 'School.school_id',
+            gradeId: 'Grade.id',
+            subjectId: 'Subject.id',
+            programId: 'Program.id',
+        })
+    )
 }
 
 export function mapClassToClassConnectionNode(
-    class_: Class
+    _class: Class
 ): ClassConnectionNode {
     return {
-        id: classObj_.class_id,
-        name: classObj_.class_name,
-        status: classObj_.status,
-        shortCode: classObj_.shortcode
+        id: _class.class_id,
+        name: _class.class_name,
+        status: _class.status,
+        shortCode: _class.shortcode,
     }
 }

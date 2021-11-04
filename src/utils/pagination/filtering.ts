@@ -1,5 +1,26 @@
 import { Brackets } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
+import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
+
+export class ConditionalJoinCmd {
+    filter: IEntityFilter
+
+    constructor(filter: IEntityFilter) {
+        this.filter = filter
+    }
+
+    ifFilter(properties: string | string[], addJoin: () => void): this {
+        if (typeof properties === "string") {
+            properties = [properties]
+        }
+
+        if (filterHasProperties(properties, this.filter)) {
+            addJoin()
+        }
+
+        return this
+    }
+}
 
 export interface IEntityFilter {
     [key: string]: IFilter | IEntityFilter[] | undefined
@@ -252,6 +273,20 @@ export function filterHasProperty(
     }
 
     return hasProperty
+}
+
+// call's the above function for each property in an array
+export function filterHasProperties(
+    properties: string[],
+    filter: IEntityFilter
+): boolean {
+    for (const property of properties) {
+        if (filterHasProperty(property, filter)) {
+            return true
+        }
+    }
+
+    return false
 }
 
 function logicalOperationFilter(

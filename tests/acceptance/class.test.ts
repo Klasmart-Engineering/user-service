@@ -916,5 +916,60 @@ describe('acceptance.class', () => {
             expect(response.status).to.eq(400)
             expect(response.body).to.have.property('errors')
         })
+
+        it('is a child connection of a school', async () => {
+            const query = `
+                query schoolConnection($direction: ConnectionDirection!) {
+                    schoolConnection(direction:$direction){
+                        edges {
+                            node {
+                                classesChildConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const user = await createUser().save()
+            const org = await createOrganization().save()
+            const role = await createRole(undefined, org).save()
+            await createOrganizationMembership({
+                user: user,
+                organization: org,
+                roles: [role],
+            }).save()
+
+            const token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+
+                .send({
+                    query,
+                    variables: {
+                        direction: 'FORWARD',
+                    },
+                })
+
+            expect(response.status).to.eq(200)
+
+            expect(
+                response.body.data.schoolConnection.edges[0].node
+                    .organizationsConnection.edges[0].node.id
+            ).to.eq(org.organization_id)
+        })
     })
 })
