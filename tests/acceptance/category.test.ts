@@ -159,7 +159,7 @@ describe('acceptance.category', () => {
             })
         })
 
-        context('when requested grade does not exists', () => {
+        context('when requested category does not exists', () => {
             it('should respond with errors', async () => {
                 const categoryId = '00000000-0000-0000-0000-000000000000'
                 const response = await makeNodeQuery(categoryId)
