@@ -842,7 +842,7 @@ const GRADE_FIELDS = gql`
             id
             name
             status
-            system        
+            system
         }
     }
 `
