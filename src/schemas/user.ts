@@ -144,6 +144,7 @@ const typeDefs = gql`
         name: String
         organizationId: String
         status: Status
+        userStatus: Status
     }
 
     extend type Query {
