@@ -864,10 +864,6 @@ export const GRADE_NODE = gql`
     query GradeNode($id: ID!) {
         gradeNode(id: $id) {
             ...gradeFields
-            lowValue
-            lowValueUnit
-            highValue
-            highValueUnit
         }
     }
 `
