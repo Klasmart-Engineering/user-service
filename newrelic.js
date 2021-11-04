@@ -38,6 +38,6 @@ exports.config = {
     record_sql: 'raw',    
     },
     slow_sql: {
-        enabled: true,
+        enabled: true
     },
 }
