@@ -6,8 +6,6 @@ import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
     ConditionalJoinCmd,
-    filterHasProperties,
-    filterHasProperty,
     getWhereClauseFromFilter,
     IEntityFilter,
 } from '../utils/pagination/filtering'
@@ -19,7 +17,6 @@ import {
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
-import { BaseEntity } from 'typeorm'
 
 export const classesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'class_id',
