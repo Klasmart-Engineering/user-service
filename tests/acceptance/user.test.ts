@@ -14,8 +14,10 @@ import { User } from '../../src/entities/user'
 import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
 import {
     ADD_ORG_ROLES_TO_USERS,
+    CREATE_USERS,
     GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
     REMOVE_ORG_ROLES_FROM_USERS,
+    userToCreateUserInput,
 } from '../utils/operations/userOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createSchool } from '../factories/school.factory'
@@ -37,6 +39,7 @@ import {
     UserConnectionNode,
 } from '../../src/types/graphQL/user'
 import { Role } from '../../src/entities/role'
+import { CreateUserInput } from '../../src/types/graphQL/input/user'
 
 use(chaiAsPromised)
 
@@ -653,6 +656,48 @@ describe('acceptance.user', () => {
                 expect(response.status).to.eq(200)
                 expect(resUsers.length).to.equal(usersCount)
             })
+    context('createUsers', async () => {
+        let myUser: User
+        let myOrg: Organization
+        let token: string
+        let createUserInputs: CreateUserInput[] = []
+        beforeEach(async () => {
+            myUser = await createUser().save()
+            myOrg = await createOrganization().save()
+            const role = await createRole(undefined, myOrg, {
+                permissions: [PermissionName.create_users_40220],
+            }).save()
+            await createOrganizationMembership({
+                user: myUser,
+                organization: myOrg,
+                roles: [role],
+            }).save()
+            token = generateToken({
+                id: myUser.user_id,
+                email: myUser.email,
+                iss: 'calmid-debug',
+            })
+            createUserInputs = []
+            for (let i = 0; i < 50; i++) {
+                createUserInputs.push(userToCreateUserInput(createUser()))
+            }
+        })
+        it('Creates 50 users', async () => {
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query: CREATE_USERS,
+                    variables: { input: createUserInputs },
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body.data.createUsers.users.length).to.equal(
+                createUserInputs.length
+            )
         })
     })
 

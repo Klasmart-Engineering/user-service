@@ -20,6 +20,7 @@ import {
     addOrganizationRolesToUsers,
     removeOrganizationRolesFromUsers,
 } from '../resolvers/user'
+import { createUsers } from '../resolvers/user'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -57,6 +58,7 @@ const typeDefs = gql`
             @deprecated(reason: "Moved to auth service")
         uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
+        createUsers(input: [CreateUserInput!]!): UsersMutationResult
     }
 
     # Definitions related to mutations
@@ -87,6 +89,31 @@ const typeDefs = gql`
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
         node: UserConnectionNode
+    }
+
+    # Mutation inputs
+
+    input CreateUserInput {
+        givenName: String!
+        familyName: String!
+        contactInfo: ContactInfoInput!
+        dateOfBirth: String
+        username: String
+        gender: String!
+        shortcode: String
+        alternateEmail: String
+        alternatePhone: String
+    }
+
+    input ContactInfoInput {
+        email: String
+        phone: String
+    }
+
+    # Mutation outputs
+
+    type UsersMutationResult {
+        users: [UserConnectionNode!]!
     }
 
     # pagination extension types end here
@@ -354,6 +381,9 @@ export default function getDefault(
                     addOrganizationRolesToUsers(args, ctx),
                 removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
                     removeOrganizationRolesFromUsers(args, ctx),
+
+                createUsers: (_parent, args, ctx, _info) =>
+                    createUsers(args, ctx),
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
