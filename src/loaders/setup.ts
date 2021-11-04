@@ -313,7 +313,7 @@ export function createContextLazyLoaders(
                         'GradeConnectionNode',
                         mapGradeToGradeConnectionNode,
                         gradeSummaryNodeFields
-                        )
+                    )
             ),
         },
         ageRangeNode: {
