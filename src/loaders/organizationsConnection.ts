@@ -1,9 +1,17 @@
 import DataLoader from 'dataloader'
 import { OrganizationOwnership } from '../entities/organizationOwnership'
 import { UserSummaryNode } from '../types/graphQL/user'
+import { Lazy } from '../utils/lazyLoading'
+import { NodeDataLoader } from './genericNode'
+import { Organization } from '../entities/organization'
+import { CoreOrganizationConnectionNode } from '../pagination/organizationsConnection'
 
 export interface IOrganizationsConnectionLoaders {
-    owners?: DataLoader<string, UserSummaryNode[]>
+    owners: Lazy<DataLoader<string, UserSummaryNode[]>>
+}
+
+export interface IOrganizationNodeDataLoaders {
+    node: Lazy<NodeDataLoader<Organization, CoreOrganizationConnectionNode>>
 }
 
 export const ownersForOrgs = async (

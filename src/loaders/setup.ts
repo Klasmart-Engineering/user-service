@@ -19,6 +19,7 @@ import {
     mapOrganizationToOrganizationConnectionNode,
     organizationConnectionSortingConfig,
     organizationsConnectionQuery,
+    organizationSummaryNodeFields,
 } from '../pagination/organizationsConnection'
 import {
     mapSchoolToSchoolConnectionNode,
@@ -33,16 +34,12 @@ import {
     usersConnectionQuery,
 } from '../pagination/usersConnection'
 import { UserPermissions } from '../permissions/userPermissions'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { BrandingResult } from '../types/graphQL/branding'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
-import { GradeSummaryNode } from '../types/graphQL/grade'
-import { ProgramSummaryNode } from '../types/graphQL/program'
 import {
     ISchoolsConnectionNode,
     SchoolSimplifiedSummaryNode,
 } from '../types/graphQL/school'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import {
@@ -58,14 +55,18 @@ import {
     schoolsForClasses,
     subjectsForClasses,
 } from './classesConnection'
-import { NodeDataLoader } from './genericNode'
 import { IGradesConnectionLoaders } from './gradesConnection'
 import {
     brandingForOrganizations,
     IOrganizationLoaders,
     organizationForMemberships,
 } from './organization'
-import { IOrganizationsConnectionLoaders } from './organizationsConnection'
+import {
+    IOrganizationNodeDataLoaders,
+    IOrganizationsConnectionLoaders,
+    ownersForOrgs,
+} from './organizationsConnection'
+import { NodeDataLoader } from './genericNode'
 import {
     ageRangesForPrograms,
     gradesForPrograms,
@@ -75,6 +76,11 @@ import {
 } from './programsConnection'
 import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
+import { ProgramSummaryNode } from '../types/graphQL/program'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { SubjectSummaryNode } from '../types/graphQL/subject'
+import { UserSummaryNode } from '../types/graphQL/user'
 import {
     IUserNodeDataLoaders,
     IUsersLoaders,
@@ -96,11 +102,12 @@ export interface IDataLoaders {
     gradesConnection?: IGradesConnectionLoaders
     classesConnection: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
-    organizationsConnection?: IOrganizationsConnectionLoaders
+    organizationsConnection: IOrganizationsConnectionLoaders
     user: IUsersLoaders
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    organizationNode: IOrganizationNodeDataLoaders
 
     organizationsConnectionChild: Lazy<
         DataLoader<
@@ -223,6 +230,24 @@ export function createContextLazyLoaders(
                         'ProgramConnectionNode',
                         mapProgramToProgramConnectionNode,
                         programSummaryNodeFields
+                    )
+            ),
+        },
+        organizationsConnection: {
+            owners: new Lazy<DataLoader<string, UserSummaryNode[]>>(
+                () => new DataLoader(ownersForOrgs)
+            ),
+        },
+        organizationNode: {
+            node: new Lazy<
+                NodeDataLoader<Organization, CoreOrganizationConnectionNode>
+            >(
+                () =>
+                    new NodeDataLoader(
+                        Organization,
+                        'OrganizationConnectionNode',
+                        mapOrganizationToOrganizationConnectionNode,
+                        organizationSummaryNodeFields
                     )
             ),
         },

@@ -4,7 +4,6 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { ownersForOrgs } from '../loaders/organizationsConnection'
 import {
     orgsForUsers,
     rolesForUsers,
@@ -47,7 +46,9 @@ const typeDefs = gql`
     }
     extend type Query {
         organization(organization_id: ID!): Organization
+            @deprecated(reason: "Use 'organizationNode'.")
         organizations(organization_ids: [ID!]): [Organization]
+            @deprecated(reason: "Use 'organizationsConnection'.")
             @isAdmin(entity: "organization")
         organizationsConnection(
             direction: ConnectionDirection!
@@ -55,6 +56,8 @@ const typeDefs = gql`
             filter: OrganizationFilter
             sort: OrganizationSortInput
         ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
+        organizationNode(id: ID!): OrganizationConnectionNode
+            @isAdmin(entity: "organization")
     }
     type Organization {
         organization_id: ID!
@@ -289,7 +292,7 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) =>
-                    ctx.loaders.organizationsConnection?.owners?.load(
+                    ctx.loaders.organizationsConnection.owners.instance.load(
                         organization.id
                     ),
                 branding: async (
@@ -358,9 +361,6 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    ctx.loaders.organizationsConnection = {
-                        owners: new Dataloader((keys) => ownersForOrgs(keys)),
-                    }
                     // Add dataloaders for the usersConnection
                     // TODO remove once corresponding child connections have been created
                     ctx.loaders.usersConnection = {
@@ -373,6 +373,9 @@ export default function getDefault(
                         roles: new Dataloader((keys) => rolesForUsers(keys)),
                     }
                     return model.organizationsConnection(ctx, info, args)
+                },
+                organizationNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.organizationNode.node.instance.load(args)
                 },
             },
             Organization: {

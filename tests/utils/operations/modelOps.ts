@@ -910,6 +910,47 @@ export const ORGANIZATIONS_CONNECTION = `
     }
 `
 
+export const ORGANIZATION_NODE_CORE_FIELDS = gql`
+    fragment organizationNodeCoreFields on OrganizationConnectionNode {
+        id
+        name
+        status
+        shortCode
+        contactInfo {
+            address1
+            address2
+            phone
+        }
+    }
+`
+
+const ORGANIZATION_NODE_FIELDS = gql`
+    ${ORGANIZATION_NODE_CORE_FIELDS}
+
+    fragment organizationNodeFields on OrganizationConnectionNode {
+        ...organizationNodeCoreFields
+
+        owners {
+            id
+        }
+
+        branding {
+            iconImageURL
+            primaryColor
+        }
+    }
+`
+
+export const ORGANIZATION_NODE = gql`
+    ${ORGANIZATION_NODE_FIELDS}
+
+    query OrganizatioNode($id: ID!) {
+        organizationNode(id: $id) {
+            ...organizationNodeFields
+        }
+    }
+`
+
 export const ORGANIZATIONS_CONNECTION_MAIN_DATA = `
     query organizationsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: OrganizationFilter, $sortArgs: OrganizationSortInput) {
         organizationsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs){

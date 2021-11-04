@@ -100,10 +100,13 @@ describe('isAdmin', () => {
             const orgInfo = (org: Organization) => {
                 return org.organization_id
             }
+
+            let noMember: User
             let otherOrganization: Organization
 
             beforeEach(async () => {
                 const otherUser = await createNonAdminUser(testClient)
+                noMember = await createUser().save()
                 otherOrganization = await createOrganizationAndValidate(
                     testClient,
                     otherUser.user_id,
@@ -133,6 +136,16 @@ describe('isAdmin', () => {
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         otherOrganization.organization_id,
                     ])
+                })
+            })
+
+            context('and the user does not belong to any organization', () => {
+                it('has not access to any organization', async () => {
+                    const gqlOrgs = await getAllOrganizations(testClient, {
+                        authorization: generateToken(userToPayload(noMember)),
+                    })
+
+                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([])
                 })
             })
         })

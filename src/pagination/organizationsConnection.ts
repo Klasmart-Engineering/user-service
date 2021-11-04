@@ -108,17 +108,7 @@ export async function organizationsConnectionQuery(
         )
     }
 
-    scope.select(
-        ([
-            'organization_id',
-            'organization_name',
-            'address1',
-            'address2',
-            'phone',
-            'shortCode',
-            'status',
-        ] as (keyof Organization)[]).map((field) => `Organization.${field}`)
-    )
+    scope.select(organizationSummaryNodeFields)
 
     return scope
 }
@@ -139,3 +129,13 @@ export function mapOrganizationToOrganizationConnectionNode(
         // other properties have dedicated resolvers that use Dataloader
     }
 }
+
+export const organizationSummaryNodeFields = ([
+    'organization_id',
+    'organization_name',
+    'address1',
+    'address2',
+    'phone',
+    'shortCode',
+    'status',
+] as (keyof Organization)[]).map((field) => `Organization.${field}`)
