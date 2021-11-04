@@ -33,10 +33,9 @@ exports.config = {
 
     transaction_tracer: {
         enabled: true,
-    record_sql:    
-            'raw',    
+        record_sql: 'raw',    
     },
     slow_sql: {
-        enabled: true,
+        enabled: true
     },
  }
