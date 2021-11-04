@@ -30,4 +30,13 @@ exports.config = {
             'response.headers.x*',
         ],
     },
-}
+
+    transaction_tracer: {
+        enabled: true,
+    record_sql:    
+            'raw',    
+    },
+    slow_sql: {
+        enabled: true,
+    },
+ }
