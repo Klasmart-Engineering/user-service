@@ -1,5 +1,9 @@
 import DataLoader from 'dataloader'
+<<<<<<< HEAD
 import { AgeRange } from '../entities/ageRange'
+=======
+import { Category } from '../entities/category'
+>>>>>>> c25aced0 (feat(UD-1274): query and tests implemented)
 import { Class } from '../entities/class'
 import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
@@ -12,6 +16,10 @@ import {
     mapAgeRangeToAgeRangeConnectionNode,
     ageRangeNodeFields,
 } from '../pagination/ageRangesConnection'
+import {
+    categoryConnectionNodeFields,
+    mapCategoryToCategoryConnectionNode,
+} from '../pagination/categoriesConnection'
 import {
     classSummaryNodeFields,
     mapClassToClassNode,
@@ -45,6 +53,7 @@ import {
 } from '../pagination/usersConnection'
 import { UserPermissions } from '../permissions/userPermissions'
 import { BrandingResult } from '../types/graphQL/branding'
+import { CategorySummaryNode } from '../types/graphQL/category'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import {
     ISchoolsConnectionNode,
@@ -53,6 +62,7 @@ import {
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import { IAgeRangeNodeDataLoader } from './ageRange'
+import { ICategoryNodeDataLoader } from './category'
 import {
     childConnectionLoader,
     IChildConnectionDataloaderKey,
@@ -146,6 +156,7 @@ export interface IDataLoaders {
         >
     >
     classNode: IClassNodeDataLoaders
+    categoryNode: ICategoryNodeDataLoader
 }
 
 export function createContextLazyLoaders(
@@ -313,6 +324,17 @@ export function createContextLazyLoaders(
                         'GradeConnectionNode',
                         mapGradeToGradeConnectionNode,
                         gradeSummaryNodeFields
+                        )
+            ),
+        },
+        categoryNode: {
+            node: new Lazy<NodeDataLoader<Category, CategorySummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Category,
+                        'CategoryConnectionNode',
+                        mapCategoryToCategoryConnectionNode,
+                        categoryConnectionNodeFields
                     )
             ),
         },

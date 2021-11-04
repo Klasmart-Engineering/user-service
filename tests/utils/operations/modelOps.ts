@@ -842,6 +842,16 @@ const GRADE_FIELDS = gql`
             id
             name
             status
+            system        
+        }
+    }
+`
+export const CATEGORY_NODE = gql`
+    query categoryNode($id: ID!) {
+        categoryNode(id: $id) {
+            id
+            name
+            status
             system
         }
     }

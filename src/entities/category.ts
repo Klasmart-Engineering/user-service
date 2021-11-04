@@ -27,7 +27,7 @@ export class Category extends CustomBaseEntity {
     public name?: string
 
     @Column({ nullable: false, default: false })
-    public system?: boolean
+    public system!: boolean
 
     @ManyToOne(() => Organization, (organization) => organization.ageRanges)
     @JoinColumn({ name: 'organization_id' })

@@ -39,7 +39,11 @@ const typeDefs = gql`
         system: Boolean!
     }
     extend type Query {
-        category(id: ID!): Category @isAdmin(entity: "category")
+        category(id: ID!): Category
+            @isAdmin(entity: "category")
+            @deprecated(reason: "use 'categoryNode'")
+        categoryNode(id: ID!): CategoryConnectionNode
+            @isAdmin(entity: "category")
         categoriesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -83,6 +87,9 @@ export default function getDefault(
                     model.getCategory(args, ctx),
                 categoriesConnection: (_parent, args, ctx: Context, info) => {
                     return model.categoriesConnection(ctx, info, args)
+                },
+                categoryNode: (_parent, args, ctx) => {
+                    return ctx.loaders.categoryNode.node.instance.load(args)
                 },
             },
         },
