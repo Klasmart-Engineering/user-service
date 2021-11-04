@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { School } from '../entities/school'
 import { Class } from '../entities/class'
-import { ClassConnectionNode } from '../types/graphQL/classConnectionNode'
+import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
@@ -139,7 +139,7 @@ function classesConnectionWhere(
 
 export function mapClassToClassConnectionNode(
     _class: Class
-): ClassConnectionNode {
+): ClassSummaryNode {
     return {
         id: _class.class_id,
         name: _class.class_name,
