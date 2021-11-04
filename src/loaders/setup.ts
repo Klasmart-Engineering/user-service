@@ -324,7 +324,7 @@ export function createContextLazyLoaders(
                         'GradeConnectionNode',
                         mapGradeToGradeConnectionNode,
                         gradeSummaryNodeFields
-                        )
+                    )
             ),
         },
         categoryNode: {
