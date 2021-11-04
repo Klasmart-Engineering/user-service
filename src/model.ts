@@ -74,8 +74,8 @@ import BrandingErrorConstants from './types/errors/branding/brandingErrorConstan
 import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
 import { Status } from './entities/status'
-import { AgeRangeConnectionNode } from './types/graphQL/ageRangeConnectionNode'
-import { SubjectConnectionNode } from './types/graphQL/subjectConnectionNode'
+import { AgeRangeConnectionNode } from './types/graphQL/ageRange'
+import { SubjectConnectionNode } from './types/graphQL/subject'
 import { runMigrations } from './initializers/migrations'
 import { usersConnectionResolver } from './pagination/usersConnection'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
@@ -557,11 +557,6 @@ export class Model {
 
         return data
     }
-
-    public classesConnection = async (
-        info: GraphQLResolveInfo,
-        paginationArgs: IPaginationArgs<Class>
-    ) => classesConnectionResolver(info, paginationArgs)
 
     public async subjectsConnection(
         _context: Context,
