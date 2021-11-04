@@ -816,6 +816,47 @@ export const CLASS_NODE_MAIN_DATA = gql`
     }
 `
 
+export const GRADE_MAIN_FIELDS = gql`
+    fragment gradeMainFields on GradeConnectionNode {
+        id
+        name
+        status
+        system
+    }
+`
+
+const GRADE_FIELDS = gql`
+    ${GRADE_MAIN_FIELDS}
+
+    fragment gradeFields on GradeConnectionNode {
+        ...gradeMainFields
+
+        fromGrade {
+            id
+            name
+            status
+            system
+        }
+
+        toGrade {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
+export const GRADE_NODE = gql`
+    ${GRADE_FIELDS}
+
+    query GradeNode($id: ID!) {
+        gradeNode(id: $id) {
+            ...gradeFields
+        }
+    }
+`
+
 export const SUBJECTS_CONNECTION = `
     query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
         subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {

@@ -57,7 +57,6 @@ import { Category } from './entities/category'
 import { Subcategory } from './entities/subcategory'
 import { Subject } from './entities/subject'
 import { Upload } from './types/upload'
-import { GradeConnectionNode } from './types/graphQL/grade'
 import {
     BrandingResult,
     BrandingImageInfo,
@@ -89,6 +88,7 @@ import { rolesConnectionResolver } from './pagination/rolesConnection'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 import { programsConnectionResolver } from './pagination/programsConnection'
 import { classesConnectionResolver } from './pagination/classesConnection'
+import { gradesConnectionResolver } from './pagination/gradesConnection'
 
 export class Model {
     public static async create() {
@@ -413,78 +413,11 @@ export class Model {
         paginationArgs: IPaginationArgs<Role>
     ) => rolesConnectionResolver(info, paginationArgs)
 
-    public async gradesConnection(
+    public gradesConnection = (
         _context: Context,
         info: GraphQLResolveInfo,
-        {
-            direction,
-            directionArgs,
-            scope,
-            filter,
-            sort,
-        }: IPaginationArgs<Grade>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-        if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('Grade.organization', 'Organization')
-            }
-
-            if (filterHasProperty('fromGradeId', filter)) {
-                scope.leftJoinAndSelect(
-                    'Grade.progress_from_grade',
-                    'FromGrade'
-                )
-            }
-
-            if (filterHasProperty('toGradeId', filter)) {
-                scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
-            }
-
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    id: 'Grade.id',
-                    name: 'Grade.name',
-                    system: 'Grade.system',
-                    status: 'Grade.status',
-                    organizationId: 'Organization.organization_id',
-                    fromGradeId: 'FromGrade.id',
-                    toGradeId: 'ToGrade.id',
-                })
-            )
-        }
-
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'id',
-                aliases: {
-                    id: 'id',
-                    name: 'name',
-                },
-                sort,
-            },
-            includeTotalCount,
-        })
-
-        for (const edge of data.edges) {
-            const grade = edge.node as Grade
-            const newNode: Partial<GradeConnectionNode> = {
-                id: grade.id,
-                name: grade.name,
-                status: grade.status,
-                system: grade.system,
-                // other properties have dedicated resolvers that use Dataloader
-            }
-
-            edge.node = newNode
-        }
-
-        return data
-    }
+        paginationArgs: IPaginationArgs<Grade>
+    ) => gradesConnectionResolver(info, paginationArgs)
 
     public async ageRangesConnection(
         _context: Context,

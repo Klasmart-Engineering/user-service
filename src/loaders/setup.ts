@@ -1,5 +1,6 @@
 import DataLoader from 'dataloader'
 import { Class } from '../entities/class'
+import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Program } from '../entities/program'
@@ -10,6 +11,10 @@ import {
     classSummaryNodeFields,
     mapClassToClassNode,
 } from '../pagination/classesConnection'
+import {
+    gradeSummaryNodeFields,
+    mapGradeToGradeConnectionNode,
+} from '../pagination/gradesConnection'
 import {
     mapProgramToProgramConnectionNode,
     programSummaryNodeFields,
@@ -55,7 +60,12 @@ import {
     schoolsForClasses,
     subjectsForClasses,
 } from './classesConnection'
-import { IGradesConnectionLoaders } from './gradesConnection'
+import {
+    fromGradeForGrades,
+    IGradeNodeDataLoaders,
+    IGradesConnectionLoaders,
+    toGradeForGrades,
+} from './gradesConnection'
 import {
     brandingForOrganizations,
     IOrganizationLoaders,
@@ -99,7 +109,7 @@ export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
     programsConnection: IProgramsConnectionLoaders
     programNode: IProgramNodeDataLoaders
-    gradesConnection?: IGradesConnectionLoaders
+    gradesConnection: IGradesConnectionLoaders
     classesConnection: IClassesConnectionLoaders
     subjectsConnection?: ISubjectsConnectionLoaders
     organizationsConnection: IOrganizationsConnectionLoaders
@@ -107,6 +117,7 @@ export interface IDataLoaders {
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    gradeNode: IGradeNodeDataLoaders
     organizationNode: IOrganizationNodeDataLoaders
 
     organizationsConnectionChild: Lazy<
@@ -276,6 +287,25 @@ export function createContextLazyLoaders(
                         'ClassConnectionNode',
                         mapClassToClassNode,
                         classSummaryNodeFields
+                    )
+            ),
+        },
+        gradesConnection: {
+            fromGrade: new Lazy<
+                DataLoader<string, GradeSummaryNode | undefined>
+            >(() => new DataLoader(fromGradeForGrades)),
+            toGrade: new Lazy<DataLoader<string, GradeSummaryNode | undefined>>(
+                () => new DataLoader(toGradeForGrades)
+            ),
+        },
+        gradeNode: {
+            node: new Lazy<NodeDataLoader<Grade, GradeSummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Grade,
+                        'GradeConnectionNode',
+                        mapGradeToGradeConnectionNode,
+                        gradeSummaryNodeFields
                     )
             ),
         },

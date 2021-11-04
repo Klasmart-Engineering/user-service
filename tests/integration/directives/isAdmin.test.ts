@@ -15,6 +15,7 @@ import {
 import {
     classesConnection,
     getAllOrganizations,
+    gradesConnection,
     permissionsConnection,
     subcategoriesConnection,
     userConnection,
@@ -54,6 +55,10 @@ import {
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { createSubcategory } from '../../factories/subcategory.factory'
+import GradesInitializer from '../../../src/initializers/grades'
+import { Grade } from '../../../src/entities/grade'
+import { createGrade } from '../../factories/grade.factory'
+
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -1174,6 +1179,105 @@ describe('isAdmin', () => {
                 expect(visiblePermissions.totalCount).to.eql(
                     systemSubcategoriesCount
                 )
+            })
+        })
+    })
+
+    describe('grades', () => {
+        let adminUser: User
+        let memberUser1: User
+        let noMemberUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let allGradesCount: number
+        let systemGradesCount: number
+        const organizationGradesCount = 6
+
+        const queryVisibleGrades = async (token?: string) => {
+            const response = await gradesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+
+            return response
+        }
+
+        beforeEach(async () => {
+            // Generating system grades
+            await GradesInitializer.run()
+            systemGradesCount = await Grade.count()
+
+            // Creating Users and Orgs
+            adminUser = await createAdminUser(testClient)
+            memberUser1 = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization1 = await createOrganization(memberUser1).save()
+            organization2 = await createOrganization().save()
+
+            // Creating Grades for organization1
+            await Grade.save(
+                Array.from(Array(organizationGradesCount), () =>
+                    createGrade(organization1)
+                )
+            )
+
+            // Creating Grades for organization2
+            await Grade.save(
+                Array.from(Array(organizationGradesCount), () =>
+                    createGrade(organization2)
+                )
+            )
+
+            // Creating membership for memberUser1 in organization1
+            await createOrganizationMembership({
+                user: memberUser1,
+                organization: organization1,
+            }).save()
+
+            allGradesCount = await Grade.count()
+        })
+
+        context('when user is not logged in', () => {
+            it('fails authentication', async () => {
+                const visibleGrades = queryVisibleGrades()
+
+                await expect(visibleGrades).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
+            })
+        })
+
+        context('when user is logged in', () => {
+            context('and user is an admin', () => {
+                it('should have access to all the existent grades', async () => {
+                    const token = generateToken(userToPayload(adminUser))
+                    const visibleGrades = await queryVisibleGrades(token)
+
+                    expect(visibleGrades.totalCount).to.eql(allGradesCount)
+                })
+            })
+
+            context('and user is an organization member', () => {
+                it('should have access to the organization and system ones', async () => {
+                    const token = generateToken(userToPayload(memberUser1))
+                    const visibleGrades = await queryVisibleGrades(token)
+
+                    expect(visibleGrades.totalCount).to.eql(
+                        organizationGradesCount + systemGradesCount
+                    )
+                })
+            })
+
+            context('and user does not belongs to any organization', () => {
+                it('should have access just to the system ones', async () => {
+                    const token = generateToken(userToPayload(noMemberUser))
+                    const visibleGrades = await queryVisibleGrades(token)
+
+                    expect(visibleGrades.totalCount).to.eql(systemGradesCount)
+                })
             })
         })
     })
