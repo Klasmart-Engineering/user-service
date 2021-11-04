@@ -198,39 +198,47 @@ export class UserPermissions {
                         OrganizationMembership
                     )
                         .createQueryBuilder()
-                        .innerJoin('OrganizationMembership.roles', 'Role')
-                        .innerJoin('Role.permissions', 'Permission')
+                        .leftJoin('OrganizationMembership.roles', 'Role')
+                        .leftJoin('Role.permissions', 'Permission')
                         .select(
                             'OrganizationMembership.organization_id, Permission.permission_name'
                         )
                         .where('OrganizationMembership.user_id = :user_id', {
                             user_id,
                         })
-                        .andWhere('Role.status = :status', {
-                            status: Status.ACTIVE,
-                        })
+                        .andWhere(
+                            '(Role.status = :status OR Role.status IS NULL)',
+                            {
+                                status: Status.ACTIVE,
+                            }
+                        )
                         .groupBy(
                             'OrganizationMembership.user_id, OrganizationMembership.organization_id, Permission.permission_name'
                         )
-                        .having('bool_and(Permission.allow) = :allowed', {
-                            allowed: true,
-                        })
+                        .having(
+                            'bool_and(Permission.allow) = :allowed OR Permission.allow IS NULL',
+                            {
+                                allowed: true,
+                            }
+                        )
                         .getRawMany()
 
                     for (const {
                         organization_id,
                         permission_id,
                     } of organizationPermissionResults) {
-                        const permissions = organizationPermissions.get(
+                        let permissions = organizationPermissions.get(
                             organization_id
                         )
-                        if (permissions) {
-                            permissions.add(permission_id)
-                        } else {
+                        if (!permissions) {
+                            permissions = new Set()
                             organizationPermissions.set(
                                 organization_id,
-                                new Set([permission_id])
+                                permissions
                             )
+                        }
+                        if (permission_id) {
+                            permissions.add(permission_id)
                         }
                     }
                     resolve(organizationPermissions)
@@ -306,11 +314,12 @@ export class UserPermissions {
         requiredPermissions: PermissionName[],
         operator: 'AND' | 'OR' = 'AND'
     ): Promise<string[]> {
-        if (requiredPermissions.length === 0) {
-            return []
-        }
         const orgIds: string[] = []
         const orgPermissions = await this.organizationPermissions(this.user_id)
+
+        if (requiredPermissions.length === 0) {
+            return Array.from(orgPermissions.keys())
+        }
 
         for (const [orgId, permissions] of orgPermissions) {
             let hasRequiredPerms = operator === 'AND' ? true : false

@@ -378,25 +378,15 @@ describe('userPermissions', () => {
         })
 
         describe('orgMembershipsWithPermissions', () => {
+            it('includes all organizations you are a member if no permissions are provided', async () => {
+                const orgIds = await userPermissions?.orgMembershipsWithPermissions(
+                    []
+                )
+                expect(orgIds.length).to.eq(2)
+            })
             context(
                 'returns orgs with memberships with ALL permissions',
                 () => {
-                    it('returns no orgs if no permissions are provided', async () => {
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            []
-                        )
-                        expect(orgIds.length).to.eq(0)
-                    })
-                    it("returns no orgs if the user doesn't have any the permissions", async () => {
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            [
-                                PermissionName.view_users_40110,
-                                PermissionName.view_user_page_40101,
-                            ],
-                            'AND'
-                        )
-                        expect(orgIds.length).to.eq(0)
-                    })
                     it('returns no orgs if the user is missing one of the permissions', async () => {
                         await grantPermission(
                             testClient,
@@ -441,13 +431,7 @@ describe('userPermissions', () => {
             context(
                 'returns orgs with memberships with ANY permissions',
                 () => {
-                    it('returns no orgs if no permissions are provided', async () => {
-                        const orgIds = await userPermissions?.orgMembershipsWithPermissions(
-                            []
-                        )
-                        expect(orgIds.length).to.eq(0)
-                    })
-                    it("returns no orgs if the user doesn't have any the permissions", async () => {
+                    it("returns no orgs if the user doesn't have any of the permissions", async () => {
                         const orgIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
                                 PermissionName.view_users_40110,

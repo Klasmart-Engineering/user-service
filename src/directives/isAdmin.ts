@@ -341,17 +341,20 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     )
 }
 
-export const nonAdminOrganizationScope: NonAdminScope<Organization> = (
+export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
     scope,
     permissions
 ) => {
-    scope
-        .select('Organization')
-        .distinct(true)
-        .innerJoin('Organization.memberships', 'OrganizationMembership')
-        .andWhere('OrganizationMembership.user_id = :d_userId', {
-            d_userId: permissions.getUserId(),
+    const orgIds = await permissions.orgMembershipsWithPermissions([])
+    scope.select('Organization').distinct(true)
+    if (orgIds.length > 0) {
+        scope.andWhere('Organization.organization_id IN (:...orgIds)', {
+            orgIds,
         })
+    } else {
+        // postgres errors if we try to do `IN ()`
+        scope.andWhere('false')
+    }
 }
 
 export const nonAdminAgeRangeScope: NonAdminScope<AgeRange> = (

@@ -15,6 +15,12 @@ import {
     programSummaryNodeFields,
 } from '../pagination/programsConnection'
 import {
+    CoreOrganizationConnectionNode,
+    mapOrganizationToOrganizationConnectionNode,
+    organizationConnectionSortingConfig,
+    organizationsConnectionQuery,
+} from '../pagination/organizationsConnection'
+import {
     mapSchoolToSchoolConnectionNode,
     schoolConnectionQuery,
     schoolsConnectionSortingConfig,
@@ -96,6 +102,12 @@ export interface IDataLoaders {
     organization: IOrganizationLoaders
     school: ISchoolLoaders
 
+    organizationsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<CoreOrganizationConnectionNode>
+        >
+    >
     usersConnectionChild: Lazy<
         DataLoader<
             IChildConnectionDataloaderKey,
@@ -142,6 +154,18 @@ export function createContextLazyLoaders(
                 () => new DataLoader(schoolsByIds)
             ),
         },
+        organizationsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        organizationsConnectionQuery,
+                        mapOrganizationToOrganizationConnectionNode,
+                        organizationConnectionSortingConfig,
+                        { permissions, entity: 'organization' }
+                    )
+                })
+        ),
         usersConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {

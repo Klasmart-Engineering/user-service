@@ -3,6 +3,7 @@ import chaiAsPromised from 'chai-as-promised'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { sortBy } from 'lodash'
+import { fake } from 'sinon'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { OrganizationOwnership } from '../../../src/entities/organizationOwnership'
@@ -172,6 +173,12 @@ describe('organizationsConnection', () => {
                 },
                 {
                     ownerUserId: {
+                        operator: 'eq',
+                        value: faker.datatype.uuid(),
+                    },
+                },
+                {
+                    userId: {
                         operator: 'eq',
                         value: faker.datatype.uuid(),
                     },
@@ -966,9 +973,8 @@ describe('organizationsConnection', () => {
                 authorization: getNonAdminAuthToken(),
             })
             expect(connection.logger.count).to.be.eq(
-                expectedCount + 2,
-                `one for permission checks
-                one for additional select distinct from organizationsConnection scope.getMany()`
+                expectedCount + 1,
+                'one extra for permission checks'
             )
         })
     })
