@@ -1,9 +1,6 @@
 import DataLoader from 'dataloader'
-<<<<<<< HEAD
 import { AgeRange } from '../entities/ageRange'
-=======
 import { Category } from '../entities/category'
->>>>>>> c25aced0 (feat(UD-1274): query and tests implemented)
 import { Class } from '../entities/class'
 import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
