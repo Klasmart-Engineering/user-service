@@ -25,69 +25,68 @@ import { createAdminUser } from '../../factories/user.factory'
 import { Category } from '../../../src/entities/category'
 import { CategorySummaryNode } from '../../../src/types/graphQL/category'
 import { createCategory } from '../../factories/category.factory'
+import { NIL_UUID } from '../../utils/database'
 
 use(chaiAsPromised)
 
-const CATEGORY_NODE_QUERY_2_NODES = gql`
-    query($id: ID!, $id2: ID!) {
-        category1: categoryNode(id: $id) {
-            id
-            name
-        }
+const buildScopeAndContext = async (permissions: UserPermissions) => {
+    const scopeObject = Category.createQueryBuilder('Category')
 
-        category2: categoryNode(id: $id2) {
-            id
-            name
-        }
+    if (!permissions.isAdmin) {
+        await nonAdminCategoryScope(scopeObject, permissions)
     }
-`
 
-async function category2Nodes(
-    testClient: ApolloServerTestClient,
-    headers: Headers,
-    id: string,
-    id2: string
-) {
-    const { query } = testClient
+    const ctxObject = ({
+        permissions,
+        loaders: createContextLazyLoaders(permissions),
+    } as unknown) as Context
 
-    const operation = () =>
-        query({
-            query: print(CATEGORY_NODE_QUERY_2_NODES),
-            variables: {
-                id,
-                id2,
-            },
-            headers,
-        })
-
-    await gqlTry(operation)
+    return { scope: scopeObject, ctx: ctxObject }
 }
 
 describe('categoryNode', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
-    let scope: SelectQueryBuilder<Category>
     let adminPermissions: UserPermissions
-    let ctx: Context
     let category1: Category
     let category2: Category
 
-    const buildScopeAndContext = async (permissions: UserPermissions) => {
-        const scopeObject = Category.createQueryBuilder('Category')
-
-        if (!permissions.isAdmin) {
-            await nonAdminCategoryScope(scopeObject, permissions)
+    const CATEGORY_NODE_QUERY_2_NODES = gql`
+        query($id: ID!, $id2: ID!) {
+            category1: categoryNode(id: $id) {
+                id
+                name
+            }
+            category2: categoryNode(id: $id2) {
+                id
+                name
+            }
         }
+    `
 
-        const ctxObject = ({
-            permissions,
-            loaders: createContextLazyLoaders(permissions),
-        } as unknown) as Context
+    async function category2Nodes(
+        testClient: ApolloServerTestClient,
+        headers: Headers,
+        id: string,
+        id2: string
+    ) {
+        const { query } = testClient
 
-        return { scope: scopeObject, ctx: ctxObject }
+        const operation = () =>
+            query({
+                query: print(CATEGORY_NODE_QUERY_2_NODES),
+                variables: {
+                    id,
+                    id2,
+                },
+                headers,
+            })
+
+        await gqlTry(operation)
     }
 
     const getCategoryNode = async (categoryId: string) => {
+        const { scope, ctx } = await buildScopeAndContext(adminPermissions)
         const coreResult = (await ctx.loaders.categoryNode.node.instance.load({
             scope,
             id: categoryId,
@@ -112,12 +111,7 @@ describe('categoryNode', () => {
         category1 = await Category.save(createCategory())
         category2 = await Category.save(createCategory())
         const admin = await createAdminUser().save()
-
-        // Emulating context
         adminPermissions = new UserPermissions(userToPayload(admin))
-        const result = await buildScopeAndContext(adminPermissions)
-        scope = result.scope
-        ctx = result.ctx
     })
 
     context('data', () => {
@@ -149,12 +143,7 @@ describe('categoryNode', () => {
 
     context('input error handling', () => {
         it('throws an error if id does not exist', async () => {
-            await expect(
-                ctx.loaders.categoryNode.node.instance.load({
-                    scope,
-                    id: '00000000-0000-0000-0000-00000',
-                })
-            ).to.be.rejected
+            await expect(getCategoryNode(NIL_UUID)).to.be.rejected
         })
     })
 })
