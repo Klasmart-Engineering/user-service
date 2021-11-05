@@ -41,7 +41,9 @@ const typeDefs = gql`
     extend type Query {
         category(id: ID!): Category
             @isAdmin(entity: "category")
-            @deprecated(reason: "use 'categoryNode'")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         categoryNode(id: ID!): CategoryConnectionNode
             @isAdmin(entity: "category")
         categoriesConnection(

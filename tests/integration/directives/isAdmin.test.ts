@@ -1398,7 +1398,7 @@ describe('isAdmin', () => {
         let systemCategoriesCount: number
         const organizationCategoriesCount = 10
 
-        const queryVisiblePermissions = async (token: string) => {
+        const queryVisibleCategories = async (token: string) => {
             const response = await categoriesConnection(
                 testClient,
                 'FORWARD',
@@ -1440,16 +1440,16 @@ describe('isAdmin', () => {
         context('admin', () => {
             it('allows access to all the categories', async () => {
                 const token = generateToken(userToPayload(adminUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(allCategoriesCount)
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(allCategoriesCount)
             })
         })
 
         context('organization member', () => {
             it('allows access to system categories and owns', async () => {
                 const token = generateToken(userToPayload(memberUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(
                     systemCategoriesCount + organizationCategoriesCount
                 )
             })
@@ -1458,8 +1458,8 @@ describe('isAdmin', () => {
         context('no member user', () => {
             it('alows access just to system categories', async () => {
                 const token = generateToken(userToPayload(noMemberUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(
                     systemCategoriesCount
                 )
             })
