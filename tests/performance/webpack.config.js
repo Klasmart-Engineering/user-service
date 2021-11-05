@@ -14,6 +14,8 @@ module.exports = {
         createUsersParallel: `./createUsersParallel`,
         parallelLanding: `./parallelLanding.ts`,
         getPaginatedUsers: `./getPaginatedUsers.ts`,
+        getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
+        getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),
