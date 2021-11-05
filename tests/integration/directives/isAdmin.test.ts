@@ -64,8 +64,6 @@ import { AgeRange } from '../../../src/entities/ageRange'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
-import { Category } from '../../../src/entities/category'
-import { createCategory } from '../../factories/category.factory'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
