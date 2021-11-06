@@ -10,6 +10,7 @@ import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
 import { SubcategoryConnectionNode } from '../../src/types/graphQL/subcategory'
+import { createSubcategory } from '../factories/subcategory.factory'
 
 interface ISubcategoryEdge {
     node: SubcategoryConnectionNode
@@ -18,7 +19,7 @@ interface ISubcategoryEdge {
 const url = 'http://localhost:8080'
 const request = supertest(url)
 
-async function makeQuery() {
+async function makeConnectionQuery() {
     return await request
         .post('/user')
         .set({
@@ -26,7 +27,7 @@ async function makeQuery() {
             Authorization: getAdminAuthToken(),
         })
         .send({
-            query: SUBCATEGORIES_CONNECTION,
+            query: print(SUBCATEGORIES_CONNECTION),
             variables: {
                 direction: 'FORWARD',
             },
@@ -68,7 +69,7 @@ describe('acceptance.subcategory', () => {
 
         context('when data is requested in a correct way', () => {
             it('should response with status 200', async () => {
-                const response = await makeQuery()
+                const response = await makeConnectionQuery()
                 const subcategoriesConnection =
                     response.body.data.subcategoriesConnection
 
@@ -113,7 +114,9 @@ describe('acceptance.subcategory', () => {
     context('subcategoryNode', () => {
         let subcategoriesEdges: ISubcategoryEdge[]
         beforeEach(async () => {
-            const subcategoryResponse = await makeQuery()
+            const subcat = await Subcategory.save(createSubcategory())
+            const subcategoriesCount = await Subcategory.count()
+            const subcategoryResponse = await makeConnectionQuery()
             subcategoriesEdges =
                 subcategoryResponse.body.data.subcategoriesConnection.edges
         })
