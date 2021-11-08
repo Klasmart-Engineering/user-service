@@ -9,13 +9,8 @@ import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
-import { SubcategoryConnectionNode } from '../../src/types/graphQL/subcategory'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { NIL_UUID } from '../utils/database'
-
-interface ISubcategoryEdge {
-    node: SubcategoryConnectionNode
-}
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -119,9 +114,8 @@ describe('acceptance.subcategory', () => {
     context('subcategoryNode', () => {
         context('when requested subcategory exists', () => {
             it('should respond succesfully', async () => {
-                let subcategoriesEdges: ISubcategoryEdge[]
                 const subcategoryResponse = await makeConnectionQuery()
-                subcategoriesEdges =
+                const subcategoriesEdges =
                     subcategoryResponse.body.data.subcategoriesConnection.edges
                 const subcategoryId = subcategoriesEdges[0].node.id
                 const response = await makeNodeQuery(subcategoryId)
