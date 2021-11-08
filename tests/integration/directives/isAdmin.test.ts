@@ -14,6 +14,7 @@ import {
 } from '../../utils/testConfig'
 import {
     ageRangesConnection,
+    categoriesConnection,
     classesConnection,
     getAllOrganizations,
     gradesConnection,
@@ -61,6 +62,8 @@ import { Grade } from '../../../src/entities/grade'
 import { createGrade } from '../../factories/grade.factory'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { createAgeRange } from '../../factories/ageRange.factory'
+import { Category } from '../../../src/entities/category'
+import { createCategory } from '../../factories/category.factory'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -1202,7 +1205,6 @@ describe('isAdmin', () => {
                 {},
                 { authorization: token }
             )
-
             return response
         }
 
@@ -1382,6 +1384,84 @@ describe('isAdmin', () => {
                         systemAgeRangesCount
                     )
                 })
+            })
+        })
+    })
+
+    describe('categories', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let organization2: Organization
+        let allCategoriesCount: number
+        let systemCategoriesCount: number
+        const organizationCategoriesCount = 10
+
+        const queryVisibleCategories = async (token: string) => {
+            const response = await categoriesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization = await createOrganization(memberUser).save()
+
+            await Category.save(
+                Array.from(Array(organizationCategoriesCount), () =>
+                    createCategory(organization)
+                )
+            )
+
+            await Category.save(
+                Array.from(Array(organizationCategoriesCount), () =>
+                    createCategory(organization2)
+                )
+            )
+
+            await createOrganizationMembership({
+                user: memberUser,
+                organization,
+            }).save()
+
+            allCategoriesCount = await Category.count()
+            systemCategoriesCount = await Category.count({
+                where: { system: true },
+            })
+        })
+
+        context('admin', () => {
+            it('allows access to all the categories', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(allCategoriesCount)
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access to system categories and owns', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(
+                    systemCategoriesCount + organizationCategoriesCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('alows access just to system categories', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(
+                    systemCategoriesCount
+                )
             })
         })
     })

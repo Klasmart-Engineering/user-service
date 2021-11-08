@@ -65,7 +65,7 @@ export function mapCategoryToCategoryConnectionNode(
         id: category.id,
         name: category.name,
         status: category.status,
-        system: category.system ?? false,
+        system: category.system,
     }
 }
 

@@ -846,6 +846,16 @@ const GRADE_FIELDS = gql`
         }
     }
 `
+export const CATEGORY_NODE = gql`
+    query categoryNode($id: ID!) {
+        categoryNode(id: $id) {
+            id
+            name
+            status
+            system
+        }
+    }
+`
 
 export const AGE_RANGE_NODE = gql`
     query ageRangeNode($id: ID!) {
