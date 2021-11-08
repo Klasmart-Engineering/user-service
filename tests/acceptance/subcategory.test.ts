@@ -11,6 +11,7 @@ import { print } from 'graphql'
 import { expect } from 'chai'
 import { SubcategoryConnectionNode } from '../../src/types/graphQL/subcategory'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
+import { NIL_UUID } from '../utils/database'
 
 interface ISubcategoryEdge {
     node: SubcategoryConnectionNode
@@ -133,8 +134,7 @@ describe('acceptance.subcategory', () => {
 
         context('when requested subcategory does not exists', () => {
             it('should respond with errors', async () => {
-                const subcategoryId = '00000000-0000-0000-0000-000000000000'
-                const response = await makeNodeQuery(subcategoryId)
+                const response = await makeNodeQuery(NIL_UUID)
                 const errors = response.body.errors
                 const subcategoryNode = response.body.data.subcategoryNode
 

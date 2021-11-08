@@ -25,7 +25,7 @@ export async function categoriesConnectionResolver(
         )
     }
 
-    scope.select(subcategoryConnectionNodeFields)
+    scope.select(categoryConnectionNodeFields)
 
     const data = await paginateData<Category>({
         direction,
@@ -69,7 +69,7 @@ export function mapCategoryToCategoryConnectionNode(
     }
 }
 
-export const subcategoryConnectionNodeFields = ([
+export const categoryConnectionNodeFields = ([
     'id',
     'name',
     'system',

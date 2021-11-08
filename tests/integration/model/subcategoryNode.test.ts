@@ -51,40 +51,6 @@ describe('subcategoryNode', () => {
     let subcategory1: Subcategory
     let subcategory2: Subcategory
 
-    const SUBCATEGORY_NODE_QUERY_2_NODES = gql`
-        query($id: ID!, $id2: ID!) {
-            subcategory1: subcategoryNode(id: $id) {
-                id
-                name
-            }
-            subcategory2: subcategoryNode(id: $id2) {
-                id
-                name
-            }
-        }
-    `
-
-    async function subcategory2Nodes(
-        testClient: ApolloServerTestClient,
-        headers: Headers,
-        id: string,
-        id2: string
-    ) {
-        const { query } = testClient
-
-        const operation = () =>
-            query({
-                query: print(SUBCATEGORY_NODE_QUERY_2_NODES),
-                variables: {
-                    id,
-                    id2,
-                },
-                headers,
-            })
-
-        await gqlTry(operation)
-    }
-
     const getSubcategoryNode = async (subcategoryId: string) => {
         const { scope, ctx } = await buildScopeAndContext(adminPermissions)
         const coreResult = (await ctx.loaders.subcategoryNode.node.instance.load(
@@ -129,6 +95,39 @@ describe('subcategoryNode', () => {
     })
 
     context('database calls', () => {
+        const SUBCATEGORY_NODE_QUERY_2_NODES = gql`
+            query($id: ID!, $id2: ID!) {
+                subcategory1: subcategoryNode(id: $id) {
+                    id
+                    name
+                }
+                subcategory2: subcategoryNode(id: $id2) {
+                    id
+                    name
+                }
+            }
+        `
+
+        async function subcategory2Nodes(
+            testClient: ApolloServerTestClient,
+            headers: Headers,
+            id: string,
+            id2: string
+        ) {
+            const { query } = testClient
+
+            const operation = () =>
+                query({
+                    query: print(SUBCATEGORY_NODE_QUERY_2_NODES),
+                    variables: {
+                        id,
+                        id2,
+                    },
+                    headers,
+                })
+
+            await gqlTry(operation)
+        }
         it('makes just one call to the database', async () => {
             connection.logger.reset()
 
