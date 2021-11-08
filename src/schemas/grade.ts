@@ -63,7 +63,9 @@ const typeDefs = gql`
 
     extend type Query {
         grade(id: ID!): Grade
-            @deprecated(reason: "Use 'gradeNode'.")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
             @isAdmin(entity: "grade")
         gradesConnection(
             direction: ConnectionDirection!

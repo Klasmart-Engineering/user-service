@@ -149,7 +149,10 @@ const typeDefs = gql`
 
     extend type Query {
         me: User
-        user(user_id: ID!): User @deprecated(reason: "Use 'userNode'")
+        user(user_id: ID!): User
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         userNode(id: ID!): UserConnectionNode @isAdmin(entity: "user")
         usersConnection(
             direction: ConnectionDirection!

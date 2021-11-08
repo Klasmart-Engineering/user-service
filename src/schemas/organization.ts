@@ -46,7 +46,9 @@ const typeDefs = gql`
     }
     extend type Query {
         organization(organization_id: ID!): Organization
-            @deprecated(reason: "Use 'organizationNode'.")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         organizations(organization_ids: [ID!]): [Organization]
             @deprecated(reason: "Use 'organizationsConnection'.")
             @isAdmin(entity: "organization")

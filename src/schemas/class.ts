@@ -83,7 +83,10 @@ const typeDefs = gql`
 
     extend type Query {
         classes: [Class] @deprecated(reason: "Use 'classesConnection'.")
-        class(class_id: ID!): Class @deprecated(reason: "Use 'classNode'.")
+        class(class_id: ID!): Class
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         classNode(id: ID!): ClassConnectionNode @isAdmin(entity: "class")
         classesConnection(
             direction: ConnectionDirection!

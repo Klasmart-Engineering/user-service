@@ -83,7 +83,9 @@ const typeDefs = gql`
     extend type Query {
         program(id: ID!): Program
             @isAdmin(entity: "program")
-            @deprecated(reason: "Use 'programNode'")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         programNode(id: ID!): ProgramConnectionNode @isAdmin(entity: "program")
         programsConnection(
             direction: ConnectionDirection!
