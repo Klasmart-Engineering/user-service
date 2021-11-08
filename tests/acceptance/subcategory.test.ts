@@ -10,7 +10,7 @@ import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
 import { SubcategoryConnectionNode } from '../../src/types/graphQL/subcategory'
-import { createSubcategory } from '../factories/subcategory.factory'
+import SubcategoriesInitializer from '../../src/initializers/subcategories'
 
 interface ISubcategoryEdge {
     node: SubcategoryConnectionNode
@@ -58,6 +58,10 @@ describe('acceptance.subcategory', () => {
 
     after(async () => {
         await connection?.close()
+    })
+
+    beforeEach(async () => {
+        await SubcategoriesInitializer.run()
     })
 
     context('subcategoriesConnection', () => {
@@ -112,16 +116,12 @@ describe('acceptance.subcategory', () => {
     })
 
     context('subcategoryNode', () => {
-        let subcategoriesEdges: ISubcategoryEdge[]
-        beforeEach(async () => {
-            const subcat = await Subcategory.save(createSubcategory())
-            const subcategoriesCount = await Subcategory.count()
-            const subcategoryResponse = await makeConnectionQuery()
-            subcategoriesEdges =
-                subcategoryResponse.body.data.subcategoriesConnection.edges
-        })
         context('when requested subcategory exists', () => {
             it('should respond succesfully', async () => {
+                let subcategoriesEdges: ISubcategoryEdge[]
+                const subcategoryResponse = await makeConnectionQuery()
+                subcategoriesEdges =
+                    subcategoryResponse.body.data.subcategoriesConnection.edges
                 const subcategoryId = subcategoriesEdges[0].node.id
                 const response = await makeNodeQuery(subcategoryId)
                 const subcategoryNode = response.body.data.subcategoryNode
