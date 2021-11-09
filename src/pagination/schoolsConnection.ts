@@ -76,19 +76,6 @@ export async function schoolConnectionQuery(
         )
     }
 
-    const selects = ([
-        'school_id',
-        'school_name',
-        'shortcode',
-        'status',
-    ] as (keyof School)[]).map((field) => `School.${field}`)
-
-    selects.push(
-        ...(['organization_id'] as (keyof Organization)[]).map(
-            (field) => `Organization.${field}`
-        )
-    )
-
     scope.select(schoolConnectionNodeFields)
 
     return scope
@@ -115,10 +102,14 @@ export async function mapSchoolToSchoolConnectionNode(
     }
 }
 
-export const schoolConnectionNodeFields = ([
-    'school_id',
-    'school_name',
-    'shortcode',
-    'status',
-    'organizationOrganizationId',
-] as (keyof School)[]).map((field) => `School.${field}`)
+export const schoolConnectionNodeFields = [
+    ...([
+        'school_id',
+        'school_name',
+        'shortcode',
+        'status',
+    ] as (keyof School)[]).map((field) => `School.${field}`),
+    ...(['organization_id'] as (keyof Organization)[]).map(
+        (field) => `Organization.${field}`
+    )
+]
