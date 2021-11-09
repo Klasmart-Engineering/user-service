@@ -183,7 +183,6 @@ export interface IDataLoaders {
         >
     >
     categoryNode: ICategoryNodeDataLoader
-    classNode: IClassNodeDataLoaders
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
 
