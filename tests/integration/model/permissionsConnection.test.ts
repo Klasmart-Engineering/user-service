@@ -5,7 +5,7 @@ import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
 import {
     permissionsConnectionResolver,
-    PERMISSIONS_CONNECTION_COLUMNS,
+    permissionSummaryNodeFields,
 } from '../../../src/pagination/permissionsConnection'
 import { PermissionConnectionNode } from '../../../src/types/graphQL/permission'
 import { createServer } from '../../../src/utils/createServer'
@@ -116,7 +116,7 @@ describe('model', () => {
         roleInvolvedPermissionsCount = await Permission.createQueryBuilder(
             'Permission'
         )
-            .select(PERMISSIONS_CONNECTION_COLUMNS)
+            .select(permissionSummaryNodeFields)
             .innerJoin('Permission.roles', 'Role')
             .getCount()
 
@@ -313,7 +313,7 @@ describe('model', () => {
             const studentPermissions = await Permission.createQueryBuilder(
                 'Permission'
             )
-                .select(PERMISSIONS_CONNECTION_COLUMNS)
+                .select(permissionSummaryNodeFields)
                 .innerJoin('Permission.roles', 'Role')
                 .where('Role.role_id = :studentRoleId', { studentRoleId })
                 .orderBy('Permission.permission_name', 'ASC', 'NULLS LAST')

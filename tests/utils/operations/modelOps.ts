@@ -401,7 +401,21 @@ const PROGRAM_NODE_QUERY = gql`
     }
 `
 
+export const PERMISSION_NODE_FIELDS = gql`
+    fragment permissionFields on PermissionsConnectionNode {
+        id
+        name
+        category
+        group
+        level
+        description
+        allow
+    }
+`
+
 export const PERMISSIONS_CONNECTION = gql`
+    ${PERMISSION_NODE_FIELDS}
+
     query(
         $direction: ConnectionDirection!
         $directionArgs: ConnectionsDirectionArgs
@@ -419,13 +433,7 @@ export const PERMISSIONS_CONNECTION = gql`
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    category
-                    group
-                    level
-                    description
-                    allow
+                    ...permissionFields
                 }
             }
 
@@ -435,6 +443,16 @@ export const PERMISSIONS_CONNECTION = gql`
                 startCursor
                 endCursor
             }
+        }
+    }
+`
+
+export const PERMISSION_NODE = gql`
+    ${PERMISSION_NODE_FIELDS}
+
+    query PermissionNode($id: ID!) {
+        permissionNode(id: $id) {
+            ...permissionFields
         }
     }
 `

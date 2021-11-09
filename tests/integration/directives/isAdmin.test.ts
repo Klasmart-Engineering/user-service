@@ -926,7 +926,7 @@ describe('isAdmin', () => {
         let allPermissionsCount: number
         let roleRelatedPermissionsCount: number
 
-        const queryVisiblePermissions = async (token: string) => {
+        const queryVisiblePermissions = async (token?: string) => {
             const response = await permissionsConnection(
                 testClient,
                 'FORWARD',
@@ -959,31 +959,50 @@ describe('isAdmin', () => {
                 .getCount()
         })
 
-        context('admin', () => {
-            it('allows access to all the permissions', async () => {
-                const token = generateToken(userToPayload(adminUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(
-                    allPermissionsCount
+        context('when user is not logged in', () => {
+            it('fails authentication', async () => {
+                const gqlResult = queryVisiblePermissions()
+
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
                 )
             })
         })
 
-        context('organization member', () => {
-            it('allows access just to role related permissions', async () => {
-                const token = generateToken(userToPayload(memberUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(
-                    roleRelatedPermissionsCount
-                )
+        context('when user is logged in', () => {
+            context('and user is admin', () => {
+                it('allows access to all the permissions', async () => {
+                    const token = generateToken(userToPayload(adminUser))
+                    const visiblePermissions = await queryVisiblePermissions(
+                        token
+                    )
+                    expect(visiblePermissions.totalCount).to.eql(
+                        allPermissionsCount
+                    )
+                })
             })
-        })
 
-        context('no member user', () => {
-            it('deny access to any permission', async () => {
-                const token = generateToken(userToPayload(noMemberUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(0)
+            context('and user is organization member', () => {
+                it('allows access just to role related permissions', async () => {
+                    const token = generateToken(userToPayload(memberUser))
+                    const visiblePermissions = await queryVisiblePermissions(
+                        token
+                    )
+                    expect(visiblePermissions.totalCount).to.eql(
+                        roleRelatedPermissionsCount
+                    )
+                })
+            })
+
+            context('and user is non member user', () => {
+                it('deny access to any permission', async () => {
+                    const token = generateToken(userToPayload(noMemberUser))
+                    const visiblePermissions = await queryVisiblePermissions(
+                        token
+                    )
+                    expect(visiblePermissions.totalCount).to.eql(0)
+                })
             })
         })
     })

@@ -125,6 +125,13 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
+import { Permission } from '../entities/permission'
+import {
+    IPermissionNodeDataLoaders,
+    mapPermissionToPermissionConnectionNode,
+    permissionSummaryNodeFields,
+} from '../pagination/permissionsConnection'
+import { PermissionConnectionNode } from '../types/graphQL/permission'
 import {
     IRoleNodeDataLoaders,
     mapRoleToRoleConnectionNode,
@@ -148,6 +155,7 @@ export interface IDataLoaders {
     roleNode: IRoleNodeDataLoaders
     gradeNode: IGradeNodeDataLoaders
     organizationNode: IOrganizationNodeDataLoaders
+    permissionNode: IPermissionNodeDataLoaders
     subcategoryNode: ISubcategoryNodeDataLoader
     ageRangeNode: IAgeRangeNodeDataLoader
 
@@ -361,6 +369,19 @@ export function createContextLazyLoaders(
                         'GradeConnectionNode',
                         mapGradeToGradeConnectionNode,
                         gradeSummaryNodeFields
+                    )
+            ),
+        },
+        permissionNode: {
+            node: new Lazy<
+                NodeDataLoader<Permission, PermissionConnectionNode>
+            >(
+                () =>
+                    new NodeDataLoader(
+                        Permission,
+                        'PermissionConnectionNode',
+                        mapPermissionToPermissionConnectionNode,
+                        permissionSummaryNodeFields
                     )
             ),
         },
