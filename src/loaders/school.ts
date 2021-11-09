@@ -50,10 +50,10 @@ export const schoolsByIds = async (
 
 /**
  * The schoolConnectionNode requires a join between School and Organization.
- * The mapSchoolToSchoolConnectionNode returns a Promise. These two changes 
- * required too much changes and use of Unions in the generic NodeDataLoader 
- * to be able to use it only for this case. All the rest of the single node 
- * queries were already implemented well with the Generic one. That's why it 
+ * The mapSchoolToSchoolConnectionNode returns a Promise. These two changes
+ * required too much changes and use of Unions in the generic NodeDataLoader
+ * to be able to use it only for this case. All the rest of the single node
+ * queries were already implemented well with the Generic one. That's why it
  * was added a custom one for School.
  */
 export class SchoolNodeDataLoader extends DataLoader<
@@ -75,7 +75,7 @@ export class SchoolNodeDataLoader extends DataLoader<
                     ids,
                 })
                 .innerJoin('School.organization', 'Organization')
-            console.log(scope)    
+            console.log(scope)
             const entities = await scope.getMany()
             const nodes: ISchoolsConnectionNode[] = []
             for (const entity of entities) {
