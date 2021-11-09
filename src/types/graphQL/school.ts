@@ -5,7 +5,7 @@ export interface ISchoolsConnectionNode {
     name: string
     status: Status
     shortCode?: string
-    organizationId?: string
+    organizationId: string
 }
 
 export interface SchoolSummaryNode {
