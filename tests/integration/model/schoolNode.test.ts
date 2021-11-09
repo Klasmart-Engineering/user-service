@@ -97,7 +97,7 @@ describe('schoolNode', () => {
     }
 
     const getSchoolNode = async (schoolId: string) => {
-        const coreResult = (await ctx.loaders.schoolNode.node.instance.load({
+        const coreResult = (await ctx.loaders.schoolNode.instance.load({
             scope,
             id: schoolId,
         })) as ISchoolsConnectionNode
@@ -174,7 +174,7 @@ describe('schoolNode', () => {
     context('input error handling', () => {
         it("throws an error if id doesn't exist", async () => {
             await expect(
-                ctx.loaders.schoolNode.node.instance.load({
+                ctx.loaders.schoolNode.instance.load({
                     scope,
                     id: '00000000-0000-0000-0000-00000',
                 })

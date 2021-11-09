@@ -134,7 +134,7 @@ export default function getDefault(
                     return model.schoolsConnection(ctx, info, args)
                 },
                 schoolNode: (_parent, args, ctx, _info) => {
-                    return ctx.loaders.schoolNode.node.instance.load(args)
+                    return ctx.loaders.schoolNode.instance.load(args)
                 },
             },
             SchoolMembership: {

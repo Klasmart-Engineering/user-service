@@ -42,7 +42,6 @@ import {
     mapSchoolToSchoolConnectionNode,
     schoolConnectionQuery,
     schoolsConnectionSortingConfig,
-    schoolConnectionNodeFields,
 } from '../pagination/schoolsConnection'
 import {
     CoreUserConnectionNode,
@@ -101,8 +100,8 @@ import {
 import { NodeDataLoader } from './genericNode'
 import {
     ISchoolLoaders,
-    ISchoolNodeDataLoaders,
     organizationsForSchools,
+    SchoolNodeDataLoader,
     schoolsByIds,
 } from './school'
 import {
@@ -185,7 +184,7 @@ export interface IDataLoaders {
     >
     categoryNode: ICategoryNodeDataLoader
     classNode: IClassNodeDataLoaders
-    schoolNode: ISchoolNodeDataLoaders
+    schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
 
 export function createContextLazyLoaders(
@@ -322,17 +321,9 @@ export function createContextLazyLoaders(
                     )
             ),
         },
-        schoolNode: {
-            node: new Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>(
-                () =>
-                    new NodeDataLoader(
-                        School,
-                        'SchoolConnectionNode',
-                        mapSchoolToSchoolConnectionNode,
-                        schoolConnectionNodeFields
-                    )
-            ),
-        },
+        schoolNode: new Lazy<SchoolNodeDataLoader>(
+            () => new SchoolNodeDataLoader()
+        ),
         classesConnection: {
             schools: new Lazy<DataLoader<string, SchoolSummaryNode[]>>(
                 () => new DataLoader(schoolsForClasses)

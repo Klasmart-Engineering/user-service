@@ -1,5 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
+import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
@@ -46,7 +47,9 @@ export async function schoolsConnectionResolver(
     return {
         totalCount: data.totalCount,
         pageInfo: data.pageInfo,
-        edges: data.edges.map(mapSchoolEdgeToSchoolConnectionEdge),
+        edges: await Promise.all(
+            data.edges.map(mapSchoolEdgeToSchoolConnectionEdge)
+        ),
     }
 }
 
@@ -54,10 +57,14 @@ export async function schoolConnectionQuery(
     scope: SelectQueryBuilder<School>,
     filter?: IEntityFilter
 ) {
+    // Required for building SchoolConnectionNode
+    // TODO remove once School.organization_id FK is exposed on the Entity
+    scope.innerJoin('School.organization', 'Organization')
+
     if (filter) {
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
-                organizationId: 'School.organizationOrganizationId',
+                organizationId: 'School.organization',
                 // Could also refer to SchoolMembership.school_id
                 schoolId: 'School.school_id',
                 name: 'school_name',
@@ -69,29 +76,42 @@ export async function schoolConnectionQuery(
         )
     }
 
+    const selects = ([
+        'school_id',
+        'school_name',
+        'shortcode',
+        'status',
+    ] as (keyof School)[]).map((field) => `School.${field}`)
+
+    selects.push(
+        ...(['organization_id'] as (keyof Organization)[]).map(
+            (field) => `Organization.${field}`
+        )
+    )
+
     scope.select(schoolConnectionNodeFields)
 
     return scope
 }
 
-function mapSchoolEdgeToSchoolConnectionEdge(
+async function mapSchoolEdgeToSchoolConnectionEdge(
     edge: IEdge<School>
-): IEdge<ISchoolsConnectionNode> {
+): Promise<IEdge<ISchoolsConnectionNode>> {
     return {
-        node: mapSchoolToSchoolConnectionNode(edge.node),
+        node: await mapSchoolToSchoolConnectionNode(edge.node),
         cursor: edge.cursor,
     }
 }
 
-export function mapSchoolToSchoolConnectionNode(
+export async function mapSchoolToSchoolConnectionNode(
     school: School
-): ISchoolsConnectionNode {
+): Promise<ISchoolsConnectionNode> {
     return {
         id: school.school_id,
         name: school.school_name,
         status: school.status,
         shortCode: school.shortcode,
-        organizationId: school.organizationOrganizationId,
+        organizationId: (await school.organization)?.organization_id || '',
     }
 }
 

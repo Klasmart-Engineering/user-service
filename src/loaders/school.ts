@@ -2,16 +2,18 @@ import DataLoader from 'dataloader'
 import { School } from '../entities/school'
 import { Organization } from '../entities/organization'
 import { Lazy } from '../utils/lazyLoading'
-import { NodeDataLoader } from './genericNode'
+import { buildStaticAPIErrorProps, NodeDataLoader } from './genericNode'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
+import { SelectQueryBuilder } from 'typeorm'
+import { APIError } from '../types/errors/apiError'
+import {
+    schoolConnectionNodeFields,
+    mapSchoolToSchoolConnectionNode,
+} from '../pagination/schoolsConnection'
 
 export interface ISchoolLoaders {
     organization: Lazy<DataLoader<string, Organization | undefined>>
     schoolById: Lazy<DataLoader<string, School | undefined>>
-}
-
-export interface ISchoolNodeDataLoaders {
-    node: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
 
 export const organizationsForSchools = async (
@@ -44,4 +46,50 @@ export const schoolsByIds = async (
         ])
     )
     return schoolIds.map((id) => schools.get(id))
+}
+
+export class SchoolNodeDataLoader extends DataLoader<
+    { id: string; scope: SelectQueryBuilder<School> },
+    ISchoolsConnectionNode | APIError
+> {
+    constructor() {
+        super(async function (
+            keys: readonly { id: string; scope: SelectQueryBuilder<School> }[]
+        ): Promise<(ISchoolsConnectionNode | APIError)[]> {
+            const ids = []
+            const scope = keys[0].scope
+            for (const key of keys) {
+                ids.push(key.id)
+            }
+            scope
+                .select(schoolConnectionNodeFields)
+                .andWhere(`"School"."school_id" IN (:...ids)`, {
+                    ids,
+                })
+                .innerJoin('School.organization', 'Organization')
+
+            const entities = await scope.getMany()
+            const nodes: ISchoolsConnectionNode[] = []
+            for (const entity of entities) {
+                nodes.push(await mapSchoolToSchoolConnectionNode(entity))
+            }
+
+            const nodesMap = new Map<string, ISchoolsConnectionNode>(
+                nodes.map((node) => [node.id, node])
+            )
+
+            const staticErrorProps = buildStaticAPIErrorProps(
+                'SchoolConnectionNode'
+            )
+
+            return ids.map(
+                (id) =>
+                    nodesMap.get(id) ??
+                    new APIError({
+                        ...staticErrorProps,
+                        entityName: id,
+                    })
+            )
+        })
+    }
 }
