@@ -103,7 +103,7 @@ describe('schoolsConnection', () => {
                 authorization: getAdminAuthToken(),
             })
             expect(connection.logger.count).to.equal(
-                2,
+                3,
                 '1. COUNT, 2. DISTINCT ids, 3. SchoolConnectionNode data'
             )
         })
