@@ -111,5 +111,5 @@ export const schoolConnectionNodeFields = [
     ] as (keyof School)[]).map((field) => `School.${field}`),
     ...(['organization_id'] as (keyof Organization)[]).map(
         (field) => `Organization.${field}`
-    )
+    ),
 ]
