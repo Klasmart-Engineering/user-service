@@ -1,8 +1,20 @@
-import gql from 'graphql-tag'
-import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { GraphQLResolveInfo } from 'graphql'
+import gql from 'graphql-tag'
+import {
+    orgsForUsers,
+    schoolsForUsers,
+    rolesForUsers,
+} from '../loaders/usersConnection'
 import { Context } from '../main'
+import { Model } from '../model'
 import { ClassConnectionNode } from '../types/graphQL/class'
+import { filterHasProperty } from '../utils/pagination/filtering'
+import {
+    IChildPaginationArgs,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
+import Dataloader from 'dataloader'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -66,6 +78,22 @@ const typeDefs = gql`
         grades: [GradeSummaryNode!]
         subjects: [SubjectSummaryNode!]
         programs: [ProgramSummaryNode!]
+
+        studentsConnection(
+            count: PageSize
+            cursor: String
+            filter: UserFilter
+            sort: UserSortInput
+            direction: ConnectionDirection
+        ): UsersConnectionResponse
+
+        teachersConnection(
+            count: PageSize
+            cursor: String
+            filter: UserFilter
+            sort: UserSortInput
+            direction: ConnectionDirection
+        ): UsersConnectionResponse
     }
 
     type SchoolSummaryNode {
@@ -192,6 +220,50 @@ export default function getDefault(
                         class_.id
                     )
                 },
+                studentsConnection: async (
+                    classNode: ClassConnectionNode,
+                    args: IChildPaginationArgs,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    // edge case since usersConnection supports multiple classId filters
+                    if (filterHasProperty('classId', args.filter)) {
+                        throw new Error(
+                            'Cannot filter by classId on studentsConnection'
+                        )
+                    }
+                    return ctx.loaders.usersConnectionChild.instance.load({
+                        args,
+                        includeTotalCount: shouldIncludeTotalCount(info, args),
+                        parent: {
+                            id: classNode.id,
+                            filterKey: 'classStudyingId',
+                            pivot: '"ClassStudying"."class_id"',
+                        },
+                    })
+                },
+                teachersConnection: async (
+                    classNode: ClassConnectionNode,
+                    args: IChildPaginationArgs,
+                    ctx: Context,
+                    info: GraphQLResolveInfo
+                ) => {
+                    // edge case since usersConnection supports multiple classId filters
+                    if (filterHasProperty('classId', args.filter)) {
+                        throw new Error(
+                            'Cannot filter by classId on teachersConnection'
+                        )
+                    }
+                    return ctx.loaders.usersConnectionChild.instance.load({
+                        args,
+                        includeTotalCount: shouldIncludeTotalCount(info, args),
+                        parent: {
+                            id: classNode.id,
+                            filterKey: 'classTeachingId',
+                            pivot: '"ClassTeaching"."class_id"',
+                        },
+                    })
+                },
             },
             Mutation: {
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
@@ -203,9 +275,31 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
+                    // Add dataloaders for the usersConnection
+                    // TODO remove once corresponding child connections have been created
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys)
+                        ),
+                        roles: new Dataloader((keys) => rolesForUsers(keys)),
+                    }
                     return model.classesConnection(info, args)
                 },
                 classNode: (_parent, args, ctx: Context) => {
+                    // Add dataloaders for the usersConnection
+                    // TODO remove once corresponding child connections have been created
+                    ctx.loaders.usersConnection = {
+                        organizations: new Dataloader((keys) =>
+                            orgsForUsers(keys)
+                        ),
+                        schools: new Dataloader((keys) =>
+                            schoolsForUsers(keys)
+                        ),
+                        roles: new Dataloader((keys) => rolesForUsers(keys)),
+                    }
                     return ctx.loaders.classNode.node.instance.load(args)
                 },
             },

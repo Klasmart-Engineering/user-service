@@ -237,8 +237,11 @@ export function getWhereClauseFromFilter(
 // used to check for entity relations that require SQL joins.
 export function filterHasProperty(
     property: string,
-    filter: IEntityFilter
+    filter?: IEntityFilter
 ): boolean {
+    if (!filter) {
+        return false
+    }
     let hasProperty = false
 
     for (const key of Object.keys(filter)) {

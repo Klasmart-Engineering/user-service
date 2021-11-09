@@ -725,6 +725,23 @@ const CLASS_FIELDS = gql`
             status
             system
         }
+
+        studentsConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
+        }
+        teachersConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
+        }
     }
 `
 

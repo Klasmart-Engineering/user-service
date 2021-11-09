@@ -6,8 +6,8 @@ import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import {
     orgsForUsers,
-    rolesForUsers,
     schoolsForUsers,
+    rolesForUsers,
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
