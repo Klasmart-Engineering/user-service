@@ -48,6 +48,14 @@ export const schoolsByIds = async (
     return schoolIds.map((id) => schools.get(id))
 }
 
+/**
+ * The schoolConnectionNode requires a join between School and Organization.
+ * The mapSchoolToSchoolConnectionNode returns a Promise. These two changes 
+ * required too much changes and use of Unions in the generic NodeDataLoader 
+ * to be able to use it only for this case. All the rest of the single node 
+ * queries were already implemented well with the Generic one. That's why it 
+ * was added a custom one for School.
+ */
 export class SchoolNodeDataLoader extends DataLoader<
     { id: string; scope: SelectQueryBuilder<School> },
     ISchoolsConnectionNode | APIError
