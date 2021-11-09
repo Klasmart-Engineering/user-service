@@ -200,7 +200,7 @@ export default function getDefault(
                 class: (_parent, args, ctx, _info) => model.getClass(args, ctx),
                 classes: (_parent, _args, ctx) => model.getClasses(ctx),
                 classesConnection: (_parent, args, ctx: Context, info) => {
-                    return model.classesConnection(info, args)
+                    return model.classesConnection(_parent, info, args )
                 },
                 classNode: (_parent, args, ctx: Context) => {
                     return ctx.loaders.classNode.node.instance.load(args)

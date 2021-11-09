@@ -4,16 +4,11 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
-import { ISchoolsConnectionNode } from '../types/graphQL/schoolsConnectionNode'
 import {
     IChildPaginationArgs,
-    IPaginationArgs,
 } from '../utils/pagination/paginate'
-import { Class } from '../entities/class'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { GraphQLResolveInfo } from 'graphql'
-import { classesConnection } from '../../tests/utils/operations/modelOps'
-import { classesConnectionResolver } from '../pagination/classesConnection'
 
 const typeDefs = gql`
     extend type Mutation {

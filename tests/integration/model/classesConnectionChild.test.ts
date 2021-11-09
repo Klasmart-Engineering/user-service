@@ -1,4 +1,3 @@
-import { Organization } from '../../../src/entities/organization'
 import {
     createContextLazyLoaders,
     IDataLoaders,
@@ -8,14 +7,8 @@ import {
     createTestConnection,
     TestConnection,
 } from '../../utils/testConnection'
-import { getRepository } from 'typeorm'
-import { createOrganization } from '../../factories/organization.factory'
 import { User } from '../../../src/entities/user'
 import { expect } from 'chai'
-import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
-import { Role } from '../../../src/entities/role'
-import { createRole } from '../../factories/role.factory'
-import { classesConnectionQuery } from '../../../src/pagination/classesConnection'
 import {
     classesChildConnection,
     classesChildConnectionResolver,
@@ -37,10 +30,9 @@ import {
 import { Model } from '../../../src/model'
 import { createAdminUser } from '../../utils/testEntities'
 import { createServer } from '../../../src/utils/createServer'
-import { getAdminAuthToken } from '../../utils/testConfig'
 import { classesConnection } from '../../utils/operations/modelOps'
 
-describe.only('classesChildConnection', async () => {
+describe('classesChildConnection', async () => {
     let connection: TestConnection
     let loaders: IDataLoaders
 
@@ -76,7 +68,10 @@ describe.only('classesChildConnection', async () => {
         class3 = await createClass([school2]).save()
         class4 = await createClass([school2]).save()
 
-        schools = new Map([[school1, [class1, class2]]])
+        schools = new Map([
+            [school1, [class1, class2]],
+            [school2, [class3, class4]],
+        ])
 
         const token = { id: clientUser1.user_id, email: clientUser1.email }
         const permissions = new UserPermissions(token)
@@ -106,8 +101,10 @@ describe.only('classesChildConnection', async () => {
 
             const sorted = schools
                 .get(school1)!
-                .map((classObj) => classObj.class_name)
+                .map((_class) => _class.class_name)
                 .sort()
+
+            console.info(sorted)
 
             expect(result.edges.map((e) => e.node.name)).deep.equal(sorted)
         })
@@ -133,9 +130,10 @@ describe.only('classesChildConnection', async () => {
                 false
             )
 
-            expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                [class1.class_id, class2.class_id]
-            )
+            expect(result.edges.map((e) => e.node.id)).to.have.same.members([
+                class1.class_id,
+                class2.class_id,
+            ])
         })
 
         it('uses exactly one dataloader when called with different schools', async () => {
@@ -196,9 +194,7 @@ describe.only('classesChildConnection', async () => {
 
                 const result = await callResolver(fakeInfo)
 
-                expect(result.totalCount).to.eq(
-                    schools.get(school2)?.length
-                )
+                expect(result.totalCount).to.eq(schools.get(school2)?.length)
             })
 
             it('doesnt return total count', async () => {

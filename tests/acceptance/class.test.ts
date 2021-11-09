@@ -918,91 +918,10 @@ describe('acceptance.class', () => {
             expect(response.body).to.have.property('errors')
         })
 
-        it('is a child connection of a school', async () => {
-            const query = `
-                query schoolConnection($direction: ConnectionDirection!) {
-                    schoolConnection(direction:$direction){
-                        edges {
-                            node {
-                                classesChildConnection{
-                                    edges{
-                                        node{
-                                            id
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }`
-
-            const user = await createUser().save()
-            const org = await createOrganization().save()
-            const role = await createRole(undefined, org).save()
-            await createOrganizationMembership({
-                user: user,
-                organization: org,
-                roles: [role],
-            }).save()
-
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
-
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: token,
-                })
-
-                .send({
-                    query,
-                    variables: {
-                        direction: 'FORWARD',
-                    },
-                })
-
-            expect(response.status).to.eq(200)
-
-            expect(
-                response.body.data.schoolConnection.edges[0].node
-                    .organizationsConnection.edges[0].node.id
-            ).to.eq(org.organization_id)
-        })
-    })
-
-    context('classNode', () => {
-        context('when data is requested in a correct way', () => {
-            it('should respond with status 200', async () => {
-                const classId = class1Ids[0]
-                const response = await request
-                    .post('/user')
-                    .set({
-                        ContentType: 'application/json',
-                        Authorization: getAdminAuthToken(),
-                    })
-                    .send({
-                        query: print(CLASS_NODE),
-                        variables: {
-                            id: classId,
-                        },
-                    })
-
-                const classNode = response.body.data.classNode
-
-                expect(response.status).to.eq(200)
-                expect(classNode.id).to.equal(classId)
-            })
-        })
-
-        context(
-            "when request is using a param that doesn't exist ('classId' instead of 'id')",
-            () => {
-                it('should respond with status 400', async () => {
-                    const classId = '7h15-15-n07-4n-1d'
+        context('classNode', () => {
+            context('when data is requested in a correct way', () => {
+                it('should respond with status 200', async () => {
+                    const classId = class1Ids[0]
                     const response = await request
                         .post('/user')
                         .set({
@@ -1012,18 +931,44 @@ describe('acceptance.class', () => {
                         .send({
                             query: print(CLASS_NODE),
                             variables: {
-                                classId,
+                                id: classId,
                             },
                         })
 
-                    const errors = response.body.errors
-                    const data = response.body.data
+                    const classNode = response.body.data.classNode
 
-                    expect(response.status).to.eq(400)
-                    expect(errors).to.exist
-                    expect(data).to.be.undefined
+                    expect(response.status).to.eq(200)
+                    expect(classNode.id).to.equal(classId)
                 })
-            }
-        )
+            })
+
+            context(
+                "when request is using a param that doesn't exist ('classId' instead of 'id')",
+                () => {
+                    it('should respond with status 400', async () => {
+                        const classId = '7h15-15-n07-4n-1d'
+                        const response = await request
+                            .post('/user')
+                            .set({
+                                ContentType: 'application/json',
+                                Authorization: getAdminAuthToken(),
+                            })
+                            .send({
+                                query: print(CLASS_NODE),
+                                variables: {
+                                    classId,
+                                },
+                            })
+
+                        const errors = response.body.errors
+                        const data = response.body.data
+
+                        expect(response.status).to.eq(400)
+                        expect(errors).to.exist
+                        expect(data).to.be.undefined
+                    })
+                }
+            )
+        })
     })
 })

@@ -1038,24 +1038,6 @@ export async function runQuery(
     return res.data
 }
 
-export async function runQuery(
-    queryString: string,
-    testClient: ApolloServerTestClient,
-    headers?: Headers,
-    variables?: Record<string, unknown>
-) {
-    const { query } = testClient
-    const operation = () =>
-        query({
-            query: queryString,
-            headers,
-            variables,
-        })
-
-    const res = await gqlTry(operation)
-    return res.data
-}
-
 /**
  * Creates a new user, and makes extra assertions about what the new state should be (e.g. it got added to the db).
  */

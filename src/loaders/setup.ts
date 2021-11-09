@@ -8,11 +8,8 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
 import {
     classesConnectionQuery,
-    classesConnectionSortingConfig,
-    mapClassToClassConnectionNode,
-} from '../pagination/classesConnection'
-    classSummaryNodeFields,
-    mapClassToClassNode,
+    classesConnectionSortingConfig, classesSummeryNodeFields,
+    mapClassToClassConnectionNode
 } from '../pagination/classesConnection'
 import {
     mapProgramToProgramConnectionNode,
@@ -92,6 +89,7 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
+import { ClassConnectionNode } from '../types/graphQL/class'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -122,6 +120,12 @@ export interface IDataLoaders {
         DataLoader<
             IChildConnectionDataloaderKey,
             IPaginatedResponse<ISchoolsConnectionNode>
+        >
+    >
+    classesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<ClassConnectionNode>
         >
     >
     classNode: IClassNodeDataLoaders
@@ -265,8 +269,8 @@ export function createContextLazyLoaders(
                     new NodeDataLoader(
                         Class,
                         'ClassConnectionNode',
-                        mapClassToClassNode,
-                        classSummaryNodeFields
+                        mapClassToClassConnectionNode,
+                        classesSummeryNodeFields
                     )
             ),
         },

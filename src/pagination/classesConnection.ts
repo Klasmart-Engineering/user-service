@@ -1,7 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { School } from '../entities/school'
 import { Class } from '../entities/class'
-import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
@@ -17,6 +16,14 @@ import {
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
+import { ClassConnectionNode } from '../types/graphQL/class'
+
+export const classesSummeryNodeFields = [
+        'Class.class_id',
+        'Class.class_name',
+        'Class.status',
+        'Class.shortcode',
+    ]
 
 export const classesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'class_id',
@@ -69,12 +76,7 @@ export async function classesConnectionQuery(
 }
 
 function classesConnectionSelect(scope: SelectQueryBuilder<Class>) {
-    scope.select([
-        'Class.class_id',
-        'Class.class_name',
-        'Class.status',
-        'Class.shortcode',
-    ])
+    scope.select(classesSummeryNodeFields)
 }
 
 function classesConnectionFilter(
@@ -93,7 +95,7 @@ function classesConnectionFilter(
             'schoolId',
             () =>
                 !scopeHasJoin(scope, School) &&
-                scope.innerJoin('Class.schools', 'School')
+                    scope.innerJoin('Class.schools', 'School')
         )
         .ifFilter(ageRangeFilters, () => {
             scope
@@ -137,9 +139,7 @@ function classesConnectionWhere(
     )
 }
 
-export function mapClassToClassConnectionNode(
-    _class: Class
-): ClassSummaryNode {
+export function mapClassToClassConnectionNode(_class: Class): ClassConnectionNode {
     return {
         id: _class.class_id,
         name: _class.class_name,
