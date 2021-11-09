@@ -39,6 +39,7 @@ import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
+import { NIL_UUID } from '../../utils/database'
 import { class2Nodes } from '../../utils/operations/modelOps'
 import { userToPayload } from '../../utils/operations/userOps'
 import { getAdminAuthToken } from '../../utils/testConfig'
@@ -608,7 +609,7 @@ describe('classNode', () => {
             await expect(
                 ctx.loaders.classNode.node.instance.load({
                     scope,
-                    id: '00000000-0000-0000-0000-00000',
+                    id: NIL_UUID,
                 })
             ).to.be.rejected
         })

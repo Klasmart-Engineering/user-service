@@ -619,18 +619,36 @@ export const CATEGORIES_CONNECTION = `
         }
     }`
 
-export const ROLES_CONNECTION = `
-    query rolesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: RoleFilter, $sortArgs: RoleSortInput) {
-        rolesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+export const ROLE_FIELDS = gql`
+    fragment roleFields on RoleConnectionNode {
+        id
+        name
+        status
+        system
+        description
+    }
+`
+
+export const ROLES_CONNECTION = gql`
+    ${ROLE_FIELDS}
+
+    query rolesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: RoleFilter
+        $sortArgs: RoleSortInput
+    ) {
+        rolesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    status
-                    system
-                    description
+                    ...roleFields
                 }
             }
 
@@ -640,6 +658,16 @@ export const ROLES_CONNECTION = `
                 startCursor
                 endCursor
             }
+        }
+    }
+`
+
+export const ROLE_NODE = gql`
+    ${ROLE_FIELDS}
+
+    query RoleNode($id: ID!) {
+        roleNode(id: $id) {
+            ...roleFields
         }
     }
 `

@@ -31,6 +31,7 @@ import { Status } from '../../src/entities/status'
 import { BrandingImageTag } from '../../src/types/graphQL/branding'
 import { Organization } from '../../src/entities/organization'
 import { getNonAdminAuthToken } from '../utils/testConfig'
+import { NIL_UUID } from '../utils/database'
 
 use(chaiAsPromised)
 
@@ -504,8 +505,7 @@ describe('model.branding', () => {
 
                 it('should throw an error', async () => {
                     const type = BrandingImageTag.ICON
-                    const noneExistingId =
-                        '00000000-0000-0000-0000-000000000000'
+                    const noneExistingId = NIL_UUID
                     const func = () =>
                         deleteBrandingImageQuery(
                             testClient,

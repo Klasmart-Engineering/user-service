@@ -3,6 +3,7 @@ import { BaseConnectionOptions } from 'typeorm/connection/BaseConnectionOptions'
 import { View } from 'typeorm/schema-builder/view/View'
 
 export const NIL_UUID = '00000000-0000-0000-0000-000000000000'
+
 /**
  * Port of TypeORM protected function QueryRunner.escapePath
  *

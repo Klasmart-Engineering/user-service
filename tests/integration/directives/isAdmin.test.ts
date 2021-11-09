@@ -51,8 +51,8 @@ import { createSchoolMembership } from '../../factories/schoolMembership.factory
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
 import {
+    createEntityScope,
     nonAdminOrganizationScope,
-    nonAdminRoleScope,
 } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
@@ -990,7 +990,9 @@ describe('isAdmin', () => {
 
     describe('roles', async () => {
         let usersList: User[] = []
+        let superAdmin: User
         let user: User
+        let noMember: User
         let roleList: Role[] = []
         let organizations: Organization[] = []
         let userPermissions: UserPermissions
@@ -1002,7 +1004,7 @@ describe('isAdmin', () => {
             organizations = []
             orgMemberships = []
 
-            const superAdmin = await createAdminUser(testClient)
+            superAdmin = await createAdminUser(testClient)
 
             // create two orgs and one role per org
             for (let i = 0; i < 2; i++) {
@@ -1012,6 +1014,7 @@ describe('isAdmin', () => {
                 await connection.manager.save(role)
                 roleList.push(role)
             }
+
             const anotherRole = createRole('role 0b', organizations[0])
             await connection.manager.save(anotherRole)
             roleList.push(anotherRole)
@@ -1019,6 +1022,7 @@ describe('isAdmin', () => {
             for (let i = 0; i < 10; i++) {
                 usersList.push(createUser())
             }
+
             await connection.manager.save(usersList)
 
             for (let j = 0; j < 5; j++) {
@@ -1030,6 +1034,7 @@ describe('isAdmin', () => {
                     })
                 )
             }
+
             for (let j = 5; j < usersList.length; j++) {
                 orgMemberships.push(
                     createOrganizationMembership({
@@ -1039,7 +1044,33 @@ describe('isAdmin', () => {
                     })
                 )
             }
+
             await OrganizationMembership.save(orgMemberships)
+            noMember = await createUser().save()
+        })
+
+        context('admin', () => {
+            it('can see all the existent roles', async () => {
+                userPermissions = new UserPermissions({
+                    id: superAdmin.user_id,
+                    email: superAdmin.email || '',
+                })
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const results = await scope.getMany()
+                const orgRoles = results.filter((r) => r.system_role === false)
+                const systemRoles = results.filter(
+                    (r) => r.system_role === true
+                )
+
+                expect(results).to.have.lengthOf(8)
+                expect(orgRoles).to.have.lengthOf(3)
+                expect(systemRoles).to.have.lengthOf(5)
+            })
         })
 
         context('non admin', () => {
@@ -1049,8 +1080,11 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                const scope = Role.createQueryBuilder()
-                await nonAdminRoleScope(scope, userPermissions)
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
 
                 const results = await scope.getMany()
                 const ownedRoles = results.filter(
@@ -1071,8 +1105,11 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                const scope = Role.createQueryBuilder()
-                await nonAdminRoleScope(scope, userPermissions)
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
 
                 const results = await scope.getMany()
                 const rolesFromOtherOrgs = results.find(
@@ -1088,12 +1125,16 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                const scope = Role.createQueryBuilder()
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
                 const filteredName = roleList[2].role_name
                 scope.andWhere('Role.role_name = :filteredName', {
                     filteredName,
                 })
-                await nonAdminRoleScope(scope, userPermissions)
 
                 const results = await scope.getMany()
                 const ownedRoles = results.filter(
@@ -1103,6 +1144,30 @@ describe('isAdmin', () => {
                 expect(results).to.have.lengthOf(1)
                 expect(ownedRoles).to.have.lengthOf(1)
                 expect(results[0].role_name).to.equal(filteredName)
+            })
+        })
+
+        context('non member', () => {
+            it('can just see the system ones', async () => {
+                userPermissions = new UserPermissions({
+                    id: noMember.user_id,
+                    email: noMember.email || '',
+                })
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const results = await scope.getMany()
+                const orgRoles = results.filter((r) => r.system_role === false)
+                const systemRoles = results.filter(
+                    (r) => r.system_role === true
+                )
+
+                expect(results).to.have.lengthOf(5)
+                expect(orgRoles).to.have.lengthOf(0)
+                expect(systemRoles).to.have.lengthOf(5)
             })
         })
     })

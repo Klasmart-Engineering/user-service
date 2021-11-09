@@ -62,6 +62,9 @@ const typeDefs = gql`
 
     extend type Query {
         role(role_id: ID!): Role
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         roles: [Role]
         rolesConnection(
             direction: ConnectionDirection!
@@ -69,6 +72,7 @@ const typeDefs = gql`
             filter: RoleFilter
             sort: RoleSortInput
         ): RolesConnectionResponse @isAdmin(entity: "role")
+        roleNode(id: ID!): RoleConnectionNode @isAdmin(entity: "role")
     }
     type Role {
         role_id: ID!
@@ -119,6 +123,9 @@ export default function getDefault(
                 role: (_parent, args, ctx, _info) => model.getRole(args, ctx),
                 rolesConnection: (_parent, args, ctx: Context, info) => {
                     return model.rolesConnection(ctx, info, args)
+                },
+                roleNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.roleNode.node.instance.load(args)
                 },
             },
         },

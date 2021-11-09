@@ -6,6 +6,7 @@ import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { Program } from '../entities/program'
+import { Role } from '../entities/role'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
@@ -124,6 +125,12 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
+import {
+    IRoleNodeDataLoaders,
+    mapRoleToRoleConnectionNode,
+    roleConnectionNodeFields,
+} from '../pagination/rolesConnection'
+import { RoleSummaryNode } from '../types/graphQL/role'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -137,6 +144,8 @@ export interface IDataLoaders {
     userNode: IUserNodeDataLoaders
     organization: IOrganizationLoaders
     school: ISchoolLoaders
+    classNode: IClassNodeDataLoaders
+    roleNode: IRoleNodeDataLoaders
     gradeNode: IGradeNodeDataLoaders
     organizationNode: IOrganizationNodeDataLoaders
     subcategoryNode: ISubcategoryNodeDataLoader
@@ -160,7 +169,6 @@ export interface IDataLoaders {
             IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
-    classNode: IClassNodeDataLoaders
     categoryNode: ICategoryNodeDataLoader
 }
 
@@ -323,6 +331,17 @@ export function createContextLazyLoaders(
                         'ClassConnectionNode',
                         mapClassToClassNode,
                         classSummaryNodeFields
+                    )
+            ),
+        },
+        roleNode: {
+            node: new Lazy<NodeDataLoader<Role, RoleSummaryNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Role,
+                        'RoleConnectionNode',
+                        mapRoleToRoleConnectionNode,
+                        roleConnectionNodeFields
                     )
             ),
         },
