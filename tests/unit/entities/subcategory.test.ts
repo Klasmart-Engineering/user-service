@@ -1,6 +1,5 @@
 import { expect, use } from 'chai'
 import { Connection, EntityManager } from 'typeorm'
-
 import { Subcategory } from '../../../src/entities/subcategory'
 import { createTestConnection } from '../../utils/testConnection'
 import { createOrganization } from '../../factories/organization.factory'
@@ -38,7 +37,8 @@ describe('Subcategory', () => {
     describe('.new', () => {
         context('when system is not defined', () => {
             beforeEach(async () => {
-                subcategory.system = undefined
+                const subCat = subcategory as any
+                subCat.system = undefined
                 await manager.save(org)
                 await manager.save(subcategory)
             })

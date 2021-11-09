@@ -895,6 +895,17 @@ export const GRADE_NODE = gql`
     }
 `
 
+export const SUBCATEGORY_NODE = gql`
+    query subcategoryNode($id: ID!) {
+        subcategoryNode(id: $id) {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
 export const SUBJECTS_CONNECTION = `
     query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
         subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {

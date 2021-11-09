@@ -9,6 +9,7 @@ import { Program } from '../entities/program'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { User } from '../entities/user'
+import { Subcategory } from '../entities/subcategory'
 import {
     mapAgeRangeToAgeRangeConnectionNode,
     ageRangeNodeFields,
@@ -48,6 +49,12 @@ import {
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../pagination/usersConnection'
+import {
+    subcategoryConnectionNodeFields,
+    mapSubcategoryToSubcategoryConnectionNode,
+} from '../pagination/subcategoriesConnection'
+import { SubcategoryConnectionNode } from '../types/graphQL/subcategory'
+import { ISubcategoryNodeDataLoader } from './subcategory'
 import { UserPermissions } from '../permissions/userPermissions'
 import { BrandingResult } from '../types/graphQL/branding'
 import { CategorySummaryNode } from '../types/graphQL/category'
@@ -132,6 +139,7 @@ export interface IDataLoaders {
     school: ISchoolLoaders
     gradeNode: IGradeNodeDataLoaders
     organizationNode: IOrganizationNodeDataLoaders
+    subcategoryNode: ISubcategoryNodeDataLoader
     ageRangeNode: IAgeRangeNodeDataLoader
 
     organizationsConnectionChild: Lazy<
@@ -236,6 +244,19 @@ export function createContextLazyLoaders(
             organizations: new DataLoader((keys) => orgsForUsers(keys)),
             schools: new DataLoader((keys) => schoolsForUsers(keys)),
             roles: new DataLoader((keys) => rolesForUsers(keys)),
+        },
+        subcategoryNode: {
+            node: new Lazy<
+                NodeDataLoader<Subcategory, SubcategoryConnectionNode>
+            >(
+                () =>
+                    new NodeDataLoader(
+                        Subcategory,
+                        'SubcategoryConnectionNode',
+                        mapSubcategoryToSubcategoryConnectionNode,
+                        subcategoryConnectionNodeFields
+                    )
+            ),
         },
         programsConnection: {
             ageRanges: new Lazy<DataLoader<string, AgeRangeConnectionNode[]>>(

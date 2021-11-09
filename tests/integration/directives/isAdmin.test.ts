@@ -1286,6 +1286,93 @@ describe('isAdmin', () => {
         })
     })
 
+    describe('subcategories', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let organization2: Organization
+        let allSubcategoriesCount: number
+        let systemSubcategoriesCount: number
+        const organizationSubcategoriesCount = 10
+
+        const queryVisibleSubcategories = async (token: string) => {
+            const response = await subcategoriesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization = await createOrganization(memberUser).save()
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization)
+                )
+            )
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization2)
+                )
+            )
+
+            await createOrganizationMembership({
+                user: memberUser,
+                organization,
+            }).save()
+
+            allSubcategoriesCount = await Subcategory.count()
+            systemSubcategoriesCount = await Subcategory.count({
+                where: { system: true },
+            })
+        })
+
+        context('admin', () => {
+            it('allows access to all the subcategories', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visibleSubcategories = await queryVisibleSubcategories(
+                    token
+                )
+                expect(visibleSubcategories.totalCount).to.eql(
+                    allSubcategoriesCount
+                )
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access to system subcategories and owns', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visibleSubcategories = await queryVisibleSubcategories(
+                    token
+                )
+                expect(visibleSubcategories.totalCount).to.eql(
+                    systemSubcategoriesCount + organizationSubcategoriesCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('alows access just to system subcategories', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visibleSubcategories = await queryVisibleSubcategories(
+                    token
+                )
+                expect(visibleSubcategories.totalCount).to.eql(
+                    systemSubcategoriesCount
+                )
+            })
+        })
+    })
+
     describe('ageRanges', () => {
         let adminUser: User
         let memberUser1: User
