@@ -19,6 +19,7 @@ import {
     getAllOrganizations,
     gradesConnection,
     permissionsConnection,
+    schoolsConnection,
     subcategoriesConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
@@ -1643,9 +1644,11 @@ describe('isAdmin', () => {
     })
 
     context('schools', () => {
-        let aliases: string[]
-        let conditions: string[]
         let admin: User
+        let orgOwner: User
+        let schoolAdmin: User
+        let orgMember: User
+        let ownerAndSchoolAdmin: User
         let org1: Organization
         let org2: Organization
         let org3: Organization
@@ -1659,6 +1662,7 @@ describe('isAdmin', () => {
         let schoolAdminPermissions: UserPermissions
         let ownerAndSchoolAdminPermissions: UserPermissions
         const schoolsCount = 12
+        const organizationsCount = 3
 
         let ctx: Context
 
@@ -1671,6 +1675,17 @@ describe('isAdmin', () => {
                 permissions,
                 loaders: createContextLazyLoaders(permissions),
             } as unknown) as Context
+        }
+
+        const querySchools = async (token: string) => {
+            const response = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
         }
 
         beforeEach(async () => {
@@ -1715,10 +1730,10 @@ describe('isAdmin', () => {
             // Emulating context
             await buildScopeAndContext(adminPermissions)
 
-            const orgOwner = await createUser().save()
-            const schoolAdmin = await createUser().save()
-            const orgMember = await createUser().save()
-            const ownerAndSchoolAdmin = await createUser().save()
+            orgOwner = await createUser().save()
+            schoolAdmin = await createUser().save()
+            orgMember = await createUser().save()
+            ownerAndSchoolAdmin = await createUser().save()
 
             const viewAllSchoolsRoleOrg3 = await createRole(
                 'View Schools',
@@ -1740,7 +1755,7 @@ describe('isAdmin', () => {
                 permissions: [PermissionName.view_my_school_20119],
             }).save()
 
-            // adding orgOwner to org3 with orgAdminRole¿
+            // adding orgOwner to org3 with orgAdminRole
             await createOrganizationMembership({
                 user: orgOwner,
                 organization: org3,
@@ -1798,55 +1813,30 @@ describe('isAdmin', () => {
             )
         })
 
-        it('super admin query', async () => {
-            aliases = scope.expressionMap.aliases.map((a) => a.name)
-            conditions = scope.expressionMap.wheres.map((w) => w.condition)
-
-            expect(aliases.length).to.eq(1)
-            expect(aliases).to.deep.equalInAnyOrder(['School'])
-
-            expect(conditions.length).to.eq(0)
+        it('super admin should see schools from all the organizations', async () => {
+            const token = generateToken(userToPayload(admin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(
+                schoolsCount * organizationsCount
+            )
         })
 
-        it('org admin query', async () => {
-            await buildScopeAndContext(orgOwnerPermissions)
-
-            aliases = scope.expressionMap.aliases.map((a) => a.name)
-            conditions = scope.expressionMap.wheres.map((w) => w.condition)
-
-            expect(aliases.length).to.eq(2)
-            expect(aliases).to.deep.equalInAnyOrder([
-                'School',
-                'OrganizationMembership',
-            ])
-
-            expect(conditions.length).to.eq(0)
+        it('org admin should see schools from his org', async () => {
+            const token = generateToken(userToPayload(orgOwner))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(org3Schools.length)
         })
 
-        it('school admin query', async () => {
-            await buildScopeAndContext(schoolAdminPermissions)
-
-            aliases = scope.expressionMap.aliases.map((a) => a.name)
-            conditions = scope.expressionMap.wheres.map((w) => w.condition)
-
-            expect(aliases.length).to.eq(2)
-            expect(aliases).to.deep.equalInAnyOrder([
-                'School',
-                'SchoolMembership',
-            ])
-
-            expect(conditions.length).to.eq(0)
+        it('org admin from 1 org and school owner of another org should see schools all the schools from the first org and only the one he owns from org 2', async () => {
+            const token = generateToken(userToPayload(ownerAndSchoolAdmin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(org2Schools.length + 1)
         })
 
-        it('owner and school admin query', async () => {
-            await buildScopeAndContext(ownerAndSchoolAdminPermissions)
-
-            aliases = scope.expressionMap.aliases.map((a) => a.name)
-            conditions = scope.expressionMap.wheres.map((w) => w.condition)
-            expect(conditions.length).to.eq(1)
-            expect(conditions).to.deep.equalInAnyOrder([
-                '(OrganizationMembership.user IS NOT NULL OR SchoolMembership.user IS NOT NULL)',
-            ])
+        it('school admin should see only his school', async () => {
+            const token = generateToken(userToPayload(schoolAdmin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(1)
         })
     })
 })
