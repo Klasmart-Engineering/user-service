@@ -1,29 +1,49 @@
-import { expect } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
-import { createSchool } from '../utils/operations/acceptance/acceptanceOps.test'
-import { SCHOOL_NODE } from '../utils/operations/modelOps'
-import { CREATE_ORGANIZATION } from '../utils/operations/userOps'
+import { School } from '../../src/entities/school'
+import { SCHOOLS_CONNECTION, SCHOOL_NODE } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import { expect } from 'chai'
+import { NIL_UUID } from '../utils/database'
+import {
+    createOrg,
+    createSchool,
+} from '../utils/operations/acceptance/acceptanceOps.test'
+import { loadFixtures } from '../utils/fixtures'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
-let org1Id: string
+const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
+const org_name = 'my-org'
 
-async function createOrg(user_id: string, org_name: string, token: string) {
+async function makeConnectionQuery() {
     return await request
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: token,
+            Authorization: getAdminAuthToken(),
         })
         .send({
-            query: CREATE_ORGANIZATION,
+            query: SCHOOLS_CONNECTION,
             variables: {
-                user_id,
-                org_name,
+                direction: 'FORWARD',
+            },
+        })
+}
+
+const makeNodeQuery = async (id: string) => {
+    return await request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: getAdminAuthToken(),
+        })
+        .send({
+            query: print(SCHOOL_NODE),
+            variables: {
+                id,
             },
         })
 }
@@ -35,34 +55,42 @@ describe('acceptance.school', () => {
         connection = await createTestConnection()
     })
 
+    beforeEach(async () => {
+        await loadFixtures('users', connection)
+        const createOrgResponse = await createOrg(
+            user_id,
+            org_name,
+            getAdminAuthToken()
+        )
+        const {
+            organization_id,
+        } = createOrgResponse.body.data.user.createOrganization
+        await createSchool(organization_id, `school x`, getAdminAuthToken())
+    })
+
     after(async () => {
         await connection?.close()
     })
 
-    context('schoolNode', () => {
+    context('schoolsConnection', () => {
+        let schoolsCount: number
+
+        beforeEach(async () => {
+            schoolsCount = await School.count()
+        })
+
         context('when data is requested in a correct way', () => {
-            it('should respond with status 200', async () => {
-                const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
-                const org_name = 'my-org'
-                const createOrg1Response = await createOrg(
-                    user_id,
-                    org_name,
-                    getAdminAuthToken()
-                )
-                const createOrg1Data =
-                    createOrg1Response.body.data.user.createOrganization
+            it('should response with status 200', async () => {
+                const response = await makeConnectionQuery()
+                const schoolsConnection = response.body.data.schoolsConnection
 
-                org1Id = createOrg1Data.organization_id
-                const createSchoolResponse = await createSchool(
-                    org1Id,
-                    `school`,
-                    getAdminAuthToken()
-                )
+                expect(response.status).to.eq(200)
+                expect(schoolsConnection.totalCount).to.equal(schoolsCount)
+            })
+        })
 
-                const createSchoolData =
-                    createSchoolResponse.body.data.organization.createSchool
-
-                const schoolId = createSchoolData.school_id
+        context('when data is requested in an incorrect way', () => {
+            it('should response with status 400', async () => {
                 const response = await request
                     .post('/user')
                     .set({
@@ -70,16 +98,52 @@ describe('acceptance.school', () => {
                         Authorization: getAdminAuthToken(),
                     })
                     .send({
-                        query: print(SCHOOL_NODE),
+                        query: SCHOOLS_CONNECTION,
                         variables: {
-                            id: schoolId,
+                            direction: 'FORWARD',
+                            filterArgs: {
+                                byStatus: {
+                                    operator: 'eq',
+                                    value: 'available',
+                                },
+                            },
                         },
                     })
 
+                const errors = response.body.errors
+                const data = response.body.data
+
+                expect(response.status).to.eq(400)
+                expect(errors).to.exist
+                expect(data).to.be.undefined
+            })
+        })
+    })
+
+    context('schoolNode', () => {
+        context('when requested school exists', () => {
+            it('should respond succesfully', async () => {
+                const schoolResponse = await makeConnectionQuery()
+                const schoolsEdges =
+                    schoolResponse.body.data.schoolsConnection.edges
+                const schoolId = schoolsEdges[0].node.id
+                const response = await makeNodeQuery(schoolId)
                 const schoolNode = response.body.data.schoolNode
 
                 expect(response.status).to.eq(200)
                 expect(schoolNode.id).to.equal(schoolId)
+            })
+        })
+
+        context('when requested school does not exists', () => {
+            it('should respond with errors', async () => {
+                const response = await makeNodeQuery(NIL_UUID)
+                const errors = response.body.errors
+                const schoolNode = response.body.data.schoolNode
+
+                expect(response.status).to.eq(200)
+                expect(errors).to.exist
+                expect(schoolNode).to.be.null
             })
         })
     })

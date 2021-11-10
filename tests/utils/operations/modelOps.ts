@@ -468,7 +468,7 @@ export const PERMISSION_NODE = gql`
     }
 `
 
-const SCHOOLS_CONNECTION = `
+export const SCHOOLS_CONNECTION = `
     query schoolsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SchoolFilter, $sortArgs: SchoolSortInput) {
         schoolsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
             totalCount
