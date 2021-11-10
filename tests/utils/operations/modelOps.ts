@@ -413,17 +413,6 @@ export const PERMISSION_NODE_FIELDS = gql`
     }
 `
 
-const SCHOOL_NODE_QUERY_2_NODES = gql`
-    query($id: ID!, $id2: ID!) {
-        schoolNode(id: $id) {
-            name
-        }
-        schoolNode2: schoolNode(id: $id2) {
-            name
-        }
-    }
-`
-
 export const PERMISSIONS_CONNECTION = gql`
     ${PERMISSION_NODE_FIELDS}
 
