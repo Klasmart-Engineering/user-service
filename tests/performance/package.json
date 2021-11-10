@@ -13,7 +13,8 @@
       "setup:create-1k-students": "k6 run ./dist/create1kUsers.js",
       "get:users": "k6 run ./dist/getPaginatedUsers.js",
       "get:users:cursor": "k6 run ./dist/getPaginatedUsersCursor.js",
-      "get:users:filters": "k6 run ./dist/getPaginatedUsersFilter.js"
+      "get:users:filters": "k6 run ./dist/getPaginatedUsersFilter.js",
+      "get:users:mixed": "k6 run ./dist/getPaginatedUsersMixed.js"
     },
     "dependencies": {
       "@babel/core": "7.13.16",

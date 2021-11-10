@@ -18,7 +18,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '30s',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -41,7 +41,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '2m',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -64,7 +64,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '2m',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -87,7 +87,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '2m',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -110,7 +110,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '2m',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -133,7 +133,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '30s',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -156,76 +156,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '2m',
-                    target: 4
-                },
-                // Ramp down
-                {
-                    duration: '20s',
-                    target: 0
-                },
-            ],
-        },
-        teacher07: {
-            executor: 'ramping-vus',
-            exec: 'teacher07',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                // Ramp up               
-                {
-                    duration: '20s',
-                    target: 2
-                },
-                // Hold
-                {
-                    duration: '2m',
-                    target: 4
-                },
-                // Ramp down
-                {
-                    duration: '20s',
-                    target: 0
-                },
-            ],
-        },
-        teacher08: {
-            executor: 'ramping-vus',
-            exec: 'teacher08',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                // Ramp up               
-                {
-                    duration: '20s',
-                    target: 2
-                },
-                // Hold
-                {
-                    duration: '2m',
-                    target: 4
-                },
-                // Ramp down
-                {
-                    duration: '20s',
-                    target: 0
-                },
-            ],
-        },
-        teacher09: {
-            executor: 'ramping-vus',
-            exec: 'teacher09',
-            startTime: '0s',
-            gracefulStop: '5s',
-            stages: [
-                // Ramp up               
-                {
-                    duration: '20s',
-                    target: 2
-                },
-                // Hold
-                {
-                    duration: '2m',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -248,7 +179,7 @@ export const options: Options = {
                 },
                 // Hold
                 {
-                    duration: '30s',
+                    duration: '2s',
                     target: 4
                 },
                 // Ramp down
@@ -263,7 +194,7 @@ export const options: Options = {
 
 export function setup() {
     let i = 0;
-    const l = 4;
+    const l = 9;
     let data = {};
 
     for (i; i < l; i++) {
@@ -298,101 +229,79 @@ export function setup() {
     return data;
 }
 
-export function teacher00(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher00, null);
+/* Filter options
+{organizationUserStatus: {operator: "eq", value: "inactive"}}
+{roleId: { operator: 'eq', value: process.env.ROLE_ID_STUDENT, }}
+{schoolId: {operator: "eq", value: "7b11aaae-8e8b-4370-b8a7-6bb069088967"}}
+{email: {operator: "contains", value: "edgardo"}}
+*/
 
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
+export function teacher00(data: { [key: string]: { res: any, userId: string }}) {
+    getUsers({ count: 10, search: 'student' }, data.teacher00, [{ organizationUserStatus: {
+        operator: 'eq',
+        value: 'active',
+    }}]);
+
+    sleep(5);
+
+    getUsers({ count: 50, search: 'student' }, data.teacher00, [{ organizationUserStatus: {
+        operator: 'eq',
+        value: 'active',
+    }}]);
 }
 
 export function teacher01(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher01);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
+    getUsers({ count: 10, search: 'student' }, data.teacher01, [{ organizationUserStatus: {
+        operator: 'eq',
+        value: 'inactive',
+    }}]);
 }
 
 export function teacher02(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher02);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
+    getUsers({ count: 10, search: 'student' }, data.teacher02, [{ roleId: {
+        operator: 'eq',
+        value: process.env.ROLE_ID_STUDENT as string,
+    }}]);
 }
 
 export function teacher03(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher03);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
+    getUsers({ count: 10, search: 'student' }, data.teacher03, [{ roleId: {
+        operator: 'eq',
+        value: process.env.ROLE_ID_STUDENT as string,
+    }}]);
 }
 
 export function teacher04(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher04);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
+    getUsers({ count: 10, search: 'student' }, data.teacher04, [
+        { 
+            roleId: {
+                operator: 'eq',
+                value: process.env.ROLE_ID_STUDENT as string,
+            },
+            email: {
+                operator: "contains", 
+                value: "edgardo"
+            }
+        }
+    ]);
 }
 
 export function teacher05(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher05, null);
+   let pageInfo = getUsers({ count: 10, search: 'student'  }, data.teacher05, [{email: {operator: "contains", value: "edgardo"}}]);
 
-    while (pageInfo?.hasNextPage) {
+   while (pageInfo?.hasNextPage) {
         sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
+        pageInfo = getUsers({ count: 10, search: 'student'  }, data.teacher05, [{email: {operator: "contains", value: "edgardo"}}], pageInfo.endCursor);
     }
 }
 
 export function teacher06(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher06);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
-}
-
-export function teacher07(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher07);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
-}
-
-export function teacher08(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher08);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
-}
-
-export function teacher09(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.teacher09);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
-}
+    getUsers({ count: 10, search: 'student' }, data.teacher06, [{schoolId: {operator: "eq", value: "7b11aaae-8e8b-4370-b8a7-6bb069088967"}}]);
+ }
 
 export function orgAdmin(data: { [key: string]: { res: any, userId: string }}) {
-    let pageInfo = getUsers({ count: 10 }, data.orgAdmin);
-
-    while (pageInfo?.hasNextPage) {
-        sleep(2);
-        pageInfo = getUsers({ count: 10 }, data.orgAdmin, null, pageInfo.endCursor);
-    }
+    getUsers({ count: 10, search: 'student' }, data.orgAdmin, [{ roleId: {
+        operator: 'eq',
+        value: process.env.ROLE_ID_STUDENT as string,
+    }}]);
 }

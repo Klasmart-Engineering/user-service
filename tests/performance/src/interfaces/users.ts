@@ -25,4 +25,5 @@ export interface UserPayload {
     email?: string;
     phone?: string;
     orderBy?: string;
+    search?: string;
 }

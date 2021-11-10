@@ -16,6 +16,7 @@ module.exports = {
         getPaginatedUsers: `./getPaginatedUsers.ts`,
         getPaginatedUsersCursor: `./getPaginatedUsersCursor.ts`,
         getPaginatedUsersFilter: `./getPaginatedUsersFilters.ts`,
+        getPaginatedUsersMixed: `./getPaginatedUsersMixed.ts`,
     },
     output: {
         path: path.join(__dirname, `dist`),
