@@ -230,6 +230,9 @@ const typeDefs = gql`
         ): Organization
         merge(other_id: String): User
         addOrganization(organization_id: ID!): OrganizationMembership
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2419261457/"
+            )
         addSchool(school_id: ID!): SchoolMembership
         setPrimary(_: Int): Boolean @isAdmin(entity: "user")
     }

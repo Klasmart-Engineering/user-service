@@ -15,15 +15,11 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { getAdminAuthToken, generateToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { gqlTry } from '../gqlTry'
-import {
-    userToPayload,
-    userToSuperPayload,
-} from '../../utils/operations/userOps'
-import { utils } from 'mocha'
 import { Program } from '../../../src/entities/program'
 import { gql } from 'apollo-server-express'
 import { EditMembershipArguments } from '../../../src/operations/organization'
 import { pickBy } from 'lodash'
+import { AddUsersToOrganizationInput } from '../../../src/types/graphQL/organization'
 
 export const CREATE_CLASS = `
     mutation myMutation(
@@ -432,6 +428,27 @@ export const LIST_MEMBERSHIPS = gql`
                     family_name
                     email
                     avatar
+                }
+            }
+        }
+    }
+`
+
+export const ADD_USERS_TO_ORGANIZATIONS = gql`
+    mutation myMutation($input: [AddUsersToOrganizationInput!]!) {
+        addUsersToOrganizations(input: $input) {
+            organizations {
+                id
+                name
+                contactInfo {
+                    address1
+                    address2
+                    phone
+                }
+                shortCode
+                status
+                owners {
+                    id
                 }
             }
         }
@@ -1058,4 +1075,23 @@ export async function listMemberships(
             memberships: OrganizationMembership[]
         }
     }
+}
+
+export async function addUsersToOrganizations(
+    testClient: ApolloServerTestClient,
+    input: AddUsersToOrganizationInput[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
+    const operation = () =>
+        mutate({
+            mutation: ADD_USERS_TO_ORGANIZATIONS,
+            variables: { input },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+
+    const gqlOrgMutationResult = res.data?.addUsersToOrganizations
+    return gqlOrgMutationResult
 }

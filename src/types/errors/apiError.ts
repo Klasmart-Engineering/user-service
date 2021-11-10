@@ -23,6 +23,7 @@ export class APIError extends Error implements IAPIError {
     min?: number
     max?: number
     format?: string
+    index?: number
 
     constructor(error: IAPIError) {
         const { code, message, variables, ...params } = error
@@ -30,9 +31,23 @@ export class APIError extends Error implements IAPIError {
         this.code = code
         this.variables = variables
         // Must set message explicitly rather than with super(), otherwise it's private
-        this.message = stringInject(message, params) ?? message
+        this.message = formatMessage(message, params)
         Object.assign(this, params)
     }
+}
+
+export function formatMessage(
+    message: string | undefined,
+    params: ErrorParams
+): string {
+    return message
+        ? stringInject(
+              params.index !== undefined
+                  ? `${apiErrorConstants.MSG_ERR_API_AT_INDEX}, ${message}`
+                  : message,
+              params
+          ) ?? message
+        : ''
 }
 
 export function joiResultToAPIErrors<APIArguments>(
@@ -59,6 +74,7 @@ export function joiResultToAPIErrors<APIArguments>(
 
 export const apiErrorConstants = {
     ERR_API_BAD_INPUT: 'ERR_API_BAD_INPUT',
+    MSG_ERR_API_AT_INDEX: 'On index {index}',
 }
 
 export class APIErrorCollection extends ApolloError {

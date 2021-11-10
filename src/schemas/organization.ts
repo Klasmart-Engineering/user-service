@@ -12,6 +12,7 @@ import {
 import { Context } from '../main'
 import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
+import { addUsersToOrganizations } from '../resolvers/organization'
 import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
@@ -22,6 +23,9 @@ const typeDefs = gql`
     scalar Url
 
     extend type Mutation {
+        addUsersToOrganizations(
+            input: [AddUsersToOrganizationInput!]!
+        ): OrganizationsMutationResult
         organization(
             organization_id: ID!
             organization_name: String
@@ -61,6 +65,9 @@ const typeDefs = gql`
         organizationNode(id: ID!): OrganizationConnectionNode
             @isAdmin(entity: "organization")
     }
+
+    # DB Entities
+
     type Organization {
         organization_id: ID!
 
@@ -112,6 +119,9 @@ const typeDefs = gql`
         ): Organization
         setPrimaryContact(user_id: ID!): User
         addUser(user_id: ID!, shortcode: String): OrganizationMembership
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2419261457/"
+            )
         inviteUser(
             email: String
             phone: String
@@ -185,6 +195,7 @@ const typeDefs = gql`
         removeRole(role_id: ID!): OrganizationMembership
         leave(_: Int): Boolean
     }
+
     type OrganizationOwnership {
         #properties
         user_id: ID!
@@ -203,6 +214,19 @@ const typeDefs = gql`
 
     enum BrandingImageTag {
         ICON
+    }
+
+    # Mutation related definitions
+
+    input AddUsersToOrganizationInput {
+        organizationId: ID!
+        organizationRoleIds: [ID!]!
+        userIds: [ID!]!
+        shortcode: String
+    }
+
+    type OrganizationsMutationResult {
+        organizations: [OrganizationConnectionNode!]!
     }
 
     # Organization connection related definitions
@@ -339,6 +363,8 @@ export default function getDefault(
                 },
             },
             Mutation: {
+                addUsersToOrganizations: (_parent, args, ctx, _info) =>
+                    addUsersToOrganizations(args, ctx),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>

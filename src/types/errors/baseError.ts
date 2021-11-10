@@ -27,4 +27,5 @@ export interface ErrorParams {
     min?: number
     max?: number
     format?: string
+    index?: number
 }

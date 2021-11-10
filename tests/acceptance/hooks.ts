@@ -14,12 +14,9 @@ before(async () => {
         name: 'master',
     })
     await truncateTables(connection)
-    originalAdmins = UserPermissions.ADMIN_EMAILS
-    UserPermissions.ADMIN_EMAILS = ['joe@gmail.com']
 })
 
 after(async () => {
-    UserPermissions.ADMIN_EMAILS = originalAdmins
     await connection?.close()
 })
 
