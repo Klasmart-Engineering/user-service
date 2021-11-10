@@ -75,7 +75,6 @@ export class SchoolNodeDataLoader extends DataLoader<
                     ids,
                 })
                 .innerJoin('School.organization', 'Organization')
-            console.log(scope)
             const entities = await scope.getMany()
             const nodes: ISchoolsConnectionNode[] = []
             for (const entity of entities) {

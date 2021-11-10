@@ -54,7 +54,6 @@ import { Permission } from '../../../src/entities/permission'
 import {
     createEntityScope,
     nonAdminOrganizationScope,
-    nonAdminRoleScope,
     nonAdminSchoolScope,
 } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
