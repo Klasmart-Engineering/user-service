@@ -17,6 +17,7 @@ import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
 import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
 import { ClassConnectionNode } from '../types/graphQL/class'
+import { Organization } from '../entities/organization'
 
 export const classesSummeryNodeFields = [
         'Class.class_id',
@@ -106,6 +107,11 @@ function classesConnectionFilter(
             // nonAdminClassScope may have already joined on Schools
             !scopeHasJoin(scope, School) &&
                 scope.leftJoin('Class.schools', 'School')
+        })
+        .ifFilter('organizationId', () => {
+            // nonAdminClassScope may have already joined on Schools
+            !scopeHasJoin(scope, Organization) &&
+                scope.leftJoin('Class.organization', 'Organization')
         })
         .ifFilter('gradeId', () => scope.innerJoin('Class.grades', 'Grade'))
         .ifFilter('subjectId', () =>

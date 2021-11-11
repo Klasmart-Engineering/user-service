@@ -3,7 +3,7 @@ import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
-import { generateToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createSchool } from '../factories/school.factory'
 import { createUser } from '../factories/user.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
@@ -14,6 +14,7 @@ import { PermissionName } from '../../src/permissions/permissionNames'
 import { createClass } from '../factories/class.factory'
 import { createAdminUser } from '../utils/testEntities'
 import { School } from '../../src/entities/school'
+import { createTestClient } from '../utils/createTestClient'
 
 use(chaiAsPromised)
 
@@ -38,34 +39,13 @@ async function makeRequest(
         })
 }
 
-async function createUserInSchool() {
-    const user = await createUser().save()
-    const organization = await createOrganization().save()
-    const role = await createRole('viewSchool', organization, {
-        permissions: [PermissionName.view_school_20110],
-    }).save()
 
-    await createOrganizationMembership({
-        user,
-        organization,
-        roles: [role],
-    }).save()
-
-    const school = await createSchool(organization).save()
-
-    await createSchoolMembership({
-        user,
-        school,
-    }).save()
-
-    return { user, school }
-}
-
-describe('acceptance.school', () => {
+describe('acceptance.organization', () => {
     let connection: TestConnection
 
     before(async () => {
         connection = await createTestConnection()
+        testClient = await createTestClient()
     })
 
     after(async () => {
@@ -75,8 +55,8 @@ describe('acceptance.school', () => {
     context('schoolsConnection', () => {
         it('has classesConnection as a child', async () => {
             const query = `
-                query schoolConnection($direction: ConnectionDirection!) {
-                    schoolConnection(direction:$direction){
+                query organizationConnection($direction: ConnectionDirection!) {
+                    organizationConnection(direction:$direction){
                         edges {
                             node {
                                 classesChildConnection{
@@ -91,29 +71,29 @@ describe('acceptance.school', () => {
                     }
                 }`
 
-            const { user, school } = await createUserInSchool()
+            const org1 = await createOrganization().save()
+            const org2 = await createOrganization().save()
 
-            const _class = await createClass([school]).save()
+            const _class1 = await createClass([],org1).save()
+            const _class2 = await createClass([],org1).save()
 
-            const token = generateToken({
-                id: user.user_id,
-                email: user.email,
-                iss: 'calmid-debug',
-            })
+            const _class3 = await createClass([],org2).save()
+            const _class4 = await createClass([],org2).save()
+
 
             const response = await makeRequest(
                 query,
                 {
                     direction: 'FORWARD',
                 },
-                token
+                getAdminAuthToken()
             )
 
             expect(response.status).to.eq(200)
 
             expect(
-                response.body.data.schoolsConnection.edges[0].node
-                    .classesConnection.edges[0].node.id
+                response.body.data.organizationConnection.edges[0].node
+                    .organizationConnection.edges[0].node.id
             ).to.eq(_class.class_id)
         })
     })

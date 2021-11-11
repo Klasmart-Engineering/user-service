@@ -17,6 +17,7 @@ import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 
 const typeDefs = gql`
     scalar HexColor
@@ -274,8 +275,48 @@ const typeDefs = gql`
             sort: SchoolSortInput
             direction: ConnectionDirection
         ): SchoolsConnectionResponse
+        
+        classesConnection(
+            count: PageSize
+            cursor: String
+            filter: SchoolFilter
+            sort: SchoolSortInput
+            direction: ConnectionDirection
+        ): ClassesConnectionResponse
     }
 `
+
+// This is a workaround to needing to mock total count AST check in tests
+// Remove this wrapper and associated methods when total count has been removed from the core resolver logic
+// Total count will be made either a directive, a middleware plugin calculation, or something
+export async function classesChildConnectionResolver(
+    organization_id: string,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesChildConnection(organization_id, args, ctx, includeTotalCount)
+}
+
+export function classesChildConnection(
+    organization_id: string,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    includeTotalCount: boolean
+) {
+    return ctx.loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: organization_id,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+    })
+}
+
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -332,6 +373,7 @@ export default function getDefault(
                         },
                     })
                 },
+                classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
                 organization: (_parent, args, _context, _info) =>
