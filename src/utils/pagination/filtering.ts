@@ -1,6 +1,5 @@
 import { Brackets } from 'typeorm'
 import { v4 as uuid_v4 } from 'uuid'
-import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
 
 export class ConditionalJoinCmd {
     filter: IEntityFilter
