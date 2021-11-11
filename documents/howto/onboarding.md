@@ -25,7 +25,7 @@ python create_jwt_token.py -i <a random v4 uuid> -e <user email>
 
 ### Setup authentication headers
 - Start the application and navigate to the URL outputted in the terminal to view the GraphQL explorer.
-- Update the explorer HTTP headers with your token:
+- Update the explorer HTTP/Request headers with your token:
 ```json
 {
     "Authorization": "<my token>"

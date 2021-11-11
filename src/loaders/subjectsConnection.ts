@@ -2,7 +2,7 @@ import DataLoader from 'dataloader'
 import { Subject } from '../entities/subject'
 import { CategorySummaryNode } from '../types/graphQL/category'
 import { ProgramSummaryNode } from '../types/graphQL/program'
-import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
+import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 
 export interface ISubjectsConnectionLoaders {
     categories?: DataLoader<string, CategorySummaryNode[]>
@@ -36,7 +36,7 @@ async function getSubjectCategories(subject: Subject) {
 
     for (const category of categories) {
         // summary elements have a limit
-        if (counter === SUMMARY_ELEMENTS_LIMIT) {
+        if (counter === MAX_PAGE_SIZE) {
             return currentCategories
         }
 

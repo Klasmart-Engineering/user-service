@@ -1,25 +1,6 @@
-import {
-    ApolloServerPluginLandingPageGraphQLPlayground,
-    PluginDefinition,
-} from 'apollo-server-core'
+import { PluginDefinition } from 'apollo-server-core'
 
-const staticPlugins: PluginDefinition[] = [
-    ApolloServerPluginLandingPageGraphQLPlayground({
-        settings: {
-            // Apollo Server v2 defaults
-            'general.betaUpdates': false,
-            'editor.theme': 'dark',
-            'editor.cursorShape': 'line',
-            'editor.reuseHeaders': true,
-            'tracing.hideTracingResponse': true,
-            'queryPlan.hideQueryPlanResponse': true,
-            'editor.fontSize': 14,
-            'editor.fontFamily': `'Source Code Pro', 'Consolas', 'Inconsolata', 'Droid Sans Mono', 'Monaco', monospace`,
-            // Custom settings
-            'request.credentials': 'include',
-        },
-    }),
-]
+const staticPlugins: PluginDefinition[] = []
 
 /**
  * Avoid importing the ApolloServerPlugin for NewRelic (which tries to load NewRelic) if not in 'production'

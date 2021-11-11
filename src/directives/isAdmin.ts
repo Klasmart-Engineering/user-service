@@ -26,6 +26,10 @@ import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
 
+//
+// changing permission rules? update the docs: permissions.md
+//
+
 type IEntityString =
     | 'organization'
     | 'user'

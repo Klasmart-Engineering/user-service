@@ -3,6 +3,7 @@ import { Kind } from 'graphql/language'
 import { GraphQLError } from 'graphql'
 import Joi from 'joi'
 import gql from 'graphql-tag'
+import { MAX_PAGE_SIZE } from '../../utils/pagination/paginate'
 
 export const GraphQLPageSize = new GraphQLScalarType({
     name: 'PageSize',
@@ -25,7 +26,6 @@ export const GraphQLPageSize = new GraphQLScalarType({
 })
 
 export const MIN_PAGE_SIZE = 1
-export const MAX_PAGE_SIZE = 50
 
 function parse(value: string | number): number {
     const validation = Joi.number()

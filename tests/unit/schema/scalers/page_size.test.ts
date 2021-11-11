@@ -2,11 +2,11 @@ import { Kind } from 'graphql/language'
 
 import {
     GraphQLPageSize,
-    MAX_PAGE_SIZE,
     MIN_PAGE_SIZE,
 } from '../../../../src/schemas/scalars/page_size'
 import { GraphQLError } from 'graphql'
 import { expect } from 'chai'
+import { MAX_PAGE_SIZE } from '../../../../src/utils/pagination/paginate'
 
 type Kinds = 'IntValue' | 'FloatValue' | 'StringValue'
 

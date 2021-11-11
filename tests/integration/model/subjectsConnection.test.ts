@@ -6,9 +6,9 @@ import { Status } from '../../../src/entities/status'
 import { Subject } from '../../../src/entities/subject'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
-import { SUMMARY_ELEMENTS_LIMIT } from '../../../src/types/paginationConstants'
 import { createServer } from '../../../src/utils/createServer'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
+import { MAX_PAGE_SIZE } from '../../../src/utils/pagination/paginate'
 import { createCategory } from '../../factories/category.factory'
 import { createOrganization } from '../../factories/organization.factory'
 import { createSubject } from '../../factories/subject.factory'
@@ -260,9 +260,7 @@ describe('subjectsConnection', () => {
                 const subjects = result.edges
 
                 subjects.every((subject) => {
-                    expect(subject.node.categories?.length).to.eq(
-                        SUMMARY_ELEMENTS_LIMIT
-                    )
+                    expect(subject.node.categories?.length).to.eq(MAX_PAGE_SIZE)
                 })
             })
         })
