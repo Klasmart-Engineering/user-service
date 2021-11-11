@@ -457,7 +457,7 @@ export const PERMISSION_NODE = gql`
     }
 `
 
-const SCHOOLS_CONNECTION = `
+export const SCHOOLS_CONNECTION = `
     query schoolsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SchoolFilter, $sortArgs: SchoolSortInput) {
         schoolsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
             totalCount
@@ -1850,6 +1850,18 @@ export async function program2Nodes(
 
     await gqlTry(operation)
 }
+
+export const SCHOOL_NODE = gql`
+    query SchoolNode($id: ID!) {
+        schoolNode(id: $id) {
+            id
+            name
+            status
+            shortCode
+            organizationId
+        }
+    }
+`
 
 export async function schoolsConnection(
     testClient: ApolloServerTestClient,

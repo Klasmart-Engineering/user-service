@@ -99,13 +99,18 @@ import {
 } from './organizationsConnection'
 import { NodeDataLoader } from './genericNode'
 import {
+    ISchoolLoaders,
+    organizationsForSchools,
+    SchoolNodeDataLoader,
+    schoolsByIds,
+} from './school'
+import {
     ageRangesForPrograms,
     gradesForPrograms,
     IProgramNodeDataLoaders,
     IProgramsConnectionLoaders,
     subjectsForPrograms,
 } from './programsConnection'
-import { ISchoolLoaders, organizationsForSchools, schoolsByIds } from './school'
 import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import { ProgramSummaryNode } from '../types/graphQL/program'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
@@ -178,6 +183,7 @@ export interface IDataLoaders {
         >
     >
     categoryNode: ICategoryNodeDataLoader
+    schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
 
 export function createContextLazyLoaders(
@@ -314,6 +320,9 @@ export function createContextLazyLoaders(
                     )
             ),
         },
+        schoolNode: new Lazy<SchoolNodeDataLoader>(
+            () => new SchoolNodeDataLoader()
+        ),
         classesConnection: {
             schools: new Lazy<DataLoader<string, SchoolSummaryNode[]>>(
                 () => new DataLoader(schoolsForClasses)

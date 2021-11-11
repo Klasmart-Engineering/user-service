@@ -14,8 +14,9 @@ const typeDefs = gql`
     extend type Query {
         school(school_id: ID!): School
             @deprecated(
-                reason: "Use 'schoolsConnection' with 'schoolId' filter."
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
+        schoolNode(id: ID!): SchoolConnectionNode @isAdmin(entity: "school")
         schoolsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -134,6 +135,9 @@ export default function getDefault(
                     model.getSchool(args, ctx),
                 schoolsConnection: (_parent, args, ctx, info) => {
                     return model.schoolsConnection(ctx, info, args)
+                },
+                schoolNode: (_parent, args, ctx, _info) => {
+                    return ctx.loaders.schoolNode.instance.load(args)
                 },
             },
             SchoolMembership: {

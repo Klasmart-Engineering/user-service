@@ -19,6 +19,7 @@ import {
     getAllOrganizations,
     gradesConnection,
     permissionsConnection,
+    schoolsConnection,
     subcategoriesConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
@@ -53,6 +54,7 @@ import { Permission } from '../../../src/entities/permission'
 import {
     createEntityScope,
     nonAdminOrganizationScope,
+    nonAdminSchoolScope,
 } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
@@ -64,6 +66,9 @@ import { AgeRange } from '../../../src/entities/ageRange'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
+import { Context } from '../../../src/main'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -1634,6 +1639,203 @@ describe('isAdmin', () => {
                     systemCategoriesCount
                 )
             })
+        })
+    })
+
+    context('schools', () => {
+        let admin: User
+        let orgOwner: User
+        let schoolAdmin: User
+        let orgMember: User
+        let ownerAndSchoolAdmin: User
+        let org1: Organization
+        let org2: Organization
+        let org3: Organization
+        let org1Schools: School[] = []
+        let org2Schools: School[] = []
+        let org3Schools: School[] = []
+        const schools: School[] = []
+        let scope: SelectQueryBuilder<School>
+        let adminPermissions: UserPermissions
+        let orgOwnerPermissions: UserPermissions
+        let schoolAdminPermissions: UserPermissions
+        let ownerAndSchoolAdminPermissions: UserPermissions
+        const schoolsCount = 12
+        const organizationsCount = 3
+
+        let ctx: Context
+
+        const buildScopeAndContext = async (permissions: UserPermissions) => {
+            if (!permissions.isAdmin) {
+                await nonAdminSchoolScope(scope, permissions)
+            }
+
+            ctx = ({
+                permissions,
+                loaders: createContextLazyLoaders(permissions),
+            } as unknown) as Context
+        }
+
+        const querySchools = async (token: string) => {
+            const response = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            scope = School.createQueryBuilder('School')
+
+            admin = await createAdminUser(testClient)
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            org3 = await createOrganization().save()
+
+            // creating org1 schools
+            org1Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const s = createSchool(org1)
+                    s.school_name = `school ${i}`
+                    return s
+                })
+            )
+
+            // creating org2 schools
+            org2Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const c = createSchool(org2)
+                    c.school_name = `school ${i}`
+                    return c
+                })
+            )
+
+            // creating org3 schools
+            org3Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const s = createSchool(org3)
+                    s.school_name = `school ${i}`
+                    return s
+                })
+            )
+
+            schools.push(...org1Schools, ...org2Schools, ...org3Schools)
+
+            adminPermissions = new UserPermissions(userToPayload(admin))
+
+            // Emulating context
+            await buildScopeAndContext(adminPermissions)
+
+            orgOwner = await createUser().save()
+            schoolAdmin = await createUser().save()
+            orgMember = await createUser().save()
+            ownerAndSchoolAdmin = await createUser().save()
+
+            const viewAllSchoolsRoleOrg3 = await createRole(
+                'View Schools',
+                org3,
+                {
+                    permissions: [PermissionName.view_school_20110],
+                }
+            ).save()
+
+            const viewAllSchoolsFromTheOrgRole = await createRole(
+                'View Schools',
+                org2,
+                {
+                    permissions: [PermissionName.view_school_20110],
+                }
+            ).save()
+
+            const viewMySchoolRole = await createRole('View My School', org3, {
+                permissions: [PermissionName.view_my_school_20119],
+            }).save()
+
+            // adding orgOwner to org3 with orgAdminRole
+            await createOrganizationMembership({
+                user: orgOwner,
+                organization: org3,
+                roles: [viewAllSchoolsRoleOrg3],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to org2 with orgAdminRole
+            await createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org2,
+                roles: [viewAllSchoolsFromTheOrgRole],
+            }).save()
+
+            // adding schoolAdmin to org3 with schoolAdminRole
+            await createOrganizationMembership({
+                user: schoolAdmin,
+                organization: org3,
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding schoolAdmin to first org3School
+            await createSchoolMembership({
+                user: schoolAdmin,
+                school: org3Schools[0],
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to org3 with schoolAdminRole
+            await createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org3,
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to second org3School
+            await createSchoolMembership({
+                user: ownerAndSchoolAdmin,
+                school: org3Schools[1],
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding orgMember to org3
+            await createOrganizationMembership({
+                user: orgMember,
+                organization: org3,
+                roles: [],
+            }).save()
+
+            orgOwnerPermissions = new UserPermissions(userToPayload(orgOwner))
+            schoolAdminPermissions = new UserPermissions(
+                userToPayload(schoolAdmin)
+            )
+            ownerAndSchoolAdminPermissions = new UserPermissions(
+                userToPayload(ownerAndSchoolAdmin)
+            )
+        })
+
+        it('super admin should see schools from all the organizations', async () => {
+            const token = generateToken(userToPayload(admin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(
+                schoolsCount * organizationsCount
+            )
+        })
+
+        it('org admin should see schools from his org', async () => {
+            const token = generateToken(userToPayload(orgOwner))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(org3Schools.length)
+        })
+
+        it('org admin from 1 org and school owner of another org should see schools all the schools from the first org and only the one he owns from org 2', async () => {
+            const token = generateToken(userToPayload(ownerAndSchoolAdmin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(org2Schools.length + 1)
+        })
+
+        it('school admin should see only his school', async () => {
+            const token = generateToken(userToPayload(schoolAdmin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(1)
         })
     })
 })
