@@ -253,7 +253,7 @@ describe('acceptance.organization', () => {
                     organizationConnection(direction:$direction){
                         edges {
                             node {
-                                classesChildConnection{
+                                classesConnection{
                                     edges{
                                         node{
                                             id

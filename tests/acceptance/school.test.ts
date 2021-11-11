@@ -171,7 +171,7 @@ describe('acceptance.school', () => {
                     schoolConnection(direction:$direction){
                         edges {
                             node {
-                                classesChildConnection{
+                                classesConnection{
                                     edges{
                                         node{
                                             id

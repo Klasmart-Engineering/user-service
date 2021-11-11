@@ -402,12 +402,6 @@ export class Model {
         paginationArgs: IPaginationArgs<School>
     ) => schoolsConnectionResolver(info, paginationArgs)
 
-    public classesConnection = (
-        _context: Context,
-        info: GraphQLResolveInfo,
-        paginationArgs: IPaginationArgs<Class>
-    ) => classesConnectionResolver(info, paginationArgs)
-
     public programsConnection = async (
         info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<Program>
@@ -430,6 +424,12 @@ export class Model {
         info: GraphQLResolveInfo,
         paginationArgs: IPaginationArgs<AgeRange>
     ) => ageRangesConnectionResolver(info, paginationArgs)
+
+    public classesConnection = (
+        _context: Context,
+        info: GraphQLResolveInfo,
+        paginationArgs: IPaginationArgs<Class>
+    ) => classesConnectionResolver(info, paginationArgs)
 
     public async subjectsConnection(
         _context: Context,
