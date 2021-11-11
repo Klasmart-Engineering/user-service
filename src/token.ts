@@ -1,7 +1,8 @@
 import { AuthenticationError } from 'apollo-server-express'
-import { NextFunction, Request, Response } from 'express'
-import { verify, decode, VerifyOptions, Secret } from 'jsonwebtoken'
+import express, { NextFunction, Request, Response } from 'express'
+import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
+import { customErrors } from './types/errors/customError'
 
 const IS_AZURE_B2C_ENABLED = process.env.AZURE_B2C_ENABLED === 'true'
 const issuers = new Map<
@@ -151,4 +152,21 @@ export function checkIssuerAuthorization(
     }
 
     next()
+}
+
+export async function validateToken(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+) {
+    try {
+        if (process.env.NODE_ENV !== 'development') {
+            await checkToken(req)
+        }
+        next()
+    } catch (e) {
+        res.status(401).send(
+            `${customErrors.missing_token.code}: ${customErrors.missing_token.message}`
+        )
+    }
 }

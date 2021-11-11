@@ -9,7 +9,8 @@ import { IEntityFilter } from './filtering'
 import { GraphQLResolveInfo } from 'graphql'
 import { findTotalCountInPaginationEndpoints } from '../graphql'
 
-const DEFAULT_PAGE_SIZE = 50
+// changing this? update the docs: constraints.md
+export const MAX_PAGE_SIZE = 50
 
 export type Direction = 'FORWARD' | 'BACKWARD'
 
@@ -195,9 +196,7 @@ export const getPaginationQuery = async ({
     scope,
     sort,
 }: IPaginateData) => {
-    const pageSize = directionArgs?.count
-        ? directionArgs.count
-        : DEFAULT_PAGE_SIZE
+    const pageSize = directionArgs?.count ? directionArgs.count : MAX_PAGE_SIZE
 
     const cursorData = directionArgs?.cursor
         ? getDataFromCursor(directionArgs.cursor)

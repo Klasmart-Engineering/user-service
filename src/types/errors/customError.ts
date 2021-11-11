@@ -171,6 +171,12 @@ export const customErrors = {
         message:
             'Unauthorized to upload {entity} to {parentEntity} "{parentName}".',
     },
+    missing_token: {
+        code: 'UNAUTHORIZED',
+        message: `No authentication token provided. 
+                Please login to the hub to refresh the cookie, 
+                or provide a token in the Authorization header.`,
+    },
 
     // generic fallback if a joi constraint is not overridden
     // see messages.ts

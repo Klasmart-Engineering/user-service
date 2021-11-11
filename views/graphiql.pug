@@ -1,0 +1,35 @@
+//- this is from https://github.com/graphql/graphiql/blob/main/packages/graphiql/README.md
+//- converted to pug using https://html-to-pug.com/
+
+head
+    title User Service API
+    link(href='https://unpkg.com/graphiql/graphiql.min.css' rel='stylesheet')
+body(style="margin:0")
+    #graphiql(style='height: 100vh;')
+    script(crossorigin='' src='https://unpkg.com/react/umd/react.production.min.js')
+    script(crossorigin='' src='https://unpkg.com/react-dom/umd/react-dom.production.min.js')
+    script(crossorigin='' src='https://unpkg.com/graphiql/graphiql.min.js')
+    script.
+        const graphQLFetcher = async (graphQLParams, opts) => {
+            const { headers = {} } = opts;
+
+            const prefix = "#{routePrefix}"
+            const path = `./${[prefix]}` 
+
+            const response = await fetch(path, {
+                method: 'post',
+                headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                ...headers,
+                },
+                body: JSON.stringify(graphQLParams),
+            });
+
+            return response.json();
+        };
+
+        ReactDOM.render(
+            React.createElement(GraphiQL, { fetcher: graphQLFetcher,  headerEditorEnabled: true}),
+            document.getElementById('graphiql'),
+        );

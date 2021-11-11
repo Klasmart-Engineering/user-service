@@ -26,6 +26,7 @@ import depthLimit from 'graphql-depth-limit'
     }
 10 = 3 * 3 nested connections + 1 root level node
 */
+// changing this? update the docs: constraints.md
 export const DEFAULT_MAX_QUERY_DEPTH = 10
 
 export function maxQueryDepth(): number {

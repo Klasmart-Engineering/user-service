@@ -9,6 +9,7 @@ COPY tsconfig*.json ./
 COPY customTypings customTypings
 COPY migrations migrations
 COPY src src
+COPY views views
 RUN npm run build
 
 FROM base as deps

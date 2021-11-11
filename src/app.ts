@@ -1,18 +1,20 @@
-import cors, { CorsOptions } from 'cors'
-import express from 'express'
-import { Model } from './model'
 import cookieParser from 'cookie-parser'
-import { graphqlUploadExpress } from 'graphql-upload'
-import { createServer } from './utils/createServer'
-import { checkIssuerAuthorization } from './token'
+import cors, { CorsOptions } from 'cors'
 import escapeStringRegexp from 'escape-string-regexp'
+import express from 'express'
+import expressPlayground from 'graphql-playground-middleware-express'
+import { graphqlUploadExpress } from 'graphql-upload'
+import path from 'path'
 import appPackage from '../package.json'
 import logger, { Logger } from './logging'
 import {
     correlationIdMiddleware,
-    loggerMiddlewareFactory,
     CORRELATION_ID_HEADER,
+    loggerMiddlewareFactory,
 } from './middlewares'
+import { Model } from './model'
+import { checkIssuerAuthorization, validateToken } from './token'
+import { createServer } from './utils/createServer'
 
 interface AppOptions {
     routePrefix?: string
@@ -27,7 +29,7 @@ const domainRegex = new RegExp(
     `^https://(.*\\.)?${escapeStringRegexp(DOMAIN)}(:\\d{1,5})?$`
 )
 
-const ROUTE_PREFIX = process.env.ROUTE_PREFIX ?? ''
+export const ROUTE_PREFIX = process.env.ROUTE_PREFIX ?? ''
 
 const corsOptions: CorsOptions = {
     allowedHeaders: ['Authorization', 'Content-Type', CORRELATION_ID_HEADER],
@@ -55,13 +57,34 @@ export function createExpressApp(opts: AppOptions = {}): express.Express {
     app.use(checkIssuerAuthorization)
     app.use(cors(corsOptions))
 
-    app.get(`${options.routePrefix}/health`, (req, res) => {
+    const viewsPath = path.join(__dirname, '..', 'views')
+    app.use(express.static(viewsPath))
+    app.set('views', viewsPath)
+    app.set('view engine', 'pug')
+
+    app.get(`${options.routePrefix}`, validateToken, (_, res) => {
+        res.render('index', { routePrefix: ROUTE_PREFIX })
+    })
+    app.get(`${options.routePrefix}/explorer`, validateToken, (_, res) => {
+        res.render('graphiql', { routePrefix: ROUTE_PREFIX })
+    })
+    app.get(
+        `${options.routePrefix}/playground`,
+        validateToken,
+        (req, res, next) => {
+            expressPlayground({
+                endpoint: `${options.routePrefix}/playground`,
+            })(req, res, next)
+        }
+    )
+
+    app.get(`${options.routePrefix}/health`, (_, res) => {
         res.status(200).json({
             status: 'pass',
         })
     })
 
-    app.get(`${options.routePrefix}/version`, (req, res) => {
+    app.get(`${options.routePrefix}/version`, (_, res) => {
         res.status(200).json({
             version: `${appPackage.version}`,
         })

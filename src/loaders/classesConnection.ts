@@ -5,7 +5,6 @@ import { GradeSummaryNode } from '../types/graphQL/grade'
 import { ProgramSummaryNode } from '../types/graphQL/program'
 import { SchoolSummaryNode } from '../types/graphQL/school'
 import { SubjectSummaryNode } from '../types/graphQL/subject'
-import { SUMMARY_ELEMENTS_LIMIT } from '../types/paginationConstants'
 import { SelectQueryBuilder } from 'typeorm'
 import { School } from '../entities/school'
 import { AgeRange } from '../entities/ageRange'
@@ -15,6 +14,7 @@ import { Program } from '../entities/program'
 import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
+import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 
 export interface IClassesConnectionLoaders {
     schools: Lazy<DataLoader<string, SchoolSummaryNode[]>>
@@ -170,7 +170,7 @@ async function getNestedEntities(
         let counter = 1
         for (const entity of entities) {
             currentEntities.push(buildEntityProps(entityName, entity))
-            if (counter === SUMMARY_ELEMENTS_LIMIT) {
+            if (counter === MAX_PAGE_SIZE) {
                 break
             }
             counter += 1
