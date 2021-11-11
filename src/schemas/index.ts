@@ -16,6 +16,7 @@ import school from './school'
 import subcategory from './subcategory'
 import subject from './subject'
 import user from './user'
+import myUser from './myUser'
 import enums from './enums'
 import scalars from './scalars'
 import { Model } from '../model'
@@ -40,7 +41,8 @@ export default function getDefault(model: Model, context?: Context) {
         school(model, context),
         subcategory(model, context),
         subject(model, context),
-        user(model, context)
+        user(model, context),
+        myUser(model)
     )
     const schema = mergeRawSchemas(
         {
