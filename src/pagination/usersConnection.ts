@@ -98,9 +98,25 @@ export async function usersConnectionQuery(
         ) {
             scope.leftJoin('User.school_memberships', 'SchoolMembership')
         }
+
         if (filterHasProperty('classId', filter)) {
             scope.leftJoin('User.classesStudying', 'ClassStudying')
             scope.leftJoin('User.classesTeaching', 'ClassTeaching')
+            if (
+                filterHasProperty('classStudyingId', filter) ||
+                filterHasProperty('classTeachingId', filter)
+            ) {
+                throw new Error(
+                    'Cannot filter by classId in combination with classStudyingId/classTeachingId.'
+                )
+            }
+        } else {
+            if (filterHasProperty('classStudyingId', filter)) {
+                scope.innerJoin('User.classesStudying', 'ClassStudying')
+            }
+            if (filterHasProperty('classTeachingId', filter)) {
+                scope.innerJoin('User.classesTeaching', 'ClassTeaching')
+            }
         }
 
         scope.andWhere(
@@ -119,6 +135,8 @@ export async function usersConnectionQuery(
                         'ClassTeaching.class_id',
                     ],
                 },
+                classStudyingId: 'ClassStudying.class_id',
+                classTeachingId: 'ClassTeaching.class_id',
             })
         )
     }

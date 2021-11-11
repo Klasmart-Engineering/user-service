@@ -1,10 +1,16 @@
 import DataLoader from 'dataloader'
 import { Grade } from '../entities/grade'
 import { GradeSummaryNode } from '../types/graphQL/grade'
+import { Lazy } from '../utils/lazyLoading'
+import { NodeDataLoader } from './genericNode'
 
 export interface IGradesConnectionLoaders {
-    fromGrade?: DataLoader<string, GradeSummaryNode | undefined>
-    toGrade?: DataLoader<string, GradeSummaryNode | undefined>
+    fromGrade: Lazy<DataLoader<string, GradeSummaryNode | undefined>>
+    toGrade: Lazy<DataLoader<string, GradeSummaryNode | undefined>>
+}
+
+export interface IGradeNodeDataLoaders {
+    node: Lazy<NodeDataLoader<Grade, GradeSummaryNode>>
 }
 
 export const fromGradeForGrades = async (

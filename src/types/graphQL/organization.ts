@@ -4,6 +4,7 @@ import { Branding } from '../../entities/branding'
 import { UserConnectionNode, UserSummaryNode } from './user'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
 import { ISchoolsConnectionNode } from './school'
+import { CoreOrganizationConnectionNode } from '../../pagination/organizationsConnection'
 
 export interface CreateOrganizationInput {
     userId: string
@@ -15,6 +16,13 @@ export interface CreateOrganizationInput {
     branding?: BrandingInput
 }
 
+export interface AddUsersToOrganizationInput {
+    organizationId: string
+    organizationRoleIds: string[]
+    userIds: string[]
+    shortcode?: string
+}
+
 export interface OrganizationConnectionNode {
     id: string
     name?: string
@@ -22,8 +30,8 @@ export interface OrganizationConnectionNode {
     shortCode?: string
     status: Status
 
-    owners: UserSummaryNode[]
-    branding: Branding
+    owners?: UserSummaryNode[]
+    branding?: Branding
 
     usersConnection?: IPaginatedResponse<UserConnectionNode>
     schoolsConnection?: IPaginatedResponse<ISchoolsConnectionNode>
@@ -42,4 +50,8 @@ export interface OrganizationSummaryNode {
     userStatus: Status
     status?: Status
     userShortCode?: string
+}
+
+export interface OrganizationsMutationResult {
+    organizations: CoreOrganizationConnectionNode[]
 }

@@ -3,12 +3,6 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { GradeConnectionNode } from '../types/graphQL/grade'
-import {
-    fromGradeForGrades,
-    toGradeForGrades,
-} from '../loaders/gradesConnection'
-
-import Dataloader from 'dataloader'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -68,13 +62,18 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        grade(id: ID!): Grade @isAdmin(entity: "grade")
+        grade(id: ID!): Grade
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+            @isAdmin(entity: "grade")
         gradesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
             filter: GradeFilter
             sort: GradeSortInput
         ): GradesConnectionResponse @isAdmin(entity: "grade")
+        gradeNode(id: ID!): GradeConnectionNode @isAdmin(entity: "grade")
     }
 
     type Grade {
@@ -110,7 +109,7 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.gradesConnection?.fromGrade?.load(
+                    return ctx.loaders.gradesConnection.fromGrade.instance.load(
                         grade.id
                     )
                 },
@@ -119,7 +118,9 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.gradesConnection?.toGrade?.load(grade.id)
+                    return ctx.loaders.gradesConnection.toGrade.instance.load(
+                        grade.id
+                    )
                 },
             },
             Mutation: {
@@ -132,16 +133,10 @@ export default function getDefault(
             Query: {
                 grade: (_parent, args, ctx, _info) => model.getGrade(args, ctx),
                 gradesConnection: (_parent, args, ctx: Context, info) => {
-                    ctx.loaders.gradesConnection = {
-                        fromGrade: new Dataloader((keys) =>
-                            fromGradeForGrades(keys)
-                        ),
-                        toGrade: new Dataloader((keys) =>
-                            toGradeForGrades(keys)
-                        ),
-                    }
-
                     return model.gradesConnection(ctx, info, args)
+                },
+                gradeNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.gradeNode.node.instance.load(args)
                 },
             },
         },

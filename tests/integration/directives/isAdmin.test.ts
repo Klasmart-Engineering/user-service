@@ -13,9 +13,13 @@ import {
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
 import {
+    ageRangesConnection,
+    categoriesConnection,
     classesConnection,
     getAllOrganizations,
+    gradesConnection,
     permissionsConnection,
+    schoolsConnection,
     subcategoriesConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
@@ -48,12 +52,23 @@ import { createSchoolMembership } from '../../factories/schoolMembership.factory
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { Permission } from '../../../src/entities/permission'
 import {
+    createEntityScope,
     nonAdminOrganizationScope,
-    nonAdminRoleScope,
+    nonAdminSchoolScope,
 } from '../../../src/directives/isAdmin'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { createSubcategory } from '../../factories/subcategory.factory'
+import GradesInitializer from '../../../src/initializers/grades'
+import { Grade } from '../../../src/entities/grade'
+import { createGrade } from '../../factories/grade.factory'
+import { AgeRange } from '../../../src/entities/ageRange'
+import { createAgeRange } from '../../factories/ageRange.factory'
+import { Category } from '../../../src/entities/category'
+import { createCategory } from '../../factories/category.factory'
+import { Context } from '../../../src/main'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -100,10 +115,13 @@ describe('isAdmin', () => {
             const orgInfo = (org: Organization) => {
                 return org.organization_id
             }
+
+            let noMember: User
             let otherOrganization: Organization
 
             beforeEach(async () => {
                 const otherUser = await createNonAdminUser(testClient)
+                noMember = await createUser().save()
                 otherOrganization = await createOrganizationAndValidate(
                     testClient,
                     otherUser.user_id,
@@ -133,6 +151,16 @@ describe('isAdmin', () => {
                     expect(gqlOrgs.map(orgInfo)).to.deep.eq([
                         otherOrganization.organization_id,
                     ])
+                })
+            })
+
+            context('and the user does not belong to any organization', () => {
+                it('has not access to any organization', async () => {
+                    const gqlOrgs = await getAllOrganizations(testClient, {
+                        authorization: generateToken(userToPayload(noMember)),
+                    })
+
+                    expect(gqlOrgs.map(orgInfo)).to.deep.eq([])
                 })
             })
         })
@@ -903,7 +931,7 @@ describe('isAdmin', () => {
         let allPermissionsCount: number
         let roleRelatedPermissionsCount: number
 
-        const queryVisiblePermissions = async (token: string) => {
+        const queryVisiblePermissions = async (token?: string) => {
             const response = await permissionsConnection(
                 testClient,
                 'FORWARD',
@@ -936,38 +964,59 @@ describe('isAdmin', () => {
                 .getCount()
         })
 
-        context('admin', () => {
-            it('allows access to all the permissions', async () => {
-                const token = generateToken(userToPayload(adminUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(
-                    allPermissionsCount
+        context('when user is not logged in', () => {
+            it('fails authentication', async () => {
+                const gqlResult = queryVisiblePermissions()
+
+                await expect(gqlResult).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
                 )
             })
         })
 
-        context('organization member', () => {
-            it('allows access just to role related permissions', async () => {
-                const token = generateToken(userToPayload(memberUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(
-                    roleRelatedPermissionsCount
-                )
+        context('when user is logged in', () => {
+            context('and user is admin', () => {
+                it('allows access to all the permissions', async () => {
+                    const token = generateToken(userToPayload(adminUser))
+                    const visiblePermissions = await queryVisiblePermissions(
+                        token
+                    )
+                    expect(visiblePermissions.totalCount).to.eql(
+                        allPermissionsCount
+                    )
+                })
             })
-        })
 
-        context('no member user', () => {
-            it('deny access to any permission', async () => {
-                const token = generateToken(userToPayload(noMemberUser))
-                const visiblePermissions = await queryVisiblePermissions(token)
-                expect(visiblePermissions.totalCount).to.eql(0)
+            context('and user is organization member', () => {
+                it('allows access just to role related permissions', async () => {
+                    const token = generateToken(userToPayload(memberUser))
+                    const visiblePermissions = await queryVisiblePermissions(
+                        token
+                    )
+                    expect(visiblePermissions.totalCount).to.eql(
+                        roleRelatedPermissionsCount
+                    )
+                })
+            })
+
+            context('and user is non member user', () => {
+                it('deny access to any permission', async () => {
+                    const token = generateToken(userToPayload(noMemberUser))
+                    const visiblePermissions = await queryVisiblePermissions(
+                        token
+                    )
+                    expect(visiblePermissions.totalCount).to.eql(0)
+                })
             })
         })
     })
 
     describe('roles', async () => {
         let usersList: User[] = []
+        let superAdmin: User
         let user: User
+        let noMember: User
         let roleList: Role[] = []
         let organizations: Organization[] = []
         let userPermissions: UserPermissions
@@ -979,7 +1028,7 @@ describe('isAdmin', () => {
             organizations = []
             orgMemberships = []
 
-            const superAdmin = await createAdminUser(testClient)
+            superAdmin = await createAdminUser(testClient)
 
             // create two orgs and one role per org
             for (let i = 0; i < 2; i++) {
@@ -989,6 +1038,7 @@ describe('isAdmin', () => {
                 await connection.manager.save(role)
                 roleList.push(role)
             }
+
             const anotherRole = createRole('role 0b', organizations[0])
             await connection.manager.save(anotherRole)
             roleList.push(anotherRole)
@@ -996,6 +1046,7 @@ describe('isAdmin', () => {
             for (let i = 0; i < 10; i++) {
                 usersList.push(createUser())
             }
+
             await connection.manager.save(usersList)
 
             for (let j = 0; j < 5; j++) {
@@ -1007,6 +1058,7 @@ describe('isAdmin', () => {
                     })
                 )
             }
+
             for (let j = 5; j < usersList.length; j++) {
                 orgMemberships.push(
                     createOrganizationMembership({
@@ -1016,7 +1068,33 @@ describe('isAdmin', () => {
                     })
                 )
             }
+
             await OrganizationMembership.save(orgMemberships)
+            noMember = await createUser().save()
+        })
+
+        context('admin', () => {
+            it('can see all the existent roles', async () => {
+                userPermissions = new UserPermissions({
+                    id: superAdmin.user_id,
+                    email: superAdmin.email || '',
+                })
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const results = await scope.getMany()
+                const orgRoles = results.filter((r) => r.system_role === false)
+                const systemRoles = results.filter(
+                    (r) => r.system_role === true
+                )
+
+                expect(results).to.have.lengthOf(8)
+                expect(orgRoles).to.have.lengthOf(3)
+                expect(systemRoles).to.have.lengthOf(5)
+            })
         })
 
         context('non admin', () => {
@@ -1026,8 +1104,11 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                const scope = Role.createQueryBuilder()
-                await nonAdminRoleScope(scope, userPermissions)
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
 
                 const results = await scope.getMany()
                 const ownedRoles = results.filter(
@@ -1048,8 +1129,11 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                const scope = Role.createQueryBuilder()
-                await nonAdminRoleScope(scope, userPermissions)
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
 
                 const results = await scope.getMany()
                 const rolesFromOtherOrgs = results.find(
@@ -1065,12 +1149,16 @@ describe('isAdmin', () => {
                     id: user.user_id,
                     email: user.email || '',
                 })
-                const scope = Role.createQueryBuilder()
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
                 const filteredName = roleList[2].role_name
                 scope.andWhere('Role.role_name = :filteredName', {
                     filteredName,
                 })
-                await nonAdminRoleScope(scope, userPermissions)
 
                 const results = await scope.getMany()
                 const ownedRoles = results.filter(
@@ -1080,6 +1168,30 @@ describe('isAdmin', () => {
                 expect(results).to.have.lengthOf(1)
                 expect(ownedRoles).to.have.lengthOf(1)
                 expect(results[0].role_name).to.equal(filteredName)
+            })
+        })
+
+        context('non member', () => {
+            it('can just see the system ones', async () => {
+                userPermissions = new UserPermissions({
+                    id: noMember.user_id,
+                    email: noMember.email || '',
+                })
+
+                const scope = (await createEntityScope({
+                    permissions: userPermissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const results = await scope.getMany()
+                const orgRoles = results.filter((r) => r.system_role === false)
+                const systemRoles = results.filter(
+                    (r) => r.system_role === true
+                )
+
+                expect(results).to.have.lengthOf(5)
+                expect(orgRoles).to.have.lengthOf(0)
+                expect(systemRoles).to.have.lengthOf(5)
             })
         })
     })
@@ -1162,6 +1274,568 @@ describe('isAdmin', () => {
                     systemSubcategoriesCount
                 )
             })
+        })
+    })
+
+    describe('grades', () => {
+        let adminUser: User
+        let memberUser1: User
+        let noMemberUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let allGradesCount: number
+        let systemGradesCount: number
+        const organizationGradesCount = 6
+
+        const queryVisibleGrades = async (token?: string) => {
+            const response = await gradesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            // Generating system grades
+            await GradesInitializer.run()
+            systemGradesCount = await Grade.count()
+
+            // Creating Users and Orgs
+            adminUser = await createAdminUser(testClient)
+            memberUser1 = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization1 = await createOrganization(memberUser1).save()
+            organization2 = await createOrganization().save()
+
+            // Creating Grades for organization1
+            await Grade.save(
+                Array.from(Array(organizationGradesCount), () =>
+                    createGrade(organization1)
+                )
+            )
+
+            // Creating Grades for organization2
+            await Grade.save(
+                Array.from(Array(organizationGradesCount), () =>
+                    createGrade(organization2)
+                )
+            )
+
+            // Creating membership for memberUser1 in organization1
+            await createOrganizationMembership({
+                user: memberUser1,
+                organization: organization1,
+            }).save()
+
+            allGradesCount = await Grade.count()
+        })
+
+        context('when user is not logged in', () => {
+            it('fails authentication', async () => {
+                const visibleGrades = queryVisibleGrades()
+
+                await expect(visibleGrades).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
+            })
+        })
+
+        context('when user is logged in', () => {
+            context('and user is an admin', () => {
+                it('should have access to all the existent grades', async () => {
+                    const token = generateToken(userToPayload(adminUser))
+                    const visibleGrades = await queryVisibleGrades(token)
+
+                    expect(visibleGrades.totalCount).to.eql(allGradesCount)
+                })
+            })
+
+            context('and user is an organization member', () => {
+                it('should have access to the organization and system ones', async () => {
+                    const token = generateToken(userToPayload(memberUser1))
+                    const visibleGrades = await queryVisibleGrades(token)
+
+                    expect(visibleGrades.totalCount).to.eql(
+                        organizationGradesCount + systemGradesCount
+                    )
+                })
+            })
+
+            context('and user does not belongs to any organization', () => {
+                it('should have access just to the system ones', async () => {
+                    const token = generateToken(userToPayload(noMemberUser))
+                    const visibleGrades = await queryVisibleGrades(token)
+
+                    expect(visibleGrades.totalCount).to.eql(systemGradesCount)
+                })
+            })
+        })
+    })
+
+    describe('subcategories', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let organization2: Organization
+        let allSubcategoriesCount: number
+        let systemSubcategoriesCount: number
+        const organizationSubcategoriesCount = 10
+
+        const queryVisibleSubcategories = async (token: string) => {
+            const response = await subcategoriesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization = await createOrganization(memberUser).save()
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization)
+                )
+            )
+
+            await Subcategory.save(
+                Array.from(Array(organizationSubcategoriesCount), () =>
+                    createSubcategory(organization2)
+                )
+            )
+
+            await createOrganizationMembership({
+                user: memberUser,
+                organization,
+            }).save()
+
+            allSubcategoriesCount = await Subcategory.count()
+            systemSubcategoriesCount = await Subcategory.count({
+                where: { system: true },
+            })
+        })
+
+        context('admin', () => {
+            it('allows access to all the subcategories', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visibleSubcategories = await queryVisibleSubcategories(
+                    token
+                )
+                expect(visibleSubcategories.totalCount).to.eql(
+                    allSubcategoriesCount
+                )
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access to system subcategories and owns', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visibleSubcategories = await queryVisibleSubcategories(
+                    token
+                )
+                expect(visibleSubcategories.totalCount).to.eql(
+                    systemSubcategoriesCount + organizationSubcategoriesCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('alows access just to system subcategories', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visibleSubcategories = await queryVisibleSubcategories(
+                    token
+                )
+                expect(visibleSubcategories.totalCount).to.eql(
+                    systemSubcategoriesCount
+                )
+            })
+        })
+    })
+
+    describe('ageRanges', () => {
+        let adminUser: User
+        let memberUser1: User
+        let noMemberUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let allAgeRangesCount: number
+        let systemAgeRangesCount: number
+        const organizationAgeRangesCount = 6
+
+        const queryVisibleAgeRanges = async (token?: string) => {
+            const response = await ageRangesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+
+            return response
+        }
+
+        beforeEach(async () => {
+            systemAgeRangesCount = await AgeRange.count()
+
+            // Creating Users and Orgs
+            adminUser = await createAdminUser(testClient)
+            memberUser1 = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization1 = await createOrganization(memberUser1).save()
+            organization2 = await createOrganization().save()
+
+            // Creating Age Ranges for organization1
+            await AgeRange.save(
+                Array.from(Array(organizationAgeRangesCount), () =>
+                    createAgeRange(organization1)
+                )
+            )
+
+            // Creating Age Ranges for organization2
+            await AgeRange.save(
+                Array.from(Array(organizationAgeRangesCount), () =>
+                    createAgeRange(organization2)
+                )
+            )
+
+            // Creating membership for memberUser1 in organization1
+            await createOrganizationMembership({
+                user: memberUser1,
+                organization: organization1,
+            }).save()
+
+            allAgeRangesCount = await AgeRange.count()
+        })
+
+        context('when user is not logged in', () => {
+            it('fails authentication', async () => {
+                const visibleAgeRanges = queryVisibleAgeRanges()
+
+                await expect(visibleAgeRanges).to.be.rejectedWith(
+                    Error,
+                    'Context creation failed: No authentication token'
+                )
+            })
+        })
+
+        context('when user is logged in', () => {
+            context('and user is an admin', () => {
+                it('should have access to all the existent age ranges', async () => {
+                    const token = generateToken(userToPayload(adminUser))
+                    const visibleAgeRanges = await queryVisibleAgeRanges(token)
+
+                    expect(visibleAgeRanges.totalCount).to.eql(
+                        allAgeRangesCount
+                    )
+                })
+            })
+
+            context('and user is an organization member', () => {
+                it('should have access to the organization and system ones', async () => {
+                    const token = generateToken(userToPayload(memberUser1))
+                    const visibleAgeRanges = await queryVisibleAgeRanges(token)
+
+                    expect(visibleAgeRanges.totalCount).to.eql(
+                        organizationAgeRangesCount + systemAgeRangesCount
+                    )
+                })
+            })
+
+            context('and user does not belongs to any organization', () => {
+                it('should have access just to the system ones', async () => {
+                    const token = generateToken(userToPayload(noMemberUser))
+                    const visibleAgeRanges = await queryVisibleAgeRanges(token)
+
+                    expect(visibleAgeRanges.totalCount).to.eql(
+                        systemAgeRangesCount
+                    )
+                })
+            })
+        })
+    })
+
+    describe('categories', () => {
+        let adminUser: User
+        let memberUser: User
+        let noMemberUser: User
+        let organization: Organization
+        let organization2: Organization
+        let allCategoriesCount: number
+        let systemCategoriesCount: number
+        const organizationCategoriesCount = 10
+
+        const queryVisibleCategories = async (token: string) => {
+            const response = await categoriesConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            memberUser = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization = await createOrganization(memberUser).save()
+
+            await Category.save(
+                Array.from(Array(organizationCategoriesCount), () =>
+                    createCategory(organization)
+                )
+            )
+
+            await Category.save(
+                Array.from(Array(organizationCategoriesCount), () =>
+                    createCategory(organization2)
+                )
+            )
+
+            await createOrganizationMembership({
+                user: memberUser,
+                organization,
+            }).save()
+
+            allCategoriesCount = await Category.count()
+            systemCategoriesCount = await Category.count({
+                where: { system: true },
+            })
+        })
+
+        context('admin', () => {
+            it('allows access to all the categories', async () => {
+                const token = generateToken(userToPayload(adminUser))
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(allCategoriesCount)
+            })
+        })
+
+        context('organization member', () => {
+            it('allows access to system categories and owns', async () => {
+                const token = generateToken(userToPayload(memberUser))
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(
+                    systemCategoriesCount + organizationCategoriesCount
+                )
+            })
+        })
+
+        context('no member user', () => {
+            it('alows access just to system categories', async () => {
+                const token = generateToken(userToPayload(noMemberUser))
+                const visibleCategories = await queryVisibleCategories(token)
+                expect(visibleCategories.totalCount).to.eql(
+                    systemCategoriesCount
+                )
+            })
+        })
+    })
+
+    context('schools', () => {
+        let admin: User
+        let orgOwner: User
+        let schoolAdmin: User
+        let orgMember: User
+        let ownerAndSchoolAdmin: User
+        let org1: Organization
+        let org2: Organization
+        let org3: Organization
+        let org1Schools: School[] = []
+        let org2Schools: School[] = []
+        let org3Schools: School[] = []
+        const schools: School[] = []
+        let scope: SelectQueryBuilder<School>
+        let adminPermissions: UserPermissions
+        let orgOwnerPermissions: UserPermissions
+        let schoolAdminPermissions: UserPermissions
+        let ownerAndSchoolAdminPermissions: UserPermissions
+        const schoolsCount = 12
+        const organizationsCount = 3
+
+        let ctx: Context
+
+        const buildScopeAndContext = async (permissions: UserPermissions) => {
+            if (!permissions.isAdmin) {
+                await nonAdminSchoolScope(scope, permissions)
+            }
+
+            ctx = ({
+                permissions,
+                loaders: createContextLazyLoaders(permissions),
+            } as unknown) as Context
+        }
+
+        const querySchools = async (token: string) => {
+            const response = await schoolsConnection(
+                testClient,
+                'FORWARD',
+                {},
+                true,
+                { authorization: token }
+            )
+            return response
+        }
+
+        beforeEach(async () => {
+            scope = School.createQueryBuilder('School')
+
+            admin = await createAdminUser(testClient)
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            org3 = await createOrganization().save()
+
+            // creating org1 schools
+            org1Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const s = createSchool(org1)
+                    s.school_name = `school ${i}`
+                    return s
+                })
+            )
+
+            // creating org2 schools
+            org2Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const c = createSchool(org2)
+                    c.school_name = `school ${i}`
+                    return c
+                })
+            )
+
+            // creating org3 schools
+            org3Schools = await School.save(
+                Array.from(Array(schoolsCount), (_, i) => {
+                    const s = createSchool(org3)
+                    s.school_name = `school ${i}`
+                    return s
+                })
+            )
+
+            schools.push(...org1Schools, ...org2Schools, ...org3Schools)
+
+            adminPermissions = new UserPermissions(userToPayload(admin))
+
+            // Emulating context
+            await buildScopeAndContext(adminPermissions)
+
+            orgOwner = await createUser().save()
+            schoolAdmin = await createUser().save()
+            orgMember = await createUser().save()
+            ownerAndSchoolAdmin = await createUser().save()
+
+            const viewAllSchoolsRoleOrg3 = await createRole(
+                'View Schools',
+                org3,
+                {
+                    permissions: [PermissionName.view_school_20110],
+                }
+            ).save()
+
+            const viewAllSchoolsFromTheOrgRole = await createRole(
+                'View Schools',
+                org2,
+                {
+                    permissions: [PermissionName.view_school_20110],
+                }
+            ).save()
+
+            const viewMySchoolRole = await createRole('View My School', org3, {
+                permissions: [PermissionName.view_my_school_20119],
+            }).save()
+
+            // adding orgOwner to org3 with orgAdminRole
+            await createOrganizationMembership({
+                user: orgOwner,
+                organization: org3,
+                roles: [viewAllSchoolsRoleOrg3],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to org2 with orgAdminRole
+            await createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org2,
+                roles: [viewAllSchoolsFromTheOrgRole],
+            }).save()
+
+            // adding schoolAdmin to org3 with schoolAdminRole
+            await createOrganizationMembership({
+                user: schoolAdmin,
+                organization: org3,
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding schoolAdmin to first org3School
+            await createSchoolMembership({
+                user: schoolAdmin,
+                school: org3Schools[0],
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to org3 with schoolAdminRole
+            await createOrganizationMembership({
+                user: ownerAndSchoolAdmin,
+                organization: org3,
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding ownerAndSchoolAdmin to second org3School
+            await createSchoolMembership({
+                user: ownerAndSchoolAdmin,
+                school: org3Schools[1],
+                roles: [viewMySchoolRole],
+            }).save()
+
+            // adding orgMember to org3
+            await createOrganizationMembership({
+                user: orgMember,
+                organization: org3,
+                roles: [],
+            }).save()
+
+            orgOwnerPermissions = new UserPermissions(userToPayload(orgOwner))
+            schoolAdminPermissions = new UserPermissions(
+                userToPayload(schoolAdmin)
+            )
+            ownerAndSchoolAdminPermissions = new UserPermissions(
+                userToPayload(ownerAndSchoolAdmin)
+            )
+        })
+
+        it('super admin should see schools from all the organizations', async () => {
+            const token = generateToken(userToPayload(admin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(
+                schoolsCount * organizationsCount
+            )
+        })
+
+        it('org admin should see schools from his org', async () => {
+            const token = generateToken(userToPayload(orgOwner))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(org3Schools.length)
+        })
+
+        it('org admin from 1 org and school owner of another org should see schools all the schools from the first org and only the one he owns from org 2', async () => {
+            const token = generateToken(userToPayload(ownerAndSchoolAdmin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(org2Schools.length + 1)
+        })
+
+        it('school admin should see only his school', async () => {
+            const token = generateToken(userToPayload(schoolAdmin))
+            const visibleSchools = await querySchools(token)
+            expect(visibleSchools.totalCount).to.eql(1)
         })
     })
 })

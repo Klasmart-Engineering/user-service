@@ -97,7 +97,7 @@ export class UserPermissions {
         { school_ids, organization_id }: PermissionContext,
         permission_name: PermissionName
     ) {
-        const isActive = this.getUserIsActive(this.user_id)
+        const isActive = await this.getUserIsActive(this.user_id)
         if (!isActive) {
             throw new Error(
                 `User(${this.user_id}) has been deleted, so does not have Permission(${permission_name}) in Organization(${organization_id})`

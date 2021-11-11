@@ -401,7 +401,21 @@ const PROGRAM_NODE_QUERY = gql`
     }
 `
 
+export const PERMISSION_NODE_FIELDS = gql`
+    fragment permissionFields on PermissionsConnectionNode {
+        id
+        name
+        category
+        group
+        level
+        description
+        allow
+    }
+`
+
 export const PERMISSIONS_CONNECTION = gql`
+    ${PERMISSION_NODE_FIELDS}
+
     query(
         $direction: ConnectionDirection!
         $directionArgs: ConnectionsDirectionArgs
@@ -419,13 +433,7 @@ export const PERMISSIONS_CONNECTION = gql`
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    category
-                    group
-                    level
-                    description
-                    allow
+                    ...permissionFields
                 }
             }
 
@@ -439,7 +447,17 @@ export const PERMISSIONS_CONNECTION = gql`
     }
 `
 
-const SCHOOLS_CONNECTION = `
+export const PERMISSION_NODE = gql`
+    ${PERMISSION_NODE_FIELDS}
+
+    query PermissionNode($id: ID!) {
+        permissionNode(id: $id) {
+            ...permissionFields
+        }
+    }
+`
+
+export const SCHOOLS_CONNECTION = `
     query schoolsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SchoolFilter, $sortArgs: SchoolSortInput) {
         schoolsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
             totalCount
@@ -619,18 +637,36 @@ export const CATEGORIES_CONNECTION = `
         }
     }`
 
-export const ROLES_CONNECTION = `
-    query rolesConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: RoleFilter, $sortArgs: RoleSortInput) {
-        rolesConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+export const ROLE_FIELDS = gql`
+    fragment roleFields on RoleConnectionNode {
+        id
+        name
+        status
+        system
+        description
+    }
+`
+
+export const ROLES_CONNECTION = gql`
+    ${ROLE_FIELDS}
+
+    query rolesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: RoleFilter
+        $sortArgs: RoleSortInput
+    ) {
+        rolesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    status
-                    system
-                    description
+                    ...roleFields
                 }
             }
 
@@ -640,6 +676,16 @@ export const ROLES_CONNECTION = `
                 startCursor
                 endCursor
             }
+        }
+    }
+`
+
+export const ROLE_NODE = gql`
+    ${ROLE_FIELDS}
+
+    query RoleNode($id: ID!) {
+        roleNode(id: $id) {
+            ...roleFields
         }
     }
 `
@@ -724,6 +770,23 @@ const CLASS_FIELDS = gql`
             name
             status
             system
+        }
+
+        studentsConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
+        }
+        teachersConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
         }
     }
 `
@@ -812,6 +875,79 @@ export const CLASS_NODE_MAIN_DATA = gql`
     query ClassNode($id: ID!) {
         classNode(id: $id) {
             ...classMainFields
+        }
+    }
+`
+
+export const GRADE_MAIN_FIELDS = gql`
+    fragment gradeMainFields on GradeConnectionNode {
+        id
+        name
+        status
+        system
+    }
+`
+
+const GRADE_FIELDS = gql`
+    ${GRADE_MAIN_FIELDS}
+
+    fragment gradeFields on GradeConnectionNode {
+        ...gradeMainFields
+
+        fromGrade {
+            id
+            name
+            status
+            system
+        }
+
+        toGrade {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+export const CATEGORY_NODE = gql`
+    query categoryNode($id: ID!) {
+        categoryNode(id: $id) {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
+export const AGE_RANGE_NODE = gql`
+    query ageRangeNode($id: ID!) {
+        ageRangeNode(id: $id) {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
+export const GRADE_NODE = gql`
+    ${GRADE_FIELDS}
+
+    query GradeNode($id: ID!) {
+        gradeNode(id: $id) {
+            ...gradeFields
+        }
+    }
+`
+
+export const SUBCATEGORY_NODE = gql`
+    query subcategoryNode($id: ID!) {
+        subcategoryNode(id: $id) {
+            id
+            name
+            status
+            system
         }
     }
 `
@@ -906,6 +1042,47 @@ export const ORGANIZATIONS_CONNECTION = `
               startCursor
               endCursor
             }
+        }
+    }
+`
+
+export const ORGANIZATION_NODE_CORE_FIELDS = gql`
+    fragment organizationNodeCoreFields on OrganizationConnectionNode {
+        id
+        name
+        status
+        shortCode
+        contactInfo {
+            address1
+            address2
+            phone
+        }
+    }
+`
+
+const ORGANIZATION_NODE_FIELDS = gql`
+    ${ORGANIZATION_NODE_CORE_FIELDS}
+
+    fragment organizationNodeFields on OrganizationConnectionNode {
+        ...organizationNodeCoreFields
+
+        owners {
+            id
+        }
+
+        branding {
+            iconImageURL
+            primaryColor
+        }
+    }
+`
+
+export const ORGANIZATION_NODE = gql`
+    ${ORGANIZATION_NODE_FIELDS}
+
+    query OrganizatioNode($id: ID!) {
+        organizationNode(id: $id) {
+            ...organizationNodeFields
         }
     }
 `
@@ -1673,6 +1850,18 @@ export async function program2Nodes(
 
     await gqlTry(operation)
 }
+
+export const SCHOOL_NODE = gql`
+    query SchoolNode($id: ID!) {
+        schoolNode(id: $id) {
+            id
+            name
+            status
+            shortCode
+            organizationId
+        }
+    }
+`
 
 export async function schoolsConnection(
     testClient: ApolloServerTestClient,

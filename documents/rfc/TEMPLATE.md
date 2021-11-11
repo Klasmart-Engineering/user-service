@@ -22,6 +22,18 @@ When documenting a workflow, include graphs / charts that visualise the textual 
 
 When suggesting a new design, revisit the RFC when the decision for a specific design approach has been made.
 
+### Error handling
+
+Describe how the errors will be handled.
+
+For example:
+
+* New errors with `code`, `message` and `variables` (if any)
+* When error happens, stop the operation or just move over to collect other errors before stop the operation
+* How we return errors to the client
+* If necessary, may involve/coordinate the client teams for their ideas
+* If need to send the error to New Relic for metrics/monitoring, please describe it as well
+
 ## Out of scope
 
 List anything that is explicitly outside of the scope of the RFC to help keep discussion focused and avoid scope creep.

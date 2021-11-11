@@ -4,15 +4,15 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
-import { ownersForOrgs } from '../loaders/organizationsConnection'
 import {
     orgsForUsers,
-    rolesForUsers,
     schoolsForUsers,
+    rolesForUsers,
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
+import { addUsersToOrganizations } from '../resolvers/organization'
 import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
@@ -24,6 +24,9 @@ const typeDefs = gql`
     scalar Url
 
     extend type Mutation {
+        addUsersToOrganizations(
+            input: [AddUsersToOrganizationInput!]!
+        ): OrganizationsMutationResult
         organization(
             organization_id: ID!
             organization_name: String
@@ -48,7 +51,11 @@ const typeDefs = gql`
     }
     extend type Query {
         organization(organization_id: ID!): Organization
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
         organizations(organization_ids: [ID!]): [Organization]
+            @deprecated(reason: "Use 'organizationsConnection'.")
             @isAdmin(entity: "organization")
         organizationsConnection(
             direction: ConnectionDirection!
@@ -56,7 +63,12 @@ const typeDefs = gql`
             filter: OrganizationFilter
             sort: OrganizationSortInput
         ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
+        organizationNode(id: ID!): OrganizationConnectionNode
+            @isAdmin(entity: "organization")
     }
+
+    # DB Entities
+
     type Organization {
         organization_id: ID!
 
@@ -108,6 +120,9 @@ const typeDefs = gql`
         ): Organization
         setPrimaryContact(user_id: ID!): User
         addUser(user_id: ID!, shortcode: String): OrganizationMembership
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2419261457/"
+            )
         inviteUser(
             email: String
             phone: String
@@ -181,6 +196,7 @@ const typeDefs = gql`
         removeRole(role_id: ID!): OrganizationMembership
         leave(_: Int): Boolean
     }
+
     type OrganizationOwnership {
         #properties
         user_id: ID!
@@ -199,6 +215,19 @@ const typeDefs = gql`
 
     enum BrandingImageTag {
         ICON
+    }
+
+    # Mutation related definitions
+
+    input AddUsersToOrganizationInput {
+        organizationId: ID!
+        organizationRoleIds: [ID!]!
+        userIds: [ID!]!
+        shortcode: String
+    }
+
+    type OrganizationsMutationResult {
+        organizations: [OrganizationConnectionNode!]!
     }
 
     # Organization connection related definitions
@@ -330,7 +359,7 @@ export default function getDefault(
                     args: Record<string, unknown>,
                     ctx: Context
                 ) =>
-                    ctx.loaders.organizationsConnection?.owners?.load(
+                    ctx.loaders.organizationsConnection.owners.instance.load(
                         organization.id
                     ),
                 branding: async (
@@ -376,6 +405,8 @@ export default function getDefault(
                 classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
+                addUsersToOrganizations: (_parent, args, ctx, _info) =>
+                    addUsersToOrganizations(args, ctx),
                 organization: (_parent, args, _context, _info) =>
                     model.setOrganization(args),
                 uploadOrganizationsFromCSV: (_parent, args, ctx, info) =>
@@ -400,9 +431,6 @@ export default function getDefault(
                     ctx: Context,
                     info
                 ) => {
-                    ctx.loaders.organizationsConnection = {
-                        owners: new Dataloader((keys) => ownersForOrgs(keys)),
-                    }
                     // Add dataloaders for the usersConnection
                     // TODO remove once corresponding child connections have been created
                     ctx.loaders.usersConnection = {
@@ -415,6 +443,9 @@ export default function getDefault(
                         roles: new Dataloader((keys) => rolesForUsers(keys)),
                     }
                     return model.organizationsConnection(ctx, info, args)
+                },
+                organizationNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.organizationNode.node.instance.load(args)
                 },
             },
             Organization: {

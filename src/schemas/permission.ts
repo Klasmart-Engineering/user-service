@@ -65,6 +65,8 @@ const typeDefs = gql`
             sort: PermissionSortInput
             filter: PermissionFilter
         ): PermissionsConnectionResponse @isAdmin(entity: "permission")
+        permissionNode(id: ID!): PermissionsConnectionNode
+            @isAdmin(entity: "permission")
     }
 `
 export default function getDefault(
@@ -77,6 +79,8 @@ export default function getDefault(
             Query: {
                 permissionsConnection: (_parent, args, ctx, info) =>
                     permissionsConnectionResolver(info, ctx, args),
+                permissionNode: (_parent, args, ctx: Context) =>
+                    ctx.loaders.permissionNode.node.instance.load(args),
             },
         },
     }

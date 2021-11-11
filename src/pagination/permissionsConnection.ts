@@ -1,8 +1,10 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Permission } from '../entities/permission'
+import { NodeDataLoader } from '../loaders/genericNode'
 import { Context } from '../main'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { Lazy } from '../utils/lazyLoading'
 import {
     filterHasProperty,
     getWhereClauseFromFilter,
@@ -13,7 +15,11 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 
-export const PERMISSIONS_CONNECTION_COLUMNS: string[] = ([
+export interface IPermissionNodeDataLoaders {
+    node: Lazy<NodeDataLoader<Permission, PermissionConnectionNode>>
+}
+
+export const permissionSummaryNodeFields: string[] = ([
     'permission_id',
     'permission_name',
     'permission_category',
@@ -51,7 +57,7 @@ export async function permissionsConnectionResolver(
         )
     }
 
-    scope.select(PERMISSIONS_CONNECTION_COLUMNS)
+    scope.select(permissionSummaryNodeFields)
 
     const data = await paginateData<Permission>({
         direction,
@@ -83,7 +89,7 @@ export async function permissionsConnectionResolver(
     }
 }
 
-function mapPermissionToPermissionConnectionNode(
+export function mapPermissionToPermissionConnectionNode(
     permission: Permission
 ): PermissionConnectionNode {
     return {

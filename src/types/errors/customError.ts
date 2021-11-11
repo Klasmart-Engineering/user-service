@@ -22,6 +22,7 @@ export const genericErrorCodes = [
     'inactive_status',
     'invalid_operation_type',
     'delete_rejected_entity_in_use',
+    'nonexistent_or_inactive',
 ] as const
 
 export type GenericErrorCode = typeof genericErrorCodes[number]
@@ -148,6 +149,11 @@ export const customErrors = {
     inactive_status: {
         code: 'ERR_INACTIVE_STATUS',
         message: '{entity} {entityName} is inactive.',
+    },
+    nonexistent_or_inactive: {
+        code: 'ERR_NONEXISTENT_ENTITY_OR_INACTIVE_STATUS',
+        message:
+            'No active {entity} was found with {attribute} {otherAttribute}.',
     },
 
     // auth

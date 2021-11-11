@@ -12,7 +12,13 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
+        subcategory(id: ID!): Subcategory
+            @isAdmin(entity: "subcategory")
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+        subcategoryNode(id: ID!): SubcategoryConnectionNode
+            @isAdmin(entity: "subcategory")
         subcategoriesConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
@@ -45,10 +51,10 @@ const typeDefs = gql`
 
     type SubcategoriesConnectionEdge implements iConnectionEdge {
         cursor: String
-        node: SubcategoriesConnectionNode
+        node: SubcategoryConnectionNode
     }
 
-    type SubcategoriesConnectionNode {
+    type SubcategoryConnectionNode {
         id: ID!
         name: String!
         status: Status!
@@ -95,6 +101,8 @@ export default function getDefault(
                     model.getSubcategory(args, ctx),
                 subcategoriesConnection: (_parent, args, ctx, info) =>
                     subcategoriesConnectionResolver(info, ctx, args),
+                subcategoryNode: (_parent, args, ctx) =>
+                    ctx.loaders.subcategoryNode.node.instance.load(args),
             },
         },
     }

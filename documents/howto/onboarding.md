@@ -20,7 +20,16 @@ You need to understand that in order to interact with the API, you need to have 
 
 - Run the [script](https://bitbucket.org/calmisland/kidsloop-user-service/src/master/scripts/create_jwt_token.py) for generating tokens
 ```bash
-python create_jwt_token.py -i USER_ID -e USER_EMAIL
+python create_jwt_token.py -i <a random v4 uuid> -e <user email>
+```
+
+### Setup authentication headers
+- Start the application and navigate to the URL outputted in the terminal to view the GraphQL explorer.
+- Update the explorer HTTP headers with your token:
+```json
+{
+    "Authorization": "<my token>"
+}
 ```
 
 ### Create a valid user
@@ -35,7 +44,9 @@ mutation {
 }
 ```
 
-At this point you have a valid email and user_id, so you can use it to generate a valid token.
+At this point you have a valid email and user_id, so you can use it to generate a valid token. 
+Update the Authorization header with this token to start interacting with the API as that user.
+
 
 ## What do I do with a token ?
 

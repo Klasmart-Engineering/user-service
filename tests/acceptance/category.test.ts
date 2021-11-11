@@ -3,22 +3,63 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import CategoriesInitializer from '../../src/initializers/categories'
+import { CategorySummaryNode } from '../../src/types/graphQL/category'
 import { loadFixtures } from '../utils/fixtures'
 import {
     createCategories,
     createOrg,
     ICategoryDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { CATEGORIES_CONNECTION } from '../utils/operations/modelOps'
+import {
+    CATEGORIES_CONNECTION,
+    CATEGORY_NODE,
+} from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
+import { print } from 'graphql'
 
+interface ICategoryEdge {
+    node: CategorySummaryNode
+}
 let systemcategoriesCount = 0
 const url = 'http://localhost:8080/user'
 const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
 const categoriesCount = 12
+
+async function makeQuery(pageSize: any) {
+    return await request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: getAdminAuthToken(),
+        })
+        .send({
+            query: CATEGORIES_CONNECTION,
+            variables: {
+                direction: 'FORWARD',
+                directionArgs: {
+                    count: pageSize,
+                },
+            },
+        })
+}
+
+const makeNodeQuery = async (id: string) => {
+    return await request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: getAdminAuthToken(),
+        })
+        .send({
+            query: print(CATEGORY_NODE),
+            variables: {
+                id,
+            },
+        })
+}
 
 describe('acceptance.category', () => {
     let connection: Connection
@@ -69,24 +110,6 @@ describe('acceptance.category', () => {
     })
 
     context('categoriesConnection', () => {
-        async function makeQuery(pageSize: any) {
-            return await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: getAdminAuthToken(),
-                })
-                .send({
-                    query: CATEGORIES_CONNECTION,
-                    variables: {
-                        direction: 'FORWARD',
-                        directionArgs: {
-                            count: pageSize,
-                        },
-                    },
-                })
-        }
-
         it('queries paginated categories', async () => {
             const pageSize = 5
 
@@ -115,6 +138,38 @@ describe('acceptance.category', () => {
                         'Variable "$directionArgs" got invalid value "not_a_number" at "directionArgs.count"; Expected type "PageSize".'
                     )
                 )
+        })
+    })
+
+    context('categoryNode', () => {
+        let categoriesEdges: ICategoryEdge[]
+        beforeEach(async () => {
+            const categoryResponse = await makeQuery(1)
+            categoriesEdges =
+                categoryResponse.body.data.categoriesConnection.edges
+        })
+        context('when requested category exists', () => {
+            it('should respond succesfully', async () => {
+                const categoryId = categoriesEdges[0].node.id
+                const response = await makeNodeQuery(categoryId)
+                const categoryNode = response.body.data.categoryNode
+
+                expect(response.status).to.eq(200)
+                expect(categoryNode.id).to.equal(categoryId)
+            })
+        })
+
+        context('when requested category does not exists', () => {
+            it('should respond with errors', async () => {
+                const categoryId = '00000000-0000-0000-0000-000000000000'
+                const response = await makeNodeQuery(categoryId)
+                const errors = response.body.errors
+                const categoryNode = response.body.data.categoryNode
+
+                expect(response.status).to.eq(200)
+                expect(errors).to.exist
+                expect(categoryNode).to.be.null
+            })
         })
     })
 })

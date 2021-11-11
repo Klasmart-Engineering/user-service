@@ -57,7 +57,6 @@ import { Category } from './entities/category'
 import { Subcategory } from './entities/subcategory'
 import { Subject } from './entities/subject'
 import { Upload } from './types/upload'
-import { GradeConnectionNode } from './types/graphQL/grade'
 import {
     BrandingResult,
     BrandingImageInfo,
@@ -74,7 +73,6 @@ import BrandingErrorConstants from './types/errors/branding/brandingErrorConstan
 import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
 import { Status } from './entities/status'
-import { AgeRangeConnectionNode } from './types/graphQL/ageRange'
 import { SubjectConnectionNode } from './types/graphQL/subject'
 import { runMigrations } from './initializers/migrations'
 import { usersConnectionResolver } from './pagination/usersConnection'
@@ -89,6 +87,8 @@ import { rolesConnectionResolver } from './pagination/rolesConnection'
 import { categoriesConnectionResolver } from './pagination/categoriesConnection'
 import { programsConnectionResolver } from './pagination/programsConnection'
 import { classesConnectionResolver } from './pagination/classesConnection'
+import { gradesConnectionResolver } from './pagination/gradesConnection'
+import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
 
 export class Model {
     public static async create() {
@@ -419,144 +419,17 @@ export class Model {
         paginationArgs: IPaginationArgs<Role>
     ) => rolesConnectionResolver(info, paginationArgs)
 
-    public async gradesConnection(
+    public gradesConnection = (
         _context: Context,
         info: GraphQLResolveInfo,
-        {
-            direction,
-            directionArgs,
-            scope,
-            filter,
-            sort,
-        }: IPaginationArgs<Grade>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+        paginationArgs: IPaginationArgs<Grade>
+    ) => gradesConnectionResolver(info, paginationArgs)
 
-        if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('Grade.organization', 'Organization')
-            }
-
-            if (filterHasProperty('fromGradeId', filter)) {
-                scope.leftJoinAndSelect(
-                    'Grade.progress_from_grade',
-                    'FromGrade'
-                )
-            }
-
-            if (filterHasProperty('toGradeId', filter)) {
-                scope.leftJoinAndSelect('Grade.progress_to_grade', 'ToGrade')
-            }
-
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    id: 'Grade.id',
-                    name: 'Grade.name',
-                    system: 'Grade.system',
-                    status: 'Grade.status',
-                    organizationId: 'Organization.organization_id',
-                    fromGradeId: 'FromGrade.id',
-                    toGradeId: 'ToGrade.id',
-                })
-            )
-        }
-
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'id',
-                aliases: {
-                    id: 'id',
-                    name: 'name',
-                },
-                sort,
-            },
-            includeTotalCount,
-        })
-
-        for (const edge of data.edges) {
-            const grade = edge.node as Grade
-            const newNode: Partial<GradeConnectionNode> = {
-                id: grade.id,
-                name: grade.name,
-                status: grade.status,
-                system: grade.system,
-                // other properties have dedicated resolvers that use Dataloader
-            }
-
-            edge.node = newNode
-        }
-
-        return data
-    }
-
-    public async ageRangesConnection(
+    public ageRangesConnection = (
         _context: Context,
         info: GraphQLResolveInfo,
-        {
-            direction,
-            directionArgs,
-            scope,
-            filter,
-            sort,
-        }: IPaginationArgs<AgeRange>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-        if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('AgeRange.organization', 'Organization')
-            }
-
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    ageRangeValueFrom: 'AgeRange.low_value',
-                    ageRangeUnitFrom: 'AgeRange.low_value_unit',
-                    ageRangeValueTo: 'AgeRange.high_value',
-                    ageRangeUnitTo: 'AgeRange.high_value_unit',
-                    system: 'AgeRange.system',
-                    status: 'AgeRange.status',
-                    organizationId: 'Organization.organization_id',
-                })
-            )
-        }
-
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'id',
-                aliases: {
-                    id: 'id',
-                    lowValue: 'low_value',
-                    lowValueUnit: 'low_value_unit',
-                },
-                sort,
-            },
-            includeTotalCount,
-        })
-
-        for (const edge of data.edges) {
-            const ageRange = edge.node as AgeRange
-            const newNode: Partial<AgeRangeConnectionNode> = {
-                id: ageRange.id,
-                name: ageRange.name,
-                status: ageRange.status,
-                system: ageRange.system,
-                lowValue: ageRange.low_value,
-                lowValueUnit: ageRange.low_value_unit,
-                highValue: ageRange.high_value,
-                highValueUnit: ageRange.high_value_unit,
-            }
-
-            edge.node = newNode
-        }
-
-        return data
-    }
+        paginationArgs: IPaginationArgs<AgeRange>
+    ) => ageRangesConnectionResolver(info, paginationArgs)
 
     public async subjectsConnection(
         _context: Context,

@@ -2,6 +2,8 @@ import { expect } from 'chai'
 import {
     APIError,
     APIErrorCollection,
+    apiErrorConstants,
+    formatMessage,
     IAPIError,
 } from '../../src/types/errors/apiError'
 import { ErrorParams } from '../../src/types/errors/baseError'
@@ -29,31 +31,37 @@ function expectIsAPIErrorCollection(
     expect(error).to.have.property('message').equal('ERR_API_BAD_INPUT')
 }
 
-type ExpectAPIError<K extends keyof ErrorParams> = (
-    actualError: Error,
-    params: Required<Pick<ErrorParams, K>>,
-    variables: APIError['variables']
-) => Chai.Assertion
-
 function expectAPIErrorType(
     expectedErrorType: GenericErrorCode,
     actualError: Error,
     params: ErrorParams,
-    variables: APIError['variables']
+    variables: APIError['variables'],
+    errorIndex = 0,
+    errorCount = 1
 ) {
     expectIsAPIErrorCollection(actualError)
     const expectedError = customErrors[expectedErrorType] as {
         code: string
         message?: string
     }
-    expect(actualError.errors?.[0]).to.deep.equal({
+    expect(actualError.errors[errorIndex]).to.deep.equal({
         code: expectedError.code,
-        message: stringInject(expectedError?.message ?? '', params),
+        message: formatMessage(expectedError.message, params),
         variables,
         ...params,
     })
-    return expect(actualError.errors).to.have.length(1)
+    return expect(actualError.errors).to.have.length(errorCount)
 }
+
+type ExpectAPIError<K extends keyof ErrorParams> = (
+    actualError: Error,
+    params:
+        | Required<Pick<ErrorParams, K>>
+        | Required<Pick<ErrorParams, K | 'index'>>,
+    variables: APIError['variables'],
+    errorIndex?: number,
+    errorCount?: number
+) => Chai.Assertion
 
 type ExpectAPIErrors = Implements<
     {
@@ -89,6 +97,9 @@ type ExpectAPIErrors = Implements<
         invalid_operation_type: ExpectAPIError<'attribute' | 'otherAttribute'>
         inactive_status: ExpectAPIError<'entity' | 'entityName'>
         delete_rejected_entity_in_use: ExpectAPIError<'entity' | 'entityName'>
+        nonexistent_or_inactive: ExpectAPIError<
+            'entity' | 'attribute' | 'otherAttribute'
+        >
     }
 >
 
@@ -100,7 +111,20 @@ export const expectAPIError = Object.fromEntries(
         .map((error) => error as GenericErrorCode)
         .map((error) => [
             error,
-            (actualError: Error, params: ErrorParams, variables: string[]) =>
-                expectAPIErrorType(error, actualError, params, variables),
+            (
+                actualError: Error,
+                params: ErrorParams,
+                variables: string[],
+                errorIndex?: number,
+                errorCount?: number
+            ) =>
+                expectAPIErrorType(
+                    error,
+                    actualError,
+                    params,
+                    variables,
+                    errorIndex,
+                    errorCount
+                ),
         ])
 ) as ExpectAPIErrors

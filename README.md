@@ -2,18 +2,39 @@
 | --------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------- |
 | ![Statements](https://img.shields.io/badge/Coverage-68.92%25-red.svg) | ![Branches](https://img.shields.io/badge/Coverage-37.41%25-red.svg) | ![Functions](https://img.shields.io/badge/Coverage-67.04%25-red.svg) | ![Lines](https://img.shields.io/badge/Coverage-71.9%25-red.svg) |
 
-# Setup
+
+Welcome to the user service!
+
+- Getting started? Follow installation & running instructions below. 
+- Questions? Head over to [#ask-user-service](https://app.slack.com/client/T02SSP0AM/C02LP6QAQGZ) on Slack.
+
+
+# Installation
+
+Install postgres:
 
 -   `docker run -d --name=postgres -p 5432:5432 -e POSTGRES_PASSWORD=kidsloop postgres`
 
+Install dependencies:
+
 -   `npm i`
+
+Setup environment variables:
 
 -   Create a `.env` file by copying the contents of `.env.example`
 
-# Restart
+# Running
 
-1. `docker start postgres`
-2. `npm start`
+Start postgres:
+
+-  `docker start postgres`
+
+Start the application:
+
+- `npm start`
+- or, `npm run start:local` for an HTTPS server
+
+Getting started for the first time? Following the [onboarding doc](./documents/howto/onboarding.md).
 
 # Testing
 

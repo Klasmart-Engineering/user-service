@@ -1,7 +1,9 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Role } from '../entities/role'
-import { RoleConnectionNode } from '../types/graphQL/role'
+import { NodeDataLoader } from '../loaders/genericNode'
+import { RoleConnectionNode, RoleSummaryNode } from '../types/graphQL/role'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { Lazy } from '../utils/lazyLoading'
 import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {
     IEdge,
@@ -9,6 +11,10 @@ import {
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+
+export interface IRoleNodeDataLoaders {
+    node: Lazy<NodeDataLoader<Role, RoleSummaryNode>>
+}
 
 export async function rolesConnectionResolver(
     info: GraphQLResolveInfo,

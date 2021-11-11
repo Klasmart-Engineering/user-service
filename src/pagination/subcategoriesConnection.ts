@@ -8,17 +8,11 @@ import {
     getWhereClauseFromFilter,
 } from '../utils/pagination/filtering'
 import {
+    IEdge,
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
-
-const SUBCATEGORIES_CONNECTION_COLUMNS: string[] = ([
-    'id',
-    'name',
-    'status',
-    'system',
-] as (keyof Subcategory)[]).map((field) => `Subcategory.${field}`)
 
 export async function subcategoriesConnectionResolver(
     info: GraphQLResolveInfo,
@@ -52,7 +46,7 @@ export async function subcategoriesConnectionResolver(
         )
     }
 
-    scope.select(SUBCATEGORIES_CONNECTION_COLUMNS)
+    scope.select(subcategoryConnectionNodeFields)
 
     const data = await paginateData<Subcategory>({
         direction,
@@ -72,22 +66,33 @@ export async function subcategoriesConnectionResolver(
     return {
         totalCount: data.totalCount,
         pageInfo: data.pageInfo,
-        edges: data.edges.map((edge) => {
-            return {
-                node: mapSubcategoryToSubcategoryConnectionNode(edge.node),
-                cursor: edge.cursor,
-            }
-        }),
+        edges: data.edges.map(mapSubcategoryEdgeToSubcategoryConnectionEdge),
     }
 }
 
-function mapSubcategoryToSubcategoryConnectionNode(
+function mapSubcategoryEdgeToSubcategoryConnectionEdge(
+    edge: IEdge<Subcategory>
+): IEdge<SubcategoryConnectionNode> {
+    return {
+        node: mapSubcategoryToSubcategoryConnectionNode(edge.node),
+        cursor: edge.cursor,
+    }
+}
+
+export function mapSubcategoryToSubcategoryConnectionNode(
     subcategory: Subcategory
 ): SubcategoryConnectionNode {
     return {
         id: subcategory.id,
         name: subcategory.name || '',
         status: subcategory.status,
-        system: !!subcategory.system,
+        system: subcategory.system,
     }
 }
+
+export const subcategoryConnectionNodeFields = ([
+    'id',
+    'name',
+    'status',
+    'system',
+] as (keyof Subcategory)[]).map((field) => `Subcategory.${field}`)

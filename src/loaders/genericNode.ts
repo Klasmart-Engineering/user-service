@@ -4,7 +4,7 @@ import { CustomBaseEntity } from '../entities/customBaseEntity'
 import { APIError, IAPIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 
-function buildStaticAPIErrorProps(
+export function buildStaticAPIErrorProps(
     nodeType: string
 ): Pick<IAPIError, 'code' | 'message' | 'entity' | 'variables'> {
     return {
