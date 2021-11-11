@@ -7,10 +7,6 @@ import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
 import { NIL_UUID } from '../utils/database'
-import {
-    createOrg,
-    createSchool,
-} from '../utils/operations/acceptance/acceptanceOps.test'
 import { loadFixtures } from '../utils/fixtures'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -19,6 +15,8 @@ import { createOrganization } from '../factories/organization.factory'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createClass } from '../factories/class.factory'
+import { createSchool } from '../factories/school.factory'
+import { createOrg } from '../utils/operations/acceptance/acceptanceOps.test'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -78,6 +76,24 @@ async function createUserInSchool() {
     return { user, school }
 }
 
+async function makeRequest(
+    query: string,
+    variables: Record<string, unknown>,
+    token?: string
+) {
+    return request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+
+        .send({
+            query,
+            variables,
+        })
+}
+
 describe('acceptance.school', () => {
     let connection: Connection
 
@@ -95,7 +111,7 @@ describe('acceptance.school', () => {
         const {
             organization_id,
         } = createOrgResponse.body.data.user.createOrganization
-        await createSchool(organization_id, `school x`, getAdminAuthToken())
+        createSchool(organization_id, `school x`)
     })
 
     after(async () => {

@@ -4,9 +4,7 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
-import {
-    IChildPaginationArgs,
-} from '../utils/pagination/paginate'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { GraphQLResolveInfo } from 'graphql'
 

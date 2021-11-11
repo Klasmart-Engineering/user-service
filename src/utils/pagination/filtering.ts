@@ -10,7 +10,7 @@ export class ConditionalJoinCmd {
     }
 
     ifFilter(properties: string | string[], addJoin: () => void): this {
-        if (typeof properties === "string") {
+        if (typeof properties === 'string') {
             properties = [properties]
         }
 

@@ -104,8 +104,6 @@ describe('classesChildConnection', async () => {
                 .map((_class) => _class.class_name)
                 .sort()
 
-            console.info(sorted)
-
             expect(result.edges.map((e) => e.node.name)).deep.equal(sorted)
         })
     })

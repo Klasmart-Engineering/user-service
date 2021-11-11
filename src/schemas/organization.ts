@@ -304,7 +304,7 @@ const typeDefs = gql`
             sort: SchoolSortInput
             direction: ConnectionDirection
         ): SchoolsConnectionResponse
-        
+
         classesConnection(
             count: PageSize
             cursor: String
@@ -344,7 +344,6 @@ export function classesChildConnection(
         },
     })
 }
-
 
 export default function getDefault(
     model: Model,
