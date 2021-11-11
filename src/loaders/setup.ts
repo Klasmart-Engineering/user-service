@@ -20,11 +20,10 @@ import {
     mapCategoryToCategoryConnectionNode,
 } from '../pagination/categoriesConnection'
 import {
-    classSummaryNodeFields,
-    mapClassToClassNode,
     classesConnectionQuery,
-    classesConnectionSortingConfig, classesSummeryNodeFields,
-    mapClassToClassConnectionNode
+    classesConnectionSortingConfig,
+    classSummaryNodeFields,
+    mapClassToClassConnectionNode,
 } from '../pagination/classesConnection'
 import {
     gradeSummaryNodeFields,
@@ -194,7 +193,6 @@ export interface IDataLoaders {
             IPaginatedResponse<ClassConnectionNode>
         >
     >
-    classNode: IClassNodeDataLoaders
 }
 
 export function createContextLazyLoaders(
@@ -370,7 +368,7 @@ export function createContextLazyLoaders(
                         Class,
                         'ClassConnectionNode',
                         mapClassToClassConnectionNode,
-                        classesSummeryNodeFields
+                        classSummaryNodeFields
                     )
             ),
         },

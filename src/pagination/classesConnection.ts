@@ -19,12 +19,12 @@ import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
 import { ClassConnectionNode } from '../types/graphQL/class'
 import { Organization } from '../entities/organization'
 
-export const classesSummeryNodeFields = [
-        'Class.class_id',
-        'Class.class_name',
-        'Class.status',
-        'Class.shortcode',
-    ]
+export const classSummaryNodeFields = [
+    'Class.class_id',
+    'Class.class_name',
+    'Class.status',
+    'Class.shortcode',
+]
 
 export const classesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'class_id',
@@ -77,7 +77,7 @@ export async function classesConnectionQuery(
 }
 
 function classesConnectionSelect(scope: SelectQueryBuilder<Class>) {
-    scope.select(classesSummeryNodeFields)
+    scope.select(classSummaryNodeFields)
 }
 
 function classesConnectionFilter(
@@ -96,7 +96,7 @@ function classesConnectionFilter(
             'schoolId',
             () =>
                 !scopeHasJoin(scope, School) &&
-                    scope.innerJoin('Class.schools', 'School')
+                scope.innerJoin('Class.schools', 'School')
         )
         .ifFilter(ageRangeFilters, () => {
             scope
@@ -145,7 +145,9 @@ function classesConnectionWhere(
     )
 }
 
-export function mapClassToClassConnectionNode(_class: Class): ClassConnectionNode {
+export function mapClassToClassConnectionNode(
+    _class: Class
+): ClassConnectionNode {
     return {
         id: _class.class_id,
         name: _class.class_name,

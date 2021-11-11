@@ -286,8 +286,7 @@ export default function getDefault(
                         ),
                         roles: new Dataloader((keys) => rolesForUsers(keys)),
                     }
-                    return model.classesConnection(info, args)
-                    return model.classesConnection(_parent, info, args )
+                    return model.classesConnection(ctx, info, args)
                 },
                 classNode: (_parent, args, ctx: Context) => {
                     // Add dataloaders for the usersConnection
