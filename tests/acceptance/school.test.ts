@@ -19,6 +19,10 @@ import { Class } from '../../src/entities/class'
 import { createClass } from '../factories/class.factory'
 import { User } from '../../src/entities/user'
 import { createUser } from '../factories/user.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createRole } from '../factories/role.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -175,6 +179,22 @@ describe('acceptance.school', () => {
                 [wizardingSchool],
                 wizardOrg
             ).save()
+            const role = await createRole(undefined, undefined, {
+                permissions: [
+                    PermissionName.view_school_20110,
+                    PermissionName.view_school_classes_20117,
+                ],
+            }).save()
+
+            await createOrganizationMembership({
+                user: wizardUser,
+                organization: wizardOrg,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user: wizardUser,
+                school: wizardingSchool,
+            }).save()
 
             const token = generateToken({
                 id: wizardUser.user_id,
@@ -185,10 +205,6 @@ describe('acceptance.school', () => {
             const response = await makeRequest(token, query, {
                 direction: 'FORWARD',
             })
-            /*eslint-disable*/
-            console.log(response.body)
-            console.log(response.body.data.schoolsConnection)
-            /*eslint-enable*/
 
             expect(response.status).to.eq(200)
             expect(

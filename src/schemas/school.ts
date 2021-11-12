@@ -102,7 +102,7 @@ const typeDefs = gql`
             direction: ConnectionDirection
             filter: ClassFilter
             sort: ClassSortInput
-        ): [ClassesConnectionResponse!]!
+        ): ClassesConnectionResponse
     }
 
     input SchoolFilter {
@@ -139,9 +139,6 @@ export async function classesChildConnectionResolver(
     ctx: Pick<Context, 'loaders'>,
     info: Pick<GraphQLResolveInfo, 'fieldNodes'>
 ) {
-    /*eslint-disable*/
-    console.log('CLASSES CHILD CONN RESOLVER FIRING!!!')
-    /*eslint-enable*/
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
     return classesChildConnection(school, args, ctx.loaders, includeTotalCount)
 }
