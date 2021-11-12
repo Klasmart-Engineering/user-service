@@ -2,7 +2,7 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { School } from '../../src/entities/school'
 import { SCHOOLS_CONNECTION, SCHOOL_NODE } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
@@ -11,7 +11,14 @@ import {
     createOrg,
     createSchool,
 } from '../utils/operations/acceptance/acceptanceOps.test'
+import { createSchool as createFactorySchool } from '../factories/school.factory'
 import { loadFixtures } from '../utils/fixtures'
+import { Organization } from '../../src/entities/organization'
+import { createOrganization } from '../factories/organization.factory'
+import { Class } from '../../src/entities/class'
+import { createClass } from '../factories/class.factory'
+import { User } from '../../src/entities/user'
+import { createUser } from '../factories/user.factory'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -48,6 +55,23 @@ const makeNodeQuery = async (id: string) => {
         })
 }
 
+function makeRequest(
+    token: string,
+    query: string,
+    variables: { direction: string }
+) {
+    return supertest('http://localhost:8080')
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query,
+            variables,
+        })
+}
+
 describe('acceptance.school', () => {
     let connection: Connection
 
@@ -74,6 +98,10 @@ describe('acceptance.school', () => {
 
     context('schoolsConnection', () => {
         let schoolsCount: number
+        let wizardingSchool: School
+        let wizardOrg: Organization
+        let potionsClass: Class
+        let wizardUser: User
 
         beforeEach(async () => {
             schoolsCount = await School.count()
@@ -117,6 +145,56 @@ describe('acceptance.school', () => {
                 expect(errors).to.exist
                 expect(data).to.be.undefined
             })
+        })
+
+        it('has classesConnection as a child', async () => {
+            const query = `
+                query schoolsConnection($direction: ConnectionDirection!) {
+                    schoolsConnection(direction:$direction){
+                        edges {
+                            node {
+                                classesConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            wizardUser = await createUser().save()
+            wizardOrg = await createOrganization().save()
+            wizardingSchool = await createFactorySchool(
+                wizardOrg,
+                'Hogwarts'
+            ).save()
+            potionsClass = await createClass(
+                [wizardingSchool],
+                wizardOrg
+            ).save()
+
+            const token = generateToken({
+                id: wizardUser.user_id,
+                email: wizardUser.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await makeRequest(token, query, {
+                direction: 'FORWARD',
+            })
+            /*eslint-disable*/
+            console.log(response.body)
+            console.log(response.body.data.schoolsConnection)
+            /*eslint-enable*/
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.schoolsConnection.edges[0].node
+                    .classesConnection.edges[0].node.id
+            ).to.eq(potionsClass.class_id)
         })
     })
 
