@@ -25,6 +25,8 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
+import { UserConnectionNode } from '../../src/types/graphQL/user'
 
 use(chaiAsPromised)
 
@@ -334,16 +336,19 @@ describe('acceptance.user', () => {
             expect(response.status).to.eq(200)
         })
 
-        it('has organizationsConnection as a child', async () => {
+        it('has organizationMembershipsConnection as a child', async () => {
             const query = `
                 query usersConnection($direction: ConnectionDirection!) {
                     usersConnection(direction:$direction){
                         edges {
                             node {
-                                organizationsConnection{
+                                organizationMembershipsConnection{
                                     edges{
                                         node{
-                                            id
+                                            organizationId
+                                            organization {
+                                                id
+                                            }
                                         }
                                     }
                                 }
@@ -381,10 +386,12 @@ describe('acceptance.user', () => {
                     },
                 })
             expect(response.status).to.eq(200)
-            expect(
-                response.body.data.usersConnection.edges[0].node
-                    .organizationsConnection.edges[0].node.id
-            ).to.eq(org.organization_id)
+            const usersConnection: IPaginatedResponse<UserConnectionNode> =
+                response.body.data.usersConnection
+            const orgNode = usersConnection.edges[0].node
+                .organizationMembershipsConnection!.edges[0].node
+            expect(orgNode.organizationId).to.eq(org.organization_id)
+            expect(orgNode.organization!.id).to.eq(org.organization_id)
         })
 
         it('has schoolsConnection as a child', async () => {

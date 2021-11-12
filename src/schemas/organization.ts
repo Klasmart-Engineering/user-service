@@ -4,21 +4,19 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { IDataLoaders } from '../loaders/setup'
 import {
     orgsForUsers,
-    schoolsForUsers,
     rolesForUsers,
+    schoolsForUsers,
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
-import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { addUsersToOrganizations } from '../resolvers/organization'
+import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import {
-    IChildPaginationArgs,
-    shouldIncludeTotalCount,
-} from '../utils/pagination/paginate'
-import { IDataLoaders } from '../loaders/setup'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     scalar HexColor
@@ -290,13 +288,13 @@ const typeDefs = gql`
         owners: [UserSummaryNode]
         branding: Branding
 
-        usersConnection(
+        organizationMembershipsConnection(
             count: PageSize
             cursor: String
-            filter: UserFilter
-            sort: UserSortInput
+            filter: OrganizationMembershipFilter
+            sort: OrganizationMembershipSortBy
             direction: ConnectionDirection
-        ): UsersConnectionResponse
+        ): OrganizationMembershipsConnectionResponse
 
         schoolsConnection(
             count: PageSize
@@ -365,22 +363,7 @@ export default function getDefault(
                     ctx.loaders.organization.branding.instance.load(
                         organization.id
                     ),
-                usersConnection: async (
-                    organization: OrganizationConnectionNode,
-                    args: IChildPaginationArgs,
-                    ctx: Context,
-                    info: GraphQLResolveInfo
-                ) => {
-                    return ctx.loaders.usersConnectionChild.instance.load({
-                        args,
-                        includeTotalCount: shouldIncludeTotalCount(info, args),
-                        parent: {
-                            id: organization.id,
-                            filterKey: 'organizationId',
-                            pivot: '"OrganizationMembership"."organization_id"',
-                        },
-                    })
-                },
+                organizationMembershipsConnection: organizationMembershipsConnectionResolver,
                 schoolsConnection: schoolsChildConnectionResolver,
             },
             Mutation: {
@@ -458,4 +441,39 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function organizationMembershipsConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadOrganizationMembershipsForOrganization(
+        ctx,
+        organization.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadOrganizationMembershipsForOrganization(
+    context: Pick<Context, 'loaders'>,
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"OrganizationMembership"."organization_id"',
+        },
+    }
+    return context.loaders.organizationMembershipsConnectionChild.instance.load(
+        key
+    )
 }

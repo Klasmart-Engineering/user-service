@@ -1,19 +1,21 @@
-import gql from 'graphql-tag'
-import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import Dataloader from 'dataloader'
+import { GraphQLResolveInfo } from 'graphql'
+import gql from 'graphql-tag'
+import { User } from '../entities/user'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { IDataLoaders } from '../loaders/setup'
 import {
     orgsForUsers,
-    schoolsForUsers,
     rolesForUsers,
+    schoolsForUsers,
 } from '../loaders/usersConnection'
-import Dataloader from 'dataloader'
 import { Context } from '../main'
+import { Model } from '../model'
+import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import { UserConnectionNode } from '../types/graphQL/user'
-import { User } from '../entities/user'
-import { IChildPaginationArgs } from '../utils/pagination/paginate'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { GraphQLResolveInfo } from 'graphql'
-import { IDataLoaders } from '../loaders/setup'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -103,13 +105,15 @@ const typeDefs = gql`
             @deprecated(
                 reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
             )
-        organizationsConnection(
+
+        organizationMembershipsConnection(
             count: PageSize
             cursor: String
+            filter: OrganizationMembershipFilter
+            sort: OrganizationMembershipSortBy
             direction: ConnectionDirection
-            filter: OrganizationFilter
-            sort: OrganizationSortInput
-        ): OrganizationsConnectionResponse
+        ): OrganizationMembershipsConnectionResponse
+
         roles: [RoleSummaryNode!]!
         schools: [SchoolSummaryNode!]!
         status: Status!
@@ -246,41 +250,6 @@ const typeDefs = gql`
     }
 `
 
-export async function organizationsChildConnectionResolver(
-    user: Pick<UserConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    ctx: Pick<Context, 'loaders'>,
-    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
-) {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-    return organizationsChildConnection(
-        user,
-        args,
-        ctx.loaders,
-        includeTotalCount
-    )
-}
-
-// this is split from organizationsChildConnectionResolver
-// to make it easier to call from intergration tests
-// without mocking GraphQLResolveInfo
-export async function organizationsChildConnection(
-    user: Pick<UserConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    loaders: IDataLoaders,
-    includeTotalCount: boolean
-) {
-    return loaders.organizationsConnectionChild.instance.load({
-        args,
-        includeTotalCount,
-        parent: {
-            id: user.id,
-            filterKey: 'userId',
-            pivot: '"OrganizationMembership"."user_id"',
-        },
-    })
-}
-
 export async function schoolsChildConnectionResolver(
     user: Pick<UserConnectionNode, 'id'>,
     args: IChildPaginationArgs,
@@ -329,7 +298,7 @@ export default function getDefault(
                               user.id
                           )
                 },
-                organizationsConnection: organizationsChildConnectionResolver,
+                organizationMembershipsConnection: organizationMembershipsConnectionResolver,
                 schools: async (
                     user: UserConnectionNode,
                     args: Record<string, unknown>,
@@ -407,4 +376,39 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function organizationMembershipsConnectionResolver(
+    user: Pick<CoreUserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadOrganizationMembershipsForUser(
+        ctx,
+        user.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadOrganizationMembershipsForUser(
+    context: Pick<Context, 'loaders'>,
+    userId: CoreUserConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = false
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: userId,
+            filterKey: 'userId',
+            pivot: '"OrganizationMembership"."user_id"',
+        },
+    }
+    return context.loaders.organizationMembershipsConnectionChild.instance.load(
+        key
+    )
 }

@@ -1053,11 +1053,12 @@ export const ORGANIZATIONS_CONNECTION = `
                     owners {
                         id
                     }
-                    usersConnection(direction: FORWARD) {
+                    organizationMembershipsConnection {
                         totalCount
                         edges {
                             node {
-                                organizations {
+                                organizationId
+                                organization {
                                     id
                                 }
                             }

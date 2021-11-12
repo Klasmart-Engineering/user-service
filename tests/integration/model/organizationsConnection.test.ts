@@ -788,8 +788,8 @@ describe('organizationsConnection', () => {
                 }
             }
         })
-        context('.usersConnection', () => {
-            it('returns organization users', async () => {
+        context('.organizationMembershipsConnection', () => {
+            it('returns organization members', async () => {
                 const usersPerOrg = await organizationsConnection(
                     testClient,
                     direction,
@@ -798,63 +798,16 @@ describe('organizationsConnection', () => {
                 )
                 expect(usersPerOrg.edges.length).to.eq(2)
                 for (const orgUsers of usersPerOrg.edges) {
-                    expect(orgUsers.node.usersConnection?.totalCount).to.eq(10)
-                }
-            })
-            it('uses the isAdmin scope for permissions', async () => {
-                // create a non-admin user and add to org1
-                const nonAdmin = await createNonAdminUser(testClient)
-                const membership = await createOrganizationMembership({
-                    user: nonAdmin,
-                    organization: orgs[0],
-                }).save()
-
-                // can't see any other users without permissions
-                let usersPerOrg = await organizationsConnection(
-                    testClient,
-                    direction,
-                    { count: 5 },
-                    { authorization: getNonAdminAuthToken() }
-                )
-                expect(usersPerOrg.totalCount).to.eq(1)
-                expect(
-                    usersPerOrg.edges[0].node.usersConnection?.totalCount
-                ).to.eq(1)
-
-                // can see all other users with required permissions
-                const role = await createRole('role', orgs[0], {
-                    permissions: [PermissionName.view_users_40110],
-                }).save()
-                membership.roles = Promise.resolve([role])
-                await membership.save()
-                usersPerOrg = await organizationsConnection(
-                    testClient,
-                    direction,
-                    { count: 5 },
-                    { authorization: getNonAdminAuthToken() }
-                )
-                expect(usersPerOrg.totalCount).to.eq(1)
-                expect(
-                    usersPerOrg.edges[0].node.usersConnection?.totalCount
-                ).to.eq(numUsersPerOrg + 1)
-            })
-            it('returns the child connection relations', async () => {
-                const usersPerOrg = await organizationsConnection(
-                    testClient,
-                    direction,
-                    { count: 5 },
-                    { authorization: getAdminAuthToken() }
-                )
-                expect(usersPerOrg.edges.length).to.eq(2)
-                for (const orgUsers of usersPerOrg.edges) {
-                    expect(
-                        orgUsers.node.usersConnection?.edges
-                    ).to.have.lengthOf(10)
-                    for (const user of orgUsers.node.usersConnection?.edges ??
-                        []) {
-                        const userOrgs = user.node.organizations
-                        expect(userOrgs).to.have.lengthOf(1)
-                        expect(userOrgs[0].id).to.eq(orgUsers.node.id)
+                    const memberships = orgUsers.node
+                        .organizationMembershipsConnection!
+                    expect(memberships.totalCount).to.eq(numUsersPerOrg)
+                    expect(memberships.edges.length).to.eq(numUsersPerOrg)
+                    for (const edge of memberships.edges) {
+                        expect(edge.node.organizationId).to.eq(orgUsers.node.id)
+                        expect(edge.node.organizationId).to.eq(
+                            edge.node.organization?.id
+                        )
+                        expect(edge.node.userId).to.eq(edge.node.user?.id)
                     }
                 }
             })
@@ -925,11 +878,11 @@ describe('organizationsConnection', () => {
                     organizationsConnection(direction: FORWARD) {   # 1
                         edges {
                             node {
-                                usersConnection {                   
+                                organizationMembershipsConnection {                   
                                     totalCount                      # 2 
                                     edges {                         # 3
                                         node {
-                                            id
+                                            userId
                                         }
                                     }
                                 }

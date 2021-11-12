@@ -34,8 +34,6 @@ import {
 import {
     CoreOrganizationConnectionNode,
     mapOrganizationToOrganizationConnectionNode,
-    organizationConnectionSortingConfig,
-    organizationsConnectionQuery,
     organizationSummaryNodeFields,
 } from '../pagination/organizationsConnection'
 import {
@@ -143,6 +141,12 @@ import {
     roleConnectionNodeFields,
 } from '../pagination/rolesConnection'
 import { RoleSummaryNode } from '../types/graphQL/role'
+import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
+import {
+    mapOrganizationMembershipToOrganizationMembershipNode,
+    organizationMembershipConnectionQuery,
+    organizationMembershipsConnectionSortingConfig,
+} from '../pagination/organizationMembershipsConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -164,16 +168,16 @@ export interface IDataLoaders {
     subcategoryNode: ISubcategoryNodeDataLoader
     ageRangeNode: IAgeRangeNodeDataLoader
 
-    organizationsConnectionChild: Lazy<
-        DataLoader<
-            IChildConnectionDataloaderKey,
-            IPaginatedResponse<CoreOrganizationConnectionNode>
-        >
-    >
     usersConnectionChild: Lazy<
         DataLoader<
             IChildConnectionDataloaderKey,
             IPaginatedResponse<CoreUserConnectionNode>
+        >
+    >
+    organizationMembershipsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<OrganizationMembershipConnectionNode>
         >
     >
     schoolsConnectionChild: Lazy<
@@ -217,18 +221,6 @@ export function createContextLazyLoaders(
                 () => new DataLoader(schoolsByIds)
             ),
         },
-        organizationsConnectionChild: new Lazy(
-            () =>
-                new DataLoader((items) => {
-                    return childConnectionLoader(
-                        items,
-                        organizationsConnectionQuery,
-                        mapOrganizationToOrganizationConnectionNode,
-                        organizationConnectionSortingConfig,
-                        { permissions, entity: 'organization' }
-                    )
-                })
-        ),
         usersConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {
@@ -238,6 +230,18 @@ export function createContextLazyLoaders(
                         mapUserToUserConnectionNode,
                         userConnectionSortingConfig,
                         { permissions, entity: 'user' }
+                    )
+                })
+        ),
+        organizationMembershipsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        organizationMembershipConnectionQuery,
+                        mapOrganizationMembershipToOrganizationMembershipNode,
+                        organizationMembershipsConnectionSortingConfig,
+                        { permissions, entity: 'organizationMembership' }
                     )
                 })
         ),

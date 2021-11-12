@@ -2085,6 +2085,99 @@ describe('isAdmin', () => {
         })
     })
 
+    describe('organizationMemberships', () => {
+        let adminScope: SelectQueryBuilder<OrganizationMembership>
+        let nonAdminScope: SelectQueryBuilder<OrganizationMembership>
+
+        let org1: Organization
+        let org2: Organization
+        let org1Memberships: OrganizationMembership[]
+        let org2Memberships: OrganizationMembership[]
+
+        let admin: User
+        let nonAdmin: User
+
+        function ids(arr: OrganizationMembership[]) {
+            return arr.map((m) => m.user_id + m.organization_id)
+        }
+
+        beforeEach(async () => {
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            org1Memberships = await Promise.all([
+                createOrganizationMembership({
+                    organization: org1,
+                    user: await createUser().save(),
+                }).save(),
+                createOrganizationMembership({
+                    organization: org1,
+                    user: await createUser().save(),
+                }).save(),
+            ])
+            org2Memberships = await Promise.all([
+                createOrganizationMembership({
+                    organization: org2,
+                    user: await createUser().save(),
+                }).save(),
+                createOrganizationMembership({
+                    organization: org2,
+                    user: await createUser().save(),
+                }).save(),
+            ])
+
+            admin = await createAdminUser(testClient)
+            nonAdmin = await createNonAdminUser(testClient)
+            adminScope = (await createEntityScope({
+                permissions: new UserPermissions({
+                    id: admin.user_id,
+                    email: admin.email!,
+                }),
+                entity: 'organizationMembership',
+            })) as SelectQueryBuilder<OrganizationMembership>
+            nonAdminScope = (await createEntityScope({
+                permissions: new UserPermissions({
+                    id: nonAdmin.user_id,
+                    email: nonAdmin.email!,
+                }),
+                entity: 'organizationMembership',
+            })) as SelectQueryBuilder<OrganizationMembership>
+        })
+        context('admin', () => {
+            it('can see all organization memberships', async () => {
+                const results = await adminScope.getMany()
+                expect(ids(results)).to.have.members(
+                    ids([...org1Memberships, ...org2Memberships])
+                )
+            })
+        })
+        context('organization member', () => {
+            beforeEach(async () => {
+                org1Memberships.push(
+                    await createOrganizationMembership({
+                        organization: org1,
+                        user: nonAdmin,
+                    }).save()
+                )
+                nonAdminScope = (await createEntityScope({
+                    permissions: new UserPermissions({
+                        id: nonAdmin.user_id,
+                        email: nonAdmin.email!,
+                    }),
+                    entity: 'organizationMembership',
+                })) as SelectQueryBuilder<OrganizationMembership>
+            })
+            it('can see organization memberships from their orgs only', async () => {
+                const results = await nonAdminScope.getMany()
+                expect(ids(results)).to.have.members(ids(org1Memberships))
+            })
+        })
+        context('no organization user', () => {
+            it('can see no organization memberships', async () => {
+                const results = await nonAdminScope.getMany()
+                expect(results).to.have.lengthOf(0)
+            })
+        })
+    })
     context('schools', () => {
         let admin: User
         let orgOwner: User

@@ -43,6 +43,7 @@ type IEntityString =
     | 'program'
     | 'school'
     | 'permission'
+    | 'organizationMembership'
 
 interface IsAdminDirectiveArgs {
     entity?: IEntityString
@@ -130,6 +131,10 @@ export const createEntityScope = async ({
         case 'permission':
             scope = getRepository(Permission).createQueryBuilder()
             break
+
+        case 'organizationMembership':
+            scope = getRepository(OrganizationMembership).createQueryBuilder()
+            break
         default:
             permissions.rejectIfNotAdmin()
     }
@@ -204,6 +209,12 @@ export const createEntityScope = async ({
             case 'role':
                 await nonAdminRoleScope(
                     scope as SelectQueryBuilder<Role>,
+                    permissions
+                )
+                break
+            case 'organizationMembership':
+                await nonAdminOrganizationMembershipScope(
+                    scope as SelectQueryBuilder<OrganizationMembership>,
                     permissions
                 )
                 break
@@ -357,6 +368,22 @@ export const nonAdminOrganizationScope: NonAdminScope<Organization> = async (
         })
     } else {
         // postgres errors if we try to do `IN ()`
+        scope.andWhere('false')
+    }
+}
+
+export const nonAdminOrganizationMembershipScope: NonAdminScope<OrganizationMembership> = async (
+    scope,
+    permissions
+) => {
+    // non admins can view organization memberships in their orgs only
+    // note that permissions for accessing actual user / org info is handled via the corresponding scopes
+    const orgIds = await permissions.orgMembershipsWithPermissions([])
+    if (orgIds.length > 0) {
+        scope.where('OrganizationMembership.organization IN (:...orgIds)', {
+            orgIds,
+        })
+    } else {
         scope.andWhere('false')
     }
 }

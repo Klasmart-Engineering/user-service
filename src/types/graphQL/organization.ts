@@ -1,10 +1,11 @@
-import { BrandingInput } from './branding'
-import { Status } from '../../entities/status'
 import { Branding } from '../../entities/branding'
-import { UserConnectionNode, UserSummaryNode } from './user'
-import { IPaginatedResponse } from '../../utils/pagination/paginate'
-import { ISchoolsConnectionNode } from './school'
+import { Status } from '../../entities/status'
 import { CoreOrganizationConnectionNode } from '../../pagination/organizationsConnection'
+import { IPaginatedResponse } from '../../utils/pagination/paginate'
+import { BrandingInput } from './branding'
+import { OrganizationMembershipConnectionNode } from './organizationMemberships'
+import { ISchoolsConnectionNode } from './school'
+import { UserSummaryNode } from './user'
 
 export interface CreateOrganizationInput {
     userId: string
@@ -33,7 +34,7 @@ export interface OrganizationConnectionNode {
     owners?: UserSummaryNode[]
     branding?: Branding
 
-    usersConnection?: IPaginatedResponse<UserConnectionNode>
+    organizationMembershipsConnection?: IPaginatedResponse<OrganizationMembershipConnectionNode>
     schoolsConnection?: IPaginatedResponse<ISchoolsConnectionNode>
 }
 
