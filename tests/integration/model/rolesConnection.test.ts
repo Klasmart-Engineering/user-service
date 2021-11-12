@@ -25,6 +25,25 @@ import { createAdminUser } from '../../utils/testEntities'
 import { GraphQLResolveInfo } from 'graphql'
 import { getRepository, SelectQueryBuilder } from 'typeorm'
 import { rolesConnectionResolver } from '../../../src/pagination/rolesConnection'
+import {
+    createContextLazyLoaders,
+    IDataLoaders,
+} from '../../../src/loaders/setup'
+import { Permission } from '../../../src/entities/permission'
+import { createPermission } from '../../factories/permission.factory'
+import { createUser } from '../../factories/user.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
+import {
+    rolesConnectionChild as organizationRolesConnectionChild,
+    rolesConnectionChildResolver as organizationRolesConnectionChildResolver,
+} from '../../../src/schemas/organization'
+import { RoleConnectionNode } from '../../../src/types/graphQL/role'
+import {
+    rolesConnectionChild as permissionRolesConnectionChild,
+    rolesConnectionChildResolver as permissionRolesConnectionChildResolver,
+} from '../../../src/schemas/permission'
 
 use(chaiAsPromised)
 
@@ -285,6 +304,270 @@ describe('model', () => {
 
             const systems = result.edges.map((edge) => edge.node.system)
             systems.every((system) => system === filterSystem)
+        })
+    })
+
+    context('as child connection', async () => {
+        let fakeResolverInfo: any
+
+        beforeEach(() => {
+            fakeResolverInfo = {
+                fieldNodes: [
+                    {
+                        kind: 'Field',
+                        name: {
+                            kind: 'Name',
+                            value: 'rolesConnection',
+                        },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [],
+                        },
+                    },
+                ],
+            }
+        })
+
+        // these tests use organizations as the parent
+        // but test code paths that are common across all child connection implementation
+        // regardless of the parent entity type
+        context('common across all parents', () => {
+            let ctx: { loaders: IDataLoaders }
+
+            beforeEach(async () => {
+                const user = await createUser().save()
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                }).save()
+
+                const token = { id: user.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            const resolveForRoles = async (organizations: Organization[]) => {
+                const loaderResults = []
+                for (const organization of organizations) {
+                    const loaderResult = organizationRolesConnectionChild(
+                        organization.organization_id,
+                        {},
+                        ctx.loaders,
+                        false
+                    )
+                    loaderResults.push(loaderResult)
+                }
+
+                await Promise.all(loaderResults)
+            }
+
+            it("db calls doen't increase with number of resolver calls", async () => {
+                // warm up permission caches
+                await resolveForRoles([org1, org2])
+                connection.logger.reset()
+
+                await resolveForRoles([org1])
+                const dbCallsForSingleRole = connection.logger.count
+                connection.logger.reset()
+
+                await resolveForRoles([org1, org2])
+                const dbCallsForTwoRoles = connection.logger.count
+                expect(dbCallsForTwoRoles).to.be.eq(dbCallsForSingleRole)
+            })
+
+            context('sorting', () => {
+                let args: IChildPaginationArgs
+
+                beforeEach(() => {
+                    args = {
+                        direction: 'FORWARD',
+                        count: 5,
+                        sort: {
+                            field: 'given_name',
+                            order: 'ASC',
+                        },
+                    }
+                })
+
+                const checkSorted = async (
+                    entityProperty: keyof Role,
+                    fieldName: keyof RoleConnectionNode
+                ) => {
+                    const result = await organizationRolesConnectionChild(
+                        org1.organization_id,
+                        args,
+                        ctx.loaders,
+                        false
+                    )
+
+                    const sorted = org1Roles
+                        .map((r) => r[entityProperty])
+                        .sort()
+
+                    expect(
+                        result.edges.map((e) => e.node[fieldName])
+                    ).deep.equal(sorted)
+                }
+
+                it('sorts by id', async () => {
+                    args.sort!.field = 'role_id'
+
+                    return checkSorted('role_id', 'id')
+                })
+                it('sorts by name', async () => {
+                    args.sort!.field = 'role_name'
+
+                    return checkSorted('role_name', 'name')
+                })
+            })
+        })
+
+        context('organization parent', () => {
+            let ctx: { loaders: IDataLoaders }
+
+            beforeEach(async () => {
+                const user = await createUser().save()
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                }).save()
+
+                const token = { id: user.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns correct roles per organization', async () => {
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: org1Roles.length,
+                }
+
+                const result = await organizationRolesConnectionChild(
+                    org1.organization_id,
+                    args,
+                    ctx.loaders,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    org1Roles.map((r) => r.role_id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) => {
+                    return organizationRolesConnectionChildResolver(
+                        { id: org1.organization_id },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+                }
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(org1Roles.length)
+                })
+
+                it('doesnt return total count', async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
+        })
+
+        context('permission parent', () => {
+            let ctx: { loaders: IDataLoaders }
+
+            let permission1: Permission
+            let permission2: Permission
+
+            let permission1Roles: Role[]
+
+            beforeEach(async () => {
+                const role1 = await createRole('role1', org1).save()
+                const role2 = await createRole('role2', org1).save()
+                const role3 = await createRole('role3', org1).save()
+
+                permission1 = await createPermission(role1).save()
+                permission2 = await createPermission(role2).save()
+                ;(await role3.permissions)?.push(permission1)
+                await role3.save()
+                ;(await role3.permissions)?.push(permission1)
+                await role3.save()
+                ;(await permission1.roles)?.push(role3)
+                await permission1.save()
+
+                permission1Roles = [role1, role3]
+
+                const user = await createUser().save()
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                }).save()
+
+                const token = { id: user.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns correct roles per permission', async () => {
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: permission1Roles.length,
+                }
+
+                const result = await permissionRolesConnectionChild(
+                    permission1.permission_name,
+                    args,
+                    ctx.loaders,
+                    false
+                )
+
+                expect(result.edges.map((e) => e.node.id)).to.have.same.members(
+                    permission1Roles.map((r) => r.role_id)
+                )
+            })
+
+            context('totalCount', async () => {
+                const callResolver = (
+                    fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
+                ) => {
+                    return permissionRolesConnectionChildResolver(
+                        { name: permission1.permission_name },
+                        {},
+                        ctx,
+                        fakeInfo
+                    )
+                }
+
+                it('returns total count', async () => {
+                    fakeResolverInfo.fieldNodes[0].selectionSet?.selections.push(
+                        {
+                            kind: 'Field',
+                            name: { kind: 'Name', value: 'totalCount' },
+                        }
+                    )
+
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(permission1Roles.length)
+                })
+
+                it('doesnt return total count', async () => {
+                    const result = await callResolver(fakeResolverInfo)
+                    expect(result.totalCount).to.eq(undefined)
+                })
+            })
         })
     })
 })

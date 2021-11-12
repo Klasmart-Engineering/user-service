@@ -138,6 +138,8 @@ import { PermissionConnectionNode } from '../types/graphQL/permission'
 import {
     IRoleNodeDataLoaders,
     mapRoleToRoleConnectionNode,
+    roleConnectionQuery,
+    rolesConnectionSortingConfig,
     roleConnectionNodeFields,
 } from '../pagination/rolesConnection'
 import { RoleSummaryNode } from '../types/graphQL/role'
@@ -147,6 +149,7 @@ import {
     organizationMembershipConnectionQuery,
     organizationMembershipsConnectionSortingConfig,
 } from '../pagination/organizationMembershipsConnection'
+import { RoleConnectionNode } from '../types/graphQL/role'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -184,6 +187,12 @@ export interface IDataLoaders {
         DataLoader<
             IChildConnectionDataloaderKey,
             IPaginatedResponse<ISchoolsConnectionNode>
+        >
+    >
+    rolesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<RoleConnectionNode>
         >
     >
     categoryNode: ICategoryNodeDataLoader
@@ -254,6 +263,21 @@ export function createContextLazyLoaders(
                         mapSchoolToSchoolConnectionNode,
                         schoolsConnectionSortingConfig,
                         { permissions, entity: 'school' }
+                    )
+                })
+        ),
+        rolesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        (scope, filter) => {
+                            roleConnectionQuery(scope, filter)
+                            return Promise.resolve(scope)
+                        },
+                        mapRoleToRoleConnectionNode,
+                        rolesConnectionSortingConfig,
+                        { permissions, entity: 'role' }
                     )
                 })
         ),

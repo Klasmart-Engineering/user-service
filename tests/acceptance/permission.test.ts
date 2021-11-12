@@ -17,6 +17,9 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { permissionSummaryNodeFields } from '../../src/pagination/permissionsConnection'
 import { userToPayload } from '../utils/operations/userOps'
 import { PermissionConnectionNode } from '../../src/types/graphQL/permission'
+import { createRole } from '../factories/role.factory'
+import { createPermission } from '../factories/permission.factory'
+import { makeRequest } from './utils'
 
 interface IPermissionEdge {
     node: PermissionConnectionNode
@@ -190,6 +193,57 @@ describe('acceptance.permission', () => {
                 expect(permissionNode).to.be.null
                 expect(errors).to.exist
             })
+        })
+    })
+
+    context('permissionsConnection', () => {
+        it('has rolesConnection as a child', async () => {
+            const query = `
+                query permissionsConnection($direction: ConnectionDirection!, $filter: PermissionFilter) {
+                    permissionsConnection(direction:$direction, filter: $filter){
+                        edges {
+                            node {
+                                rolesConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const role = await createRole('role1', organization).save()
+            const permission = await createPermission(role).save()
+
+            const token = generateToken({
+                id: organizationMember.user_id,
+                email: organizationMember.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                    filter: {
+                        name: {
+                            operator: 'eq',
+                            value: permission.permission_name,
+                        },
+                    },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.permissionsConnection.edges[0].node
+                    .rolesConnection.edges[0].node.id
+            ).to.eq(role.role_id)
         })
     })
 })

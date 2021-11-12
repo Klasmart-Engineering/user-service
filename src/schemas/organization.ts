@@ -16,7 +16,12 @@ import { Model } from '../model'
 import { addUsersToOrganizations } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { RoleConnectionNode } from '../types/graphQL/role'
+import {
+    IChildPaginationArgs,
+    IPaginatedResponse,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     scalar HexColor
@@ -303,6 +308,14 @@ const typeDefs = gql`
             sort: SchoolSortInput
             direction: ConnectionDirection
         ): SchoolsConnectionResponse
+
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
     }
 `
 
@@ -338,6 +351,36 @@ export async function schoolsChildConnection(
         },
     })
 }
+export async function rolesConnectionChildResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = shouldIncludeTotalCount(info, args)
+    return rolesConnectionChild(
+        organization.id,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+export async function rolesConnectionChild(
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    return loaders.rolesConnectionChild.instance.load({
+        args,
+        includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Role"."organizationOrganizationId"',
+        },
+    })
+}
 
 export default function getDefault(
     model: Model,
@@ -365,6 +408,7 @@ export default function getDefault(
                     ),
                 organizationMembershipsConnection: organizationMembershipsConnectionResolver,
                 schoolsConnection: schoolsChildConnectionResolver,
+                rolesConnection: rolesConnectionChildResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>

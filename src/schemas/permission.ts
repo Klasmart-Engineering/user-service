@@ -3,6 +3,15 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { permissionsConnectionResolver } from '../pagination/permissionsConnection'
+import { PermissionConnectionNode } from '../types/graphQL/permission'
+import {
+    IChildPaginationArgs,
+    IPaginatedResponse,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql'
+import { IDataLoaders } from '../loaders/setup'
+import { RoleConnectionNode } from '../types/graphQL/role'
 
 const typeDefs = gql`
     type Permission {
@@ -34,6 +43,14 @@ const typeDefs = gql`
         level: String
         description: String
         allow: Boolean!
+
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
     }
 
     enum PermissionSortBy {
@@ -69,6 +86,43 @@ const typeDefs = gql`
             @isAdmin(entity: "permission")
     }
 `
+export async function rolesConnectionChildResolver(
+    permission: Pick<PermissionConnectionNode, 'name'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    const includeTotalCount = shouldIncludeTotalCount(info, args)
+    return rolesConnectionChild(
+        permission.name,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export async function rolesConnectionChild(
+    permissionName: PermissionConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    return loaders.rolesConnectionChild.instance.load({
+        args,
+        includeTotalCount,
+        parent: {
+            id: permissionName,
+            filterKey: 'permissionName',
+            // on the permission_name property of the permission entity we tell typeORM to map it to the permission_id SQL column
+            // and so in most places we can reference permission_name and expect typeORM to replace it with permission_id
+            // however the pivot string is used in the generated query without this replacement happening
+            // so we must specificy permission_id ourselves
+            // in production both have the same values but we prefere permision_id as it's the primary key
+            pivot: '"Permission"."permission_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -76,6 +130,9 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            PermissionsConnectionNode: {
+                rolesConnection: rolesConnectionChildResolver,
+            },
             Query: {
                 permissionsConnection: (_parent, args, ctx, info) =>
                     permissionsConnectionResolver(info, ctx, args),

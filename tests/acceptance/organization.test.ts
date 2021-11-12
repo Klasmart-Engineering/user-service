@@ -3,19 +3,14 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Organization } from '../../src/entities/organization'
 import { User } from '../../src/entities/user'
-import {
-    createAdminUser,
-    createUser,
-    createUsers,
-} from '../factories/user.factory'
+import { createUser, createUsers } from '../factories/user.factory'
 import { ORGANIZATION_NODE } from '../utils/operations/modelOps'
 import { userToPayload } from '../utils/operations/userOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { generateToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { Branding } from '../../src/entities/branding'
 import { BrandingImage } from '../../src/entities/brandingImage'
-import { createOrg } from '../utils/operations/acceptance/acceptanceOps.test'
 import { createBrandingImage } from '../factories/brandingImage.factory'
 import { createBranding } from '../factories/branding.factory'
 import {
@@ -26,6 +21,9 @@ import { createOrganization } from '../factories/organization.factory'
 import { createRole as roleFactory } from '../factories/role.factory'
 import { ADD_USERS_TO_ORGANIZATIONS } from '../utils/operations/organizationOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
+import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -46,22 +44,8 @@ describe('acceptance.organization', () => {
 
     beforeEach(async () => {
         user = await createUser().save()
-        const orgResponse = await createOrg(
-            user.user_id,
-            'Organization One',
-            getAdminAuthToken()
-        )
-
-        const orgId =
-            orgResponse.body.data.user.createOrganization.organization_id
-
-        organization = await Organization.findOneOrFail(orgId)
-
-        const brandingImage1 = await createBrandingImage().save()
-        branding = createBranding(organization)
-        branding.primaryColor = '#118ab2'
-        branding.images = [brandingImage1]
-        await branding.save()
+        organization = await createOrganization(user).save()
+        await createOrganizationMembership({ user, organization }).save()
     })
 
     context('addUsersToOrganizations', () => {
@@ -127,6 +111,17 @@ describe('acceptance.organization', () => {
     })
 
     context('organizationNode', () => {
+        beforeEach(async () => {
+            await createOrganizationOwnership({ user, organization }).save()
+            await createOrganizationMembership({ user, organization }).save()
+
+            const brandingImage1 = await createBrandingImage().save()
+            branding = createBranding(organization)
+            branding.primaryColor = '#118ab2'
+            branding.images = [brandingImage1]
+            await branding.save()
+        })
+
         context('when data is requested in a correct way', () => {
             it('should respond with status 200', async () => {
                 const organizationId = organization.organization_id
@@ -142,7 +137,6 @@ describe('acceptance.organization', () => {
                             id: organizationId,
                         },
                     })
-
                 const organizationNode = response.body.data.organizationNode
 
                 expect(response.status).to.eq(200)
@@ -168,7 +162,6 @@ describe('acceptance.organization', () => {
                 expect(organizationNode.contactInfo.phone).to.equal(
                     organization.phone
                 )
-
                 const owners = organizationNode.owners
                 const orgOwner = await organization.owner
 
@@ -214,5 +207,48 @@ describe('acceptance.organization', () => {
                 })
             }
         )
+    })
+
+    context('organizationsConnection', () => {
+        it('has rolesConnection as a child', async () => {
+            const query = `
+                query organizationsConnection($direction: ConnectionDirection!) {
+                    organizationsConnection(direction:$direction){
+                        edges {
+                            node {
+                                rolesConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const role = await roleFactory('role', organization).save()
+
+            const token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .rolesConnection.edges[0].node.id
+            ).to.eq(role.role_id)
+        })
     })
 })

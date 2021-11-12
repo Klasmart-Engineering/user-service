@@ -71,7 +71,7 @@ const getDataFromCursor = (cursor: string) => {
 }
 
 export function shouldIncludeTotalCount(
-    info: GraphQLResolveInfo,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>,
     args: IChildPaginationArgs
 ) {
     return (
