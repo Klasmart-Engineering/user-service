@@ -31,6 +31,13 @@ import { OrganizationMembership } from '../../../src/entities/organizationMember
 import { Role } from '../../../src/entities/role'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { generateShortCode } from '../../../src/utils/shortcode'
+import { classesChildConnection } from '../../../src/schemas/school'
+import { createClass } from '../../factories/class.factory'
+import { Class } from '../../../src/entities/class'
+import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { Context } from '../../../src/main'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -43,6 +50,13 @@ describe('schoolsConnection', () => {
     let org1: Organization
     let org2: Organization
     let schools: School[] = []
+
+    let wizardUser: User
+    let wizardOrg: Organization
+    let wizardingSchool: School
+    let magicClass: Class
+    let potionsClass: Class
+    let ctx: Pick<Context, 'loaders'>
 
     before(async () => {
         connection = await createTestConnection()
@@ -736,6 +750,69 @@ describe('schoolsConnection', () => {
                 2,
                 '1. DISTINCT ids, 2. SchoolConnectionNode data'
             )
+        })
+    })
+
+    context('child connections', () => {
+        context('.classesConnection', async () => {
+            beforeEach(async () => {
+                wizardUser = await createUser().save()
+                wizardOrg = await createOrganization().save()
+                wizardingSchool = await createSchool(
+                    wizardOrg,
+                    'Hogwarts'
+                ).save()
+                magicClass = await createClass(
+                    [wizardingSchool],
+                    wizardOrg
+                ).save()
+                potionsClass = await createClass(
+                    [wizardingSchool],
+                    wizardOrg
+                ).save()
+                const role = await createRole(undefined, undefined, {
+                    permissions: [
+                        PermissionName.view_school_20110,
+                        PermissionName.view_school_classes_20117,
+                    ],
+                }).save()
+
+                await createOrganizationMembership({
+                    user: wizardUser,
+                    organization: wizardOrg,
+                    roles: [role],
+                }).save()
+                await createSchoolMembership({
+                    user: wizardUser,
+                    school: wizardingSchool,
+                }).save()
+
+                const token = { id: wizardUser.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns classes for a school', async () => {
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 2,
+                }
+
+                const result = await classesChildConnection(
+                    { id: wizardingSchool.school_id },
+                    args,
+                    ctx.loaders,
+                    false
+                )
+
+                const expectedClassIds = [
+                    magicClass.class_id,
+                    potionsClass.class_id,
+                ]
+                const actualClassIds = result.edges.map((edge) => edge.node.id)
+
+                expect(expectedClassIds).to.have.same.members(actualClassIds)
+            })
         })
     })
 })
