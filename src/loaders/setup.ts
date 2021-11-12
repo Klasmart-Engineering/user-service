@@ -20,8 +20,11 @@ import {
     mapCategoryToCategoryConnectionNode,
 } from '../pagination/categoriesConnection'
 import {
-    classSummaryNodeFields,
-    mapClassToClassNode,
+    coreClassConnectionNodeFields,
+    CoreClassConnectionNode,
+    mapClassToClassConnectionNode,
+    classesConnectionSortingConfig,
+    classesConnectionQuery,
 } from '../pagination/classesConnection'
 import {
     gradeSummaryNodeFields,
@@ -195,6 +198,12 @@ export interface IDataLoaders {
             IPaginatedResponse<RoleConnectionNode>
         >
     >
+    classesConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<CoreClassConnectionNode>
+        >
+    >
     categoryNode: ICategoryNodeDataLoader
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
@@ -278,6 +287,18 @@ export function createContextLazyLoaders(
                         mapRoleToRoleConnectionNode,
                         rolesConnectionSortingConfig,
                         { permissions, entity: 'role' }
+                    )
+                })
+        ),
+        classesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        classesConnectionQuery,
+                        mapClassToClassConnectionNode,
+                        classesConnectionSortingConfig,
+                        { permissions, entity: 'class' }
                     )
                 })
         ),
@@ -374,8 +395,8 @@ export function createContextLazyLoaders(
                     new NodeDataLoader(
                         Class,
                         'ClassConnectionNode',
-                        mapClassToClassNode,
-                        classSummaryNodeFields
+                        mapClassToClassConnectionNode,
+                        coreClassConnectionNodeFields
                     )
             ),
         },
