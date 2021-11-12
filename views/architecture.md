@@ -1,8 +1,10 @@
 ## Architecture
 
+Sign in to Bitbucket to view these images.
+
 ### AWS
 
-![AWS Architecture](user-service_arch.png "AWS Architecture")
+![AWS Architecture](https://bitbucket.org/calmisland/kidsloop-user-service/raw/master/views/user-service_arch.png "AWS Architecture")
 
 
 ### Database Schema
