@@ -1202,7 +1202,7 @@ describe('isAdmin', () => {
         })
     })
 
-    describe.only('schools', () => {
+    describe('schools', () => {
         context('nonAdminSchoolScope', async () => {
             let clientUser: User
             let school1: School
