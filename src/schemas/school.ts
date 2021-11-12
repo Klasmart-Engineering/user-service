@@ -101,6 +101,7 @@ const typeDefs = gql`
 
         # joined columns
         organizationId: UUIDFilter
+        userId: UUIDFilter
 
         AND: [SchoolFilter!]
         OR: [SchoolFilter!]

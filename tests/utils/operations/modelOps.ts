@@ -788,6 +788,14 @@ const CLASS_FIELDS = gql`
                 }
             }
         }
+        schoolsConnection {
+            totalCount
+            edges {
+                node {
+                    id
+                }
+            }
+        }
     }
 `
 
@@ -820,6 +828,30 @@ export const CLASSES_CONNECTION = gql`
                 hasPreviousPage
                 startCursor
                 endCursor
+            }
+        }
+    }
+`
+
+export const CLASSES_CONNECTION_SCHOOL_CHILD = gql`
+    ${CLASS_FIELDS}
+
+    query ClassesConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: ClassFilter
+        $sortArgs: ClassSortInput
+    ) {
+        classesConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
+            edges {
+                node {
+                    ...classFields
+                }
             }
         }
     }

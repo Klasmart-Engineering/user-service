@@ -28,7 +28,11 @@ import {
     inviteUserToOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { DELETE_CLASS } from '../utils/operations/classOps'
-import { CLASSES_CONNECTION, CLASS_NODE } from '../utils/operations/modelOps'
+import {
+    CLASSES_CONNECTION,
+    CLASS_NODE,
+    CLASSES_CONNECTION_SCHOOL_CHILD,
+} from '../utils/operations/modelOps'
 import {
     CREATE_CLASS,
     getSystemRoleIds,
@@ -56,6 +60,7 @@ const schoolsCount = 2
 
 let user2: User
 let schoolAdmin: User
+let schoolAdminSchoolId: string
 let orgMember: User
 let org1Id: string
 let org2Id: string
@@ -183,6 +188,7 @@ describe('acceptance.class', () => {
             schoolIds.push(createSchoolData.school_id)
         }
 
+        schoolAdminSchoolId = schoolIds[0]
         const createSchoolAdminResponse = await inviteUserToOrganization(
             'school',
             'admin',
@@ -193,7 +199,7 @@ describe('acceptance.class', () => {
             'SHORTY2',
             [schoolAdminRoleId],
             [schoolAdminRoleId],
-            [schoolIds[0]]
+            [schoolAdminSchoolId]
         )
 
         const createSchoolAdminData =
@@ -916,6 +922,51 @@ describe('acceptance.class', () => {
 
             expect(response.status).to.eq(400)
             expect(response.body).to.have.property('errors')
+        })
+
+        it('has schoolsConnection as a child', async () => {
+            const organizationId = org1Id
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: generateToken(userToPayload(schoolAdmin)),
+                })
+                .send({
+                    query: print(CLASSES_CONNECTION_SCHOOL_CHILD),
+                    variables: {
+                        direction: 'FORWARD',
+                        filterArgs: {
+                            organizationId: {
+                                operator: 'eq',
+                                value: organizationId,
+                            },
+                        },
+                    },
+                })
+
+            const classesConnection = response.body.data.classesConnection
+
+            // Since there's only one school associated with the school admin,
+            // We expect to see just that one school in the school child result
+            const actualSchoolNodesWithIds = []
+            for (const classNode of classesConnection.edges) {
+                const nodeSchoolsConnectionEdges =
+                    classNode.node.schoolsConnection.edges
+                actualSchoolNodesWithIds.push(nodeSchoolsConnectionEdges)
+            }
+            const actualSchoolIds = actualSchoolNodesWithIds
+                .reduce((acc, val) => acc.concat(val), [])
+                .map((obj: { node: any }) => obj.node.id) as string[]
+            const uniqueActualSchoolIds = [...new Set(actualSchoolIds)]
+
+            const expectedSchoolIds = [schoolAdminSchoolId]
+
+            expect(response.status).to.eq(200)
+            expect(uniqueActualSchoolIds).to.have.same.members(
+                expectedSchoolIds
+            )
         })
     })
 

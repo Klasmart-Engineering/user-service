@@ -1,5 +1,4 @@
 import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import {
     orgsForUsers,
@@ -15,6 +14,9 @@ import {
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
 import Dataloader from 'dataloader'
+import { GraphQLResolveInfo } from 'graphql/type/definition'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IDataLoaders } from '../loaders/setup'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -94,6 +96,14 @@ const typeDefs = gql`
             sort: UserSortInput
             direction: ConnectionDirection
         ): UsersConnectionResponse
+
+        schoolsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SchoolFilter
+            sort: SchoolSortInput
+        ): SchoolsConnectionResponse
     }
 
     type SchoolSummaryNode {
@@ -167,6 +177,35 @@ const typeDefs = gql`
         # removeSchedule(id: ID!): Boolean
     }
 `
+
+export async function schoolsChildConnectionResolver(
+    class_: Pick<ClassConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return schoolsChildConnection(class_, args, ctx.loaders, includeTotalCount)
+}
+
+//This method is split up from totalCount to be easily testable
+export async function schoolsChildConnection(
+    class_: Pick<ClassConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.schoolsConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: class_.id,
+            filterKey: 'classId',
+            pivot: '"Class"."class_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -220,6 +259,7 @@ export default function getDefault(
                         class_.id
                     )
                 },
+                schoolsConnection: schoolsChildConnectionResolver,
                 studentsConnection: async (
                     classNode: ClassConnectionNode,
                     args: IChildPaginationArgs,

@@ -973,8 +973,8 @@ describe('organizationsConnection', () => {
                 authorization: getNonAdminAuthToken(),
             })
             expect(connection.logger.count).to.be.eq(
-                expectedCount + 1,
-                'one extra for permission checks'
+                expectedCount + 2,
+                'two extra for permission checks (org and school)'
             )
         })
     })

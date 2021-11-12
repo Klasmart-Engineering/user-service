@@ -462,15 +462,16 @@ describe('userPermissions', () => {
         })
 
         describe('schoolMembershipsWithPermissions', () => {
+            it('returns all schools you are a member of if no permissions are provided', async () => {
+                const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
+                    []
+                )
+                expect(schoolIds.length).to.eq(2)
+            })
+
             context(
                 'returns school with memberships with ALL permissions',
                 () => {
-                    it('returns no school if no permissions are provided', async () => {
-                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                            []
-                        )
-                        expect(schoolIds.length).to.eq(0)
-                    })
                     it("returns no schools if the user doesn't have any the permissions", async () => {
                         const schoolIds = await userPermissions?.orgMembershipsWithPermissions(
                             [
@@ -525,12 +526,6 @@ describe('userPermissions', () => {
             context(
                 'returns schools with memberships with ANY permissions',
                 () => {
-                    it('returns no schools if no permissions are provided', async () => {
-                        const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
-                            []
-                        )
-                        expect(schoolIds.length).to.eq(0)
-                    })
                     it("returns no schools if the user doesn't have any the permissions", async () => {
                         const schoolIds = await userPermissions?.schoolMembershipsWithPermissions(
                             [

@@ -2,9 +2,11 @@ import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { School } from '../entities/school'
+import { SchoolMembership } from '../entities/schoolMembership'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
+    filterHasProperty,
     getWhereClauseFromFilter,
     IEntityFilter,
 } from '../utils/pagination/filtering'
@@ -15,6 +17,7 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
+import { scopeHasJoin } from '../utils/typeorm'
 
 export const schoolsConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'school_id',
@@ -62,6 +65,21 @@ export async function schoolConnectionQuery(
     scope.innerJoin('School.organization', 'Organization')
 
     if (filter) {
+        if (
+            filterHasProperty('userId', filter) &&
+            !scopeHasJoin(scope, SchoolMembership)
+        ) {
+            scope.innerJoin(
+                SchoolMembership,
+                'SchoolMembership',
+                'School.school_id = SchoolMembership.schoolSchoolId'
+            )
+        }
+
+        if (filterHasProperty('classId', filter)) {
+            scope.innerJoin('School.classes', 'Class')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 organizationId: 'School.organization',
@@ -72,6 +90,10 @@ export async function schoolConnectionQuery(
                 shortCode: 'School.shortcode',
                 // Could also refer to [Organization/School]Membership.status
                 status: 'School.status',
+
+                // Connections
+                userId: 'SchoolMembership.userUserId',
+                classId: 'Class.class_id',
             })
         )
     }

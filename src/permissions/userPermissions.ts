@@ -267,23 +267,29 @@ export class UserPermissions {
                             SchoolMembership
                         )
                             .createQueryBuilder()
-                            .innerJoin('SchoolMembership.roles', 'Role')
-                            .innerJoin('Role.permissions', 'Permission')
+                            .leftJoin('SchoolMembership.roles', 'Role')
+                            .leftJoin('Role.permissions', 'Permission')
                             .select(
                                 'SchoolMembership.school_id, Permission.permission_name'
                             )
                             .where('SchoolMembership.user_id = :user_id', {
                                 user_id,
                             })
-                            .andWhere('Role.status = :status', {
-                                status: Status.ACTIVE,
-                            })
+                            .andWhere(
+                                '(Role.status = :status OR Role.status IS NULL)',
+                                {
+                                    status: Status.ACTIVE,
+                                }
+                            )
                             .groupBy(
                                 'SchoolMembership.user_id, SchoolMembership.school_id, Permission.permission_name'
                             )
-                            .having('bool_and(Permission.allow) = :allowed', {
-                                allowed: true,
-                            })
+                            .having(
+                                'bool_and(Permission.allow) = :allowed OR Permission.allow IS NULL',
+                                {
+                                    allowed: true,
+                                }
+                            )
                             .getRawMany()
 
                         for (const {
@@ -342,12 +348,13 @@ export class UserPermissions {
         requiredPermissions: PermissionName[],
         operator: 'AND' | 'OR' = 'AND'
     ): Promise<string[]> {
-        if (requiredPermissions.length === 0) {
-            return []
-        }
-
         const schoolIds: string[] = []
         const schoolPermissions = await this.schoolPermissions(this.user_id)
+
+        if (requiredPermissions.length === 0) {
+            const schoolIdsFromPerms = Array.from(schoolPermissions.keys())
+            return schoolIdsFromPerms
+        }
 
         for (const [schoolId, permissions] of schoolPermissions) {
             let hasRequiredPerms = operator === 'AND' ? true : false

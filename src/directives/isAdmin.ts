@@ -479,13 +479,13 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
     scope,
     permissions
 ) => {
-    const userId = permissions.getUserId()
+    const schoolIds = await permissions.schoolMembershipsWithPermissions([]) // all schools the User is a member of
     const [schoolOrgs, mySchoolOrgs] = await Promise.all([
         permissions.orgMembershipsWithPermissions([
-            PermissionName.view_school_20110,
+            PermissionName.view_school_20110, // all schools (through orgs) the User is allowed to see
         ]),
         permissions.orgMembershipsWithPermissions([
-            PermissionName.view_my_school_20119,
+            PermissionName.view_my_school_20119, // all schools (through orgs) the User is a member of and allowed to see
         ]),
     ])
 
@@ -497,53 +497,64 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
         // (ability to see all Schools in the Organization) can take precedence, saving JOINs
         !isSubsetOf(mySchoolOrgs, schoolOrgs)
     ) {
-        scope
-            .leftJoin(
-                OrganizationMembership,
-                'OrganizationMembership',
-                'School.organization IN (:...schoolOrgs) AND OrganizationMembership.user = :d_user_id',
-                {
-                    schoolOrgs,
-                    d_user_id: userId,
-                }
-            )
-            .leftJoin(
-                'School.memberships',
-                'SchoolMembership',
-                'School.organization IN (:...mySchoolOrgs) AND SchoolMembership.user = :user_id',
-                {
-                    mySchoolOrgs,
-                    user_id: userId,
-                }
-            )
-            .where(
+        scope.leftJoin(
+            'School.memberships',
+            'SchoolMembership',
+            'SchoolMembership.schoolSchoolId = School.school_id'
+        )
+
+        if (schoolIds.length > 0) {
+            scope.where(
                 // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
                 new Brackets((qb) => {
-                    qb.where('OrganizationMembership.user IS NOT NULL').orWhere(
-                        'SchoolMembership.user IS NOT NULL'
+                    qb.where(
+                        // Schools which the user is not a member of but is allowed to see through orgs
+                        '(School.organization IN (:...schoolOrgs) AND SchoolMembership.user IS NULL)',
+                        {
+                            schoolOrgs,
+                        }
+                    ).orWhere(
+                        // Schools which the user is a member of and is allowed to see
+                        '(School.school_id IN (:...schoolIds) AND SchoolMembership.user IS NOT NULL)',
+                        {
+                            schoolIds,
+                        }
                     )
                 })
             )
+        } else {
+            scope.where(
+                new Brackets((qb) => {
+                    qb.where(
+                        // Schools which the user is not a member of but is allowed to see through orgs
+                        '(School.organization IN (:...schoolOrgs) AND SchoolMembership.user IS NULL)',
+                        {
+                            schoolOrgs,
+                        }
+                    ).orWhere(
+                        // FALSE is a workaround for `School.organization IN ()` which is invalid PostgresQL
+                        'SchoolMembership.user IS NOT NULL AND FALSE'
+                    )
+                })
+            )
+        }
     } else if (schoolOrgs.length) {
-        scope.innerJoin(
-            OrganizationMembership,
-            'OrganizationMembership',
-            'School.organization IN (:...schoolOrgs) AND OrganizationMembership.user = :d_user_id',
-            {
-                schoolOrgs,
-                d_user_id: userId,
-            }
-        )
+        scope.where('School.organization IN (:...schoolOrgs)', {
+            schoolOrgs,
+        })
     } else if (mySchoolOrgs.length) {
-        scope.innerJoin(
-            'School.memberships',
-            'SchoolMembership',
-            'School.organization IN (:...mySchoolOrgs) AND SchoolMembership.user = :user_id',
-            {
+        scope
+            .innerJoin(
+                'School.memberships',
+                'SchoolMembership',
+                'SchoolMembership.schoolSchoolId = School.school_id'
+            )
+            .where('School.organization IN (:...mySchoolOrgs)', {
                 mySchoolOrgs,
-                user_id: userId,
-            }
-        )
+            })
+            .andWhere('SchoolMembership.schoolSchoolId IN (:...schoolIds)', {
+                schoolIds,
+            })
     } else {
         // No permissions
         scope.where('false')

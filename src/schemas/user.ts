@@ -115,6 +115,14 @@ const typeDefs = gql`
         status: Status!
         dateOfBirth: String
         gender: String
+
+        schoolsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SchoolFilter
+            sort: SchoolSortInput
+        ): SchoolsConnectionResponse
     }
 
     type ContactInfo {
@@ -273,6 +281,34 @@ export async function organizationsChildConnection(
     })
 }
 
+export async function schoolsChildConnectionResolver(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return schoolsChildConnection(user, args, ctx.loaders, includeTotalCount)
+}
+
+//This method is split up from totalCount to be easily testable
+export async function schoolsChildConnection(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.schoolsConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: user.id,
+            filterKey: 'userId',
+            pivot: '"SchoolMembership"."user_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -314,6 +350,7 @@ export default function getDefault(
                         ? ctx.loaders.userNode.roles.load(user.id)
                         : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
+                schoolsConnection: schoolsChildConnectionResolver,
             },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),

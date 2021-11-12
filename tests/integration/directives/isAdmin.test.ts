@@ -1,5 +1,10 @@
 import { expect, use } from 'chai'
-import { Connection, createQueryBuilder, SelectQueryBuilder } from 'typeorm'
+import {
+    Brackets,
+    Connection,
+    createQueryBuilder,
+    SelectQueryBuilder,
+} from 'typeorm'
 import {
     ApolloServerTestClient,
     createTestClient,
@@ -68,6 +73,7 @@ import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
 import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { SchoolMembership } from '../../../src/entities/schoolMembership'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1193,6 +1199,443 @@ describe('isAdmin', () => {
                 expect(orgRoles).to.have.lengthOf(0)
                 expect(systemRoles).to.have.lengthOf(5)
             })
+        })
+    })
+
+    describe.only('schools', () => {
+        context('nonAdminSchoolScope', async () => {
+            let clientUser: User
+            let school1: School
+            let org1: Organization
+            let otherUser: User
+            let school2: School
+            let org2: Organization
+            let school3: School
+            let clientPermissions: UserPermissions
+            let schoolMemberships: Map<User, School[]>
+            let orgMemberships: Map<User, Organization[]>
+            let scope: SelectQueryBuilder<School>
+
+            beforeEach(async () => {
+                clientUser = await createUser().save()
+                otherUser = await createUser().save()
+                org1 = await createOrganization().save()
+                org2 = await createOrganization().save()
+                school1 = await createSchool(org1, 'Scoo').save()
+                school2 = await createSchool(org2, 'By').save()
+                school3 = await createSchool(org1, 'Doo').save()
+            })
+
+            context(
+                'client user has both view-school permissions',
+                async () => {
+                    beforeEach(async () => {
+                        const role = await createRole(undefined, undefined, {
+                            permissions: [
+                                PermissionName.view_school_20110,
+                                PermissionName.view_my_school_20119,
+                            ],
+                        }).save()
+
+                        orgMemberships = new Map([
+                            [clientUser, [org1]],
+                            [otherUser, [org2]],
+                        ])
+
+                        for (const [user, orgs] of orgMemberships) {
+                            for (const organization of orgs) {
+                                await createOrganizationMembership({
+                                    user,
+                                    organization,
+                                    roles: [role],
+                                }).save()
+                            }
+                        }
+
+                        schoolMemberships = new Map([
+                            [clientUser, [school1, school3]],
+                            [otherUser, [school2, school3]],
+                        ])
+
+                        for (const [user, schools] of schoolMemberships) {
+                            for (const school of schools) {
+                                await createSchoolMembership({
+                                    user,
+                                    school,
+                                }).save()
+                            }
+                        }
+
+                        const token = { id: clientUser.user_id }
+                        clientPermissions = new UserPermissions(token)
+                        scope = (await createEntityScope({
+                            permissions: clientPermissions,
+                            entity: 'school',
+                        })) as SelectQueryBuilder<School>
+                    })
+
+                    it("limits scope to a user's schools", async () => {
+                        const schools = await scope.select('School').getMany()
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equal(
+                            schoolMemberships
+                                .get(clientUser)!
+                                .map((school) => school.school_id)
+                        )
+                    })
+
+                    // use case for this is schoolConnection child on usersConnection
+                    it('when filtering by another user, shows intersection of schools both users belong to', async () => {
+                        scope.select('School')
+                        scope.innerJoin(
+                            SchoolMembership,
+                            'SchoolMembership',
+                            'School.school_id = SchoolMembership.schoolSchoolId'
+                        )
+
+                        // if nonAdminSchoolScope joined to SchoolMembership itself
+                        // then it would now be filtering on 2 mutually exclusive conditions
+                        scope.andWhere(
+                            'SchoolMembership.userUserId = :userId',
+                            {
+                                userId: otherUser.user_id,
+                            }
+                        )
+
+                        const schools = await scope.getMany()
+
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equalInAnyOrder([school3.school_id])
+                    })
+                }
+            )
+
+            // The rest of the contexts and tests deal with uses cases for school child connection filtering on user
+            context(
+                'client user has both view-school permissions in different orgs and is part of a school',
+                async () => {
+                    beforeEach(async () => {
+                        const roleViewSchool = await createRole(
+                            undefined,
+                            org1,
+                            {
+                                permissions: [PermissionName.view_school_20110],
+                            }
+                        ).save()
+                        const roleViewMySchool = await createRole(
+                            undefined,
+                            org2,
+                            {
+                                permissions: [
+                                    PermissionName.view_my_school_20119,
+                                ],
+                            }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: clientUser,
+                            organization: org1,
+                            roles: [roleViewSchool],
+                        }).save()
+                        await createOrganizationMembership({
+                            user: clientUser,
+                            organization: org2,
+                            roles: [roleViewMySchool],
+                        }).save()
+                        await createOrganizationMembership({
+                            user: otherUser,
+                            organization: org2,
+                            roles: [],
+                        }).save()
+
+                        schoolMemberships = new Map([
+                            [clientUser, [school1, school2]],
+                            [otherUser, [school2]],
+                        ])
+                        for (const [user, schools] of schoolMemberships) {
+                            for (const school of schools) {
+                                await createSchoolMembership({
+                                    user,
+                                    school,
+                                }).save()
+                            }
+                        }
+
+                        const token = { id: clientUser.user_id }
+                        clientPermissions = new UserPermissions(token)
+                        scope = (await createEntityScope({
+                            permissions: clientPermissions,
+                            entity: 'school',
+                        })) as SelectQueryBuilder<School>
+                    })
+
+                    it('when filtering by another user, shows intersection of schools both users belong to as well as schools of their orgs', async () => {
+                        scope.select('School')
+
+                        const schools = await scope.getMany()
+
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equalInAnyOrder([
+                            school1.school_id,
+                            school2.school_id,
+                            school3.school_id,
+                        ])
+                    })
+                }
+            )
+
+            context(
+                'client user has both view-school permissions in different orgs and is NOT part of a school',
+                async () => {
+                    beforeEach(async () => {
+                        const roleViewSchool = await createRole(
+                            undefined,
+                            org1,
+                            {
+                                permissions: [PermissionName.view_school_20110],
+                            }
+                        ).save()
+                        const roleViewMySchool = await createRole(
+                            undefined,
+                            org2,
+                            {
+                                permissions: [
+                                    PermissionName.view_my_school_20119,
+                                ],
+                            }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: clientUser,
+                            organization: org1,
+                            roles: [roleViewSchool],
+                        }).save()
+                        await createOrganizationMembership({
+                            user: clientUser,
+                            organization: org2,
+                            roles: [roleViewMySchool],
+                        }).save()
+                        await createOrganizationMembership({
+                            user: otherUser,
+                            organization: org2,
+                            roles: [],
+                        }).save()
+                        await createSchoolMembership({
+                            user: otherUser,
+                            school: school2,
+                        }).save()
+
+                        const token = { id: clientUser.user_id }
+                        clientPermissions = new UserPermissions(token)
+                        scope = (await createEntityScope({
+                            permissions: clientPermissions,
+                            entity: 'school',
+                        })) as SelectQueryBuilder<School>
+                    })
+
+                    it('when filtering by another user, only shows client org schools (view_school) and not other user school (even if view_my_school)', async () => {
+                        scope.select('School')
+
+                        const schools = await scope.getMany()
+
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equalInAnyOrder([
+                            school1.school_id,
+                            school3.school_id,
+                        ])
+                    })
+                }
+            )
+
+            context(
+                'client user has view_my_school_20119 permission, cannot see other user schools without view_school_20110 permission',
+                async () => {
+                    beforeEach(async () => {
+                        const role = await createRole(undefined, undefined, {
+                            permissions: [PermissionName.view_my_school_20119],
+                        }).save()
+
+                        // Both client and other user are part of same org
+                        // But without view_school_20110, client user should not see other user's schools
+                        orgMemberships = new Map([
+                            [clientUser, [org1, org2]],
+                            [otherUser, [org2]],
+                        ])
+
+                        for (const [user, orgs] of orgMemberships) {
+                            for (const organization of orgs) {
+                                await createOrganizationMembership({
+                                    user,
+                                    organization,
+                                    roles: [role],
+                                }).save()
+                            }
+                        }
+
+                        schoolMemberships = new Map([
+                            [clientUser, [school1]],
+                            [otherUser, [school2, school3]],
+                        ])
+
+                        for (const [user, schools] of schoolMemberships) {
+                            for (const school of schools) {
+                                await createSchoolMembership({
+                                    user,
+                                    school,
+                                }).save()
+                            }
+                        }
+
+                        const token = { id: clientUser.user_id }
+                        clientPermissions = new UserPermissions(token)
+                        scope = (await createEntityScope({
+                            permissions: clientPermissions,
+                            entity: 'school',
+                        })) as SelectQueryBuilder<School>
+                    })
+
+                    it('when client filters by another user, only sees client school and not other user school', async () => {
+                        scope.select('School')
+                        scope.where(
+                            new Brackets((qb) => {
+                                qb.andWhere(
+                                    'SchoolMembership.userUserId = :userId',
+                                    {
+                                        userId: otherUser.user_id,
+                                    }
+                                ).orWhere(
+                                    'SchoolMembership.userUserId = :userId',
+                                    {
+                                        userId: clientUser.user_id,
+                                    }
+                                )
+                            })
+                        )
+
+                        const schools = await scope.getMany()
+
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equalInAnyOrder([school1.school_id])
+                    })
+                }
+            )
+
+            context(
+                'client user has view_school_20110 permission only, cannot see own school in other org without view_my_school_20119',
+                async () => {
+                    beforeEach(async () => {
+                        const role = await createRole(undefined, undefined, {
+                            permissions: [PermissionName.view_school_20110],
+                        }).save()
+
+                        orgMemberships = new Map([
+                            [clientUser, [org2]],
+                            [otherUser, [org2]],
+                        ])
+
+                        for (const [user, orgs] of orgMemberships) {
+                            for (const organization of orgs) {
+                                await createOrganizationMembership({
+                                    user,
+                                    organization,
+                                    roles: [role],
+                                }).save()
+                            }
+                        }
+
+                        schoolMemberships = new Map([
+                            [clientUser, [school1]], // This school is in org1 which clientUser is not part of
+                            [otherUser, [school2]], // This school is in org2 which clientUser is part of
+                        ])
+
+                        for (const [user, schools] of schoolMemberships) {
+                            for (const school of schools) {
+                                await createSchoolMembership({
+                                    user,
+                                    school,
+                                }).save()
+                            }
+                        }
+
+                        const token = { id: clientUser.user_id }
+                        clientPermissions = new UserPermissions(token)
+                        scope = (await createEntityScope({
+                            permissions: clientPermissions,
+                            entity: 'school',
+                        })) as SelectQueryBuilder<School>
+                    })
+
+                    it('when client filters by another user, only sees other schools and not client school', async () => {
+                        scope.select('School')
+
+                        const schools = await scope.getMany()
+
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equalInAnyOrder([school2.school_id])
+                    })
+                }
+            )
+
+            context(
+                'client user has no view-school permissions in their orgs',
+                async () => {
+                    beforeEach(async () => {
+                        const role = await createRole(undefined, undefined, {
+                            permissions: [],
+                        }).save()
+
+                        orgMemberships = new Map([
+                            [clientUser, [org1, org2]],
+                            [otherUser, [org2]],
+                        ])
+
+                        for (const [user, orgs] of orgMemberships) {
+                            for (const organization of orgs) {
+                                await createOrganizationMembership({
+                                    user,
+                                    organization,
+                                    roles: [role],
+                                }).save()
+                            }
+                        }
+
+                        schoolMemberships = new Map([
+                            [clientUser, [school1, school2, school3]],
+                            [otherUser, [school2]],
+                        ])
+
+                        for (const [user, schools] of schoolMemberships) {
+                            for (const school of schools) {
+                                await createSchoolMembership({
+                                    user,
+                                    school,
+                                }).save()
+                            }
+                        }
+
+                        const token = { id: clientUser.user_id }
+                        clientPermissions = new UserPermissions(token)
+                        scope = (await createEntityScope({
+                            permissions: clientPermissions,
+                            entity: 'school',
+                        })) as SelectQueryBuilder<School>
+                    })
+
+                    it('when client filters by another user, should not see any school related to either client or other user', async () => {
+                        scope.select('School')
+
+                        const schools = await scope.getMany()
+
+                        expect(
+                            schools.map((school) => school.school_id)
+                        ).deep.equal([])
+                    })
+                }
+            )
         })
     })
 

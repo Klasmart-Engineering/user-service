@@ -386,6 +386,66 @@ describe('acceptance.user', () => {
                     .organizationsConnection.edges[0].node.id
             ).to.eq(org.organization_id)
         })
+
+        it('has schoolsConnection as a child', async () => {
+            const query = `
+                query usersConnection($direction: ConnectionDirection!) {
+                    usersConnection(direction:$direction){
+                        edges {
+                            node {
+                                schoolsConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const user = await createUser().save()
+            const org = await createOrganization().save()
+            const school = await createSchool(org).save()
+
+            const role = await createRole(undefined, org, {
+                permissions: [PermissionName.view_school_20110],
+            }).save()
+            await createOrganizationMembership({
+                user: user,
+                organization: org,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user: user,
+                school: school,
+            }).save()
+
+            const token = generateToken({
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query,
+                    variables: {
+                        direction: 'FORWARD',
+                    },
+                })
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.usersConnection.edges[0].node
+                    .schoolsConnection.edges[0].node.id
+            ).to.eq(school.school_id)
+        })
     })
     context('my_users', async () => {
         it('Finds no users if I am not logged in', async () => {

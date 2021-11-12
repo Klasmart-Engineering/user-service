@@ -13,10 +13,12 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
 import { addUsersToOrganizations } from '../resolvers/organization'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
+import { IDataLoaders } from '../loaders/setup'
 
 const typeDefs = gql`
     scalar HexColor
@@ -305,6 +307,40 @@ const typeDefs = gql`
         ): SchoolsConnectionResponse
     }
 `
+
+export async function schoolsChildConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return schoolsChildConnection(
+        organization,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+//This method is split up from totalCount to be easily testable
+export async function schoolsChildConnection(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.schoolsConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: organization.id,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -345,22 +381,7 @@ export default function getDefault(
                         },
                     })
                 },
-                schoolsConnection: async (
-                    organization: OrganizationConnectionNode,
-                    args: IChildPaginationArgs,
-                    ctx: Context,
-                    info: GraphQLResolveInfo
-                ) => {
-                    return ctx.loaders.schoolsConnectionChild.instance.load({
-                        args,
-                        includeTotalCount: shouldIncludeTotalCount(info, args),
-                        parent: {
-                            id: organization.id,
-                            filterKey: 'organizationId',
-                            pivot: '"Organization"."organization_id"',
-                        },
-                    })
-                },
+                schoolsConnection: schoolsChildConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
