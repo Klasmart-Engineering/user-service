@@ -838,7 +838,7 @@ describe('organizationsConnection', () => {
                 await createSchoolMembership({
                     user: nonAdmin,
                     school: (await orgs[0].schools)![0],
-                })
+                }).save()
 
                 // can't see any schools without permissions
                 let schoolsPerOrg = await organizationsConnection(

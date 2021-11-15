@@ -597,11 +597,11 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
         PermissionName.view_classes_20114,
     ])
 
+    //
     const schoolOrgs = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_school_classes_20117,
     ])
 
-    //
     if (classOrgs.length && schoolOrgs.length) {
         scope
             .leftJoin('Class.schools', 'School')
