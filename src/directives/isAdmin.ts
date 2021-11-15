@@ -592,25 +592,34 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
     scope,
     permissions
 ) => {
+    const userId = permissions.getUserId()
     const classOrgs = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_classes_20114,
     ])
 
+    //
     const schoolOrgs = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_school_classes_20117,
     ])
 
     if (classOrgs.length && schoolOrgs.length) {
-        scope.leftJoin('Class.schools', 'School').where(
-            // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
-            new Brackets((qb) => {
-                qb.where('Class.organization IN (:...classOrgs)', {
-                    classOrgs,
-                }).orWhere('Class.organization IN (:...schoolOrgs)', {
-                    schoolOrgs,
+        scope
+            .leftJoin('Class.schools', 'School')
+            .leftJoin('School.memberships', 'SchoolMembership')
+            .where(
+                // NB: Must be included in brackets to avoid incorrect AND/OR boolean logic with downstream WHERE
+                new Brackets((qb) => {
+                    qb.where('Class.organization IN (:...classOrgs)', {
+                        classOrgs,
+                    }).orWhere(
+                        'Class.organization IN (:...schoolOrgs) AND SchoolMembership.user_id = :user_id',
+                        {
+                            user_id: userId,
+                            schoolOrgs,
+                        }
+                    )
                 })
-            })
-        )
+            )
         return
     }
 
@@ -622,6 +631,12 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
         scope
             // Must be LEFT JOIN to support `isNull` operator
             .leftJoin('Class.schools', 'School')
+            .innerJoin(
+                'School.memberships',
+                'SchoolMembership',
+                'SchoolMembership.user_id = :user_id',
+                { user_id: userId }
+            )
             .where('Class.organization IN (:...schoolOrgs)', { schoolOrgs })
         return
     }
