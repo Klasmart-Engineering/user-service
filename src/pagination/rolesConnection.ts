@@ -1,6 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { SelectQueryBuilder } from 'typeorm'
-import { Permission } from '../entities/permission'
 import { Role } from '../entities/role'
 import { NodeDataLoader } from '../loaders/genericNode'
 import { RoleConnectionNode, RoleSummaryNode } from '../types/graphQL/role'
@@ -18,7 +17,6 @@ import {
     paginateData,
 } from '../utils/pagination/paginate'
 import { IConnectionSortingConfig } from '../utils/pagination/sorting'
-import { scopeHasJoin } from '../utils/typeorm'
 
 export const rolesConnectionSortingConfig: IConnectionSortingConfig = {
     primaryKey: 'role_id',
@@ -63,11 +61,22 @@ export function roleConnectionQuery(
     filter?: IEntityFilter
 ) {
     if (filter) {
-        if (
-            filterHasProperty('permissionName', filter) &&
-            !scopeHasJoin(scope, Permission)
-        ) {
+        if (filterHasProperty('permissionName', filter)) {
             scope.innerJoin('Role.permissions', 'Permission')
+        }
+
+        if (
+            filterHasProperty('membershipOrganizationId', filter) ||
+            filterHasProperty('membershipOrganizationUserId', filter)
+        ) {
+            scope.innerJoin('Role.memberships', 'OrganizationMembership')
+        }
+
+        if (
+            filterHasProperty('schoolId', filter) ||
+            filterHasProperty('schoolUserId', filter)
+        ) {
+            scope.innerJoin('Role.schoolMemberships', 'SchoolMembership')
         }
 
         scope.andWhere(
@@ -76,6 +85,11 @@ export function roleConnectionQuery(
                 system: 'Role.system_role',
                 status: 'Role.status',
                 organizationId: 'Role.organizationOrganizationId',
+                membershipOrganizationUserId: 'OrganizationMembership.user_id',
+                membershipOrganizationId:
+                    'OrganizationMembership.organization_id',
+                schoolId: 'SchoolMembership.school_id',
+                schoolUserId: 'SchoolMembership.user_id',
                 permissionName: 'Permission.permission_name',
             })
         )

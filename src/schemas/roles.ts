@@ -46,6 +46,10 @@ const typeDefs = gql`
         status: StringFilter
         system: BooleanFilter
         organizationId: UUIDFilter
+        schoolId: UUIDFilter
+        schoolUserId: UUIDFilter
+        membershipOrganizationUserId: UUIDFilter
+        membershipOrganizationId: UUIDFilter
 
         #joined columns
         AND: [RoleFilter]
