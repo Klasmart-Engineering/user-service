@@ -1022,10 +1022,8 @@ describe('isAdmin', () => {
         let usersList: User[] = []
         let superAdmin: User
         let user: User
-        let noMember: User
         let roleList: Role[] = []
         let organizations: Organization[] = []
-        let userPermissions: UserPermissions
         let orgMemberships: OrganizationMembership[]
 
         beforeEach(async () => {
@@ -1076,12 +1074,27 @@ describe('isAdmin', () => {
             }
 
             await OrganizationMembership.save(orgMemberships)
-            noMember = await createUser().save()
+        })
+
+        it("non admin scope doesn't join to other tables", async () => {
+            const nonAdmin = usersList[0]
+
+            const userPermissions = new UserPermissions({
+                id: nonAdmin.user_id,
+                email: nonAdmin.email || '',
+            })
+
+            const scope = (await createEntityScope({
+                permissions: userPermissions,
+                entity: 'role',
+            })) as SelectQueryBuilder<Role>
+
+            expect(scope.expressionMap.joinAttributes.length).to.eq(0)
         })
 
         context('admin', () => {
             it('can see all the existent roles', async () => {
-                userPermissions = new UserPermissions({
+                const userPermissions = new UserPermissions({
                     id: superAdmin.user_id,
                     email: superAdmin.email || '',
                 })
@@ -1106,7 +1119,7 @@ describe('isAdmin', () => {
         context('non admin', () => {
             it('can see its roles or the system ones', async () => {
                 user = usersList[9]
-                userPermissions = new UserPermissions({
+                const userPermissions = new UserPermissions({
                     id: user.user_id,
                     email: user.email || '',
                 })
@@ -1131,7 +1144,7 @@ describe('isAdmin', () => {
 
             it('can not see roles from other orgs', async () => {
                 user = usersList[9]
-                userPermissions = new UserPermissions({
+                const userPermissions = new UserPermissions({
                     id: user.user_id,
                     email: user.email || '',
                 })
@@ -1151,7 +1164,7 @@ describe('isAdmin', () => {
 
             it('nonAdminRoleScope works even with filter applied', async () => {
                 user = usersList[0]
-                userPermissions = new UserPermissions({
+                const userPermissions = new UserPermissions({
                     id: user.user_id,
                     email: user.email || '',
                 })
@@ -1179,7 +1192,8 @@ describe('isAdmin', () => {
 
         context('non member', () => {
             it('can just see the system ones', async () => {
-                userPermissions = new UserPermissions({
+                const noMember = await createUser().save()
+                const userPermissions = new UserPermissions({
                     id: noMember.user_id,
                     email: noMember.email || '',
                 })
