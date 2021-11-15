@@ -1089,6 +1089,14 @@ export const ORGANIZATIONS_CONNECTION = `
                     schoolsConnection(direction: FORWARD) {
                         totalCount
                     }
+                    classesConnection(direction: FORWARD) {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
                 }
             }
             pageInfo{

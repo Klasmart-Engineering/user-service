@@ -870,6 +870,62 @@ describe('organizationsConnection', () => {
                 ).to.eq(numSchoolsPerOrg)
             })
         })
+
+        context('.classesConnection', async () => {
+            // it('returns classes for user', async () => {
+            //     const schoolsPerOrg = await organizationsConnection(
+            //         testClient,
+            //         direction,
+            //         { count: 5 },
+            //         { authorization: getAdminAuthToken() }
+            //     )
+            //     expect(schoolsPerOrg.edges.length).to.eq(2)
+            //     for (const orgUsers of schoolsPerOrg.edges) {
+            //         expect(orgUsers.node.schoolsConnection?.totalCount).to.eq(
+            //             numSchoolsPerOrg
+            //         )
+            //     }
+            // })
+            // it('uses the isAdmin scope for permissions', async () => {
+            //     // create a non-admin user and add to a school in org1
+            //     const nonAdmin = await createNonAdminUser(testClient)
+            //     const membership = await createOrganizationMembership({
+            //         user: nonAdmin,
+            //         organization: orgs[0],
+            //     }).save()
+            //     await createSchoolMembership({
+            //         user: nonAdmin,
+            //         school: (await orgs[0].schools)![0],
+            //     }).save()
+            //     // can't see any schools without permissions
+            //     let schoolsPerOrg = await organizationsConnection(
+            //         testClient,
+            //         direction,
+            //         { count: 5 },
+            //         { authorization: getNonAdminAuthToken() }
+            //     )
+            //     expect(schoolsPerOrg.totalCount).to.eq(1)
+            //     expect(
+            //         schoolsPerOrg.edges[0].node.schoolsConnection?.totalCount
+            //     ).to.eq(0)
+            //     // can see all other schools with required permissions
+            //     const role = await createRole('role', orgs[0], {
+            //         permissions: [PermissionName.view_school_20110],
+            //     }).save()
+            //     membership.roles = Promise.resolve([role])
+            //     await membership.save()
+            //     schoolsPerOrg = await organizationsConnection(
+            //         testClient,
+            //         direction,
+            //         { count: 5 },
+            //         { authorization: getNonAdminAuthToken() }
+            //     )
+            //     expect(schoolsPerOrg.totalCount).to.eq(1)
+            //     expect(
+            //         schoolsPerOrg.edges[0].node.schoolsConnection?.totalCount
+            //     ).to.eq(numSchoolsPerOrg)
+            // })
+        })
         it('dataloads child connections', async () => {
             const expectedCount = 7
 

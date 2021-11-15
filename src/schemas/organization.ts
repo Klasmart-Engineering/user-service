@@ -418,7 +418,7 @@ export function classesChildConnection(
         parent: {
             id: organizationId,
             filterKey: 'organizationId',
-            pivot: '"Organization"."organization_id"',
+            pivot: '"Class"."organizationOrganizationId"',
         },
     })
 }
