@@ -871,7 +871,7 @@ describe('organizationsConnection', () => {
             })
         })
         it('dataloads child connections', async () => {
-            const expectedCount = 5
+            const expectedCount = 7
 
             const query = `
                 query {
@@ -889,6 +889,14 @@ describe('organizationsConnection', () => {
                                 schoolsConnection {
                                     totalCount                      # 4
                                     edges {                         # 5
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                                rolesConnection {
+                                    totalCount                      # 6
+                                    edges {                         # 7
                                         node {
                                             id
                                         }
