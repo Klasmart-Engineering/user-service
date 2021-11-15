@@ -12,6 +12,7 @@ import {
     IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
+    IEdge,
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
@@ -58,12 +59,9 @@ export async function classesConnectionResolver(
     return {
         totalCount: data.totalCount,
         pageInfo: data.pageInfo,
-        edges: data.edges.map((edge) => {
-            return {
-                node: mapClassToClassConnectionNode(edge.node),
-                cursor: edge.cursor,
-            }
-        }),
+        edges: await Promise.all(
+            data.edges.map(mapClassEdgeToClassConnectionEdge)
+        ),
     }
 }
 
@@ -136,6 +134,15 @@ export function mapClassToClassConnectionNode(
         name: class_.class_name,
         status: class_.status,
         shortCode: class_.shortcode,
+    }
+}
+
+async function mapClassEdgeToClassConnectionEdge(
+    edge: IEdge<Class>
+): Promise<IEdge<CoreClassConnectionNode>> {
+    return {
+        node: await mapClassToClassConnectionNode(edge.node),
+        cursor: edge.cursor,
     }
 }
 

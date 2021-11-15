@@ -11,12 +11,16 @@ import {
 } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { Model } from '../../../src/model'
-import { createAdminUser } from '../../utils/testEntities'
-import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
+import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
 import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
-import { schoolsConnection } from '../../utils/operations/modelOps'
+import { runQuery, schoolsConnection } from '../../utils/operations/modelOps'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createOrganization } from '../../factories/organization.factory'
 import { Status } from '../../../src/entities/status'
@@ -31,13 +35,17 @@ import { OrganizationMembership } from '../../../src/entities/organizationMember
 import { Role } from '../../../src/entities/role'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { generateShortCode } from '../../../src/utils/shortcode'
-import { classesChildConnection } from '../../../src/schemas/school'
+import {
+    classesChildConnection,
+    classesChildConnectionResolver,
+} from '../../../src/schemas/school'
 import { createClass } from '../../factories/class.factory'
 import { Class } from '../../../src/entities/class'
 import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
+import { GraphQLResolveInfo } from 'graphql/type/definition'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -813,6 +821,72 @@ describe('schoolsConnection', () => {
 
                 expect(expectedClassIds).to.have.same.members(actualClassIds)
             })
+        })
+
+        it('dataloads child connections', async () => {
+            const expectedCount = 4
+
+            const query = `
+                query {
+                    schoolsConnection(direction: FORWARD) {       #1, 2
+                        edges {
+                            node {
+                                classesConnection {                   
+                                    totalCount                      # 3 
+                                    edges {                         # 4
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(
+                expectedCount,
+                'One extra query made at schoolsConnection to join on org'
+            )
+
+            // async isAdmin directives break dataloading
+            // so ensure that is not happening
+            const nonAdmin = await createNonAdminUser(testClient)
+            const schoolForMuggles = await createSchool(org1, 'Eton').save()
+            const classForMuggles = await createClass(
+                [schoolForMuggles],
+                org1
+            ).save()
+            const role = await createRole('role', org1, {
+                permissions: [
+                    PermissionName.view_school_20110,
+                    PermissionName.view_classes_20114,
+                    PermissionName.view_my_classes_20118,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdmin,
+                organization: org1,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user: nonAdmin,
+                school: schoolForMuggles,
+            }).save()
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getNonAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(
+                expectedCount + 2,
+                'Two extra for class permission checks (class and school classes)'
+            )
         })
     })
 })
