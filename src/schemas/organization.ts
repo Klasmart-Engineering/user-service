@@ -316,6 +316,14 @@ const typeDefs = gql`
             sort: RoleSortInput
             direction: ConnectionDirection
         ): RolesConnectionResponse
+
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
     }
 `
 
@@ -382,6 +390,39 @@ export async function rolesConnectionChild(
     })
 }
 
+// This is a workaround to needing to mock total count AST check in tests
+export async function classesChildConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesChildConnection(
+        organization.id,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export function classesChildConnection(
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Organization"."organization_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -409,6 +450,7 @@ export default function getDefault(
                 organizationMembershipsConnection: organizationMembershipsConnectionResolver,
                 schoolsConnection: schoolsChildConnectionResolver,
                 rolesConnection: rolesConnectionChildResolver,
+                classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>
