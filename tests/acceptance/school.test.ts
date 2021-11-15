@@ -23,6 +23,7 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createRole } from '../factories/role.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
+import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -56,23 +57,6 @@ const makeNodeQuery = async (id: string) => {
             variables: {
                 id,
             },
-        })
-}
-
-function makeRequest(
-    token: string,
-    query: string,
-    variables: { direction: string }
-) {
-    return supertest('http://localhost:8080')
-        .post('/user')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query,
-            variables,
         })
 }
 
@@ -202,9 +186,14 @@ describe('acceptance.school', () => {
                 iss: 'calmid-debug',
             })
 
-            const response = await makeRequest(token, query, {
-                direction: 'FORWARD',
-            })
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
 
             expect(response.status).to.eq(200)
             expect(
