@@ -778,6 +778,13 @@ describe('schoolsConnection', () => {
                     [wizardingSchool],
                     wizardOrg
                 ).save()
+
+                const token = { id: wizardUser.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns classes for a school', async () => {
                 const role = await createRole(undefined, undefined, {
                     permissions: [
                         PermissionName.view_school_20110,
@@ -795,12 +802,6 @@ describe('schoolsConnection', () => {
                     school: wizardingSchool,
                 }).save()
 
-                const token = { id: wizardUser.user_id }
-                const permissions = new UserPermissions(token)
-                ctx = { loaders: createContextLazyLoaders(permissions) }
-            })
-
-            it('returns classes for a school', async () => {
                 const args: IChildPaginationArgs = {
                     direction: 'FORWARD',
                     count: 2,
@@ -820,6 +821,68 @@ describe('schoolsConnection', () => {
                 const actualClassIds = result.edges.map((edge) => edge.node.id)
 
                 expect(expectedClassIds).to.have.same.members(actualClassIds)
+            })
+
+            it('uses the isAdmin scope for permissions', async () => {
+                // create a non-admin user in wizardOrg
+                const nonAdminMuggle = await createNonAdminUser(testClient)
+                const roleSchoolOnly = await createRole(undefined, undefined, {
+                    permissions: [PermissionName.view_school_20110],
+                }).save()
+                const membership = await createOrganizationMembership({
+                    user: nonAdminMuggle,
+                    organization: wizardOrg,
+                    roles: [roleSchoolOnly],
+                }).save()
+                await createSchoolMembership({
+                    user: nonAdminMuggle,
+                    school: wizardingSchool,
+                }).save()
+                // can't see any classes without relevant permissions
+                const classesPerSchool = await schoolsConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 5 },
+                    true,
+                    { authorization: getNonAdminAuthToken() },
+                    undefined,
+                    undefined,
+                    true
+                )
+
+                expect(classesPerSchool.totalCount).to.eq(1)
+                expect(
+                    classesPerSchool.edges[0].node.classesConnection!.totalCount
+                ).to.eq(0)
+
+                // can see all other classes with required permissions
+                // Yer a wizard now, Harry
+                const roleAllClasses = await createRole(undefined, undefined, {
+                    permissions: [
+                        PermissionName.view_school_20110,
+                        PermissionName.view_classes_20114,
+                        PermissionName.view_school_classes_20117,
+                    ],
+                }).save()
+                membership.roles = Promise.resolve([roleAllClasses])
+                await membership.save()
+
+                const classesPerSchoolWithPerms = await schoolsConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 5 },
+                    true,
+                    { authorization: getNonAdminAuthToken() },
+                    undefined,
+                    undefined,
+                    true
+                )
+
+                expect(classesPerSchoolWithPerms.totalCount).to.eq(1)
+                expect(
+                    classesPerSchoolWithPerms.edges[0].node.classesConnection!
+                        .totalCount
+                ).to.eq([magicClass, potionsClass].length)
             })
         })
 
