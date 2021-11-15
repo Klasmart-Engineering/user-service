@@ -381,7 +381,6 @@ export class UserPermissions {
     ): Promise<boolean> {
         const userId = this.getUserId()
         let allowPerm = false
-
         const isAdmin = await this.isUserAdmin(this.user_id)
         allowPerm =
             isAdmin && superAdminRole.permissions.includes(permissionName)
@@ -398,12 +397,12 @@ export class UserPermissions {
                     status: Status.ACTIVE,
                 })
                 .andWhere('Role.status = :status')
+                .andWhere('Permission.permission_id =:permissionId', {
+                    permissionId: permissionName.valueOf(),
+                })
                 .getMany()
 
-            allowPerm =
-                perms.some(
-                    (p) => p.permission_name === permissionName.valueOf()
-                ) || false
+            allowPerm = perms.length > 0
         }
         return allowPerm
     }

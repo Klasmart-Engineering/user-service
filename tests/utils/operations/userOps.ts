@@ -10,13 +10,13 @@ import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { Subject } from '../../../src/entities/subject'
 import {
+    UserConnectionNode,
     AddOrganizationRolesToUserInput,
     UsersMutationResult,
-} from '../../../src/types/graphQL/user'
-    ContactInfoInput,
+    UserContactInfo,
     CreateUserInput,
-} from '../../../src/types/graphQL/input/user'
-import { UserConnectionNode } from '../../../src/types/graphQL/user'
+} from '../../../src/types/graphQL/user'
+
 import { userValidations } from '../../../src/entities/validations/user'
 
 export const CREATE_ORGANIZATION = `
@@ -780,7 +780,7 @@ export async function createGqlUsers(
 }
 
 export function userToCreateUserInput(u: User): CreateUserInput {
-    const ci: ContactInfoInput = {
+    const ci: UserContactInfo = {
         email: u.email,
         phone: u.phone,
     }

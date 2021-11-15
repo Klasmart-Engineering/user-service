@@ -52,3 +52,13 @@ export interface RemoveOrganizationRolesFromUserInput {
 export interface UsersMutationResult {
     users: CoreUserConnectionNode[]
 }
+export interface CreateUserInput {
+    givenName: string
+    familyName: string
+    contactInfo: UserContactInfo
+    dateOfBirth?: string
+    username?: string
+    gender: string
+    alternateEmail?: string | null
+    alternatePhone?: string | null
+}

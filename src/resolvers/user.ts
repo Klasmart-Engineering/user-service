@@ -11,7 +11,11 @@ import {
 } from '../pagination/usersConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { UserPermissions } from '../permissions/userPermissions'
-import { APIError, APIErrorCollection } from '../types/errors/apiError'
+import {
+    APIError,
+    APIErrorCollection,
+    validateAPICall,
+} from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import {
     AddOrganizationRolesToUserInput,
@@ -19,7 +23,7 @@ import {
     UsersMutationResult,
 } from '../types/graphQL/user'
 import { Brackets, EntityManager, getConnection } from 'typeorm'
-import { ContactInfoInput, CreateUserInput } from '../types/graphQL/input/user'
+import { UserContactInfo, CreateUserInput } from '../types/graphQL/user'
 import { v4 as uuid_v4 } from 'uuid'
 import { UserConnectionNode } from '../types/graphQL/user'
 import {
@@ -27,7 +31,6 @@ import {
     createUserSchemaMetadata,
 } from '../utils/mutations/validations/user'
 import clean from '../utils/clean'
-
 
 // TODO: Replace with static configuration solution
 export const MAX_MUTATION_INPUT_ARRAY_SIZE = 50
@@ -234,10 +237,11 @@ async function modifyOrganizationRoles(
     }
 
     return { users: output }
+}
 
 // Uses the same "clean.xxxx()" calls as the csv functions do
 function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
-    const ci: ContactInfoInput = {
+    const ci: UserContactInfo = {
         email: clean.email(cui.contactInfo.email),
         phone: clean.phone(cui.contactInfo.phone),
     }
@@ -264,7 +268,7 @@ function cleanCreateUserInput(cui: CreateUserInput): CreateUserInput {
 async function checkForExistingUsers(
     manager: EntityManager,
     inputs: CreateUserInput[]
-): Promise<User[]> {
+): Promise<APIError[]> {
     const scope = manager.createQueryBuilder(User, 'User')
 
     for (const i in inputs) {
@@ -299,7 +303,12 @@ async function checkForExistingUsers(
             )
         }
     }
-    return await scope.getMany()
+    const existingUsers = await scope.getMany()
+    const existingUserErrors = buildListOfExistingUserErrors(
+        inputs,
+        existingUsers
+    )
+    return existingUserErrors
 }
 
 // The search has returned a list of User records that the database has found that already exist.
@@ -315,11 +324,9 @@ function getIndicesOfExistingUsers(
     const results: number[] = []
     for (const user of users) {
         const userKey = makeUserKey(user)
-        if (inputMap.has(userKey)) {
-            const index = inputMap.get(userKey)
-            if (index != undefined) {
-                results.push(index)
-            }
+        const index = inputMap.get(userKey)
+        if (index != undefined) {
+            results.push(index)
         }
     }
     results.sort(function (a, b) {
@@ -335,6 +342,9 @@ function buildListOfExistingUserErrors(
     existingUsers: User[]
 ): APIError[] {
     const errs: APIError[] = []
+    if (existingUsers.length === 0) {
+        return errs
+    }
     const indices = getIndicesOfExistingUsers(inputs, existingUsers)
     for (const index of indices) {
         const key = makeInputKey(inputs[index])
@@ -357,29 +367,35 @@ function buildListOfExistingUserErrors(
     return errs
 }
 
-// This character: Unicode 0001, is a control character unlikely to occur in a string
-// is used a divider between parts of a key made of separate string attributes
-const ctlA = String.fromCharCode(1)
-
 // We build a key for a map, I am using maps to reduce the looping through arrays to
 // a minumum when looking up values
 function makeInputKey(input: CreateUserInput): string {
-    const contactInfo = input.contactInfo.email
-        ? input.contactInfo.email
-        : input.contactInfo.phone
-    return `${input.givenName}${ctlA}${input.familyName}${ctlA}${contactInfo}`
+    const jsonKey = {
+        contactInfo: input.contactInfo.email
+            ? input.contactInfo.email
+            : input.contactInfo.phone,
+        givenName: input.givenName,
+        familyName: input.familyName,
+    }
+    return JSON.stringify(jsonKey)
 }
 
 function makeUserKey(user: User): string {
-    const contactInfo = user.email ? user.email : user.phone
-    return `${user.given_name}${ctlA}${user.family_name}${ctlA}${contactInfo}`
+    const jsonKey = {
+        contactInfo: user.email ? user.email : user.phone,
+        givenName: user.given_name,
+        familyName: user.family_name,
+    }
+    return JSON.stringify(jsonKey)
 }
 
 function keyToPrintableString(key: string): string {
-    // eslint-disable-next-line no-control-regex
-    const re = new RegExp(ctlA, 'g')
+    const jsonKey = JSON.parse(key)
+    const given = jsonKey['givenName']
+    const family = jsonKey['familyName']
+    const contact = jsonKey['contactInfo']
 
-    return key.replace(re, ',')
+    return `${given},${family},${contact}`
 }
 
 // In addition to validation we create a map of the input values and look up the subsequent inputs
@@ -457,9 +473,6 @@ function buildListOfNewUsers(inputs: CreateUserInput[]): User[] {
     return newUsers
 }
 
-// TO DO: Replace with static configuration solution
-export const MAX_MUTATION_INPUT_ARRAY_SIZE = 50
-
 export async function createUsers(
     args: { input: CreateUserInput[] },
     context: Context
@@ -468,140 +481,77 @@ export async function createUsers(
     const results: UserConnectionNode[] = []
     const inputs = args.input
     const errs: APIError[] = []
-    try {
-        const manager = connection.manager
 
-        // The users that we are creating in createUsers() are not linked to any organization however, permissions
-        // are organization based, so the user whose token is passed to createUsers() has has to have permissions in
-        // at least one organization to create users, or that token user has to be a super admin.
+    const manager = connection.manager
 
-        // I strongly suggest that the API call that createUsers() is replacing model.newUser() be altered to use this
-        // call while it is deprecated, before it is finally removed from the API.
+    // The users that we are creating in createUsers() are not linked to any organization however, permissions
+    // are organization based, so the user whose token is passed to createUsers() has has to have permissions in
+    // at least one organization to create users, or that token user has to be a super admin.
 
-        const createUserPerm = await context.permissions.checkForPermInAnyOrg(
-            manager,
-            PermissionName.create_users_40220
+    const createUserPerm = await context.permissions.checkForPermInAnyOrg(
+        manager,
+        PermissionName.create_users_40220
+    )
+
+    if (!createUserPerm) {
+        errs.push(
+            new APIError({
+                code: customErrors.unauthorized.code,
+                message: customErrors.unauthorized.message,
+                variables: [],
+                entity: 'User',
+                attribute: 'ID',
+            })
         )
 
-        if (!createUserPerm) {
-            errs.push(
-                new APIError({
-                    code: customErrors.unauthorized.code,
-                    message: customErrors.unauthorized.message,
-                    variables: [],
-                    entity: 'User',
-                    attribute: 'ID',
-                })
-            )
-
-            throw errs
-        }
-
-        if (inputs.length === 0) {
-            errs.push(
-                new APIError({
-                    code: customErrors.invalid_array_min_length.code,
-                    message: customErrors.invalid_array_min_length.message,
-                    variables: [],
-                    entity: 'User',
-                })
-            )
-            throw errs
-        }
-
-        // Question : is this the correct placement or should it go first?
-        if (inputs.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
-            errs.push(
-                new APIError({
-                    code: customErrors.invalid_array_max_length.code,
-                    message: customErrors.invalid_array_max_length.message,
-                    variables: [],
-                    entity: 'User',
-                })
-            )
-            throw errs
-        }
-
-        const checkErrs = checkCreateUserInput(inputs)
-        if (checkErrs.length > 0) {
-            errs.push(...checkErrs)
-        }
-
-        if (errs.length > 0) {
-            throw errs
-        }
-
-        const normalizedInputs = inputs.map((val) => cleanCreateUserInput(val))
-        const existingUsers = await checkForExistingUsers(
-            manager,
-            normalizedInputs
-        )
-
-        if (existingUsers && existingUsers.length > 0) {
-            const existingUserErrors = buildListOfExistingUserErrors(
-                normalizedInputs,
-                existingUsers
-            )
-            if (existingUserErrors.length > 0) {
-                errs.push(...existingUserErrors)
-                throw errs
-            }
-        }
-
-        const newUsers = buildListOfNewUsers(normalizedInputs)
-
-        try {
-            await manager.save<User>(newUsers)
-        } catch (error: unknown) {
-            let mess = 'Unknown error'
-
-            if (typeof error === 'string') {
-                mess = error
-            } else {
-                if (error instanceof Error) {
-                    mess = error.message
-                }
-            }
-
-            errs.push(
-                new APIError({
-                    code: customErrors.database_save_error.code,
-                    message: customErrors.database_save_error.message,
-                    variables: [mess],
-                    entity: 'User',
-                })
-            )
-            throw errs
-        }
-
-        newUsers.map((u) =>
-            results.push(mapUserToUserConnectionNode(u) as UserConnectionNode)
-        )
-    } catch (error) {
-        results.length = 0
-        if (errs.length === 0) {
-            let mess = 'Unknown error'
-
-            if (typeof error === 'string') {
-                mess = error
-            } else {
-                if (error instanceof Error) {
-                    mess = error.message
-                }
-            }
-            errs.push(
-                new APIError({
-                    code: customErrors.database_save_error.code,
-                    message: customErrors.database_save_error.message,
-                    variables: [mess],
-                    entity: 'User',
-                })
-            )
-        }
-    }
-    if (errs.length > 0) {
         throw errs
     }
+
+    if (inputs.length === 0) {
+        errs.push(
+            new APIError({
+                code: customErrors.invalid_array_min_length.code,
+                message: customErrors.invalid_array_min_length.message,
+                variables: [],
+                entity: 'User',
+            })
+        )
+    }
+
+    if (inputs.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+        errs.push(
+            new APIError({
+                code: customErrors.invalid_array_max_length.code,
+                message: customErrors.invalid_array_max_length.message,
+                variables: [],
+                entity: 'User',
+            })
+        )
+    }
+
+    const checkErrs = checkCreateUserInput(inputs)
+    if (checkErrs.length > 0) {
+        errs.push(...checkErrs)
+    }
+
+    const normalizedInputs = inputs.map((val) => cleanCreateUserInput(val))
+    const existingUserErrors = await checkForExistingUsers(
+        manager,
+        normalizedInputs
+    )
+    if (existingUserErrors.length > 0) {
+        errs.push(...existingUserErrors)
+    }
+
+    if (errs.length > 0) throw errs
+
+    const newUsers = buildListOfNewUsers(normalizedInputs)
+
+    await manager.save<User>(newUsers)
+
+    newUsers.map((u) =>
+        results.push(mapUserToUserConnectionNode(u) as UserConnectionNode)
+    )
 
     const resultValue: UsersMutationResult = { users: results }
 

@@ -1,7 +1,7 @@
 import Joi from 'joi'
 import { userValidations } from '../../../entities/validations/user'
 import { APISchema, APISchemaMetadata } from '../../../types/api'
-import { CreateUserInput } from '../../../types/graphQL/input/user'
+import { CreateUserInput } from '../../../types/graphQL/user'
 
 export const createUserSchemaMetadata: APISchemaMetadata<CreateUserInput> = {
     contactInfo: {

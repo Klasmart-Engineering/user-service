@@ -83,7 +83,7 @@ import {
 } from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { errorFormattingWrapper } from '../utils/errors'
-import { CreateUserInput } from '../../src/types/graphQL/input/user'
+import { CreateUserInput } from '../../src/types/graphQL/user'
 import { equal } from 'joi'
 
 use(chaiAsPromised)
@@ -1776,209 +1776,220 @@ describe('user', () => {
                 await checkNoChangesMade(false)
             }
         )
-    describe('createUsers', () => {
-        let idOfUserPerformingOperation: string
-        let organizationId: string
-        let arbitraryUserToken: string
-        let createUserInputs: CreateUserInput[]
-        let adminToken: string
-        beforeEach(async () => {
-            idOfUserPerformingOperation = (await createNonAdminUser(testClient))
-                .user_id
-            arbitraryUserToken = getNonAdminAuthToken()
-            const orgOwner = await createAdminUser(testClient)
-            adminToken = getAdminAuthToken()
-            organizationId = (
-                await createOrganizationAndValidate(
-                    testClient,
-                    orgOwner.user_id
-                )
-            ).organization_id
+        describe('createUsers', () => {
+            let idOfUserPerformingOperation: string
+            let organizationId: string
+            let arbitraryUserToken: string
+            let createUserInputs: CreateUserInput[]
+            let adminToken: string
+            beforeEach(async () => {
+                idOfUserPerformingOperation = (
+                    await createNonAdminUser(testClient)
+                ).user_id
+                arbitraryUserToken = getNonAdminAuthToken()
+                const orgOwner = await createAdminUser(testClient)
+                adminToken = getAdminAuthToken()
+                organizationId = (
+                    await createOrganizationAndValidate(
+                        testClient,
+                        orgOwner.user_id
+                    )
+                ).organization_id
 
-            createUserInputs = []
-            for (let i = 0; i < 50; i++) {
-                createUserInputs.push(userToCreateUserInput(createUser()))
-            }
-        })
+                createUserInputs = []
+                for (let i = 0; i < 50; i++) {
+                    createUserInputs.push(userToCreateUserInput(createUser()))
+                }
+            })
 
-        context('when not authorized', () => {
-            it('it fails to create users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: arbitraryUserToken,
-                    })
-                ).to.be.rejected
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers).to.equal(previousUsers)
-            })
-        })
-        context('when admin', () => {
-            it('creates users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                const gqlcreateUserResult = await createGqlUsers(
-                    testClient,
-                    createUserInputs,
-                    { authorization: adminToken }
-                )
-                const userConNodes = gqlcreateUserResult.users
-                expect(userConNodes.length).to.equal(createUserInputs.length)
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers - previousUsers).to.equal(
-                    createUserInputs.length
-                )
-            })
-        })
-        context('when user has permission', () => {
-            beforeEach(async () => {
-                await addUserToOrganizationAndValidate(
-                    testClient,
-                    idOfUserPerformingOperation,
-                    organizationId,
-                    { authorization: getAdminAuthToken() }
-                )
-                const role = await createRole(
-                    testClient,
-                    organizationId,
-                    adminToken
-                )
-                await grantPermission(
-                    testClient,
-                    role.role_id,
-                    'create_users_40220',
-                    { authorization: adminToken }
-                )
-                await addRoleToOrganizationMembership(
-                    testClient,
-                    idOfUserPerformingOperation,
-                    organizationId,
-                    role.role_id,
-                    { authorization: adminToken }
-                )
-            })
-            it('creates users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                const gqlcreateUserResult = await createGqlUsers(
-                    testClient,
-                    createUserInputs,
-                    { authorization: arbitraryUserToken }
-                )
-                const userConNodes = gqlcreateUserResult.users
-                expect(userConNodes.length).to.equal(createUserInputs.length)
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers - previousUsers).to.equal(
-                    createUserInputs.length
-                )
-            })
-        })
-        context('when there are two many input array members', () => {
-            beforeEach(async () => {
-                createUserInputs.push(userToCreateUserInput(createUser()))
-            })
-            it('it fails to create users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers).to.equal(previousUsers)
-            })
-        })
-        context('when there is a validation failure', () => {
-            beforeEach(async () => {
-                createUserInputs[2].contactInfo.email = 'somethinghorrid'
-            })
-            it('it fails to create users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers).to.equal(previousUsers)
-            })
-        })
-        context('when there is a duplication in the input', () => {
-            beforeEach(async () => {
-                createUserInputs[3] = createUserInputs[2]
-            })
-            it('it fails to create users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers).to.equal(previousUsers)
-            })
-        })
-        context('when some matching records already exist on the db', () => {
-            beforeEach(async () => {
-                const oldInputs: CreateUserInput[] = []
-                oldInputs.push(createUserInputs[5])
-                oldInputs.push(createUserInputs[35])
-                await createGqlUsers(testClient, oldInputs, {
-                    authorization: adminToken,
+            context('when not authorized', () => {
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createGqlUsers(testClient, createUserInputs, {
+                            authorization: arbitraryUserToken,
+                        })
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
                 })
             })
-            it('it fails to create users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                await expect(
-                    createGqlUsers(testClient, createUserInputs, {
-                        authorization: adminToken,
-                    })
-                ).to.be.rejected
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers).to.equal(previousUsers)
+            context('when admin', () => {
+                it('creates users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    const gqlcreateUserResult = await createGqlUsers(
+                        testClient,
+                        createUserInputs,
+                        { authorization: adminToken }
+                    )
+                    const userConNodes = gqlcreateUserResult.users
+                    expect(userConNodes.length).to.equal(
+                        createUserInputs.length
+                    )
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers - previousUsers).to.equal(
+                        createUserInputs.length
+                    )
+                })
             })
-        })
-        context('when the input array is empty', () => {
-            const emptyInputs: CreateUserInput[] = []
-            it('it fails to create users', async () => {
-                const previousUsers = await connection
-                    .getRepository(User)
-                    .count()
-                await expect(
-                    createGqlUsers(testClient, emptyInputs, {
-                        authorization: adminToken,
+            context('when user has permission', () => {
+                beforeEach(async () => {
+                    await addUserToOrganizationAndValidate(
+                        testClient,
+                        idOfUserPerformingOperation,
+                        organizationId,
+                        { authorization: getAdminAuthToken() }
+                    )
+                    const role = await createRole(
+                        testClient,
+                        organizationId,
+                        adminToken
+                    )
+                    await grantPermission(
+                        testClient,
+                        role.role_id,
+                        'create_users_40220',
+                        { authorization: adminToken }
+                    )
+                    await addRoleToOrganizationMembership(
+                        testClient,
+                        idOfUserPerformingOperation,
+                        organizationId,
+                        role.role_id,
+                        { authorization: adminToken }
+                    )
+                })
+                it('creates users with permission', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    connection.logger.reset()
+                    const gqlcreateUserResult = await createGqlUsers(
+                        testClient,
+                        createUserInputs,
+                        { authorization: arbitraryUserToken }
+                    )
+                    const userConNodes = gqlcreateUserResult.users
+                    expect(connection.logger.count).to.equal(7)
+                    expect(userConNodes.length).to.equal(
+                        createUserInputs.length
+                    )
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers - previousUsers).to.equal(
+                        createUserInputs.length
+                    )
+                })
+            })
+            context('when there are two many input array members', () => {
+                beforeEach(async () => {
+                    createUserInputs.push(userToCreateUserInput(createUser()))
+                })
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createGqlUsers(testClient, createUserInputs, {
+                            authorization: adminToken,
+                        })
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
+            })
+            context('when there is a validation failure', () => {
+                beforeEach(async () => {
+                    createUserInputs[2].contactInfo.email = 'somethinghorrid'
+                })
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createGqlUsers(testClient, createUserInputs, {
+                            authorization: adminToken,
+                        })
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
+            })
+            context('when there is a duplication in the input', () => {
+                beforeEach(async () => {
+                    createUserInputs[3] = createUserInputs[2]
+                })
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createGqlUsers(testClient, createUserInputs, {
+                            authorization: adminToken,
+                        })
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
+            })
+            context(
+                'when some matching records already exist on the db',
+                () => {
+                    beforeEach(async () => {
+                        const oldInputs: CreateUserInput[] = []
+                        oldInputs.push(createUserInputs[5])
+                        oldInputs.push(createUserInputs[35])
+                        await createGqlUsers(testClient, oldInputs, {
+                            authorization: adminToken,
+                        })
                     })
-                ).to.be.rejected
-                const currentUsers = await connection
-                    .getRepository(User)
-                    .count()
-                expect(currentUsers).to.equal(previousUsers)
+                    it('it fails to create users', async () => {
+                        const previousUsers = await connection
+                            .getRepository(User)
+                            .count()
+                        await expect(
+                            createGqlUsers(testClient, createUserInputs, {
+                                authorization: adminToken,
+                            })
+                        ).to.be.rejected
+                        const currentUsers = await connection
+                            .getRepository(User)
+                            .count()
+                        expect(currentUsers).to.equal(previousUsers)
+                    })
+                }
+            )
+            context('when the input array is empty', () => {
+                const emptyInputs: CreateUserInput[] = []
+                it('it fails to create users', async () => {
+                    const previousUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    await expect(
+                        createGqlUsers(testClient, emptyInputs, {
+                            authorization: adminToken,
+                        })
+                    ).to.be.rejected
+                    const currentUsers = await connection
+                        .getRepository(User)
+                        .count()
+                    expect(currentUsers).to.equal(previousUsers)
+                })
             })
         })
     })

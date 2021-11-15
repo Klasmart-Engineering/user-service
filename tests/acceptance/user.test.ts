@@ -39,7 +39,7 @@ import {
     UserConnectionNode,
 } from '../../src/types/graphQL/user'
 import { Role } from '../../src/entities/role'
-import { CreateUserInput } from '../../src/types/graphQL/input/user'
+import { CreateUserInput } from '../../src/types/graphQL/user'
 
 use(chaiAsPromised)
 
@@ -656,6 +656,8 @@ describe('acceptance.user', () => {
                 expect(response.status).to.eq(200)
                 expect(resUsers.length).to.equal(usersCount)
             })
+        })
+    })
     context('createUsers', async () => {
         let myUser: User
         let myOrg: Organization
