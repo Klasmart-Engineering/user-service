@@ -35,17 +35,13 @@ import { OrganizationMembership } from '../../../src/entities/organizationMember
 import { Role } from '../../../src/entities/role'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { generateShortCode } from '../../../src/utils/shortcode'
-import {
-    classesChildConnection,
-    classesChildConnectionResolver,
-} from '../../../src/schemas/school'
+import { classesChildConnection as schoolClassesChildConnection } from '../../../src/schemas/school'
 import { createClass } from '../../factories/class.factory'
 import { Class } from '../../../src/entities/class'
 import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
 import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
-import { GraphQLResolveInfo } from 'graphql/type/definition'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -807,7 +803,7 @@ describe('schoolsConnection', () => {
                     count: 2,
                 }
 
-                const result = await classesChildConnection(
+                const result = await schoolClassesChildConnection(
                     { id: wizardingSchool.school_id },
                     args,
                     ctx.loaders,
