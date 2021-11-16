@@ -602,11 +602,30 @@ export const nonAdminSchoolMembershipScope: NonAdminScope<SchoolMembership> = as
     scope,
     permissions
 ) => {
-    // non admins can view memberships of their schools only
+    // non admins can view memberships of the schools they're a member of
+    // AND all schools in their orgs
     // note that permissions for accessing actual user / school info is handled via the corresponding scopes
+    const orgIds = await permissions.orgMembershipsWithPermissions([])
     const schoolIds = await permissions.schoolMembershipsWithPermissions([])
 
-    if (schoolIds.length > 0) {
+    if (orgIds.length > 0 && schoolIds.length > 0) {
+        scope.innerJoin('SchoolMembership.school', 'School')
+        scope.where(
+            new Brackets((qb) => {
+                qb.where('School.organization IN (:...orgIds)', {
+                    orgIds,
+                })
+                qb.orWhere('SchoolMembership.school IN (:...schoolIds)', {
+                    schoolIds,
+                })
+            })
+        )
+    } else if (orgIds.length > 0) {
+        scope.innerJoin('SchoolMembership.school', 'School')
+        scope.where('School.organization IN (:...orgIds)', {
+            orgIds,
+        })
+    } else if (schoolIds.length > 0) {
         scope.where('SchoolMembership.school IN (:...schoolIds)', {
             schoolIds,
         })

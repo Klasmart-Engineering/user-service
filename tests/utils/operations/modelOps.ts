@@ -279,6 +279,38 @@ export const USERS_CONNECTION = `
                     roles{
                         id
                     }
+                    organizationMembershipsConnection {
+                        totalCount
+                        edges {
+                            node {
+                                organizationId
+                            }
+                        }
+                    }
+                    schoolMembershipsConnection {
+                        totalCount
+                        edges {
+                            node {
+                                schoolId
+                            }
+                        }
+                    }
+                    classesStudyingConnection {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                    classesTeachingConnection {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
                 }
             }
             pageInfo{

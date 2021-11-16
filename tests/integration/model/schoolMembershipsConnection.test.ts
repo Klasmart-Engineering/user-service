@@ -302,9 +302,9 @@ describe('schoolMembershipsConnection', () => {
                 )
             }
             await Promise.all(loaderResults)
-            // one for permissions query
+            // two for permissions query
             // one for fetching memberships
-            expect(connection.logger.count).to.be.eq(2)
+            expect(connection.logger.count).to.be.eq(3)
         })
 
         context('sorting', () => {

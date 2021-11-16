@@ -19,8 +19,8 @@ import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { convertDataToCursor } from '../../../src/utils/pagination/paginate'
 import { createClass } from '../../factories/class.factory'
 import {
-    createOrganizations,
     createOrganization,
+    createOrganizations,
 } from '../../factories/organization.factory'
 import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
 import { createRole } from '../../factories/role.factory'
@@ -36,19 +36,20 @@ import {
     createTestClient,
 } from '../../utils/createTestClient'
 import {
-    usersConnectionNodes,
+    runQuery,
     userConnection,
     usersConnectionMainData,
+    usersConnectionNodes,
 } from '../../utils/operations/modelOps'
 import { addRoleToOrganizationMembership } from '../../utils/operations/organizationMembershipOps'
 import { grantPermission } from '../../utils/operations/roleOps'
 import {
-    userToPayload,
     addOrganizationToUserAndValidate,
+    userToPayload,
 } from '../../utils/operations/userOps'
 import {
-    getAdminAuthToken,
     generateToken,
+    getAdminAuthToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
 import {
@@ -1566,6 +1567,324 @@ describe('usersConnection', () => {
             )
 
             expect(connection.logger.count).to.be.eq(1)
+        })
+    })
+
+    context('child connections', () => {
+        let organization: Organization
+        let users: User[]
+
+        beforeEach(async () => {
+            organization = await createOrganization().save()
+            users = await User.save(createUsers(9))
+            for (const user of users) {
+                await createOrganizationMembership({
+                    user,
+                    organization,
+                }).save()
+            }
+        })
+
+        async function getUsers(
+            token = getAdminAuthToken(),
+            filter?: IEntityFilter
+        ) {
+            return userConnection(
+                testClient,
+                direction,
+                { count: 20 },
+                { authorization: token },
+                filter
+            )
+        }
+        context('organizationMembershipsConnection', () => {
+            it('returns org memberships per user', async () => {
+                const result = await getUsers()
+                expect(result.edges).to.have.lengthOf(users.length)
+                for (const edge of result.edges) {
+                    const memberships = edge.node
+                        .organizationMembershipsConnection!
+                    expect(memberships.totalCount).to.eq(1)
+                    expect(memberships.edges[0].node.organizationId).to.eq(
+                        organization.organization_id
+                    )
+                }
+            })
+            it('uses isAdmin scope for permissions', async () => {
+                // create a non-admin user and add to org
+                const nonAdmin = await createNonAdminUser(testClient)
+                const role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization,
+                    roles: [role],
+                }).save()
+
+                // add one user to another org
+                const otherOrg = await createOrganization().save()
+                const userWithTwoOrgs = users[0]
+                await createOrganizationMembership({
+                    user: userWithTwoOrgs,
+                    organization: otherOrg,
+                }).save()
+
+                // can't see other org memberships
+                let result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: userWithTwoOrgs.user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                let memberships = result.edges[0].node
+                    .organizationMembershipsConnection!
+                expect(memberships.totalCount).to.eq(1)
+
+                // can see the other org membership if they are part of that org
+                await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization: otherOrg,
+                }).save()
+
+                result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: userWithTwoOrgs.user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                memberships = result.edges[0].node
+                    .organizationMembershipsConnection!
+                expect(memberships.totalCount).to.eq(2)
+            })
+        })
+        context('schoolMembershipsConnection', () => {
+            let school: School
+            beforeEach(async () => {
+                school = await createSchool(organization).save()
+                for (const user of users) {
+                    await createSchoolMembership({
+                        user,
+                        school,
+                    }).save()
+                }
+            })
+            it('returns school memberships per user', async () => {
+                const result = await getUsers()
+                expect(result.edges).to.have.lengthOf(users.length)
+                for (const edge of result.edges) {
+                    const memberships = edge.node.schoolMembershipsConnection!
+                    expect(memberships.totalCount).to.eq(1)
+                    expect(memberships.edges[0].node.schoolId).to.eq(
+                        school.school_id
+                    )
+                }
+            })
+            it('uses isAdmin scope for permissions', async () => {
+                // create a non-admin user and add to org & school
+                const nonAdmin = await createNonAdminUser(testClient)
+                const role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization,
+                    roles: [role],
+                }).save()
+                await createSchoolMembership({
+                    user: nonAdmin,
+                    school,
+                }).save()
+
+                // add one user to another school in another org
+                const otherOrg = await createOrganization().save()
+                const otherSchool = await createSchool(otherOrg).save()
+                const userWithTwoSchools = users[0]
+                await createSchoolMembership({
+                    user: userWithTwoSchools,
+                    school: otherSchool,
+                }).save()
+
+                // cant see the other school memberships
+                let result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: userWithTwoSchools.user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                let memberships = result.edges[0].node
+                    .schoolMembershipsConnection!
+                expect(memberships.totalCount).to.eq(1)
+
+                // can see other school membership if they are part of that school
+                await createSchoolMembership({
+                    user: nonAdmin,
+                    school: otherSchool,
+                }).save()
+
+                result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: userWithTwoSchools.user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                memberships = result.edges[0].node.schoolMembershipsConnection!
+                expect(memberships.totalCount).to.eq(2)
+            })
+        })
+        context('classesStudyingConnection', () => {
+            let _class: Class
+            beforeEach(async () => {
+                _class = await createClass([], organization).save()
+                _class.students = Promise.resolve(users)
+                await _class.save()
+            })
+            it('returns classes studying per user', async () => {
+                const result = await getUsers()
+                expect(result.edges).to.have.lengthOf(users.length)
+                for (const edge of result.edges) {
+                    const classes = edge.node.classesStudyingConnection!
+                    expect(classes.totalCount).to.eq(1)
+                    expect(classes.edges[0].node.id).to.eq(_class.class_id)
+                }
+            })
+            it('uses isAdmin scope for permissions', async () => {
+                // can't see any classes without permissions
+                // create a non-admin user and add to org & school
+                const nonAdmin = await createNonAdminUser(testClient)
+                let role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                const orgMembership = await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization,
+                    roles: [role],
+                }).save()
+
+                let result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: users[0].user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                let classes = result.edges[0].node.classesStudyingConnection!
+                expect(classes.totalCount).to.eq(0)
+
+                role = await createRole('role', organization, {
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_classes_20114,
+                    ],
+                }).save()
+                orgMembership.roles = Promise.resolve([role])
+                await orgMembership.save()
+
+                result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: users[0].user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                classes = result.edges[0].node.classesStudyingConnection!
+                expect(classes.totalCount).to.eq(1)
+            })
+        })
+        context('classesTeachingConnection', () => {
+            let _class: Class
+            beforeEach(async () => {
+                _class = await createClass([], organization).save()
+                _class.teachers = Promise.resolve(users)
+                await _class.save()
+            })
+            it('returns classes teaching per user', async () => {
+                const result = await getUsers()
+                expect(result.edges).to.have.lengthOf(users.length)
+                for (const edge of result.edges) {
+                    const classes = edge.node.classesTeachingConnection!
+                    expect(classes.totalCount).to.eq(1)
+                    expect(classes.edges[0].node.id).to.eq(_class.class_id)
+                }
+            })
+            it('uses isAdmin scope for permissions', async () => {
+                // can't see any classes without permissions
+                // create a non-admin user and add to org & school
+                const nonAdmin = await createNonAdminUser(testClient)
+                let role = await createRole('role', organization, {
+                    permissions: [PermissionName.view_users_40110],
+                }).save()
+                const orgMembership = await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization,
+                    roles: [role],
+                }).save()
+
+                let result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: users[0].user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                let classes = result.edges[0].node.classesTeachingConnection!
+                expect(classes.totalCount).to.eq(0)
+
+                role = await createRole('role', organization, {
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_classes_20114,
+                    ],
+                }).save()
+                orgMembership.roles = Promise.resolve([role])
+                await orgMembership.save()
+
+                result = await getUsers(getNonAdminAuthToken(), {
+                    userId: {
+                        operator: 'eq',
+                        value: users[0].user_id,
+                    },
+                })
+                expect(result.edges).to.have.lengthOf(1)
+                classes = result.edges[0].node.classesTeachingConnection!
+                expect(classes.totalCount).to.eq(1)
+            })
+        })
+        it('dataloads child connections', async () => {
+            const expectedCount = 9
+            const query = `
+                query {
+                    usersConnection(direction:FORWARD) {            # 1
+                        edges {
+                            node {
+                                organizationMembershipsConnection { # 2
+                                    totalCount                      # 3
+                                }
+                                schoolMembershipsConnection {       # 4
+                                    totalCount                      # 5 
+
+                                }
+                                classesStudyingConnection {         # 6
+                                    totalCount                      # 7
+                                }
+                                classesTeachingConnection {         # 8
+                                    totalCount                      # 9
+                                }
+                            }
+                        }
+                    }
+                }
+                `
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(expectedCount)
         })
     })
 })
