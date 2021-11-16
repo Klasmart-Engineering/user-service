@@ -10,28 +10,74 @@ import {
     mapUserToUserConnectionNode,
 } from '../pagination/usersConnection'
 import { PermissionName } from '../permissions/permissionNames'
+import { UserPermissions } from '../permissions/userPermissions'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
 import {
     AddOrganizationRolesToUserInput,
+    RemoveOrganizationRolesFromUserInput,
     UsersMutationResult,
 } from '../types/graphQL/user'
 
 // TODO: Replace with static configuration solution
 export const MAX_MUTATION_INPUT_ARRAY_SIZE = 50
 
-export async function addOrganizationRolesToUsers(
+export function addOrganizationRolesToUsers(
     args: { input: AddOrganizationRolesToUserInput[] },
     context: Pick<Context, 'permissions'>
 ): Promise<UsersMutationResult> {
-    // Initial validations
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
-        throw new Error(
-            `${args.input.length} is larger than the limit of ${MAX_MUTATION_INPUT_ARRAY_SIZE} on mutation input arrays`
-        )
+    return modifyOrganizationRoles(
+        args,
+        context.permissions,
+        (currentRoles: Role[], rolesToAdd: Role[]): Role[] => {
+            currentRoles.push(...rolesToAdd)
+            return [...new Set(currentRoles)]
+        }
+    )
+}
 
+export function removeOrganizationRolesFromUsers(
+    args: { input: RemoveOrganizationRolesFromUserInput[] },
+    context: Pick<Context, 'permissions'>
+): Promise<{ users: CoreUserConnectionNode[] }> {
+    return modifyOrganizationRoles(
+        args,
+        context.permissions,
+        (currentRoles: Role[], rolesToRemove: Role[]): Role[] =>
+            currentRoles.filter(
+                (cr) => !rolesToRemove.find((rtr) => cr.role_id === rtr.role_id)
+            )
+    )
+}
+
+async function modifyOrganizationRoles(
+    args: {
+        input:
+            | AddOrganizationRolesToUserInput[]
+            | RemoveOrganizationRolesFromUserInput[]
+    },
+    permissions: UserPermissions,
+    roleModificationFn: (currentRoles: Role[], roleChanges: Role[]) => Role[]
+) {
+    // Initial validations
+    if (args.input.length === 0)
+        throw new APIError({
+            code: customErrors.invalid_array_min_length.code,
+            message: customErrors.invalid_array_min_length.message,
+            variables: [],
+            entity: 'User',
+            min: 1,
+        })
+    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
+        throw new APIError({
+            code: customErrors.invalid_array_max_length.code,
+            message: customErrors.invalid_array_max_length.message,
+            variables: [],
+            entity: 'User',
+            max: MAX_MUTATION_INPUT_ARRAY_SIZE,
+        })
     for (const val of args.input) {
-        await context.permissions.rejectIfNotAllowed(
+        await permissions.rejectIfNotAllowed(
             { organization_id: val.organizationId },
             PermissionName.edit_users_40330
         )
@@ -75,9 +121,9 @@ export async function addOrganizationRolesToUsers(
     )
 
     // Process inputs
+    const errors: APIError[] = []
     const memberships: OrganizationMembership[] = []
     const output: CoreUserConnectionNode[] = []
-    const errors: APIError[] = []
     for (const [index, subArgs] of args.input.entries()) {
         // Organization validation
         const { organizationId, userId, roleIds } = subArgs
@@ -146,18 +192,18 @@ export async function addOrganizationRolesToUsers(
                     variables: ['organization_id', 'user_id'],
                     entity: 'User',
                     entityName: user?.user_name() || userId,
-                    parentEntity: 'Organization',
+                    parentEntity: 'OrganizationMembership in Organization',
                     parentName: org?.organization_name || organizationId,
                     index,
                 })
             )
 
-        // Add new roles
+        // Add/remove roles in organization membership
         if (errors.length > 0 || !dbMembership) continue
-        const dbMembershipRoles = await dbMembership.roles // should already be fetched
-        dbMembershipRoles?.push(...roles)
-        const combinedRoles = new Set(dbMembershipRoles)
-        dbMembership.roles = Promise.resolve([...combinedRoles])
+        const dbMembershipRoles = (await dbMembership.roles) || [] // should already be fetched
+        dbMembership.roles = Promise.resolve(
+            roleModificationFn(dbMembershipRoles, roles)
+        )
         memberships.push(dbMembership)
 
         // Build output
@@ -168,10 +214,13 @@ export async function addOrganizationRolesToUsers(
     try {
         await getManager().save(memberships)
     } catch (e) {
-        const err = e instanceof Error ? e.message : 'Unknown Error'
-        throw new Error(
-            `AddOrganizationRolesToUsers: Error occurred during save. Error: ${err}`
-        )
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw new APIError({
+            code: customErrors.database_save_error.code,
+            message: customErrors.database_save_error.message,
+            variables: [message],
+            entity: 'User',
+        })
     }
 
     return { users: output }

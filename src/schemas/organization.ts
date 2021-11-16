@@ -207,6 +207,9 @@ const typeDefs = gql`
                 reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433482757"
             )
         removeRole(role_id: ID!): OrganizationMembership
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2440790112"
+            )
         leave(_: Int): Boolean
     }
 

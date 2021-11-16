@@ -293,6 +293,14 @@ export const ADD_ORG_ROLES_TO_USERS = `
     }
 `
 
+export const REMOVE_ORG_ROLES_FROM_USERS = `
+    mutation myMutation($input: [RemoveOrganizationRolesFromUserInput!]!) {
+        removeOrganizationRolesFromUsers(input: $input) {
+            ${USERS_MUTATION_RESULT}
+        }
+    }
+`
+
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,

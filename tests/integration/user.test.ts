@@ -74,9 +74,11 @@ import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { expectIsNonNullable } from '../utils/assertions'
-import { AddOrganizationRolesToUserInput } from '../../src/types/graphQL/user'
 import { expectAPIError } from '../utils/apiError'
-import { addOrganizationRolesToUsers } from '../../src/resolvers/user'
+import {
+    addOrganizationRolesToUsers,
+    removeOrganizationRolesFromUsers,
+} from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { errorFormattingWrapper } from '../utils/errors'
 
@@ -85,10 +87,18 @@ use(deepEqualInAnyOrder)
 
 describe('user', () => {
     let connection: TestConnection
-    let originalAdmins: string[]
     let testClient: ApolloServerTestClient
-    let user: User
+    let adminUser: User
+    let nonAdminUser: User
+    let organization1: Organization
+    let organization2: Organization
+    let organization3: Organization
+    let user1: User
     let user2: User
+    let user3: User
+    let role1: Role
+    let role2: Role
+    let role3: Role
 
     before(async () => {
         connection = await createTestConnection()
@@ -100,17 +110,18 @@ describe('user', () => {
         await connection?.close()
     })
 
-    describe('set', () => {
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-        })
+    beforeEach(async () => {
+        adminUser = await createAdminUser(testClient)
+        nonAdminUser = await createNonAdminUser(testClient)
+    })
 
+    describe('set', () => {
         it('should set the specified user properties', async () => {
-            const gqlUpdatedUser = await updateUser(testClient, user, {
+            const gqlUpdatedUser = await updateUser(testClient, adminUser, {
                 authorization: getAdminAuthToken(),
             })
             const dbUser = await User.findOneOrFail({
-                where: { user_id: user.user_id },
+                where: { user_id: adminUser.user_id },
             })
             expect(gqlUpdatedUser).to.exist
             expect(dbUser).to.include(gqlUpdatedUser)
@@ -122,18 +133,17 @@ describe('user', () => {
     })
 
     describe('setPrimary', () => {
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-            user2 = await createNonAdminUser(testClient)
-        })
-
         context("when primary user doesn't exists", () => {
             it('should set an user as primary', async () => {
-                const gqlPrimaryUser = await setPrimaryUser(testClient, user, {
-                    authorization: getAdminAuthToken(),
-                })
+                const gqlPrimaryUser = await setPrimaryUser(
+                    testClient,
+                    adminUser,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
                 const dbUser = await User.findOneOrFail({
-                    where: { user_id: user.user_id },
+                    where: { user_id: adminUser.user_id },
                 })
 
                 expect(gqlPrimaryUser).to.exist
@@ -144,24 +154,33 @@ describe('user', () => {
 
         context('when primary user already exists', () => {
             it('should unset it and set another as primary', async () => {
-                await updateUserEmail(testClient, user2, user.email as string, {
-                    authorization: getNonAdminAuthToken(),
-                })
+                await updateUserEmail(
+                    testClient,
+                    nonAdminUser,
+                    adminUser.email as string,
+                    {
+                        authorization: getNonAdminAuthToken(),
+                    }
+                )
 
-                const gqlPrimaryUser = await setPrimaryUser(testClient, user, {
-                    authorization: getAdminAuthToken(),
-                })
+                const gqlPrimaryUser = await setPrimaryUser(
+                    testClient,
+                    adminUser,
+                    {
+                        authorization: getAdminAuthToken(),
+                    }
+                )
                 const gqlNewPrimaryUser = await setPrimaryUser(
                     testClient,
-                    user2,
+                    nonAdminUser,
                     { authorization: getNonAdminAuthToken() }
                 )
 
                 const dbUser = await User.findOneOrFail({
-                    where: { user_id: user.user_id },
+                    where: { user_id: adminUser.user_id },
                 })
                 const dbNewPrimaryUser = await User.findOneOrFail({
-                    where: { user_id: user2.user_id },
+                    where: { user_id: nonAdminUser.user_id },
                 })
 
                 expect(gqlPrimaryUser).to.exist
@@ -174,22 +193,31 @@ describe('user', () => {
         })
 
         it('should unset the current primary user and set another as primary', async () => {
-            await updateUserEmail(testClient, user2, user.email as string, {
-                authorization: getNonAdminAuthToken(),
-            })
+            await updateUserEmail(
+                testClient,
+                nonAdminUser,
+                adminUser.email as string,
+                {
+                    authorization: getNonAdminAuthToken(),
+                }
+            )
 
-            const gqlPrimaryUser = await setPrimaryUser(testClient, user, {
+            const gqlPrimaryUser = await setPrimaryUser(testClient, adminUser, {
                 authorization: getAdminAuthToken(),
             })
-            const gqlNewPrimaryUser = await setPrimaryUser(testClient, user2, {
-                authorization: getNonAdminAuthToken(),
-            })
+            const gqlNewPrimaryUser = await setPrimaryUser(
+                testClient,
+                nonAdminUser,
+                {
+                    authorization: getNonAdminAuthToken(),
+                }
+            )
 
             const dbUser = await User.findOneOrFail({
-                where: { user_id: user.user_id },
+                where: { user_id: adminUser.user_id },
             })
             const dbNewPrimaryUser = await User.findOneOrFail({
-                where: { user_id: user2.user_id },
+                where: { user_id: nonAdminUser.user_id },
             })
 
             expect(gqlPrimaryUser).to.exist
@@ -202,15 +230,11 @@ describe('user', () => {
     })
 
     describe('memberships', () => {
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-        })
-
         context('when none', () => {
             it('should return an empty array', async () => {
                 const gqlMemberships = await getOrganizationMemberships(
                     testClient,
-                    user,
+                    adminUser,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlMemberships).to.exist
@@ -222,11 +246,11 @@ describe('user', () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
                 await addOrganizationToUserAndValidate(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     organization.organization_id
                 )
             })
@@ -234,7 +258,7 @@ describe('user', () => {
             it('should return an array containing one organization membership', async () => {
                 const gqlMemberships = await getOrganizationMemberships(
                     testClient,
-                    user,
+                    adminUser,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlMemberships).to.exist
@@ -247,15 +271,14 @@ describe('user', () => {
         let organizationId: string
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
             const organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             organizationId = organization.organization_id
             await addOrganizationToUserAndValidate(
                 testClient,
-                user.user_id,
+                adminUser.user_id,
                 organizationId
             )
         })
@@ -263,13 +286,13 @@ describe('user', () => {
         it('should get the organization membership associated with the specified organization ID', async () => {
             const gqlMembership = await getOrganizationMembership(
                 testClient,
-                user.user_id,
+                adminUser.user_id,
                 organizationId,
                 { authorization: getAdminAuthToken() }
             )
             const dbMembership = await OrganizationMembership.findOneOrFail({
                 where: {
-                    user_id: user.user_id,
+                    user_id: adminUser.user_id,
                     organization_id: organizationId,
                 },
             })
@@ -280,15 +303,11 @@ describe('user', () => {
     })
 
     describe('school_memberships', () => {
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-        })
-
         context('when none', () => {
             it('should return an empty array', async () => {
                 const gqlMemberships = await getSchoolMemberships(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlMemberships).to.exist
@@ -300,7 +319,7 @@ describe('user', () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
                 const school = await createSchool(
                     testClient,
@@ -311,7 +330,7 @@ describe('user', () => {
                 )
                 await addUserToSchool(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     school.school_id,
                     { authorization: getAdminAuthToken() }
                 )
@@ -320,7 +339,7 @@ describe('user', () => {
             it('should return an array containing one school membership', async () => {
                 const gqlMemberships = await getSchoolMemberships(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlMemberships).to.exist
@@ -333,10 +352,9 @@ describe('user', () => {
         let schoolId: string
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
             const organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             const school = await createSchool(
                 testClient,
@@ -346,7 +364,7 @@ describe('user', () => {
                 { authorization: getAdminAuthToken() }
             )
             schoolId = school.school_id
-            await addUserToSchool(testClient, user.user_id, schoolId, {
+            await addUserToSchool(testClient, adminUser.user_id, schoolId, {
                 authorization: getAdminAuthToken(),
             })
         })
@@ -354,13 +372,13 @@ describe('user', () => {
         it('should get school membership', async () => {
             const gqlMembership = await getSchoolMembership(
                 testClient,
-                user.user_id,
+                adminUser.user_id,
                 schoolId,
                 { authorization: getAdminAuthToken() }
             )
             const dbMembership = await SchoolMembership.findOneOrFail({
                 where: {
-                    user_id: user.user_id,
+                    user_id: adminUser.user_id,
                     school_id: schoolId,
                 },
             })
@@ -371,15 +389,11 @@ describe('user', () => {
     })
 
     describe('classesTeaching', () => {
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-        })
-
         context('when none', () => {
             it('should return an empty array', async () => {
                 const gqlClasses = await getClassesTeaching(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlClasses).to.exist
@@ -391,7 +405,7 @@ describe('user', () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
                 const cls = await createClass(
                     testClient,
@@ -400,7 +414,7 @@ describe('user', () => {
                 await addTeacherToClass(
                     testClient,
                     cls.class_id,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
             })
@@ -408,7 +422,7 @@ describe('user', () => {
             it('should return an array containing one class', async () => {
                 const gqlClasses = await getClassesTeaching(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlClasses).to.exist
@@ -418,15 +432,11 @@ describe('user', () => {
     })
 
     describe('classesStudying', () => {
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-        })
-
         context('when none', () => {
             it('should return an empty array', async () => {
                 const gqlClasses = await getClassesStudying(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlClasses).to.exist
@@ -438,7 +448,7 @@ describe('user', () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
                 const cls = await createClass(
                     testClient,
@@ -447,7 +457,7 @@ describe('user', () => {
                 await addStudentToClass(
                     testClient,
                     cls.class_id,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
             })
@@ -455,7 +465,7 @@ describe('user', () => {
             it('should return an array containing one class', async () => {
                 const gqlClasses = await getClassesStudying(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlClasses).to.exist
@@ -466,14 +476,11 @@ describe('user', () => {
 
     describe('createOrganization', () => {
         const shortcode_re = /^[A-Z|0-9]+$/
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-        })
 
         it('should create an organization', async () => {
             const organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             expect(organization).to.exist
             expect(organization.shortCode).to.match(shortcode_re)
@@ -486,7 +493,7 @@ describe('user', () => {
             it('creates an organization', async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     undefined,
                     undefined
                 )
@@ -500,7 +507,7 @@ describe('user', () => {
             it('creates an organization', async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     undefined,
                     ''
                 )
@@ -515,7 +522,7 @@ describe('user', () => {
                 it('creates an organization', async () => {
                     const organization = await createOrganizationAndValidate(
                         testClient,
-                        user.user_id,
+                        adminUser.user_id,
                         undefined,
                         'happy1'
                     )
@@ -530,7 +537,7 @@ describe('user', () => {
                     await expect(
                         createOrganization(
                             testClient,
-                            user.user_id,
+                            adminUser.user_id,
                             'A name',
                             'very wrong'
                         )
@@ -542,12 +549,12 @@ describe('user', () => {
         it('creates the organization ownership', async () => {
             const organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             const organizationOwnership = await OrganizationOwnership.find({
                 where: {
                     organization_id: organization.organization_id,
-                    user_id: user.user_id,
+                    user_id: adminUser.user_id,
                 },
             })
 
@@ -558,13 +565,17 @@ describe('user', () => {
             beforeEach(async () => {
                 const organization = await createOrganizationAndValidate(
                     testClient,
-                    user.user_id
+                    adminUser.user_id
                 )
             })
 
             it('does not create another organisation', async () => {
                 await expect(
-                    createOrganization(testClient, user.user_id, 'Another Org')
+                    createOrganization(
+                        testClient,
+                        adminUser.user_id,
+                        'Another Org'
+                    )
                 ).to.be.rejected
             })
         })
@@ -574,10 +585,9 @@ describe('user', () => {
         let organizationId: string
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
             const organization = await createOrganizationAndValidate(
                 testClient,
-                user.user_id
+                adminUser.user_id
             )
             organizationId = organization.organization_id
         })
@@ -585,7 +595,7 @@ describe('user', () => {
         it('user should join the specified organization', async () => {
             const membership = await addOrganizationToUserAndValidate(
                 testClient,
-                user.user_id,
+                adminUser.user_id,
                 organizationId
             )
             expect(membership).to.exist
@@ -608,9 +618,8 @@ describe('user', () => {
         let arbitraryUserToken: string
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
             tokenOfOrg1Owner = getAdminAuthToken()
-            const idOfOrg1Owner = user.user_id
+            const idOfOrg1Owner = adminUser.user_id
             const idOfOrg2Owner = (await createNonAdminUser(testClient)).user_id
             tokenOfOrg2Owner = getNonAdminAuthToken()
             idOfUserToBeQueried = (
@@ -857,29 +866,27 @@ describe('user', () => {
         )
     })
     describe('merge', () => {
-        let organization: Organization
-        let role: Role
         let school: School
         let oldUser: User
         let newUser: User
+
         beforeEach(async () => {
-            const adminUser = await adminUserFactory().save()
-            organization = await organizationFactory(adminUser).save()
-            role = await roleFactory(undefined, organization).save()
-            school = await schoolFactory(organization).save()
+            organization1 = await organizationFactory(adminUser).save()
+            role1 = await roleFactory(undefined, organization1).save()
+            school = await schoolFactory(organization1).save()
 
             oldUser = await createUser().save()
 
             newUser = await createUser().save()
             await createOrganizationMembership({
                 user: newUser,
-                organization,
-                roles: [role],
+                organization: organization1,
+                roles: [role1],
             }).save()
             await createSchoolMembership({
                 user: newUser,
                 school,
-                roles: [role],
+                roles: [role1],
             }).save()
         })
 
@@ -1007,20 +1014,20 @@ describe('user', () => {
             expectMergeResponse({
                 response: gqlUser,
                 schools: [school],
-                organizations: [organization],
+                organizations: [organization1],
                 classesStudying: [],
             })
 
             await expectMergedUser({
                 schools: [school],
-                organizations: [organization],
+                organizations: [organization1],
                 classesStudying: [],
             })
 
             await expectDeletedNewUser()
         })
         it('should merge one user into another including classes deleting the source user', async () => {
-            const cls = classFactory([], organization)
+            const cls = classFactory([], organization1)
             cls.students = Promise.resolve([newUser])
             await cls.save()
 
@@ -1034,13 +1041,13 @@ describe('user', () => {
             expectMergeResponse({
                 response: gqlUser,
                 schools: [school],
-                organizations: [organization],
+                organizations: [organization1],
                 classesStudying: [cls],
             })
 
             await expectMergedUser({
                 schools: [school],
-                organizations: [organization],
+                organizations: [organization1],
                 classesStudying: [cls],
             })
 
@@ -1052,18 +1059,12 @@ describe('user', () => {
         let cls: Class
         let subject: Subject
         let role: Role
-        let otherUser: User
-
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
-            otherUser = await createNonAdminUser(testClient)
-        })
 
         context('when none', () => {
             it('should return an empty array', async () => {
                 const gqlSubjects = await getSubjectsTeaching(
                     testClient,
-                    user.user_id,
+                    adminUser.user_id,
                     { authorization: getAdminAuthToken() }
                 )
                 expect(gqlSubjects).to.be.empty
@@ -1076,7 +1077,7 @@ describe('user', () => {
                     beforeEach(async () => {
                         organization = await createOrganizationAndValidate(
                             testClient,
-                            user.user_id
+                            adminUser.user_id
                         )
                         role = await createRole(
                             testClient,
@@ -1116,7 +1117,7 @@ describe('user', () => {
                         ])
                         await addOrganizationToUserAndValidate(
                             testClient,
-                            otherUser.user_id,
+                            nonAdminUser.user_id,
                             organization.organization_id,
                             getAdminAuthToken()
                         )
@@ -1127,12 +1128,12 @@ describe('user', () => {
                         await addTeacherToClass(
                             testClient,
                             cls.class_id,
-                            otherUser.user_id,
+                            nonAdminUser.user_id,
                             { authorization: getAdminAuthToken() }
                         )
                         await addRoleToOrganizationMembership(
                             testClient,
-                            otherUser.user_id,
+                            nonAdminUser.user_id,
                             organization.organization_id,
                             role.role_id
                         )
@@ -1150,7 +1151,7 @@ describe('user', () => {
                     it('should return an array containing one subject', async () => {
                         const gqlSubjects = await getSubjectsTeaching(
                             testClient,
-                            otherUser.user_id,
+                            nonAdminUser.user_id,
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlSubjects).to.exist
@@ -1164,7 +1165,7 @@ describe('user', () => {
                     beforeEach(async () => {
                         organization = await createOrganizationAndValidate(
                             testClient,
-                            user.user_id
+                            adminUser.user_id
                         )
                         role = await createRole(
                             testClient,
@@ -1204,7 +1205,7 @@ describe('user', () => {
                         ])
                         await addOrganizationToUserAndValidate(
                             testClient,
-                            user.user_id,
+                            adminUser.user_id,
                             organization.organization_id,
                             getAdminAuthToken()
                         )
@@ -1215,12 +1216,12 @@ describe('user', () => {
                         await addTeacherToClass(
                             testClient,
                             cls.class_id,
-                            user.user_id,
+                            adminUser.user_id,
                             { authorization: getAdminAuthToken() }
                         )
                         await addRoleToOrganizationMembership(
                             testClient,
-                            user.user_id,
+                            adminUser.user_id,
                             organization.organization_id,
                             role.role_id
                         )
@@ -1237,7 +1238,7 @@ describe('user', () => {
                     it('should return an empty', async () => {
                         const gqlSubjects = await getSubjectsTeaching(
                             testClient,
-                            user.user_id,
+                            adminUser.user_id,
                             { authorization: getNonAdminAuthToken() }
                         )
                         expect(gqlSubjects).to.be.empty
@@ -1254,7 +1255,7 @@ describe('user', () => {
                         beforeEach(async () => {
                             organization = await createOrganizationAndValidate(
                                 testClient,
-                                otherUser.user_id
+                                nonAdminUser.user_id
                             )
                             role = await createRole(
                                 testClient,
@@ -1302,19 +1303,19 @@ describe('user', () => {
                             await addTeacherToClass(
                                 testClient,
                                 cls.class_id,
-                                otherUser.user_id,
+                                nonAdminUser.user_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
                             await addRoleToOrganizationMembership(
                                 testClient,
-                                otherUser.user_id,
+                                nonAdminUser.user_id,
                                 organization.organization_id,
                                 role.role_id,
                                 { authorization: getNonAdminAuthToken() }
                             )
                             await addOrganizationToUserAndValidate(
                                 testClient,
-                                otherUser.user_id,
+                                nonAdminUser.user_id,
                                 organization.organization_id,
                                 getNonAdminAuthToken()
                             )
@@ -1331,7 +1332,7 @@ describe('user', () => {
                         it('should return an array of one subject', async () => {
                             const gqlSubjects = await getSubjectsTeaching(
                                 testClient,
-                                otherUser.user_id,
+                                nonAdminUser.user_id,
                                 { authorization: getAdminAuthToken() }
                             )
                             expect(gqlSubjects).to.exist
@@ -1422,24 +1423,49 @@ describe('user', () => {
         })
     })
 
-    describe('.addOrganizationRolesToUsers', () => {
-        let adminUser: User
-        let nonAdminUser: User
-        let organization1: Organization
-        let organization2: Organization
-        let organization3: Organization
-        let user1: User
-        let user2: User
-        let user3: User
-        let role1: Role
-        let role2: Role
-        let role3: Role
-        let input: AddOrganizationRolesToUserInput[]
+    async function commonSetupForModifyOrgRoles() {
+        organization1 = await organizationFactory().save()
+        organization2 = await organizationFactory().save()
+        organization3 = await organizationFactory().save()
+        ;[user1, user2, user3] = createUsers(3)
+        role1 = roleFactory('Role 1')
+        role2 = roleFactory('Role 2')
+        role3 = roleFactory('Role 3')
+        await connection.manager.save([
+            user1,
+            user2,
+            user3,
+            role1,
+            role2,
+            role3,
+        ])
+    }
 
+    function inputForModifyOrgRoles() {
+        return [
+            {
+                organizationId: organization1.organization_id,
+                userId: user1.user_id,
+                roleIds: [role1.role_id, role2.role_id],
+            },
+            {
+                organizationId: organization2.organization_id,
+                userId: user2.user_id,
+                roleIds: [role2.role_id, role3.role_id],
+            },
+            {
+                organizationId: organization3.organization_id,
+                userId: user3.user_id,
+                roleIds: [role3.role_id],
+            },
+        ]
+    }
+
+    describe('.addOrganizationRolesToUsers', () => {
         function addRoles(authUser = adminUser) {
             return errorFormattingWrapper(
                 addOrganizationRolesToUsers(
-                    { input },
+                    { input: inputForModifyOrgRoles() },
                     {
                         permissions: new UserPermissions({
                             id: authUser.user_id,
@@ -1449,28 +1475,6 @@ describe('user', () => {
                     }
                 )
             )
-        }
-
-        async function checkOutput() {
-            for (const i of input) {
-                const { organizationId, userId, roleIds } = i
-
-                const dbMembership = await OrganizationMembership.findOneOrFail(
-                    {
-                        where: {
-                            organization_id: organizationId,
-                            user_id: userId,
-                        },
-                    }
-                )
-
-                const dbRoles = new Set(
-                    (await dbMembership.roles)?.map((val) => val.role_id)
-                )
-                const roles = new Set(roleIds)
-                expect(dbRoles.size).to.equal(roles.size)
-                dbRoles.forEach((val) => expect(roles.has(val)).to.be.true)
-            }
         }
 
         function checkNotFoundErrors(
@@ -1532,29 +1536,35 @@ describe('user', () => {
             })
         }
 
-        beforeEach(async () => {
-            adminUser = await createAdminUser(testClient)
-            nonAdminUser = await createNonAdminUser(testClient)
-            organization1 = await organizationFactory().save()
-            organization2 = await organizationFactory().save()
-            organization3 = await organizationFactory().save()
-            ;[user1, user2, user3] = createUsers(3)
-            role1 = roleFactory('Role 1')
-            role2 = roleFactory('Role 2')
-            role3 = roleFactory('Role 3')
-            await connection.manager.save([
-                user1,
-                user2,
-                user3,
-                role1,
-                role2,
-                role3,
-            ])
+        async function checkOutput() {
+            for (const [idx, input] of inputForModifyOrgRoles().entries()) {
+                const { organizationId, userId, roleIds } = input
+                const dbMembership = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organizationId,
+                            user_id: userId,
+                        },
+                    }
+                )
+                const dbRoles = (await dbMembership.roles)
+                    ?.map((val) => val.role_id)
+                    .sort()
 
+                const initialRoles = idx === 0 ? [role3.role_id] : []
+                roleIds.push(...initialRoles)
+                const expectedRoles = [...new Set(roleIds.sort())]
+                expect(expectedRoles).to.deep.equal(dbRoles)
+            }
+        }
+
+        beforeEach(async () => {
+            await commonSetupForModifyOrgRoles()
             await OrganizationMembership.save([
                 createOrganizationMembership({
                     user: user1,
                     organization: organization1,
+                    roles: [role3],
                 }),
                 createOrganizationMembership({
                     user: user2,
@@ -1565,24 +1575,6 @@ describe('user', () => {
                     organization: organization3,
                 }),
             ])
-
-            input = [
-                {
-                    organizationId: organization1.organization_id,
-                    userId: user1.user_id,
-                    roleIds: [role1.role_id, role2.role_id],
-                },
-                {
-                    organizationId: organization2.organization_id,
-                    userId: user2.user_id,
-                    roleIds: [role2.role_id, role3.role_id],
-                },
-                {
-                    organizationId: organization3.organization_id,
-                    userId: user3.user_id,
-                    roleIds: [role3.role_id],
-                },
-            ]
         })
 
         context('when caller has permissions to add roles to user', () => {
@@ -1607,7 +1599,7 @@ describe('user', () => {
                     await createOrganizationMembership({
                         user: user1,
                         organization: organization1,
-                        roles: [role1],
+                        roles: [role1, role3],
                     }).save()
                 })
 
@@ -1684,7 +1676,8 @@ describe('user', () => {
                         {
                             entity: 'User',
                             entityName: user1.user_name(),
-                            parentEntity: 'Organization',
+                            parentEntity:
+                                'OrganizationMembership in Organization',
                             parentName: organization1.organization_name || '',
                             index: 0,
                         },
@@ -1737,7 +1730,8 @@ describe('user', () => {
                         {
                             entity: 'User',
                             entityName: user3.user_name(),
-                            parentEntity: 'Organization',
+                            parentEntity:
+                                'OrganizationMembership in Organization',
                             parentName: organization3.organization_name || '',
                             index: 2,
                         },
@@ -1778,5 +1772,82 @@ describe('user', () => {
                 await checkNoChangesMade(false)
             }
         )
+    })
+
+    // This mutation needs only one test since it mostly the same as adOrganizationRolesToUsers
+    describe('.removeOrganizationRolesFromUsers', () => {
+        let initialRoles: Role[][]
+
+        function removeRoles(authUser = adminUser) {
+            return errorFormattingWrapper(
+                removeOrganizationRolesFromUsers(
+                    { input: inputForModifyOrgRoles() },
+                    {
+                        permissions: new UserPermissions({
+                            id: authUser.user_id,
+                            email: authUser.email,
+                            phone: authUser.phone,
+                        }),
+                    }
+                )
+            )
+        }
+
+        async function checkOutput() {
+            for (const [idx, input] of inputForModifyOrgRoles().entries()) {
+                const { organizationId, userId, roleIds } = input
+                const dbMembership = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organizationId,
+                            user_id: userId,
+                        },
+                    }
+                )
+                const dbRoles = (await dbMembership.roles)?.sort()
+
+                const expectedRolesArray = initialRoles[idx].filter(
+                    (initr) => !roleIds.find((rid) => initr.role_id === rid)
+                )
+                const expectedRoles = [...new Set(expectedRolesArray.sort())]
+                expect(expectedRoles).to.deep.equal(dbRoles)
+            }
+        }
+
+        beforeEach(async () => {
+            await commonSetupForModifyOrgRoles()
+            initialRoles = [
+                [role1, role2, role3],
+                [role2, role3],
+                [role1, role2, role3],
+            ]
+
+            await OrganizationMembership.save([
+                createOrganizationMembership({
+                    user: user1,
+                    organization: organization1,
+                    roles: initialRoles[0],
+                }),
+                createOrganizationMembership({
+                    user: user2,
+                    organization: organization2,
+                    roles: initialRoles[1],
+                }),
+                createOrganizationMembership({
+                    user: user3,
+                    organization: organization3,
+                    roles: initialRoles[2],
+                }),
+            ])
+        })
+
+        context('when caller has permissions to add roles to user', () => {
+            context('and all attributes are valid', () => {
+                it('adds all the roles', async () => {
+                    await expect(removeRoles()).to.be.fulfilled
+                    await checkOutput()
+                })
+            })
+        })
     })
 })

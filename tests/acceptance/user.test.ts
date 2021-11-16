@@ -15,6 +15,7 @@ import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
 import {
     ADD_ORG_ROLES_TO_USERS,
     GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
+    REMOVE_ORG_ROLES_FROM_USERS,
 } from '../utils/operations/userOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createSchool } from '../factories/school.factory'
@@ -32,6 +33,7 @@ import { createClass } from '../factories/class.factory'
 import { Class } from '../../src/entities/class'
 import {
     AddOrganizationRolesToUserInput,
+    RemoveOrganizationRolesFromUserInput,
     UserConnectionNode,
 } from '../../src/types/graphQL/user'
 import { Role } from '../../src/entities/role'
@@ -621,16 +623,12 @@ describe('acceptance.user', () => {
             }
             await Role.save(roles)
 
-            const start_idx = Math.floor(Math.random() * (rolesCount - 5))
-            const end_idx = start_idx + 5
             input = []
             for (const membership of memberships) {
                 input.push({
                     userId: membership.user_id,
                     organizationId: membership.organization_id,
-                    roleIds: roles
-                        .slice(start_idx, end_idx)
-                        .map((v) => v.role_id),
+                    roleIds: roles.slice(3, 11).map((v) => v.role_id),
                 })
             }
         })
@@ -652,6 +650,51 @@ describe('acceptance.user', () => {
 
                 const resUsers: UserConnectionNode[] =
                     response.body.data.addOrganizationRolesToUsers.users
+                expect(response.status).to.eq(200)
+                expect(resUsers.length).to.equal(usersCount)
+            })
+        })
+    })
+
+    context('removeOrganizationRolesFromUser', () => {
+        let input: RemoveOrganizationRolesFromUserInput[]
+
+        beforeEach(async () => {
+            const roles = []
+            for (let i = 0; i < rolesCount; i++) {
+                roles.push(createRole(`Role ${i}`))
+            }
+            await Role.save(roles)
+
+            input = []
+            for (const membership of memberships) {
+                membership.roles = Promise.resolve(roles.slice(3, 17))
+                await membership.save()
+                input.push({
+                    userId: membership.user_id,
+                    organizationId: membership.organization_id,
+                    roleIds: roles.slice(8, 17).map((v) => v.role_id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should respond with status 200', async () => {
+                const response = await request
+                    .post('/user')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: REMOVE_ORG_ROLES_FROM_USERS,
+                        variables: {
+                            input,
+                        },
+                    })
+
+                const resUsers: UserConnectionNode[] =
+                    response.body.data.removeOrganizationRolesFromUsers.users
                 expect(response.status).to.eq(200)
                 expect(resUsers.length).to.equal(usersCount)
             })

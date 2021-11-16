@@ -16,12 +16,18 @@ import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import { UserConnectionNode } from '../types/graphQL/user'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
-import { addOrganizationRolesToUsers } from '../resolvers/user'
+import {
+    addOrganizationRolesToUsers,
+    removeOrganizationRolesFromUsers,
+} from '../resolvers/user'
 
 const typeDefs = gql`
     extend type Mutation {
         addOrganizationRolesToUsers(
             input: [AddOrganizationRolesToUserInput!]!
+        ): UsersMutationResult
+        removeOrganizationRolesFromUsers(
+            input: [RemoveOrganizationRolesFromUserInput!]!
         ): UsersMutationResult
         me: User
         user(
@@ -56,6 +62,12 @@ const typeDefs = gql`
     # Definitions related to mutations
 
     input AddOrganizationRolesToUserInput {
+        userId: ID!
+        organizationId: ID!
+        roleIds: [ID!]!
+    }
+
+    input RemoveOrganizationRolesFromUserInput {
         userId: ID!
         organizationId: ID!
         roleIds: [ID!]!
@@ -340,6 +352,8 @@ export default function getDefault(
                     model.uploadUsersFromCSV(args, ctx, info),
                 addOrganizationRolesToUsers: (_parent, args, ctx, _info) =>
                     addOrganizationRolesToUsers(args, ctx),
+                removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
+                    removeOrganizationRolesFromUsers(args, ctx),
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),
