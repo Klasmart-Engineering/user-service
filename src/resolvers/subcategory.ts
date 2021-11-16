@@ -1,5 +1,4 @@
-import { GraphQLResolveInfo } from 'graphql'
-import { getManager, getRepository, In } from 'typeorm'
+import { getManager } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { Status } from '../entities/status'
 import { Subcategory } from '../entities/subcategory'
@@ -55,7 +54,7 @@ export const deleteSubcategories = async (
             })
         )
     } else {
-        for (let subcategory of subcategories) {
+        for (const subcategory of subcategories) {
             if (subcategory.status === Status.INACTIVE) {
                 errors.push(
                     new APIError({
@@ -81,6 +80,7 @@ export const deleteSubcategories = async (
             if (!subcategory.system && !isAdmin) {
                 const isAllowedIntheOrg = await context.permissions.isAllowedInsideTheOrganization(
                     userId,
+                    // eslint-disable-next-line  @typescript-eslint/no-explicit-any
                     (subcategory as any).__organization__.organization_id,
                     PermissionName.delete_subjects_20447
                 )

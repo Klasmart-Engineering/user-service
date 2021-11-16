@@ -840,7 +840,6 @@ export async function createOrUpdateSubcategories(
         })
 
     const res = await gqlTry(operation)
-    console.log(res)
     const gqlSubcategories = res.data?.organization
         .createOrUpdateSubcategories as Subcategory[]
 
