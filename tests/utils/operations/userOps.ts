@@ -9,7 +9,10 @@ import { gqlTry } from '../gqlTry'
 import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { Subject } from '../../../src/entities/subject'
-import { string } from 'joi'
+import {
+    AddOrganizationRolesToUserInput,
+    UsersMutationResult,
+} from '../../../src/types/graphQL/user'
 
 export const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
@@ -240,6 +243,52 @@ const ADD_SCHOOL = `
                 user_id
                 school_id
             }
+        }
+    }
+`
+
+const USERS_MUTATION_RESULT = `users {
+                id
+                givenName
+                familyName
+                avatar
+                contactInfo {
+                    email
+                    phone
+                }
+                alternateContactInfo {
+                    email
+                    phone
+                }
+                organizations {
+                    id
+                    name
+                    joinDate
+                    status
+                    userShortCode
+                }
+                roles {
+                    id
+                    name
+                    organizationId
+                    schoolId
+                    status
+                }
+                schools {
+                    id
+                    name
+                    organizationId
+                    status
+                }
+                status
+                dateOfBirth
+                gender
+            }`
+
+export const ADD_ORG_ROLES_TO_USERS = `
+    mutation myMutation($input: [AddOrganizationRolesToUserInput!]!) {
+        addOrganizationRolesToUsers(input: $input) {
+            ${USERS_MUTATION_RESULT}
         }
     }
 `

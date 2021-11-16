@@ -2,7 +2,6 @@ import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
-
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
@@ -13,7 +12,10 @@ import {
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
 import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
-import { GET_SCHOOL_MEMBERSHIPS_WITH_ORG } from '../utils/operations/userOps'
+import {
+    ADD_ORG_ROLES_TO_USERS,
+    GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
+} from '../utils/operations/userOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createSchool } from '../factories/school.factory'
 import { createRole } from '../factories/role.factory'
@@ -25,10 +27,14 @@ import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
-import { UserConnectionNode } from '../../src/types/graphQL/user'
 import { makeRequest } from './utils'
 import { createClass } from '../factories/class.factory'
 import { Class } from '../../src/entities/class'
+import {
+    AddOrganizationRolesToUserInput,
+    UserConnectionNode,
+} from '../../src/types/graphQL/user'
+import { Role } from '../../src/entities/role'
 
 use(chaiAsPromised)
 
@@ -36,8 +42,9 @@ const url = 'http://localhost:8080'
 const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
-const usersCount = 6
+const usersCount = 50
 const classesCount = 2
+const rolesCount = 20
 
 let orgId: string
 let userIds: string[]
@@ -55,6 +62,7 @@ const ME = `
 
 describe('acceptance.user', () => {
     let connection: TestConnection
+    let memberships: OrganizationMembership[]
 
     before(async () => {
         connection = await createTestConnection()
@@ -85,7 +93,7 @@ describe('acceptance.user', () => {
             Array(usersCount).fill(undefined).map(createUser)
         )
 
-        await OrganizationMembership.save(
+        memberships = await OrganizationMembership.save(
             users.map((user) =>
                 createOrganizationMembership({ user, organization })
             )
@@ -600,6 +608,53 @@ describe('acceptance.user', () => {
 
             expect(response.status).to.eq(200)
             expect(response.body.data.my_users.length).to.equal(0)
+        })
+    })
+
+    context('addOrganizationRolesToUser', () => {
+        let input: AddOrganizationRolesToUserInput[]
+
+        beforeEach(async () => {
+            const roles = []
+            for (let i = 0; i < rolesCount; i++) {
+                roles.push(createRole(`Role ${i}`))
+            }
+            await Role.save(roles)
+
+            const start_idx = Math.floor(Math.random() * (rolesCount - 5))
+            const end_idx = start_idx + 5
+            input = []
+            for (const membership of memberships) {
+                input.push({
+                    userId: membership.user_id,
+                    organizationId: membership.organization_id,
+                    roleIds: roles
+                        .slice(start_idx, end_idx)
+                        .map((v) => v.role_id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should respond with status 200', async () => {
+                const response = await request
+                    .post('/user')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: ADD_ORG_ROLES_TO_USERS,
+                        variables: {
+                            input,
+                        },
+                    })
+
+                const resUsers: UserConnectionNode[] =
+                    response.body.data.addOrganizationRolesToUsers.users
+                expect(response.status).to.eq(200)
+                expect(resUsers.length).to.equal(usersCount)
+            })
         })
     })
 })

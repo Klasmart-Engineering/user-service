@@ -159,6 +159,9 @@ const typeDefs = gql`
             alternate_email: String
             alternate_phone: String
         ): MembershipUpdate
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433581057"
+            )
         createRole(role_name: String!, role_description: String!): Role
         createSchool(school_name: String, shortcode: String): School
         createClass(class_name: String, shortcode: String): Class
@@ -196,7 +199,13 @@ const typeDefs = gql`
 
         #mutations
         addRole(role_id: ID!): Role
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433482757"
+            )
         addRoles(role_ids: [ID!]!): [Role]
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433482757"
+            )
         removeRole(role_id: ID!): OrganizationMembership
         leave(_: Int): Boolean
     }

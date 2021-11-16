@@ -16,9 +16,13 @@ import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import { UserConnectionNode } from '../types/graphQL/user'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { addOrganizationRolesToUsers } from '../resolvers/user'
 
 const typeDefs = gql`
     extend type Mutation {
+        addOrganizationRolesToUsers(
+            input: [AddOrganizationRolesToUserInput!]!
+        ): UsersMutationResult
         me: User
         user(
             user_id: ID!
@@ -47,6 +51,18 @@ const typeDefs = gql`
             @deprecated(reason: "Moved to auth service")
         uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
+    }
+
+    # Definitions related to mutations
+
+    input AddOrganizationRolesToUserInput {
+        userId: ID!
+        organizationId: ID!
+        roleIds: [ID!]!
+    }
+
+    type UsersMutationResult {
+        users: [UserConnectionNode!]!
     }
 
     # pagination extension types start here
@@ -101,7 +117,7 @@ const typeDefs = gql`
         avatar: String
         contactInfo: ContactInfo!
         alternateContactInfo: ContactInfo
-        organizations: [OrganizationSummaryNode!]!
+        organizations: [OrganizationSummaryNode!]
             @deprecated(
                 reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
             )
@@ -130,8 +146,8 @@ const typeDefs = gql`
             sort: ClassSortInput
         ): ClassesConnectionResponse
 
-        roles: [RoleSummaryNode!]!
-        schools: [SchoolSummaryNode!]!
+        roles: [RoleSummaryNode!]
+        schools: [SchoolSummaryNode!]
         status: Status!
         dateOfBirth: String
         gender: String
@@ -320,9 +336,10 @@ export default function getDefault(
                 },
                 newUser: (_parent, args, _context, _info) =>
                     model.newUser(args),
-
                 uploadUsersFromCSV: (_parent, args, ctx, info) =>
                     model.uploadUsersFromCSV(args, ctx, info),
+                addOrganizationRolesToUsers: (_parent, args, ctx, _info) =>
+                    addOrganizationRolesToUsers(args, ctx),
             },
             Query: {
                 me: (_, _args, ctx, _info) => model.getMyUser(ctx),

@@ -1,6 +1,7 @@
 import { Status } from '../../entities/status'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
 import { ClassConnectionNode } from './class'
+import { CoreUserConnectionNode } from '../../pagination/usersConnection'
 import { OrganizationSummaryNode } from './organization'
 import { OrganizationMembershipConnectionNode } from './organizationMemberships'
 import { RoleSummaryNode } from './role'
@@ -34,4 +35,14 @@ export interface UserSummaryNode {
 export interface UserContactInfo {
     email?: string | null
     phone?: string | null
+}
+
+export interface AddOrganizationRolesToUserInput {
+    userId: string
+    organizationId: string
+    roleIds: string[]
+}
+
+export interface UsersMutationResult {
+    users: CoreUserConnectionNode[]
 }

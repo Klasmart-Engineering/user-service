@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
-import { Connection } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Model } from '../../src/model'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
 import { User } from '../../src/entities/user'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
@@ -67,18 +67,24 @@ import { createRole as roleFactory } from '../factories/role.factory'
 import {
     createUser,
     createAdminUser as adminUserFactory,
+    createUsers,
 } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { expectIsNonNullable } from '../utils/assertions'
+import { AddOrganizationRolesToUserInput } from '../../src/types/graphQL/user'
+import { expectAPIError } from '../utils/apiError'
+import { addOrganizationRolesToUsers } from '../../src/resolvers/user'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { errorFormattingWrapper } from '../utils/errors'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('user', () => {
-    let connection: Connection
+    let connection: TestConnection
     let originalAdmins: string[]
     let testClient: ApolloServerTestClient
     let user: User
@@ -1414,5 +1420,363 @@ describe('user', () => {
                 }
             )
         })
+    })
+
+    describe('.addOrganizationRolesToUsers', () => {
+        let adminUser: User
+        let nonAdminUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let organization3: Organization
+        let user1: User
+        let user2: User
+        let user3: User
+        let role1: Role
+        let role2: Role
+        let role3: Role
+        let input: AddOrganizationRolesToUserInput[]
+
+        function addRoles(authUser = adminUser) {
+            return errorFormattingWrapper(
+                addOrganizationRolesToUsers(
+                    { input },
+                    {
+                        permissions: new UserPermissions({
+                            id: authUser.user_id,
+                            email: authUser.email,
+                            phone: authUser.phone,
+                        }),
+                    }
+                )
+            )
+        }
+
+        async function checkOutput() {
+            for (const i of input) {
+                const { organizationId, userId, roleIds } = i
+
+                const dbMembership = await OrganizationMembership.findOneOrFail(
+                    {
+                        where: {
+                            organization_id: organizationId,
+                            user_id: userId,
+                        },
+                    }
+                )
+
+                const dbRoles = new Set(
+                    (await dbMembership.roles)?.map((val) => val.role_id)
+                )
+                const roles = new Set(roleIds)
+                expect(dbRoles.size).to.equal(roles.size)
+                dbRoles.forEach((val) => expect(roles.has(val)).to.be.true)
+            }
+        }
+
+        function checkNotFoundErrors(
+            actualError: Error,
+            expectedErrors: {
+                entity: string
+                id: string
+                entryIndex: number
+            }[],
+            totalErrorCount?: number
+        ) {
+            expectedErrors.forEach((val, errorIndex) => {
+                const variables: string[] = []
+                switch (val.entity) {
+                    case 'Role':
+                        variables.push('role_id')
+                        break
+                    case 'Organization':
+                        variables.push('organization_id')
+                        break
+                    case 'User':
+                        variables.push('user_id')
+                        break
+                }
+                expectAPIError.nonexistent_or_inactive(
+                    actualError,
+                    {
+                        entity: val.entity,
+                        attribute: val.entity === 'Role' ? 'IDs' : 'ID',
+                        otherAttribute: val.id,
+                        index: val.entryIndex,
+                    },
+                    variables,
+                    errorIndex,
+                    totalErrorCount ?? expectedErrors.length
+                )
+            })
+        }
+
+        async function checkNoChangesMade(useAdminUser = true) {
+            it('does not add the users', async () => {
+                await expect(addRoles(useAdminUser ? undefined : nonAdminUser))
+                    .to.be.rejected
+                const memberships = await OrganizationMembership.find({
+                    where: {
+                        organization_id: In(
+                            [organization1, organization2, organization3].map(
+                                (v) => v.organization_id
+                            )
+                        ),
+                        user_id: In([
+                            user1.user_id,
+                            user2.user_id,
+                            user3.user_id,
+                        ]),
+                    },
+                })
+                memberships.forEach((m) => expect(m.roles).to.be.empty)
+            })
+        }
+
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+            nonAdminUser = await createNonAdminUser(testClient)
+            organization1 = await organizationFactory().save()
+            organization2 = await organizationFactory().save()
+            organization3 = await organizationFactory().save()
+            ;[user1, user2, user3] = createUsers(3)
+            role1 = roleFactory('Role 1')
+            role2 = roleFactory('Role 2')
+            role3 = roleFactory('Role 3')
+            await connection.manager.save([
+                user1,
+                user2,
+                user3,
+                role1,
+                role2,
+                role3,
+            ])
+
+            await OrganizationMembership.save([
+                createOrganizationMembership({
+                    user: user1,
+                    organization: organization1,
+                }),
+                createOrganizationMembership({
+                    user: user2,
+                    organization: organization2,
+                }),
+                createOrganizationMembership({
+                    user: user3,
+                    organization: organization3,
+                }),
+            ])
+
+            input = [
+                {
+                    organizationId: organization1.organization_id,
+                    userId: user1.user_id,
+                    roleIds: [role1.role_id, role2.role_id],
+                },
+                {
+                    organizationId: organization2.organization_id,
+                    userId: user2.user_id,
+                    roleIds: [role2.role_id, role3.role_id],
+                },
+                {
+                    organizationId: organization3.organization_id,
+                    userId: user3.user_id,
+                    roleIds: [role3.role_id],
+                },
+            ]
+        })
+
+        context('when caller has permissions to add roles to user', () => {
+            context('and all attributes are valid', () => {
+                it('adds all the roles', async () => {
+                    await expect(addRoles()).to.be.fulfilled
+                    await checkOutput()
+                })
+
+                it('makes the expected number of queries to the database', async () => {
+                    connection.logger.reset()
+                    await addRoles()
+                    expect(connection.logger.count).to.be.eq(18)
+                    // 9 from permission check
+                    // 4 from preloaded queries
+                    // 5 from saving OrganizationMembership[] (1 per)
+                })
+            })
+
+            context('and one of the roles was already added', () => {
+                beforeEach(async () => {
+                    await createOrganizationMembership({
+                        user: user1,
+                        organization: organization1,
+                        roles: [role1],
+                    }).save()
+                })
+
+                it('adds all the roles', async () => {
+                    await expect(addRoles()).to.be.fulfilled
+                    await checkOutput()
+                })
+            })
+
+            context('and one of the organizations is inactive', async () => {
+                beforeEach(
+                    async () => await organization3.inactivate(getManager())
+                )
+
+                it('returns an inactive or nonexistent organization error', async () => {
+                    const res = await expect(addRoles()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Organization',
+                            id: organization3.organization_id,
+                            entryIndex: 2,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of the users is inactive', async () => {
+                beforeEach(async () => await user2.inactivate(getManager()))
+
+                it('returns an inactive or nonexistent user error', async () => {
+                    const res = await expect(addRoles()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'User',
+                            id: user2.user_id,
+                            entryIndex: 1,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of the roles is inactive', async () => {
+                beforeEach(async () => await role1.inactivate(getManager()))
+
+                it('returns an inactive or nonexistent role error', async () => {
+                    const res = await expect(addRoles()).to.be.rejected
+                    checkNotFoundErrors(res, [
+                        {
+                            entity: 'Role',
+                            id: role1.role_id,
+                            entryIndex: 0,
+                        },
+                    ])
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and one of the memberships is inactive', async () => {
+                beforeEach(async () =>
+                    (await user1.memberships)?.forEach(
+                        async (m) => await m.inactivate(getManager())
+                    )
+                )
+
+                it('returns a nonexistent child error', async () => {
+                    const res = await expect(addRoles()).to.be.rejected
+                    expectAPIError.nonexistent_child(
+                        res,
+                        {
+                            entity: 'User',
+                            entityName: user1.user_name(),
+                            parentEntity: 'Organization',
+                            parentName: organization1.organization_name || '',
+                            index: 0,
+                        },
+                        ['organization_id', 'user_id'],
+                        0,
+                        1
+                    )
+                })
+
+                await checkNoChangesMade()
+            })
+
+            context('and multiple attributes are inactive', async () => {
+                beforeEach(async () => {
+                    ;(await user3.memberships)?.forEach(
+                        async (m) => await m.inactivate(getManager())
+                    )
+                    await Promise.all([
+                        user1.inactivate(getManager()),
+                        role1.inactivate(getManager()),
+                        role2.inactivate(getManager()),
+                    ])
+                })
+
+                it('returns several inactive or nonexistent errors', async () => {
+                    const res = await expect(addRoles()).to.be.rejected
+                    checkNotFoundErrors(
+                        res,
+                        [
+                            {
+                                entity: 'Role',
+                                id: [role1.role_id, role2.role_id].toString(),
+                                entryIndex: 0,
+                            },
+                            {
+                                entity: 'User',
+                                id: user1.user_id,
+                                entryIndex: 0,
+                            },
+                            {
+                                entity: 'Role',
+                                id: role2.role_id,
+                                entryIndex: 1,
+                            },
+                        ],
+                        4
+                    )
+                    expectAPIError.nonexistent_child(
+                        res,
+                        {
+                            entity: 'User',
+                            entityName: user3.user_name(),
+                            parentEntity: 'Organization',
+                            parentName: organization3.organization_name || '',
+                            index: 2,
+                        },
+                        ['organization_id', 'user_id'],
+                        3,
+                        4
+                    )
+                })
+
+                await checkNoChangesMade()
+            })
+        })
+
+        context(
+            'when caller does not have permissions to add roles to all users',
+            async () => {
+                beforeEach(async () => {
+                    const nonAdminRole = await roleFactory(
+                        'Non Admin Role',
+                        organization1,
+                        {
+                            permissions: [PermissionName.edit_users_40330],
+                        }
+                    ).save()
+                    await createOrganizationMembership({
+                        user: nonAdminUser,
+                        organization: organization1,
+                        roles: [nonAdminRole],
+                    }).save()
+                })
+
+                it('returns a permission error', async () => {
+                    await expect(addRoles(nonAdminUser)).to.be.rejectedWith(
+                        `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.edit_users_40330}) in Organization(${organization2.organization_id})`
+                    )
+                })
+
+                await checkNoChangesMade(false)
+            }
+        )
     })
 })
