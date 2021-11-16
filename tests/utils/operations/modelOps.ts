@@ -1039,11 +1039,12 @@ export const SUBCATEGORY_NODE = gql`
 `
 
 export const SUBCATEGORIES_DELETE = gql`
-    query deleteSubcategories($input: [DeleteSubcategoryInput!]!) {
+    mutation deleteSubcategories($input: [DeleteSubcategoryInput!]!) {
         deleteSubcategories(input: $input) {
             subcategories {
                 name
                 status
+                id
             }
         }
     }

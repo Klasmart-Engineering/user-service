@@ -273,7 +273,7 @@ const LIST_GRADES = `
     }
 `
 
-const CREATE_OR_UPDATE_SUBCATEGORIES = `
+export const CREATE_OR_UPDATE_SUBCATEGORIES = `
     mutation myMutation(
             $organization_id: ID!,
             $subcategories: [SubcategoryDetail]!) {
@@ -840,6 +840,7 @@ export async function createOrUpdateSubcategories(
         })
 
     const res = await gqlTry(operation)
+    console.log(res)
     const gqlSubcategories = res.data?.organization
         .createOrUpdateSubcategories as Subcategory[]
 

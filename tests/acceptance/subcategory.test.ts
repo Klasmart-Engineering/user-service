@@ -6,15 +6,30 @@ import {
     SUBCATEGORIES_DELETE,
     SUBCATEGORY_NODE,
 } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { NIL_UUID } from '../utils/database'
+import { DeleteSubcategoryInput } from '../../src/types/graphQL/subcategory'
+import {
+    createSubcategories,
+    ISubcategoryDetail,
+} from '../utils/operations/acceptance/acceptanceOps.test'
+import { loadFixtures } from '../utils/fixtures'
+import { User } from '../../src/entities/user'
+import { createUser } from '../factories/user.factory'
+import { userToPayload } from '../utils/operations/userOps'
+import { createRole } from '../factories/role.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
+const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
+const org_name = 'my-org'
 
 async function makeConnectionQuery() {
     return await request
@@ -46,17 +61,20 @@ const makeNodeQuery = async (id: string) => {
         })
 }
 
-const makeDeleteQuery = async (id: string) => {
+const makeDeleteMutation = async (
+    token: string,
+    input: DeleteSubcategoryInput[]
+) => {
     return await request
         .post('/user')
         .set({
             ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
+            Authorization: token,
         })
         .send({
             query: print(SUBCATEGORIES_DELETE),
             variables: {
-                input: [{ id }],
+                input,
             },
         })
 }
@@ -157,13 +175,53 @@ describe('acceptance.subcategory', () => {
 
     context('deleteSubcategories', () => {
         context('when id exists', () => {
+            let subcategoryId: string
+            let user: User
+            let token: string
+            beforeEach(async () => {
+                const org1 = await createOrganization().save()
+                user = await createUser().save()
+                const deleteSubcategoriesRoleOrg1 = await createRole(
+                    'Delete Subcategories',
+                    org1,
+                    {
+                        permissions: [PermissionName.delete_subjects_20447],
+                    }
+                ).save()
+                const createSubjectsRole = await createRole(
+                    'Create Subcategories',
+                    org1,
+                    {
+                        permissions: [PermissionName.create_subjects_20227],
+                    }
+                ).save()
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                    roles: [createSubjectsRole, deleteSubcategoriesRoleOrg1],
+                }).save()
+                token = generateToken(userToPayload(user))
+                const subcategoriesDetails: ISubcategoryDetail[] = []
+                for (let i = 0; i < 1; i++) {
+                    subcategoriesDetails.push({
+                        name: `subcategory ${i}`,
+                        system: false,
+                    })
+                }
+                const res = await createSubcategories(
+                    org1.organization_id,
+                    subcategoriesDetails,
+                    token
+                )
+                subcategoryId =
+                    res.body.data.organization.createOrUpdateSubcategories[0].id
+            })
             it('should respond succesfully', async () => {
-                const subcategoryResponse = await makeConnectionQuery()
-                const subcategoriesEdges =
-                    subcategoryResponse.body.data.subcategoriesConnection.edges
-                const subcategoryId = subcategoriesEdges[0].node.id
-                const response = await makeDeleteQuery(subcategoryId)
-                const subcategoryNode = response.body.data.subcategories[0]
+                const response = await makeDeleteMutation(token, [
+                    { id: subcategoryId },
+                ])
+                const subcategoryNode =
+                    response.body.data.deleteSubcategories.subcategories[0]
 
                 expect(response.status).to.eq(200)
                 expect(subcategoryNode.id).to.equal(subcategoryId)
@@ -172,7 +230,9 @@ describe('acceptance.subcategory', () => {
 
         context('when requested subcategory does not exists', () => {
             it('should respond with errors', async () => {
-                const response = await makeNodeQuery(NIL_UUID)
+                const response = await makeDeleteMutation(getAdminAuthToken(), [
+                    { id: NIL_UUID },
+                ])
                 const errors = response.body.errors
                 expect(response.status).to.eq(200)
                 expect(errors).to.exist

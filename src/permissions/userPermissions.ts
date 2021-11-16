@@ -177,8 +177,6 @@ export class UserPermissions {
         const allOrganizationPermisions = await this.organizationPermissions(
             userId
         )
-        console.log(organizationId)
-        console.log(allOrganizationPermisions)
         const organizationPermissions = allOrganizationPermisions.get(
             organizationId
         )

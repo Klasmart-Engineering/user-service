@@ -91,7 +91,7 @@ describe('subcategory', () => {
             ])
 
             deleteSubcategoriesRoleOrg1 = await createRole(
-                'Create Categories',
+                'Delete Subcategories',
                 org1,
                 {
                     permissions: [PermissionName.delete_subjects_20447],
