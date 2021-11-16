@@ -417,7 +417,7 @@ describe('userPermissions', () => {
         )
 
         context(
-            'when the user has a the role that does not include the permission',
+            'when the user has a role that does not include the permission',
             () => {
                 beforeEach(async () => {
                     req.headers = {
