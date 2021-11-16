@@ -98,14 +98,12 @@ describe('subcategory', () => {
                 }
             ).save()
 
-            // Assigning userWithPermission to org1 with the createCategoriesRole
             await createOrganizationMembership({
                 user: userWithPermission,
                 organization: org1,
                 roles: [deleteSubcategoriesRoleOrg1],
             }).save()
 
-            // Assigning userWithoutPermission to org1
             await createOrganizationMembership({
                 user: userWithoutPermission,
                 organization: org1,
