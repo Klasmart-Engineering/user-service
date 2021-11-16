@@ -103,6 +103,8 @@ import { ICategoryNodeDataLoader } from './category'
 import {
     childConnectionLoader,
     IChildConnectionDataloaderKey,
+    ICompositeIdChildConnectionDataloaderKey,
+    multiKeyChildConnectionLoader,
 } from './childConnectionLoader'
 import {
     ageRangesForClasses,
@@ -215,6 +217,12 @@ export interface IDataLoaders {
             IPaginatedResponse<CoreClassConnectionNode>
         >
     >
+    membershipRolesConnectionChild: Lazy<
+        DataLoader<
+            ICompositeIdChildConnectionDataloaderKey,
+            IPaginatedResponse<RoleConnectionNode>
+        >
+    >
     categoryNode: ICategoryNodeDataLoader
     schoolNode: Lazy<NodeDataLoader<School, ISchoolsConnectionNode>>
 }
@@ -322,6 +330,21 @@ export function createContextLazyLoaders(
                         mapClassToClassConnectionNode,
                         classesConnectionSortingConfig,
                         { permissions, entity: 'class' }
+                    )
+                })
+        ),
+        membershipRolesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return multiKeyChildConnectionLoader(
+                        items,
+                        (scope, filter) => {
+                            roleConnectionQuery(scope, filter)
+                            return Promise.resolve(scope)
+                        },
+                        mapRoleToRoleConnectionNode,
+                        rolesConnectionSortingConfig,
+                        { permissions, entity: 'role' }
                     )
                 })
         ),

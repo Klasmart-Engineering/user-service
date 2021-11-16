@@ -30,6 +30,64 @@ export interface IChildConnectionDataloaderKey {
     readonly includeTotalCount: boolean
 }
 
+// most child connections filter on their parents using a single column (normally the parents primary key)
+// this exposes a simpler interface for that case
+export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
+    keys: readonly IChildConnectionDataloaderKey[],
+    connectionQuery: (
+        scope: SelectQueryBuilder<Entity>,
+        filter?: IEntityFilter
+    ) => Promise<SelectQueryBuilder<Entity>>,
+    entityToNodeMapFunction: (source: Entity) => Node | Promise<Node>,
+    sort: ISortingConfig,
+    scopeArgs: ICreateScopeArgs
+): Promise<IPaginatedResponse<Node>[]> => {
+    const keysWithCompositeIds: ICompositeIdChildConnectionDataloaderKey[] = keys.map(
+        (k) => {
+            return {
+                parent: {
+                    compositeId: [k.parent.id],
+                    filterKeys: [k.parent.filterKey],
+                    pivots: [k.parent.pivot],
+                },
+                args: k.args,
+                includeTotalCount: k.includeTotalCount,
+            }
+        }
+    )
+
+    return multiKeyChildConnectionLoader(
+        keysWithCompositeIds,
+        connectionQuery,
+        entityToNodeMapFunction,
+        sort,
+        scopeArgs
+    )
+}
+
+export interface ICompositeIdChildConnectionDataloaderKey {
+    // the arrays in parent must use the same order
+    // compositeId[n] much be for the same column as filterkeys[n] and piviot[n]
+    readonly parent: {
+        // values used to uniquely identify the parent for filtering and grouping child rows
+        // each parent can supply more then one value to support composite primary keys
+        compositeId: string[]
+        filterKeys: string[]
+        pivots: string[]
+    }
+    readonly args: IChildPaginationArgs
+    readonly includeTotalCount: boolean
+}
+interface IChildConnectionRequest<Node> {
+    // the unique request properties
+    key: ICompositeIdChildConnectionDataloaderKey
+    // composite keys to identify each parent
+    parentCompositeIds: string[][]
+    // the final parentId:childConnections map for this unique request
+    // this will be referenced when producing the final result to corresponding to each input key
+    result: Map<string, IPaginatedResponse<Node>>
+}
+
 // returns a deterministic request identifier for a dataloader object key
 // a "request" is a group of dataloader keys that share the same arguments
 // i.e. keys that originate from the same child connection request
@@ -38,7 +96,7 @@ export interface IChildConnectionDataloaderKey {
 //     usersConnection(count: 1) {} # request A
 //     usersConnection(count: 2) {} # request B
 // }
-function getRequestIdentifier(key: IChildConnectionDataloaderKey) {
+function getRequestIdentifier(key: ICompositeIdChildConnectionDataloaderKey) {
     // flatten the object and discard the scope property and unique parentId
     const flatObj = {
         direction: key.args.direction,
@@ -47,8 +105,8 @@ function getRequestIdentifier(key: IChildConnectionDataloaderKey) {
         filter: JSON.stringify(key.args.filter),
         sort: JSON.stringify(key.args.sort),
         includeTotalCount: key.includeTotalCount,
-        parentPivot: key.parent.pivot,
-        parentFilterKey: key.parent.filterKey,
+        parentPivot: key.parent.pivots,
+        parentFilterKey: key.parent.filterKeys,
     }
     return crypto
         .createHash('md5')
@@ -56,17 +114,17 @@ function getRequestIdentifier(key: IChildConnectionDataloaderKey) {
         .digest('hex')
 }
 
-interface IChildConnectionRequest<Node> {
-    // the unique request properties
-    key: IChildConnectionDataloaderKey
-    // the list of parent Ids to filter by (e.g. orgIds in this case)
-    parentIds: string[]
-    // the final parentId:childConnections map for this unique request
-    // this will be referenced when producing the final result to corresponding to each input key
-    result: Map<string, IPaginatedResponse<Node>>
+// this is used to create a single string for composite keys
+// which is useful for Map objects
+function createSingleLookUpKey(compositeId: string[]): string {
+    return JSON.stringify(compositeId)
 }
-export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
-    keys: readonly IChildConnectionDataloaderKey[],
+
+export const multiKeyChildConnectionLoader = async <
+    Entity extends BaseEntity,
+    Node
+>(
+    keys: readonly ICompositeIdChildConnectionDataloaderKey[],
     connectionQuery: (
         scope: SelectQueryBuilder<Entity>,
         filter?: IEntityFilter
@@ -82,14 +140,14 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
     // group keys by request as described above
     const requests: Map<string, IChildConnectionRequest<Node>> = new Map()
     for (const key of keys) {
-        const id = getRequestIdentifier(key)
-        const request = requests.get(id)
+        const requestId = getRequestIdentifier(key)
+        const request = requests.get(requestId)
         if (request) {
-            request.parentIds.push(key.parent.id)
+            request.parentCompositeIds.push(key.parent.compositeId)
         } else {
-            requests.set(id, {
+            requests.set(requestId, {
                 key,
-                parentIds: [key.parent.id],
+                parentCompositeIds: [key.parent.compositeId],
                 result: new Map(),
             })
         }
@@ -97,36 +155,35 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
 
     // resolve all child connections independently per request, in parallel
     await Promise.all(
-        Array.from(requests.entries()).map(async ([id, request]) => {
+        Array.from(requests.values()).map(async (request) => {
             // create a new scope per request
             const scope = (await createEntityScope(
                 scopeArgs
             )) as SelectQueryBuilder<Entity>
 
             // there may be duplicate parentIds, so use a unique set to create maps
-            const parentIds = request.parentIds
-            const uniqueParentIds = [...new Set(parentIds)]
+            const parentLookUpKeys = request.parentCompositeIds.map(
+                (compositeId) => createSingleLookUpKey(compositeId)
+            )
+            const uniqueParentLookUpKeys = [...new Set(parentLookUpKeys)]
 
             const args = request.key.args
             const parent = request.key.parent
             const includeTotalCount = request.key.includeTotalCount
-            const groupByProperty = parent.pivot
-            const pivotColumn = 'pivot'
 
             // not allowed to filter by the parent entity
-            if (
-                args.filter &&
-                filterHasProperty(parent.filterKey, args.filter)
-            ) {
-                throw new Error(
-                    `Cannot filter by parent ID ${parent.filterKey} in a child connection.`
-                )
+            for (const filterKey of parent.filterKeys) {
+                if (args.filter && filterHasProperty(filterKey, args.filter)) {
+                    throw new Error(
+                        `Cannot filter by parent property ${filterKey} in this child connection.`
+                    )
+                }
             }
 
             // Create the Dataloader map of parentId: childConnectionNode[]
             const parentMap = new Map<string, IPaginatedResponse<Node>>(
-                uniqueParentIds.map((parentId) => [
-                    parentId,
+                uniqueParentLookUpKeys.map((parentLookUpKey) => [
+                    parentLookUpKey,
                     {
                         totalCount: includeTotalCount ? 0 : undefined,
                         pageInfo: {
@@ -142,35 +199,57 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
 
             // Create the base scope with necessary joins, filters, and selects
             // Sorting and pagination is done separately in the paginationScope
-            const baseScope = await connectionQuery(scope, {
-                [parent.filterKey]: {
-                    operator: 'in',
-                    value: uniqueParentIds,
-                },
+
+            const filter = {
                 ...args.filter,
-            })
+            }
+
+            for (const [index, filterKey] of parent.filterKeys.entries()) {
+                const uniqueFilterValue: Set<string> = new Set()
+                for (const parentCompositeId of request.parentCompositeIds) {
+                    uniqueFilterValue.add(parentCompositeId[index])
+                }
+
+                filter[filterKey] = {
+                    operator: 'in',
+                    value: [...uniqueFilterValue],
+                }
+            }
+
+            const baseScope = await connectionQuery(scope, filter)
 
             //
             // Get the total counts per parent and update the dataloader map
             //
+            const pivots = []
+            const groupBys: string[] = []
+            const groupByProperties = parent.pivots
+            const groupByString = groupByProperties.join(',')
+            for (const [index, piviot] of groupByProperties.entries()) {
+                pivots.push(`${piviot} as "piviot${index}"`)
+                groupBys.push(`piviot${index}`)
+            }
             if (includeTotalCount) {
                 // Create the query to get total children counts per parent (ignores pagination filters etc)
                 const countScope = baseScope
                     .clone()
-                    .select([
-                        `${groupByProperty} as "${pivotColumn}"`,
-                        'count(*)',
-                    ])
+                    .select(pivots)
                     .addSelect('count(*)')
-                    .groupBy(`"${pivotColumn}"`)
+                    .groupBy(groupByString)
 
                 // Get the counts and update the dataloader map
                 const parentCounts: {
-                    [pivotColumn]: string
+                    [groupBy: string]: string
                     count: string
                 }[] = await countScope.getRawMany()
                 for (const parentCount of parentCounts) {
-                    const children = parentMap.get(parentCount[pivotColumn])
+                    const piviotValues: string[] = groupBys.map(
+                        (column) => parentCount[column]
+                    )
+
+                    const children = parentMap.get(
+                        createSingleLookUpKey(piviotValues)
+                    )
                     if (children) {
                         children.totalCount = parseInt(parentCount.count)
                     }
@@ -200,6 +279,7 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
                 },
                 includeTotalCount: false,
             })
+
             // get one more item to determine if there is another page
             const seekPageSize = pageSize + 1
 
@@ -209,9 +289,9 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
             // TODO a better way of extracting the ORDER BY clause
             const orderBy = filterQuery.slice(filterQuery.indexOf('ORDER BY'))
 
-            paginationScope.addSelect(`${groupByProperty} as "${pivotColumn}"`)
+            paginationScope.addSelect(pivots)
             paginationScope.addSelect(
-                `ROW_NUMBER() OVER (PARTITION BY ${groupByProperty} ${orderBy})`,
+                `ROW_NUMBER() OVER (PARTITION BY ${groupByString} ${orderBy})`,
                 'row_num'
             )
 
@@ -225,36 +305,42 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
 
             // get raw SQL results and create a map of parentId:childEntity
             const childrenRaw: {
-                [pivotColumn]: string
+                [column: string]: string
             }[] = await childScope.getRawMany()
+
             const entities = await convertRawToEntities(childrenRaw, baseScope)
 
             const parentToChildMap = new Map<string, Entity[]>(
-                uniqueParentIds.map((id) => [id, []])
+                uniqueParentLookUpKeys.map((id) => [id, []])
             )
             childrenRaw.forEach((childRaw, index) => {
                 const entity = entities[index]
                 if (entity) {
-                    const parentId = childRaw[pivotColumn]
-                    const children = parentToChildMap.get(parentId)
+                    const piviotValues: string[] = groupBys.map(
+                        (column) => childRaw[column]
+                    )
+                    const parentLookUpKey = createSingleLookUpKey(piviotValues)
+
+                    const children = parentToChildMap.get(parentLookUpKey)
+
                     children?.push(entity)
-                    parentToChildMap.set(parentId, children || [])
+                    parentToChildMap.set(parentLookUpKey, children || [])
                 }
             })
 
             // for each parent, calculate their edges and page info
-            for (const [parentId, children] of parentToChildMap) {
+            for (const [parentLookUpKey, children] of parentToChildMap) {
                 const { pageInfo, edges } = getPageInfoAndEdges<Entity>(
                     children,
                     pageSize,
                     sort.primaryKey,
                     primaryColumns,
-                    parentMap.get(parentId)?.totalCount ?? 0,
+                    parentMap.get(parentLookUpKey)?.totalCount ?? 0,
                     cursorData,
                     args.direction
                 )
 
-                const parentResult = parentMap.get(parentId)
+                const parentResult = parentMap.get(parentLookUpKey)
                 if (parentResult) {
                     for (const edge of edges) {
                         const processedEdge = {
@@ -279,7 +365,9 @@ export const childConnectionLoader = async <Entity extends BaseEntity, Node>(
         const request = requests.get(id)
 
         // get the result for the requested parentId
-        const result = request?.result.get(key.parent.id)
+        const result = request?.result.get(
+            createSingleLookUpKey(key.parent.compositeId)
+        )
         finalResult.push(result!)
     }
     return finalResult

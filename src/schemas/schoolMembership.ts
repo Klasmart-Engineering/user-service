@@ -1,8 +1,16 @@
 import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { IDataLoaders } from '../loaders/setup'
 import { Context } from '../main'
 import { Model } from '../model'
+import { RoleConnectionNode } from '../types/graphQL/role'
 import { SchoolMembershipConnectionNode } from '../types/graphQL/schoolMembership'
+import {
+    IChildPaginationArgs,
+    IPaginatedResponse,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     type SchoolMembershipsConnectionResponse implements iConnectionResponse {
@@ -46,8 +54,52 @@ const typeDefs = gql`
         joinTimestamp: String
         user: UserConnectionNode @isAdmin(entity: "user")
         school: SchoolConnectionNode @isAdmin(entity: "school")
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
     }
 `
+
+export async function rolesConnectionChildResolver(
+    membership: Pick<SchoolMembershipConnectionNode, 'schoolId' | 'userId'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    const includeTotalCount = shouldIncludeTotalCount(info, args)
+    return rolesConnectionChild(
+        membership.schoolId,
+        membership.userId,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export async function rolesConnectionChild(
+    schoolId: SchoolMembershipConnectionNode['schoolId'],
+    userId: SchoolMembershipConnectionNode['userId'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    return loaders.membershipRolesConnectionChild.instance.load({
+        args,
+        includeTotalCount,
+        parent: {
+            compositeId: [schoolId, userId],
+            filterKeys: ['schoolId', 'schoolUserId'],
+            pivots: [
+                '"SchoolMembership"."school_id"',
+                '"SchoolMembership"."user_id"',
+            ],
+        },
+    })
+}
 
 export default function getDefault(model: Model): ApolloServerExpressConfig {
     return {
@@ -74,8 +126,7 @@ export default function getDefault(model: Model): ApolloServerExpressConfig {
                         scope: args.scope,
                     })
                 },
-                // TODO
-                // roles: (_parent, args, ctx: Context) => {},
+                rolesConnection: rolesConnectionChildResolver,
             },
         },
     }
