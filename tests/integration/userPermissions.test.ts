@@ -22,8 +22,13 @@ import {
     createOrganizationAndValidate,
     addOrganizationToUserAndValidate,
     addSchoolToUser,
+    userToPayload,
 } from '../utils/operations/userOps'
-import { getNonAdminAuthToken, getAdminAuthToken } from '../utils/testConfig'
+import {
+    getNonAdminAuthToken,
+    getAdminAuthToken,
+    generateToken,
+} from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import chaiAsPromised from 'chai-as-promised'
 import chai from 'chai'
@@ -37,6 +42,9 @@ import { Role } from '../../src/entities/role'
 import { createRole as createRoleFactory } from '../factories/role.factory'
 import { createSchool as createSchoolFactory } from '../factories/school.factory'
 import { Status } from '../../src/entities/status'
+import { createUser } from '../factories/user.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { Organization } from '../../src/entities/organization'
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
@@ -315,6 +323,121 @@ describe('userPermissions', () => {
                 }
             })
         })
+    })
+
+    describe('isAllowedInsideTheOrganization', () => {
+        let userWithRoleAndPermission: User
+        let userWithoutRole: User
+        let userWithRoleWithoutPermission: User
+        let org1: Organization
+        let roleWithPermission: Role
+        let roleWithoutPermission: Role
+        let userPermissions: UserPermissions
+        let token: TokenPayload
+
+        beforeEach(async () => {
+            userWithRoleAndPermission = await createUser().save()
+            userWithoutRole = await createUser().save()
+            userWithRoleWithoutPermission = await createUser().save()
+            org1 = await createOrganization().save()
+            roleWithPermission = await createRoleFactory(
+                'role_with_permission',
+                org1,
+                {
+                    permissions: [PermissionName.delete_subjects_20447],
+                }
+            ).save()
+            await createOrganizationMembership({
+                user: userWithRoleAndPermission,
+                organization: org1,
+                roles: [roleWithPermission],
+            }).save()
+            await createOrganizationMembership({
+                user: userWithoutRole,
+                organization: org1,
+            }).save()
+            roleWithoutPermission = await createRoleFactory(
+                'role_without_permission',
+                org1,
+                {
+                    permissions: [],
+                }
+            ).save()
+            await createOrganizationMembership({
+                user: userWithRoleWithoutPermission,
+                organization: org1,
+                roles: [roleWithoutPermission],
+            }).save()
+        })
+
+        context(
+            'when the user has not the role with the included permission',
+            () => {
+                beforeEach(async () => {
+                    req.headers = {
+                        authorization: generateToken(
+                            userToPayload(userWithRoleAndPermission)
+                        ),
+                    }
+                    token = await checkToken(req)
+                    userPermissions = new UserPermissions(token)
+                })
+                it('should return true', async () => {
+                    const result = await userPermissions.isAllowedInsideTheOrganization(
+                        userWithRoleAndPermission.user_id,
+                        org1.organization_id,
+                        PermissionName.delete_subjects_20447
+                    )
+                    expect(result).to.be.true
+                })
+            }
+        )
+
+        context(
+            'when the user has not the role with the included permission',
+            () => {
+                beforeEach(async () => {
+                    req.headers = {
+                        authorization: generateToken(
+                            userToPayload(userWithoutRole)
+                        ),
+                    }
+                    token = await checkToken(req)
+                    userPermissions = new UserPermissions(token)
+                })
+                it('should return false', async () => {
+                    const result = await userPermissions.isAllowedInsideTheOrganization(
+                        userWithoutRole.user_id,
+                        org1.organization_id,
+                        PermissionName.delete_subjects_20447
+                    )
+                    expect(result).to.be.false
+                })
+            }
+        )
+
+        context(
+            'when the user has a the role that does not include the permission',
+            () => {
+                beforeEach(async () => {
+                    req.headers = {
+                        authorization: generateToken(
+                            userToPayload(userWithRoleWithoutPermission)
+                        ),
+                    }
+                    token = await checkToken(req)
+                    userPermissions = new UserPermissions(token)
+                })
+                it('should return false', async () => {
+                    const result = await userPermissions.isAllowedInsideTheOrganization(
+                        userWithRoleWithoutPermission.user_id,
+                        org1.organization_id,
+                        PermissionName.delete_subjects_20447
+                    )
+                    expect(result).to.be.false
+                })
+            }
+        )
     })
 
     context('memberships with permissions', () => {

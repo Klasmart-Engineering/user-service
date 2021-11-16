@@ -17,7 +17,6 @@ import {
     createSubcategories,
     ISubcategoryDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { loadFixtures } from '../utils/fixtures'
 import { User } from '../../src/entities/user'
 import { createUser } from '../factories/user.factory'
 import { userToPayload } from '../utils/operations/userOps'
