@@ -127,6 +127,14 @@ const typeDefs = gql`
             filter: SchoolFilter
             sort: SchoolSortInput
         ): SchoolsConnectionResponse
+
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
     }
 
     type ContactInfo {
@@ -278,6 +286,34 @@ export async function schoolsChildConnection(
     })
 }
 
+// This is a workaround to needing to mock total count AST check in tests
+export async function classesChildConnectionResolver(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesChildConnection(user.id, args, ctx.loaders, includeTotalCount)
+}
+
+export function classesChildConnection(
+    userId: UserConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: userId,
+            filterKey: 'userId',
+            pivot: '"Class"."organizationOrganizationId"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -320,6 +356,7 @@ export default function getDefault(
                         : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
                 schoolsConnection: schoolsChildConnectionResolver,
+                classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),

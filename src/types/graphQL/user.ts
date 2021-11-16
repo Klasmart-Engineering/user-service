@@ -1,9 +1,10 @@
 import { Status } from '../../entities/status'
+import { CoreClassConnectionNode } from '../../pagination/classesConnection'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
 import { OrganizationSummaryNode } from './organization'
 import { OrganizationMembershipConnectionNode } from './organizationMemberships'
 import { RoleSummaryNode } from './role'
-import { SchoolSummaryNode } from './school'
+import { ISchoolsConnectionNode, SchoolSummaryNode } from './school'
 
 export interface UserConnectionNode {
     id: string
@@ -20,6 +21,8 @@ export interface UserConnectionNode {
     gender?: string
 
     organizationMembershipsConnection?: IPaginatedResponse<OrganizationMembershipConnectionNode>
+    schoolsConnection?: IPaginatedResponse<ISchoolsConnectionNode>
+    classesConnection?: IPaginatedResponse<CoreClassConnectionNode>
 }
 
 export interface UserSummaryNode {
