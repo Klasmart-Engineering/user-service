@@ -2388,4 +2388,98 @@ describe('isAdmin', () => {
             expect(visibleSchools.totalCount).to.eql(1)
         })
     })
+
+    describe('schoolMemberships', () => {
+        let admin: User
+        let nonAdmin: User
+        let adminScope: SelectQueryBuilder<SchoolMembership>
+        let nonAdminScope: SelectQueryBuilder<SchoolMembership>
+
+        let school1: School
+        let school2: School
+        let school1Memberships: SchoolMembership[]
+        let school2Memberships: SchoolMembership[]
+
+        beforeEach(async () => {
+            admin = await createAdminUser(testClient)
+            nonAdmin = await createNonAdminUser(testClient)
+            adminScope = (await createEntityScope({
+                permissions: new UserPermissions({
+                    id: admin.user_id,
+
+                    email: admin.email!,
+                }),
+                entity: 'schoolMembership',
+            })) as SelectQueryBuilder<SchoolMembership>
+            nonAdminScope = (await createEntityScope({
+                permissions: new UserPermissions({
+                    id: nonAdmin.user_id,
+                    email: nonAdmin.email!,
+                }),
+                entity: 'schoolMembership',
+            })) as SelectQueryBuilder<SchoolMembership>
+
+            school1 = await createSchool().save()
+            school2 = await createSchool().save()
+
+            school1Memberships = await Promise.all([
+                createSchoolMembership({
+                    school: school1,
+                    user: await createUser().save(),
+                }).save(),
+                createSchoolMembership({
+                    school: school1,
+                    user: await createUser().save(),
+                }).save(),
+            ])
+
+            school2Memberships = await Promise.all([
+                createSchoolMembership({
+                    school: school2,
+                    user: await createUser().save(),
+                }).save(),
+                createSchoolMembership({
+                    school: school2,
+                    user: await createUser().save(),
+                }).save(),
+            ])
+        })
+        context('when user is admin', () => {
+            it('can see all school memberships', async () => {
+                const members = await adminScope.getMany()
+                expect(members).to.have.lengthOf(
+                    school1Memberships.length + school2Memberships.length
+                )
+            })
+        })
+
+        context('when user is a school member', () => {
+            beforeEach(async () => {
+                school1Memberships.push(
+                    await createSchoolMembership({
+                        school: school1,
+                        user: nonAdmin,
+                    }).save()
+                )
+                nonAdminScope = (await createEntityScope({
+                    permissions: new UserPermissions({
+                        id: nonAdmin.user_id,
+                        email: nonAdmin.email!,
+                    }),
+                    entity: 'schoolMembership',
+                })) as SelectQueryBuilder<SchoolMembership>
+            })
+            it('can see memberships from their schools only', async () => {
+                const members = await nonAdminScope.getMany()
+                expect(members).to.have.lengthOf(school1Memberships.length)
+            })
+        })
+
+        context('when user is not a school member', () => {
+            it('cannot see any memberships', async () => {
+                const members = await nonAdminScope.getMany()
+                expect(members).to.have.lengthOf(0)
+            })
+        })
+    })
 })

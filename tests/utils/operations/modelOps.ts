@@ -1914,6 +1914,14 @@ export const SCHOOL_NODE = gql`
             status
             shortCode
             organizationId
+            schoolMembershipsConnection {
+                edges {
+                    node {
+                        schoolId
+                        userId
+                    }
+                }
+            }
         }
     }
 `

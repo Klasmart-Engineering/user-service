@@ -1,6 +1,7 @@
 import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
+import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
 import validationConstants from '../../src/entities/validations/constants'
 import { generateShortCode } from '../../src/utils/shortcode'
@@ -9,10 +10,12 @@ export function createOrganizationMembership({
     user,
     organization,
     roles,
+    status,
 }: {
     user: User
     organization: Organization
     roles?: Role[]
+    status?: Status
 }): OrganizationMembership {
     const membership = new OrganizationMembership()
     membership.organization_id = organization.organization_id
@@ -25,6 +28,9 @@ export function createOrganizationMembership({
     )
     if (roles) {
         membership.roles = Promise.resolve(roles)
+    }
+    if (status) {
+        membership.status = status
     }
     return membership
 }

@@ -16,10 +16,6 @@ import { createOrganizationMembership } from '../../factories/organizationMember
 import { Role } from '../../../src/entities/role'
 import { createRole } from '../../factories/role.factory'
 import {
-    schoolsChildConnection as userSchoolsChildConnection,
-    schoolsChildConnectionResolver as userSchoolsChildConnectionResolver,
-} from '../../../src/schemas/user'
-import {
     schoolsChildConnection as orgSchoolsChildConnection,
     schoolsChildConnectionResolver as orgSchoolsChildConnectionResolver,
 } from '../../../src/schemas/organization'
@@ -129,99 +125,6 @@ describe('schoolsChildConnection', async () => {
         const token = { id: clientUser.user_id }
         const permissions = new UserPermissions(token)
         ctx = { loaders: createContextLazyLoaders(permissions) }
-    })
-
-    context('usersConnection parent', async () => {
-        it('returns correct schools per user', async () => {
-            const args: IChildPaginationArgs = {
-                direction: 'FORWARD',
-                count: 2,
-            }
-
-            const result = await userSchoolsChildConnection(
-                { id: clientUser.user_id },
-                args,
-                ctx.loaders,
-                false
-            )
-
-            expect(result.edges.map((e) => e.node.id)).to.have.same.members(
-                schoolMemberships
-                    .get(clientUser)!
-                    .map((school) => school.school_id)
-            )
-        })
-
-        it('uses exactly one dataloader when called with different users', async () => {
-            connection.logger.reset()
-
-            const loaderResults = []
-            for (const user of [clientUser, otherUser]) {
-                const loaderResult = userSchoolsChildConnection(
-                    { id: user.user_id },
-                    {},
-                    ctx.loaders,
-                    false
-                )
-                loaderResults.push(loaderResult)
-            }
-
-            await Promise.all(loaderResults)
-            // one query for school permissions
-            // one query for organization permissions
-            // one query for fetching users
-            expect(connection.logger.count).to.be.eq(3)
-        })
-
-        context('totalCount', async () => {
-            let fakeInfo: any
-
-            beforeEach(() => {
-                fakeInfo = {
-                    fieldNodes: [
-                        {
-                            kind: 'Field',
-                            name: {
-                                kind: 'Name',
-                                value: 'schoolsConnection',
-                            },
-                            selectionSet: {
-                                kind: 'SelectionSet',
-                                selections: [],
-                            },
-                        },
-                    ],
-                }
-            })
-
-            const callResolver = (
-                fakeInfo: Pick<GraphQLResolveInfo, 'fieldNodes'>
-            ) => {
-                return userSchoolsChildConnectionResolver(
-                    { id: clientUser.user_id },
-                    {},
-                    ctx,
-                    fakeInfo
-                )
-            }
-
-            it('returns total count', async () => {
-                fakeInfo.fieldNodes[0].selectionSet?.selections.push({
-                    kind: 'Field',
-                    name: { kind: 'Name', value: 'totalCount' },
-                })
-
-                const result = await callResolver(fakeInfo)
-                expect(result.totalCount).to.eq(
-                    schoolMemberships.get(clientUser)!.length
-                )
-            })
-
-            it('doesnt return total count', async () => {
-                const result = await callResolver(fakeInfo)
-                expect(result.totalCount).to.eq(undefined)
-            })
-        })
     })
 
     context('organizationsConnection parent', async () => {

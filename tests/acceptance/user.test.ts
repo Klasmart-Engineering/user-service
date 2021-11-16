@@ -394,16 +394,16 @@ describe('acceptance.user', () => {
             expect(orgNode.organization!.id).to.eq(org.organization_id)
         })
 
-        it('has schoolsConnection as a child', async () => {
+        it('has schoolMembershipsConnection as a child', async () => {
             const query = `
                 query usersConnection($direction: ConnectionDirection!) {
                     usersConnection(direction:$direction){
                         edges {
                             node {
-                                schoolsConnection{
+                                schoolMembershipsConnection{
                                     edges{
                                         node{
-                                            id
+                                            schoolId
                                         }
                                     }
                                 }
@@ -448,9 +448,11 @@ describe('acceptance.user', () => {
                     },
                 })
             expect(response.status).to.eq(200)
+            const usersConnection: IPaginatedResponse<UserConnectionNode> =
+                response.body.data.usersConnection
             expect(
-                response.body.data.usersConnection.edges[0].node
-                    .schoolsConnection.edges[0].node.id
+                usersConnection.edges[0].node.schoolMembershipsConnection!
+                    .edges[0].node.schoolId
             ).to.eq(school.school_id)
         })
     })

@@ -43,6 +43,7 @@ type IEntityString =
     | 'program'
     | 'school'
     | 'permission'
+    | 'schoolMembership'
     | 'organizationMembership'
 
 interface IsAdminDirectiveArgs {
@@ -131,7 +132,9 @@ export const createEntityScope = async ({
         case 'permission':
             scope = getRepository(Permission).createQueryBuilder()
             break
-
+        case 'schoolMembership':
+            scope = getRepository(SchoolMembership).createQueryBuilder()
+            break
         case 'organizationMembership':
             scope = getRepository(OrganizationMembership).createQueryBuilder()
             break
@@ -209,6 +212,13 @@ export const createEntityScope = async ({
             case 'role':
                 await nonAdminRoleScope(
                     scope as SelectQueryBuilder<Role>,
+                    permissions
+                )
+                break
+
+            case 'schoolMembership':
+                await nonAdminSchoolMembershipScope(
+                    scope as SelectQueryBuilder<SchoolMembership>,
                     permissions
                 )
                 break
@@ -585,6 +595,23 @@ export const nonAdminSchoolScope: NonAdminScope<School> = async (
     } else {
         // No permissions
         scope.where('false')
+    }
+}
+
+export const nonAdminSchoolMembershipScope: NonAdminScope<SchoolMembership> = async (
+    scope,
+    permissions
+) => {
+    // non admins can view memberships of their schools only
+    // note that permissions for accessing actual user / school info is handled via the corresponding scopes
+    const schoolIds = await permissions.schoolMembershipsWithPermissions([])
+
+    if (schoolIds.length > 0) {
+        scope.where('SchoolMembership.school IN (:...schoolIds)', {
+            schoolIds,
+        })
+    } else {
+        scope.andWhere('false')
     }
 }
 

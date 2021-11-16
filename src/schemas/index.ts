@@ -18,6 +18,7 @@ import subject from './subject'
 import user from './user'
 import organizationMembership from './organizationMembership'
 import myUser from './myUser'
+import schoolMembership from './schoolMembership'
 import enums from './enums'
 import scalars from './scalars'
 import { Model } from '../model'
@@ -44,6 +45,7 @@ export default function getDefault(model: Model, context?: Context) {
         subject(model, context),
         user(model, context),
         myUser(model),
+        schoolMembership(model),
         organizationMembership(model, context)
     )
     const schema = mergeRawSchemas(

@@ -4,7 +4,6 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { User } from '../entities/user'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
-import { IDataLoaders } from '../loaders/setup'
 import {
     orgsForUsers,
     rolesForUsers,
@@ -120,13 +119,13 @@ const typeDefs = gql`
         dateOfBirth: String
         gender: String
 
-        schoolsConnection(
+        schoolMembershipsConnection(
             count: PageSize
             cursor: String
             direction: ConnectionDirection
-            filter: SchoolFilter
-            sort: SchoolSortInput
-        ): SchoolsConnectionResponse
+            filter: SchoolMembershipFilter
+            sort: SchoolMembershipSortInput
+        ): SchoolMembershipsConnectionResponse
     }
 
     type ContactInfo {
@@ -250,34 +249,6 @@ const typeDefs = gql`
     }
 `
 
-export async function schoolsChildConnectionResolver(
-    user: Pick<UserConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    ctx: Pick<Context, 'loaders'>,
-    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
-) {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-    return schoolsChildConnection(user, args, ctx.loaders, includeTotalCount)
-}
-
-//This method is split up from totalCount to be easily testable
-export async function schoolsChildConnection(
-    user: Pick<UserConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    loaders: IDataLoaders,
-    includeTotalCount: boolean
-) {
-    return loaders.schoolsConnectionChild.instance.load({
-        args,
-        includeTotalCount: includeTotalCount,
-        parent: {
-            id: user.id,
-            filterKey: 'userId',
-            pivot: '"SchoolMembership"."user_id"',
-        },
-    })
-}
-
 export default function getDefault(
     model: Model,
     context?: Context
@@ -319,7 +290,7 @@ export default function getDefault(
                         ? ctx.loaders.userNode.roles.load(user.id)
                         : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
-                schoolsConnection: schoolsChildConnectionResolver,
+                schoolMembershipsConnection: schoolMembershipsConnectionResolver,
             },
             Mutation: {
                 me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
@@ -377,7 +348,6 @@ export default function getDefault(
         },
     }
 }
-
 export async function organizationMembershipsConnectionResolver(
     user: Pick<CoreUserConnectionNode, 'id'>,
     args: IChildPaginationArgs,
@@ -411,4 +381,33 @@ export async function loadOrganizationMembershipsForUser(
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key
     )
+}
+
+export async function schoolMembershipsConnectionResolver(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSchoolMembershipsForUser(ctx, user.id, args, includeTotalCount)
+}
+
+export async function loadSchoolMembershipsForUser(
+    context: Pick<Context, 'loaders'>,
+    userId: UserConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: userId,
+            filterKey: 'userId',
+            pivot: '"SchoolMembership"."user_id"',
+        },
+    }
+
+    return context.loaders.schoolMembershipsConnectionChild.instance.load(key)
 }

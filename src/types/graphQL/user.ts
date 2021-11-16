@@ -4,6 +4,7 @@ import { OrganizationSummaryNode } from './organization'
 import { OrganizationMembershipConnectionNode } from './organizationMemberships'
 import { RoleSummaryNode } from './role'
 import { SchoolSummaryNode } from './school'
+import { SchoolMembershipConnectionNode } from './schoolMembership'
 
 export interface UserConnectionNode {
     id: string
@@ -20,6 +21,7 @@ export interface UserConnectionNode {
     gender?: string
 
     organizationMembershipsConnection?: IPaginatedResponse<OrganizationMembershipConnectionNode>
+    schoolMembershipsConnection?: IPaginatedResponse<SchoolMembershipConnectionNode>
 }
 
 export interface UserSummaryNode {

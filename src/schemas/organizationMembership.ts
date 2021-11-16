@@ -21,6 +21,7 @@ const typeDefs = gql`
         shortCode: StringFilter
         organizationId: UUIDFilter
         userId: UUIDFilter
+        status: StringFilter
 
         # joined columns
         roleId: UUIDFilter
