@@ -18,12 +18,22 @@ import {
     OrganizationConnectionNode,
 } from '../../src/types/graphQL/organization'
 import { createOrganization } from '../factories/organization.factory'
-import { createRole as roleFactory } from '../factories/role.factory'
+import {
+    createRole,
+    createRole as roleFactory,
+} from '../factories/role.factory'
 import { ADD_USERS_TO_ORGANIZATIONS } from '../utils/operations/organizationOps'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createOrganizationOwnership } from '../factories/organizationOwnership.factory'
 import { makeRequest } from './utils'
+import { School } from '../../src/entities/school'
+import { Class } from '../../src/entities/class'
+import { createSchool } from '../factories/school.factory'
+import { createClass } from '../factories/class.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -33,6 +43,8 @@ describe('acceptance.organization', () => {
     let user: User
     let organization: Organization
     let branding: Branding
+    let school: School
+    let class_: Class
 
     before(async () => {
         connection = await createTestConnection()
@@ -45,7 +57,12 @@ describe('acceptance.organization', () => {
     beforeEach(async () => {
         user = await createUser().save()
         organization = await createOrganization(user).save()
-        await createOrganizationMembership({ user, organization }).save()
+        await createOrganizationMembership({
+            user,
+            organization,
+        }).save()
+        school = await createSchool(organization).save()
+        class_ = await createClass([school], organization).save()
     })
 
     context('addUsersToOrganizations', () => {
@@ -249,6 +266,60 @@ describe('acceptance.organization', () => {
                 response.body.data.organizationsConnection.edges[0].node
                     .rolesConnection.edges[0].node.id
             ).to.eq(role.role_id)
+        })
+
+        it('has classesConnection as a child', async () => {
+            const query = `
+                query organizationsConnection($direction: ConnectionDirection!) {
+                    organizationsConnection(direction:$direction){
+                        edges {
+                            node {
+                                classesConnection {
+                                    edges {
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const role = await createRole(undefined, undefined, {
+                permissions: [
+                    PermissionName.view_classes_20114,
+                    PermissionName.view_school_classes_20117,
+                ],
+            }).save()
+
+            const nonAdminUser = await createUser().save()
+            await createOrganizationMembership({
+                user: nonAdminUser,
+                organization,
+                roles: [role],
+            }).save()
+
+            const token = generateToken({
+                id: nonAdminUser.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationsConnection.edges[0].node
+                    .classesConnection.edges[0].node.id
+            ).to.eq(class_.class_id)
         })
     })
 })
