@@ -3,6 +3,7 @@ import { Connection } from 'typeorm'
 import { Subcategory } from '../../src/entities/subcategory'
 import {
     SUBCATEGORIES_CONNECTION,
+    SUBCATEGORIES_DELETE,
     SUBCATEGORY_NODE,
 } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
@@ -41,6 +42,21 @@ const makeNodeQuery = async (id: string) => {
             query: print(SUBCATEGORY_NODE),
             variables: {
                 id,
+            },
+        })
+}
+
+const makeDeleteQuery = async (id: string) => {
+    return await request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: getAdminAuthToken(),
+        })
+        .send({
+            query: print(SUBCATEGORIES_DELETE),
+            variables: {
+                input: [{ id }],
             },
         })
 }
@@ -135,6 +151,31 @@ describe('acceptance.subcategory', () => {
                 expect(response.status).to.eq(200)
                 expect(errors).to.exist
                 expect(subcategoryNode).to.be.null
+            })
+        })
+    })
+
+    context('deleteSubcategories', () => {
+        context('when id exists', () => {
+            it('should respond succesfully', async () => {
+                const subcategoryResponse = await makeConnectionQuery()
+                const subcategoriesEdges =
+                    subcategoryResponse.body.data.subcategoriesConnection.edges
+                const subcategoryId = subcategoriesEdges[0].node.id
+                const response = await makeDeleteQuery(subcategoryId)
+                const subcategoryNode = response.body.data.subcategories[0]
+
+                expect(response.status).to.eq(200)
+                expect(subcategoryNode.id).to.equal(subcategoryId)
+            })
+        })
+
+        context('when requested subcategory does not exists', () => {
+            it('should respond with errors', async () => {
+                const response = await makeNodeQuery(NIL_UUID)
+                const errors = response.body.errors
+                expect(response.status).to.eq(200)
+                expect(errors).to.exist
             })
         })
     })

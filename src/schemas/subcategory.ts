@@ -3,12 +3,16 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { subcategoriesConnectionResolver } from '../pagination/subcategoriesConnection'
+import { deleteSubcategories } from '../resolvers/subcategory'
 
 const typeDefs = gql`
     extend type Mutation {
         subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
         uploadSubCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        deleteSubcategories(
+            input: [DeleteSubcategoryInput!]!
+        ): SubcategoriesMutationResult
     }
 
     extend type Query {
@@ -35,6 +39,9 @@ const typeDefs = gql`
 
         # Mutations
         delete(_: Int): Boolean
+            @deprecated(
+                reason: "Sunset Date: 10/02/2022 Details: https://bitbucket.org/calmisland/kidsloop-user-service/src/master/documents/rfc/mutations/050-Subcategory-toplevel-mutations.md"
+            )
     }
 
     input SubcategoryDetail {
@@ -82,6 +89,14 @@ const typeDefs = gql`
         AND: [SubcategoryFilter]
         OR: [SubcategoryFilter]
     }
+
+    input DeleteSubcategoryInput {
+        id: ID!
+    }
+
+    type SubcategoriesMutationResult {
+        subcategories: [SubcategoryConnectionNode!]!
+    }
 `
 export default function getDefault(
     model: Model,
@@ -95,6 +110,8 @@ export default function getDefault(
                     model.getSubcategory(args, ctx),
                 uploadSubCategoriesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadSubCategoriesFromCSV(args, ctx, info),
+                deleteSubcategories: (_parent, args, ctx, info) =>
+                    deleteSubcategories(args, ctx),
             },
             Query: {
                 subcategory: (_parent, args, ctx, _info) =>

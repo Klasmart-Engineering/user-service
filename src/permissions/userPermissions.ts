@@ -145,19 +145,11 @@ export class UserPermissions {
             isAdmin && superAdminRole.permissions.includes(permission_name)
 
         if (!output && organization_id) {
-            const allOrganizationPermisions = await this.organizationPermissions(
-                user_id
+            output = await this.isAllowedInsideTheOrganization(
+                user_id,
+                organization_id,
+                permission_name
             )
-            const organizationPermissions = allOrganizationPermisions.get(
-                organization_id
-            )
-
-            if (
-                organizationPermissions &&
-                organizationPermissions.has(permission_name)
-            ) {
-                output = true
-            }
         }
 
         if (!output && school_ids) {
@@ -175,6 +167,28 @@ export class UserPermissions {
         }
 
         return output
+    }
+
+    public async isAllowedInsideTheOrganization(
+        userId: string | undefined,
+        organizationId: string,
+        permissionName: string
+    ): Promise<boolean> {
+        const allOrganizationPermisions = await this.organizationPermissions(
+            userId
+        )
+        console.log(organizationId)
+        console.log(allOrganizationPermisions)
+        const organizationPermissions = allOrganizationPermisions.get(
+            organizationId
+        )
+        if (
+            organizationPermissions &&
+            organizationPermissions.has(permissionName)
+        ) {
+            return true
+        }
+        return false
     }
 
     private async organizationPermissions(
