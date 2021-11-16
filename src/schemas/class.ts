@@ -68,6 +68,10 @@ const typeDefs = gql`
 
         AND: [ClassFilter!]
         OR: [ClassFilter!]
+
+        #connections - extra filters
+        studentId: UUIDFilter
+        teacherId: UUIDFilter
     }
 
     type ClassConnectionNode {

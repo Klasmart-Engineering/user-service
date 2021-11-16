@@ -8,7 +8,6 @@ import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addStudentsToClass,
-    createClass,
     createOrg,
     leaveTheOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
@@ -27,6 +26,9 @@ import { OrganizationMembership } from '../../src/entities/organizationMembershi
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
 import { UserConnectionNode } from '../../src/types/graphQL/user'
+import { makeRequest } from './utils'
+import { createClass } from '../factories/class.factory'
+import { Class } from '../../src/entities/class'
 
 use(chaiAsPromised)
 
@@ -98,17 +100,10 @@ describe('acceptance.user', () => {
                 userIds[i * 3 + 1],
                 userIds[i * 3 + 2],
             ]
-            const classResponse = await createClass(
-                orgId,
-                `class ${i + 1}`,
-                getAdminAuthToken()
-            )
 
-            const classId =
-                classResponse.body.data.organization.createClass.class_id
-
-            classIds.push(classId)
-            await addStudentsToClass(classId, uIds, getAdminAuthToken())
+            const class_ = await createClass([], organization).save()
+            classIds.push(class_.class_id)
+            await addStudentsToClass(class_.class_id, uIds, getAdminAuthToken())
         }
     })
 
@@ -373,18 +368,14 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
 
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: token,
-                })
-                .send({
-                    query,
-                    variables: {
-                        direction: 'FORWARD',
-                    },
-                })
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
             expect(response.status).to.eq(200)
             const usersConnection: IPaginatedResponse<UserConnectionNode> =
                 response.body.data.usersConnection
@@ -435,18 +426,14 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
 
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: token,
-                })
-                .send({
-                    query,
-                    variables: {
-                        direction: 'FORWARD',
-                    },
-                })
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
             expect(response.status).to.eq(200)
             const usersConnection: IPaginatedResponse<UserConnectionNode> =
                 response.body.data.usersConnection
@@ -455,7 +442,107 @@ describe('acceptance.user', () => {
                     .edges[0].node.schoolId
             ).to.eq(school.school_id)
         })
+
+        context('classes child connections', () => {
+            let user: User
+            let classStudying: Class
+            let classTeaching: Class
+            let userToken: string
+
+            beforeEach(async () => {
+                user = await createUser().save()
+                const org = await createOrganization().save()
+
+                const role = await createRole(undefined, org, {
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_classes_20114,
+                    ],
+                }).save()
+                await createOrganizationMembership({
+                    user: user,
+                    organization: org,
+                    roles: [role],
+                }).save()
+
+                classStudying = await createClass([], org, {
+                    students: [user],
+                }).save()
+                classTeaching = await createClass([], org, {
+                    teachers: [user],
+                }).save()
+
+                userToken = generateToken({
+                    id: user.user_id,
+                    email: user.email,
+                    iss: 'calmid-debug',
+                })
+            })
+
+            it('has classesStudyingConnection as a child', async () => {
+                const query = `
+                    query usersConnection($direction: ConnectionDirection!) {
+                        usersConnection(direction:$direction){
+                            edges {
+                                node {
+                                    classesStudyingConnection {
+                                        edges{
+                                            node{
+                                                id
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }`
+
+                const response = await makeRequest(
+                    request,
+                    query,
+                    {
+                        direction: 'FORWARD',
+                    },
+                    userToken
+                )
+                expect(
+                    response.body.data.usersConnection.edges[0].node
+                        .classesStudyingConnection.edges[0].node.id
+                ).to.eq(classStudying.class_id)
+            })
+            it('has classesTeachingConnection as a child', async () => {
+                const query = `
+                    query usersConnection($direction: ConnectionDirection!) {
+                        usersConnection(direction:$direction){
+                            edges {
+                                node {
+                                    classesTeachingConnection {
+                                        edges{
+                                            node{
+                                                id
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }`
+                const response = await makeRequest(
+                    request,
+                    query,
+                    {
+                        direction: 'FORWARD',
+                    },
+                    userToken
+                )
+                expect(
+                    response.body.data.usersConnection.edges[0].node
+                        .classesTeachingConnection.edges[0].node.id
+                ).to.eq(classTeaching.class_id)
+            })
+        })
     })
+
     context('my_users', async () => {
         it('Finds no users if I am not logged in', async () => {
             const response = await request

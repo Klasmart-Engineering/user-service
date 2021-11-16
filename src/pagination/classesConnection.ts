@@ -104,6 +104,13 @@ export async function classesConnectionQuery(
             scope.innerJoin('Class.programs', 'Program')
         }
 
+        if (filterHasProperty('studentId', filter)) {
+            scope.innerJoin('Class.students', 'Student')
+        }
+        if (filterHasProperty('teacherId', filter)) {
+            scope.innerJoin('Class.teachers', 'Teacher')
+        }
+
         scope.andWhere(
             getWhereClauseFromFilter(filter, {
                 id: 'Class.class_id',
@@ -119,6 +126,8 @@ export async function classesConnectionQuery(
                 gradeId: 'Grade.id',
                 subjectId: 'Subject.id',
                 programId: 'Program.id',
+                studentId: 'Student.user_id',
+                teacherId: 'Teacher.user_id',
             })
         )
     }

@@ -4,6 +4,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
 import { User } from '../entities/user'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
+import { IDataLoaders } from '../loaders/setup'
 import {
     orgsForUsers,
     rolesForUsers,
@@ -112,6 +113,22 @@ const typeDefs = gql`
             sort: OrganizationMembershipSortBy
             direction: ConnectionDirection
         ): OrganizationMembershipsConnectionResponse
+
+        classesStudyingConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        classesTeachingConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
 
         roles: [RoleSummaryNode!]!
         schools: [SchoolSummaryNode!]!
@@ -290,6 +307,9 @@ export default function getDefault(
                         ? ctx.loaders.userNode.roles.load(user.id)
                         : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
+
+                classesStudyingConnection: classesStudyingConnectionResolver,
+                classesTeachingConnection: classesTeachingConnectionResolver,
                 schoolMembershipsConnection: schoolMembershipsConnectionResolver,
             },
             Mutation: {
@@ -347,6 +367,60 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function classesStudyingConnectionResolver(
+    user: UserConnectionNode,
+    args: Record<string, unknown>,
+    ctx: Context,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesStudyingConnection(user, args, ctx.loaders, includeTotalCount)
+}
+
+export async function classesStudyingConnection(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: user.id,
+            filterKey: 'studentId',
+            pivot: '"Student"."user_id"',
+        },
+    })
+}
+
+export async function classesTeachingConnectionResolver(
+    user: UserConnectionNode,
+    args: Record<string, unknown>,
+    ctx: Context,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesTeachingConnection(user, args, ctx.loaders, includeTotalCount)
+}
+
+export async function classesTeachingConnection(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: user.id,
+            filterKey: 'teacherId',
+            pivot: '"Teacher"."user_id"',
+        },
+    })
 }
 export async function organizationMembershipsConnectionResolver(
     user: Pick<CoreUserConnectionNode, 'id'>,
