@@ -12,7 +12,6 @@ import { print } from 'graphql'
 import { expect } from 'chai'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { NIL_UUID } from '../utils/database'
-import { DeleteSubcategoryInput } from '../../src/types/graphQL/subcategory'
 import {
     createSubcategories,
     ISubcategoryDetail,
@@ -24,6 +23,7 @@ import { createRole } from '../factories/role.factory'
 import { createOrganization } from '../factories/organization.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -56,24 +56,6 @@ const makeNodeQuery = async (id: string) => {
             query: print(SUBCATEGORY_NODE),
             variables: {
                 id,
-            },
-        })
-}
-
-const makeDeleteMutation = async (
-    token: string,
-    input: DeleteSubcategoryInput[]
-) => {
-    return await request
-        .post('/user')
-        .set({
-            ContentType: 'application/json',
-            Authorization: token,
-        })
-        .send({
-            query: print(SUBCATEGORIES_DELETE),
-            variables: {
-                input,
             },
         })
 }
@@ -216,9 +198,12 @@ describe('acceptance.subcategory', () => {
                     res.body.data.organization.createOrUpdateSubcategories[0].id
             })
             it('should respond succesfully', async () => {
-                const response = await makeDeleteMutation(token, [
+                const response = await makeRequest(
+                    request,
+                    print(SUBCATEGORIES_DELETE),
                     { id: subcategoryId },
-                ])
+                    token
+                )
                 const subcategoryNode =
                     response.body.data.deleteSubcategories.subcategories[0]
 
@@ -229,9 +214,12 @@ describe('acceptance.subcategory', () => {
 
         context('when requested subcategory does not exists', () => {
             it('should respond with errors', async () => {
-                const response = await makeDeleteMutation(getAdminAuthToken(), [
+                const response = await makeRequest(
+                    request,
+                    print(SUBCATEGORIES_DELETE),
                     { id: NIL_UUID },
-                ])
+                    getAdminAuthToken()
+                )
                 const errors = response.body.errors
                 expect(response.status).to.eq(200)
                 expect(errors).to.exist
