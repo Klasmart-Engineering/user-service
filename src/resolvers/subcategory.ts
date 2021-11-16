@@ -44,29 +44,49 @@ export const deleteSubcategories = async (
         })
         .getMany()
 
-    if (subcategories.length === 0 || subcategories.length !== ids.length) {
-        errors.push(
-            new APIError({
-                code: customErrors.nonexistent_entity.code,
-                message: customErrors.nonexistent_entity.message,
-                variables: ['id'],
-                entity: 'Subcategory',
-            })
-        )
-    } else {
-        for (const subcategory of subcategories) {
-            if (subcategory.status === Status.INACTIVE) {
-                errors.push(
-                    new APIError({
-                        code: customErrors.inactive_status.code,
-                        message: customErrors.inactive_status.message,
-                        variables: ['id'],
-                        entity: 'Subcategory',
-                        entityName: subcategory.name,
-                    })
-                )
-            }
-            if (subcategory.system && !isAdmin) {
+    for (const id of ids) {
+        const subcategory = subcategories.find((s) => s.id === id)
+        if (!subcategory) {
+            errors.push(
+                new APIError({
+                    code: customErrors.nonexistent_entity.code,
+                    message: customErrors.nonexistent_entity.message,
+                    variables: ['id'],
+                    entity: 'Subcategory',
+                })
+            )
+            continue
+        }
+        if (subcategory.status === Status.INACTIVE) {
+            errors.push(
+                new APIError({
+                    code: customErrors.inactive_status.code,
+                    message: customErrors.inactive_status.message,
+                    variables: ['id'],
+                    entity: 'Subcategory',
+                    entityName: subcategory.name,
+                })
+            )
+        }
+        if (subcategory.system && !isAdmin) {
+            errors.push(
+                new APIError({
+                    code: customErrors.unauthorized.code,
+                    message: customErrors.unauthorized.message,
+                    variables: ['id'],
+                    entity: 'Subcategory',
+                    entityName: subcategory.name,
+                })
+            )
+        }
+        if (!subcategory.system && !isAdmin) {
+            const isAllowedIntheOrg = await context.permissions.isAllowedInsideTheOrganization(
+                userId,
+                // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+                (subcategory as any).__organization__.organization_id,
+                PermissionName.delete_subjects_20447
+            )
+            if (!isAllowedIntheOrg) {
                 errors.push(
                     new APIError({
                         code: customErrors.unauthorized.code,
@@ -77,32 +97,13 @@ export const deleteSubcategories = async (
                     })
                 )
             }
-            if (!subcategory.system && !isAdmin) {
-                const isAllowedIntheOrg = await context.permissions.isAllowedInsideTheOrganization(
-                    userId,
-                    // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-                    (subcategory as any).__organization__.organization_id,
-                    PermissionName.delete_subjects_20447
-                )
-                if (!isAllowedIntheOrg) {
-                    errors.push(
-                        new APIError({
-                            code: customErrors.unauthorized.code,
-                            message: customErrors.unauthorized.message,
-                            variables: ['id'],
-                            entity: 'Subcategory',
-                            entityName: subcategory.name,
-                        })
-                    )
-                }
-            }
-
-            subcategory.status = Status.INACTIVE
-            subcategory.deleted_at = new Date()
-            subcategoryNodes.push(
-                mapSubcategoryToSubcategoryConnectionNode(subcategory)
-            )
         }
+
+        subcategory.status = Status.INACTIVE
+        subcategory.deleted_at = new Date()
+        subcategoryNodes.push(
+            mapSubcategoryToSubcategoryConnectionNode(subcategory)
+        )
     }
 
     if (errors.length) throw new APIErrorCollection(errors)
