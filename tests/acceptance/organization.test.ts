@@ -88,19 +88,14 @@ describe('acceptance.organization', () => {
             }
             await connection.manager.save(organizations)
 
-            const start_idx = Math.floor(Math.random() * (roleuser_count - 5))
-            const end_idx = start_idx + 5
-
             input = []
             for (let i = 0; i < org_count; i++) {
                 input.push({
                     organizationId: organizations[i].organization_id,
                     organizationRoleIds: roles
-                        .slice(start_idx, end_idx)
+                        .slice(2, 11)
                         .map((v) => v.role_id),
-                    userIds: users
-                        .slice(start_idx, end_idx)
-                        .map((v) => v.user_id),
+                    userIds: users.slice(8, 15).map((v) => v.user_id),
                 })
             }
         })
@@ -114,7 +109,7 @@ describe('acceptance.organization', () => {
                         Authorization: generateToken(userToPayload(adminUser)),
                     })
                     .send({
-                        query: print(ADD_USERS_TO_ORGANIZATIONS),
+                        query: ADD_USERS_TO_ORGANIZATIONS,
                         variables: {
                             input,
                         },
