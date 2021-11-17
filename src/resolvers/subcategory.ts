@@ -21,10 +21,15 @@ export const deleteSubcategories = async (
     args: { input: DeleteSubcategoryInput[] },
     context: Context
 ): Promise<SubcategoriesMutationResult> => {
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
-        throw new Error(
-            `${args.input.length} is larger than the limit of ${MAX_MUTATION_INPUT_ARRAY_SIZE} on mutation input arrays`
-        )
+    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+        throw new APIError({
+            code: customErrors.invalid_array_max_length.code,
+            message: customErrors.invalid_array_max_length.message,
+            variables: [],
+            entity: 'User',
+            max: MAX_MUTATION_INPUT_ARRAY_SIZE,
+        })
+    }
 
     const errors: APIError[] = []
     const ids: string[] = args.input.map((val) => val.id).flat()
@@ -118,10 +123,13 @@ export const deleteSubcategories = async (
     try {
         await getManager().save(subcategories)
     } catch (e) {
-        const err = e instanceof Error ? e.message : 'Unknown Error'
-        throw new Error(
-            `DeleteSubcategoriesInput: Error occurred during save. Error: ${err}`
-        )
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw new APIError({
+            code: customErrors.database_save_error.code,
+            message: customErrors.database_save_error.message,
+            variables: [message],
+            entity: 'Subcategory',
+        })
     }
 
     return { subcategories: subcategoryNodes }
