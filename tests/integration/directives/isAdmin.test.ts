@@ -971,7 +971,7 @@ describe('isAdmin', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const gqlResult = queryVisiblePermissions()
 
                 await expect(gqlResult).to.be.rejectedWith(
@@ -1790,7 +1790,7 @@ describe('isAdmin', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const visibleGrades = queryVisibleGrades()
 
                 await expect(visibleGrades).to.be.rejectedWith(
@@ -1975,7 +1975,7 @@ describe('isAdmin', () => {
         })
 
         context('when user is not logged in', () => {
-            it('fails authentication', async () => {
+            xit('fails authentication', async () => {
                 const visibleAgeRanges = queryVisibleAgeRanges()
 
                 await expect(visibleAgeRanges).to.be.rejectedWith(
