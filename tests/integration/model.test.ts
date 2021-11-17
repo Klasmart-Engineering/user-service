@@ -36,6 +36,7 @@ import {
     getOrganizations,
     getProgram,
     getSubcategory,
+    myUsers,
 } from '../utils/operations/modelOps'
 import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
 import {
@@ -174,7 +175,6 @@ describe('model', () => {
                     'Context creation failed: No authentication token'
                 )
             })
-            expect(users).to.have.length(numEmailProfiles)
         })
 
         it('throws an error if multiple users with the username are found', async () => {

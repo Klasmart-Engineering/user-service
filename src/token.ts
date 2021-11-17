@@ -1,4 +1,3 @@
-import { AuthenticationError } from 'apollo-server-express'
 import { NextFunction, Request, Response } from 'express'
 import { decode, Secret, verify, VerifyOptions } from 'jsonwebtoken'
 import getAuthenticatedUser from './services/azureAdB2C'
