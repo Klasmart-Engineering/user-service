@@ -1038,6 +1038,18 @@ export const SUBCATEGORY_NODE = gql`
     }
 `
 
+export const SUBCATEGORIES_DELETE = gql`
+    mutation deleteSubcategories($input: [DeleteSubcategoryInput!]!) {
+        deleteSubcategories(input: $input) {
+            subcategories {
+                name
+                status
+                id
+            }
+        }
+    }
+`
+
 export const SUBJECTS_CONNECTION = `
     query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
         subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
