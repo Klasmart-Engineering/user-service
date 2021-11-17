@@ -44,8 +44,8 @@ export const deleteSubcategories = async (
         })
         .getMany()
 
-    // eslint-disable-next-line  @typescript-eslint/no-explicit-any
     const organizationsIds = subcategories.map(
+        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         (subcategory) => (subcategory as any).__organization__?.organization_id
     )
     const organizationsWhereIsPermitted = await context.permissions.organizationsWhereItIsAllowed(
@@ -89,8 +89,8 @@ export const deleteSubcategories = async (
             )
         }
         if (!subcategory.system && !isAdmin) {
-            // eslint-disable-next-line  @typescript-eslint/no-explicit-any
             const isAllowedIntheOrg = organizationsWhereIsPermitted.includes(
+                // eslint-disable-next-line  @typescript-eslint/no-explicit-any
                 (subcategory as any).__organization__.organization_id
             )
             if (!isAllowedIntheOrg) {
