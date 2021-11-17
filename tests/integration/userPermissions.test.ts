@@ -325,6 +325,147 @@ describe('userPermissions', () => {
         })
     })
 
+    describe('allowedInOrganizations', () => {
+        let userWithRoleAndPermissionInOrg1: User
+        let userWithoutRole: User
+        let userWithRoleWithoutPermission: User
+        let inactiveUser: User
+        let org1: Organization
+        let org2: Organization
+        let roleWithPermission: Role
+        let roleWithoutPermission: Role
+        let userPermissions: UserPermissions
+        let token: TokenPayload
+
+        beforeEach(async () => {
+            userWithRoleAndPermissionInOrg1 = await createUser().save()
+            userWithoutRole = await createUser().save()
+            userWithRoleWithoutPermission = await createUser().save()
+            inactiveUser = createUser()
+            inactiveUser.status = Status.INACTIVE
+            await inactiveUser.save()
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            roleWithPermission = await createRoleFactory(
+                'role_with_permission',
+                org1,
+                {
+                    permissions: [PermissionName.delete_subjects_20447],
+                }
+            ).save()
+            await createOrganizationMembership({
+                user: userWithRoleAndPermissionInOrg1,
+                organization: org1,
+                roles: [roleWithPermission],
+            }).save()
+            await createOrganizationMembership({
+                user: userWithRoleAndPermissionInOrg1,
+                organization: org2,
+                roles: [],
+            }).save()
+            await createOrganizationMembership({
+                user: userWithoutRole,
+                organization: org1,
+            }).save()
+            roleWithoutPermission = await createRoleFactory(
+                'role_without_permission',
+                org1,
+                {
+                    permissions: [],
+                }
+            ).save()
+            await createOrganizationMembership({
+                user: userWithRoleWithoutPermission,
+                organization: org1,
+                roles: [roleWithoutPermission],
+            }).save()
+        })
+
+        context(
+            'when the user has not the role with the included permission',
+            () => {
+                beforeEach(async () => {
+                    req.headers = {
+                        authorization: generateToken(
+                            userToPayload(userWithRoleAndPermissionInOrg1)
+                        ),
+                    }
+                    token = await checkToken(req)
+                    userPermissions = new UserPermissions(token)
+                })
+                it('should return all the organizations ids that allow it and not the other', async () => {
+                    const result = await userPermissions.organizationsWhereItIsAllowed(
+                        [org1.organization_id, org2.organization_id],
+                        PermissionName.delete_subjects_20447
+                    )
+                    expect(result).to.have.lengthOf(1)
+                    expect(result[0]).to.equal(org1.organization_id)
+                })
+            }
+        )
+
+        context(
+            'when the user has not the role with the included permission',
+            () => {
+                beforeEach(async () => {
+                    req.headers = {
+                        authorization: generateToken(
+                            userToPayload(userWithoutRole)
+                        ),
+                    }
+                    token = await checkToken(req)
+                    userPermissions = new UserPermissions(token)
+                })
+                it('should return an empty array', async () => {
+                    const result = await userPermissions.organizationsWhereItIsAllowed(
+                        [org1.organization_id],
+                        PermissionName.delete_subjects_20447
+                    )
+                    expect(result).to.be.have.lengthOf(0)
+                })
+            }
+        )
+
+        context(
+            'when the user has a role that does not include the permission',
+            () => {
+                beforeEach(async () => {
+                    req.headers = {
+                        authorization: generateToken(
+                            userToPayload(userWithRoleWithoutPermission)
+                        ),
+                    }
+                    token = await checkToken(req)
+                    userPermissions = new UserPermissions(token)
+                })
+                it('should return an empty array', async () => {
+                    const result = await userPermissions.organizationsWhereItIsAllowed(
+                        [org1.organization_id],
+                        PermissionName.delete_subjects_20447
+                    )
+                    expect(result).to.be.have.lengthOf(0)
+                })
+            }
+        )
+
+        context('when the user is inactive', () => {
+            beforeEach(async () => {
+                req.headers = {
+                    authorization: generateToken(userToPayload(inactiveUser)),
+                }
+                token = await checkToken(req)
+                userPermissions = new UserPermissions(token)
+            })
+            it('should return an empty array', async () => {
+                const result = await userPermissions.organizationsWhereItIsAllowed(
+                    [org1.organization_id],
+                    PermissionName.delete_subjects_20447
+                )
+                expect(result).to.be.have.lengthOf(0)
+            })
+        })
+    })
+
     context('memberships with permissions', () => {
         let userPermissions: UserPermissions
         let nonAdmin: User

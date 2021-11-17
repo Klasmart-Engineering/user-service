@@ -30,7 +30,6 @@ export const deleteSubcategories = async (
     const ids: string[] = args.input.map((val) => val.id).flat()
     const subcategoryNodes: SubcategoryConnectionNode[] = []
     const isAdmin = context.permissions.isAdmin
-    const userId = context.permissions.getUserId()
 
     const subcategories = await Subcategory.createQueryBuilder()
         .select([
@@ -49,7 +48,7 @@ export const deleteSubcategories = async (
     const organizationsIds = subcategories.map(
         (subcategory) => (subcategory as any).__organization__?.organization_id
     )
-    const organizationsWhereIsPermitted = await context.permissions.isAllowedInOrganizations(
+    const organizationsWhereIsPermitted = await context.permissions.organizationsWhereItIsAllowed(
         organizationsIds,
         PermissionName.delete_subjects_20447
     )

@@ -176,10 +176,14 @@ export class UserPermissions {
         return output
     }
 
-    public async isAllowedInOrganizations(
+    public async organizationsWhereItIsAllowed(
         organizationIds: string[],
         permissionName: string
     ): Promise<string[]> {
+        const isActive = await this.getUserIsActive(this.user_id)
+        if (!isActive) {
+            return []
+        }
         const orgsWithPermission: string[] = []
         const allOrganizationPermisions = await this.organizationPermissions(
             this.user_id
