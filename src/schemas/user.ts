@@ -205,6 +205,9 @@ const typeDefs = gql`
 
     extend type Query {
         me: User
+            @deprecated(
+                reason: "Use myUser.node. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
+            )
         user(user_id: ID!): User
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
@@ -219,7 +222,7 @@ const typeDefs = gql`
         users: [User] @deprecated(reason: "Unused")
         my_users: [User!]
             @deprecated(
-                reason: "Use 'usersConnection with a filter for matching 'email' or 'phone'"
+                reason: "Use myUser.profiles. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
             )
     }
 
@@ -341,7 +344,8 @@ export default function getDefault(
                 schoolMembershipsConnection: schoolMembershipsConnectionResolver,
             },
             Mutation: {
-                me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
+                me: (_parent, _args, ctx: Context, _info) =>
+                    model.getMyUser(ctx.token),
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 switch_user: (_parent, args, ctx, info) => {
                     throw new Error('Deprecated')
@@ -356,7 +360,8 @@ export default function getDefault(
                     removeOrganizationRolesFromUsers(args, ctx),
             },
             Query: {
-                me: (_, _args, ctx, _info) => model.getMyUser(ctx),
+                me: (_, _args, ctx: Context, _info) =>
+                    model.getMyUser(ctx.token),
                 usersConnection: (_parent, args, ctx: Context, info) => {
                     // Regenerate the loaders on every resolution, because the `args.filter`
                     // may be different
@@ -381,8 +386,8 @@ export default function getDefault(
                 user: (_parent, { user_id }, ctx: Context, _info) => {
                     return ctx.loaders.user.user.instance.load(user_id)
                 },
-                my_users: (_parent, _args, ctx, info) =>
-                    model.myUsers({}, ctx, info),
+                my_users: (_parent, _args, ctx: Context, info) =>
+                    model.myUsers(ctx.token),
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {

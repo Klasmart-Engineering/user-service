@@ -5,6 +5,9 @@ import { createUser } from '../factories/user.factory'
 import { generateToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { v4 as uuid_v4 } from 'uuid'
+import { User } from '../../src/entities/user'
+import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 
 function makeRequest(token: string, query: string) {
     return supertest('http://localhost:8080')
@@ -60,6 +63,44 @@ describe('acceptance.myUser', () => {
             const response = await makeRequest(token, query)
             expect(response.status).to.eq(200)
             expect(response.body.errors).exist
+        })
+    })
+
+    context('MyUser.profiles', () => {
+        const query = `
+            query {
+                myUser {
+                    profiles {
+                        id
+                    }
+                }
+            }
+        `
+
+        let clientUser: User
+        let profile: User
+
+        beforeEach(async () => {
+            const organization = await createOrganization().save()
+            clientUser = await createUser().save()
+            profile = await createUser({ email: clientUser.email }).save()
+
+            for (const user of [clientUser, profile]) {
+                await createOrganizationMembership({
+                    user,
+                    organization,
+                }).save()
+            }
+        })
+
+        it('returns all active profiles for the active user', async () => {
+            const token = generateToken({
+                id: clientUser.user_id,
+                email: clientUser.email,
+                iss: 'calmid-debug',
+            })
+            const response = await makeRequest(token, query)
+            expect(response.body.data.myUser.profiles).to.have.length(2)
         })
     })
 })

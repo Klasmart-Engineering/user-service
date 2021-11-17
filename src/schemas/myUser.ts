@@ -13,6 +13,7 @@ const typeDefs = gql`
 
     type MyUser {
         node: UserConnectionNode
+        profiles: [UserConnectionNode!]!
     }
 `
 
@@ -22,7 +23,7 @@ export default function getDefault(model: Model): ApolloServerExpressConfig {
         resolvers: {
             MyUser: {
                 node: async (_parent, _args, ctx: Context, _info) => {
-                    const user = await model.getMyUser(ctx)
+                    const user = await model.getMyUser(ctx.token)
                     if (!user) {
                         throw new APIErrorCollection([
                             new APIError({
@@ -36,6 +37,10 @@ export default function getDefault(model: Model): ApolloServerExpressConfig {
                         ])
                     }
                     return mapUserToUserConnectionNode(user)
+                },
+                profiles: async (_parent, _args, ctx: Context, info) => {
+                    const users = await model.myUsers(ctx.token)
+                    return users.map(mapUserToUserConnectionNode)
                 },
             },
             Query: {

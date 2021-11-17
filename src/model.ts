@@ -89,6 +89,7 @@ import { programsConnectionResolver } from './pagination/programsConnection'
 import { classesConnectionResolver } from './pagination/classesConnection'
 import { gradesConnectionResolver } from './pagination/gradesConnection'
 import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
+import { TokenPayload } from './token'
 
 export class Model {
     public static async create() {
@@ -172,8 +173,8 @@ export class Model {
         )
     }
 
-    public async getMyUser({ token, permissions }: Context) {
-        const user_id = permissions.getUserId()
+    public async getMyUser(token: TokenPayload) {
+        const user_id = token.id
         if (!user_id) {
             return undefined
         }
@@ -296,13 +297,9 @@ export class Model {
         return user
     }
 
-    public async myUsers(
-        args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const userEmail = context.token?.email
-        const userPhone = context.token?.phone
+    public async myUsers(token: TokenPayload) {
+        const userEmail = token?.email
+        const userPhone = token?.phone
         let users: User[] = []
 
         const scope = getRepository(User)
