@@ -10,9 +10,14 @@ import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { Subject } from '../../../src/entities/subject'
 import {
+    UserConnectionNode,
     AddOrganizationRolesToUserInput,
     UsersMutationResult,
+    UserContactInfo,
+    CreateUserInput,
 } from '../../../src/types/graphQL/user'
+
+import { userValidations } from '../../../src/entities/validations/user'
 
 export const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
@@ -291,6 +296,26 @@ export const ADD_ORG_ROLES_TO_USERS = `
             ${USERS_MUTATION_RESULT}
         }
     }
+    `
+export const CREATE_USERS = `
+    mutation CreateUsers($input:[CreateUserInput!]!){
+        createUsers(input:$input){
+            users{
+                id
+                givenName
+                familyName
+                gender
+                contactInfo{
+                    email
+                    phone
+                }
+                alternateContactInfo{
+                email
+                phone
+            }
+        }
+    }
+}
 `
 
 export const REMOVE_ORG_ROLES_FROM_USERS = `
@@ -734,4 +759,40 @@ export async function addSchoolToUser(
     const res = await gqlTry(operation)
     const gqlMembership = res.data?.user.addSchool as SchoolMembership
     return gqlMembership
+}
+
+export async function createGqlUsers(
+    testClient: ApolloServerTestClient,
+    input: CreateUserInput[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: CREATE_USERS,
+            variables: { input },
+            headers: headers,
+        })
+    const res = await gqlTry(operation)
+    const gqlUsersResult = res.data?.createUsers as UsersMutationResult
+    return gqlUsersResult
+}
+
+export function userToCreateUserInput(u: User): CreateUserInput {
+    const ci: UserContactInfo = {
+        email: u.email,
+        phone: u.phone,
+    }
+    const cui: CreateUserInput = {
+        givenName: u.given_name ? u.given_name : '',
+        familyName: u.family_name ? u.family_name : '',
+        contactInfo: ci,
+        gender: u.gender ? u.gender : '',
+        dateOfBirth: u.date_of_birth,
+        username: u.username,
+        alternateEmail: u.alternate_email,
+        alternatePhone: u.alternate_phone,
+    }
+    return cui
 }

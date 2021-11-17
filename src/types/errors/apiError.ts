@@ -66,6 +66,7 @@ export function joiResultToAPIErrors<APIArguments>(
                 variables: [key],
                 entity: meta?.entity,
                 attribute: meta?.attribute ?? key,
+                index: params?.index as number,
                 ...params,
             })
         }) ?? []
