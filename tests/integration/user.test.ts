@@ -1878,7 +1878,7 @@ describe('user', () => {
                         { authorization: arbitraryUserToken }
                     )
                     const userConNodes = gqlcreateUserResult.users
-                    expect(connection.logger.count).to.equal(7)
+                    expect(connection.logger.count).to.equal(6)
                     expect(userConNodes.length).to.equal(
                         createUserInputs.length
                     )

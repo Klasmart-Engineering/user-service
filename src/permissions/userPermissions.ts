@@ -374,36 +374,4 @@ export class UserPermissions {
 
         return schoolIds
     }
-
-    async checkForPermInAnyOrg(
-        manager: EntityManager,
-        permissionName: PermissionName
-    ): Promise<boolean> {
-        const userId = this.getUserId()
-        let allowPerm = false
-        const isAdmin = await this.isUserAdmin(this.user_id)
-        allowPerm =
-            isAdmin && superAdminRole.permissions.includes(permissionName)
-
-        if (allowPerm === false) {
-            const perms = await manager
-                .createQueryBuilder(Permission, 'Permission')
-                .innerJoin('Permission.roles', 'Role')
-                .innerJoin('Role.memberships', 'OrganizationMembership')
-                .where('OrganizationMembership.user_id = :user_id', {
-                    user_id: userId,
-                })
-                .andWhere('OrganizationMembership.status = :status', {
-                    status: Status.ACTIVE,
-                })
-                .andWhere('Role.status = :status')
-                .andWhere('Permission.permission_id =:permissionId', {
-                    permissionId: permissionName.valueOf(),
-                })
-                .getMany()
-
-            allowPerm = perms.length > 0
-        }
-        return allowPerm
-    }
 }

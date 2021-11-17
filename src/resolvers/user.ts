@@ -488,11 +488,16 @@ export async function createUsers(
     // are organization based, so the user whose token is passed to createUsers() has has to have permissions in
     // at least one organization to create users, or that token user has to be a super admin.
 
-    const createUserPerm = await context.permissions.checkForPermInAnyOrg(
-        manager,
-        PermissionName.create_users_40220
-    )
-
+    let createUserPerm = false
+    try {
+        context.permissions.rejectIfNotAdmin()
+        createUserPerm = true
+    } catch {
+        const orgs = await context.permissions.orgMembershipsWithPermissions([
+            PermissionName.create_users_40220,
+        ])
+        createUserPerm = orgs.length > 0
+    }
     if (!createUserPerm) {
         errs.push(
             new APIError({
