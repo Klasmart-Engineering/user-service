@@ -1,5 +1,5 @@
 import { expect, use } from 'chai'
-import { getManager, In } from 'typeorm'
+import { createQueryBuilder, getManager, In } from 'typeorm'
 import { Model } from '../../src/model'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { createServer } from '../../src/utils/createServer'
@@ -63,14 +63,13 @@ import { SHORTCODE_DEFAULT_MAXLEN } from '../../src/utils/shortcode'
 import { Subject } from '../../src/entities/subject'
 import { createClass as classFactory } from '../factories/class.factory'
 import { createSubject } from '../factories/subject.factory'
-import { createOrganization as organizationFactory } from '../factories/organization.factory'
+import {
+    createOrganization as organizationFactory,
+    createOrganizations,
+} from '../factories/organization.factory'
 import { createSchool as schoolFactory } from '../factories/school.factory'
 import { createRole as roleFactory } from '../factories/role.factory'
-import {
-    createUser,
-    createAdminUser as adminUserFactory,
-    createUsers,
-} from '../factories/user.factory'
+import { createUser, createUsers } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { School } from '../../src/entities/school'
@@ -83,8 +82,11 @@ import {
 } from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { errorFormattingWrapper } from '../utils/errors'
-import { CreateUserInput } from '../../src/types/graphQL/user'
-import { equal } from 'joi'
+import {
+    AddOrganizationRolesToUserInput,
+    CreateUserInput,
+    RemoveOrganizationRolesFromUserInput,
+} from '../../src/types/graphQL/user'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -95,14 +97,7 @@ describe('user', () => {
     let adminUser: User
     let nonAdminUser: User
     let organization1: Organization
-    let organization2: Organization
-    let organization3: Organization
-    let user1: User
-    let user2: User
-    let user3: User
     let role1: Role
-    let role2: Role
-    let role3: Role
 
     before(async () => {
         connection = await createTestConnection()
@@ -1427,645 +1422,673 @@ describe('user', () => {
         })
     })
 
-    async function commonSetupForModifyOrgRoles() {
-        organization1 = await organizationFactory().save()
-        organization2 = await organizationFactory().save()
-        organization3 = await organizationFactory().save()
-        ;[user1, user2, user3] = createUsers(3)
-        role1 = roleFactory('Role 1')
-        role2 = roleFactory('Role 2')
-        role3 = roleFactory('Role 3')
-        await connection.manager.save([
-            user1,
-            user2,
-            user3,
-            role1,
-            role2,
-            role3,
-        ])
-    }
-
-    function inputForModifyOrgRoles() {
-        return [
-            {
-                organizationId: organization1.organization_id,
-                userId: user1.user_id,
-                roleIds: [role1.role_id, role2.role_id],
-            },
-            {
-                organizationId: organization2.organization_id,
-                userId: user2.user_id,
-                roleIds: [role2.role_id, role3.role_id],
-            },
-            {
-                organizationId: organization3.organization_id,
-                userId: user3.user_id,
-                roleIds: [role3.role_id],
-            },
-        ]
-    }
-
-    describe('.addOrganizationRolesToUsers', () => {
-        function addRoles(authUser = adminUser) {
-            return errorFormattingWrapper(
-                addOrganizationRolesToUsers(
-                    { input: inputForModifyOrgRoles() },
-                    {
-                        permissions: new UserPermissions({
-                            id: authUser.user_id,
-                            email: authUser.email,
-                            phone: authUser.phone,
-                        }),
-                    }
-                )
-            )
-        }
-
-        function checkNotFoundErrors(
-            actualError: Error,
-            expectedErrors: {
-                entity: string
-                id: string
-                entryIndex: number
-            }[],
-            totalErrorCount?: number
-        ) {
-            expectedErrors.forEach((val, errorIndex) => {
-                const variables: string[] = []
-                switch (val.entity) {
-                    case 'Role':
-                        variables.push('role_id')
-                        break
-                    case 'Organization':
-                        variables.push('organization_id')
-                        break
-                    case 'User':
-                        variables.push('user_id')
-                        break
-                }
-                expectAPIError.nonexistent_or_inactive(
-                    actualError,
-                    {
-                        entity: val.entity,
-                        attribute: val.entity === 'Role' ? 'IDs' : 'ID',
-                        otherAttribute: val.id,
-                        index: val.entryIndex,
-                    },
-                    variables,
-                    errorIndex,
-                    totalErrorCount ?? expectedErrors.length
-                )
-            })
-        }
-
-        async function checkNoChangesMade(useAdminUser = true) {
-            it('does not add the users', async () => {
-                await expect(addRoles(useAdminUser ? undefined : nonAdminUser))
-                    .to.be.rejected
-                const memberships = await OrganizationMembership.find({
-                    where: {
-                        organization_id: In(
-                            [organization1, organization2, organization3].map(
-                                (v) => v.organization_id
-                            )
-                        ),
-                        user_id: In([
-                            user1.user_id,
-                            user2.user_id,
-                            user3.user_id,
-                        ]),
-                    },
-                })
-                memberships.forEach((m) => expect(m.roles).to.be.empty)
-            })
-        }
-
-        async function checkOutput() {
-            for (const [idx, input] of inputForModifyOrgRoles().entries()) {
-                const { organizationId, userId, roleIds } = input
-                const dbMembership = await OrganizationMembership.findOneOrFail(
-                    {
-                        where: {
-                            organization_id: organizationId,
-                            user_id: userId,
-                        },
-                    }
-                )
-                const dbRoles = (await dbMembership.roles)
-                    ?.map((val) => val.role_id)
-                    .sort()
-
-                const initialRoles = idx === 0 ? [role3.role_id] : []
-                roleIds.push(...initialRoles)
-                const expectedRoles = [...new Set(roleIds.sort())]
-                expect(expectedRoles).to.deep.equal(dbRoles)
-            }
-        }
-
+    describe('createUsers', () => {
+        let idOfUserPerformingOperation: string
+        let organizationId: string
+        let arbitraryUserToken: string
+        let createUserInputs: CreateUserInput[]
+        let adminToken: string
         beforeEach(async () => {
-            await commonSetupForModifyOrgRoles()
-            await OrganizationMembership.save([
-                createOrganizationMembership({
-                    user: user1,
-                    organization: organization1,
-                    roles: [role3],
-                }),
-                createOrganizationMembership({
-                    user: user2,
-                    organization: organization2,
-                }),
-                createOrganizationMembership({
-                    user: user3,
-                    organization: organization3,
-                }),
-            ])
-        })
-
-        context('when caller has permissions to add roles to user', () => {
-            context('and all attributes are valid', () => {
-                it('adds all the roles', async () => {
-                    await expect(addRoles()).to.be.fulfilled
-                    await checkOutput()
-                })
-
-                it('makes the expected number of queries to the database', async () => {
-                    connection.logger.reset()
-                    await addRoles()
-                    expect(connection.logger.count).to.be.eq(18)
-                    // 9 from permission check
-                    // 4 from preloaded queries
-                    // 5 from saving OrganizationMembership[] (1 per)
-                })
-            })
-
-            context('and one of the roles was already added', () => {
-                beforeEach(async () => {
-                    await createOrganizationMembership({
-                        user: user1,
-                        organization: organization1,
-                        roles: [role1, role3],
-                    }).save()
-                })
-
-                it('adds all the roles', async () => {
-                    await expect(addRoles()).to.be.fulfilled
-                    await checkOutput()
-                })
-            })
-
-            context('and one of the organizations is inactive', async () => {
-                beforeEach(
-                    async () => await organization3.inactivate(getManager())
+            idOfUserPerformingOperation = (await createNonAdminUser(testClient))
+                .user_id
+            arbitraryUserToken = getNonAdminAuthToken()
+            const orgOwner = await createAdminUser(testClient)
+            adminToken = getAdminAuthToken()
+            organizationId = (
+                await createOrganizationAndValidate(
+                    testClient,
+                    orgOwner.user_id
                 )
+            ).organization_id
 
-                it('returns an inactive or nonexistent organization error', async () => {
-                    const res = await expect(addRoles()).to.be.rejected
-                    checkNotFoundErrors(res, [
-                        {
-                            entity: 'Organization',
-                            id: organization3.organization_id,
-                            entryIndex: 2,
-                        },
-                    ])
-                })
-
-                await checkNoChangesMade()
-            })
-
-            context('and one of the users is inactive', async () => {
-                beforeEach(async () => await user2.inactivate(getManager()))
-
-                it('returns an inactive or nonexistent user error', async () => {
-                    const res = await expect(addRoles()).to.be.rejected
-                    checkNotFoundErrors(res, [
-                        {
-                            entity: 'User',
-                            id: user2.user_id,
-                            entryIndex: 1,
-                        },
-                    ])
-                })
-
-                await checkNoChangesMade()
-            })
-
-            context('and one of the roles is inactive', async () => {
-                beforeEach(async () => await role1.inactivate(getManager()))
-
-                it('returns an inactive or nonexistent role error', async () => {
-                    const res = await expect(addRoles()).to.be.rejected
-                    checkNotFoundErrors(res, [
-                        {
-                            entity: 'Role',
-                            id: role1.role_id,
-                            entryIndex: 0,
-                        },
-                    ])
-                })
-
-                await checkNoChangesMade()
-            })
-
-            context('and one of the memberships is inactive', async () => {
-                beforeEach(async () =>
-                    (await user1.memberships)?.forEach(
-                        async (m) => await m.inactivate(getManager())
-                    )
-                )
-
-                it('returns a nonexistent child error', async () => {
-                    const res = await expect(addRoles()).to.be.rejected
-                    expectAPIError.nonexistent_child(
-                        res,
-                        {
-                            entity: 'User',
-                            entityName: user1.user_name(),
-                            parentEntity:
-                                'OrganizationMembership in Organization',
-                            parentName: organization1.organization_name || '',
-                            index: 0,
-                        },
-                        ['organization_id', 'user_id'],
-                        0,
-                        1
-                    )
-                })
-
-                await checkNoChangesMade()
-            })
-
-            context('and multiple attributes are inactive', async () => {
-                beforeEach(async () => {
-                    ;(await user3.memberships)?.forEach(
-                        async (m) => await m.inactivate(getManager())
-                    )
-                    await Promise.all([
-                        user1.inactivate(getManager()),
-                        role1.inactivate(getManager()),
-                        role2.inactivate(getManager()),
-                    ])
-                })
-
-                it('returns several inactive or nonexistent errors', async () => {
-                    const res = await expect(addRoles()).to.be.rejected
-                    checkNotFoundErrors(
-                        res,
-                        [
-                            {
-                                entity: 'Role',
-                                id: [role1.role_id, role2.role_id].toString(),
-                                entryIndex: 0,
-                            },
-                            {
-                                entity: 'User',
-                                id: user1.user_id,
-                                entryIndex: 0,
-                            },
-                            {
-                                entity: 'Role',
-                                id: role2.role_id,
-                                entryIndex: 1,
-                            },
-                        ],
-                        4
-                    )
-                    expectAPIError.nonexistent_child(
-                        res,
-                        {
-                            entity: 'User',
-                            entityName: user3.user_name(),
-                            parentEntity:
-                                'OrganizationMembership in Organization',
-                            parentName: organization3.organization_name || '',
-                            index: 2,
-                        },
-                        ['organization_id', 'user_id'],
-                        3,
-                        4
-                    )
-                })
-
-                await checkNoChangesMade()
-            })
-        })
-
-        context(
-            'when caller does not have permissions to add roles to all users',
-            async () => {
-                beforeEach(async () => {
-                    const nonAdminRole = await roleFactory(
-                        'Non Admin Role',
-                        organization1,
-                        {
-                            permissions: [PermissionName.edit_users_40330],
-                        }
-                    ).save()
-                    await createOrganizationMembership({
-                        user: nonAdminUser,
-                        organization: organization1,
-                        roles: [nonAdminRole],
-                    }).save()
-                })
-
-                it('returns a permission error', async () => {
-                    await expect(addRoles(nonAdminUser)).to.be.rejectedWith(
-                        `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.edit_users_40330}) in Organization(${organization2.organization_id})`
-                    )
-                })
-
-                await checkNoChangesMade(false)
+            createUserInputs = []
+            for (let i = 0; i < 50; i++) {
+                createUserInputs.push(userToCreateUserInput(createUser()))
             }
-        )
-        describe('createUsers', () => {
-            let idOfUserPerformingOperation: string
-            let organizationId: string
-            let arbitraryUserToken: string
-            let createUserInputs: CreateUserInput[]
-            let adminToken: string
+        })
+
+        context('when not authorized', () => {
+            it('it fails to create users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                await expect(
+                    createGqlUsers(testClient, createUserInputs, {
+                        authorization: arbitraryUserToken,
+                    })
+                ).to.be.rejected
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers).to.equal(previousUsers)
+            })
+        })
+        context('when admin', () => {
+            it('creates users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                const gqlcreateUserResult = await createGqlUsers(
+                    testClient,
+                    createUserInputs,
+                    { authorization: adminToken }
+                )
+                const userConNodes = gqlcreateUserResult.users
+                expect(userConNodes.length).to.equal(createUserInputs.length)
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers - previousUsers).to.equal(
+                    createUserInputs.length
+                )
+            })
+        })
+        context('when user has permission', () => {
             beforeEach(async () => {
-                idOfUserPerformingOperation = (
-                    await createNonAdminUser(testClient)
-                ).user_id
-                arbitraryUserToken = getNonAdminAuthToken()
-                const orgOwner = await createAdminUser(testClient)
-                adminToken = getAdminAuthToken()
-                organizationId = (
-                    await createOrganizationAndValidate(
-                        testClient,
-                        orgOwner.user_id
-                    )
-                ).organization_id
-
-                createUserInputs = []
-                for (let i = 0; i < 50; i++) {
-                    createUserInputs.push(userToCreateUserInput(createUser()))
-                }
+                await addUserToOrganizationAndValidate(
+                    testClient,
+                    idOfUserPerformingOperation,
+                    organizationId,
+                    { authorization: getAdminAuthToken() }
+                )
+                const role = await createRole(
+                    testClient,
+                    organizationId,
+                    adminToken
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    'create_users_40220',
+                    { authorization: adminToken }
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    idOfUserPerformingOperation,
+                    organizationId,
+                    role.role_id,
+                    { authorization: adminToken }
+                )
             })
-
-            context('when not authorized', () => {
-                it('it fails to create users', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    await expect(
-                        createGqlUsers(testClient, createUserInputs, {
-                            authorization: arbitraryUserToken,
-                        })
-                    ).to.be.rejected
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers).to.equal(previousUsers)
-                })
+            it('creates users with permission', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                connection.logger.reset()
+                const gqlcreateUserResult = await createGqlUsers(
+                    testClient,
+                    createUserInputs,
+                    { authorization: arbitraryUserToken }
+                )
+                const userConNodes = gqlcreateUserResult.users
+                expect(connection.logger.count).to.equal(6)
+                expect(userConNodes.length).to.equal(createUserInputs.length)
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers - previousUsers).to.equal(
+                    createUserInputs.length
+                )
             })
-            context('when admin', () => {
-                it('creates users', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    const gqlcreateUserResult = await createGqlUsers(
-                        testClient,
-                        createUserInputs,
-                        { authorization: adminToken }
-                    )
-                    const userConNodes = gqlcreateUserResult.users
-                    expect(userConNodes.length).to.equal(
-                        createUserInputs.length
-                    )
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers - previousUsers).to.equal(
-                        createUserInputs.length
-                    )
-                })
+        })
+        context('when there are two many input array members', () => {
+            beforeEach(async () => {
+                createUserInputs.push(userToCreateUserInput(createUser()))
             })
-            context('when user has permission', () => {
-                beforeEach(async () => {
-                    await addUserToOrganizationAndValidate(
-                        testClient,
-                        idOfUserPerformingOperation,
-                        organizationId,
-                        { authorization: getAdminAuthToken() }
-                    )
-                    const role = await createRole(
-                        testClient,
-                        organizationId,
-                        adminToken
-                    )
-                    await grantPermission(
-                        testClient,
-                        role.role_id,
-                        'create_users_40220',
-                        { authorization: adminToken }
-                    )
-                    await addRoleToOrganizationMembership(
-                        testClient,
-                        idOfUserPerformingOperation,
-                        organizationId,
-                        role.role_id,
-                        { authorization: adminToken }
-                    )
-                })
-                it('creates users with permission', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    connection.logger.reset()
-                    const gqlcreateUserResult = await createGqlUsers(
-                        testClient,
-                        createUserInputs,
-                        { authorization: arbitraryUserToken }
-                    )
-                    const userConNodes = gqlcreateUserResult.users
-                    expect(connection.logger.count).to.equal(6)
-                    expect(userConNodes.length).to.equal(
-                        createUserInputs.length
-                    )
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers - previousUsers).to.equal(
-                        createUserInputs.length
-                    )
-                })
-            })
-            context('when there are two many input array members', () => {
-                beforeEach(async () => {
-                    createUserInputs.push(userToCreateUserInput(createUser()))
-                })
-                it('it fails to create users', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    await expect(
-                        createGqlUsers(testClient, createUserInputs, {
-                            authorization: adminToken,
-                        })
-                    ).to.be.rejected
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers).to.equal(previousUsers)
-                })
-            })
-            context('when there is a validation failure', () => {
-                beforeEach(async () => {
-                    createUserInputs[2].contactInfo.email = 'somethinghorrid'
-                })
-                it('it fails to create users', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    await expect(
-                        createGqlUsers(testClient, createUserInputs, {
-                            authorization: adminToken,
-                        })
-                    ).to.be.rejected
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers).to.equal(previousUsers)
-                })
-            })
-            context('when there is a duplication in the input', () => {
-                beforeEach(async () => {
-                    createUserInputs[3] = createUserInputs[2]
-                })
-                it('it fails to create users', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    await expect(
-                        createGqlUsers(testClient, createUserInputs, {
-                            authorization: adminToken,
-                        })
-                    ).to.be.rejected
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers).to.equal(previousUsers)
-                })
-            })
-            context(
-                'when some matching records already exist on the db',
-                () => {
-                    beforeEach(async () => {
-                        const oldInputs: CreateUserInput[] = []
-                        oldInputs.push(createUserInputs[5])
-                        oldInputs.push(createUserInputs[35])
-                        await createGqlUsers(testClient, oldInputs, {
-                            authorization: adminToken,
-                        })
+            it('it fails to create users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                await expect(
+                    createGqlUsers(testClient, createUserInputs, {
+                        authorization: adminToken,
                     })
-                    it('it fails to create users', async () => {
-                        const previousUsers = await connection
-                            .getRepository(User)
-                            .count()
-                        await expect(
-                            createGqlUsers(testClient, createUserInputs, {
-                                authorization: adminToken,
-                            })
-                        ).to.be.rejected
-                        const currentUsers = await connection
-                            .getRepository(User)
-                            .count()
-                        expect(currentUsers).to.equal(previousUsers)
+                ).to.be.rejected
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers).to.equal(previousUsers)
+            })
+        })
+        context('when there is a validation failure', () => {
+            beforeEach(async () => {
+                createUserInputs[2].contactInfo.email = 'somethinghorrid'
+            })
+            it('it fails to create users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                await expect(
+                    createGqlUsers(testClient, createUserInputs, {
+                        authorization: adminToken,
                     })
-                }
-            )
-            context('when the input array is empty', () => {
-                const emptyInputs: CreateUserInput[] = []
-                it('it fails to create users', async () => {
-                    const previousUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    await expect(
-                        createGqlUsers(testClient, emptyInputs, {
-                            authorization: adminToken,
-                        })
-                    ).to.be.rejected
-                    const currentUsers = await connection
-                        .getRepository(User)
-                        .count()
-                    expect(currentUsers).to.equal(previousUsers)
+                ).to.be.rejected
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers).to.equal(previousUsers)
+            })
+        })
+        context('when there is a duplication in the input', () => {
+            beforeEach(async () => {
+                createUserInputs[3] = createUserInputs[2]
+            })
+            it('it fails to create users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                await expect(
+                    createGqlUsers(testClient, createUserInputs, {
+                        authorization: adminToken,
+                    })
+                ).to.be.rejected
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers).to.equal(previousUsers)
+            })
+        })
+        context('when some matching records already exist on the db', () => {
+            beforeEach(async () => {
+                const oldInputs: CreateUserInput[] = []
+                oldInputs.push(createUserInputs[5])
+                oldInputs.push(createUserInputs[35])
+                await createGqlUsers(testClient, oldInputs, {
+                    authorization: adminToken,
                 })
+            })
+            it('it fails to create users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                await expect(
+                    createGqlUsers(testClient, createUserInputs, {
+                        authorization: adminToken,
+                    })
+                ).to.be.rejected
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers).to.equal(previousUsers)
+            })
+        })
+        context('when the input array is empty', () => {
+            const emptyInputs: CreateUserInput[] = []
+            it('it fails to create users', async () => {
+                const previousUsers = await connection
+                    .getRepository(User)
+                    .count()
+                await expect(
+                    createGqlUsers(testClient, emptyInputs, {
+                        authorization: adminToken,
+                    })
+                ).to.be.rejected
+                const currentUsers = await connection
+                    .getRepository(User)
+                    .count()
+                expect(currentUsers).to.equal(previousUsers)
             })
         })
     })
 
-    // This mutation needs only one test since it mostly the same as adOrganizationRolesToUsers
-    describe('.removeOrganizationRolesFromUsers', () => {
+    describe('.modifyOrganizationRoles', () => {
+        let organization2: Organization
+        let organization3: Organization
+        let user1: User
+        let user2: User
+        let user3: User
+        let role2: Role
+        let role3: Role
+        let input:
+            | AddOrganizationRolesToUserInput[]
+            | RemoveOrganizationRolesFromUserInput[]
         let initialRoles: Role[][]
 
-        function removeRoles(authUser = adminUser) {
-            return errorFormattingWrapper(
-                removeOrganizationRolesFromUsers(
-                    { input: inputForModifyOrgRoles() },
-                    {
-                        permissions: new UserPermissions({
-                            id: authUser.user_id,
-                            email: authUser.email,
-                            phone: authUser.phone,
-                        }),
-                    }
-                )
-            )
-        }
-
-        async function checkOutput() {
-            for (const [idx, input] of inputForModifyOrgRoles().entries()) {
-                const { organizationId, userId, roleIds } = input
+        /**
+         * Use inputs to generate the roles a membership is expected to have
+         * and check that it matches with what is in the databse
+         */
+        async function checkDbHasExpectedValues(
+            modifyRolesFn: (
+                currentRoles: Role[],
+                idsToModify: string[]
+            ) => string[]
+        ) {
+            for (const [idx, val] of input.entries()) {
+                const { organizationId, userId, roleIds } = val
                 const dbMembership = await OrganizationMembership.findOneOrFail(
                     {
                         where: {
                             organization_id: organizationId,
                             user_id: userId,
                         },
+                        relations: ['roles'],
                     }
                 )
-                const dbRoles = (await dbMembership.roles)?.sort()
 
-                const expectedRolesArray = initialRoles[idx].filter(
-                    (initr) => !roleIds.find((rid) => initr.role_id === rid)
+                const dbRoleIds = (await dbMembership.roles)
+                    ?.map((r) => r.role_id)
+                    .sort()
+                const expectedRoleIds = modifyRolesFn(
+                    initialRoles[idx],
+                    roleIds
                 )
-                const expectedRoles = [...new Set(expectedRolesArray.sort())]
-                expect(expectedRoles).to.deep.equal(dbRoles)
+                expect(expectedRoleIds).to.deep.equal(dbRoleIds)
             }
         }
 
         beforeEach(async () => {
-            await commonSetupForModifyOrgRoles()
-            initialRoles = [
-                [role1, role2, role3],
-                [role2, role3],
-                [role1, role2, role3],
-            ]
+            ;[
+                organization1,
+                organization2,
+                organization3,
+            ] = await Organization.save(createOrganizations(3))
+            ;[user1, user2, user3] = await User.save(createUsers(3))
+            ;[role1, role2, role3] = await Role.save(
+                ['1', '2', '3'].map((num) => roleFactory(`Role ${num}`))
+            )
 
-            await OrganizationMembership.save([
-                createOrganizationMembership({
-                    user: user1,
-                    organization: organization1,
-                    roles: initialRoles[0],
-                }),
-                createOrganizationMembership({
-                    user: user2,
-                    organization: organization2,
-                    roles: initialRoles[1],
-                }),
-                createOrganizationMembership({
-                    user: user3,
-                    organization: organization3,
-                    roles: initialRoles[2],
-                }),
-            ])
+            input = [
+                {
+                    organizationId: organization1.organization_id,
+                    userId: user1.user_id,
+                    roleIds: [role1.role_id, role2.role_id],
+                },
+                {
+                    organizationId: organization2.organization_id,
+                    userId: user2.user_id,
+                    roleIds: [role2.role_id, role3.role_id],
+                },
+                {
+                    organizationId: organization3.organization_id,
+                    userId: user3.user_id,
+                    roleIds: [role3.role_id],
+                },
+            ]
         })
 
-        context('when caller has permissions to add roles to user', () => {
-            context('and all attributes are valid', () => {
-                it('adds all the roles', async () => {
-                    await expect(removeRoles()).to.be.fulfilled
-                    await checkOutput()
+        // All the tests for .modifyOrganizationRoles are done here, as well as a specific one for .addOrganizationRolesToUsers
+        context('when called by .addOrganizationRolesToUsers', () => {
+            function addOrgRoles(authUser = adminUser) {
+                return errorFormattingWrapper(
+                    addOrganizationRolesToUsers(
+                        { input: input },
+                        {
+                            permissions: new UserPermissions({
+                                id: authUser.user_id,
+                                email: authUser.email,
+                                phone: authUser.phone,
+                            }),
+                        }
+                    )
+                )
+            }
+
+            function checkNotFoundErrors(
+                actualError: Error,
+                expectedErrors: {
+                    entity: string
+                    id: string
+                    entryIndex: number
+                }[],
+                totalErrorCount?: number
+            ) {
+                expectedErrors.forEach((val, errorIndex) => {
+                    const getVar = () => {
+                        switch (val.entity) {
+                            case 'Role':
+                                return 'role_id'
+                            case 'Organization':
+                                return 'organization_id'
+                            case 'User':
+                                return 'user_id'
+                            default:
+                                return ''
+                        }
+                    }
+                    expectAPIError.nonexistent_or_inactive(
+                        actualError,
+                        {
+                            entity: val.entity,
+                            attribute: val.entity === 'Role' ? 'IDs' : 'ID',
+                            otherAttribute: val.id,
+                            index: val.entryIndex,
+                        },
+                        [getVar()],
+                        errorIndex,
+                        totalErrorCount ?? expectedErrors.length
+                    )
+                })
+            }
+
+            async function checkNoChangesMade(useAdminUser = true) {
+                it('does not add the users', async () => {
+                    await expect(
+                        addOrgRoles(useAdminUser ? undefined : nonAdminUser)
+                    ).to.be.rejected
+                    const memberships = await OrganizationMembership.find({
+                        where: {
+                            organization_id: In(
+                                [
+                                    organization1,
+                                    organization2,
+                                    organization3,
+                                ].map((v) => v.organization_id)
+                            ),
+                            user_id: In([
+                                user1.user_id,
+                                user2.user_id,
+                                user3.user_id,
+                            ]),
+                        },
+                    })
+                    memberships.forEach((m) => expect(m.roles).to.be.empty)
+                })
+            }
+
+            function checkRolesAdded() {
+                return checkDbHasExpectedValues(
+                    (currentRoles: Role[], roleIdsToAdd: string[]) => {
+                        roleIdsToAdd.push(...currentRoles.map((r) => r.role_id))
+                        return [...new Set(roleIdsToAdd.sort())]
+                    }
+                )
+            }
+
+            beforeEach(async () => {
+                initialRoles = [[role3], [], []]
+                await OrganizationMembership.save([
+                    createOrganizationMembership({
+                        user: user1,
+                        organization: organization1,
+                        roles: initialRoles[0],
+                    }),
+                    createOrganizationMembership({
+                        user: user2,
+                        organization: organization2,
+                    }),
+                    createOrganizationMembership({
+                        user: user3,
+                        organization: organization3,
+                    }),
+                ])
+            })
+
+            context('and caller has permissions to add roles to user', () => {
+                context('and all attributes are valid', () => {
+                    it('adds all the roles', async () => {
+                        await expect(addOrgRoles()).to.be.fulfilled
+                        await checkRolesAdded()
+                    })
+
+                    it('makes the expected number of queries to the database', async () => {
+                        connection.logger.reset()
+                        await addOrgRoles()
+                        expect(connection.logger.count).to.be.eq(18)
+                        // 9 from permission check
+                        // 4 from preloaded queries
+                        // 5 from saving OrganizationMembership[] (1 per)
+                    })
+                })
+
+                context('and one of the roles was already added', () => {
+                    beforeEach(async () => {
+                        await createOrganizationMembership({
+                            user: user1,
+                            organization: organization1,
+                            roles: [role1, role3],
+                        }).save()
+                    })
+
+                    it('adds all the roles', async () => {
+                        await expect(addOrgRoles()).to.be.fulfilled
+                        await checkRolesAdded()
+                    })
+                })
+
+                context(
+                    'and one of the organizations is inactive',
+                    async () => {
+                        beforeEach(
+                            async () =>
+                                await organization3.inactivate(getManager())
+                        )
+
+                        it('returns an inactive or nonexistent organization error', async () => {
+                            const res = await expect(addOrgRoles()).to.be
+                                .rejected
+                            checkNotFoundErrors(res, [
+                                {
+                                    entity: 'Organization',
+                                    id: organization3.organization_id,
+                                    entryIndex: 2,
+                                },
+                            ])
+                        })
+
+                        await checkNoChangesMade()
+                    }
+                )
+
+                context('and one of the users is inactive', async () => {
+                    beforeEach(async () => await user2.inactivate(getManager()))
+
+                    it('returns an inactive or nonexistent user error', async () => {
+                        const res = await expect(addOrgRoles()).to.be.rejected
+                        checkNotFoundErrors(res, [
+                            {
+                                entity: 'User',
+                                id: user2.user_id,
+                                entryIndex: 1,
+                            },
+                        ])
+                    })
+
+                    await checkNoChangesMade()
+                })
+
+                context('and one of the roles is inactive', async () => {
+                    beforeEach(async () => await role1.inactivate(getManager()))
+
+                    it('returns an inactive or nonexistent role error', async () => {
+                        const res = await expect(addOrgRoles()).to.be.rejected
+                        checkNotFoundErrors(res, [
+                            {
+                                entity: 'Role',
+                                id: role1.role_id,
+                                entryIndex: 0,
+                            },
+                        ])
+                    })
+
+                    await checkNoChangesMade()
+                })
+
+                context('and one of the memberships is inactive', async () => {
+                    beforeEach(async () =>
+                        (await user1.memberships)?.forEach(
+                            async (m) => await m.inactivate(getManager())
+                        )
+                    )
+
+                    it('returns a nonexistent child error', async () => {
+                        const res = await expect(addOrgRoles()).to.be.rejected
+                        expectAPIError.nonexistent_child(
+                            res,
+                            {
+                                entity: 'User',
+                                entityName: user1.user_name(),
+                                parentEntity:
+                                    'OrganizationMembership in Organization',
+                                parentName:
+                                    organization1.organization_name || '',
+                                index: 0,
+                            },
+                            ['organization_id', 'user_id'],
+                            0,
+                            1
+                        )
+                    })
+
+                    await checkNoChangesMade()
+                })
+
+                context('and multiple attributes are inactive', async () => {
+                    beforeEach(async () => {
+                        ;(await user3.memberships)?.forEach(
+                            async (m) => await m.inactivate(getManager())
+                        )
+                        await Promise.all([
+                            user1.inactivate(getManager()),
+                            role1.inactivate(getManager()),
+                            role2.inactivate(getManager()),
+                        ])
+                    })
+
+                    it('returns several inactive or nonexistent errors', async () => {
+                        const res = await expect(addOrgRoles()).to.be.rejected
+                        checkNotFoundErrors(
+                            res,
+                            [
+                                {
+                                    entity: 'Role',
+                                    id: [
+                                        role1.role_id,
+                                        role2.role_id,
+                                    ].toString(),
+                                    entryIndex: 0,
+                                },
+                                {
+                                    entity: 'User',
+                                    id: user1.user_id,
+                                    entryIndex: 0,
+                                },
+                                {
+                                    entity: 'Role',
+                                    id: role2.role_id,
+                                    entryIndex: 1,
+                                },
+                            ],
+                            4
+                        )
+                        expectAPIError.nonexistent_child(
+                            res,
+                            {
+                                entity: 'User',
+                                entityName: user3.user_name(),
+                                parentEntity:
+                                    'OrganizationMembership in Organization',
+                                parentName:
+                                    organization3.organization_name || '',
+                                index: 2,
+                            },
+                            ['organization_id', 'user_id'],
+                            3,
+                            4
+                        )
+                    })
+
+                    await checkNoChangesMade()
+                })
+            })
+
+            context(
+                'and caller does not have permissions to add roles to all users',
+                async () => {
+                    beforeEach(async () => {
+                        const nonAdminRole = await roleFactory(
+                            'Non Admin Role',
+                            organization1,
+                            {
+                                permissions: [PermissionName.edit_users_40330],
+                            }
+                        ).save()
+                        await createOrganizationMembership({
+                            user: nonAdminUser,
+                            organization: organization1,
+                            roles: [nonAdminRole],
+                        }).save()
+                    })
+
+                    it('returns a permission error', async () => {
+                        await expect(
+                            addOrgRoles(nonAdminUser)
+                        ).to.be.rejectedWith(
+                            `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.edit_users_40330}) in Organization(${organization2.organization_id})`
+                        )
+                    })
+
+                    await checkNoChangesMade(false)
+                }
+            )
+        })
+
+        // There is only one test specifically for .removeOrganizationRolesFromUsers, all common tests are done with .addOrganizationRolesToUsers
+        context('when called by .removeOrganizationRolesFromUsers', () => {
+            function removeOrgRoles(authUser = adminUser) {
+                return errorFormattingWrapper(
+                    removeOrganizationRolesFromUsers(
+                        { input: input },
+                        {
+                            permissions: new UserPermissions({
+                                id: authUser.user_id,
+                                email: authUser.email,
+                                phone: authUser.phone,
+                            }),
+                        }
+                    )
+                )
+            }
+
+            function checkRolesRemoved() {
+                return checkDbHasExpectedValues(
+                    (currentRoles: Role[], roleIdsToRemove: string[]) => {
+                        const expectedRolesArray = currentRoles.filter(
+                            (cr) =>
+                                !roleIdsToRemove.find(
+                                    (rid) => cr.role_id === rid
+                                )
+                        )
+                        return [
+                            ...new Set(
+                                expectedRolesArray.map((r) => r.role_id).sort()
+                            ),
+                        ]
+                    }
+                )
+            }
+
+            beforeEach(async () => {
+                initialRoles = [
+                    [role1, role2, role3],
+                    [role2, role3],
+                    [role1, role2, role3],
+                ]
+                await OrganizationMembership.save([
+                    createOrganizationMembership({
+                        user: user1,
+                        organization: organization1,
+                        roles: initialRoles[0],
+                    }),
+                    createOrganizationMembership({
+                        user: user2,
+                        organization: organization2,
+                        roles: initialRoles[1],
+                    }),
+                    createOrganizationMembership({
+                        user: user3,
+                        organization: organization3,
+                        roles: initialRoles[2],
+                    }),
+                ])
+            })
+
+            context('and caller has permissions to add roles to user', () => {
+                context('and all attributes are valid', () => {
+                    it('adds all the roles', async () => {
+                        await expect(removeOrgRoles()).to.be.fulfilled
+                        await checkRolesRemoved()
+                    })
                 })
             })
         })
