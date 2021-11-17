@@ -182,13 +182,12 @@ describe('acceptance.subcategory', () => {
                     roles: [createSubjectsRole, deleteSubcategoriesRoleOrg1],
                 }).save()
                 token = generateToken(userToPayload(user))
-                const subcategoriesDetails: ISubcategoryDetail[] = []
-                for (let i = 0; i < 1; i++) {
-                    subcategoriesDetails.push({
-                        name: `subcategory ${i}`,
+                const subcategoriesDetails: ISubcategoryDetail[] = [
+                    {
+                        name: `subcategory 0`,
                         system: false,
-                    })
-                }
+                    },
+                ]
                 const res = await createSubcategories(
                     org1.organization_id,
                     subcategoriesDetails,
