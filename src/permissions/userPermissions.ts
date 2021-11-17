@@ -1,11 +1,9 @@
-import { EntityManager, getRepository } from 'typeorm'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { User } from '../entities/user'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
-import { Permission } from '../entities/permission'
 
 interface PermissionContext {
     school_ids?: string[]
