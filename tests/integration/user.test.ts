@@ -25,6 +25,9 @@ import {
     MergeUserResponse,
     userToCreateUserInput,
     createGqlUsers,
+    updateGqlUsers,
+    userToUpdateUserInput,
+    randomChangeToUpdateUserInput,
 } from '../utils/operations/userOps'
 import { createNonAdminUser, createAdminUser } from '../utils/testEntities'
 import {
@@ -79,6 +82,7 @@ import { expectAPIError } from '../utils/apiError'
 import {
     addOrganizationRolesToUsers,
     removeOrganizationRolesFromUsers,
+    updateUsers,
 } from '../../src/resolvers/user'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import { errorFormattingWrapper } from '../utils/errors'
@@ -86,13 +90,22 @@ import {
     AddOrganizationRolesToUserInput,
     CreateUserInput,
     RemoveOrganizationRolesFromUserInput,
+    UpdateUserInput,
+    UserConnectionNode,
 } from '../../src/types/graphQL/user'
+import { equal } from 'joi'
+import { mapUserToUserConnectionNode } from '../../src/pagination/usersConnection'
+import clean from '../../src/utils/clean'
+import faker from 'faker'
+import { v4 as uuid_v4 } from 'uuid'
+import { userValidations } from '../../src/entities/validations/user'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
 describe('user', () => {
     let connection: TestConnection
+    let originalAdmins: string[]
     let testClient: ApolloServerTestClient
     let adminUser: User
     let nonAdminUser: User
@@ -2090,6 +2103,312 @@ describe('user', () => {
                         await checkRolesRemoved()
                     })
                 })
+            })
+        })
+    })
+    describe('UpdateUsers', () => {
+        let idOfUserPerformingOperation: string
+        let userPerformingOperation: User
+        let organizationId: string
+        let arbitraryUserToken: string
+        let updateUserInputs: UpdateUserInput[]
+        let adminToken: string
+        beforeEach(async () => {
+            faker.seed(123456)
+
+            userPerformingOperation = await createNonAdminUser(testClient)
+            idOfUserPerformingOperation = userPerformingOperation.user_id
+            arbitraryUserToken = getNonAdminAuthToken()
+            const orgOwner = await createAdminUser(testClient)
+            adminToken = getAdminAuthToken()
+            organizationId = (
+                await createOrganizationAndValidate(
+                    testClient,
+                    orgOwner.user_id
+                )
+            ).organization_id
+
+            updateUserInputs = []
+            for (let i = 0; i < 50; i++) {
+                const u = await createUser().save()
+                updateUserInputs.push(
+                    randomChangeToUpdateUserInput(userToUpdateUserInput(u))
+                )
+            }
+        })
+
+        context('when not authorized', () => {
+            it('it fails to update users', async () => {
+                await expect(
+                    updateUsers(
+                        { input: updateUserInputs },
+                        {
+                            permissions: new UserPermissions({
+                                id: userPerformingOperation.user_id,
+                                email: userPerformingOperation.email,
+                                phone: userPerformingOperation.phone,
+                            }),
+                        }
+                    )
+                ).to.be.rejected
+            })
+        })
+        context('when admin', () => {
+            it('updates users', async () => {
+                const updateUserResult = await updateUsers(
+                    { input: updateUserInputs },
+                    {
+                        permissions: new UserPermissions({
+                            id: adminUser.user_id,
+                            email: adminUser.email,
+                            phone: adminUser.phone,
+                        }),
+                    }
+                )
+
+                const userConNodes = updateUserResult.users
+                expect(userConNodes.length).to.equal(updateUserInputs.length)
+                const userIds = updateUserInputs.map((uui) => uui.id)
+                const currentUsers = await connection.manager
+                    .createQueryBuilder(User, 'User')
+                    .where('User.user_id IN (:...ids)', { ids: userIds })
+                    .getMany()
+                const currentUserNodes: UserConnectionNode[] = []
+                currentUsers.map((u) =>
+                    currentUserNodes.push(
+                        mapUserToUserConnectionNode(u) as UserConnectionNode
+                    )
+                )
+                userConNodes.sort((a, b) =>
+                    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+                )
+                currentUserNodes.sort((a, b) =>
+                    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+                )
+                expect(currentUserNodes).to.deep.equal(userConNodes)
+            })
+        })
+
+        context('when user has permission', () => {
+            beforeEach(async () => {
+                await addUserToOrganizationAndValidate(
+                    testClient,
+                    idOfUserPerformingOperation,
+                    organizationId,
+                    { authorization: getAdminAuthToken() }
+                )
+                const role = await createRole(
+                    testClient,
+                    organizationId,
+                    adminToken
+                )
+                await grantPermission(
+                    testClient,
+                    role.role_id,
+                    'edit_users_40330',
+                    { authorization: adminToken }
+                )
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    idOfUserPerformingOperation,
+                    organizationId,
+                    role.role_id,
+                    { authorization: adminToken }
+                )
+            })
+            it('updates users', async () => {
+                connection.logger.reset()
+                const updateUserResult = await updateUsers(
+                    { input: updateUserInputs },
+                    {
+                        permissions: new UserPermissions({
+                            id: userPerformingOperation.user_id,
+                            email: userPerformingOperation.email,
+                            phone: userPerformingOperation.phone,
+                        }),
+                    }
+                )
+                const userConNodes = updateUserResult.users
+                expect(userConNodes.length).to.equal(updateUserInputs.length)
+                expect(connection.logger.count).to.equal(56)
+                const userIds = updateUserInputs.map((uui) => uui.id)
+                const currentUsers = await connection.manager
+                    .createQueryBuilder(User, 'User')
+                    .where('User.user_id IN (:...ids)', { ids: userIds })
+                    .getMany()
+                const currentUserNodes: UserConnectionNode[] = []
+
+                currentUsers.map((u) =>
+                    currentUserNodes.push(
+                        mapUserToUserConnectionNode(u) as UserConnectionNode
+                    )
+                )
+                userConNodes.sort((a, b) =>
+                    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+                )
+                currentUserNodes.sort((a, b) =>
+                    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+                )
+                expect(currentUserNodes).to.deep.equal(userConNodes)
+            })
+        })
+        context('when there are too many input array members', () => {
+            beforeEach(async () => {
+                const u = await createUser().save()
+                updateUserInputs.push(userToUpdateUserInput(u))
+            })
+            it('it fails to update users', async () => {
+                await expect(
+                    updateUsers(
+                        { input: updateUserInputs },
+                        {
+                            permissions: new UserPermissions({
+                                id: adminUser.user_id,
+                                email: adminUser.email,
+                                phone: adminUser.phone,
+                            }),
+                        }
+                    )
+                ).to.be.rejected
+            })
+        })
+        context('when there is a validation failure', () => {
+            beforeEach(async () => {
+                updateUserInputs[2].email = 'somethinghorrid'
+            })
+            it('it fails to update users', async () => {
+                await expect(
+                    updateUsers(
+                        { input: updateUserInputs },
+                        {
+                            permissions: new UserPermissions({
+                                id: adminUser.user_id,
+                                email: adminUser.email,
+                                phone: adminUser.phone,
+                            }),
+                        }
+                    )
+                ).to.be.rejected
+            })
+        })
+        context('when there is a duplication of id in the input', () => {
+            beforeEach(async () => {
+                updateUserInputs[3].id = updateUserInputs[2].id
+            })
+            it('it fails to update users', async () => {
+                await expect(
+                    updateUsers(
+                        { input: updateUserInputs },
+                        {
+                            permissions: new UserPermissions({
+                                id: adminUser.user_id,
+                                email: adminUser.email,
+                                phone: adminUser.phone,
+                            }),
+                        }
+                    )
+                ).to.be.rejected
+            })
+        })
+        context(
+            'when there is a duplication of personal info in the input',
+            () => {
+                beforeEach(async () => {
+                    updateUserInputs[3].email = updateUserInputs[2].email
+                    updateUserInputs[3].phone = updateUserInputs[2].phone
+                    updateUserInputs[3].givenName =
+                        updateUserInputs[2].givenName
+                    updateUserInputs[3].familyName =
+                        updateUserInputs[2].familyName
+                })
+                it('it fails to update users', async () => {
+                    await expect(
+                        updateUsers(
+                            { input: updateUserInputs },
+                            {
+                                permissions: new UserPermissions({
+                                    id: adminUser.user_id,
+                                    email: adminUser.email,
+                                    phone: adminUser.phone,
+                                }),
+                            }
+                        )
+                    ).to.be.rejected
+                })
+            }
+        )
+        context(
+            'when some matching personal info records already exist on the db with a different user_id',
+            () => {
+                beforeEach(async () => {
+                    const u1 = createUser()
+                    const u2 = createUser()
+                    u1.email =
+                        clean.email(updateUserInputs[5].email) || undefined
+                    u1.phone =
+                        clean.phone(updateUserInputs[5].phone) || undefined
+                    u1.given_name = updateUserInputs[5].givenName
+                    u1.family_name = updateUserInputs[5].familyName
+                    await u1.save()
+
+                    u2.email =
+                        clean.email(updateUserInputs[15].email) || undefined
+                    u2.phone =
+                        clean.phone(updateUserInputs[15].phone) || undefined
+                    u2.given_name = updateUserInputs[15].givenName
+                    u2.family_name = updateUserInputs[15].familyName
+                    await u2.save()
+                })
+                it('it fails to create users', async () => {
+                    await expect(
+                        updateUsers(
+                            { input: updateUserInputs },
+                            {
+                                permissions: new UserPermissions({
+                                    id: adminUser.user_id,
+                                    email: adminUser.email,
+                                    phone: adminUser.phone,
+                                }),
+                            }
+                        )
+                    ).to.be.rejected
+                })
+            }
+        )
+        context('when one update record does not exist on the db', () => {
+            beforeEach(async () => {
+                updateUserInputs[23].id = uuid_v4()
+            })
+            it('it fails to update users', async () => {
+                await expect(
+                    updateUsers(
+                        { input: updateUserInputs },
+                        {
+                            permissions: new UserPermissions({
+                                id: adminUser.user_id,
+                                email: adminUser.email,
+                                phone: adminUser.phone,
+                            }),
+                        }
+                    )
+                ).to.be.rejected
+            })
+        })
+        context('when the input array is empty', () => {
+            const emptyInputs: UpdateUserInput[] = []
+            it('it fails to update users', async () => {
+                await expect(
+                    updateUsers(
+                        { input: emptyInputs },
+                        {
+                            permissions: new UserPermissions({
+                                id: adminUser.user_id,
+                                email: adminUser.email,
+                                phone: adminUser.phone,
+                            }),
+                        }
+                    )
+                ).to.be.rejected
             })
         })
     })

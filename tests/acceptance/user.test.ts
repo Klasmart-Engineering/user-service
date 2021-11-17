@@ -16,8 +16,11 @@ import {
     ADD_ORG_ROLES_TO_USERS,
     CREATE_USERS,
     GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
+    randomChangeToUpdateUserInput,
     REMOVE_ORG_ROLES_FROM_USERS,
+    UPDATE_USERS,
     userToCreateUserInput,
+    userToUpdateUserInput,
 } from '../utils/operations/userOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createSchool } from '../factories/school.factory'
@@ -36,10 +39,13 @@ import { Class } from '../../src/entities/class'
 import {
     AddOrganizationRolesToUserInput,
     RemoveOrganizationRolesFromUserInput,
+    UpdateUserInput,
     UserConnectionNode,
 } from '../../src/types/graphQL/user'
 import { Role } from '../../src/entities/role'
 import { CreateUserInput } from '../../src/types/graphQL/user'
+import { mapUserToUserConnectionNode } from '../../src/pagination/usersConnection'
+import faker from 'faker'
 
 use(chaiAsPromised)
 
@@ -697,9 +703,79 @@ describe('acceptance.user', () => {
                 })
 
             expect(response.status).to.eq(200)
+            expect(response.body.errors).to.equal(undefined)
             expect(response.body.data.createUsers.users.length).to.equal(
                 createUserInputs.length
             )
+        })
+    })
+
+    context('updateUsers', async () => {
+        let myUser: User
+        let myOrg: Organization
+        let token: string
+        let updateUserInputs: UpdateUserInput[] = []
+        beforeEach(async () => {
+            // So the test is the same every time
+            faker.seed(123546)
+            myUser = await createUser().save()
+            myOrg = await createOrganization().save()
+            const role = await createRole(undefined, myOrg, {
+                permissions: [PermissionName.edit_users_40330],
+            }).save()
+            await createOrganizationMembership({
+                user: myUser,
+                organization: myOrg,
+                roles: [role],
+            }).save()
+            token = generateToken({
+                id: myUser.user_id,
+                email: myUser.email,
+                iss: 'calmid-debug',
+            })
+            updateUserInputs = []
+            for (let i = 0; i < 50; i++) {
+                const u = await createUser().save()
+                updateUserInputs.push(
+                    randomChangeToUpdateUserInput(userToUpdateUserInput(u))
+                )
+            }
+        })
+        it('Updates 50 users', async () => {
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query: UPDATE_USERS,
+                    variables: { input: updateUserInputs },
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body.errors).to.equal(undefined)
+            const userConNodes: UserConnectionNode[] =
+                response.body.data.updateUsers.users
+            expect(userConNodes.length).to.equal(updateUserInputs.length)
+            const inputUserIds = updateUserInputs.map((uui) => uui.id)
+            const currentUsers = await connection.manager
+                .createQueryBuilder(User, 'User')
+                .where('User.user_id IN (:...ids)', { ids: inputUserIds })
+                .getMany()
+            const currentUserNodes: UserConnectionNode[] = []
+            currentUsers.map((u) =>
+                currentUserNodes.push(
+                    mapUserToUserConnectionNode(u) as UserConnectionNode
+                )
+            )
+            userConNodes.sort((a, b) =>
+                a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+            )
+            currentUserNodes.sort((a, b) =>
+                a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+            )
+            expect(currentUserNodes).to.deep.equal(userConNodes)
         })
     })
 

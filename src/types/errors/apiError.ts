@@ -52,14 +52,31 @@ export function formatMessage(
 
 export function joiResultToAPIErrors<APIArguments>(
     result: ValidationResult,
-    metadata: APISchemaMetadata<APIArguments>
+    metadata: APISchemaMetadata<APIArguments> | APIMetadataPlaceHolder
 ): APIError[] {
     return (
         result?.error?.details.map((error) => {
             const details = getCustomConstraintDetails(error)
             const { code, message, params } = details
             const key = error.context?.key || ''
-            const meta = metadata?.[key as keyof APIArguments]
+            const m = metadata as APIMetadataPlaceHolder
+            if (m.entity != undefined) {
+                return new APIError({
+                    code,
+                    message,
+                    variables: [key],
+                    entity: m.entity,
+                    attribute: m.attribute ?? key,
+                    index: params?.index as number,
+                    ...params,
+                })
+            }
+            const mdata = metadata as APISchemaMetadata<APIArguments>
+            let meta = mdata?.[key as keyof APIArguments]
+            if (meta === undefined) {
+                meta = mdata?.['_' as keyof APIArguments]
+                if (meta) meta.attribute = key
+            }
             return new APIError({
                 code,
                 message,
@@ -96,7 +113,7 @@ export class APIErrorCollection extends ApolloError {
 export function validateAPICall<APIArguments>(
     data: APIArguments,
     schema: APISchema<APIArguments>,
-    metadata: APISchemaMetadata<APIArguments>
+    metadata: APISchemaMetadata<APIArguments> | APIMetadataPlaceHolder
 ) {
     const result = Joi.object(schema).validate(data, {
         abortEarly: false,
@@ -106,4 +123,9 @@ export function validateAPICall<APIArguments>(
         errors: joiResultToAPIErrors<APIArguments>(result, metadata),
         validData: result.value as Partial<APIArguments>,
     }
+}
+
+export interface APIMetadataPlaceHolder {
+    entity: string
+    attribute?: string
 }

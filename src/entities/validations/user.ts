@@ -1,7 +1,7 @@
-import Joi from 'joi'
 import validationConstants from './constants'
 import { sharedValidations } from './shared'
 import { REGEX } from './regex'
+import Joi from 'joi'
 
 export const userValidations = {
     user_id: Joi.string().uuid(),
@@ -43,4 +43,11 @@ export const userValidations = {
     alternate_email: sharedValidations.email.allow('', null).optional(),
 
     alternate_phone: sharedValidations.phone.allow('', null).optional(),
+
+    avatar: Joi.string()
+        .allow('', null)
+        .optional()
+        .max(validationConstants.AVATAR_MAX_LEN),
+
+    primaryUser: Joi.boolean().optional(),
 }

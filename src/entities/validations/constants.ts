@@ -15,6 +15,7 @@ export const validationConstants = {
     GENDER_MIN_LENGTH: 3,
     GENDER_MAX_LENGTH: 16,
     USERNAME_MAX_LEN: 35,
+    AVATAR_MAX_LEN: 8192,
 }
 
 export default validationConstants

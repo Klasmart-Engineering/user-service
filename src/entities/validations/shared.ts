@@ -21,4 +21,5 @@ export const sharedValidations = {
     phone: Joi.string().regex(REGEX.phone, {
         name: 'phone',
     }),
+    base64: Joi.string().base64(),
 }
