@@ -3,8 +3,6 @@ import { Model } from '../model'
 import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SubjectConnectionNode } from '../types/graphQL/subject'
-import DataLoader from 'dataloader'
-import { categoriesForSubjects } from '../loaders/subjectsConnection'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -60,7 +58,6 @@ const typeDefs = gql`
         status: Status!
         system: Boolean!
         categories: [CategorySummaryNode!]
-        programs: [ProgramSummaryNode!]
     }
 
     type CategorySummaryNode {
@@ -71,13 +68,18 @@ const typeDefs = gql`
     }
 
     extend type Query {
-        subject(id: ID!): Subject @isAdmin(entity: "subject")
+        subject(id: ID!): Subject
+            @deprecated(
+                reason: "Sunset Date: 09/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+            )
+            @isAdmin(entity: "subject")
         subjectsConnection(
             direction: ConnectionDirection!
             directionArgs: ConnectionsDirectionArgs
             filter: SubjectFilter
             sort: SubjectSortInput
         ): SubjectsConnectionResponse @isAdmin(entity: "subject")
+        subjectNode(id: ID!): SubjectConnectionNode @isAdmin(entity: "subject")
     }
 
     type Subject {
@@ -113,7 +115,7 @@ export default function getDefault(
                     _args: Record<string, unknown>,
                     ctx: Context
                 ) => {
-                    return ctx.loaders.subjectsConnection?.categories?.load(
+                    return ctx.loaders.subjectsConnection.categories.instance.load(
                         subject.id
                     )
                 },
@@ -130,13 +132,10 @@ export default function getDefault(
                 subject: (_parent, args, ctx, _info) =>
                     model.getSubject(args, ctx),
                 subjectsConnection: (_parent, args, ctx: Context, info) => {
-                    ctx.loaders.subjectsConnection = {
-                        categories: new DataLoader((keys) =>
-                            categoriesForSubjects(keys)
-                        ),
-                    }
-
                     return model.subjectsConnection(ctx, info, args)
+                },
+                subjectNode: (_parent, args, ctx: Context) => {
+                    return ctx.loaders.subjectNode.node.instance.load(args)
                 },
             },
         },

@@ -1038,6 +1038,30 @@ export const SUBCATEGORY_NODE = gql`
     }
 `
 
+export const SUBJECT_MAIN_FIELDS = gql`
+    fragment subjectMainFields on SubjectConnectionNode {
+        id
+        name
+        status
+        system
+    }
+`
+
+const SUBJECT_FIELDS = gql`
+    ${SUBJECT_MAIN_FIELDS}
+
+    fragment subjectFields on SubjectConnectionNode {
+        ...subjectMainFields
+
+        categories {
+            id
+            name
+            status
+            system
+        }
+    }
+`
+
 export const SUBCATEGORIES_DELETE = gql`
     mutation deleteSubcategories($input: [DeleteSubcategoryInput!]!) {
         deleteSubcategories(input: $input) {
@@ -1050,25 +1074,27 @@ export const SUBCATEGORIES_DELETE = gql`
     }
 `
 
-export const SUBJECTS_CONNECTION = `
-    query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
-        subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+export const SUBJECTS_CONNECTION = gql`
+    ${SUBJECT_FIELDS}
+
+    query SubjectsConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: SubjectFilter
+        $sortArgs: SubjectSortInput
+    ) {
+        subjectsConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
 
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    status
-                    system
-
-                    categories {
-                        id
-                        name
-                        status
-                        system
-                    }
+                    ...subjectFields
                 }
             }
 
@@ -1082,18 +1108,27 @@ export const SUBJECTS_CONNECTION = `
     }
 `
 
-export const SUBJECTS_CONNECTION_MAIN_DATA = `
-    query SubjectsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SubjectFilter, $sortArgs: SubjectSortInput) {
-        subjectsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
+export const SUBJECTS_CONNECTION_MAIN_DATA = gql`
+    ${SUBJECT_MAIN_FIELDS}
+
+    query SubjectsConnection(
+        $direction: ConnectionDirection!
+        $directionArgs: ConnectionsDirectionArgs
+        $filterArgs: SubjectFilter
+        $sortArgs: SubjectSortInput
+    ) {
+        subjectsConnection(
+            direction: $direction
+            directionArgs: $directionArgs
+            filter: $filterArgs
+            sort: $sortArgs
+        ) {
             totalCount
 
             edges {
                 cursor
                 node {
-                    id
-                    name
-                    status
-                    system
+                    ...subjectMainFields
                 }
             }
 
@@ -1103,6 +1138,16 @@ export const SUBJECTS_CONNECTION_MAIN_DATA = `
                 startCursor
                 endCursor
             }
+        }
+    }
+`
+
+export const SUBJECT_NODE = gql`
+    ${SUBJECT_FIELDS}
+
+    query SubjectNode($id: ID!) {
+        subjectNode(id: $id) {
+            ...subjectFields
         }
     }
 `
@@ -2248,7 +2293,7 @@ export async function subjectsConnectionMainData(
 ): Promise<IPaginatedResponse<SubjectConnectionNode>> {
     const { query } = testClient
     const paginationQuery = buildPaginationQuery(
-        SUBJECTS_CONNECTION_MAIN_DATA,
+        print(SUBJECTS_CONNECTION_MAIN_DATA),
         includeTotalCount
     )
 

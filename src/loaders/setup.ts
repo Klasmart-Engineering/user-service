@@ -32,31 +32,14 @@ import {
     mapGradeToGradeConnectionNode,
 } from '../pagination/gradesConnection'
 import {
-    mapOrganizationMembershipToOrganizationMembershipNode,
-    organizationMembershipConnectionQuery,
-    organizationMembershipsConnectionSortingConfig,
-} from '../pagination/organizationMembershipsConnection'
-import {
     CoreOrganizationConnectionNode,
     mapOrganizationToOrganizationConnectionNode,
     organizationSummaryNodeFields,
 } from '../pagination/organizationsConnection'
 import {
-    IPermissionNodeDataLoaders,
-    mapPermissionToPermissionConnectionNode,
-    permissionSummaryNodeFields,
-} from '../pagination/permissionsConnection'
-import {
     mapProgramToProgramConnectionNode,
     programSummaryNodeFields,
 } from '../pagination/programsConnection'
-import {
-    IRoleNodeDataLoaders,
-    mapRoleToRoleConnectionNode,
-    roleConnectionNodeFields,
-    roleConnectionQuery,
-    rolesConnectionSortingConfig,
-} from '../pagination/rolesConnection'
 import {
     mapSchoolMembershipToSchoolMembershipNode,
     schoolMembershipConnectionQuery,
@@ -84,17 +67,13 @@ import { BrandingResult } from '../types/graphQL/branding'
 import { CategorySummaryNode } from '../types/graphQL/category'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { GradeSummaryNode } from '../types/graphQL/grade'
-import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
-import { PermissionConnectionNode } from '../types/graphQL/permission'
 import { ProgramSummaryNode } from '../types/graphQL/program'
-import { RoleConnectionNode, RoleSummaryNode } from '../types/graphQL/role'
 import {
     ISchoolsConnectionNode,
     SchoolSummaryNode,
 } from '../types/graphQL/school'
 import { SchoolMembershipConnectionNode } from '../types/graphQL/schoolMembership'
 import { SubcategoryConnectionNode } from '../types/graphQL/subcategory'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
 import { UserSummaryNode } from '../types/graphQL/user'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
@@ -139,6 +118,16 @@ import {
     IProgramsConnectionLoaders,
     subjectsForPrograms,
 } from './programsConnection'
+
+import {
+    categoriesForSubjects,
+    ISubjectNodeDataLoader,
+    ISubjectsConnectionLoaders,
+} from './subjectsConnection'
+import {
+    SubjectConnectionNode,
+    SubjectSummaryNode,
+} from '../types/graphQL/subject'
 import {
     ISchoolLoaders,
     organizationsForSchools,
@@ -146,7 +135,6 @@ import {
     schoolsByIds,
 } from './school'
 import { ISubcategoryNodeDataLoader } from './subcategory'
-import { ISubjectsConnectionLoaders } from './subjectsConnection'
 import {
     IUserNodeDataLoaders,
     IUsersLoaders,
@@ -160,6 +148,31 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
+import {
+    IPermissionNodeDataLoaders,
+    mapPermissionToPermissionConnectionNode,
+    permissionSummaryNodeFields,
+} from '../pagination/permissionsConnection'
+import { PermissionConnectionNode } from '../types/graphQL/permission'
+import {
+    IRoleNodeDataLoaders,
+    mapRoleToRoleConnectionNode,
+    roleConnectionNodeFields,
+    roleConnectionQuery,
+    rolesConnectionSortingConfig,
+} from '../pagination/rolesConnection'
+import { RoleConnectionNode, RoleSummaryNode } from '../types/graphQL/role'
+import { Subject } from '../entities/subject'
+import {
+    mapSubjectToSubjectConnectionNode,
+    subjectNodeFields,
+} from '../pagination/subjectsConnection'
+import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
+import {
+    mapOrganizationMembershipToOrganizationMembershipNode,
+    organizationMembershipConnectionQuery,
+    organizationMembershipsConnectionSortingConfig,
+} from '../pagination/organizationMembershipsConnection'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -167,7 +180,7 @@ export interface IDataLoaders {
     programNode: IProgramNodeDataLoaders
     gradesConnection: IGradesConnectionLoaders
     classesConnection: IClassesConnectionLoaders
-    subjectsConnection?: ISubjectsConnectionLoaders
+    subjectsConnection: ISubjectsConnectionLoaders
     organizationsConnection: IOrganizationsConnectionLoaders
     user: IUsersLoaders
     userNode: IUserNodeDataLoaders
@@ -180,6 +193,7 @@ export interface IDataLoaders {
     permissionNode: IPermissionNodeDataLoaders
     subcategoryNode: ISubcategoryNodeDataLoader
     ageRangeNode: IAgeRangeNodeDataLoader
+    subjectNode: ISubjectNodeDataLoader
 
     usersConnectionChild: Lazy<
         DataLoader<
@@ -508,6 +522,22 @@ export function createContextLazyLoaders(
                         'AgeRangeConnectionNode',
                         mapAgeRangeToAgeRangeConnectionNode,
                         ageRangeNodeFields
+                    )
+            ),
+        },
+        subjectsConnection: {
+            categories: new Lazy<DataLoader<string, CategorySummaryNode[]>>(
+                () => new DataLoader(categoriesForSubjects)
+            ),
+        },
+        subjectNode: {
+            node: new Lazy<NodeDataLoader<Subject, SubjectConnectionNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Subject,
+                        'SubjectConnectionNode',
+                        mapSubjectToSubjectConnectionNode,
+                        subjectNodeFields
                     )
             ),
         },

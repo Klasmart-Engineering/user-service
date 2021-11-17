@@ -1,4 +1,4 @@
-import { expect } from 'chai'
+import { expect, use } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Status } from '../../src/entities/status'
@@ -13,9 +13,18 @@ import {
     ICategoryDetail,
     ISubjectDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { SUBJECTS_CONNECTION } from '../utils/operations/modelOps'
+import { SUBJECTS_CONNECTION, SUBJECT_NODE } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
+import { print } from 'graphql'
+import { SubjectConnectionNode } from '../../src/types/graphQL/subject'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { NIL_UUID } from '../utils/database'
+import { makeRequest } from './utils'
+
+interface ISubjectEdge {
+    node: SubjectConnectionNode
+}
 
 const url = 'http://localhost:8080/user'
 const request = supertest(url)
@@ -30,8 +39,31 @@ let categoryIds: string[]
 let subjectIds: string[]
 let systemSubjectsCount = 0
 
+use(deepEqualInAnyOrder)
+
 describe('acceptance.subject', () => {
     let connection: Connection
+
+    async function makeConnectionQuery(pageSize: number) {
+        return makeRequest(
+            request,
+            print(SUBJECTS_CONNECTION),
+            {
+                direction: 'FORWARD',
+                directionArgs: { count: pageSize },
+            },
+            getAdminAuthToken()
+        )
+    }
+
+    async function makeNodeQuery(id: string) {
+        return makeRequest(
+            request,
+            print(SUBJECT_NODE),
+            { id },
+            getAdminAuthToken()
+        )
+    }
 
     before(async () => {
         connection = await createTestConnection()
@@ -121,7 +153,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                     },
@@ -143,7 +175,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         sortArgs: {
@@ -169,7 +201,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         sortArgs: {
@@ -196,7 +228,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -223,7 +255,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -250,7 +282,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -277,7 +309,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -304,7 +336,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -331,7 +363,7 @@ describe('acceptance.subject', () => {
                     Authorization: getAdminAuthToken(),
                 })
                 .send({
-                    query: SUBJECTS_CONNECTION,
+                    query: print(SUBJECTS_CONNECTION),
                     variables: {
                         direction: 'FORWARD',
                         filterArgs: {
@@ -347,6 +379,49 @@ describe('acceptance.subject', () => {
 
             expect(response.status).to.eq(200)
             expect(subjectsConnection.totalCount).to.be.gte(1)
+        })
+    })
+
+    context('subjectNode', () => {
+        let subjects: ISubjectEdge[]
+
+        beforeEach(async () => {
+            const subjectsResponse = await makeConnectionQuery(10)
+            subjects = subjectsResponse.body.data.subjectsConnection.edges
+        })
+
+        context('when requested subject exists', () => {
+            it('responds succesfully', async () => {
+                const subject = subjects[0].node
+                const response = await makeNodeQuery(subject.id)
+                const subjectNode = response.body.data.subjectNode
+
+                expect(response.status).to.eq(200)
+                expect(subjectNode.id).to.equal(subject.id)
+                expect(subjectNode.name).to.equal(subject.name)
+                expect(subjectNode.status).to.equal(subject.status)
+                expect(subjectNode.system).to.equal(subject.system)
+
+                const subjectCategories = subject.categories
+                const subjectNodeCategories = subjectNode.categories
+
+                expect(subjectNodeCategories).to.deep.equalInAnyOrder(
+                    subjectCategories
+                )
+            })
+        })
+
+        context('when requested subject does not exists', () => {
+            it('responds with errors', async () => {
+                const subjectId = NIL_UUID
+                const response = await makeNodeQuery(subjectId)
+                const subjectNode = response.body.data.subjectNode
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(subjectNode).to.be.null
+                expect(errors).to.exist
+            })
         })
     })
 })

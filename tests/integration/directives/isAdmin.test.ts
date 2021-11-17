@@ -26,6 +26,7 @@ import {
     permissionsConnection,
     schoolsConnection,
     subcategoriesConnection,
+    subjectsConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
 import {
@@ -65,12 +66,17 @@ import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { createSubcategory } from '../../factories/subcategory.factory'
 import GradesInitializer from '../../../src/initializers/grades'
+import SubjectsInitializer from '../../../src/initializers/subjects'
 import { Grade } from '../../../src/entities/grade'
 import { createGrade } from '../../factories/grade.factory'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
+import { Subject } from '../../../src/entities/subject'
+import { createSubject } from '../../factories/subject.factory'
+import { IPaginatedResponse } from '../../../src/utils/pagination/paginate'
+import { SubjectConnectionNode } from '../../../src/types/graphQL/subject'
 import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
@@ -2503,6 +2509,94 @@ describe('isAdmin', () => {
             it('cannot see any memberships', async () => {
                 const members = await nonAdminScope.getMany()
                 expect(members).to.have.lengthOf(0)
+            })
+        })
+    })
+
+    context('subjects', () => {
+        let adminUser: User
+        let memberUser1: User
+        let noMemberUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let allSubjectsCount: number
+        let systemSubjectsCount: number
+        let token: string
+        let visibleSubjects: IPaginatedResponse<SubjectConnectionNode>
+        const organizationSubjectsCount = 6
+
+        const queryVisibleSubjects = async (token?: string) => {
+            const response = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+
+            return response
+        }
+
+        beforeEach(async () => {
+            // Generating system grades
+            await SubjectsInitializer.run()
+            systemSubjectsCount = await Subject.count()
+
+            // Creating Users and Orgs
+            adminUser = await createAdminUser(testClient)
+            memberUser1 = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization1 = await createOrganization(memberUser1).save()
+            organization2 = await createOrganization().save()
+
+            // Creating Subjects for organization1
+            await Subject.save(
+                Array.from(Array(organizationSubjectsCount), () =>
+                    createSubject(organization1)
+                )
+            )
+
+            // Creating Subjects for organization2
+            await Subject.save(
+                Array.from(Array(organizationSubjectsCount), () =>
+                    createSubject(organization2)
+                )
+            )
+
+            // Creating membership for memberUser1 in organization1
+            await createOrganizationMembership({
+                user: memberUser1,
+                organization: organization1,
+            }).save()
+
+            allSubjectsCount = await Subject.count()
+        })
+
+        context('when user is an admin', () => {
+            it('should have access to all the existent subjects', async () => {
+                token = generateToken(userToPayload(adminUser))
+                visibleSubjects = await queryVisibleSubjects(token)
+
+                expect(visibleSubjects.totalCount).to.eql(allSubjectsCount)
+            })
+        })
+
+        context('when user is an organization member', () => {
+            it('should have access to the organization and system ones', async () => {
+                token = generateToken(userToPayload(memberUser1))
+                visibleSubjects = await queryVisibleSubjects(token)
+
+                expect(visibleSubjects.totalCount).to.eql(
+                    organizationSubjectsCount + systemSubjectsCount
+                )
+            })
+        })
+
+        context('when user does not belongs to any organization', () => {
+            it('should have access just to the system ones', async () => {
+                token = generateToken(userToPayload(noMemberUser))
+                visibleSubjects = await queryVisibleSubjects(token)
+
+                expect(visibleSubjects.totalCount).to.eql(systemSubjectsCount)
             })
         })
     })
