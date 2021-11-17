@@ -774,7 +774,7 @@ describe('organizationsConnection', () => {
         const numClassesPerOrg = numSchoolsPerOrg
         let orgs: Organization[]
         let school: School
-        let _class: Class
+        let class_: Class
 
         beforeEach(async () => {
             orgs = [createOrganization(), createOrganization()]
@@ -791,7 +791,12 @@ describe('organizationsConnection', () => {
             for (let i = 0; i < numSchoolsPerOrg; i++) {
                 for (const org of orgs) {
                     school = await createSchool(org).save()
-                    _class = await createClass([school], org).save()
+                    class_ = await createClass(
+                        [school],
+                        org,
+                        {},
+                        `class${i}`
+                    ).save()
                 }
             }
         })
