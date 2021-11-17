@@ -201,7 +201,7 @@ describe('acceptance.subcategory', () => {
                 const response = await makeRequest(
                     request,
                     print(SUBCATEGORIES_DELETE),
-                    { id: subcategoryId },
+                    { input: [{ id: subcategoryId }] },
                     token
                 )
                 const subcategoryNode =
@@ -217,7 +217,7 @@ describe('acceptance.subcategory', () => {
                 const response = await makeRequest(
                     request,
                     print(SUBCATEGORIES_DELETE),
-                    { id: NIL_UUID },
+                    { input: [{ id: NIL_UUID }] },
                     getAdminAuthToken()
                 )
                 const errors = response.body.errors
