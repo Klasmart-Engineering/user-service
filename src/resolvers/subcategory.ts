@@ -25,6 +25,7 @@ export const deleteSubcategories = async (
         throw new Error(
             `${args.input.length} is larger than the limit of ${MAX_MUTATION_INPUT_ARRAY_SIZE} on mutation input arrays`
         )
+
     const errors: APIError[] = []
     const ids: string[] = args.input.map((val) => val.id).flat()
     const subcategoryNodes: SubcategoryConnectionNode[] = []
@@ -43,6 +44,15 @@ export const deleteSubcategories = async (
             ids,
         })
         .getMany()
+
+    // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+    const organizationsIds = subcategories.map(
+        (subcategory) => (subcategory as any).__organization__?.organization_id
+    )
+    const organizationsWhereIsPermitted = await context.permissions.isAllowedInOrganizations(
+        organizationsIds,
+        PermissionName.delete_subjects_20447
+    )
 
     for (const id of ids) {
         const subcategory = subcategories.find((s) => s.id === id)
@@ -80,11 +90,9 @@ export const deleteSubcategories = async (
             )
         }
         if (!subcategory.system && !isAdmin) {
-            const isAllowedIntheOrg = await context.permissions.isAllowedInsideTheOrganization(
-                userId,
-                // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-                (subcategory as any).__organization__.organization_id,
-                PermissionName.delete_subjects_20447
+            // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+            const isAllowedIntheOrg = organizationsWhereIsPermitted.includes(
+                (subcategory as any).__organization__.organization_id
             )
             if (!isAllowedIntheOrg) {
                 errors.push(
