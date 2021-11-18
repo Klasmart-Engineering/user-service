@@ -145,10 +145,10 @@ export class UserPermissions {
             isAdmin && superAdminRole.permissions.includes(permission_name)
 
         if (!output && organization_id) {
-            const allOrganizationPermisions = await this.organizationPermissions(
+            const allOrganizationPermissions = await this.organizationPermissions(
                 user_id
             )
-            const organizationPermissions = allOrganizationPermisions.get(
+            const organizationPermissions = allOrganizationPermissions.get(
                 organization_id
             )
             if (
