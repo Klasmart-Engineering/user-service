@@ -72,7 +72,7 @@ describe('program', () => {
 
     describe('delete', () => {
         context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
+            it('fails authentication', async () => {
                 const gqlResult = deleteProgram(testClient, program.id, {
                     authorization: undefined,
                 })
@@ -485,7 +485,7 @@ describe('program', () => {
         })
 
         context('when not authenticated', () => {
-            xit('throws a permission error', async () => {
+            it('throws a permission error', async () => {
                 await expect(
                     editAgeRanges(testClient, program.id, [ageRange.id], {
                         authorization: undefined,
@@ -615,7 +615,7 @@ describe('program', () => {
         })
 
         context('when not authenticated', () => {
-            xit('throws a permission error', async () => {
+            it('throws a permission error', async () => {
                 await expect(
                     editGrades(testClient, program.id, [grade.id], {
                         authorization: undefined,
@@ -739,7 +739,7 @@ describe('program', () => {
         })
 
         context('when not authenticated', () => {
-            xit('throws a permission error', async () => {
+            it('throws a permission error', async () => {
                 await expect(
                     editSubjects(testClient, program.id, [subject.id], {
                         authorization: undefined,

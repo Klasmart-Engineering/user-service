@@ -557,7 +557,7 @@ describe('acceptance.user', () => {
     })
 
     context('my_users', async () => {
-        xit('Finds no users if I am not logged in', async () => {
+        it('Finds no users if I am not logged in', async () => {
             const response = await request
                 .post('/user')
                 .set({

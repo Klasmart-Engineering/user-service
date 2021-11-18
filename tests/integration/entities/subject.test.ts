@@ -96,7 +96,7 @@ describe('Subject', () => {
         })
 
         context('when not authenticated', () => {
-            xit('fails to list subjects in the organization', async () => {
+            it('fails to list subjects in the organization', async () => {
                 await expect(
                     describeSubject(testClient, subject.id, {
                         authorization: undefined,
@@ -189,7 +189,7 @@ describe('Subject', () => {
         })
 
         context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
+            it('fails authentication', async () => {
                 const gqlResult = deleteSubject(testClient, subject.id, {
                     authorization: undefined,
                 })

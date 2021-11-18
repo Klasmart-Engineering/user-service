@@ -105,7 +105,7 @@ describe('isAdmin', () => {
         })
 
         context('when user is not logged in', () => {
-            xit('fails authentication', async () => {
+            it('fails authentication', async () => {
                 const gqlResult = getAllOrganizations(testClient, {
                     authorization: undefined,
                 })
