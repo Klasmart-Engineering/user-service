@@ -453,7 +453,7 @@ describe('processClassFromCSVRow', () => {
         const classRowError = rowErrors[0]
         expect(classRowError.code).to.equal('ERR_CSV_NONE_EXIST_CHILD_ENTITY')
         expect(classRowError.message).to.equal(
-            `On row number 1, "${row.school_name}" school doesn\'t exist for "${orgName}" organization.`
+            `On row number 1, "${row.school_name}" school doesn't exist for "${orgName}" organization.`
         )
 
         const dbClass = await Class.find()
@@ -479,7 +479,7 @@ describe('processClassFromCSVRow', () => {
         const classRowError = rowErrors[0]
         expect(classRowError.code).to.equal('ERR_CSV_NONE_EXIST_CHILD_ENTITY')
         expect(classRowError.message).to.equal(
-            `On row number 1, "${row.program_name}" program doesn\'t exist for "${orgName}" organization.`
+            `On row number 1, "${row.program_name}" program doesn't exist for "${orgName}" organization.`
         )
 
         const dbClass = await Class.find()

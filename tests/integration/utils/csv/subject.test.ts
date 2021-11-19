@@ -221,7 +221,7 @@ describe('processSubjectFromCSVRow', () => {
             const subRowError = rowErrors[0]
             expect(subRowError.code).to.equal('ERR_CSV_NONE_EXIST_CHILD_ENTITY')
             expect(subRowError.message).to.equal(
-                `On row number 1, "${row.category_name}" category doesn\'t exist for "${row.organization_name}" organization.`
+                `On row number 1, "${row.category_name}" category doesn't exist for "${row.organization_name}" organization.`
             )
 
             const subject = await Subject.findOne({

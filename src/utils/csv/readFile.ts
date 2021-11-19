@@ -1,6 +1,5 @@
 import csv = require('csv-parser')
 import { Upload } from '../../types/upload'
-import { File } from '../../types/file'
 import { ReReadable } from 'rereadable-stream'
 import { EntityManager } from 'typeorm'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
@@ -165,72 +164,66 @@ export async function readCSVFile(
     headersCallback: CreateEntityHeadersCallback | undefined = undefined
 ) {
     const { filename, mimetype, encoding } = file
-    let rowCounter: number
+    let rowCounter = 0
     let csvStream
     const fileErrors: CSVError[] = []
 
-    return new Promise<File>(async (resolve, reject) => {
-        try {
-            const readStream = file.createReadStream()
-            const rereadableStream = readStream.pipe(new ReReadable())
+    const readStream = file.createReadStream()
+    const rereadableStream = readStream.pipe(new ReReadable())
 
-            await validateFile(
-                readStream,
-                rereadableStream,
-                headersCallback,
-                filename,
-                mimetype,
-                fileErrors
+    await validateFile(
+        readStream,
+        rereadableStream,
+        headersCallback,
+        filename,
+        mimetype,
+        fileErrors
+    )
+
+    if (fileErrors.length) {
+        throw fileErrors
+    }
+
+    for (let i = 0; i < rowCallbacks.length; i += 1) {
+        csvStream = rereadableStream.rewind().pipe(csv())
+        rowCounter = 0
+        for await (let chunk of csvStream) {
+            rowCounter += 1
+
+            chunk = formatCSVRow(chunk)
+
+            const rowErrors = await rowCallbacks[i](
+                manager,
+                chunk,
+                rowCounter,
+                fileErrors,
+                userPermissions
             )
 
-            if (fileErrors.length) {
-                reject(fileErrors)
-            }
+            fileErrors.push(...rowErrors)
 
-            for (let i = 0; i < rowCallbacks.length; i += 1) {
-                csvStream = rereadableStream.rewind().pipe(csv())
-                rowCounter = 0
-                for await (let chunk of csvStream) {
-                    rowCounter += 1
-
-                    chunk = formatCSVRow(chunk)
-
-                    const rowErrors = await rowCallbacks[i](
-                        manager,
-                        chunk,
-                        rowCounter,
-                        fileErrors,
-                        userPermissions
+            if (canFinish(i, rowCallbacks, csvStream)) {
+                if (fileErrors.length) {
+                    logger.error(
+                        'These errors were found in the file: %o',
+                        fileErrors
                     )
+                    throw fileErrors
+                }
 
-                    fileErrors.push(...rowErrors)
-
-                    if (canFinish(i, rowCallbacks, csvStream)) {
-                        if (fileErrors.length) {
-                            logger.error(
-                                'These errors were found in the file: %o',
-                                fileErrors
-                            )
-                            reject(fileErrors)
-                        }
-
-                        resolve({
-                            mimetype,
-                            encoding,
-                            filename,
-                        })
-                    }
+                return {
+                    mimetype,
+                    encoding,
+                    filename,
                 }
             }
-            if (rowCounter === 0) {
-                throw new Error(
-                    stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, {
-                        filename,
-                    })
-                )
-            }
-        } catch (error) {
-            reject(error)
         }
-    })
+    }
+    if (rowCounter === 0) {
+        throw new Error(
+            stringInject(constants.MSG_ERR_CSV_EMPTY_FILE, {
+                filename,
+            })
+        )
+    }
 }

@@ -379,7 +379,7 @@ describe('processProgramFromCSVRow', () => {
             const programRowError = rowErrors[0]
             expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+                `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
             const program = await Program.findOne({
@@ -415,7 +415,7 @@ describe('processProgramFromCSVRow', () => {
                 'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
             )
             expect(programRowError.message).to.equal(
-                `On row number 1, "6 - 7 month(s)" ageRange doesn\'t exist for "${rowModel.organization_name}" organization.`
+                `On row number 1, "6 - 7 month(s)" ageRange doesn't exist for "${rowModel.organization_name}" organization.`
             )
 
             const program = await Program.findOne({
@@ -451,7 +451,7 @@ describe('processProgramFromCSVRow', () => {
                 'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
             )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.grade_name}" grade doesn\'t exist for "${rowModel.organization_name}" organization.`
+                `On row number 1, "${row.grade_name}" grade doesn't exist for "${rowModel.organization_name}" organization.`
             )
 
             const program = await Program.findOne({
@@ -487,7 +487,7 @@ describe('processProgramFromCSVRow', () => {
                 'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
             )
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.subject_name}" subject doesn\'t exist for "${rowModel.organization_name}" organization.`
+                `On row number 1, "${row.subject_name}" subject doesn't exist for "${rowModel.organization_name}" organization.`
             )
 
             const program = await Program.findOne({

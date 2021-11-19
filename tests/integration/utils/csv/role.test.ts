@@ -180,7 +180,7 @@ describe('processRoleFromCSVRow', () => {
             const programRowError = rowErrors[0]
             expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+                `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
             const role = await Role.findOne({
@@ -214,7 +214,7 @@ describe('processRoleFromCSVRow', () => {
             const programRowError = rowErrors[0]
             expect(programRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(programRowError.message).to.equal(
-                `On row number 1, "${row.permission_id}" permission doesn\'t exist.`
+                `On row number 1, "${row.permission_id}" permission doesn't exist.`
             )
 
             const role = await Role.findOne({

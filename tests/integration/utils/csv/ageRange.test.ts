@@ -395,7 +395,7 @@ describe('processAgeRangeFromCSVRow', () => {
             const ageRowError = rowErrors[0]
             expect(ageRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(ageRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+                `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
             const ageRange = await AgeRange.findOne({

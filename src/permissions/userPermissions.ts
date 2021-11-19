@@ -204,49 +204,45 @@ export class UserPermissions {
         user_id?: string
     ): Promise<Map<string, Set<string>>> {
         if (!this._organizationPermissions) {
-            this._organizationPermissions = new Promise<
-                Map<string, Set<string>>
-            >(async (resolve, reject) => {
-                try {
-                    const organizationPermissions = new Map<
-                        string,
-                        Set<string>
-                    >()
-                    if (!user_id) {
-                        resolve(organizationPermissions)
-                        return
+            const organizationPermissions = new Map<string, Set<string>>()
+            if (!user_id) {
+                this._organizationPermissions = Promise.resolve(
+                    organizationPermissions
+                )
+                return this._organizationPermissions
+            }
+
+            //TODO: Adjust for returning explicity denial
+            // const organizationPermissionResults =
+            this._organizationPermissions = getRepository(
+                OrganizationMembership
+            )
+                .createQueryBuilder('OrganizationMembership')
+                .select(
+                    'OrganizationMembership.organization_id, Permission.permission_name'
+                )
+                .distinct(true)
+                .leftJoin(
+                    'OrganizationMembership.roles',
+                    'Role',
+                    'Role.status = :status',
+                    {
+                        status: Status.ACTIVE,
                     }
-
-                    //TODO: Adjust for returning explicity denial
-                    const organizationPermissionResults = await getRepository(
-                        OrganizationMembership
-                    )
-                        .createQueryBuilder('OrganizationMembership')
-                        .select(
-                            'OrganizationMembership.organization_id, Permission.permission_name'
-                        )
-                        .distinct(true)
-                        .leftJoin(
-                            'OrganizationMembership.roles',
-                            'Role',
-                            'Role.status = :status',
-                            {
-                                status: Status.ACTIVE,
-                            }
-                        )
-                        .leftJoin(
-                            'Role.permissions',
-                            'Permission',
-                            'Permission.allow = :allowed',
-                            {
-                                allowed: true,
-                            }
-                        )
-                        .where('OrganizationMembership.user_id = :user_id', {
-                            user_id,
-                        })
-                        .getRawMany()
-
+                )
+                .leftJoin(
+                    'Role.permissions',
+                    'Permission',
+                    'Permission.allow = :allowed',
+                    {
+                        allowed: true,
+                    }
+                )
+                .where('OrganizationMembership.user_id = :user_id', {
+                    user_id,
+                })
+                .getRawMany()
+                .then((organizationPermissionResults) => {
                     for (const {
                         organization_id,
                         permission_id,
@@ -265,11 +261,8 @@ export class UserPermissions {
                             permissions.add(permission_id)
                         }
                     }
-                    resolve(organizationPermissions)
-                } catch (e) {
-                    reject(e)
-                }
-            })
+                    return organizationPermissions
+                })
         }
         return this._organizationPermissions
     }
@@ -278,64 +271,54 @@ export class UserPermissions {
         user_id?: string
     ): Promise<Map<string, Set<string>>> {
         if (!this._schoolPermissions) {
-            this._schoolPermissions = new Promise<Map<string, Set<string>>>(
-                async (resolve, reject) => {
-                    try {
-                        const schoolPermissions = new Map<string, Set<string>>()
-                        if (!user_id) {
-                            resolve(schoolPermissions)
-                            return
-                        }
-                        //TODO: Adjust for returning explicity denial
-                        const schoolPermissionResults = await getRepository(
-                            SchoolMembership
-                        )
-                            .createQueryBuilder()
-                            .select(
-                                'SchoolMembership.school_id, Permission.permission_name'
-                            )
-                            .distinct(true)
-                            .leftJoin(
-                                'SchoolMembership.roles',
-                                'Role',
-                                'Role.status = :status',
-                                {
-                                    status: Status.ACTIVE,
-                                }
-                            )
-                            .leftJoin(
-                                'Role.permissions',
-                                'Permission',
-                                'Permission.allow = :allowed',
-                                {
-                                    allowed: true,
-                                }
-                            )
-                            .where('SchoolMembership.user_id = :user_id', {
-                                user_id,
-                            })
-                            .getRawMany()
-
-                        for (const {
-                            school_id,
-                            permission_id,
-                        } of schoolPermissionResults) {
-                            const permissions = schoolPermissions.get(school_id)
-                            if (permissions) {
-                                permissions.add(permission_id)
-                            } else {
-                                schoolPermissions.set(
-                                    school_id,
-                                    new Set([permission_id])
-                                )
-                            }
-                        }
-                        resolve(schoolPermissions)
-                    } catch (e) {
-                        reject(e)
+            const schoolPermissions = new Map<string, Set<string>>()
+            if (!user_id) {
+                return Promise.resolve(schoolPermissions)
+            }
+            //TODO: Adjust for returning explicity denial
+            this._schoolPermissions = getRepository(SchoolMembership)
+                .createQueryBuilder()
+                .select(
+                    'SchoolMembership.school_id, Permission.permission_name'
+                )
+                .distinct(true)
+                .leftJoin(
+                    'SchoolMembership.roles',
+                    'Role',
+                    'Role.status = :status',
+                    {
+                        status: Status.ACTIVE,
                     }
-                }
-            )
+                )
+                .leftJoin(
+                    'Role.permissions',
+                    'Permission',
+                    'Permission.allow = :allowed',
+                    {
+                        allowed: true,
+                    }
+                )
+                .where('SchoolMembership.user_id = :user_id', {
+                    user_id,
+                })
+                .getRawMany()
+                .then((schoolPermissionResults) => {
+                    for (const {
+                        school_id,
+                        permission_id,
+                    } of schoolPermissionResults) {
+                        const permissions = schoolPermissions.get(school_id)
+                        if (permissions) {
+                            permissions.add(permission_id)
+                        } else {
+                            schoolPermissions.set(
+                                school_id,
+                                new Set([permission_id])
+                            )
+                        }
+                    }
+                    return schoolPermissions
+                })
         }
         return this._schoolPermissions
     }

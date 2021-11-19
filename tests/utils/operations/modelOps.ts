@@ -1663,8 +1663,6 @@ export function fileMockInput(
     encoding: string
 ) {
     return {
-        resolve: () => {},
-        reject: () => {},
         promise: new Promise((resolve) =>
             resolve({
                 filename,

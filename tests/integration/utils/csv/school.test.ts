@@ -374,7 +374,7 @@ describe('processSchoolFromCSVRow', () => {
                 'ERR_CSV_NONE_EXIST_CHILD_ENTITY'
             )
             expect(schoolRowError.message).to.equal(
-                `On row number 1, "${row.program_name}" program doesn\'t exist for "${row.organization_name}" organization.`
+                `On row number 1, "${row.program_name}" program doesn't exist for "${row.organization_name}" organization.`
             )
 
             const school = await School.findOne({

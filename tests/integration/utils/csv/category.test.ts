@@ -152,7 +152,7 @@ describe('processCategoryFromCSVRow', () => {
             const categoryRowError = rowErrors[0]
             expect(categoryRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(categoryRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+                `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
             const category = await Category.findOne({
@@ -186,7 +186,7 @@ describe('processCategoryFromCSVRow', () => {
             const categoryRowError = rowErrors[0]
             expect(categoryRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(categoryRowError.message).to.equal(
-                `On row number 1, "${row.subcategory_name}" subCategory doesn\'t exist.`
+                `On row number 1, "${row.subcategory_name}" subCategory doesn't exist.`
             )
 
             const category = await Category.findOne({

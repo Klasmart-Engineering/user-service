@@ -2,7 +2,8 @@
     "root": true,
     "parser": "@typescript-eslint/parser",
     "plugins": [
-      "@typescript-eslint"
+      "@typescript-eslint",
+      "mocha"
     ],
     "extends": [
       "eslint:recommended",
@@ -15,12 +16,9 @@
     },
     "rules": {
       "no-shadow": "warn",
-      "no-async-promise-executor": "warn",
       "@typescript-eslint/no-this-alias": "warn",
       "no-empty-pattern": "warn",
-      "no-useless-escape": "warn",
       "no-console": "error",
-      "@typescript-eslint/no-empty-function": "warn",
       "@typescript-eslint/no-extra-semi": "off",
       "@typescript-eslint/explicit-member-accessibility": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
@@ -32,6 +30,7 @@
       "@typescript-eslint/no-object-literal-type-assertion": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-unused-vars": [2, {"vars": "all", "args": "none"}],
-      "@typescript-eslint/no-floating-promises": "error"
+      "@typescript-eslint/no-floating-promises": "error",
+      "mocha/no-exclusive-tests": "error"
     }
   }

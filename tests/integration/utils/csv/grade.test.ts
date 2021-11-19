@@ -140,7 +140,7 @@ describe('processGradeFromCSVRow', () => {
             const gradeRowError = rowErrors[0]
             expect(gradeRowError.code).to.equal('ERR_CSV_NONE_EXIST_ENTITY')
             expect(gradeRowError.message).to.equal(
-                `On row number 1, "${row.organization_name}" organization doesn\'t exist.`
+                `On row number 1, "${row.organization_name}" organization doesn't exist.`
             )
 
             const grade = await Grade.findOne({
