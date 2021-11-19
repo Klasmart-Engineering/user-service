@@ -1,6 +1,6 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Context } from '../main'
 
 const typeDefs = gql`
@@ -24,9 +24,9 @@ const typeDefs = gql`
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {},
     }
 }

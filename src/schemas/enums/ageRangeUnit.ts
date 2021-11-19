@@ -1,9 +1,13 @@
 import gql from 'graphql-tag'
 
 // an enum that defines age-ranges
-export default gql`
+const ageRangeUnit = gql`
     enum AgeRangeUnit {
         year
         month
     }
 `
+
+export default {
+    typeDefs: ageRangeUnit,
+}

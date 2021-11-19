@@ -1,15 +1,16 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { GraphQLResolveInfo } from 'graphql'
+import { Model } from '../model'
+import { Context } from '../main'
+
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
-import { Context } from '../main'
-import { Model } from '../model'
-import { ISchoolsConnectionNode } from '../types/graphQL/school'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { ISchoolsConnectionNode } from '../types/graphQL/school'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -172,9 +173,9 @@ export function classesChildConnection(
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             SchoolConnectionNode: {
                 schoolMembershipsConnection: schoolMembershipsConnectionResolver,

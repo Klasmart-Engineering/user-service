@@ -1,4 +1,3 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import gql from 'graphql-tag'
 import { Context } from '../main'
 import { Model } from '../model'
@@ -6,6 +5,7 @@ import { mapUserToUserConnectionNode } from '../pagination/usersConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     extend type Query {
@@ -33,9 +33,9 @@ const typeDefs = gql`
     }
 `
 
-export default function getDefault(model: Model): ApolloServerExpressConfig {
+export default function getDefault(model: Model): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             MyUser: {
                 node: async (_parent, _args, ctx: Context, _info) => {

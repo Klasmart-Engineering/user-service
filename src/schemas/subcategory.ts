@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 import { subcategoriesConnectionResolver } from '../pagination/subcategoriesConnection'
 import { deleteSubcategories } from '../resolvers/subcategory'
 
@@ -101,9 +101,9 @@ const typeDefs = gql`
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             Mutation: {
                 subcategory: (_parent, args, ctx, _info) =>

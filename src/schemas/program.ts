@@ -1,8 +1,8 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { ProgramConnectionNode } from '../types/graphQL/program'
 import { Context } from '../main'
+import { ProgramConnectionNode } from '../types/graphQL/program'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -125,9 +125,9 @@ const typeDefs = gql`
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             ProgramConnectionNode: {
                 ageRanges: async (

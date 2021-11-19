@@ -1,5 +1,7 @@
 import ageRangeUnit from './ageRangeUnit'
 import status from './status'
-import { mergeRawSchemas } from '../helpers/mergeRawSchemas'
+import { GraphQLSchemaModule } from '../../types/schemaModule'
 
-export default mergeRawSchemas(ageRangeUnit, status)
+const enumsModules: GraphQLSchemaModule[] = [ageRangeUnit, status]
+
+export default enumsModules

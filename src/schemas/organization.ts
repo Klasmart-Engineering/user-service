@@ -1,7 +1,6 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import Dataloader from 'dataloader'
-import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
@@ -15,8 +14,9 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { addUsersToOrganizations } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { RoleConnectionNode } from '../types/graphQL/role'
+import { GraphQLSchemaModule } from '../types/schemaModule'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     IChildPaginationArgs,
     IPaginatedResponse,
@@ -438,9 +438,9 @@ export function classesChildConnection(
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             OrganizationConnectionNode: {
                 owners: async (

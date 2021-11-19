@@ -1,7 +1,8 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { SelectQueryBuilder } from 'typeorm'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 import { User } from '../entities/user'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
@@ -12,10 +13,11 @@ import {
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
+import { createEntityScope } from '../directives/isAdmin'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import { UserConnectionNode } from '../types/graphQL/user'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     addOrganizationRolesToUsers,
     removeOrganizationRolesFromUsers,
@@ -73,10 +75,6 @@ const typeDefs = gql`
         userId: ID!
         organizationId: ID!
         roleIds: [ID!]!
-    }
-
-    type UsersMutationResult {
-        users: [UserConnectionNode!]!
     }
 
     # pagination extension types start here
@@ -149,7 +147,7 @@ const typeDefs = gql`
         OR: [UserFilter!]
     }
 
-    type UserConnectionNode {
+    type UserConnectionNode @key(fields: "id") {
         id: ID!
         givenName: String
         familyName: String
@@ -253,7 +251,7 @@ const typeDefs = gql`
             )
     }
 
-    type User {
+    type User @key(fields: "user_id") {
         user_id: ID!
 
         #properties
@@ -327,9 +325,9 @@ const typeDefs = gql`
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             UserConnectionNode: {
                 organizations: async (
@@ -369,6 +367,17 @@ export default function getDefault(
                 classesStudyingConnection: classesStudyingConnectionResolver,
                 classesTeachingConnection: classesTeachingConnectionResolver,
                 schoolMembershipsConnection: schoolMembershipsConnectionResolver,
+                __resolveReference: async (userRef, ctx: Context) => {
+                    const scope = (await createEntityScope({
+                        permissions: ctx.permissions,
+                        entity: 'user',
+                    })) as SelectQueryBuilder<User>
+                    const args = {
+                        id: userRef.id,
+                        scope,
+                    }
+                    return ctx.loaders.userNode.node.instance.load(args)
+                },
             },
             Mutation: {
                 me: (_parent, _args, ctx: Context, _info) =>
@@ -430,6 +439,7 @@ export default function getDefault(
                         user.user_id
                     )
                 },
+                __resolveReference: (userRef) => model.getUser(userRef.user_id),
             },
         },
     }

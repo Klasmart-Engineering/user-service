@@ -1,8 +1,8 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { GradeConnectionNode } from '../types/graphQL/grade'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -99,9 +99,9 @@ const typeDefs = gql`
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             GradeConnectionNode: {
                 fromGrade: async (

@@ -1,6 +1,6 @@
 import gql from 'graphql-tag'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SubjectConnectionNode } from '../types/graphQL/subject'
 
@@ -105,9 +105,9 @@ const typeDefs = gql`
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             SubjectConnectionNode: {
                 categories: async (

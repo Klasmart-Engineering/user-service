@@ -1,6 +1,5 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
 import {
@@ -11,6 +10,7 @@ import {
 import { GraphQLResolveInfo } from 'graphql'
 import { RoleConnectionNode } from '../types/graphQL/role'
 import { IDataLoaders } from '../loaders/setup'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     type OrganizationMembershipsConnectionResponse implements iConnectionResponse {
@@ -113,9 +113,9 @@ export async function rolesConnectionChild(
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             OrganizationMembershipConnectionNode: {
                 user: (

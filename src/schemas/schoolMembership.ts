@@ -1,11 +1,11 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
-import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
-import { IDataLoaders } from '../loaders/setup'
+import { GraphQLResolveInfo } from 'graphql'
 import { Context } from '../main'
 import { Model } from '../model'
+import { IDataLoaders } from '../loaders/setup'
 import { RoleConnectionNode } from '../types/graphQL/role'
 import { SchoolMembershipConnectionNode } from '../types/graphQL/schoolMembership'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 import {
     IChildPaginationArgs,
     IPaginatedResponse,
@@ -101,9 +101,9 @@ export async function rolesConnectionChild(
     })
 }
 
-export default function getDefault(model: Model): ApolloServerExpressConfig {
+export default function getDefault(model: Model): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             SchoolMembershipConnectionNode: {
                 user: (
