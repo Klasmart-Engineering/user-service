@@ -200,6 +200,25 @@ The migration will only ever run once, so if you need to rerun it during develop
 -   Delete the corresponding migration row from the `migrations` Postgres table
 -   Rerun the application
 
+## Fill the database with fake data
+
+Customize `tests/populateDatabase.ts` to create whatever entities you need in the database.
+
+Then run it:
+
+```bash
+# start the database AND have the application bootstrap the database
+docker-compose up
+npm run-script populate-database
+```
+
+If you create a very large number of entities and want to save them to the database all at once
+if might be useful to run node with a higher memory limit:
+
+```bash
+npm run-script populate-database-extra-memory
+```
+
 # Useful Tools
 
 -   [VSCode](https://code.visualstudio.com/), for a feature rich development environment

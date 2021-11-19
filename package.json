@@ -18,6 +18,8 @@
     "prettier-format": "prettier --config .prettierrc \"./**/*.{ts,test.ts}\" --write",
     "prettier-check": "prettier --config .prettierrc \"./**/*.{ts,test.ts}\" --check",
     "commitlint-check": "commitlint",
+    "populate-database-extra-memory": "DATABASE_URL=\"postgres://postgres:kidsloop@localhost/postgres1\" node --max-old-space-size=8096 -- node_modules/.bin/ts-node -P tsconfig.json \"tests/populateDatabase.ts\"",
+    "populate-database": "DATABASE_URL=\"postgres://postgres:kidsloop@localhost/postgres1\" ts-node \"tests/populateDatabase.ts\"",
     "test:unit": "NODE_ENV=development mocha --require ts-node/register --file tests/unit/hooks.ts \"tests/unit/**/*.test.ts\"",
     "test:integration": "NODE_ENV=development mocha --require ts-node/register --file tests/integration/hooks.ts \"tests/integration/**/*.test.ts\" --timeout 8000",
     "test:acceptance": "DATABASE_URL=postgres://postgres:kidsloop@localhost/postgres1 mocha --require ts-node/register --file tests/acceptance/hooks.ts \"tests/acceptance/**/*.test.ts\" --timeout 8000",
