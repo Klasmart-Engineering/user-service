@@ -12,6 +12,7 @@ import {
     OneToOne,
     SelectQueryBuilder,
     EntityManager,
+    QueryRunner,
 } from 'typeorm'
 import { GraphQLResolveInfo } from 'graphql'
 import { Retryable, BackOffPolicy } from 'typescript-retry-decorator'
@@ -31,6 +32,11 @@ import { CustomBaseEntity } from './customBaseEntity'
 import { isDOB, isEmail, isPhone } from '../utils/validations'
 import clean from '../utils/clean'
 import logger from '../logging'
+import { UserConnectionNode } from '../types/graphQL/user'
+import {
+    CoreUserConnectionNode,
+    mapUserToUserConnectionNode,
+} from '../pagination/usersConnection'
 
 @Entity()
 export class User extends CustomBaseEntity {
@@ -83,8 +89,7 @@ export class User extends CustomBaseEntity {
 
     public async membership(
         { organization_id }: { organization_id: string },
-        context: Context,
-        info: GraphQLResolveInfo
+        context: Context
     ) {
         try {
             const membership = await getRepository(
@@ -107,8 +112,7 @@ export class User extends CustomBaseEntity {
 
     public async school_membership(
         { school_id }: { school_id: string },
-        context: Context,
-        info: GraphQLResolveInfo
+        context: Context
     ) {
         try {
             const membership = await getRepository(
@@ -138,8 +142,7 @@ export class User extends CustomBaseEntity {
 
     public async organizationsWithPermission(
         { permission_name }: { permission_name: string },
-        context: Context,
-        info: GraphQLResolveInfo
+        context: Context
     ) {
         try {
             return await getRepository(OrganizationMembership)
@@ -166,8 +169,7 @@ export class User extends CustomBaseEntity {
 
     public async schoolsWithPermission(
         { permission_name }: { permission_name: string },
-        context: Context,
-        info: GraphQLResolveInfo
+        context: Context
     ) {
         try {
             const schoolPermissionPromise = getRepository(SchoolMembership)
@@ -450,9 +452,14 @@ export class User extends CustomBaseEntity {
     }
 
     public async addOrganization(
-        { organization_id }: { organization_id: string },
+        {
+            organization_id,
+            status,
+            roles,
+        }: { organization_id: string } & Partial<OrganizationMembership>,
         context: Context,
-        info: GraphQLResolveInfo
+        info: GraphQLResolveInfo,
+        manager: EntityManager = getManager()
     ) {
         try {
             if (info.operation.operation !== 'mutation') {
@@ -463,11 +470,15 @@ export class User extends CustomBaseEntity {
                 Organization
             ).findOneOrFail(organization_id)
             const membership = new OrganizationMembership()
+
             membership.organization_id = organization_id
             membership.organization = Promise.resolve(organization)
             membership.user_id = this.user_id
             membership.user = Promise.resolve(this)
-            await getManager().save(membership)
+            membership.status = status || Status.ACTIVE
+            membership.roles = roles
+
+            await manager.save(membership)
             return membership
         } catch (e) {
             context.logger?.error(e)
@@ -475,9 +486,14 @@ export class User extends CustomBaseEntity {
     }
 
     public async addSchool(
-        { school_id }: { school_id: string },
+        {
+            school_id,
+            status = Status.ACTIVE,
+            roles,
+        }: { school_id: string } & Partial<SchoolMembership>,
         context: Context,
-        info: GraphQLResolveInfo
+        info: GraphQLResolveInfo,
+        manager: EntityManager = getManager()
     ) {
         try {
             if (info.operation.operation !== 'mutation') {
@@ -490,11 +506,27 @@ export class User extends CustomBaseEntity {
             membership.school = Promise.resolve(school)
             membership.user_id = this.user_id
             membership.user = Promise.resolve(this)
-            await getManager().save(membership)
+            membership.status = status
+            membership.roles = roles
+
+            await manager.save(membership)
             return membership
         } catch (e) {
             context.logger?.error(e)
         }
+    }
+
+    public async merge(
+        { other_id }: { other_id: string },
+        context: Context,
+        info: GraphQLResolveInfo
+    ) {
+        await mergeUsers(
+            [{ destId: this.user_id, srcId: other_id }],
+            context,
+            info
+        )
+        return await getRepository(User).findOneOrFail(this.user_id)
     }
 
     @Retryable({
@@ -503,116 +535,44 @@ export class User extends CustomBaseEntity {
         backOff: 50,
         exponentialOption: { maxInterval: 2000, multiplier: 2 },
     })
-    private async retryMerge(
-        otherUser: User,
-        context: Context
-    ): Promise<User | null> {
-        let dberr: unknown
-        const connection = getConnection()
-        const queryRunner = connection.createQueryRunner()
-        await queryRunner.connect()
-        let success = true
-        const otherMemberships = await otherUser.memberships
-        const ourMemberships = await this.memberships
-        const otherSchoolMemberships = await otherUser.school_memberships
-        const ourSchoolMemberships = await this.school_memberships
-        const otherClassesStudying = await otherUser.classesStudying
-        const otherClassesTeaching = await otherUser.classesTeaching
-        const ourClassesStudying = await this.classesStudying
-        const ourClassesTeaching = await this.classesTeaching
-
-        await queryRunner.startTransaction()
-        try {
-            let classesStudying = ourClassesStudying || []
-            let classesTeaching = ourClassesTeaching || []
-            let memberships = ourMemberships || []
-            let schoolmemberships = ourSchoolMemberships || []
-
-            if (otherUser.gender) {
-                this.gender = otherUser.gender
-            }
-            if (otherUser.username) {
-                this.username = otherUser.username
-            }
-            if (otherUser.date_of_birth) {
-                this.date_of_birth = otherUser.date_of_birth
-            }
-            memberships = this.mergeOrganizationMemberships(
-                memberships,
-                otherMemberships
-            )
-            if (memberships.length > 0) {
-                this.memberships = Promise.resolve(memberships)
-                await queryRunner.manager.save([this, ...memberships])
-            } else {
-                this.memberships = undefined
-            }
-
-            schoolmemberships = this.mergeSchoolMemberships(
-                schoolmemberships,
-                otherSchoolMemberships
-            )
-            if (schoolmemberships.length > 0) {
-                this.school_memberships = Promise.resolve(schoolmemberships)
-                await queryRunner.manager.save([this, ...schoolmemberships])
-            } else {
-                this.school_memberships = undefined
-            }
-
-            classesStudying = this.mergeClasses(
-                classesStudying,
-                otherClassesStudying
-            )
-            if (classesStudying.length > 0) {
-                this.classesStudying = Promise.resolve(classesStudying)
-                await queryRunner.manager.save([this, ...classesStudying])
-            }
-
-            classesTeaching = this.mergeClasses(
-                classesTeaching,
-                otherClassesTeaching
-            )
-            if (classesTeaching.length > 0) {
-                this.classesTeaching = Promise.resolve(classesTeaching)
-                await queryRunner.manager.save([this, ...classesTeaching])
-            }
-
-            await otherUser.removeUser(queryRunner.manager)
-
-            await queryRunner.commitTransaction()
-        } catch (err) {
-            success = false
-            context.logger?.error(err)
-            dberr = err
-            await queryRunner.rollbackTransaction()
-        } finally {
-            await queryRunner.release()
-        }
-        if (success) {
-            context.logger?.info('success')
-            return this
-        }
-        if (dberr !== undefined) {
-            throw dberr
-        }
-        return null
-    }
-
-    public async merge(
-        { other_id }: { other_id: string },
+    async mergeFrom(
+        src: User,
         context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        if (info.operation.operation !== 'mutation' || other_id === undefined) {
-            return null
-        }
-        const otherUser = await getRepository(User).findOne({
-            user_id: other_id,
+        info: GraphQLResolveInfo,
+        mgr: EntityManager = getManager()
+    ): Promise<User> {
+        await this.set(
+            {
+                gender: src.gender,
+                username: src.username,
+                date_of_birth: src.date_of_birth,
+            },
+            context,
+            info
+        )
+        ;(await src.memberships)?.map(async (srcOrg) => {
+            if (!(await this.membership(srcOrg, context))) {
+                await this.addOrganization(srcOrg, context, info, mgr)
+            }
         })
-        if (otherUser !== undefined) {
-            return this.retryMerge(otherUser, context)
-        }
-        return null
+        ;(await src.school_memberships)?.map(async (srcSchool) => {
+            if (!(await this.school_membership(srcSchool, context))) {
+                await this.addSchool(srcSchool, context, info, mgr)
+            }
+        })
+
+        const studying = await this.classesStudying
+        const teaching = await this.classesTeaching
+        ;(await src.classesStudying)
+            ?.filter((srcStudying) => !studying?.includes(srcStudying))
+            .forEach((class_) => class_.addStudent(this, context, info, mgr))
+        ;(await src.classesTeaching)
+            ?.filter((srcTeaching) => !teaching?.includes(srcTeaching))
+            .forEach((class_) => class_.addTeacher(this, context, info, mgr))
+
+        await src.removeUser(mgr)
+
+        return this
     }
 
     private async removeOrganizationMemberships(manager: EntityManager) {
@@ -668,88 +628,7 @@ export class User extends CustomBaseEntity {
         await this.inactivateSchoolMemberships(manager)
         await manager.save(this)
     }
-
-    private mergeOrganizationMemberships(
-        toMemberships: OrganizationMembership[],
-        fromMemberships?: OrganizationMembership[]
-    ): OrganizationMembership[] {
-        if (fromMemberships !== undefined) {
-            const ourid = this.user_id
-            for (const fromMembership of fromMemberships) {
-                const found = toMemberships.some(
-                    (toMembership) =>
-                        toMembership.organization_id ===
-                        fromMembership.organization_id
-                )
-                if (!found) {
-                    const membership = new OrganizationMembership()
-                    membership.organization_id = fromMembership.organization_id
-                    membership.user_id = ourid
-                    membership.user = Promise.resolve(this)
-                    membership.organization = fromMembership.organization
-                    membership.status = fromMembership.status
-
-                    if (fromMembership.roles !== undefined) {
-                        membership.roles = Promise.resolve(fromMembership.roles)
-                    }
-                    toMemberships.push(membership)
-                }
-            }
-        }
-        return toMemberships
-    }
-
-    private mergeSchoolMemberships(
-        toSchoolMemberships: SchoolMembership[],
-        fromSchoolMemberships?: SchoolMembership[]
-    ): SchoolMembership[] {
-        if (fromSchoolMemberships !== undefined) {
-            const ourid = this.user_id
-            for (const fromSchoolMembership of fromSchoolMemberships) {
-                const found = toSchoolMemberships.some(
-                    (toSchoolMembership) =>
-                        toSchoolMembership.school_id ===
-                        fromSchoolMembership.school_id
-                )
-                if (!found) {
-                    const schoolMembership = new SchoolMembership()
-                    schoolMembership.user_id = ourid
-                    schoolMembership.user = Promise.resolve(this)
-                    schoolMembership.school_id = fromSchoolMembership.school_id
-                    schoolMembership.school = fromSchoolMembership.school
-                    schoolMembership.status = fromSchoolMembership.status
-                    if (fromSchoolMembership.roles !== undefined) {
-                        schoolMembership.roles = Promise.resolve(
-                            fromSchoolMembership.roles
-                        )
-                    }
-                    toSchoolMemberships.push(schoolMembership)
-                }
-            }
-        }
-        return toSchoolMemberships
-    }
-
-    private mergeClasses(toClasses: Class[], fromClasses?: Class[]): Class[] {
-        if (fromClasses !== undefined) {
-            for (const fromClass of fromClasses) {
-                const found = toClasses.some(
-                    (toClass) => toClass.class_id === fromClass.class_id
-                )
-                if (!found) {
-                    toClasses.push(fromClass)
-                }
-            }
-        }
-        return toClasses
-    }
 }
-
-if (!process.env.DOMAIN) {
-    logger.warn('DOMAIN env variable not set, defaulting to kidsloop.net')
-}
-const domain = process.env.DOMAIN || 'kidsloop.net'
-const accountNamespace = v5(domain, v5.DNS)
 
 export function accountUUID(email?: string) {
     const hash = createHash('sha256')
@@ -758,3 +637,51 @@ export function accountUUID(email?: string) {
     }
     return v5(hash.digest(), accountNamespace)
 }
+
+export async function mergeUsers(
+    mergeUserInput: { destId: string; srcId: string }[],
+    context: Context,
+    info: GraphQLResolveInfo
+) {
+    if (info.operation.operation !== 'mutation') {
+        return null
+    }
+
+    const queryRunner = getConnection().createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    const mergePromises = []
+    for (const { destId, srcId } of mergeUserInput) {
+        console.log('test')
+        const destUser = await getRepository(User).findOneOrFail(destId)
+        const srcUser = await getRepository(User).findOneOrFail(srcId)
+        mergePromises.push(
+            destUser?.mergeFrom(srcUser, context, info, queryRunner.manager)
+        )
+    }
+
+    let mergeResults: CoreUserConnectionNode[] = []
+    await Promise.all(mergePromises)
+        .then(async (resultUsers) => {
+            console.log(resultUsers)
+            mergeResults = resultUsers.map((resultUser) =>
+                mapUserToUserConnectionNode(resultUser)
+            )
+            await queryRunner.commitTransaction()
+            context.logger?.info('success')
+        })
+        .catch(async (err) => {
+            await queryRunner.rollbackTransaction()
+            context.logger?.error(err)
+            throw err
+        })
+
+    return mergeResults
+}
+
+if (!process.env.DOMAIN) {
+    logger.warn('DOMAIN env variable not set, defaulting to kidsloop.net')
+}
+const domain = process.env.DOMAIN || 'kidsloop.net'
+const accountNamespace = v5(domain, v5.DNS)

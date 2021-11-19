@@ -10,7 +10,7 @@ import {
     ManyToMany,
     ManyToOne,
     PrimaryGeneratedColumn,
-    In,
+    In, EntityManager
 } from 'typeorm'
 import { AgeRange } from './ageRange'
 import { Grade } from './grade'
@@ -249,7 +249,8 @@ export class Class extends CustomBaseEntity {
     public async addTeacher(
         { user_id }: { user_id: string },
         context: Context,
-        info: GraphQLResolveInfo
+        info: GraphQLResolveInfo,
+        manager: EntityManager = getManager()
     ) {
         const organization_id = (await this.organization)?.organization_id
         if (
@@ -271,7 +272,7 @@ export class Class extends CustomBaseEntity {
             const classes = (await user.classesTeaching) || []
             classes.push(this)
             user.classesTeaching = Promise.resolve(classes)
-            await user.save()
+            await manager.save(user)
 
             return user
         } catch (e) {
@@ -385,7 +386,8 @@ export class Class extends CustomBaseEntity {
     public async addStudent(
         { user_id }: { user_id: string },
         context: Context,
-        info: GraphQLResolveInfo
+        info: GraphQLResolveInfo,
+        manager: EntityManager = getManager()
     ) {
         const organization_id = (await this.organization)?.organization_id
         if (
@@ -407,7 +409,7 @@ export class Class extends CustomBaseEntity {
             const classes = (await user.classesStudying) || []
             classes.push(this)
             user.classesStudying = Promise.resolve(classes)
-            await user.save()
+            await manager.save(user)
 
             return user
         } catch (e) {

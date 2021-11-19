@@ -47,6 +47,18 @@ const typeDefs = gql`
             @deprecated(reason: "Moved to auth service")
         uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
+        mergeUsers(input: [MergeUserInput!]!): UsersMutationResult
+    }
+    
+    # Mutation inputs
+    input MergeUserInput {
+        targetId: ID!
+        sourceId: ID!
+    }
+
+    # Mutation outputs
+    type UsersMutationResult {
+        users: [UserConnectionNode!]!
     }
 
     # pagination extension types start here
