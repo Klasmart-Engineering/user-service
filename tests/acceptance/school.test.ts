@@ -1,28 +1,29 @@
+import { expect } from 'chai'
+import { print } from 'graphql'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
+import { Class } from '../../src/entities/class'
+import { Organization } from '../../src/entities/organization'
 import { School } from '../../src/entities/school'
-import { SCHOOLS_CONNECTION, SCHOOL_NODE } from '../utils/operations/modelOps'
-import { generateToken, getAdminAuthToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
-import { print } from 'graphql'
-import { expect } from 'chai'
+import { User } from '../../src/entities/user'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { ISchoolsConnectionNode } from '../../src/types/graphQL/school'
+import { createClass } from '../factories/class.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createRole } from '../factories/role.factory'
+import { createSchool as createFactorySchool } from '../factories/school.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { createUser } from '../factories/user.factory'
 import { NIL_UUID } from '../utils/database'
+import { loadFixtures } from '../utils/fixtures'
 import {
     createOrg,
     createSchool,
 } from '../utils/operations/acceptance/acceptanceOps.test'
-import { createSchool as createFactorySchool } from '../factories/school.factory'
-import { loadFixtures } from '../utils/fixtures'
-import { Organization } from '../../src/entities/organization'
-import { createOrganization } from '../factories/organization.factory'
-import { Class } from '../../src/entities/class'
-import { createClass } from '../factories/class.factory'
-import { User } from '../../src/entities/user'
-import { createUser } from '../factories/user.factory'
-import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
-import { createRole } from '../factories/role.factory'
-import { PermissionName } from '../../src/permissions/permissionNames'
+import { SCHOOLS_CONNECTION, SCHOOL_NODE } from '../utils/operations/modelOps'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
+import { createTestConnection } from '../utils/testConnection'
 import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
@@ -62,6 +63,9 @@ const makeNodeQuery = async (id: string) => {
 
 describe('acceptance.school', () => {
     let connection: Connection
+    let schoolId: string
+    let clientUser: User
+    let schoolMember: User
 
     before(async () => {
         connection = await createTestConnection()
@@ -69,6 +73,11 @@ describe('acceptance.school', () => {
 
     beforeEach(async () => {
         await loadFixtures('users', connection)
+        // find the NON admin user created above...
+        // TODO this whole thing better...
+        clientUser = (await User.findOne(
+            'c6d4feed-9133-5529-8d72-1003526d1b13'
+        )) as User
         const createOrgResponse = await createOrg(
             user_id,
             org_name,
@@ -77,7 +86,24 @@ describe('acceptance.school', () => {
         const {
             organization_id,
         } = createOrgResponse.body.data.user.createOrganization
-        await createSchool(organization_id, `school x`, getAdminAuthToken())
+        const createSchoolResponse = await createSchool(
+            organization_id,
+            `school x`,
+            getAdminAuthToken()
+        )
+        schoolId =
+            createSchoolResponse.body.data.organization.createSchool.school_id
+        const school = await School.findOne(schoolId)
+
+        schoolMember = await createUser().save()
+        await createSchoolMembership({
+            school: school!,
+            user: schoolMember,
+        }).save()
+        await createSchoolMembership({
+            school: school!,
+            user: clientUser!,
+        }).save()
     })
 
     after(async () => {
@@ -228,6 +254,21 @@ describe('acceptance.school', () => {
                 expect(errors).to.exist
                 expect(schoolNode).to.be.null
             })
+        })
+
+        it('has schoolMembershipsConnection as a child', async () => {
+            const response = await makeNodeQuery(schoolId)
+            const schoolNode = response.body.data
+                .schoolNode as ISchoolsConnectionNode
+
+            expect(response.status).to.eq(200)
+            const memberships = schoolNode.schoolMembershipsConnection?.edges.map(
+                (e) => e.node.userId
+            )
+            expect(memberships).to.have.members([
+                schoolMember.user_id,
+                clientUser.user_id,
+            ])
         })
     })
 })

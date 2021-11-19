@@ -1,6 +1,6 @@
 import gql from 'graphql-tag'
+import { GraphQLResolveInfo } from 'graphql'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { permissionsConnectionResolver } from '../pagination/permissionsConnection'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
@@ -9,9 +9,9 @@ import {
     IPaginatedResponse,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
-import { GraphQLResolveInfo } from 'graphql'
 import { IDataLoaders } from '../loaders/setup'
 import { RoleConnectionNode } from '../types/graphQL/role'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     type Permission {
@@ -126,9 +126,9 @@ export async function rolesConnectionChild(
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             PermissionsConnectionNode: {
                 rolesConnection: rolesConnectionChildResolver,

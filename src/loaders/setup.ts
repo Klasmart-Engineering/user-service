@@ -5,15 +5,16 @@ import { Class } from '../entities/class'
 import { Grade } from '../entities/grade'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
+import { Permission } from '../entities/permission'
 import { Program } from '../entities/program'
 import { Role } from '../entities/role'
 import { School } from '../entities/school'
 import { SchoolMembership } from '../entities/schoolMembership'
-import { User } from '../entities/user'
 import { Subcategory } from '../entities/subcategory'
+import { User } from '../entities/user'
 import {
-    mapAgeRangeToAgeRangeConnectionNode,
     ageRangeNodeFields,
+    mapAgeRangeToAgeRangeConnectionNode,
 } from '../pagination/ageRangesConnection'
 import {
     categoryConnectionNodeFields,
@@ -31,19 +32,28 @@ import {
     mapGradeToGradeConnectionNode,
 } from '../pagination/gradesConnection'
 import {
-    mapProgramToProgramConnectionNode,
-    programSummaryNodeFields,
-} from '../pagination/programsConnection'
-import {
     CoreOrganizationConnectionNode,
     mapOrganizationToOrganizationConnectionNode,
     organizationSummaryNodeFields,
 } from '../pagination/organizationsConnection'
 import {
+    mapProgramToProgramConnectionNode,
+    programSummaryNodeFields,
+} from '../pagination/programsConnection'
+import {
+    mapSchoolMembershipToSchoolMembershipNode,
+    schoolMembershipConnectionQuery,
+    schoolMembershipsConnectionSortingConfig,
+} from '../pagination/schoolMembershipsConnection'
+import {
     mapSchoolToSchoolConnectionNode,
     schoolConnectionQuery,
     schoolsConnectionSortingConfig,
 } from '../pagination/schoolsConnection'
+import {
+    mapSubcategoryToSubcategoryConnectionNode,
+    subcategoryConnectionNodeFields,
+} from '../pagination/subcategoriesConnection'
 import {
     CoreUserConnectionNode,
     coreUserConnectionNodeFields,
@@ -51,20 +61,20 @@ import {
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../pagination/usersConnection'
-import {
-    subcategoryConnectionNodeFields,
-    mapSubcategoryToSubcategoryConnectionNode,
-} from '../pagination/subcategoriesConnection'
-import { SubcategoryConnectionNode } from '../types/graphQL/subcategory'
-import { ISubcategoryNodeDataLoader } from './subcategory'
 import { UserPermissions } from '../permissions/userPermissions'
+import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { BrandingResult } from '../types/graphQL/branding'
 import { CategorySummaryNode } from '../types/graphQL/category'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
+import { GradeSummaryNode } from '../types/graphQL/grade'
+import { ProgramSummaryNode } from '../types/graphQL/program'
 import {
     ISchoolsConnectionNode,
     SchoolSummaryNode,
 } from '../types/graphQL/school'
+import { SchoolMembershipConnectionNode } from '../types/graphQL/schoolMembership'
+import { SubcategoryConnectionNode } from '../types/graphQL/subcategory'
+import { UserSummaryNode } from '../types/graphQL/user'
 import { Lazy } from '../utils/lazyLoading'
 import { IPaginatedResponse } from '../utils/pagination/paginate'
 import { IAgeRangeNodeDataLoader } from './ageRange'
@@ -72,6 +82,8 @@ import { ICategoryNodeDataLoader } from './category'
 import {
     childConnectionLoader,
     IChildConnectionDataloaderKey,
+    ICompositeIdChildConnectionDataloaderKey,
+    multiKeyChildConnectionLoader,
 } from './childConnectionLoader'
 import {
     ageRangesForClasses,
@@ -82,6 +94,7 @@ import {
     schoolsForClasses,
     subjectsForClasses,
 } from './classesConnection'
+import { NodeDataLoader } from './genericNode'
 import {
     fromGradeForGrades,
     IGradeNodeDataLoaders,
@@ -98,13 +111,6 @@ import {
     IOrganizationsConnectionLoaders,
     ownersForOrgs,
 } from './organizationsConnection'
-import { NodeDataLoader } from './genericNode'
-import {
-    ISchoolLoaders,
-    organizationsForSchools,
-    SchoolNodeDataLoader,
-    schoolsByIds,
-} from './school'
 import {
     ageRangesForPrograms,
     gradesForPrograms,
@@ -112,12 +118,23 @@ import {
     IProgramsConnectionLoaders,
     subjectsForPrograms,
 } from './programsConnection'
-import { ISubjectsConnectionLoaders } from './subjectsConnection'
-import { ProgramSummaryNode } from '../types/graphQL/program'
-import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
-import { GradeSummaryNode } from '../types/graphQL/grade'
-import { SubjectSummaryNode } from '../types/graphQL/subject'
-import { UserSummaryNode } from '../types/graphQL/user'
+
+import {
+    categoriesForSubjects,
+    ISubjectNodeDataLoader,
+    ISubjectsConnectionLoaders,
+} from './subjectsConnection'
+import {
+    SubjectConnectionNode,
+    SubjectSummaryNode,
+} from '../types/graphQL/subject'
+import {
+    ISchoolLoaders,
+    organizationsForSchools,
+    SchoolNodeDataLoader,
+    schoolsByIds,
+} from './school'
+import { ISubcategoryNodeDataLoader } from './subcategory'
 import {
     IUserNodeDataLoaders,
     IUsersLoaders,
@@ -131,7 +148,6 @@ import {
     rolesForUsers,
     schoolsForUsers,
 } from './usersConnection'
-import { Permission } from '../entities/permission'
 import {
     IPermissionNodeDataLoaders,
     mapPermissionToPermissionConnectionNode,
@@ -141,18 +157,22 @@ import { PermissionConnectionNode } from '../types/graphQL/permission'
 import {
     IRoleNodeDataLoaders,
     mapRoleToRoleConnectionNode,
+    roleConnectionNodeFields,
     roleConnectionQuery,
     rolesConnectionSortingConfig,
-    roleConnectionNodeFields,
 } from '../pagination/rolesConnection'
-import { RoleSummaryNode } from '../types/graphQL/role'
+import { RoleConnectionNode, RoleSummaryNode } from '../types/graphQL/role'
+import { Subject } from '../entities/subject'
+import {
+    mapSubjectToSubjectConnectionNode,
+    subjectNodeFields,
+} from '../pagination/subjectsConnection'
 import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
 import {
     mapOrganizationMembershipToOrganizationMembershipNode,
     organizationMembershipConnectionQuery,
     organizationMembershipsConnectionSortingConfig,
 } from '../pagination/organizationMembershipsConnection'
-import { RoleConnectionNode } from '../types/graphQL/role'
 
 export interface IDataLoaders {
     usersConnection?: IUsersConnectionLoaders
@@ -160,7 +180,7 @@ export interface IDataLoaders {
     programNode: IProgramNodeDataLoaders
     gradesConnection: IGradesConnectionLoaders
     classesConnection: IClassesConnectionLoaders
-    subjectsConnection?: ISubjectsConnectionLoaders
+    subjectsConnection: ISubjectsConnectionLoaders
     organizationsConnection: IOrganizationsConnectionLoaders
     user: IUsersLoaders
     userNode: IUserNodeDataLoaders
@@ -173,6 +193,7 @@ export interface IDataLoaders {
     permissionNode: IPermissionNodeDataLoaders
     subcategoryNode: ISubcategoryNodeDataLoader
     ageRangeNode: IAgeRangeNodeDataLoader
+    subjectNode: ISubjectNodeDataLoader
 
     usersConnectionChild: Lazy<
         DataLoader<
@@ -192,6 +213,12 @@ export interface IDataLoaders {
             IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
+    schoolMembershipsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey,
+            IPaginatedResponse<SchoolMembershipConnectionNode>
+        >
+    >
     rolesConnectionChild: Lazy<
         DataLoader<
             IChildConnectionDataloaderKey,
@@ -202,6 +229,12 @@ export interface IDataLoaders {
         DataLoader<
             IChildConnectionDataloaderKey,
             IPaginatedResponse<CoreClassConnectionNode>
+        >
+    >
+    membershipRolesConnectionChild: Lazy<
+        DataLoader<
+            ICompositeIdChildConnectionDataloaderKey,
+            IPaginatedResponse<RoleConnectionNode>
         >
     >
     categoryNode: ICategoryNodeDataLoader
@@ -275,6 +308,18 @@ export function createContextLazyLoaders(
                     )
                 })
         ),
+        schoolMembershipsConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return childConnectionLoader(
+                        items,
+                        schoolMembershipConnectionQuery,
+                        mapSchoolMembershipToSchoolMembershipNode,
+                        schoolMembershipsConnectionSortingConfig,
+                        { permissions, entity: 'schoolMembership' }
+                    )
+                })
+        ),
         rolesConnectionChild: new Lazy(
             () =>
                 new DataLoader((items) => {
@@ -299,6 +344,21 @@ export function createContextLazyLoaders(
                         mapClassToClassConnectionNode,
                         classesConnectionSortingConfig,
                         { permissions, entity: 'class' }
+                    )
+                })
+        ),
+        membershipRolesConnectionChild: new Lazy(
+            () =>
+                new DataLoader((items) => {
+                    return multiKeyChildConnectionLoader(
+                        items,
+                        (scope, filter) => {
+                            roleConnectionQuery(scope, filter)
+                            return Promise.resolve(scope)
+                        },
+                        mapRoleToRoleConnectionNode,
+                        rolesConnectionSortingConfig,
+                        { permissions, entity: 'role' }
                     )
                 })
         ),
@@ -462,6 +522,22 @@ export function createContextLazyLoaders(
                         'AgeRangeConnectionNode',
                         mapAgeRangeToAgeRangeConnectionNode,
                         ageRangeNodeFields
+                    )
+            ),
+        },
+        subjectsConnection: {
+            categories: new Lazy<DataLoader<string, CategorySummaryNode[]>>(
+                () => new DataLoader(categoriesForSubjects)
+            ),
+        },
+        subjectNode: {
+            node: new Lazy<NodeDataLoader<Subject, SubjectConnectionNode>>(
+                () =>
+                    new NodeDataLoader(
+                        Subject,
+                        'SubjectConnectionNode',
+                        mapSubjectToSubjectConnectionNode,
+                        subjectNodeFields
                     )
             ),
         },

@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -107,12 +107,13 @@ const typeDefs = gql`
         delete_role(_: Int): Boolean
     }
 `
+
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             Mutation: {
                 roles: (_parent, _args, ctx) => model.getRoles(ctx),

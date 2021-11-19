@@ -32,6 +32,7 @@ export async function organizationMembershipConnectionQuery(
                 organizationId: 'OrganizationMembership.organization_id',
                 shortCode: 'OrganizationMembership.shortcode',
                 roleId: 'Role.role_id',
+                status: 'OrganizationMembership.status',
             })
         )
     }

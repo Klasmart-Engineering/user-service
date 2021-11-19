@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 2.3.0 (2021-11-18)
+
+
+### Features
+
+* add MyUser.node ([94b1ace](https://bitbucket.org/calmisland/kidsloop-user-service/commits/94b1ace936f4fd21074a4178a40314a880fb5dde))
+* classStudying & classesTeaching connection for UserConnectionNode ([6d45158](https://bitbucket.org/calmisland/kidsloop-user-service/commits/6d45158bd329a890868de8dcd910c5013096b630))
+* myuser.profiles ([a7b874c](https://bitbucket.org/calmisland/kidsloop-user-service/commits/a7b874cf5dd3e3ac6ab28bd481631915ae2cc0ac))
+* organizationMemberships child connection ([3a0e356](https://bitbucket.org/calmisland/kidsloop-user-service/commits/3a0e356527bdfd699ec79c4bb69ac92d400d68b4))
+* organizations pagination & filtering (UD-987) ([c699a2c](https://bitbucket.org/calmisland/kidsloop-user-service/commits/c699a2cd72dbd6cd96cfedb1df5ebfbe907082b0))
+* school memberships connection ([237ee1e](https://bitbucket.org/calmisland/kidsloop-user-service/commits/237ee1e9dcecd336914f3a2d7f45b4b417c7cf6d))
+* students and teachers child connections ([bd3e03e](https://bitbucket.org/calmisland/kidsloop-user-service/commits/bd3e03e9bf149f399c7e00fd8ae3503309170194))
+* **UD-1267:** create organization node query ([d7f3d9d](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d7f3d9d998f2eec2278b0a3af02991aa7be7a1a3)), closes [#633](https://bitbucket.org/calmisland/kidsloop-user-service/issues/633)
+* **UD-1268:** school node query ([b835bec](https://bitbucket.org/calmisland/kidsloop-user-service/commits/b835becfed4f354ec3527f66258892dfb8efaebf))
+* **UD-1269:** create classNode query ([50be479](https://bitbucket.org/calmisland/kidsloop-user-service/commits/50be479b717e65dc0d535fcf10ecf176d35c9f67))
+* **UD-1270:** program node query ([f1a38ea](https://bitbucket.org/calmisland/kidsloop-user-service/commits/f1a38ea29bcb72d8423ff131086dfa34fe317660))
+* **UD-1271:** create gradeNode query ([afb7eda](https://bitbucket.org/calmisland/kidsloop-user-service/commits/afb7edabe34b42bb8742602c968ab2fb0e4d1654)), closes [#633](https://bitbucket.org/calmisland/kidsloop-user-service/issues/633)
+* **UD-1272:** age range node ([1001e13](https://bitbucket.org/calmisland/kidsloop-user-service/commits/1001e1364ff7720588c51a2a92aa4b333e3ce301))
+* **UD-1274:** create category node query ([0911497](https://bitbucket.org/calmisland/kidsloop-user-service/commits/09114970c55b9495e13109bb8afcbb33732fb119))
+* **UD-1275:** create subcategory node ([1425517](https://bitbucket.org/calmisland/kidsloop-user-service/commits/1425517d3c8898b614a5d604c790c05df11d3584))
+* **UD-1276:** role node query ([1afda03](https://bitbucket.org/calmisland/kidsloop-user-service/commits/1afda03030a2531d4a657f30904e51cbb45d9b73))
+* **UD-1277:** create permission node query ([2fff568](https://bitbucket.org/calmisland/kidsloop-user-service/commits/2fff568f144299916565fbc74251ac9cbb6db694))
+* **UD-1310:** categories connections query ([75e0e9b](https://bitbucket.org/calmisland/kidsloop-user-service/commits/75e0e9b89b8ee2156e71a2d0c54293ad11a74d37))
+* **UD-1311:** subcategories connection query ([057f038](https://bitbucket.org/calmisland/kidsloop-user-service/commits/057f038b56182ae415dc766db3b83351dc7de02a))
+* **UD-1312:** roles connections query ([fc62501](https://bitbucket.org/calmisland/kidsloop-user-service/commits/fc62501cab582c11542e06c1890da9978174e011))
+* **UD-1313:** permissionsConnection query ([d0b9470](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d0b9470401d041615bb137797192d44ce9432182))
+* **UD-1381:** child connections base implementation ([d209ab1](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d209ab150219473e8729de6671d692eff48ceb36))
+* **UD-1498:** organization child connection ([68445ee](https://bitbucket.org/calmisland/kidsloop-user-service/commits/68445ee9c733f2dd355ac2d1108df24a8aa17fb5))
+* **UD-1503:** implement mutation for adding users to organizations ([e9f3955](https://bitbucket.org/calmisland/kidsloop-user-service/commits/e9f3955b8c03b9d430570e5feabc151b4ad11cc6))
+* **UD-1507:** class child connection for org parent ([d5c320a](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d5c320a6b1686a8a689cb10dd53935f4c55abebc))
+* **UD-1507:** class child connection for school parent ([09d398c](https://bitbucket.org/calmisland/kidsloop-user-service/commits/09d398c2ac6c4bd4e2421859001df29f1331c16f))
+* **UD-1512:** school child connection ([26dfedf](https://bitbucket.org/calmisland/kidsloop-user-service/commits/26dfedf2f9c7ba9c2152a5cebdbdc16eb6a2c177))
+* **ud-1513:** org and school membership child role connections ([40d16d8](https://bitbucket.org/calmisland/kidsloop-user-service/commits/40d16d8c5e6aa3eb6c23e46eed23f71c0a2cc774))
+* **ud-1513:** roles child connections ([443cfcb](https://bitbucket.org/calmisland/kidsloop-user-service/commits/443cfcb3248dfb0a2e2600a633fa613bee177cca))
+* **ud-1513:** roles connection membership filters ([09fbb64](https://bitbucket.org/calmisland/kidsloop-user-service/commits/09fbb64e13c7fd18f697059d3f1fac928656b2c0))
+* **UD-1523:** implement mutation for adding organization roles to users ([d48eff8](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d48eff8e0d8cd72daaea59b84432218257cd8e13))
+* **UD-1524:** implement mutation for removing organization roles from users ([0b0611d](https://bitbucket.org/calmisland/kidsloop-user-service/commits/0b0611d660e9a3ba3dbeb187211296115ffa4a0c))
+
+
+### Bug Fixes
+
+* add organization to user not working ([260ab98](https://bitbucket.org/calmisland/kidsloop-user-service/commits/260ab987090b1674ed709af45f4b52944a7e59f3))
+* **bitbucket:** run tests on master ([88fee3d](https://bitbucket.org/calmisland/kidsloop-user-service/commits/88fee3d7f0d7469aa843deab22b1daef4a6a3ae8))
+* can add user to school w/o being part of org ([3ea39ea](https://bitbucket.org/calmisland/kidsloop-user-service/commits/3ea39ea090860932854fdbdc658af1ae69a6f2a6))
+* **changelog:** fix changelog to correct repo ([5028b64](https://bitbucket.org/calmisland/kidsloop-user-service/commits/5028b64ea0f10b93d4f6bb33c03b13f383fddcac))
+* deploy fails ([0d58e02](https://bitbucket.org/calmisland/kidsloop-user-service/commits/0d58e02196985cec5bc8e6dfc18d32bc16407948))
+* **husky:** fix husky prepare when no yarn ([eb8d359](https://bitbucket.org/calmisland/kidsloop-user-service/commits/eb8d3599695c72b9d98b405ad7608de7b277b71d))
+* organizationMembership.schoolMemberships ([8623baa](https://bitbucket.org/calmisland/kidsloop-user-service/commits/8623baa79ed5f65963ebef56920715f393d6bce5))
+* school_membership returning null ([0bc8f92](https://bitbucket.org/calmisland/kidsloop-user-service/commits/0bc8f92c82a71523058bbb25a83d377663e142e8))
+* schools from other users returned ([8e0c014](https://bitbucket.org/calmisland/kidsloop-user-service/commits/8e0c01432c4847b5875fc8e751d336e975d336e7))
+* test class name flaky issue in organizationsConnection.test ([d051cbf](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d051cbf9c751c2911a0487888d803f81843a5f0c))
+* **tests:** fix ci pipeline ([de6612f](https://bitbucket.org/calmisland/kidsloop-user-service/commits/de6612f47aee0f062a7c7a22d5aeaa544bb34d27))
+* **UD-1593:** query syntax error when user does not belong to any schools ([af59fec](https://bitbucket.org/calmisland/kidsloop-user-service/commits/af59feca84996f2cb4680992ecb1fd7e9c041868))
+* **User CSV:** UD-844 - don't overwrite shortcode ([d47b925](https://bitbucket.org/calmisland/kidsloop-user-service/commits/d47b9254c7098504b01c31739317d6e21e19bcf7))
+* user.schoolsWithPermission ([7d1328e](https://bitbucket.org/calmisland/kidsloop-user-service/commits/7d1328e3a793dccab73617f07a8383b73709803f))
+* Version endpoint (UD-1213) ([b0839f6](https://bitbucket.org/calmisland/kidsloop-user-service/commits/b0839f639e5bdb79a6791fed2adab591fee3a595))
+
 ### [2.2.1](https://bitbucket.org/calmisland/kidsloop-user-service/compare/v2.2.0...v2.2.1) (2021-10-29)
 
 

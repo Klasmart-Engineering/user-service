@@ -1,61 +1,55 @@
 import { expect, use } from 'chai'
+import chaiAsPromised from 'chai-as-promised'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { before } from 'mocha'
+import { AgeRange } from '../../src/entities/ageRange'
+import { Grade } from '../../src/entities/grade'
+import { Organization } from '../../src/entities/organization'
+import { OrganizationMembership } from '../../src/entities/organizationMembership'
+import { Program } from '../../src/entities/program'
+import { Status } from '../../src/entities/status'
+import { Subcategory } from '../../src/entities/subcategory'
+import { Subject } from '../../src/entities/subject'
+import { User } from '../../src/entities/user'
+import { Model } from '../../src/model'
+import { TokenPayload } from '../../src/token'
+import { createServer } from '../../src/utils/createServer'
+import { createAgeRange } from '../factories/ageRange.factory'
+import { createGrade } from '../factories/grade.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createProgram } from '../factories/program.factory'
+import { createSubcategory } from '../factories/subcategory.factory'
+import { createUser } from '../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../utils/createTestClient'
-import { createTestConnection, TestConnection } from '../utils/testConnection'
-import { createServer } from '../../src/utils/createServer'
-import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
-import { createAgeRange } from '../factories/ageRange.factory'
-import { createGrade } from '../factories/grade.factory'
-import { createOrganization } from '../factories/organization.factory'
-import { createSubcategory } from '../factories/subcategory.factory'
 import {
     getAgeRange,
-    getGrade,
-    getSubcategory,
     getAllOrganizations,
+    getGrade,
     getOrganizations,
-    myUsers,
     getProgram,
-    permissionsConnection,
+    getSubcategory,
 } from '../utils/operations/modelOps'
-import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
-import {
-    createOrganizationAndValidate,
-    addOrganizationToUserAndValidate,
-} from '../utils/operations/userOps'
 import { addUserToOrganizationAndValidate } from '../utils/operations/organizationOps'
-import { Model } from '../../src/model'
-import { AgeRange } from '../../src/entities/ageRange'
-import { Grade } from '../../src/entities/grade'
-import { User } from '../../src/entities/user'
-import { Permission } from '../../src/entities/permission'
-import { Organization } from '../../src/entities/organization'
-import { Subcategory } from '../../src/entities/subcategory'
-import chaiAsPromised from 'chai-as-promised'
-import { Program } from '../../src/entities/program'
-import { createProgram } from '../factories/program.factory'
-import { before } from 'mocha'
-import RolesInitializer from '../../src/initializers/roles'
-import {
-    renameDuplicateOrganizationsMutation,
-    renameDuplicateOrganizationsQuery,
-} from '../utils/operations/renameDuplicateOrganizations'
-import { IEntityFilter } from '../../src/utils/pagination/filtering'
-import { OrganizationMembership } from '../../src/entities/organizationMembership'
-import { Status } from '../../src/entities/status'
-import { Subject } from '../../src/entities/subject'
-import {
-    renameDuplicateSubjectsQuery,
-    renameDuplicateSubjectsMutation,
-} from '../utils/operations/renameDuplicateSubjects'
 import {
     renameDuplicateGradesMutation,
     renameDuplicateGradesQuery,
 } from '../utils/operations/renameDuplicateGrades'
-import { convertDataToCursor } from '../../src/utils/pagination/paginate'
-import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import {
+    renameDuplicateOrganizationsMutation,
+    renameDuplicateOrganizationsQuery,
+} from '../utils/operations/renameDuplicateOrganizations'
+import {
+    renameDuplicateSubjectsMutation,
+    renameDuplicateSubjectsQuery,
+} from '../utils/operations/renameDuplicateSubjects'
+import { createOrganizationAndValidate } from '../utils/operations/userOps'
+import { getAdminAuthToken, getNonAdminAuthToken } from '../utils/testConfig'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
+import { createAdminUser, createNonAdminUser } from '../utils/testEntities'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -63,10 +57,12 @@ use(deepEqualInAnyOrder)
 describe('model', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
+    let model: Model
 
     before(async () => {
         connection = await createTestConnection()
-        const server = await createServer(new Model(connection))
+        model = new Model(connection)
+        const server = await createServer(model)
         testClient = await createTestClient(server)
     })
 
@@ -75,69 +71,64 @@ describe('model', () => {
     })
 
     describe('getMyUser', () => {
-        let user: User
-
-        beforeEach(async () => {
-            user = await createAdminUser(testClient)
+        it('returns the user with matching user ID and email', async () => {
+            const user = await createUser().save()
+            const token = {
+                id: user.user_id,
+                email: user.email,
+                iss: 'calmid-debug',
+            }
+            const result = await model.getMyUser(token)
+            expect(result?.user_id).to.deep.eq(user.user_id)
+        })
+        it('returns the user with matching user ID and phone', async () => {
+            const user = await createUser().save()
+            const token = {
+                id: user.user_id,
+                phone: user.phone,
+                iss: 'calmid-debug',
+            }
+            const result = await model.getMyUser(token)
+            expect(result?.user_id).to.deep.eq(user.user_id)
         })
     })
 
     describe('myUsers', () => {
-        let user: User
-        let otherUser: User
-        let org: Organization
+        let organization: Organization
+        let clientUser: User
+        let profile: User
+        let userToken: TokenPayload
 
         beforeEach(async () => {
-            user = await createAdminUser(testClient)
-            otherUser = await createNonAdminUser(testClient)
-            org = createOrganization()
-            await connection.manager.save(org)
-            await addOrganizationToUserAndValidate(
-                testClient,
-                user.user_id,
-                org.organization_id,
-                getAdminAuthToken()
-            )
+            organization = await createOrganization().save()
+            clientUser = await createUser().save()
+            profile = await createUser({ email: clientUser.email }).save()
 
-            await addOrganizationToUserAndValidate(
-                testClient,
-                otherUser.user_id,
-                org.organization_id,
-                getAdminAuthToken()
-            )
-        })
-
-        context('when user is not logged in', () => {
-            it('fails authentication', async () => {
-                const gqlResult = myUsers(testClient, {
-                    authorization: '',
-                })
-                await expect(gqlResult).to.be.rejectedWith(
-                    Error,
-                    'Context creation failed: No authentication token'
-                )
-            })
-        })
-
-        context('when user is logged in', () => {
-            const userInfo = (user: User) => {
-                return user.user_id
+            userToken = {
+                id: clientUser.user_id,
+                email: clientUser.email,
+                phone: clientUser.phone,
+                iss: 'calmid-debug',
             }
 
-            it('returns the expected users', async () => {
-                const gqlUsers = await myUsers(testClient, {
-                    authorization: getAdminAuthToken(),
-                })
-
-                expect(gqlUsers.map(userInfo)).to.deep.eq([user.user_id])
-            })
+            for (const user of [clientUser, profile]) {
+                await createOrganizationMembership({
+                    user,
+                    organization,
+                }).save()
+            }
         })
-        context('when usermembership is inactive', () => {
+
+        it('returns the expected users', async () => {
+            const users = await model.myUsers(userToken)
+            expect(users).to.have.length(2)
+        })
+        context('when user membership is inactive', () => {
             beforeEach(async () => {
                 const dbOtherMembership = await OrganizationMembership.findOneOrFail(
                     {
-                        user_id: otherUser.user_id,
-                        organization_id: org.organization_id,
+                        user_id: profile.user_id,
+                        organization_id: organization.organization_id,
                     }
                 )
                 if (dbOtherMembership) {
@@ -146,28 +137,20 @@ describe('model', () => {
                 }
             })
 
-            it('returns no users', async () => {
-                const gqlUsers = await myUsers(testClient, {
-                    authorization: getNonAdminAuthToken(),
-                })
-
-                expect(gqlUsers.length).to.equal(0)
+            it('is excluded from results', async () => {
+                const users = await model.myUsers(userToken)
+                expect(users.length).to.equal(1)
             })
         })
         context('when user is inactive', () => {
             beforeEach(async () => {
-                const dbOtherUser = await User.findOneOrFail(otherUser.user_id)
-                if (dbOtherUser) {
-                    dbOtherUser.status = Status.INACTIVE
-                    await connection.manager.save(dbOtherUser)
-                }
+                profile.status = Status.INACTIVE
+                await profile.save()
             })
 
-            it('returns no users', async () => {
-                const gqlUsers = await myUsers(testClient, {
-                    authorization: getNonAdminAuthToken(),
-                })
-                expect(gqlUsers.length).to.equal(0)
+            it('is excluded from results', async () => {
+                const users = await model.myUsers(userToken)
+                expect(users.length).to.equal(1)
             })
         })
     })

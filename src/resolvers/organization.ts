@@ -24,12 +24,23 @@ export async function addUsersToOrganizations(
     args: { input: AddUsersToOrganizationInput[] },
     context: Pick<Context, 'permissions'>
 ): Promise<OrganizationsMutationResult> {
+    // Initial validations
+    if (args.input.length === 0)
+        throw new APIError({
+            code: customErrors.invalid_array_min_length.code,
+            message: customErrors.invalid_array_min_length.message,
+            variables: [],
+            entity: 'User',
+            min: 1,
+        })
     if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
-        throw new Error(
-            `${args.input.length} is larger than the limit of ${MAX_MUTATION_INPUT_ARRAY_SIZE} on mutation input arrays`
-        )
-
-    // Permission validation
+        throw new APIError({
+            code: customErrors.invalid_array_max_length.code,
+            message: customErrors.invalid_array_max_length.message,
+            variables: [],
+            entity: 'User',
+            max: MAX_MUTATION_INPUT_ARRAY_SIZE,
+        })
     for (const val of args.input) {
         await context.permissions.rejectIfNotAllowed(
             { organization_id: val.organizationId },
@@ -154,7 +165,7 @@ export async function addUsersToOrganizations(
                         variables: ['organization_id', 'user_id'],
                         entity: 'User',
                         entityName: user.username,
-                        parentEntity: 'Organization',
+                        parentEntity: 'OrganizationMembership in Organization',
                         parentName: organization.organization_name,
                         index,
                     })
@@ -186,10 +197,13 @@ export async function addUsersToOrganizations(
     try {
         await getManager().save(memberships)
     } catch (e) {
-        const err = e instanceof Error ? e.message : 'Unknown Error'
-        throw new Error(
-            `AddUsersToOrganization: Error occurred during save. Error: ${err}`
-        )
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw new APIError({
+            code: customErrors.database_save_error.code,
+            message: customErrors.database_save_error.message,
+            variables: [message],
+            entity: 'User',
+        })
     }
     return { organizations: output }
 }

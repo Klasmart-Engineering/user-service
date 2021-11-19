@@ -12,8 +12,10 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { pick } from 'lodash'
 import { loadFixtures } from '../utils/fixtures'
 import supertest from 'supertest'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { print } from 'graphql'
+import { createRole } from '../factories/role.factory'
+import { makeRequest } from './utils'
 
 const request = supertest('http://localhost:8080/user')
 
@@ -125,6 +127,75 @@ describe('acceptance.OrganizationMembership', () => {
                     )
                 )
             })
+        })
+    })
+
+    context('organizationMembershipConnection', () => {
+        it('has rolesConnection as a child', async () => {
+            const query = `
+                query rolesConnection($orgId: ID!, $direction: ConnectionDirection!, $filter: RoleFilter) {
+                    # we don't expose membership connections at top-level
+                    # so have to go via a node
+                    organizationNode(id: $orgId){
+                        organizationMembershipsConnection{
+                            edges {
+                                node {
+                                    organizationId,
+                                    rolesConnection(direction:$direction, filter: $filter){
+                                        edges{
+                                            node{
+                                                id
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            const organization = await createOrganization().save()
+            const role = await createRole('role1', organization).save()
+            const organizationMember = await createUser().save()
+            await createOrganizationMembership({
+                user: organizationMember,
+                organization,
+                roles: [role],
+            }).save()
+
+            const token = generateToken({
+                id: organizationMember.user_id,
+                email: organizationMember.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    orgId: organization.organization_id,
+                    direction: 'FORWARD',
+                    filter: {
+                        name: {
+                            operator: 'eq',
+                            value: role.role_name,
+                        },
+                    },
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.organizationNode
+                    .organizationMembershipsConnection.edges[0].node
+                    .organizationId
+            ).to.eq(organization.organization_id)
+            expect(
+                response.body.data.organizationNode
+                    .organizationMembershipsConnection.edges[0].node
+                    .rolesConnection.edges[0].node.id
+            ).to.eq(role.role_id)
         })
     })
 })

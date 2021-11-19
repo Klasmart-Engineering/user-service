@@ -1,14 +1,16 @@
 import gql from 'graphql-tag'
+import { GraphQLResolveInfo } from 'graphql'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
-import { SchoolMembership } from '../entities/schoolMembership'
+
 import { School } from '../entities/school'
-import { IChildPaginationArgs } from '../utils/pagination/paginate'
-import { GraphQLResolveInfo } from 'graphql/type/definition'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { SchoolMembership } from '../entities/schoolMembership'
+import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -96,6 +98,14 @@ const typeDefs = gql`
         shortCode: String
         organizationId: ID!
 
+        schoolMembershipsConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: SchoolMembershipFilter
+            sort: SchoolMembershipSortInput
+        ): SchoolMembershipsConnectionResponse
+
         classesConnection(
             count: PageSize
             cursor: String
@@ -163,11 +173,12 @@ export function classesChildConnection(
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             SchoolConnectionNode: {
+                schoolMembershipsConnection: schoolMembershipsConnectionResolver,
                 classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
@@ -207,4 +218,38 @@ export default function getDefault(
             },
         },
     }
+}
+
+export async function schoolMembershipsConnectionResolver(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSchoolMembershipsForSchool(
+        ctx,
+        school.id,
+        args,
+        includeTotalCount
+    )
+}
+
+export async function loadSchoolMembershipsForSchool(
+    context: Pick<Context, 'loaders'>,
+    schoolId: ISchoolsConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: schoolId,
+            filterKey: 'schoolId',
+            pivot: '"SchoolMembership"."school_id"',
+        },
+    }
+
+    return context.loaders.schoolMembershipsConnectionChild.instance.load(key)
 }

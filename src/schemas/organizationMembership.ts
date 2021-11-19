@@ -1,8 +1,16 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { OrganizationMembershipConnectionNode } from '../types/graphQL/organizationMemberships'
+import {
+    IChildPaginationArgs,
+    IPaginatedResponse,
+    shouldIncludeTotalCount,
+} from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql'
+import { RoleConnectionNode } from '../types/graphQL/role'
+import { IDataLoaders } from '../loaders/setup'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
     type OrganizationMembershipsConnectionResponse implements iConnectionResponse {
@@ -21,6 +29,7 @@ const typeDefs = gql`
         shortCode: StringFilter
         organizationId: UUIDFilter
         userId: UUIDFilter
+        status: StringFilter
 
         # joined columns
         roleId: UUIDFilter
@@ -48,15 +57,65 @@ const typeDefs = gql`
         user: UserConnectionNode @isAdmin(entity: "user")
         organization: OrganizationConnectionNode
             @isAdmin(entity: "organization")
+        rolesConnection(
+            count: PageSize
+            cursor: String
+            filter: RoleFilter
+            sort: RoleSortInput
+            direction: ConnectionDirection
+        ): RolesConnectionResponse
     }
 `
+
+export async function rolesConnectionChildResolver(
+    membership: Pick<
+        OrganizationMembershipConnectionNode,
+        'organizationId' | 'userId'
+    >,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    const includeTotalCount = shouldIncludeTotalCount(info, args)
+    return rolesConnectionChild(
+        membership.organizationId,
+        membership.userId,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export async function rolesConnectionChild(
+    orgId: OrganizationMembershipConnectionNode['organizationId'],
+    userId: OrganizationMembershipConnectionNode['userId'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+): Promise<IPaginatedResponse<RoleConnectionNode>> {
+    return loaders.membershipRolesConnectionChild.instance.load({
+        args,
+        includeTotalCount,
+        parent: {
+            compositeId: [orgId, userId],
+            filterKeys: [
+                'membershipOrganizationId',
+                'membershipOrganizationUserId',
+            ],
+            pivots: [
+                '"OrganizationMembership"."organizationOrganizationId"',
+                '"OrganizationMembership"."user_id"',
+            ],
+        },
+    })
+}
 
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             OrganizationMembershipConnectionNode: {
                 user: (
@@ -79,8 +138,7 @@ export default function getDefault(
                         scope: args.scope,
                     })
                 },
-                // TODO
-                // roles: (_parent, args, ctx: Context) => {},
+                rolesConnection: rolesConnectionChildResolver,
             },
         },
     }

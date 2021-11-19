@@ -274,7 +274,7 @@ describe('child connections', () => {
             )
             await expect(query).to.be.rejectedWith(
                 Error,
-                'Cannot filter by parent ID organizationId in a child connection.'
+                'Cannot filter by parent property organizationId in this child connection.'
             )
         })
         it('returns an empty array if no keys are provided', async () => {

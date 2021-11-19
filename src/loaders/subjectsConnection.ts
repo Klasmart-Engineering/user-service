@@ -1,12 +1,17 @@
 import DataLoader from 'dataloader'
 import { Subject } from '../entities/subject'
 import { CategorySummaryNode } from '../types/graphQL/category'
-import { ProgramSummaryNode } from '../types/graphQL/program'
+import { SubjectConnectionNode } from '../types/graphQL/subject'
+import { Lazy } from '../utils/lazyLoading'
+import { NodeDataLoader } from './genericNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 
 export interface ISubjectsConnectionLoaders {
-    categories?: DataLoader<string, CategorySummaryNode[]>
-    programs?: DataLoader<string, ProgramSummaryNode[]>
+    categories: Lazy<DataLoader<string, CategorySummaryNode[]>>
+}
+
+export interface ISubjectNodeDataLoader {
+    node: Lazy<NodeDataLoader<Subject, SubjectConnectionNode>>
 }
 
 export const categoriesForSubjects = async (

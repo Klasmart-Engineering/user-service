@@ -6,3 +6,11 @@ export interface SubcategoryConnectionNode {
     status: Status
     system: boolean
 }
+
+export interface DeleteSubcategoryInput {
+    id: string
+}
+
+export interface SubcategoriesMutationResult {
+    subcategories: SubcategoryConnectionNode[]
+}

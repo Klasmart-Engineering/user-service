@@ -35,7 +35,7 @@ export function createUser({
     user.family_name = family_name ?? faker.name.lastName()
     user.email = email ?? faker.internet.email()
     user.phone = phone ?? faker.phone.phoneNumber('+44#######')
-    user.username = username ?? faker.internet.userName()
+    user.username = username ?? faker.name.firstName()
     user.date_of_birth = date_of_birth ?? '01-2018'
     user.gender = gender ?? faker.random.arrayElement(DEFAULT_GENDERS)
     user.alternate_email = alternate_email

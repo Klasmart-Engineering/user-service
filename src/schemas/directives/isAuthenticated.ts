@@ -1,6 +1,10 @@
 import gql from 'graphql-tag'
 
 // isAuthenticated Directive
-export default gql`
+const isAuthenticated = gql`
     directive @isAuthenticated on FIELD_DEFINITION
 `
+
+export default {
+    typeDefs: isAuthenticated,
+}

@@ -4,9 +4,11 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
 import { sortBy } from 'lodash'
 import { fake } from 'sinon'
+import { Class } from '../../../src/entities/class'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { OrganizationOwnership } from '../../../src/entities/organizationOwnership'
+import { School } from '../../../src/entities/school'
 import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import { Model } from '../../../src/model'
@@ -24,6 +26,7 @@ import {
     IPaginatedResponse,
 } from '../../../src/utils/pagination/paginate'
 import { generateShortCode } from '../../../src/utils/shortcode'
+import { createClass } from '../../factories/class.factory'
 import {
     createOrganization,
     createOrganizations,
@@ -768,7 +771,10 @@ describe('organizationsConnection', () => {
     context('child connections', () => {
         const numUsersPerOrg = 10
         const numSchoolsPerOrg = 10
+        const numClassesPerOrg = numSchoolsPerOrg
         let orgs: Organization[]
+        let school: School
+        let class_: Class
 
         beforeEach(async () => {
             orgs = [createOrganization(), createOrganization()]
@@ -784,7 +790,13 @@ describe('organizationsConnection', () => {
             }
             for (let i = 0; i < numSchoolsPerOrg; i++) {
                 for (const org of orgs) {
-                    await createSchool(org).save()
+                    school = await createSchool(org).save()
+                    class_ = await createClass(
+                        [school],
+                        org,
+                        {},
+                        `class${i}`
+                    ).save()
                 }
             }
         })
@@ -870,8 +882,64 @@ describe('organizationsConnection', () => {
                 ).to.eq(numSchoolsPerOrg)
             })
         })
+
+        context('.classesConnection', async () => {
+            it('returns classes for user', async () => {
+                const classesPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getAdminAuthToken() }
+                )
+                expect(classesPerOrg.edges.length).to.eq(2)
+                for (const orgUsers of classesPerOrg.edges) {
+                    expect(orgUsers.node.classesConnection?.totalCount).to.eq(
+                        numClassesPerOrg
+                    )
+                }
+            })
+            it('uses the isAdmin scope for permissions', async () => {
+                // create a non-admin user and add to a school in org1
+                const nonAdmin = await createNonAdminUser(testClient)
+                const membership = await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization: orgs[0],
+                }).save()
+                await createSchoolMembership({
+                    user: nonAdmin,
+                    school: (await orgs[0].schools)![0],
+                }).save()
+                // can't see any classes without permissions
+                let classesPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() }
+                )
+                expect(classesPerOrg.totalCount).to.eq(1)
+                expect(
+                    classesPerOrg.edges[0].node.classesConnection?.totalCount
+                ).to.eq(0)
+                // can see all other classes with required permissions
+                const role = await createRole('role', orgs[0], {
+                    permissions: [PermissionName.view_classes_20114],
+                }).save()
+                membership.roles = Promise.resolve([role])
+                await membership.save()
+                classesPerOrg = await organizationsConnection(
+                    testClient,
+                    direction,
+                    { count: 5 },
+                    { authorization: getNonAdminAuthToken() }
+                )
+                expect(classesPerOrg.totalCount).to.eq(1)
+                expect(
+                    classesPerOrg.edges[0].node.classesConnection?.totalCount
+                ).to.eq(numClassesPerOrg)
+            })
+        })
         it('dataloads child connections', async () => {
-            const expectedCount = 5
+            const expectedCount = 9
 
             const query = `
                 query {
@@ -889,6 +957,22 @@ describe('organizationsConnection', () => {
                                 schoolsConnection {
                                     totalCount                      # 4
                                     edges {                         # 5
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                                rolesConnection {
+                                    totalCount                      # 6
+                                    edges {                         # 7
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                                classesConnection {
+                                    totalCount                      # 8
+                                    edges {                         # 9
                                         node {
                                             id
                                         }
@@ -913,6 +997,7 @@ describe('organizationsConnection', () => {
                 permissions: [
                     PermissionName.view_users_40110,
                     PermissionName.view_school_20110,
+                    PermissionName.view_classes_20114,
                 ],
             }).save()
             await createOrganizationMembership({
@@ -927,7 +1012,7 @@ describe('organizationsConnection', () => {
             })
             expect(connection.logger.count).to.be.eq(
                 expectedCount + 2,
-                'two extra for permission checks (org and school)'
+                'two extra for permission checks (orgMemberships, schoolMemberships)'
             )
         })
     })
