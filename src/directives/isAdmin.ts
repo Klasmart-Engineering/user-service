@@ -597,11 +597,11 @@ export const nonAdminClassScope: NonAdminScope<Class> = async (
         PermissionName.view_classes_20114,
     ])
 
+    //
     const schoolOrgs = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_school_classes_20117,
     ])
 
-    //
     if (classOrgs.length && schoolOrgs.length) {
         scope
             .leftJoin('Class.schools', 'School')
@@ -660,18 +660,22 @@ export const nonAdminPermissionScope: NonAdminScope<Permission> = async (
 
     scope.where('false')
 }
-export const nonAdminRoleScope: NonAdminScope<Role> = (scope, permissions) => {
-    scope
-        .leftJoin(
-            OrganizationMembership,
-            'OrganizationMembership',
-            'OrganizationMembership.organization = Role.organization'
-        )
-        .andWhere(
-            '(OrganizationMembership.user_id = :d_user_id OR Role.system_role = :system)',
-            {
-                d_user_id: permissions.getUserId(),
+export const nonAdminRoleScope: NonAdminScope<Role> = async (
+    scope,
+    permissions
+) => {
+    const orgIds = await permissions.orgMembershipsWithPermissions([])
+
+    scope.andWhere(
+        new Brackets((qb) => {
+            qb.where('Role.system_role = :system', {
                 system: true,
+            })
+            if (orgIds.length > 0) {
+                qb.orWhere('Role.organization IN (:...orgIds)', {
+                    orgIds,
+                })
             }
-        )
+        })
+    )
 }

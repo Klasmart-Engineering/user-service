@@ -11,12 +11,16 @@ import {
 } from '../../utils/testConnection'
 import { createServer } from '../../../src/utils/createServer'
 import { Model } from '../../../src/model'
-import { createAdminUser } from '../../utils/testEntities'
-import { generateToken, getAdminAuthToken } from '../../utils/testConfig'
+import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
+import {
+    generateToken,
+    getAdminAuthToken,
+    getNonAdminAuthToken,
+} from '../../utils/testConfig'
 import { School } from '../../../src/entities/school'
 import { Organization } from '../../../src/entities/organization'
 import { User } from '../../../src/entities/user'
-import { schoolsConnection } from '../../utils/operations/modelOps'
+import { runQuery, schoolsConnection } from '../../utils/operations/modelOps'
 import { IEntityFilter } from '../../../src/utils/pagination/filtering'
 import { createOrganization } from '../../factories/organization.factory'
 import { Status } from '../../../src/entities/status'
@@ -31,6 +35,13 @@ import { OrganizationMembership } from '../../../src/entities/organizationMember
 import { Role } from '../../../src/entities/role'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { generateShortCode } from '../../../src/utils/shortcode'
+import { classesChildConnection as schoolClassesChildConnection } from '../../../src/schemas/school'
+import { createClass } from '../../factories/class.factory'
+import { Class } from '../../../src/entities/class'
+import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { Context } from '../../../src/main'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -43,6 +54,13 @@ describe('schoolsConnection', () => {
     let org1: Organization
     let org2: Organization
     let schools: School[] = []
+
+    let wizardUser: User
+    let wizardOrg: Organization
+    let wizardingSchool: School
+    let magicClass: Class
+    let potionsClass: Class
+    let ctx: Pick<Context, 'loaders'>
 
     before(async () => {
         connection = await createTestConnection()
@@ -735,6 +753,198 @@ describe('schoolsConnection', () => {
             expect(connection.logger.count).to.be.eq(
                 2,
                 '1. DISTINCT ids, 2. SchoolConnectionNode data'
+            )
+        })
+    })
+
+    context('child connections', () => {
+        context('.classesConnection', async () => {
+            beforeEach(async () => {
+                wizardUser = await createUser().save()
+                wizardOrg = await createOrganization().save()
+                wizardingSchool = await createSchool(
+                    wizardOrg,
+                    'Hogwarts'
+                ).save()
+                magicClass = await createClass(
+                    [wizardingSchool],
+                    wizardOrg
+                ).save()
+                potionsClass = await createClass(
+                    [wizardingSchool],
+                    wizardOrg
+                ).save()
+
+                const token = { id: wizardUser.user_id }
+                const permissions = new UserPermissions(token)
+                ctx = { loaders: createContextLazyLoaders(permissions) }
+            })
+
+            it('returns classes for a school', async () => {
+                const role = await createRole(undefined, undefined, {
+                    permissions: [
+                        PermissionName.view_school_20110,
+                        PermissionName.view_school_classes_20117,
+                    ],
+                }).save()
+
+                await createOrganizationMembership({
+                    user: wizardUser,
+                    organization: wizardOrg,
+                    roles: [role],
+                }).save()
+                await createSchoolMembership({
+                    user: wizardUser,
+                    school: wizardingSchool,
+                }).save()
+
+                const args: IChildPaginationArgs = {
+                    direction: 'FORWARD',
+                    count: 2,
+                }
+
+                const result = await schoolClassesChildConnection(
+                    { id: wizardingSchool.school_id },
+                    args,
+                    ctx.loaders,
+                    false
+                )
+
+                const expectedClassIds = [
+                    magicClass.class_id,
+                    potionsClass.class_id,
+                ]
+                const actualClassIds = result.edges.map((edge) => edge.node.id)
+
+                expect(expectedClassIds).to.have.same.members(actualClassIds)
+            })
+
+            it('uses the isAdmin scope for permissions', async () => {
+                // create a non-admin user in wizardOrg
+                const nonAdminMuggle = await createNonAdminUser(testClient)
+                const roleSchoolOnly = await createRole(undefined, undefined, {
+                    permissions: [PermissionName.view_school_20110],
+                }).save()
+                const membership = await createOrganizationMembership({
+                    user: nonAdminMuggle,
+                    organization: wizardOrg,
+                    roles: [roleSchoolOnly],
+                }).save()
+                await createSchoolMembership({
+                    user: nonAdminMuggle,
+                    school: wizardingSchool,
+                }).save()
+                // can't see any classes without relevant permissions
+                const classesPerSchool = await schoolsConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 5 },
+                    true,
+                    { authorization: getNonAdminAuthToken() },
+                    undefined,
+                    undefined,
+                    true
+                )
+
+                expect(classesPerSchool.totalCount).to.eq(1)
+                expect(
+                    classesPerSchool.edges[0].node.classesConnection!.totalCount
+                ).to.eq(0)
+
+                // can see all other classes with required permissions
+                // Yer a wizard now, Harry
+                const roleAllClasses = await createRole(undefined, undefined, {
+                    permissions: [
+                        PermissionName.view_school_20110,
+                        PermissionName.view_classes_20114,
+                        PermissionName.view_school_classes_20117,
+                    ],
+                }).save()
+                membership.roles = Promise.resolve([roleAllClasses])
+                await membership.save()
+
+                const classesPerSchoolWithPerms = await schoolsConnection(
+                    testClient,
+                    'FORWARD',
+                    { count: 5 },
+                    true,
+                    { authorization: getNonAdminAuthToken() },
+                    undefined,
+                    undefined,
+                    true
+                )
+
+                expect(classesPerSchoolWithPerms.totalCount).to.eq(1)
+                expect(
+                    classesPerSchoolWithPerms.edges[0].node.classesConnection!
+                        .totalCount
+                ).to.eq([magicClass, potionsClass].length)
+            })
+        })
+
+        it('dataloads child connections', async () => {
+            const expectedCount = 4
+
+            const query = `
+                query {
+                    schoolsConnection(direction: FORWARD) {       #1, 2
+                        edges {
+                            node {
+                                classesConnection {                   
+                                    totalCount                      # 3 
+                                    edges {                         # 4
+                                        node {
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(
+                expectedCount,
+                'One extra query made at schoolsConnection to join on org'
+            )
+
+            // async isAdmin directives break dataloading
+            // so ensure that is not happening
+            const nonAdmin = await createNonAdminUser(testClient)
+            const schoolForMuggles = await createSchool(org1, 'Eton').save()
+            const classForMuggles = await createClass(
+                [schoolForMuggles],
+                org1
+            ).save()
+            const role = await createRole('role', org1, {
+                permissions: [
+                    PermissionName.view_school_20110,
+                    PermissionName.view_classes_20114,
+                    PermissionName.view_my_classes_20118,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdmin,
+                organization: org1,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user: nonAdmin,
+                school: schoolForMuggles,
+            }).save()
+
+            connection.logger.reset()
+            await runQuery(query, testClient, {
+                authorization: getNonAdminAuthToken(),
+            })
+            expect(connection.logger.count).to.be.eq(
+                expectedCount + 2,
+                'Two extra for class permission checks (class and school classes)'
             )
         })
     })

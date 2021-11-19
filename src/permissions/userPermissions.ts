@@ -193,34 +193,35 @@ export class UserPermissions {
                         resolve(organizationPermissions)
                         return
                     }
+
                     //TODO: Adjust for returning explicity denial
                     const organizationPermissionResults = await getRepository(
                         OrganizationMembership
                     )
-                        .createQueryBuilder()
-                        .leftJoin('OrganizationMembership.roles', 'Role')
-                        .leftJoin('Role.permissions', 'Permission')
+                        .createQueryBuilder('OrganizationMembership')
                         .select(
                             'OrganizationMembership.organization_id, Permission.permission_name'
                         )
-                        .where('OrganizationMembership.user_id = :user_id', {
-                            user_id,
-                        })
-                        .andWhere(
-                            '(Role.status = :status OR Role.status IS NULL)',
+                        .distinct(true)
+                        .leftJoin(
+                            'OrganizationMembership.roles',
+                            'Role',
+                            'Role.status = :status',
                             {
                                 status: Status.ACTIVE,
                             }
                         )
-                        .groupBy(
-                            'OrganizationMembership.user_id, OrganizationMembership.organization_id, Permission.permission_name'
-                        )
-                        .having(
-                            'bool_and(Permission.allow) = :allowed OR Permission.allow IS NULL',
+                        .leftJoin(
+                            'Role.permissions',
+                            'Permission',
+                            'Permission.allow = :allowed',
                             {
                                 allowed: true,
                             }
                         )
+                        .where('OrganizationMembership.user_id = :user_id', {
+                            user_id,
+                        })
                         .getRawMany()
 
                     for (const {
@@ -267,29 +268,29 @@ export class UserPermissions {
                             SchoolMembership
                         )
                             .createQueryBuilder()
-                            .leftJoin('SchoolMembership.roles', 'Role')
-                            .leftJoin('Role.permissions', 'Permission')
                             .select(
                                 'SchoolMembership.school_id, Permission.permission_name'
                             )
-                            .where('SchoolMembership.user_id = :user_id', {
-                                user_id,
-                            })
-                            .andWhere(
-                                '(Role.status = :status OR Role.status IS NULL)',
+                            .distinct(true)
+                            .leftJoin(
+                                'SchoolMembership.roles',
+                                'Role',
+                                'Role.status = :status',
                                 {
                                     status: Status.ACTIVE,
                                 }
                             )
-                            .groupBy(
-                                'SchoolMembership.user_id, SchoolMembership.school_id, Permission.permission_name'
-                            )
-                            .having(
-                                'bool_and(Permission.allow) = :allowed OR Permission.allow IS NULL',
+                            .leftJoin(
+                                'Role.permissions',
+                                'Permission',
+                                'Permission.allow = :allowed',
                                 {
                                     allowed: true,
                                 }
                             )
+                            .where('SchoolMembership.user_id = :user_id', {
+                                user_id,
+                            })
                             .getRawMany()
 
                         for (const {

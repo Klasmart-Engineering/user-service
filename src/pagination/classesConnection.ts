@@ -1,19 +1,41 @@
 import { GraphQLResolveInfo } from 'graphql'
+import { SelectQueryBuilder } from 'typeorm/query-builder/SelectQueryBuilder'
 import { Class } from '../entities/class'
 import { School } from '../entities/school'
+import { ClassConnectionNode } from '../types/graphQL/class'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     AVOID_NONE_SPECIFIED_BRACKETS,
     filterHasProperty,
     getWhereClauseFromFilter,
+    IEntityFilter,
 } from '../utils/pagination/filtering'
 import {
+    IEdge,
     IPaginatedResponse,
     IPaginationArgs,
     paginateData,
 } from '../utils/pagination/paginate'
+import { IConnectionSortingConfig } from '../utils/pagination/sorting'
 import { scopeHasJoin } from '../utils/typeorm'
+
+/**
+ * Core fields on `ClassConnectionNode` not populated by a DataLoader
+ */
+export type CoreClassConnectionNode = Pick<
+    ClassConnectionNode,
+    'id' | 'name' | 'status' | 'shortCode'
+>
+
+export const classesConnectionSortingConfig: IConnectionSortingConfig = {
+    primaryKey: 'class_id',
+    aliases: {
+        id: 'class_id',
+        name: 'class_name',
+        shortCode: 'shortcode',
+    },
+}
 
 export async function classesConnectionResolver(
     info: GraphQLResolveInfo,
@@ -21,8 +43,34 @@ export async function classesConnectionResolver(
 ): Promise<IPaginatedResponse<ClassSummaryNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
+    const newScope = await classesConnectionQuery(scope, filter)
+
+    const data = await paginateData<Class>({
+        direction,
+        directionArgs,
+        scope: newScope,
+        sort: {
+            ...classesConnectionSortingConfig,
+            sort,
+        },
+        includeTotalCount,
+    })
+
+    return {
+        totalCount: data.totalCount,
+        pageInfo: data.pageInfo,
+        edges: await Promise.all(
+            data.edges.map(mapClassEdgeToClassConnectionEdge)
+        ),
+    }
+}
+
+export async function classesConnectionQuery(
+    scope: SelectQueryBuilder<Class>,
+    filter?: IEntityFilter
+) {
     // Select only the ClassConnectionNode fields
-    scope.select(classSummaryNodeFields)
+    scope.select(coreClassConnectionNodeFields)
 
     if (filter) {
         if (
@@ -75,44 +123,30 @@ export async function classesConnectionResolver(
         )
     }
 
-    const data = await paginateData<Class>({
-        direction,
-        directionArgs,
-        scope,
-        sort: {
-            primaryKey: 'class_id',
-            aliases: {
-                id: 'class_id',
-                name: 'class_name',
-            },
-            sort,
-        },
-        includeTotalCount,
-    })
-
-    return {
-        totalCount: data.totalCount,
-        pageInfo: data.pageInfo,
-        edges: data.edges.map((edge) => {
-            return {
-                node: mapClassToClassNode(edge.node),
-                cursor: edge.cursor,
-            }
-        }),
-    }
+    return scope
 }
 
-export function mapClassToClassNode(class_: Class): ClassSummaryNode {
+export function mapClassToClassConnectionNode(
+    class_: Class
+): CoreClassConnectionNode {
     return {
         id: class_.class_id,
         name: class_.class_name,
         status: class_.status,
         shortCode: class_.shortcode,
-        // other properties have dedicated resolvers that use Dataloader
     }
 }
 
-export const classSummaryNodeFields = ([
+async function mapClassEdgeToClassConnectionEdge(
+    edge: IEdge<Class>
+): Promise<IEdge<CoreClassConnectionNode>> {
+    return {
+        node: await mapClassToClassConnectionNode(edge.node),
+        cursor: edge.cursor,
+    }
+}
+
+export const coreClassConnectionNodeFields = ([
     'class_id',
     'class_name',
     'status',

@@ -481,6 +481,28 @@ export const SCHOOLS_CONNECTION = `
     }
 `
 
+export const SCHOOLS_CONNECTION_WITH_CHILDREN = `
+    query schoolsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: SchoolFilter, $sortArgs: SchoolSortInput) {
+        schoolsConnection(direction:$direction, directionArgs:$directionArgs, filter:$filterArgs, sort: $sortArgs){
+            totalCount
+            edges {
+                node {
+                    id
+                    name
+                    classesConnection {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
 export const PROGRAMS_CONNECTION = `
     query programsConnection($direction: ConnectionDirection!, $directionArgs: ConnectionsDirectionArgs, $filterArgs: ProgramFilter, $sortArgs: ProgramSortInput) {
         programsConnection(direction: $direction, directionArgs: $directionArgs, filter: $filterArgs, sort: $sortArgs) {
@@ -1903,13 +1925,23 @@ export async function schoolsConnection(
     includeTotalCount: boolean,
     headers?: Headers,
     filter?: IEntityFilter,
-    sort?: ISortField
+    sort?: ISortField,
+    withChildren = false
 ): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
     const { query } = testClient
-    const paginationQuery = buildPaginationQuery(
-        SCHOOLS_CONNECTION,
-        includeTotalCount
-    )
+
+    let paginationQuery: string
+    if (withChildren) {
+        paginationQuery = buildPaginationQuery(
+            SCHOOLS_CONNECTION_WITH_CHILDREN,
+            includeTotalCount
+        )
+    } else {
+        paginationQuery = buildPaginationQuery(
+            SCHOOLS_CONNECTION,
+            includeTotalCount
+        )
+    }
 
     const operation = () =>
         query({

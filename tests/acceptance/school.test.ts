@@ -2,7 +2,7 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { School } from '../../src/entities/school'
 import { SCHOOLS_CONNECTION, SCHOOL_NODE } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
@@ -11,7 +11,19 @@ import {
     createOrg,
     createSchool,
 } from '../utils/operations/acceptance/acceptanceOps.test'
+import { createSchool as createFactorySchool } from '../factories/school.factory'
 import { loadFixtures } from '../utils/fixtures'
+import { Organization } from '../../src/entities/organization'
+import { createOrganization } from '../factories/organization.factory'
+import { Class } from '../../src/entities/class'
+import { createClass } from '../factories/class.factory'
+import { User } from '../../src/entities/user'
+import { createUser } from '../factories/user.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createRole } from '../factories/role.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
@@ -74,6 +86,10 @@ describe('acceptance.school', () => {
 
     context('schoolsConnection', () => {
         let schoolsCount: number
+        let wizardingSchool: School
+        let wizardOrg: Organization
+        let potionsClass: Class
+        let wizardUser: User
 
         beforeEach(async () => {
             schoolsCount = await School.count()
@@ -117,6 +133,73 @@ describe('acceptance.school', () => {
                 expect(errors).to.exist
                 expect(data).to.be.undefined
             })
+        })
+
+        it('has classesConnection as a child', async () => {
+            const query = `
+                query schoolsConnection($direction: ConnectionDirection!) {
+                    schoolsConnection(direction:$direction){
+                        edges {
+                            node {
+                                classesConnection{
+                                    edges{
+                                        node{
+                                            id
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }`
+
+            wizardUser = await createUser().save()
+            wizardOrg = await createOrganization().save()
+            wizardingSchool = await createFactorySchool(
+                wizardOrg,
+                'Hogwarts'
+            ).save()
+            potionsClass = await createClass(
+                [wizardingSchool],
+                wizardOrg
+            ).save()
+            const role = await createRole(undefined, undefined, {
+                permissions: [
+                    PermissionName.view_school_20110,
+                    PermissionName.view_school_classes_20117,
+                ],
+            }).save()
+
+            await createOrganizationMembership({
+                user: wizardUser,
+                organization: wizardOrg,
+                roles: [role],
+            }).save()
+            await createSchoolMembership({
+                user: wizardUser,
+                school: wizardingSchool,
+            }).save()
+
+            const token = generateToken({
+                id: wizardUser.user_id,
+                email: wizardUser.email,
+                iss: 'calmid-debug',
+            })
+
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
+
+            expect(response.status).to.eq(200)
+            expect(
+                response.body.data.schoolsConnection.edges[0].node
+                    .classesConnection.edges[0].node.id
+            ).to.eq(potionsClass.class_id)
         })
     })
 
