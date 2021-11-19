@@ -4,6 +4,11 @@ import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { Context } from '../main'
 import { SchoolMembership } from '../entities/schoolMembership'
 import { School } from '../entities/school'
+import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { GraphQLResolveInfo } from 'graphql/type/definition'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import { IDataLoaders } from '../loaders/setup'
+import { ISchoolsConnectionNode } from '../types/graphQL/school'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -90,6 +95,14 @@ const typeDefs = gql`
         status: Status!
         shortCode: String
         organizationId: ID!
+
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
     }
 
     input SchoolFilter {
@@ -118,6 +131,35 @@ const typeDefs = gql`
         order: SortOrder!
     }
 `
+
+// This is a workaround to needing to mock total count AST check in tests
+export async function classesChildConnectionResolver(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesChildConnection(school, args, ctx.loaders, includeTotalCount)
+}
+
+export function classesChildConnection(
+    school: Pick<ISchoolsConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: school.id,
+            filterKey: 'schoolId',
+            pivot: '"School"."school_id"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
@@ -125,6 +167,9 @@ export default function getDefault(
     return {
         typeDefs: [typeDefs],
         resolvers: {
+            SchoolConnectionNode: {
+                classesConnection: classesChildConnectionResolver,
+            },
             Mutation: {
                 school: (_parent, args, ctx, _info) =>
                     model.getSchool(args, ctx),

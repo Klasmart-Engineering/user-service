@@ -44,10 +44,13 @@ import {
     rolesConnectionChild as permissionRolesConnectionChild,
     rolesConnectionChildResolver as permissionRolesConnectionChildResolver,
 } from '../../../src/schemas/permission'
+import { createEntityScope } from '../../../src/directives/isAdmin'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import { createSchool } from '../../factories/school.factory'
 
 use(chaiAsPromised)
 
-describe('model', () => {
+describe('rolesConnection', () => {
     let connection: TestConnection
     let testClient: ApolloServerTestClient
     let admin: User
@@ -304,6 +307,254 @@ describe('model', () => {
 
             const systems = result.edges.map((edge) => edge.node.system)
             systems.every((system) => system === filterSystem)
+        })
+
+        context('supports filtering by membership organization ID', () => {
+            let member: User
+            let filter: IEntityFilter
+
+            beforeEach(async () => {
+                member = await createUser().save()
+                await createOrganizationMembership({
+                    user: member,
+                    organization: org1,
+                    roles: org1Roles,
+                }).save()
+
+                filter = {
+                    membershipOrganizationId: {
+                        operator: 'eq',
+                        value: org1.organization_id,
+                    },
+                }
+            })
+
+            it('with an admin scope', async () => {
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    org1Roles.map((r) => r.role_id)
+                )
+            })
+            it('with a non-admin scope', async () => {
+                const token = { id: member.user_id }
+                const permissions = new UserPermissions(token)
+                const scope = (await createEntityScope({
+                    permissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    org1Roles.map((r) => r.role_id)
+                )
+            })
+        })
+
+        context('supports filtering by membership user ID', () => {
+            let member: User
+            let filter: IEntityFilter
+
+            beforeEach(async () => {
+                member = await createUser().save()
+                await createOrganizationMembership({
+                    user: member,
+                    organization: org1,
+                    roles: org1Roles,
+                }).save()
+
+                filter = {
+                    membershipOrganizationUserId: {
+                        operator: 'eq',
+                        value: member.user_id,
+                    },
+                }
+            })
+
+            it('with an admin scope', async () => {
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    org1Roles.map((r) => r.role_id)
+                )
+            })
+            it('with a non-admin scope', async () => {
+                const token = { id: member.user_id }
+                const permissions = new UserPermissions(token)
+                const scope = (await createEntityScope({
+                    permissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    org1Roles.map((r) => r.role_id)
+                )
+            })
+        })
+
+        context('supports filtering by school ID', () => {
+            let member: User
+            let filter: IEntityFilter
+            let schoolRoles: Role[]
+
+            beforeEach(async () => {
+                const school = await createSchool().save()
+
+                schoolRoles = [await createRole('school role', org1).save()]
+
+                member = await createUser().save()
+                await createOrganizationMembership({
+                    user: member,
+                    organization: org1,
+                    roles: org1Roles,
+                }).save()
+                await createSchoolMembership({
+                    user: member,
+                    school,
+                    roles: schoolRoles,
+                }).save()
+
+                filter = {
+                    schoolId: {
+                        operator: 'eq',
+                        value: school.school_id,
+                    },
+                }
+            })
+
+            it('with an admin scope', async () => {
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    schoolRoles.map((r) => r.role_id)
+                )
+            })
+            it('with a non-admin scope', async () => {
+                const token = { id: member.user_id }
+                const permissions = new UserPermissions(token)
+                const scope = (await createEntityScope({
+                    permissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    schoolRoles.map((r) => r.role_id)
+                )
+            })
+        })
+
+        context('supports filtering by school membership user ID', () => {
+            let member: User
+            let filter: IEntityFilter
+            let schoolRoles: Role[]
+
+            beforeEach(async () => {
+                const school = await createSchool().save()
+
+                schoolRoles = [await createRole('school role', org1).save()]
+
+                member = await createUser().save()
+                await createOrganizationMembership({
+                    user: member,
+                    organization: org1,
+                    roles: org1Roles,
+                }).save()
+                await createSchoolMembership({
+                    user: member,
+                    school,
+                    roles: schoolRoles,
+                }).save()
+
+                filter = {
+                    schoolUserId: {
+                        operator: 'eq',
+                        value: member.user_id,
+                    },
+                }
+            })
+
+            it('with an admin scope', async () => {
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    schoolRoles.map((r) => r.role_id)
+                )
+            })
+            it('with a non-admin scope', async () => {
+                const token = { id: member.user_id }
+                const permissions = new UserPermissions(token)
+                const scope = (await createEntityScope({
+                    permissions,
+                    entity: 'role',
+                })) as SelectQueryBuilder<Role>
+
+                const result = await rolesConnectionResolver(info, {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                })
+
+                const returnedRoles = result.edges.map((edge) => edge.node.id)
+
+                expect(returnedRoles).to.have.members(
+                    schoolRoles.map((r) => r.role_id)
+                )
+            })
         })
     })
 
