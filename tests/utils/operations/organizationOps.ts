@@ -273,7 +273,7 @@ const LIST_GRADES = `
     }
 `
 
-const CREATE_OR_UPDATE_SUBCATEGORIES = `
+export const CREATE_OR_UPDATE_SUBCATEGORIES = `
     mutation myMutation(
             $organization_id: ID!,
             $subcategories: [SubcategoryDetail]!) {
@@ -434,10 +434,7 @@ export const LIST_MEMBERSHIPS = gql`
     }
 `
 
-export const ADD_USERS_TO_ORGANIZATIONS = gql`
-    mutation myMutation($input: [AddUsersToOrganizationInput!]!) {
-        addUsersToOrganizations(input: $input) {
-            organizations {
+const ORGANIZATIONS_MUTATION_RESULT = `organizations {
                 id
                 name
                 contactInfo {
@@ -450,7 +447,12 @@ export const ADD_USERS_TO_ORGANIZATIONS = gql`
                 owners {
                     id
                 }
-            }
+            }`
+
+export const ADD_USERS_TO_ORGANIZATIONS = `
+    mutation myMutation($input: [AddUsersToOrganizationInput!]!) {
+        addUsersToOrganizations(input: $input) {
+            ${ORGANIZATIONS_MUTATION_RESULT}
         }
     }
 `
@@ -1075,23 +1077,4 @@ export async function listMemberships(
             memberships: OrganizationMembership[]
         }
     }
-}
-
-export async function addUsersToOrganizations(
-    testClient: ApolloServerTestClient,
-    input: AddUsersToOrganizationInput[],
-    headers?: Headers
-) {
-    const { mutate } = testClient
-    const operation = () =>
-        mutate({
-            mutation: ADD_USERS_TO_ORGANIZATIONS,
-            variables: { input },
-            headers: headers,
-        })
-
-    const res = await gqlTry(operation)
-
-    const gqlOrgMutationResult = res.data?.addUsersToOrganizations
-    return gqlOrgMutationResult
 }

@@ -1,7 +1,6 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import Dataloader from 'dataloader'
-import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { GraphQLResolveInfo } from 'graphql'
 import { Organization } from '../entities/organization'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
@@ -15,8 +14,9 @@ import { Context } from '../main'
 import { Model } from '../model'
 import { addUsersToOrganizations } from '../resolvers/organization'
 import { OrganizationConnectionNode } from '../types/graphQL/organization'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { RoleConnectionNode } from '../types/graphQL/role'
+import { GraphQLSchemaModule } from '../types/schemaModule'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import {
     IChildPaginationArgs,
     IPaginatedResponse,
@@ -159,6 +159,9 @@ const typeDefs = gql`
             alternate_email: String
             alternate_phone: String
         ): MembershipUpdate
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433581057"
+            )
         createRole(role_name: String!, role_description: String!): Role
         createSchool(school_name: String, shortcode: String): School
         createClass(class_name: String, shortcode: String): Class
@@ -196,8 +199,17 @@ const typeDefs = gql`
 
         #mutations
         addRole(role_id: ID!): Role
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433482757"
+            )
         addRoles(role_ids: [ID!]!): [Role]
+            @deprecated(
+                reason: "Sunset Date: 01/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2433482757"
+            )
         removeRole(role_id: ID!): OrganizationMembership
+            @deprecated(
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2440790112"
+            )
         leave(_: Int): Boolean
     }
 
@@ -316,6 +328,14 @@ const typeDefs = gql`
             sort: RoleSortInput
             direction: ConnectionDirection
         ): RolesConnectionResponse
+
+        classesConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
     }
 `
 
@@ -382,12 +402,45 @@ export async function rolesConnectionChild(
     })
 }
 
+// This is a workaround to needing to mock total count AST check in tests
+export async function classesChildConnectionResolver(
+    organization: Pick<OrganizationConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesChildConnection(
+        organization.id,
+        args,
+        ctx.loaders,
+        includeTotalCount
+    )
+}
+
+export function classesChildConnection(
+    organizationId: OrganizationConnectionNode['id'],
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: organizationId,
+            filterKey: 'organizationId',
+            pivot: '"Class"."organizationOrganizationId"',
+        },
+    })
+}
+
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             OrganizationConnectionNode: {
                 owners: async (
@@ -409,6 +462,7 @@ export default function getDefault(
                 organizationMembershipsConnection: organizationMembershipsConnectionResolver,
                 schoolsConnection: schoolsChildConnectionResolver,
                 rolesConnection: rolesConnectionChildResolver,
+                classesConnection: classesChildConnectionResolver,
             },
             Mutation: {
                 addUsersToOrganizations: (_parent, args, ctx, _info) =>

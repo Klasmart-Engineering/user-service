@@ -1,22 +1,23 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import gql from 'graphql-tag'
+import Dataloader from 'dataloader'
+import { GraphQLResolveInfo } from 'graphql/type/definition'
+
+import { Model } from '../model'
+import { Context } from '../main'
 import {
     orgsForUsers,
     schoolsForUsers,
     rolesForUsers,
 } from '../loaders/usersConnection'
-import { Context } from '../main'
-import { Model } from '../model'
+import { IDataLoaders } from '../loaders/setup'
 import { ClassConnectionNode } from '../types/graphQL/class'
+import { GraphQLSchemaModule } from '../types/schemaModule'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { filterHasProperty } from '../utils/pagination/filtering'
 import {
     IChildPaginationArgs,
     shouldIncludeTotalCount,
 } from '../utils/pagination/paginate'
-import Dataloader from 'dataloader'
-import { GraphQLResolveInfo } from 'graphql/type/definition'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
-import { IDataLoaders } from '../loaders/setup'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -68,6 +69,10 @@ const typeDefs = gql`
 
         AND: [ClassFilter!]
         OR: [ClassFilter!]
+
+        #connections - extra filters
+        studentId: UUIDFilter
+        teacherId: UUIDFilter
     }
 
     type ClassConnectionNode {
@@ -104,12 +109,6 @@ const typeDefs = gql`
             filter: SchoolFilter
             sort: SchoolSortInput
         ): SchoolsConnectionResponse
-    }
-
-    type SchoolSummaryNode {
-        id: ID!
-        name: String
-        status: Status!
     }
 
     type ProgramSummaryNode {
@@ -209,9 +208,9 @@ export async function schoolsChildConnection(
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             ClassConnectionNode: {
                 schools: async (

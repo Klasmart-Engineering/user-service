@@ -6,15 +6,18 @@ import { generateShortCode } from '../../src/utils/shortcode'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { School } from '../../src/entities/school'
 import { Role } from '../../src/entities/role'
+import { Status } from '../../src/entities/status'
 
 export function createSchoolMembership({
     user,
     school,
     roles,
+    status,
 }: {
     user: User
     school: School
     roles?: Role[]
+    status?: Status
 }): SchoolMembership {
     const schoolMembership = new SchoolMembership()
     schoolMembership.school_id = school.school_id
@@ -23,6 +26,9 @@ export function createSchoolMembership({
     schoolMembership.user = Promise.resolve(user)
     if (roles) {
         schoolMembership.roles = Promise.resolve(roles)
+    }
+    if (status) {
+        schoolMembership.status = status
     }
     return schoolMembership
 }

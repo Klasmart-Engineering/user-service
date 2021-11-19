@@ -1,7 +1,8 @@
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import Dataloader from 'dataloader'
 import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { SelectQueryBuilder } from 'typeorm'
+import { GraphQLSchemaModule } from '../types/schemaModule'
 import { User } from '../entities/user'
 import { IChildConnectionDataloaderKey } from '../loaders/childConnectionLoader'
 import { IDataLoaders } from '../loaders/setup'
@@ -12,13 +13,25 @@ import {
 } from '../loaders/usersConnection'
 import { Context } from '../main'
 import { Model } from '../model'
+import { createEntityScope } from '../directives/isAdmin'
 import { CoreUserConnectionNode } from '../pagination/usersConnection'
 import { UserConnectionNode } from '../types/graphQL/user'
-import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { IChildPaginationArgs } from '../utils/pagination/paginate'
+import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
+import {
+    addOrganizationRolesToUsers,
+    removeOrganizationRolesFromUsers,
+} from '../resolvers/user'
+import { createUsers } from '../resolvers/user'
 
 const typeDefs = gql`
     extend type Mutation {
+        addOrganizationRolesToUsers(
+            input: [AddOrganizationRolesToUserInput!]!
+        ): UsersMutationResult
+        removeOrganizationRolesFromUsers(
+            input: [RemoveOrganizationRolesFromUserInput!]!
+        ): UsersMutationResult
         me: User
         user(
             user_id: ID!
@@ -47,7 +60,7 @@ const typeDefs = gql`
             @deprecated(reason: "Moved to auth service")
         uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
-        mergeUsers(input: [MergeUserInput!]!): UsersMutationResult
+        createUsers(input: [CreateUserInput!]!): UsersMutationResult
     }
     
     # Mutation inputs
@@ -56,9 +69,18 @@ const typeDefs = gql`
         sourceId: ID!
     }
 
-    # Mutation outputs
-    type UsersMutationResult {
-        users: [UserConnectionNode!]!
+    # Definitions related to mutations
+
+    input AddOrganizationRolesToUserInput {
+        userId: ID!
+        organizationId: ID!
+        roleIds: [ID!]!
+    }
+
+    input RemoveOrganizationRolesFromUserInput {
+        userId: ID!
+        organizationId: ID!
+        roleIds: [ID!]!
     }
 
     # pagination extension types start here
@@ -71,6 +93,31 @@ const typeDefs = gql`
     type UsersConnectionEdge implements iConnectionEdge {
         cursor: String
         node: UserConnectionNode
+    }
+
+    # Mutation inputs
+
+    input CreateUserInput {
+        givenName: String!
+        familyName: String!
+        contactInfo: ContactInfoInput!
+        dateOfBirth: String
+        username: String
+        gender: String!
+        shortcode: String
+        alternateEmail: String
+        alternatePhone: String
+    }
+
+    input ContactInfoInput {
+        email: String
+        phone: String
+    }
+
+    # Mutation outputs
+
+    type UsersMutationResult {
+        users: [UserConnectionNode!]!
     }
 
     # pagination extension types end here
@@ -106,14 +153,14 @@ const typeDefs = gql`
         OR: [UserFilter!]
     }
 
-    type UserConnectionNode {
+    type UserConnectionNode @key(fields: "id") {
         id: ID!
         givenName: String
         familyName: String
         avatar: String
         contactInfo: ContactInfo!
         alternateContactInfo: ContactInfo
-        organizations: [OrganizationSummaryNode!]!
+        organizations: [OrganizationSummaryNode!]
             @deprecated(
                 reason: "Sunset Date: 31/01/22 Details: https://calmisland.atlassian.net/l/c/7Ry00nhw"
             )
@@ -126,19 +173,35 @@ const typeDefs = gql`
             direction: ConnectionDirection
         ): OrganizationMembershipsConnectionResponse
 
-        roles: [RoleSummaryNode!]!
-        schools: [SchoolSummaryNode!]!
+        classesStudyingConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        classesTeachingConnection(
+            count: PageSize
+            cursor: String
+            direction: ConnectionDirection
+            filter: ClassFilter
+            sort: ClassSortInput
+        ): ClassesConnectionResponse
+
+        roles: [RoleSummaryNode!]
+        schools: [SchoolSummaryNode!]
         status: Status!
         dateOfBirth: String
         gender: String
 
-        schoolsConnection(
+        schoolMembershipsConnection(
             count: PageSize
             cursor: String
             direction: ConnectionDirection
-            filter: SchoolFilter
-            sort: SchoolSortInput
-        ): SchoolsConnectionResponse
+            filter: SchoolMembershipFilter
+            sort: SchoolMembershipSortInput
+        ): SchoolMembershipsConnectionResponse
     }
 
     type ContactInfo {
@@ -173,6 +236,9 @@ const typeDefs = gql`
 
     extend type Query {
         me: User
+            @deprecated(
+                reason: "Use myUser.node. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
+            )
         user(user_id: ID!): User
             @deprecated(
                 reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
@@ -187,11 +253,11 @@ const typeDefs = gql`
         users: [User] @deprecated(reason: "Unused")
         my_users: [User!]
             @deprecated(
-                reason: "Use 'usersConnection with a filter for matching 'email' or 'phone'"
+                reason: "Use myUser.profiles. Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2437513558"
             )
     }
 
-    type User {
+    type User @key(fields: "user_id") {
         user_id: ID!
 
         #properties
@@ -262,40 +328,12 @@ const typeDefs = gql`
     }
 `
 
-export async function schoolsChildConnectionResolver(
-    user: Pick<UserConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    ctx: Pick<Context, 'loaders'>,
-    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
-) {
-    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-    return schoolsChildConnection(user, args, ctx.loaders, includeTotalCount)
-}
-
-//This method is split up from totalCount to be easily testable
-export async function schoolsChildConnection(
-    user: Pick<UserConnectionNode, 'id'>,
-    args: IChildPaginationArgs,
-    loaders: IDataLoaders,
-    includeTotalCount: boolean
-) {
-    return loaders.schoolsConnectionChild.instance.load({
-        args,
-        includeTotalCount: includeTotalCount,
-        parent: {
-            id: user.id,
-            filterKey: 'userId',
-            pivot: '"SchoolMembership"."user_id"',
-        },
-    })
-}
-
 export default function getDefault(
     model: Model,
     context?: Context
-): ApolloServerExpressConfig {
+): GraphQLSchemaModule {
     return {
-        typeDefs: [typeDefs],
+        typeDefs,
         resolvers: {
             UserConnectionNode: {
                 organizations: async (
@@ -331,22 +369,44 @@ export default function getDefault(
                         ? ctx.loaders.userNode.roles.load(user.id)
                         : ctx.loaders.usersConnection?.roles?.load(user.id)
                 },
-                schoolsConnection: schoolsChildConnectionResolver,
+
+                classesStudyingConnection: classesStudyingConnectionResolver,
+                classesTeachingConnection: classesTeachingConnectionResolver,
+                schoolMembershipsConnection: schoolMembershipsConnectionResolver,
+                __resolveReference: async (userRef, ctx: Context) => {
+                    const scope = (await createEntityScope({
+                        permissions: ctx.permissions,
+                        entity: 'user',
+                    })) as SelectQueryBuilder<User>
+                    const args = {
+                        id: userRef.id,
+                        scope,
+                    }
+                    return ctx.loaders.userNode.node.instance.load(args)
+                },
             },
             Mutation: {
-                me: (_parent, _args, ctx, _info) => model.getMyUser(ctx),
+                me: (_parent, _args, ctx: Context, _info) =>
+                    model.getMyUser(ctx.token),
                 user: (_parent, args, _context, _info) => model.setUser(args),
                 switch_user: (_parent, args, ctx, info) => {
                     throw new Error('Deprecated')
                 },
                 newUser: (_parent, args, _context, _info) =>
                     model.newUser(args),
-
                 uploadUsersFromCSV: (_parent, args, ctx, info) =>
                     model.uploadUsersFromCSV(args, ctx, info),
+                addOrganizationRolesToUsers: (_parent, args, ctx, _info) =>
+                    addOrganizationRolesToUsers(args, ctx),
+                removeOrganizationRolesFromUsers: (_parent, args, ctx, _info) =>
+                    removeOrganizationRolesFromUsers(args, ctx),
+
+                createUsers: (_parent, args, ctx, _info) =>
+                    createUsers(args, ctx),
             },
             Query: {
-                me: (_, _args, ctx, _info) => model.getMyUser(ctx),
+                me: (_, _args, ctx: Context, _info) =>
+                    model.getMyUser(ctx.token),
                 usersConnection: (_parent, args, ctx: Context, info) => {
                     // Regenerate the loaders on every resolution, because the `args.filter`
                     // may be different
@@ -371,8 +431,8 @@ export default function getDefault(
                 user: (_parent, { user_id }, ctx: Context, _info) => {
                     return ctx.loaders.user.user.instance.load(user_id)
                 },
-                my_users: (_parent, _args, ctx, info) =>
-                    model.myUsers({}, ctx, info),
+                my_users: (_parent, _args, ctx: Context, info) =>
+                    model.myUsers(ctx.token),
             },
             User: {
                 memberships: (user: User, _args, ctx: Context, info) => {
@@ -385,11 +445,65 @@ export default function getDefault(
                         user.user_id
                     )
                 },
+                __resolveReference: (userRef) => model.getUser(userRef.user_id),
             },
         },
     }
 }
 
+export async function classesStudyingConnectionResolver(
+    user: UserConnectionNode,
+    args: Record<string, unknown>,
+    ctx: Context,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesStudyingConnection(user, args, ctx.loaders, includeTotalCount)
+}
+
+export async function classesStudyingConnection(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: user.id,
+            filterKey: 'studentId',
+            pivot: '"Student"."user_id"',
+        },
+    })
+}
+
+export async function classesTeachingConnectionResolver(
+    user: UserConnectionNode,
+    args: Record<string, unknown>,
+    ctx: Context,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return classesTeachingConnection(user, args, ctx.loaders, includeTotalCount)
+}
+
+export async function classesTeachingConnection(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    loaders: IDataLoaders,
+    includeTotalCount: boolean
+) {
+    return loaders.classesConnectionChild.instance.load({
+        args,
+        includeTotalCount: includeTotalCount,
+        parent: {
+            id: user.id,
+            filterKey: 'teacherId',
+            pivot: '"Teacher"."user_id"',
+        },
+    })
+}
 export async function organizationMembershipsConnectionResolver(
     user: Pick<CoreUserConnectionNode, 'id'>,
     args: IChildPaginationArgs,
@@ -423,4 +537,33 @@ export async function loadOrganizationMembershipsForUser(
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key
     )
+}
+
+export async function schoolMembershipsConnectionResolver(
+    user: Pick<UserConnectionNode, 'id'>,
+    args: IChildPaginationArgs,
+    ctx: Pick<Context, 'loaders'>,
+    info: Pick<GraphQLResolveInfo, 'fieldNodes'>
+) {
+    const includeTotalCount = findTotalCountInPaginationEndpoints(info)
+    return loadSchoolMembershipsForUser(ctx, user.id, args, includeTotalCount)
+}
+
+export async function loadSchoolMembershipsForUser(
+    context: Pick<Context, 'loaders'>,
+    userId: UserConnectionNode['id'],
+    args: IChildPaginationArgs = {},
+    includeTotalCount = true
+) {
+    const key: IChildConnectionDataloaderKey = {
+        args,
+        includeTotalCount,
+        parent: {
+            id: userId,
+            filterKey: 'userId',
+            pivot: '"SchoolMembership"."user_id"',
+        },
+    }
+
+    return context.loaders.schoolMembershipsConnectionChild.instance.load(key)
 }

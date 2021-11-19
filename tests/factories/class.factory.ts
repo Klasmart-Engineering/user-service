@@ -9,11 +9,13 @@ import { User } from '../../src/entities/user'
 export function createClass(
     schools: School[] = [],
     org?: Organization,
-    { students, teachers }: { students?: User[]; teachers?: User[] } = {}
+    { students, teachers }: { students?: User[]; teachers?: User[] } = {},
+    name?: string
 ) {
     const cls = new Class()
 
-    cls.class_name = faker.random.word()
+    cls.class_name = name ?? faker.random.word()
+
     if (org) {
         cls.organization = Promise.resolve(org)
     }

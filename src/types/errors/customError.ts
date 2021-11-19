@@ -81,6 +81,10 @@ export const customErrors = {
         message:
             '{entity} {entityName} already exists for {parentEntity} {parentName}.',
     },
+    duplicate_input_value: {
+        code: 'ERR_DUPLICATE_INPUT_VALUE',
+        message: '{entity} {entityName} is repeated in the inputs.',
+    },
     duplicate_attribute_values: {
         code: 'ERR_DUPLICATE_ATTRIBUTE_VALUES',
         message: '{entity} {attribute} must contain unique values.',
@@ -111,6 +115,15 @@ export const customErrors = {
     invalid_min_length: {
         code: 'ERR_INVALID_MIN_LENGTH',
         message: '{entity} {attribute} must not be less than {min} characters.',
+    },
+    invalid_array_max_length: {
+        code: 'ERR_INVALID_ARRAY_MAX_LENGTH',
+        message:
+            '{entity} {attribute} must not be greater than {max} elements.',
+    },
+    invalid_array_min_length: {
+        code: 'ERR_INVALID_ARRAY_MIN_LENGTH',
+        message: '{entity} {attribute} must not be less than {min} elements.',
     },
     invalid_alphanumeric_special: {
         code: 'ERR_INVALID_ALPHANUMERIC_SPECIAL_CHARACTERS',
@@ -188,5 +201,15 @@ export const customErrors = {
     delete_rejected_entity_in_use: {
         code: 'ERR_DELETE_REJECTED_ENTITY_IN_USE',
         message: 'Cannot delete {entity} {entityName} since it is being used',
+    },
+
+    mutation_bad_input: {
+        code: 'MUTATION_BAD_INPUT',
+        message: 'Cannot set {entity} index {index} attribute {attribute}',
+    },
+
+    database_save_error: {
+        code: 'ERROR_SAVING',
+        message: 'Cannot save to database',
     },
 }

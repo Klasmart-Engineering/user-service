@@ -53,7 +53,6 @@ import {
     updateOrganization,
     listClasses,
     getSystemRoleIds,
-    addUsersToOrganizations,
 } from '../utils/operations/organizationOps'
 import { grantPermission } from '../utils/operations/roleOps'
 import {
@@ -105,6 +104,9 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { AddUsersToOrganizationInput } from '../../src/types/graphQL/organization'
 import { customErrors } from '../../src/types/errors/customError'
 import { Permission } from '../../src/entities/permission'
+import { errorFormattingWrapper } from '../utils/errors'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { addUsersToOrganizations } from '../../src/resolvers/organization'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -6958,6 +6960,7 @@ describe('organization', () => {
     })
 
     describe('.addUsersToOrganizations', () => {
+        let adminUser: User
         let nonAdminUser: User
         let organization1: Organization
         let organization2: Organization
@@ -6970,10 +6973,19 @@ describe('organization', () => {
         let role3: Role
         let input: AddUsersToOrganizationInput[]
 
-        function addUsers(token?: string) {
-            return addUsersToOrganizations(testClient, input, {
-                authorization: token ?? getAdminAuthToken(),
-            })
+        function addUsers(authUser = adminUser) {
+            return errorFormattingWrapper(
+                addUsersToOrganizations(
+                    { input },
+                    {
+                        permissions: new UserPermissions({
+                            id: authUser.user_id,
+                            email: authUser.email,
+                            phone: authUser.phone,
+                        }),
+                    }
+                )
+            )
         }
 
         async function checkOutput() {
@@ -7050,9 +7062,10 @@ describe('organization', () => {
             })
         }
 
-        async function checkNoChangesMade(token?: string) {
+        async function checkNoChangesMade(useAdminUser = true) {
             it('does not add the users', async () => {
-                await expect(addUsers(token)).to.be.rejected
+                await expect(addUsers(useAdminUser ? adminUser : nonAdminUser))
+                    .to.be.rejected
                 expect(
                     await OrganizationMembership.find({
                         where: {
@@ -7071,7 +7084,7 @@ describe('organization', () => {
         }
 
         beforeEach(async () => {
-            await createAdminUser(testClient)
+            adminUser = await createAdminUser(testClient)
             nonAdminUser = await createNonAdminUser(testClient)
             organization1 = await createOrganization().save()
             organization2 = await createOrganization().save()
@@ -7134,7 +7147,8 @@ describe('organization', () => {
                             {
                                 entity: 'User',
                                 entityName: user1.username || '',
-                                parentEntity: 'Organization',
+                                parentEntity:
+                                    'OrganizationMembership in Organization',
                                 parentName:
                                     organization1.organization_name || '',
                                 index: 0,
@@ -7257,14 +7271,12 @@ describe('organization', () => {
                 })
 
                 it('returns a permission error', async () => {
-                    await expect(
-                        addUsers(getNonAdminAuthToken())
-                    ).to.be.rejectedWith(
+                    await expect(addUsers(nonAdminUser)).to.be.rejectedWith(
                         `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.send_invitation_40882}) in Organization(${organization2.organization_id})`
                     )
                 })
 
-                await checkNoChangesMade(getNonAdminAuthToken())
+                await checkNoChangesMade(false)
             }
         )
     })

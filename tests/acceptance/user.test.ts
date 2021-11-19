@@ -2,19 +2,23 @@ import chaiAsPromised from 'chai-as-promised'
 import supertest from 'supertest'
 import { expect, use } from 'chai'
 import { before } from 'mocha'
-
 import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { loadFixtures } from '../utils/fixtures'
 import {
     addStudentsToClass,
-    createClass,
     createOrg,
     leaveTheOrganization,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import { User } from '../../src/entities/user'
 import { MY_USERS, USERS_CONNECTION } from '../utils/operations/modelOps'
-import { GET_SCHOOL_MEMBERSHIPS_WITH_ORG } from '../utils/operations/userOps'
+import {
+    ADD_ORG_ROLES_TO_USERS,
+    CREATE_USERS,
+    GET_SCHOOL_MEMBERSHIPS_WITH_ORG,
+    REMOVE_ORG_ROLES_FROM_USERS,
+    userToCreateUserInput,
+} from '../utils/operations/userOps'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createSchool } from '../factories/school.factory'
 import { createRole } from '../factories/role.factory'
@@ -26,7 +30,16 @@ import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
-import { UserConnectionNode } from '../../src/types/graphQL/user'
+import { makeRequest } from './utils'
+import { createClass } from '../factories/class.factory'
+import { Class } from '../../src/entities/class'
+import {
+    AddOrganizationRolesToUserInput,
+    RemoveOrganizationRolesFromUserInput,
+    UserConnectionNode,
+} from '../../src/types/graphQL/user'
+import { Role } from '../../src/entities/role'
+import { CreateUserInput } from '../../src/types/graphQL/user'
 
 use(chaiAsPromised)
 
@@ -34,8 +47,9 @@ const url = 'http://localhost:8080'
 const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
-const usersCount = 6
+const usersCount = 50
 const classesCount = 2
+const rolesCount = 20
 
 let orgId: string
 let userIds: string[]
@@ -53,6 +67,7 @@ const ME = `
 
 describe('acceptance.user', () => {
     let connection: TestConnection
+    let memberships: OrganizationMembership[]
 
     before(async () => {
         connection = await createTestConnection()
@@ -83,7 +98,7 @@ describe('acceptance.user', () => {
             Array(usersCount).fill(undefined).map(createUser)
         )
 
-        await OrganizationMembership.save(
+        memberships = await OrganizationMembership.save(
             users.map((user) =>
                 createOrganizationMembership({ user, organization })
             )
@@ -98,17 +113,10 @@ describe('acceptance.user', () => {
                 userIds[i * 3 + 1],
                 userIds[i * 3 + 2],
             ]
-            const classResponse = await createClass(
-                orgId,
-                `class ${i + 1}`,
-                getAdminAuthToken()
-            )
 
-            const classId =
-                classResponse.body.data.organization.createClass.class_id
-
-            classIds.push(classId)
-            await addStudentsToClass(classId, uIds, getAdminAuthToken())
+            const class_ = await createClass([], organization).save()
+            classIds.push(class_.class_id)
+            await addStudentsToClass(class_.class_id, uIds, getAdminAuthToken())
         }
     })
 
@@ -373,18 +381,14 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
 
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: token,
-                })
-                .send({
-                    query,
-                    variables: {
-                        direction: 'FORWARD',
-                    },
-                })
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
             expect(response.status).to.eq(200)
             const usersConnection: IPaginatedResponse<UserConnectionNode> =
                 response.body.data.usersConnection
@@ -394,16 +398,16 @@ describe('acceptance.user', () => {
             expect(orgNode.organization!.id).to.eq(org.organization_id)
         })
 
-        it('has schoolsConnection as a child', async () => {
+        it('has schoolMembershipsConnection as a child', async () => {
             const query = `
                 query usersConnection($direction: ConnectionDirection!) {
                     usersConnection(direction:$direction){
                         edges {
                             node {
-                                schoolsConnection{
+                                schoolMembershipsConnection{
                                     edges{
                                         node{
-                                            id
+                                            schoolId
                                         }
                                     }
                                 }
@@ -435,25 +439,123 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
 
-            const response = await request
-                .post('/user')
-                .set({
-                    ContentType: 'application/json',
-                    Authorization: token,
-                })
-                .send({
-                    query,
-                    variables: {
-                        direction: 'FORWARD',
-                    },
-                })
+            const response = await makeRequest(
+                request,
+                query,
+                {
+                    direction: 'FORWARD',
+                },
+                token
+            )
             expect(response.status).to.eq(200)
+            const usersConnection: IPaginatedResponse<UserConnectionNode> =
+                response.body.data.usersConnection
             expect(
-                response.body.data.usersConnection.edges[0].node
-                    .schoolsConnection.edges[0].node.id
+                usersConnection.edges[0].node.schoolMembershipsConnection!
+                    .edges[0].node.schoolId
             ).to.eq(school.school_id)
         })
+
+        context('classes child connections', () => {
+            let user: User
+            let classStudying: Class
+            let classTeaching: Class
+            let userToken: string
+
+            beforeEach(async () => {
+                user = await createUser().save()
+                const org = await createOrganization().save()
+
+                const role = await createRole(undefined, org, {
+                    permissions: [
+                        PermissionName.view_users_40110,
+                        PermissionName.view_classes_20114,
+                    ],
+                }).save()
+                await createOrganizationMembership({
+                    user: user,
+                    organization: org,
+                    roles: [role],
+                }).save()
+
+                classStudying = await createClass([], org, {
+                    students: [user],
+                }).save()
+                classTeaching = await createClass([], org, {
+                    teachers: [user],
+                }).save()
+
+                userToken = generateToken({
+                    id: user.user_id,
+                    email: user.email,
+                    iss: 'calmid-debug',
+                })
+            })
+
+            it('has classesStudyingConnection as a child', async () => {
+                const query = `
+                    query usersConnection($direction: ConnectionDirection!) {
+                        usersConnection(direction:$direction){
+                            edges {
+                                node {
+                                    classesStudyingConnection {
+                                        edges{
+                                            node{
+                                                id
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }`
+
+                const response = await makeRequest(
+                    request,
+                    query,
+                    {
+                        direction: 'FORWARD',
+                    },
+                    userToken
+                )
+                expect(
+                    response.body.data.usersConnection.edges[0].node
+                        .classesStudyingConnection.edges[0].node.id
+                ).to.eq(classStudying.class_id)
+            })
+            it('has classesTeachingConnection as a child', async () => {
+                const query = `
+                    query usersConnection($direction: ConnectionDirection!) {
+                        usersConnection(direction:$direction){
+                            edges {
+                                node {
+                                    classesTeachingConnection {
+                                        edges{
+                                            node{
+                                                id
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }`
+                const response = await makeRequest(
+                    request,
+                    query,
+                    {
+                        direction: 'FORWARD',
+                    },
+                    userToken
+                )
+                expect(
+                    response.body.data.usersConnection.edges[0].node
+                        .classesTeachingConnection.edges[0].node.id
+                ).to.eq(classTeaching.class_id)
+            })
+        })
     })
+
     context('my_users', async () => {
         it('Finds no users if I am not logged in', async () => {
             const response = await request
@@ -511,6 +613,138 @@ describe('acceptance.user', () => {
 
             expect(response.status).to.eq(200)
             expect(response.body.data.my_users.length).to.equal(0)
+        })
+    })
+
+    context('addOrganizationRolesToUser', () => {
+        let input: AddOrganizationRolesToUserInput[]
+
+        beforeEach(async () => {
+            const roles = []
+            for (let i = 0; i < rolesCount; i++) {
+                roles.push(createRole(`Role ${i}`))
+            }
+            await Role.save(roles)
+
+            input = []
+            for (const membership of memberships) {
+                input.push({
+                    userId: membership.user_id,
+                    organizationId: membership.organization_id,
+                    roleIds: roles.slice(3, 11).map((v) => v.role_id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should respond with status 200', async () => {
+                const response = await request
+                    .post('/user')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: ADD_ORG_ROLES_TO_USERS,
+                        variables: {
+                            input,
+                        },
+                    })
+
+                const resUsers: UserConnectionNode[] =
+                    response.body.data.addOrganizationRolesToUsers.users
+                expect(response.status).to.eq(200)
+                expect(resUsers.length).to.equal(usersCount)
+            })
+        })
+    })
+    context('createUsers', async () => {
+        let myUser: User
+        let myOrg: Organization
+        let token: string
+        let createUserInputs: CreateUserInput[] = []
+        beforeEach(async () => {
+            myUser = await createUser().save()
+            myOrg = await createOrganization().save()
+            const role = await createRole(undefined, myOrg, {
+                permissions: [PermissionName.create_users_40220],
+            }).save()
+            await createOrganizationMembership({
+                user: myUser,
+                organization: myOrg,
+                roles: [role],
+            }).save()
+            token = generateToken({
+                id: myUser.user_id,
+                email: myUser.email,
+                iss: 'calmid-debug',
+            })
+            createUserInputs = []
+            for (let i = 0; i < 50; i++) {
+                createUserInputs.push(userToCreateUserInput(createUser()))
+            }
+        })
+        it('Creates 50 users', async () => {
+            const response = await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: token,
+                })
+                .send({
+                    query: CREATE_USERS,
+                    variables: { input: createUserInputs },
+                })
+
+            expect(response.status).to.eq(200)
+            expect(response.body.data.createUsers.users.length).to.equal(
+                createUserInputs.length
+            )
+        })
+    })
+
+    context('removeOrganizationRolesFromUser', () => {
+        let input: RemoveOrganizationRolesFromUserInput[]
+
+        beforeEach(async () => {
+            const roles = []
+            for (let i = 0; i < rolesCount; i++) {
+                roles.push(createRole(`Role ${i}`))
+            }
+            await Role.save(roles)
+
+            input = []
+            for (const membership of memberships) {
+                membership.roles = Promise.resolve(roles.slice(3, 17))
+                await membership.save()
+                input.push({
+                    userId: membership.user_id,
+                    organizationId: membership.organization_id,
+                    roleIds: roles.slice(8, 17).map((v) => v.role_id),
+                })
+            }
+        })
+
+        context('when data is requested in a correct way', () => {
+            it('should respond with status 200', async () => {
+                const response = await request
+                    .post('/user')
+                    .set({
+                        ContentType: 'application/json',
+                        Authorization: getAdminAuthToken(),
+                    })
+                    .send({
+                        query: REMOVE_ORG_ROLES_FROM_USERS,
+                        variables: {
+                            input,
+                        },
+                    })
+
+                const resUsers: UserConnectionNode[] =
+                    response.body.data.removeOrganizationRolesFromUsers.users
+                expect(response.status).to.eq(200)
+                expect(resUsers.length).to.equal(usersCount)
+            })
         })
     })
 })

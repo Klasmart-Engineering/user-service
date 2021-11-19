@@ -1,12 +1,12 @@
-import depreciated from './depreciated'
 import isAdmin from './isAdmin'
 import isAuthenticated from './isAuthenticated'
 import isMIMEType from './isMIMEType'
-import { mergeRawSchemas } from '../helpers/mergeRawSchemas'
+import { GraphQLSchemaModule } from '../../types/schemaModule'
 
-export default mergeRawSchemas(
-    depreciated,
+const directivesModules: GraphQLSchemaModule[] = [
     isAdmin,
     isAuthenticated,
-    isMIMEType
-)
+    isMIMEType,
+]
+
+export default directivesModules

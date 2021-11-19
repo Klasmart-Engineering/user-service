@@ -1,8 +1,9 @@
+import { Request, Response } from 'express'
+import depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
-import { makeExecutableSchema } from '@graphql-tools/schema'
 import { Context } from '../main'
 import { Model } from '../model'
-import { checkToken } from '../token'
+import { checkToken, TokenPayload } from '../token'
 import { UserPermissions } from '../permissions/userPermissions'
 import getSchema from '../schemas'
 import { CustomError } from '../types/csv/csvError'
@@ -13,8 +14,6 @@ import {
     isMIMETypeTransformer,
 } from '../directives'
 import { loadPlugins } from './plugins'
-import { Request, Response } from 'express'
-import depthLimit from 'graphql-depth-limit'
 
 /* accessing a child via a connection field takes 3 depth
     myconnection { // 0
@@ -59,7 +58,7 @@ async function createContext({
     res: Response
     req: Request
 }): Promise<Context> {
-    const token = await checkToken(req)
+    const token: TokenPayload = await checkToken(req)
     const permissions = new UserPermissions(token)
 
     return {
@@ -75,15 +74,20 @@ async function createContext({
 export const createServer = async (model: Model) => {
     const environment = process.env.NODE_ENV
 
-    const schema = [
+    // 1. Generate GraphQL schema from modules
+    let schema = getSchema(model)
+
+    // 2. Transform the schema by applying directive logic
+    schema = [
         isAdminTransformer,
         isAuthenticatedTransformer,
         isMIMETypeTransformer,
     ].reduce(
         (previousSchema, transformer) => transformer(previousSchema),
-        makeExecutableSchema(getSchema(model))
+        schema
     )
 
+    // 3. create Apollo Server
     return new ApolloServer({
         schema: schema,
         context: createContext,

@@ -1,47 +1,47 @@
-import { use, expect } from 'chai'
+import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import faker from 'faker'
+import { Class } from '../../../src/entities/class'
+import { Organization } from '../../../src/entities/organization'
+import { OrganizationMembership } from '../../../src/entities/organizationMembership'
+import { Role } from '../../../src/entities/role'
+import { School } from '../../../src/entities/school'
+import { Status } from '../../../src/entities/status'
+import { User } from '../../../src/entities/user'
+import { createContextLazyLoaders } from '../../../src/loaders/setup'
+import { Context } from '../../../src/main'
+import { Model } from '../../../src/model'
+import { PermissionName } from '../../../src/permissions/permissionNames'
+import { UserPermissions } from '../../../src/permissions/userPermissions'
+import { classesChildConnection as schoolClassesChildConnection } from '../../../src/schemas/school'
+import { createServer } from '../../../src/utils/createServer'
+import { IEntityFilter } from '../../../src/utils/pagination/filtering'
+import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
+import { generateShortCode } from '../../../src/utils/shortcode'
+import { createClass } from '../../factories/class.factory'
+import { createOrganization } from '../../factories/organization.factory'
+import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
+import { createRole } from '../../factories/role.factory'
+import { createSchool } from '../../factories/school.factory'
+import { createSchoolMembership } from '../../factories/schoolMembership.factory'
+import { createUser } from '../../factories/user.factory'
 import {
     ApolloServerTestClient,
     createTestClient,
 } from '../../utils/createTestClient'
-import {
-    createTestConnection,
-    TestConnection,
-} from '../../utils/testConnection'
-import { createServer } from '../../../src/utils/createServer'
-import { Model } from '../../../src/model'
-import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
+import { runQuery, schoolsConnection } from '../../utils/operations/modelOps'
+import { userToPayload } from '../../utils/operations/userOps'
 import {
     generateToken,
     getAdminAuthToken,
     getNonAdminAuthToken,
 } from '../../utils/testConfig'
-import { School } from '../../../src/entities/school'
-import { Organization } from '../../../src/entities/organization'
-import { User } from '../../../src/entities/user'
-import { runQuery, schoolsConnection } from '../../utils/operations/modelOps'
-import { IEntityFilter } from '../../../src/utils/pagination/filtering'
-import { createOrganization } from '../../factories/organization.factory'
-import { Status } from '../../../src/entities/status'
-import { createRole } from '../../factories/role.factory'
-import { createUser } from '../../factories/user.factory'
-import { createSchool } from '../../factories/school.factory'
-import { userToPayload } from '../../utils/operations/userOps'
-import { PermissionName } from '../../../src/permissions/permissionNames'
-import { createOrganizationMembership } from '../../factories/organizationMembership.factory'
-import { createSchoolMembership } from '../../factories/schoolMembership.factory'
-import { OrganizationMembership } from '../../../src/entities/organizationMembership'
-import { Role } from '../../../src/entities/role'
-import deepEqualInAnyOrder from 'deep-equal-in-any-order'
-import { generateShortCode } from '../../../src/utils/shortcode'
-import { classesChildConnection as schoolClassesChildConnection } from '../../../src/schemas/school'
-import { createClass } from '../../factories/class.factory'
-import { Class } from '../../../src/entities/class'
-import { IChildPaginationArgs } from '../../../src/utils/pagination/paginate'
-import { UserPermissions } from '../../../src/permissions/userPermissions'
-import { createContextLazyLoaders } from '../../../src/loaders/setup'
-import { Context } from '../../../src/main'
+import {
+    createTestConnection,
+    TestConnection,
+} from '../../utils/testConnection'
+import { createAdminUser, createNonAdminUser } from '../../utils/testEntities'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)

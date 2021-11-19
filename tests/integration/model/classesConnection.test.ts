@@ -639,6 +639,65 @@ describe('classesConnection', () => {
     })
 
     context('filtering', () => {
+        let students: User[]
+        let teachers: User[]
+        beforeEach(async () => {
+            // add some users as students & teachers to each class
+            students = await User.save(Array.from(Array(5), createUser))
+            teachers = await User.save(Array.from(Array(5), createUser))
+
+            for (const user of students) {
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                }).save()
+            }
+            for (const user of teachers) {
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                }).save()
+            }
+
+            for (const class_ of org1Classes) {
+                class_.students = Promise.resolve(students)
+                class_.teachers = Promise.resolve(teachers)
+                await class_.save()
+            }
+        })
+        it('supports filtering by studentId', async () => {
+            const filter: IEntityFilter = {
+                studentId: {
+                    operator: 'eq',
+                    value: students[0].user_id,
+                },
+            }
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(result.totalCount).to.eq(org1Classes.length)
+        })
+        it('supports filtering by teacherId', async () => {
+            const filter: IEntityFilter = {
+                teacherId: {
+                    operator: 'eq',
+                    value: teachers[0].user_id,
+                },
+            }
+            const result = await classesConnection(
+                testClient,
+                'FORWARD',
+                { count: 10 },
+                { authorization: getAdminAuthToken() },
+                filter
+            )
+            expect(result.totalCount).to.eq(org1Classes.length)
+        })
+
         it('supports filtering by organization ID', async () => {
             const organizationId = org1.organization_id
 

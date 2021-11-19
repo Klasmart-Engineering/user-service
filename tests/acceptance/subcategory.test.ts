@@ -3,17 +3,32 @@ import { Connection } from 'typeorm'
 import { Subcategory } from '../../src/entities/subcategory'
 import {
     SUBCATEGORIES_CONNECTION,
+    SUBCATEGORIES_DELETE,
     SUBCATEGORY_NODE,
 } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import { expect } from 'chai'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { NIL_UUID } from '../utils/database'
+import {
+    createSubcategories,
+    ISubcategoryDetail,
+} from '../utils/operations/acceptance/acceptanceOps.test'
+import { User } from '../../src/entities/user'
+import { createUser } from '../factories/user.factory'
+import { userToPayload } from '../utils/operations/userOps'
+import { createRole } from '../factories/role.factory'
+import { createOrganization } from '../factories/organization.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { makeRequest } from './utils'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
+const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
+const org_name = 'my-org'
 
 async function makeConnectionQuery() {
     return await request
@@ -135,6 +150,78 @@ describe('acceptance.subcategory', () => {
                 expect(response.status).to.eq(200)
                 expect(errors).to.exist
                 expect(subcategoryNode).to.be.null
+            })
+        })
+    })
+
+    context('deleteSubcategories', () => {
+        context('when id exists', () => {
+            let subcategoryId: string
+            let user: User
+            let token: string
+            beforeEach(async () => {
+                const org1 = await createOrganization().save()
+                user = await createUser().save()
+                const deleteSubcategoriesRoleOrg1 = await createRole(
+                    'Delete Subcategories',
+                    org1,
+                    {
+                        permissions: [PermissionName.delete_subjects_20447],
+                    }
+                ).save()
+                const createSubjectsRole = await createRole(
+                    'Create Subcategories',
+                    org1,
+                    {
+                        permissions: [PermissionName.create_subjects_20227],
+                    }
+                ).save()
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                    roles: [createSubjectsRole, deleteSubcategoriesRoleOrg1],
+                }).save()
+                token = generateToken(userToPayload(user))
+                const subcategoriesDetails: ISubcategoryDetail[] = [
+                    {
+                        name: `subcategory 0`,
+                        system: false,
+                    },
+                ]
+                const res = await createSubcategories(
+                    org1.organization_id,
+                    subcategoriesDetails,
+                    token
+                )
+                subcategoryId =
+                    res.body.data.organization.createOrUpdateSubcategories[0].id
+            })
+            it('should respond succesfully', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(SUBCATEGORIES_DELETE),
+                    { input: [{ id: subcategoryId }] },
+                    token
+                )
+                const subcategoryNode =
+                    response.body.data.deleteSubcategories.subcategories[0]
+
+                expect(response.status).to.eq(200)
+                expect(subcategoryNode.id).to.equal(subcategoryId)
+            })
+        })
+
+        context('when requested subcategory does not exists', () => {
+            it('should respond with errors', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(SUBCATEGORIES_DELETE),
+                    { input: [{ id: NIL_UUID }] },
+                    getAdminAuthToken()
+                )
+                const errors = response.body.errors
+                expect(response.status).to.eq(200)
+                expect(errors).to.exist
             })
         })
     })

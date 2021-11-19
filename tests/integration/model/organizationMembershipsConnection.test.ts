@@ -4,6 +4,7 @@ import { createEntityScope } from '../../../src/directives/isAdmin'
 import { Organization } from '../../../src/entities/organization'
 import { OrganizationMembership } from '../../../src/entities/organizationMembership'
 import { Role } from '../../../src/entities/role'
+import { Status } from '../../../src/entities/status'
 import { User } from '../../../src/entities/user'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { Context } from '../../../src/main'
@@ -67,11 +68,13 @@ describe('organizationMembershipsConnection', () => {
                 organization: org1,
                 user: await createUser().save(),
                 roles: [org1Role],
+                status: Status.ACTIVE,
             }).save(),
             createOrganizationMembership({
                 organization: org1,
                 user: await createUser().save(),
                 roles: [org1Role],
+                status: Status.ACTIVE,
             }).save(),
         ])
         org2Memberships = await Promise.all([
@@ -79,11 +82,13 @@ describe('organizationMembershipsConnection', () => {
                 organization: org2,
                 user: await createUser().save(),
                 roles: [org2Role],
+                status: Status.INACTIVE,
             }).save(),
             createOrganizationMembership({
                 organization: org2,
                 user: await createUser().save(),
                 roles: [org2Role],
+                status: Status.INACTIVE,
             }).save(),
         ])
 
@@ -152,6 +157,15 @@ describe('organizationMembershipsConnection', () => {
                 })
                 expect(data).to.have.lengthOf(org1Memberships.length)
             })
+            it('filters by status', async () => {
+                const members = await runQuery({
+                    status: {
+                        operator: 'eq',
+                        value: 'active',
+                    },
+                })
+                expect(members).to.have.lengthOf(org1Memberships.length)
+            })
         })
     })
     describe('organizationMembershipsConnectionChild', () => {
@@ -187,7 +201,7 @@ describe('organizationMembershipsConnection', () => {
                         kind: 'Field',
                         name: {
                             kind: 'Name',
-                            value: 'organizationsConnection',
+                            value: 'organizationMembershipsConnection',
                         },
                         selectionSet: {
                             kind: 'SelectionSet',

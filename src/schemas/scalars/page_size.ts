@@ -3,6 +3,7 @@ import { Kind } from 'graphql/language'
 import { GraphQLError } from 'graphql'
 import Joi from 'joi'
 import gql from 'graphql-tag'
+import { GraphQLSchemaModule } from '../../types/schemaModule'
 import { MAX_PAGE_SIZE } from '../../utils/pagination/paginate'
 
 export const GraphQLPageSize = new GraphQLScalarType({
@@ -49,4 +50,9 @@ const typeDefs = gql`
     scalar PageSize
 `
 
-export default { typeDefs: [typeDefs], resolvers }
+const pageSizeModule: GraphQLSchemaModule = {
+    typeDefs,
+    resolvers,
+}
+
+export default pageSizeModule

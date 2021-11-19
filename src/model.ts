@@ -37,17 +37,13 @@ import { processSubCategoriesFromCSVRow } from './utils/csv/subCategories'
 import { processRoleFromCSVRow } from './utils/csv/role'
 import { processCategoryFromCSVRow } from './utils/csv/category'
 import { processSubjectFromCSVRow } from './utils/csv/subject'
-import { paginateData, IPaginationArgs } from './utils/pagination/paginate'
+import { IPaginationArgs } from './utils/pagination/paginate'
 import { processProgramFromCSVRow } from './utils/csv/program'
 import { processAgeRangeFromCSVRow } from './utils/csv/ageRange'
 import {
     renameNullOrganizations,
     renameDuplicatedOrganizations,
 } from './utils/renameMigration/organization'
-import {
-    getWhereClauseFromFilter,
-    filterHasProperty,
-} from './utils/pagination/filtering'
 import { isDOB, isEmail, isPhone } from './utils/validations'
 import { renameDuplicatedSubjects } from './utils/renameMigration/subjects'
 import { Program } from './entities/program'
@@ -73,11 +69,9 @@ import BrandingErrorConstants from './types/errors/branding/brandingErrorConstan
 import { BrandingError } from './types/errors/branding/brandingError'
 import { BrandingImage } from './entities/brandingImage'
 import { Status } from './entities/status'
-import { SubjectConnectionNode } from './types/graphQL/subject'
 import { runMigrations } from './initializers/migrations'
 import { usersConnectionResolver } from './pagination/usersConnection'
 import { schoolsConnectionResolver } from './pagination/schoolsConnection'
-import { findTotalCountInPaginationEndpoints } from './utils/graphql'
 import { organizationsConnectionResolver } from './pagination/organizationsConnection'
 import logger, { TypeORMLogger } from './logging'
 import { ReplaceRoleArguments } from './operations/roles'
@@ -89,6 +83,8 @@ import { programsConnectionResolver } from './pagination/programsConnection'
 import { classesConnectionResolver } from './pagination/classesConnection'
 import { gradesConnectionResolver } from './pagination/gradesConnection'
 import { ageRangesConnectionResolver } from './pagination/ageRangesConnection'
+import { subjectsConnectionResolver } from './pagination/subjectsConnection'
+import { TokenPayload } from './token'
 
 export class Model {
     public static async create() {
@@ -172,8 +168,8 @@ export class Model {
         )
     }
 
-    public async getMyUser({ token, permissions }: Context) {
-        const user_id = permissions.getUserId()
+    public async getMyUser(token: TokenPayload) {
+        const user_id = token.id
         if (!user_id) {
             return undefined
         }
@@ -296,13 +292,9 @@ export class Model {
         return user
     }
 
-    public async myUsers(
-        args: Record<string, unknown>,
-        context: Context,
-        info: GraphQLResolveInfo
-    ) {
-        const userEmail = context.token?.email
-        const userPhone = context.token?.phone
+    public async myUsers(token: TokenPayload) {
+        const userEmail = token?.email
+        const userPhone = token?.phone
         let users: User[] = []
 
         const scope = getRepository(User)
@@ -430,71 +422,11 @@ export class Model {
         paginationArgs: IPaginationArgs<Class>
     ) => classesConnectionResolver(info, paginationArgs)
 
-    public async subjectsConnection(
+    public subjectsConnection = async (
         _context: Context,
         info: GraphQLResolveInfo,
-        {
-            direction,
-            directionArgs,
-            scope,
-            filter,
-            sort,
-        }: IPaginationArgs<Subject>
-    ) {
-        const includeTotalCount = findTotalCountInPaginationEndpoints(info)
-
-        if (filter) {
-            if (filterHasProperty('organizationId', filter)) {
-                scope.leftJoinAndSelect('Subject.organization', 'Organization')
-            }
-
-            if (filterHasProperty('categoryId', filter)) {
-                scope.innerJoin('Subject.categories', 'Category')
-            }
-
-            scope.andWhere(
-                getWhereClauseFromFilter(filter, {
-                    id: 'Subject.id',
-                    name: 'Subject.name',
-                    status: 'Subject.status',
-                    system: 'Subject.system',
-                    organizationId: 'Organization.organization_id',
-                    categoryId: 'Category.id',
-                })
-            )
-        }
-
-        const data = await paginateData({
-            direction,
-            directionArgs,
-            scope,
-            sort: {
-                primaryKey: 'id',
-                aliases: {
-                    id: 'id',
-                    name: 'name',
-                    system: 'system',
-                },
-                sort,
-            },
-            includeTotalCount,
-        })
-
-        for (const edge of data.edges) {
-            const subject = edge.node as Subject
-            const newNode: Partial<SubjectConnectionNode> = {
-                id: subject.id,
-                name: subject.name,
-                status: subject.status,
-                system: subject.system,
-                // other properties have dedicated resolvers that use Dataloader
-            }
-
-            edge.node = newNode
-        }
-
-        return data
-    }
+        paginationArgs: IPaginationArgs<Subject>
+    ) => subjectsConnectionResolver(info, paginationArgs)
 
     public categoriesConnection = (
         _context: Context,

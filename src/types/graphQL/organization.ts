@@ -1,9 +1,11 @@
 import { Branding } from '../../entities/branding'
 import { Status } from '../../entities/status'
+import { CoreClassConnectionNode } from '../../pagination/classesConnection'
 import { CoreOrganizationConnectionNode } from '../../pagination/organizationsConnection'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
 import { BrandingInput } from './branding'
 import { OrganizationMembershipConnectionNode } from './organizationMemberships'
+import { RoleConnectionNode } from './role'
 import { ISchoolsConnectionNode } from './school'
 import { UserSummaryNode } from './user'
 
@@ -36,6 +38,8 @@ export interface OrganizationConnectionNode {
 
     organizationMembershipsConnection?: IPaginatedResponse<OrganizationMembershipConnectionNode>
     schoolsConnection?: IPaginatedResponse<ISchoolsConnectionNode>
+    rolesConnection?: IPaginatedResponse<RoleConnectionNode>
+    classesConnection?: IPaginatedResponse<CoreClassConnectionNode>
 }
 
 export interface OrganizationContactInfo {

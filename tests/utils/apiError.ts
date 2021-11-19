@@ -2,7 +2,6 @@ import { expect } from 'chai'
 import {
     APIError,
     APIErrorCollection,
-    apiErrorConstants,
     formatMessage,
     IAPIError,
 } from '../../src/types/errors/apiError'
@@ -13,7 +12,6 @@ import {
     genericErrorCodes,
 } from '../../src/types/errors/customError'
 import { Implements } from '../../src/types/generics'
-import { stringInject } from '../../src/utils/stringUtils'
 
 export function expectToBeAPIErrorCollection(
     error: Error,

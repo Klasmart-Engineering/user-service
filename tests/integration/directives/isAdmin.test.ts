@@ -26,6 +26,7 @@ import {
     permissionsConnection,
     schoolsConnection,
     subcategoriesConnection,
+    subjectsConnection,
     userConnection,
 } from '../../utils/operations/modelOps'
 import {
@@ -65,12 +66,17 @@ import { UserPermissions } from '../../../src/permissions/userPermissions'
 import { Subcategory } from '../../../src/entities/subcategory'
 import { createSubcategory } from '../../factories/subcategory.factory'
 import GradesInitializer from '../../../src/initializers/grades'
+import SubjectsInitializer from '../../../src/initializers/subjects'
 import { Grade } from '../../../src/entities/grade'
 import { createGrade } from '../../factories/grade.factory'
 import { AgeRange } from '../../../src/entities/ageRange'
 import { createAgeRange } from '../../factories/ageRange.factory'
 import { Category } from '../../../src/entities/category'
 import { createCategory } from '../../factories/category.factory'
+import { Subject } from '../../../src/entities/subject'
+import { createSubject } from '../../factories/subject.factory'
+import { IPaginatedResponse } from '../../../src/utils/pagination/paginate'
+import { SubjectConnectionNode } from '../../../src/types/graphQL/subject'
 import { Context } from '../../../src/main'
 import { createContextLazyLoaders } from '../../../src/loaders/setup'
 import { SchoolMembership } from '../../../src/entities/schoolMembership'
@@ -2386,6 +2392,212 @@ describe('isAdmin', () => {
             const token = generateToken(userToPayload(schoolAdmin))
             const visibleSchools = await querySchools(token)
             expect(visibleSchools.totalCount).to.eql(1)
+        })
+    })
+
+    describe('schoolMemberships', () => {
+        let admin: User
+        let nonAdmin: User
+        let adminScope: SelectQueryBuilder<SchoolMembership>
+        let nonAdminScope: SelectQueryBuilder<SchoolMembership>
+
+        let school1: School
+        let school2: School
+        let school1Memberships: SchoolMembership[]
+        let school2Memberships: SchoolMembership[]
+        let org1: Organization
+        let org2: Organization
+
+        beforeEach(async () => {
+            admin = await createAdminUser(testClient)
+            nonAdmin = await createNonAdminUser(testClient)
+            adminScope = (await createEntityScope({
+                permissions: new UserPermissions({
+                    id: admin.user_id,
+
+                    email: admin.email!,
+                }),
+                entity: 'schoolMembership',
+            })) as SelectQueryBuilder<SchoolMembership>
+            nonAdminScope = (await createEntityScope({
+                permissions: new UserPermissions({
+                    id: nonAdmin.user_id,
+                    email: nonAdmin.email!,
+                }),
+                entity: 'schoolMembership',
+            })) as SelectQueryBuilder<SchoolMembership>
+
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            school1 = await createSchool(org1).save()
+            school2 = await createSchool(org2).save()
+
+            school1Memberships = await Promise.all([
+                createSchoolMembership({
+                    school: school1,
+                    user: await createUser().save(),
+                }).save(),
+                createSchoolMembership({
+                    school: school1,
+                    user: await createUser().save(),
+                }).save(),
+            ])
+
+            school2Memberships = await Promise.all([
+                createSchoolMembership({
+                    school: school2,
+                    user: await createUser().save(),
+                }).save(),
+                createSchoolMembership({
+                    school: school2,
+                    user: await createUser().save(),
+                }).save(),
+            ])
+        })
+        context('when user is admin', () => {
+            it('can see all school memberships', async () => {
+                const members = await adminScope.getMany()
+                expect(members).to.have.lengthOf(
+                    school1Memberships.length + school2Memberships.length
+                )
+            })
+        })
+
+        context('when user is a org member', () => {
+            beforeEach(async () => {
+                await createOrganizationMembership({
+                    user: nonAdmin,
+                    organization: org1,
+                }).save()
+                nonAdminScope = (await createEntityScope({
+                    permissions: new UserPermissions({
+                        id: nonAdmin.user_id,
+                        email: nonAdmin.email!,
+                    }),
+                    entity: 'schoolMembership',
+                })) as SelectQueryBuilder<SchoolMembership>
+            })
+            it('can see memberships from schools in their orgs only', async () => {
+                const members = await nonAdminScope.getMany()
+                expect(members).to.have.lengthOf(school1Memberships.length)
+            })
+        })
+
+        context('when user is a school member', () => {
+            beforeEach(async () => {
+                school1Memberships.push(
+                    await createSchoolMembership({
+                        user: nonAdmin,
+                        school: school1,
+                    }).save()
+                )
+                nonAdminScope = (await createEntityScope({
+                    permissions: new UserPermissions({
+                        id: nonAdmin.user_id,
+                        email: nonAdmin.email!,
+                    }),
+                    entity: 'schoolMembership',
+                })) as SelectQueryBuilder<SchoolMembership>
+            })
+            it('can see memberships from schools', async () => {
+                const members = await nonAdminScope.getMany()
+                expect(members).to.have.lengthOf(school1Memberships.length)
+            })
+        })
+
+        context('when user is not an org or school member', () => {
+            it('cannot see any memberships', async () => {
+                const members = await nonAdminScope.getMany()
+                expect(members).to.have.lengthOf(0)
+            })
+        })
+    })
+
+    context('subjects', () => {
+        let adminUser: User
+        let memberUser1: User
+        let noMemberUser: User
+        let organization1: Organization
+        let organization2: Organization
+        let allSubjectsCount: number
+        let systemSubjectsCount: number
+        let token: string
+        let visibleSubjects: IPaginatedResponse<SubjectConnectionNode>
+        const organizationSubjectsCount = 6
+
+        const queryVisibleSubjects = async (token?: string) => {
+            const response = await subjectsConnection(
+                testClient,
+                'FORWARD',
+                {},
+                { authorization: token }
+            )
+
+            return response
+        }
+
+        beforeEach(async () => {
+            // Generating system grades
+            await SubjectsInitializer.run()
+            systemSubjectsCount = await Subject.count()
+
+            // Creating Users and Orgs
+            adminUser = await createAdminUser(testClient)
+            memberUser1 = await createUser().save()
+            noMemberUser = await createUser().save()
+            organization1 = await createOrganization(memberUser1).save()
+            organization2 = await createOrganization().save()
+
+            // Creating Subjects for organization1
+            await Subject.save(
+                Array.from(Array(organizationSubjectsCount), () =>
+                    createSubject(organization1)
+                )
+            )
+
+            // Creating Subjects for organization2
+            await Subject.save(
+                Array.from(Array(organizationSubjectsCount), () =>
+                    createSubject(organization2)
+                )
+            )
+
+            // Creating membership for memberUser1 in organization1
+            await createOrganizationMembership({
+                user: memberUser1,
+                organization: organization1,
+            }).save()
+
+            allSubjectsCount = await Subject.count()
+        })
+
+        context('when user is an admin', () => {
+            it('should have access to all the existent subjects', async () => {
+                token = generateToken(userToPayload(adminUser))
+                visibleSubjects = await queryVisibleSubjects(token)
+
+                expect(visibleSubjects.totalCount).to.eql(allSubjectsCount)
+            })
+        })
+
+        context('when user is an organization member', () => {
+            it('should have access to the organization and system ones', async () => {
+                token = generateToken(userToPayload(memberUser1))
+                visibleSubjects = await queryVisibleSubjects(token)
+
+                expect(visibleSubjects.totalCount).to.eql(
+                    organizationSubjectsCount + systemSubjectsCount
+                )
+            })
+        })
+
+        context('when user does not belongs to any organization', () => {
+            it('should have access just to the system ones', async () => {
+                token = generateToken(userToPayload(noMemberUser))
+                visibleSubjects = await queryVisibleSubjects(token)
+
+                expect(visibleSubjects.totalCount).to.eql(systemSubjectsCount)
+            })
         })
     })
 })

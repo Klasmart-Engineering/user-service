@@ -16,6 +16,7 @@ import {
     CREATE_OR_UPDATE_CATEGORIES,
     CREATE_OR_UPDATE_GRADES,
     CREATE_OR_UPDATE_PROGRAMS,
+    CREATE_OR_UPDATE_SUBCATEGORIES,
     CREATE_OR_UPDATE_SUBJECTS,
     CREATE_SCHOOL,
     INVITE_USER,
@@ -56,6 +57,12 @@ export interface ICategoryDetail {
     id?: string
     name?: string
     subcategories?: string[]
+    system?: boolean
+}
+
+export interface ISubcategoryDetail {
+    id?: string
+    name?: string
     system?: boolean
 }
 
@@ -412,6 +419,26 @@ export async function createCategories(
             variables: {
                 organization_id,
                 categories,
+            },
+        })
+}
+
+export async function createSubcategories(
+    organization_id: string,
+    subcategories: ICategoryDetail[],
+    token: string
+) {
+    return await request
+        .post('/user')
+        .set({
+            ContentType: 'application/json',
+            Authorization: token,
+        })
+        .send({
+            query: CREATE_OR_UPDATE_SUBCATEGORIES,
+            variables: {
+                organization_id,
+                subcategories,
             },
         })
 }

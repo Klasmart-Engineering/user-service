@@ -1,9 +1,12 @@
 import { Status } from '../../entities/status'
 import { IPaginatedResponse } from '../../utils/pagination/paginate'
+import { ClassConnectionNode } from './class'
+import { CoreUserConnectionNode } from '../../pagination/usersConnection'
 import { OrganizationSummaryNode } from './organization'
 import { OrganizationMembershipConnectionNode } from './organizationMemberships'
 import { RoleSummaryNode } from './role'
 import { SchoolSummaryNode } from './school'
+import { SchoolMembershipConnectionNode } from './schoolMembership'
 
 export interface UserConnectionNode {
     id: string
@@ -20,6 +23,9 @@ export interface UserConnectionNode {
     gender?: string
 
     organizationMembershipsConnection?: IPaginatedResponse<OrganizationMembershipConnectionNode>
+    schoolMembershipsConnection?: IPaginatedResponse<SchoolMembershipConnectionNode>
+    classesStudyingConnection?: IPaginatedResponse<ClassConnectionNode>
+    classesTeachingConnection?: IPaginatedResponse<ClassConnectionNode>
 }
 
 export interface UserSummaryNode {
@@ -29,4 +35,30 @@ export interface UserSummaryNode {
 export interface UserContactInfo {
     email?: string | null
     phone?: string | null
+}
+
+export interface AddOrganizationRolesToUserInput {
+    userId: string
+    organizationId: string
+    roleIds: string[]
+}
+
+export interface RemoveOrganizationRolesFromUserInput {
+    userId: string
+    organizationId: string
+    roleIds: string[]
+}
+
+export interface UsersMutationResult {
+    users: CoreUserConnectionNode[]
+}
+export interface CreateUserInput {
+    givenName: string
+    familyName: string
+    contactInfo: UserContactInfo
+    dateOfBirth?: string
+    username?: string
+    gender: string
+    alternateEmail?: string | null
+    alternatePhone?: string | null
 }

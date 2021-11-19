@@ -1,5 +1,7 @@
 import gql from 'graphql-tag'
 import GraphQLUUID from 'graphql-type-uuid'
+import { GraphQLScalarType } from 'graphql'
+import { GraphQLSchemaModule } from '../../types/schemaModule'
 
 const typeDefs = gql`
     scalar UUID
@@ -9,8 +11,13 @@ const typeDefs = gql`
     }
 `
 
+// seems like the type used by graphql-type-uuid is outdated
+const _GraphQLUUID = GraphQLUUID as GraphQLScalarType
+
 const resolvers = {
-    UUID: GraphQLUUID,
+    UUID: _GraphQLUUID,
 }
 
-export default { typeDefs: [typeDefs], resolvers }
+const uuidModule: GraphQLSchemaModule = { typeDefs, resolvers }
+
+export default uuidModule
