@@ -61,14 +61,9 @@ const typeDefs = gql`
         uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
         createUsers(input: [CreateUserInput!]!): UsersMutationResult
+        mergeUsers(input: [MergeUserInput!]!): UsersMutationResult
     }
     
-    # Mutation inputs
-    input MergeUserInput {
-        targetId: ID!
-        sourceId: ID!
-    }
-
     # Definitions related to mutations
 
     input AddOrganizationRolesToUserInput {
@@ -112,6 +107,11 @@ const typeDefs = gql`
     input ContactInfoInput {
         email: String
         phone: String
+    }
+    
+    input MergeUserInput {
+        targetId: ID!
+        sourceId: ID!
     }
 
     # Mutation outputs
