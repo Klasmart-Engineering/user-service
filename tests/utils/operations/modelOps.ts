@@ -1108,6 +1108,19 @@ export const SUBCATEGORIES_DELETE = gql`
     }
 `
 
+export const CREATE_SUBCATEGORIES = gql`
+    mutation createCategories($input: [CreateCategoryInput!]!) {
+        createCategories(input: $input) {
+            categories {
+                id
+                name
+                status
+                system
+            }
+        }
+    }
+`
+
 export const SUBJECTS_CONNECTION = gql`
     ${SUBJECT_FIELDS}
 

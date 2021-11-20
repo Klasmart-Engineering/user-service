@@ -6,6 +6,7 @@ import { subcategoriesConnectionResolver } from '../pagination/subcategoriesConn
 import {
     deleteSubcategories,
     updateSubcategories,
+    createSubcategories,
 } from '../resolvers/subcategory'
 
 const typeDefs = gql`
@@ -22,6 +23,9 @@ const typeDefs = gql`
         ): SubcategoriesMutationResult
         updateSubcategories(
             input: [UpdateSubcategoryInput!]!
+        ): SubcategoriesMutationResult
+        createSubcategories(
+            input: [CreateSubcategoryInput!]!
         ): SubcategoriesMutationResult
     }
 
@@ -112,6 +116,11 @@ const typeDefs = gql`
     type SubcategoriesMutationResult {
         subcategories: [SubcategoryConnectionNode!]!
     }
+
+    input CreateSubcategoryInput {
+        name: String!
+        organizationId: ID!
+    }
 `
 export default function getDefault(
     model: Model,
@@ -129,6 +138,8 @@ export default function getDefault(
                     deleteSubcategories(args, ctx),
                 updateSubcategories: (_parent, args, ctx, _info) =>
                     updateSubcategories(args, ctx),
+                createSubcategories: (_parent, args, ctx, _info) =>
+                    createSubcategories(args, ctx),
             },
             Query: {
                 subcategory: (_parent, args, ctx, _info) =>

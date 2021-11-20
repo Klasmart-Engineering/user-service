@@ -19,3 +19,8 @@ export interface UpdateSubcategoryInput {
     id: string
     name?: string
 }
+
+export interface CreateSubcategoryInput {
+    name: string
+    organizationId: string
+}
