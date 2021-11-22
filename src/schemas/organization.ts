@@ -369,6 +369,7 @@ export async function schoolsChildConnection(
             filterKey: 'organizationId',
             pivot: '"Organization"."organization_id"',
         },
+        primaryColumn: 'school_id',
     })
 }
 export async function rolesConnectionChildResolver(
@@ -399,6 +400,7 @@ export async function rolesConnectionChild(
             filterKey: 'organizationId',
             pivot: '"Role"."organizationOrganizationId"',
         },
+        primaryColumn: 'role_id',
     })
 }
 
@@ -432,6 +434,7 @@ export function classesChildConnection(
             filterKey: 'organizationId',
             pivot: '"Class"."organizationOrganizationId"',
         },
+        primaryColumn: 'class_id',
     })
 }
 
@@ -562,7 +565,7 @@ export async function loadOrganizationMembershipsForOrganization(
     args: IChildPaginationArgs = {},
     includeTotalCount = true
 ) {
-    const key: IChildConnectionDataloaderKey = {
+    const key: IChildConnectionDataloaderKey<OrganizationMembership> = {
         args,
         includeTotalCount,
         parent: {
@@ -570,6 +573,7 @@ export async function loadOrganizationMembershipsForOrganization(
             filterKey: 'organizationId',
             pivot: '"OrganizationMembership"."organization_id"',
         },
+        primaryColumn: 'user_id',
     }
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key

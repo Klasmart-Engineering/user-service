@@ -202,6 +202,7 @@ export async function schoolsChildConnection(
             filterKey: 'classId',
             pivot: '"Class"."class_id"',
         },
+        primaryColumn: 'school_id',
     })
 }
 
@@ -279,6 +280,7 @@ export default function getDefault(
                             filterKey: 'classStudyingId',
                             pivot: '"ClassStudying"."class_id"',
                         },
+                        primaryColumn: 'user_id',
                     })
                 },
                 teachersConnection: async (
@@ -301,6 +303,7 @@ export default function getDefault(
                             filterKey: 'classTeachingId',
                             pivot: '"ClassTeaching"."class_id"',
                         },
+                        primaryColumn: 'user_id',
                     })
                 },
             },

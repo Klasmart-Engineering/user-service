@@ -2,7 +2,9 @@ import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Connection, createQueryBuilder } from 'typeorm'
 import { ICreateScopeArgs } from '../../../../src/directives/isAdmin'
+import { Class } from '../../../../src/entities/class'
 import { Organization } from '../../../../src/entities/organization'
+import { OrganizationMembership } from '../../../../src/entities/organizationMembership'
 import { User } from '../../../../src/entities/user'
 import {
     childConnectionLoader,
@@ -10,15 +12,25 @@ import {
 } from '../../../../src/loaders/childConnectionLoader'
 import { Model } from '../../../../src/model'
 import {
+    classesConnectionQuery,
+    mapClassToClassConnectionNode,
+    classesConnectionSortingConfig,
+} from '../../../../src/pagination/classesConnection'
+import {
     userConnectionSortingConfig,
     usersConnectionQuery,
 } from '../../../../src/pagination/usersConnection'
+import { PermissionName } from '../../../../src/permissions/permissionNames'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createServer } from '../../../../src/utils/createServer'
 import { IChildPaginationArgs } from '../../../../src/utils/pagination/paginate'
 import { ISortingConfig } from '../../../../src/utils/pagination/sorting'
+import { createClass } from '../../../factories/class.factory'
 import { createOrganization } from '../../../factories/organization.factory'
 import { createOrganizationMembership } from '../../../factories/organizationMembership.factory'
+import { createRole } from '../../../factories/role.factory'
+import { createSchool } from '../../../factories/school.factory'
+import { createSchoolMembership } from '../../../factories/schoolMembership.factory'
 import { createUser } from '../../../factories/user.factory'
 import {
     ApolloServerTestClient,
@@ -27,7 +39,10 @@ import {
 import { isStringArraySortedAscending } from '../../../utils/sorting'
 import { getAdminAuthToken } from '../../../utils/testConfig'
 import { createTestConnection } from '../../../utils/testConnection'
-import { createAdminUser } from '../../../utils/testEntities'
+import {
+    createAdminUser,
+    createNonAdminUser,
+} from '../../../utils/testEntities'
 
 use(chaiAsPromised)
 
@@ -36,7 +51,7 @@ function getDataloaderKeys(
     args: IChildPaginationArgs,
     includeTotalCount = true
 ) {
-    const items: IChildConnectionDataloaderKey[] = []
+    const items: IChildConnectionDataloaderKey<User>[] = []
     for (const org of orgs) {
         items.push({
             parent: {
@@ -46,6 +61,7 @@ function getDataloaderKeys(
             },
             args,
             includeTotalCount,
+            primaryColumn: 'user_id',
         })
     }
     return items
@@ -296,6 +312,80 @@ describe('child connections', () => {
                 scopeArgs
             )
             expect(response).to.have.lengthOf(2)
+        })
+
+        it('deduplicates per parent', async () => {
+            const nonAdminUser = await createNonAdminUser(testClient)
+            const nonAdminPermissions = new UserPermissions({
+                id: nonAdminUser.user_id,
+                email: nonAdminUser.email || '',
+            })
+
+            const role = await createRole('role', orgs[0], {
+                permissions: [
+                    PermissionName.view_school_classes_20117,
+                    PermissionName.view_classes_20114,
+                ],
+            }).save()
+            await createOrganizationMembership({
+                user: nonAdminUser,
+                organization: orgs[0],
+                roles: [role],
+            }).save()
+
+            const org1Schools = [
+                await createSchool(orgs[0]).save(),
+                await createSchool(orgs[0]).save(),
+            ]
+
+            await Promise.all(
+                org1Schools.map((s) =>
+                    createSchoolMembership({
+                        school: s,
+                        user: nonAdminUser,
+                    }).save()
+                )
+            )
+
+            await createClass(
+                org1Schools,
+                orgs[0],
+                {
+                    teachers: [nonAdminUser],
+                },
+                'class 1'
+            ).save()
+            await createClass(
+                [],
+                orgs[0],
+                { teachers: [nonAdminUser] },
+                'class 2'
+            ).save()
+
+            const keys: IChildConnectionDataloaderKey<Class>[] = [
+                {
+                    parent: {
+                        id: nonAdminUser.user_id,
+                        filterKey: 'teacherId',
+                        pivot: '"Teacher"."user_id"',
+                    },
+                    args: {},
+                    includeTotalCount: true,
+                    primaryColumn: 'class_id',
+                },
+            ]
+
+            const response = await childConnectionLoader(
+                keys,
+                classesConnectionQuery,
+                mapClassToClassConnectionNode,
+                classesConnectionSortingConfig,
+                { permissions: nonAdminPermissions, entity: 'class' }
+            )
+
+            expect(response).to.have.lengthOf(1)
+            expect(response[0].totalCount).to.eq(2)
+            expect(response[0].edges).to.have.lengthOf(2)
         })
     })
 

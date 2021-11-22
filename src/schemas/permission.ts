@@ -120,6 +120,7 @@ export async function rolesConnectionChild(
             // in production both have the same values but we prefere permision_id as it's the primary key
             pivot: '"Permission"."permission_id"',
         },
+        primaryColumn: 'role_id',
     })
 }
 

@@ -107,6 +107,7 @@ export async function rolesConnectionChild(
                 '"OrganizationMembership"."user_id"',
             ],
         },
+        primaryColumn: 'role_id',
     })
 }
 

@@ -167,6 +167,7 @@ export function classesChildConnection(
             filterKey: 'schoolId',
             pivot: '"School"."school_id"',
         },
+        primaryColumn: 'class_id',
     })
 }
 
@@ -241,7 +242,7 @@ export async function loadSchoolMembershipsForSchool(
     args: IChildPaginationArgs = {},
     includeTotalCount = true
 ) {
-    const key: IChildConnectionDataloaderKey = {
+    const key: IChildConnectionDataloaderKey<SchoolMembership> = {
         args,
         includeTotalCount,
         parent: {
@@ -249,6 +250,7 @@ export async function loadSchoolMembershipsForSchool(
             filterKey: 'schoolId',
             pivot: '"SchoolMembership"."school_id"',
         },
+        primaryColumn: 'user_id',
     }
 
     return context.loaders.schoolMembershipsConnectionChild.instance.load(key)

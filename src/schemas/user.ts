@@ -23,6 +23,8 @@ import {
     removeOrganizationRolesFromUsers,
 } from '../resolvers/user'
 import { createUsers } from '../resolvers/user'
+import { OrganizationMembership } from '../entities/organizationMembership'
+import { SchoolMembership } from '../entities/schoolMembership'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -469,6 +471,7 @@ export async function classesStudyingConnection(
             filterKey: 'studentId',
             pivot: '"Student"."user_id"',
         },
+        primaryColumn: 'class_id',
     })
 }
 
@@ -496,6 +499,7 @@ export async function classesTeachingConnection(
             filterKey: 'teacherId',
             pivot: '"Teacher"."user_id"',
         },
+        primaryColumn: 'class_id',
     })
 }
 export async function organizationMembershipsConnectionResolver(
@@ -519,7 +523,7 @@ export async function loadOrganizationMembershipsForUser(
     args: IChildPaginationArgs = {},
     includeTotalCount = false
 ) {
-    const key: IChildConnectionDataloaderKey = {
+    const key: IChildConnectionDataloaderKey<OrganizationMembership> = {
         args,
         includeTotalCount,
         parent: {
@@ -527,6 +531,7 @@ export async function loadOrganizationMembershipsForUser(
             filterKey: 'userId',
             pivot: '"OrganizationMembership"."user_id"',
         },
+        primaryColumn: 'organization_id',
     }
     return context.loaders.organizationMembershipsConnectionChild.instance.load(
         key
@@ -549,7 +554,7 @@ export async function loadSchoolMembershipsForUser(
     args: IChildPaginationArgs = {},
     includeTotalCount = true
 ) {
-    const key: IChildConnectionDataloaderKey = {
+    const key: IChildConnectionDataloaderKey<SchoolMembership> = {
         args,
         includeTotalCount,
         parent: {
@@ -557,6 +562,7 @@ export async function loadSchoolMembershipsForUser(
             filterKey: 'userId',
             pivot: '"SchoolMembership"."user_id"',
         },
+        primaryColumn: 'school_id',
     }
 
     return context.loaders.schoolMembershipsConnectionChild.instance.load(key)

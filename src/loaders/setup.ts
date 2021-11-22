@@ -197,43 +197,52 @@ export interface IDataLoaders {
 
     usersConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<User>,
             IPaginatedResponse<CoreUserConnectionNode>
         >
     >
+
+    // Note that membership dataloaders are not supported on roles yet,
+    // since membership tables do not have a single primary column which
+    // the dataloader key interface expects.
+    // The dataloader key interface and corresponding implementation
+    // will need to be adapted to support composite keys.
+    // Alternatively, the primaryColumn could potentially be inferred from
+    // the SelectQueryBuilder.
+    // Additional info: https://bitbucket.org/calmisland/kidsloop-user-service/pull-requests/716
     organizationMembershipsConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<OrganizationMembership>,
             IPaginatedResponse<OrganizationMembershipConnectionNode>
-        >
-    >
-    schoolsConnectionChild: Lazy<
-        DataLoader<
-            IChildConnectionDataloaderKey,
-            IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
     schoolMembershipsConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<SchoolMembership>,
             IPaginatedResponse<SchoolMembershipConnectionNode>
+        >
+    >
+    schoolsConnectionChild: Lazy<
+        DataLoader<
+            IChildConnectionDataloaderKey<School>,
+            IPaginatedResponse<ISchoolsConnectionNode>
         >
     >
     rolesConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<Role>,
             IPaginatedResponse<RoleConnectionNode>
         >
     >
     classesConnectionChild: Lazy<
         DataLoader<
-            IChildConnectionDataloaderKey,
+            IChildConnectionDataloaderKey<Class>,
             IPaginatedResponse<CoreClassConnectionNode>
         >
     >
     membershipRolesConnectionChild: Lazy<
         DataLoader<
-            ICompositeIdChildConnectionDataloaderKey,
+            ICompositeIdChildConnectionDataloaderKey<Role>,
             IPaginatedResponse<RoleConnectionNode>
         >
     >

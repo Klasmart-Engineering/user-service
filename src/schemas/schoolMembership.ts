@@ -98,6 +98,7 @@ export async function rolesConnectionChild(
                 '"SchoolMembership"."user_id"',
             ],
         },
+        primaryColumn: 'role_id',
     })
 }
 
