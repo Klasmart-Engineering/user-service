@@ -4,7 +4,7 @@ import {
     getRepository,
     SelectQueryBuilder,
     Brackets,
-    WhereExpression,
+    createQueryBuilder,
 } from 'typeorm'
 import { Class } from '../entities/class'
 import { AgeRange } from '../entities/ageRange'
@@ -25,6 +25,7 @@ import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
+import { v4 as uuid_v4 } from 'uuid'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -249,21 +250,22 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     const email = permissions.getEmail()
     const phone = permissions.getPhone()
 
-    const orUsersSharedEmailOrPhone = (qb: WhereExpression) => {
-        qb.orWhere('User.user_id = :user_id', {
-            user_id,
-        })
+    // generate queries to find users for each of the conditions below,
+    // then do a WHERE user_id IN on each query to find all visible users
+    const visibleUserQueries: SelectQueryBuilder<unknown>[] = []
 
-        if (email) {
-            qb.orWhere('User.email = :email', {
-                email: email,
+    const distinctMembers = (
+        membershipTable: string,
+        idColumn: string,
+        ids: string[]
+    ) => {
+        const uniqueId = uuid_v4()
+        return createQueryBuilder()
+            .select('membership_table.userUserId', 'user_id')
+            .from(membershipTable, 'membership_table')
+            .andWhere(`membership_table.${idColumn} IN (:...${uniqueId})`, {
+                [uniqueId]: ids,
             })
-        }
-        if (phone) {
-            qb.orWhere('User.phone = :phone', {
-                phone: phone,
-            })
-        }
     }
 
     // 1 - can we view org users?
@@ -271,49 +273,39 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
         PermissionName.view_users_40110,
     ])
     if (userOrgs.length > 0) {
-        // just filter by org, not school
-        scope.leftJoin(
-            'User.memberships',
-            'OrganizationMembership',
-            'OrganizationMembership.organization IN (:...organizations)',
-            { organizations: userOrgs }
+        visibleUserQueries.push(
+            distinctMembers(
+                'organization_membership',
+                `organizationOrganizationId`,
+                userOrgs
+            )
         )
-        scope.andWhere(
-            new Brackets((qb) => {
-                qb.orWhere('OrganizationMembership.user_id IS NOT NULL')
-                orUsersSharedEmailOrPhone(qb)
-            })
-        )
-        return
     }
     // 2 - can we view school users?
-    const [schoolMemberships, userOrgSchools] = await Promise.all([
-        getRepository(SchoolMembership).find({
-            where: { user_id },
-            select: ['school_id'],
-        }),
-        permissions.orgMembershipsWithPermissions([
-            PermissionName.view_my_school_users_40111,
-        ]),
+    const userSchoolOrgs = await permissions.orgMembershipsWithPermissions([
+        PermissionName.view_my_school_users_40111,
     ])
-    if (userOrgSchools.length > 0 && schoolMemberships?.length) {
-        // you can view all users in the schools you belong to
-        // Must be LEFT JOIN to support `isNull` operator
-        scope.leftJoin(
-            'User.school_memberships',
-            'SchoolMembership',
-            'SchoolMembership.school_id IN (:...schoolIds)',
-            {
-                schoolIds: schoolMemberships.map(({ school_id }) => school_id),
-            }
-        )
-        scope.andWhere(
-            new Brackets((qb) => {
-                qb.orWhere('SchoolMembership.user_id IS NOT NULL')
-                orUsersSharedEmailOrPhone(qb)
+
+    if (userSchoolOrgs.length) {
+        // find a schools the user is a member of in these orgs
+        const schoolIdsQuery = getRepository(SchoolMembership)
+            .createQueryBuilder()
+            .select('SchoolMembership.school_id')
+            .innerJoin('SchoolMembership.school', 'School')
+            .innerJoin('School.organization', 'Organization')
+            .where('Organization.organization_id in (:...ids)', {
+                ids: userSchoolOrgs,
             })
+            .andWhere('SchoolMembership.userUserId = :user_id', { user_id })
+
+        const schoolIds = (await schoolIdsQuery.getRawMany()).map(
+            ({ SchoolMembership_school_id }) => SchoolMembership_school_id
         )
-        return
+
+        // you can view all users in the schools you belong to
+        visibleUserQueries.push(
+            distinctMembers('school_membership', `schoolSchoolId`, schoolIds)
+        )
     }
 
     // 3 - can we view class users?
@@ -325,43 +317,46 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     ])
 
     if (orgsWithClasses.length && classesTaught && classesTaught.length > 0) {
-        const distinctMembers = (
-            membershipTable: string,
-            qb: SelectQueryBuilder<User>
-        ) => {
-            return qb
-                .select('membership_table.userUserId', 'user_id')
-                .distinct(true)
-                .from(membershipTable, 'membership_table')
-                .andWhere('membership_table.classClassId IN (:...ids)', {
-                    ids: classesTaught.map(({ class_id }) => class_id),
-                })
-        }
-        scope.leftJoin(
-            (qb) => distinctMembers('user_classes_studying_class', qb),
-            'class_studying_membership',
-            'class_studying_membership.user_id = User.user_id'
+        visibleUserQueries.push(
+            distinctMembers(
+                'user_classes_studying_class',
+                'classClassId',
+                classesTaught.map(({ class_id }) => class_id)
+            )
         )
-        scope.leftJoin(
-            (qb) => distinctMembers('user_classes_teaching_class', qb),
-            'class_teaching_membership',
-            'class_teaching_membership.user_id = User.user_id'
+        visibleUserQueries.push(
+            distinctMembers(
+                'user_classes_teaching_class',
+                'classClassId',
+                classesTaught.map(({ class_id }) => class_id)
+            )
         )
-
-        scope.andWhere(
-            new Brackets((qb) => {
-                qb.orWhere('class_studying_membership.user_id IS NOT NULL')
-                qb.orWhere('class_teaching_membership.user_id IS NOT NULL')
-                orUsersSharedEmailOrPhone(qb)
-            })
-        )
-
-        return
     }
 
-    scope.andWhere(
+    scope.where(
         new Brackets((qb) => {
-            orUsersSharedEmailOrPhone(qb)
+            qb.orWhere('User.user_id = :user_id', {
+                user_id,
+            })
+            if (email) {
+                qb.orWhere('User.email = :email', {
+                    email: email,
+                })
+            }
+            if (phone) {
+                qb.orWhere('User.phone = :phone', {
+                    phone: phone,
+                })
+            }
+            visibleUserQueries.forEach((userQuery) => {
+                qb.orWhere((_) => {
+                    scope.setParameters({
+                        ...scope.getParameters(),
+                        ...userQuery.getParameters(),
+                    })
+                    return `"User"."user_id" IN (${userQuery.getQuery()})`
+                })
+            })
         })
     )
 }

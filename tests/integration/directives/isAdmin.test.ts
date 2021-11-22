@@ -47,7 +47,7 @@ import { School } from '../../../src/entities/school'
 import { createRole } from '../../factories/role.factory'
 import { createSchool } from '../../factories/school.factory'
 import { createOrganization } from '../../factories/organization.factory'
-import { createUser } from '../../factories/user.factory'
+import { createUser, createUsers } from '../../factories/user.factory'
 import { createClass } from '../../factories/class.factory'
 import { Class } from '../../../src/entities/class'
 import { pick } from 'lodash'
@@ -717,6 +717,311 @@ describe('isAdmin', () => {
                 )
 
                 expect(usersConnection.totalCount).to.eq(11)
+            })
+
+            context('multiple organizations', () => {
+                let clientUser: User
+
+                let org1: Organization
+                let org2: Organization
+                let org1Users: User[]
+                let org2Users: User[]
+
+                async function addUserToOrg(
+                    user: User,
+                    org: Organization,
+                    permissions: PermissionName[]
+                ) {
+                    const role = await createRole('role', org, {
+                        permissions,
+                    }).save()
+                    return await createOrganizationMembership({
+                        user,
+                        organization: org,
+                        roles: [role],
+                    }).save()
+                }
+
+                async function getUserIds() {
+                    const scope = (await createEntityScope({
+                        permissions: new UserPermissions(
+                            userToPayload(clientUser)
+                        ),
+                        entity: 'user',
+                    })) as SelectQueryBuilder<User>
+                    const users = await scope.getMany()
+                    return users.map((u) => u.user_id)
+                }
+
+                beforeEach(async () => {
+                    clientUser = await createNonAdminUser(testClient)
+                    org1 = await createOrganization().save()
+                    org2 = await createOrganization().save()
+                    // add some users to each org
+                    org1Users = await User.save(createUsers(20))
+                    org2Users = await User.save(createUsers(20))
+                    await Promise.all([
+                        ...org1Users.map((user) =>
+                            createOrganizationMembership({
+                                user,
+                                organization: org1,
+                            }).save()
+                        ),
+                        ...org2Users.map((user) =>
+                            createOrganizationMembership({
+                                user,
+                                organization: org2,
+                            }).save()
+                        ),
+                    ])
+
+                    // create some schools in each org, and add some users
+                    const org1Schools = await School.save([
+                        createSchool(org1),
+                        createSchool(org1),
+                    ])
+                    await Promise.all([
+                        ...org1Users.slice(0, 5).map((user) =>
+                            createSchoolMembership({
+                                user,
+                                school: org1Schools[0],
+                            }).save()
+                        ),
+                        ...org1Users.slice(5, 10).map((user) =>
+                            createSchoolMembership({
+                                user,
+                                school: org1Schools[1],
+                            }).save()
+                        ),
+                    ])
+                    const org2Schools = await School.save([
+                        createSchool(org2),
+                        createSchool(org2),
+                    ])
+                    await Promise.all([
+                        ...org2Users.slice(0, 5).map((user) =>
+                            createSchoolMembership({
+                                user,
+                                school: org2Schools[0],
+                            }).save()
+                        ),
+                        ...org2Users.slice(5, 10).map((user) =>
+                            createSchoolMembership({
+                                user,
+                                school: org2Schools[1],
+                            }).save()
+                        ),
+                    ])
+
+                    // create some classes in each org, and add some users
+                    await Class.save([
+                        createClass(
+                            undefined,
+                            org1,
+                            {
+                                students: org1Users.slice(0, 5),
+                                teachers: org1Users.slice(5, 10),
+                            },
+                            'org 1 class 1'
+                        ),
+                        createClass(
+                            undefined,
+                            org1,
+                            {
+                                students: org1Users.slice(10, 15),
+                                teachers: org1Users.slice(15, 20),
+                            },
+                            'org 1 class 2'
+                        ),
+                    ])
+                    await Class.save([
+                        createClass(
+                            undefined,
+                            org2,
+                            {
+                                students: org2Users.slice(0, 5),
+                                teachers: org2Users.slice(5, 10),
+                            },
+                            'org 1 class 1'
+                        ),
+                        createClass(
+                            undefined,
+                            org2,
+                            {
+                                students: org2Users.slice(10, 15),
+                                teachers: org2Users.slice(15, 20),
+                            },
+                            'org 1 class 2'
+                        ),
+                    ])
+                })
+
+                context('org admin in org1', () => {
+                    beforeEach(async () => {
+                        await addUserToOrg(clientUser, org1, [
+                            PermissionName.view_users_40110,
+                        ])
+                    })
+                    context('org admin in org2', () => {
+                        beforeEach(async () => {
+                            await addUserToOrg(clientUser, org2, [
+                                PermissionName.view_users_40110,
+                            ])
+                        })
+                        it('returns all users from both organizations', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1Users
+                                .map((user) => user.user_id)
+                                .concat(org2Users.map((user) => user.user_id))
+                                .concat([clientUser.user_id])
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                    context('school admin in org2', () => {
+                        let school: School
+                        let schoolUsers: SchoolMembership[]
+                        beforeEach(async () => {
+                            await addUserToOrg(clientUser, org2, [
+                                PermissionName.view_my_school_users_40111,
+                            ])
+                            school = (await org2.schools)![0]
+                            schoolUsers = (await (await org2.schools)![0]
+                                .memberships)!
+                            await createSchoolMembership({
+                                user: clientUser,
+                                school,
+                            }).save()
+                        })
+                        it('returns all users in org1, common school members in org2', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1Users
+                                .map((user) => user.user_id)
+                                .concat(schoolUsers.map((m) => m.user_id))
+                                .concat([clientUser.user_id])
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                    context('class teacher in org2', () => {
+                        let class_: Class
+                        let classUsers: User[]
+                        beforeEach(async () => {
+                            await addUserToOrg(clientUser, org2, [
+                                PermissionName.view_my_class_users_40112,
+                            ])
+                            class_ = (await org2.classes)![0]
+                            const teachers = await class_.teachers!
+                            class_.teachers = Promise.resolve([
+                                ...teachers,
+                                clientUser,
+                            ])
+                            await class_.save()
+                            classUsers = (await class_.students!).concat(
+                                await class_.teachers!
+                            )
+                        })
+                        it('returns all users in org1, only students and teachers in org2', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1Users
+                                .map((user) => user.user_id)
+                                .concat(classUsers.map((m) => m.user_id))
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                    context('class student in org2', () => {
+                        it('returns all users in org1, no users from org2', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1Users
+                                .map((user) => user.user_id)
+                                .concat([clientUser.user_id])
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                })
+
+                context('school admin in org1', () => {
+                    let org1School: School
+                    let org1SchoolUsers: SchoolMembership[]
+                    beforeEach(async () => {
+                        await addUserToOrg(clientUser, org1, [
+                            PermissionName.view_my_school_users_40111,
+                        ])
+                        org1School = (await org1.schools)![0]
+                        org1SchoolUsers = (await org1School.memberships)!
+                        await createSchoolMembership({
+                            user: clientUser,
+                            school: org1School,
+                        }).save()
+                    })
+                    context('school admin in org2', () => {
+                        let org2School: School
+                        let org2SchoolUsers: SchoolMembership[]
+                        beforeEach(async () => {
+                            await addUserToOrg(clientUser, org2, [
+                                PermissionName.view_my_school_users_40111,
+                            ])
+                            org2School = (await org2.schools)![0]
+                            org2SchoolUsers = (await org2School.memberships)!
+                            await createSchoolMembership({
+                                user: clientUser,
+                                school: org2School,
+                            }).save()
+                        })
+                        it('can view school users in org1, school users in org2', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1SchoolUsers
+                                .map((m) => m.user_id)
+                                .concat(org2SchoolUsers.map((m) => m.user_id))
+                                .concat([clientUser.user_id])
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                    context('school member in org2', () => {
+                        let org2School: School
+                        let org2SchoolUsers: SchoolMembership[]
+                        beforeEach(async () => {
+                            await addUserToOrg(clientUser, org2, [])
+                            org2School = (await org2.schools)![0]
+                            org2SchoolUsers = (await org2School.memberships)!
+                            await createSchoolMembership({
+                                user: clientUser,
+                                school: org2School,
+                            }).save()
+                        })
+                        it('can view school users in org1, none in org2 without permissions', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1SchoolUsers
+                                .map((m) => m.user_id)
+                                .concat([clientUser.user_id])
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                    context('class teacher in org2', () => {
+                        let class_: Class
+                        let classUsers: User[]
+                        beforeEach(async () => {
+                            await addUserToOrg(clientUser, org2, [
+                                PermissionName.view_my_class_users_40112,
+                            ])
+                            class_ = (await org2.classes)![0]
+                            const teachers = await class_.teachers!
+                            class_.teachers = Promise.resolve([
+                                ...teachers,
+                                clientUser,
+                            ])
+                            await class_.save()
+                            classUsers = (await class_.students!).concat(
+                                await class_.teachers!
+                            )
+                        })
+                        it('returns school users in org1, only students and teachers in org2', async () => {
+                            const users = await getUserIds()
+                            const expectedIds = org1SchoolUsers
+                                .map((user) => user.user_id)
+                                .concat(classUsers.map((m) => m.user_id))
+                            expect(users).to.have.same.members(expectedIds)
+                        })
+                    })
+                })
             })
         })
     })
