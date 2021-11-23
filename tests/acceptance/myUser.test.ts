@@ -1,9 +1,8 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
-import { Connection } from 'typeorm'
 import { createUser } from '../factories/user.factory'
 import { generateToken } from '../utils/testConfig'
-import { createTestConnection } from '../utils/testConnection'
+import { createTestConnection, TestConnection } from '../utils/testConnection'
 import { v4 as uuid_v4 } from 'uuid'
 import { User } from '../../src/entities/user'
 import { createOrganization } from '../factories/organization.factory'
@@ -15,12 +14,17 @@ import { PermissionName } from '../../src/permissions/permissionNames'
 import { School } from '../../src/entities/school'
 import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { Role } from '../../src/entities/role'
+import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
+import { OrganizationConnectionNode } from '../../src/types/graphQL/organization'
+import { ISchoolsConnectionNode } from '../../src/types/graphQL/school'
+import { Context } from 'mocha'
 
 const url = 'http://localhost:8080/user'
 const request = supertest(url)
 
 describe('acceptance.myUser', () => {
-    let connection: Connection
+    let connection: TestConnection
 
     before(async () => {
         connection = await createTestConnection()
@@ -306,6 +310,173 @@ describe('acceptance.myUser', () => {
                 expect(
                     response.body.data.myUser.hasPermissionsInSchool
                 ).to.have.deep.members(expectedUserPermissionsStatuses)
+            })
+        })
+    })
+
+    context('MyUser.XWithPermissions', () => {
+        let clientUser: User
+        let org1: Organization
+        let org2: Organization
+        let role1: Role
+        let role2: Role
+        let permissionIds: PermissionName[]
+        let token: string
+
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            permissionIds = [
+                PermissionName.view_users_40110,
+                PermissionName.view_school_classes_20117,
+            ]
+
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            role1 = await createRole(undefined, org1, {
+                permissions: [
+                    permissionIds[0],
+                    PermissionName.view_school_20110, // Helper permission for showing school responses in schoolsWithPermissions
+                ],
+            }).save()
+
+            role2 = await createRole(undefined, org2, {
+                permissions: [
+                    permissionIds[1],
+                    PermissionName.view_school_20110, // Helper permission for showing school responses in schoolsWithPermissions
+                ],
+            }).save()
+
+            const orgs = [org1, org2],
+                roles = [role1, role2]
+
+            for (let i = 0; i < orgs.length; i++) {
+                await createOrganizationMembership({
+                    user: clientUser,
+                    organization: orgs[i],
+                    roles: [roles[i]],
+                }).save()
+            }
+
+            token = generateToken({
+                id: clientUser.user_id,
+                email: clientUser.email,
+                iss: 'calmid-debug',
+            })
+        })
+
+        context('Organizations', () => {
+            const query = `
+                    query OrgsWithPermissions($permissionIds: [String!]!, $operator: LogicalOperator, $direction: ConnectionDirection, $count: PageSize, $cursor: String, $sort: OrganizationSortInput, $filter: OrganizationFilter){
+                        myUser {
+                            organizationsWithPermissions(permissionIds: $permissionIds, operator: $operator, direction: $direction, count: $count, cursor: $cursor, sort: $sort, filter: $filter) {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                `
+
+            it('fetches organizations which the user has the checked permissions in', async () => {
+                const response = await makeRequest(
+                    request,
+                    query,
+                    {
+                        permissionIds: [
+                            PermissionName.view_users_40110,
+                            PermissionName.view_school_classes_20117,
+                        ],
+                        operator: 'OR',
+                    },
+                    token
+                )
+
+                const result = response.body.data.myUser
+                    .organizationsWithPermissions as IPaginatedResponse<OrganizationConnectionNode>
+
+                expect(
+                    result.edges.map((e) => e.node['id'])
+                ).to.have.same.members([
+                    org1.organization_id,
+                    org2.organization_id,
+                ])
+            })
+
+            it('errors with status 400 if the required arguments are not given', async () => {
+                const response = await makeRequest(request, query, {}, token)
+
+                expect(response.status).to.equal(400)
+                expect(response.body.errors).to.have.length(1)
+                expect(response.body.errors[0].message).to.equal(
+                    `Variable "$permissionIds" of required type "[String!]!" was not provided.`
+                )
+            })
+        })
+
+        context('Schools', () => {
+            let school1: School
+            let school2: School
+
+            const query = `
+                    query SchoolsWithPermissions($permissionIds: [String!]!, $operator: LogicalOperator, $direction: ConnectionDirection, $count: PageSize, $cursor: String, $sort: SchoolSortInput, $filter: SchoolFilter){
+                        myUser {
+                            schoolsWithPermissions(permissionIds: $permissionIds, operator: $operator, direction: $direction, count: $count, cursor: $cursor, sort: $sort, filter: $filter) {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                `
+
+            beforeEach(async () => {
+                school1 = await createSchool(org1).save()
+                school2 = await createSchool(org2).save()
+                const schools = [school1, school2],
+                    roles = [role1, role2]
+                for (let i = 0; i < schools.length; i++) {
+                    await createSchoolMembership({
+                        user: clientUser,
+                        school: schools[i],
+                        roles: [roles[i]],
+                    }).save()
+                }
+            })
+
+            it('fetches schools which the user has the checked permissions in', async () => {
+                const response = await makeRequest(
+                    request,
+                    query,
+                    {
+                        permissionIds: [
+                            PermissionName.view_users_40110,
+                            PermissionName.view_school_classes_20117,
+                        ],
+                        operator: 'OR',
+                    },
+                    token
+                )
+
+                const result = response.body.data.myUser
+                    .schoolsWithPermissions as IPaginatedResponse<ISchoolsConnectionNode>
+
+                expect(
+                    result.edges.map((e) => e.node['id'])
+                ).to.have.same.members([school1.school_id, school2.school_id])
+            })
+
+            it('errors with status 400 if the required arguments are not given', async () => {
+                const response = await makeRequest(request, query, {}, token)
+
+                expect(response.status).to.equal(400)
+                expect(response.body.errors).to.have.length(1)
+                expect(response.body.errors[0].message).to.equal(
+                    `Variable "$permissionIds" of required type "[String!]!" was not provided.`
+                )
             })
         })
     })

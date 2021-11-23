@@ -323,6 +323,10 @@ export class UserPermissions {
         return this._schoolPermissions
     }
 
+    // Fetches organizations through which user has the given permissions
+    // 'AND' = all given permissions must exist in each organization membership
+    // 'OR' = any of the given permissions must exist in each organization membership
+    // Returns all user's organizations if no specific permissions are supplied
     public async orgMembershipsWithPermissions(
         requiredPermissions: PermissionName[],
         operator: 'AND' | 'OR' = 'AND'
@@ -351,6 +355,10 @@ export class UserPermissions {
         return orgIds
     }
 
+    // Fetches schools through which user has the given permissions
+    // 'AND' = all given permissions must exist in each school membership
+    // 'OR' = any of the given permissions must exist in each school membership
+    // Returns all user's schools if no specific permissions are supplied
     public async schoolMembershipsWithPermissions(
         requiredPermissions: PermissionName[],
         operator: 'AND' | 'OR' = 'AND'

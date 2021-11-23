@@ -19,6 +19,11 @@ const typeDefs = gql`
         id: ID!
         timestamp: Date
     }
+
+    enum LogicalOperator {
+        AND
+        OR
+    }
 `
 
 export default function getDefault(

@@ -1,11 +1,18 @@
 import gql from 'graphql-tag'
 import { Context } from '../main'
 import { Model } from '../model'
+import {
+    CoreOrganizationConnectionNode,
+    organizationsConnectionResolver,
+} from '../pagination/organizationsConnection'
+import { schoolsConnectionResolver } from '../pagination/schoolsConnection'
 import { mapUserToUserConnectionNode } from '../pagination/usersConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
+import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { getEmptyPaginatedResponse } from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     extend type Query {
@@ -30,6 +37,32 @@ const typeDefs = gql`
             schoolId: ID!
             permissionIds: [String!]!
         ): [UserPermissionStatus!]!
+
+        """
+        'operator' default = 'AND'
+        """
+        organizationsWithPermissions(
+            permissionIds: [String!]!
+            operator: LogicalOperator
+            direction: ConnectionDirection
+            count: PageSize
+            cursor: String
+            sort: OrganizationSortInput
+            filter: OrganizationFilter
+        ): OrganizationsConnectionResponse @isAdmin(entity: "organization")
+
+        """
+        'operator' default = 'AND'
+        """
+        schoolsWithPermissions(
+            permissionIds: [String!]!
+            operator: LogicalOperator
+            direction: ConnectionDirection
+            count: PageSize
+            cursor: String
+            sort: SchoolSortInput
+            filter: SchoolFilter
+        ): SchoolsConnectionResponse @isAdmin(entity: "school")
     }
 `
 
@@ -103,6 +136,72 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                             }
                         })
                     )
+                },
+                organizationsWithPermissions: async (
+                    _parent,
+                    args,
+                    ctx: Context,
+                    info
+                ) => {
+                    // Use cached permissions
+                    const orgIds = await ctx.permissions.orgMembershipsWithPermissions(
+                        args.permissionIds,
+                        args.operator
+                    )
+                    if (orgIds.length !== 0) {
+                        return organizationsConnectionResolver(info, {
+                            direction: args.direction || 'FORWARD',
+                            directionArgs: {
+                                count: args.count,
+                                cursor: args.cursor,
+                            },
+                            scope: args.scope,
+                            filter: {
+                                ...args.filter,
+                                id: {
+                                    operator: 'in',
+                                    value: orgIds,
+                                },
+                            },
+                        })
+                    } else {
+                        return getEmptyPaginatedResponse<CoreOrganizationConnectionNode>(
+                            0
+                        )
+                    }
+                },
+                schoolsWithPermissions: async (
+                    _parent,
+                    args,
+                    ctx: Context,
+                    info
+                ) => {
+                    // Use cached permissions
+                    const schoolIds = await ctx.permissions.schoolMembershipsWithPermissions(
+                        args.permissionIds,
+                        args.operator
+                    )
+                    if (schoolIds.length !== 0) {
+                        return schoolsConnectionResolver(info, {
+                            direction: args.direction || 'FORWARD',
+                            directionArgs: {
+                                count: args.count,
+                                cursor: args.cursor,
+                            },
+                            scope: args.scope,
+                            filter: {
+                                ...args.filter,
+                                schoolId: {
+                                    operator: 'in',
+                                    value: schoolIds,
+                                },
+                            },
+                        })
+                    } else {
+                        return getEmptyPaginatedResponse<ISchoolsConnectionNode>(
+                            0
+                        )
+                    }
                 },
             },
             Query: {

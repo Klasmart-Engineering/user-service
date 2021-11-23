@@ -323,3 +323,18 @@ export const paginateData = async <T = unknown>({
         pageInfo,
     }
 }
+
+export function getEmptyPaginatedResponse<NodeType = unknown>(
+    totalCount?: number
+): IPaginatedResponse<NodeType> {
+    return {
+        totalCount,
+        edges: [],
+        pageInfo: {
+            startCursor: '',
+            endCursor: '',
+            hasNextPage: false,
+            hasPreviousPage: false,
+        },
+    }
+}

@@ -3,6 +3,7 @@ import { BaseEntity, getManager, SelectQueryBuilder } from 'typeorm'
 import { createEntityScope, ICreateScopeArgs } from '../directives/isAdmin'
 import { filterHasProperty, IEntityFilter } from '../utils/pagination/filtering'
 import {
+    getEmptyPaginatedResponse,
     getPageInfoAndEdges,
     getPaginationQuery,
     IChildPaginationArgs,
@@ -199,16 +200,9 @@ export const multiKeyChildConnectionLoader = async <
             const parentMap = new Map<string, IPaginatedResponse<Node>>(
                 uniqueParentLookUpKeys.map((parentLookUpKey) => [
                     parentLookUpKey,
-                    {
-                        totalCount: includeTotalCount ? 0 : undefined,
-                        pageInfo: {
-                            hasPreviousPage: true,
-                            hasNextPage: true,
-                            startCursor: '',
-                            endCursor: '',
-                        },
-                        edges: [],
-                    },
+                    getEmptyPaginatedResponse<Node>(
+                        includeTotalCount ? 0 : undefined
+                    ),
                 ])
             )
 

@@ -29,6 +29,7 @@ import { PermissionConnectionNode } from '../../../src/types/graphQL/permission'
 import { CategorySummaryNode } from '../../../src/types/graphQL/category'
 import { RoleConnectionNode } from '../../../src/types/graphQL/role'
 import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategory'
+import { CoreOrganizationConnectionNode } from '../../../src/pagination/organizationsConnection'
 
 const NEW_USER = `
     mutation myMutation(
@@ -1348,6 +1349,65 @@ export const SUBCATEGORIES_CONNECTION = gql`
         }
     }
 `
+export const MYUSER_ORGS_WITH_PERMISSIONS_QUERY = gql`
+    query(
+        $permissionIds: [String!]!
+        $operator: LogicalOperator
+        $direction: ConnectionDirection
+        $count: PageSize
+        $cursor: String
+        $sort: OrganizationSortInput
+        $filter: OrganizationFilter
+    ) {
+        myUser {
+            organizationsWithPermissions(
+                permissionIds: $permissionIds
+                operator: $operator
+                direction: $direction
+                count: $count
+                cursor: $cursor
+                sort: $sort
+                filter: $filter
+            ) {
+                edges {
+                    node {
+                        id
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const MYUSER_SCHOOLS_WITH_PERMISSIONS_QUERY = gql`
+    query(
+        $permissionIds: [String!]!
+        $operator: LogicalOperator
+        $direction: ConnectionDirection
+        $count: PageSize
+        $cursor: String
+        $sort: SchoolSortInput
+        $filter: SchoolFilter
+    ) {
+        myUser {
+            schoolsWithPermissions(
+                permissionIds: $permissionIds
+                operator: $operator
+                direction: $direction
+                count: $count
+                cursor: $cursor
+                sort: $sort
+                filter: $filter
+            ) {
+                edges {
+                    node {
+                        id
+                    }
+                }
+            }
+        }
+    }
+`
 
 export async function runQuery(
     queryString: string,
@@ -2415,6 +2475,75 @@ export async function subcategoriesConnection(
 
     const res = await gqlTry(operation)
     return res.data?.subcategoriesConnection
+}
+
+export async function myUserOrganizationsWithPermissions(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    permissionIds: string[],
+    operator?: 'AND' | 'OR',
+    headers?: Headers,
+    filterArgs?: IEntityFilter,
+    sortArgs?: ISortField
+): Promise<IPaginatedResponse<CoreOrganizationConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        print(MYUSER_ORGS_WITH_PERMISSIONS_QUERY),
+        includeTotalCount
+    )
+
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs,
+                sortArgs,
+                permissionIds,
+                operator,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.myUser.organizationsWithPermissions
+}
+
+export async function myUserSchoolsWithPermissions(
+    testClient: ApolloServerTestClient,
+    direction: string,
+    directionArgs: any,
+    includeTotalCount: boolean,
+    permissionIds: string[],
+    operator?: 'AND' | 'OR',
+    headers?: Headers,
+    filterArgs?: IEntityFilter,
+    sortArgs?: ISortField
+): Promise<IPaginatedResponse<ISchoolsConnectionNode>> {
+    const { query } = testClient
+    const paginationQuery = buildPaginationQuery(
+        print(MYUSER_SCHOOLS_WITH_PERMISSIONS_QUERY),
+        includeTotalCount
+    )
+    const operation = () =>
+        query({
+            query: paginationQuery,
+            variables: {
+                direction,
+                directionArgs,
+                filterArgs,
+                sortArgs,
+                permissionIds,
+                operator,
+            },
+            headers: headers,
+        })
+
+    const res = await gqlTry(operation)
+    return res.data?.myUser.schoolsWithPermissions
 }
 
 function buildPaginationQuery(
