@@ -14,13 +14,13 @@ import { addCsvError, validateRow } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import { userRowValidation } from './validations/user'
 import { customErrors } from '../../types/errors/customError'
-import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { PermissionName } from '../../permissions/permissionNames'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import clean from '../clean'
 import { Permission } from '../../entities/permission'
+import { config } from '../../config/config'
 
 export const validateUserCSVHeaders: CreateEntityHeadersCallback = async (
     headers: (keyof UserRow)[],
@@ -304,10 +304,7 @@ export const processUserFromCSVRow: CreateEntityRowCallback<UserRow> = async (
         organizationMembership.user = Promise.resolve(user)
         organizationMembership.shortcode =
             row.user_shortcode ||
-            generateShortCode(
-                user.user_id,
-                validationConstants.SHORTCODE_MAX_LENGTH
-            )
+            generateShortCode(user.user_id, config.limits.SHORTCODE_MAX_LENGTH)
     } else if (row.user_shortcode) {
         organizationMembership.shortcode = row.user_shortcode
     }

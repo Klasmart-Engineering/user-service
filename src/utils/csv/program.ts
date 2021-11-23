@@ -9,9 +9,9 @@ import { ProgramRow } from '../../types/csv/programRow'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { config } from '../../config/config'
 
 export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = async (
     manager: EntityManager,
@@ -89,8 +89,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
         age_range_high_value &&
         (Number.isNaN(highValueNumber) ||
             !Number.isInteger(highValueNumber) ||
-            highValueNumber < validationConstants.AGE_RANGE_HIGH_VALUE_MIN ||
-            highValueNumber > validationConstants.AGE_RANGE_HIGH_VALUE_MAX)
+            highValueNumber < config.limits.AGE_RANGE_HIGH_VALUE_MIN ||
+            highValueNumber > config.limits.AGE_RANGE_HIGH_VALUE_MAX)
     ) {
         addCsvError(
             rowErrors,
@@ -101,8 +101,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             {
                 entity: 'ageRange',
                 attribute: 'age_range_high_value',
-                min: validationConstants.AGE_RANGE_HIGH_VALUE_MIN,
-                max: validationConstants.AGE_RANGE_HIGH_VALUE_MAX,
+                min: config.limits.AGE_RANGE_HIGH_VALUE_MIN,
+                max: config.limits.AGE_RANGE_HIGH_VALUE_MAX,
             }
         )
     }
@@ -111,8 +111,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
         age_range_low_value &&
         (Number.isNaN(lowValueNumber) ||
             !Number.isInteger(lowValueNumber) ||
-            lowValueNumber < validationConstants.AGE_RANGE_LOW_VALUE_MIN ||
-            lowValueNumber > validationConstants.AGE_RANGE_LOW_VALUE_MAX)
+            lowValueNumber < config.limits.AGE_RANGE_LOW_VALUE_MIN ||
+            lowValueNumber > config.limits.AGE_RANGE_LOW_VALUE_MAX)
     ) {
         addCsvError(
             rowErrors,
@@ -123,8 +123,8 @@ export const processProgramFromCSVRow: CreateEntityRowCallback<ProgramRow> = asy
             {
                 entity: 'ageRange',
                 attribute: 'age_range_low_value',
-                min: validationConstants.AGE_RANGE_LOW_VALUE_MIN,
-                max: validationConstants.AGE_RANGE_LOW_VALUE_MAX,
+                min: config.limits.AGE_RANGE_LOW_VALUE_MIN,
+                max: config.limits.AGE_RANGE_LOW_VALUE_MAX,
             }
         )
     }

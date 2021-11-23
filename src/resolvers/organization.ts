@@ -4,7 +4,6 @@ import { OrganizationMembership } from '../entities/organizationMembership'
 import { Role } from '../entities/role'
 import { Status } from '../entities/status'
 import { User } from '../entities/user'
-import validationConstants from '../entities/validations/constants'
 import { Context } from '../main'
 import { mapOrganizationToOrganizationConnectionNode } from '../pagination/organizationsConnection'
 import { PermissionName } from '../permissions/permissionNames'
@@ -15,10 +14,8 @@ import {
     OrganizationConnectionNode,
     OrganizationsMutationResult,
 } from '../types/graphQL/organization'
-import {
-    createInputLengthAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
-} from '../utils/resolvers'
+import { createInputLengthAPIError } from '../utils/resolvers'
+import { config } from '../config/config'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
 
 export async function addUsersToOrganizations(
@@ -28,7 +25,7 @@ export async function addUsersToOrganizations(
     // Initial validations
     if (args.input.length === 0)
         throw createInputLengthAPIError('Organization', 'min')
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Organization', 'max')
     for (const val of args.input) {
         await context.permissions.rejectIfNotAllowed(
@@ -102,7 +99,7 @@ export async function addUsersToOrganizations(
             if (shortcode) shortcode = shortcode.toUpperCase()
             shortcode = validateShortCode(
                 shortcode,
-                validationConstants.SHORTCODE_MAX_LENGTH
+                config.limits.SHORTCODE_MAX_LENGTH
             )
                 ? shortcode
                 : undefined
@@ -170,10 +167,7 @@ export async function addUsersToOrganizations(
             membership.user = Promise.resolve(user)
             membership.shortcode =
                 shortcode ||
-                generateShortCode(
-                    userId,
-                    validationConstants.SHORTCODE_MAX_LENGTH
-                )
+                generateShortCode(userId, config.limits.SHORTCODE_MAX_LENGTH)
             memberships.push(membership)
         }
 

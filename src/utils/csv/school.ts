@@ -11,9 +11,9 @@ import {
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { config } from '../../config/config'
 
 export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async (
     manager: EntityManager,
@@ -51,7 +51,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
         )
     }
 
-    if (row.school_name?.length > validationConstants.SCHOOL_NAME_MAX_LENGTH) {
+    if (row.school_name?.length > config.limits.SCHOOL_NAME_MAX_LENGTH) {
         addCsvError(
             rowErrors,
             csvErrorConstants.ERR_CSV_INVALID_LENGTH,
@@ -61,7 +61,7 @@ export const processSchoolFromCSVRow: CreateEntityRowCallback<SchoolRow> = async
             {
                 entity: 'school',
                 attribute: 'name',
-                max: validationConstants.SCHOOL_NAME_MAX_LENGTH,
+                max: config.limits.SCHOOL_NAME_MAX_LENGTH,
             }
         )
     }

@@ -6,9 +6,9 @@ import { AgeRangeRow } from '../../types/csv/ageRangeRow'
 import { addCsvError } from './csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
+import { config } from '../../config/config'
 
 export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = async (
     manager: EntityManager,
@@ -102,8 +102,8 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
             {
                 entity: 'ageRange',
                 attribute: 'age_range_low_value',
-                min: validationConstants.AGE_RANGE_LOW_VALUE_MIN,
-                max: validationConstants.AGE_RANGE_LOW_VALUE_MAX,
+                min: config.limits.AGE_RANGE_LOW_VALUE_MIN,
+                max: config.limits.AGE_RANGE_LOW_VALUE_MAX,
             }
         )
     }
@@ -123,8 +123,8 @@ export const processAgeRangeFromCSVRow: CreateEntityRowCallback<AgeRangeRow> = a
             {
                 entity: 'ageRange',
                 attribute: 'age_range_high_value',
-                min: validationConstants.AGE_RANGE_HIGH_VALUE_MIN,
-                max: validationConstants.AGE_RANGE_HIGH_VALUE_MAX,
+                min: config.limits.AGE_RANGE_HIGH_VALUE_MIN,
+                max: config.limits.AGE_RANGE_HIGH_VALUE_MAX,
             }
         )
     }

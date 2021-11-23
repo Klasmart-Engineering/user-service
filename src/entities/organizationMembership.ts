@@ -17,8 +17,8 @@ import { SchoolMembership } from './schoolMembership'
 import { Status } from './status'
 import { Class } from './class'
 import { PermissionName } from '../permissions/permissionNames'
-import validationConstants from './validations/constants'
 import { CustomBaseEntity } from './customBaseEntity'
+import { config } from '../config/config'
 
 @Entity()
 export class OrganizationMembership extends CustomBaseEntity {
@@ -33,7 +33,7 @@ export class OrganizationMembership extends CustomBaseEntity {
 
     @Column({
         nullable: true,
-        length: validationConstants.SHORTCODE_MAX_LENGTH,
+        length: config.limits.SHORTCODE_MAX_LENGTH,
     })
     public shortcode!: string
 

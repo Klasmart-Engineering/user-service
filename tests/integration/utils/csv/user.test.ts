@@ -29,7 +29,6 @@ import {
     createNonAdminUser,
     createAdminUser,
 } from '../../../utils/testEntities'
-import constants from '../../../../src/entities/validations/constants'
 import {
     customErrors,
     getCustomErrorMessageVariables,
@@ -42,6 +41,7 @@ import { grantPermission } from '../../../utils/operations/roleOps'
 import { PermissionName } from '../../../../src/permissions/permissionNames'
 import { normalizedLowercaseTrimmed } from '../../../../src/utils/clean'
 import { pick } from 'lodash'
+import { config } from '../../../../src/config/config'
 
 use(chaiAsPromised)
 
@@ -306,7 +306,7 @@ describe('processUserFromCSVRow', async () => {
         })
         it('errors when too long', async () => {
             row.organization_name = 'a'.repeat(
-                constants.ORGANIZATION_NAME_MAX_LENGTH + 1
+                config.limits.ORGANIZATION_NAME_MAX_LENGTH + 1
             )
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
@@ -318,7 +318,7 @@ describe('processUserFromCSVRow', async () => {
             err = rowErrors[0]
 
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.ORGANIZATION_NAME_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.ORGANIZATION_NAME_MAX_LENGTH)
         })
         it("errors when doesn't exist", async () => {
             row.organization_name = 'None Existing Org'
@@ -376,7 +376,7 @@ describe('processUserFromCSVRow', async () => {
         })
         it('errors when too long', async () => {
             row.user_given_name = 'a'.repeat(
-                constants.USER_GIVEN_NAME_MAX_LENGTH + 1
+                config.limits.USER_GIVEN_NAME_MAX_LENGTH + 1
             )
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
@@ -387,7 +387,7 @@ describe('processUserFromCSVRow', async () => {
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.USER_GIVEN_NAME_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.USER_GIVEN_NAME_MAX_LENGTH)
         })
         it('errors when invalid characters', async () => {
             row.user_given_name = '(ben)'
@@ -449,7 +449,7 @@ describe('processUserFromCSVRow', async () => {
         })
         it('errors when too long', async () => {
             row.user_family_name = 'a'.repeat(
-                constants.USER_FAMILY_NAME_MAX_LENGTH + 1
+                config.limits.USER_FAMILY_NAME_MAX_LENGTH + 1
             )
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
@@ -460,7 +460,7 @@ describe('processUserFromCSVRow', async () => {
             )
             const err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.USER_FAMILY_NAME_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.USER_FAMILY_NAME_MAX_LENGTH)
         })
         it('errors when invalid characters', async () => {
             row.user_family_name = '(ben)'
@@ -562,7 +562,7 @@ describe('processUserFromCSVRow', async () => {
             expect(err.code).to.eq(customErrors.invalid_min_length.code)
         })
         it('errors when too long', async () => {
-            row.user_gender = 'a'.repeat(constants.GENDER_MAX_LENGTH + 1)
+            row.user_gender = 'a'.repeat(config.limits.GENDER_MAX_LENGTH + 1)
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -572,7 +572,7 @@ describe('processUserFromCSVRow', async () => {
             )
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.GENDER_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.GENDER_MAX_LENGTH)
         })
         it('errors when invalid characters', async () => {
             row.user_gender = '(ben)'
@@ -632,7 +632,7 @@ describe('processUserFromCSVRow', async () => {
         })
         it('errors when too long', async () => {
             row.user_email =
-                'a'.repeat(constants.EMAIL_MAX_LENGTH + 1) + '@x.com'
+                'a'.repeat(config.limits.EMAIL_MAX_LENGTH + 1) + '@x.com'
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -643,7 +643,7 @@ describe('processUserFromCSVRow', async () => {
             err = rowErrors[0]
             expect(rowErrors.length).to.eq(1)
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.EMAIL_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.EMAIL_MAX_LENGTH)
         })
         it('errors when invalid', async () => {
             for (const email of [
@@ -762,7 +762,7 @@ describe('processUserFromCSVRow', async () => {
         })
         it('errors when too long', async () => {
             row.user_alternate_email =
-                'a'.repeat(constants.EMAIL_MAX_LENGTH + 1) + '@x.com'
+                'a'.repeat(config.limits.EMAIL_MAX_LENGTH + 1) + '@x.com'
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -773,7 +773,7 @@ describe('processUserFromCSVRow', async () => {
             err = rowErrors[0]
             expect(rowErrors.length).to.eq(1)
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.EMAIL_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.EMAIL_MAX_LENGTH)
         })
         it('errors when invalid', async () => {
             for (const email of [
@@ -858,7 +858,9 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when too long', async () => {
-            row.user_shortcode = 'a'.repeat(constants.SHORTCODE_MAX_LENGTH + 1)
+            row.user_shortcode = 'a'.repeat(
+                config.limits.SHORTCODE_MAX_LENGTH + 1
+            )
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -869,7 +871,7 @@ describe('processUserFromCSVRow', async () => {
 
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.SHORTCODE_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.SHORTCODE_MAX_LENGTH)
             expect(err.entity).to.eq('User')
             expect(err.attribute).to.eq('Short Code')
         })
@@ -902,7 +904,7 @@ describe('processUserFromCSVRow', async () => {
             orgMembership.user = Promise.resolve(existentUser)
             orgMembership.shortcode = generateShortCode(
                 existentUser.user_id,
-                constants.SHORTCODE_MAX_LENGTH
+                config.limits.SHORTCODE_MAX_LENGTH
             )
             await orgMembership.save()
 
@@ -969,7 +971,7 @@ describe('processUserFromCSVRow', async () => {
         })
         it('errors when too long', async () => {
             row.organization_role_name = 'a'.repeat(
-                constants.ROLE_NAME_MAX_LENGTH + 1
+                config.limits.ROLE_NAME_MAX_LENGTH + 1
             )
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
@@ -981,7 +983,7 @@ describe('processUserFromCSVRow', async () => {
 
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.ROLE_NAME_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.ROLE_NAME_MAX_LENGTH)
             expect(err.entity).to.eq('Organization')
             expect(err.attribute).to.eq('Role')
         })
@@ -1015,7 +1017,9 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when too long', async () => {
-            row.school_name = 'a'.repeat(constants.SCHOOL_NAME_MAX_LENGTH + 1)
+            row.school_name = 'a'.repeat(
+                config.limits.SCHOOL_NAME_MAX_LENGTH + 1
+            )
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -1026,7 +1030,7 @@ describe('processUserFromCSVRow', async () => {
 
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.SCHOOL_NAME_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.SCHOOL_NAME_MAX_LENGTH)
             expect(err.entity).to.eq('School')
             expect(err.attribute).to.eq('Name')
         })
@@ -1097,7 +1101,7 @@ describe('processUserFromCSVRow', async () => {
             }
         })
         it('errors when too long', async () => {
-            row.class_name = 'a'.repeat(constants.CLASS_NAME_MAX_LENGTH + 1)
+            row.class_name = 'a'.repeat(config.limits.CLASS_NAME_MAX_LENGTH + 1)
             rowErrors = await processUserFromCSVRow(
                 connection.manager,
                 row,
@@ -1108,7 +1112,7 @@ describe('processUserFromCSVRow', async () => {
 
             err = rowErrors[0]
             expect(err.code).to.eq(customErrors.invalid_max_length.code)
-            expect(err.max).to.eq(constants.CLASS_NAME_MAX_LENGTH)
+            expect(err.max).to.eq(config.limits.CLASS_NAME_MAX_LENGTH)
             expect(err.entity).to.eq('Class')
             expect(err.attribute).to.eq('Name')
         })

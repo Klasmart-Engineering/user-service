@@ -1,18 +1,18 @@
-import validationConstants from './constants'
 import { sharedValidations } from './shared'
 import { REGEX } from './regex'
 import Joi from 'joi'
+import { config } from '../../config/config'
 
 export const userValidations = {
     user_id: Joi.string().uuid(),
 
     given_name: sharedValidations.alphanum_with_special_characters
         .required()
-        .max(validationConstants.USER_GIVEN_NAME_MAX_LENGTH),
+        .max(config.limits.USER_GIVEN_NAME_MAX_LENGTH),
 
     family_name: sharedValidations.alphanum_with_special_characters
         .required()
-        .max(validationConstants.USER_FAMILY_NAME_MAX_LENGTH),
+        .max(config.limits.USER_FAMILY_NAME_MAX_LENGTH),
 
     email: sharedValidations.email.empty(null).when('phone', {
         is: Joi.string().exist(),
@@ -33,12 +33,12 @@ export const userValidations = {
     username: sharedValidations.alphanum_with_special_characters
         .allow('', null)
         .optional()
-        .max(validationConstants.USERNAME_MAX_LEN),
+        .max(config.limits.USERNAME_MAX_LEN),
 
     gender: sharedValidations.alphanum_with_special_characters
         .required()
-        .min(validationConstants.GENDER_MIN_LENGTH)
-        .max(validationConstants.GENDER_MAX_LENGTH),
+        .min(config.limits.GENDER_MIN_LENGTH)
+        .max(config.limits.GENDER_MAX_LENGTH),
 
     alternate_email: sharedValidations.email.allow('', null).optional(),
 
@@ -47,7 +47,7 @@ export const userValidations = {
     avatar: Joi.string()
         .allow('', null)
         .optional()
-        .max(validationConstants.AVATAR_MAX_LEN),
+        .max(config.limits.AVATAR_MAX_LEN),
 
     primaryUser: Joi.boolean().optional(),
 }

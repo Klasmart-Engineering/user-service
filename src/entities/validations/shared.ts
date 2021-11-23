@@ -1,11 +1,9 @@
 import Joi from 'joi'
-import validationConstants from './constants'
+import { config } from '../../config/config'
 import { REGEX } from './regex'
 
 export const sharedValidations = {
-    shortcode: Joi.string()
-        .alphanum()
-        .max(validationConstants.SHORTCODE_MAX_LENGTH),
+    shortcode: Joi.string().alphanum().max(config.limits.SHORTCODE_MAX_LENGTH),
 
     alphanum_with_special_characters: Joi.string().regex(
         REGEX.alphanum_with_special_characters,
@@ -17,7 +15,7 @@ export const sharedValidations = {
         .regex(REGEX.email, {
             name: 'email',
         })
-        .max(validationConstants.EMAIL_MAX_LENGTH),
+        .max(config.limits.EMAIL_MAX_LENGTH),
     phone: Joi.string().regex(REGEX.phone, {
         name: 'phone',
     }),

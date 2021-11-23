@@ -1,8 +1,8 @@
 import Joi from 'joi'
-import validationConstants from './constants'
+import { config } from '../../config/config'
 
 export const organizationValidations = {
     organization_name: Joi.string().max(
-        validationConstants.ORGANIZATION_NAME_MAX_LENGTH
+        config.limits.ORGANIZATION_NAME_MAX_LENGTH
     ),
 }

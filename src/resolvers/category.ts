@@ -16,8 +16,8 @@ import {
     createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
     createUnauthorizedOrganizationAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
 } from '../utils/resolvers'
+import { config } from '../config/config'
 
 export async function createCategories(
     args: { input: CreateCategoryInput[] },
@@ -28,7 +28,7 @@ export async function createCategories(
         throw createInputLengthAPIError('Category', 'min')
     }
 
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
         throw createInputLengthAPIError('Category', 'max')
     }
 

@@ -1,7 +1,6 @@
 import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { User } from '../../src/entities/user'
-import validationConstants from '../../src/entities/validations/constants'
 import { generateShortCode } from '../../src/utils/shortcode'
 import { SchoolMembership } from '../../src/entities/schoolMembership'
 import { School } from '../../src/entities/school'

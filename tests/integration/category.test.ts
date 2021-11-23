@@ -27,7 +27,6 @@ import {
     createInputLengthAPIError,
     createNonExistentOrInactiveEntityAPIError,
     createUnauthorizedOrganizationAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
 } from '../../src/utils/resolvers'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -36,7 +35,7 @@ import { createAdminUser, createUser } from '../factories/user.factory'
 import { NIL_UUID } from '../utils/database'
 import { userToPayload } from '../utils/operations/userOps'
 import { createTestConnection } from '../utils/testConnection'
-
+import { config } from '../../src/config/config'
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -367,7 +366,7 @@ describe('category', () => {
             })
 
             context(
-                `when user tries to create more than ${MAX_MUTATION_INPUT_ARRAY_SIZE} categories`,
+                `when user tries to create more than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE} categories`,
                 () => {
                     it('throws an APIError', async () => {
                         const expectedError = createInputLengthAPIError(
@@ -378,7 +377,7 @@ describe('category', () => {
                         await expectAPIError(
                             admin,
                             generateInput(
-                                MAX_MUTATION_INPUT_ARRAY_SIZE + 1,
+                                config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1,
                                 org1,
                                 true
                             ),

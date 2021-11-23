@@ -42,7 +42,6 @@ import {
     validateShortCode,
 } from '../utils/shortcode'
 import clean, { unswapEmailAndPhone } from '../utils/clean'
-import validationConstants from './validations/constants'
 import { CustomBaseEntity } from './customBaseEntity'
 import {
     APIError,
@@ -60,6 +59,7 @@ import {
     editMembershipSchemaMetadata,
 } from '../operations/organization'
 import { pickBy } from 'lodash'
+import { config } from '../config/config'
 
 @Entity()
 export class Organization extends CustomBaseEntity {
@@ -516,7 +516,7 @@ export class Organization extends CustomBaseEntity {
                 shortcode = shortcode.toUpperCase()
                 shortcode = validateShortCode(
                     shortcode,
-                    validationConstants.SHORTCODE_MAX_LENGTH
+                    config.limits.SHORTCODE_MAX_LENGTH
                 )
                     ? shortcode
                     : undefined
@@ -528,10 +528,7 @@ export class Organization extends CustomBaseEntity {
             membership.user = Promise.resolve(user)
             membership.shortcode =
                 shortcode ||
-                generateShortCode(
-                    user_id,
-                    validationConstants.SHORTCODE_MAX_LENGTH
-                )
+                generateShortCode(user_id, config.limits.SHORTCODE_MAX_LENGTH)
             await membership.save()
 
             return membership
@@ -1075,7 +1072,7 @@ export class Organization extends CustomBaseEntity {
         membership.shortcode =
             shortcode ||
             membership.shortcode ||
-            generateShortCode(user_id, validationConstants.SHORTCODE_MAX_LENGTH)
+            generateShortCode(user_id, config.limits.SHORTCODE_MAX_LENGTH)
         return membership
     }
 
