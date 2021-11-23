@@ -109,7 +109,7 @@ type SubjectConnectionNode {
     name: String
     status: Status!
     system: Boolean!
-    categories: [CategorySummaryNode!]
+    categories: [CategoryConnectionNode!]
     programs: [ProgramSummaryNode!]
 }
 ```

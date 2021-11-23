@@ -1,13 +1,13 @@
 import DataLoader from 'dataloader'
 import { Subject } from '../entities/subject'
-import { CategorySummaryNode } from '../types/graphQL/category'
+import { CategoryConnectionNode } from '../types/graphQL/category'
 import { SubjectConnectionNode } from '../types/graphQL/subject'
 import { Lazy } from '../utils/lazyLoading'
 import { NodeDataLoader } from './genericNode'
 import { MAX_PAGE_SIZE } from '../utils/pagination/paginate'
 
 export interface ISubjectsConnectionLoaders {
-    categories: Lazy<DataLoader<string, CategorySummaryNode[]>>
+    categories: Lazy<DataLoader<string, CategoryConnectionNode[]>>
 }
 
 export interface ISubjectNodeDataLoader {
@@ -16,7 +16,7 @@ export interface ISubjectNodeDataLoader {
 
 export const categoriesForSubjects = async (
     subjectIds: readonly string[]
-): Promise<CategorySummaryNode[][]> => {
+): Promise<CategoryConnectionNode[][]> => {
     const scope = await Subject.createQueryBuilder('Subject')
         .leftJoinAndSelect('Subject.categories', 'Category')
         .where('Subject.id IN (:...ids)', { ids: subjectIds })
@@ -37,7 +37,7 @@ export const categoriesForSubjects = async (
 async function getSubjectCategories(subject: Subject) {
     let counter = 0
     const categories = (await subject.categories) || []
-    const currentCategories: CategorySummaryNode[] = []
+    const currentCategories: CategoryConnectionNode[] = []
 
     for (const category of categories) {
         // summary elements have a limit

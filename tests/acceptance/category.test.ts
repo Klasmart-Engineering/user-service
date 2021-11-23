@@ -1,9 +1,12 @@
-import { expect } from 'chai'
+import { expect, use } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import CategoriesInitializer from '../../src/initializers/categories'
-import { CategorySummaryNode } from '../../src/types/graphQL/category'
+import {
+    CategoryConnectionNode,
+    CreateCategoryInput,
+} from '../../src/types/graphQL/category'
 import { loadFixtures } from '../utils/fixtures'
 import {
     createCategories,
@@ -13,13 +16,18 @@ import {
 import {
     CATEGORIES_CONNECTION,
     CATEGORY_NODE,
+    CREATE_CATEGORIES,
 } from '../utils/operations/modelOps'
 import { getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import deepEqualInAnyOrder from 'deep-equal-in-any-order'
+import { makeRequest } from './utils'
+
+use(deepEqualInAnyOrder)
 
 interface ICategoryEdge {
-    node: CategorySummaryNode
+    node: CategoryConnectionNode
 }
 let systemcategoriesCount = 0
 const url = 'http://localhost:8080/user'
@@ -29,40 +37,29 @@ const org_name = 'my-org'
 const categoriesCount = 12
 
 async function makeQuery(pageSize: any) {
-    return await request
-        .post('/user')
-        .set({
-            ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
-        })
-        .send({
-            query: CATEGORIES_CONNECTION,
-            variables: {
-                direction: 'FORWARD',
-                directionArgs: {
-                    count: pageSize,
-                },
-            },
-        })
+    return makeRequest(
+        request,
+        CATEGORIES_CONNECTION,
+        {
+            direction: 'FORWARD',
+            directionArgs: { count: pageSize },
+        },
+        getAdminAuthToken()
+    )
 }
 
 const makeNodeQuery = async (id: string) => {
-    return await request
-        .post('/user')
-        .set({
-            ContentType: 'application/json',
-            Authorization: getAdminAuthToken(),
-        })
-        .send({
-            query: print(CATEGORY_NODE),
-            variables: {
-                id,
-            },
-        })
+    return makeRequest(
+        request,
+        print(CATEGORY_NODE),
+        { id },
+        getAdminAuthToken()
+    )
 }
 
 describe('acceptance.category', () => {
     let connection: Connection
+    let orgId: string
 
     before(async () => {
         connection = await createTestConnection()
@@ -86,7 +83,7 @@ describe('acceptance.category', () => {
         const createOrgData =
             createOrgResponse.body.data.user.createOrganization
 
-        const orgId = createOrgData.organization_id
+        orgId = createOrgData.organization_id
 
         for (let i = 1; i <= categoriesCount; i++) {
             categoriesDetails.push({
@@ -169,6 +166,71 @@ describe('acceptance.category', () => {
                 expect(response.status).to.eq(200)
                 expect(errors).to.exist
                 expect(categoryNode).to.be.null
+            })
+        })
+    })
+
+    context('createCategories', () => {
+        let category1Input: CreateCategoryInput
+        let category2Input: CreateCategoryInput
+
+        const makeCreateCategoriesMutation = async (
+            input: CreateCategoryInput[]
+        ) => {
+            return await makeRequest(
+                request,
+                print(CREATE_CATEGORIES),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        beforeEach(async () => {
+            category1Input = {
+                name: 'Acceptance Category 1',
+                organizationId: orgId,
+            }
+
+            category2Input = {
+                name: 'Acceptance Category 2',
+                organizationId: orgId,
+            }
+        })
+
+        context('when input is sent in a correct way', () => {
+            it('should respond succesfully', async () => {
+                const input = [category1Input, category2Input]
+                const response = await makeCreateCategoriesMutation(input)
+                const categories =
+                    response.body.data.createCategories.categories
+
+                expect(response.status).to.eq(200)
+                expect(categories).to.exist
+                expect(categories).to.be.an('array')
+                expect(categories.length).to.eq(input.length)
+
+                const categoriesCreatedNames = categories.map(
+                    (cc: CategoryConnectionNode) => cc.name
+                )
+
+                const inputNames = input.map((i) => i.name)
+
+                expect(categoriesCreatedNames).to.deep.equalInAnyOrder(
+                    inputNames
+                )
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const input = [category1Input, category1Input]
+                const response = await makeCreateCategoriesMutation(input)
+                const categoriesCreated = response.body.data.createCategories
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(categoriesCreated).to.be.null
+                expect(errors).to.exist
             })
         })
     })

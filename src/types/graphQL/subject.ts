@@ -1,12 +1,12 @@
 import { Status } from '../../entities/status'
-import { CategorySummaryNode } from './category'
+import { CategoryConnectionNode } from './category'
 
 export interface SubjectConnectionNode {
     id: string
     name?: string
     status: Status
     system: boolean
-    categories?: CategorySummaryNode[]
+    categories?: CategoryConnectionNode[]
 }
 
 export interface SubjectSummaryNode {

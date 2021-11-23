@@ -57,14 +57,7 @@ const typeDefs = gql`
         name: String
         status: Status!
         system: Boolean!
-        categories: [CategorySummaryNode!]
-    }
-
-    type CategorySummaryNode {
-        id: ID!
-        name: String
-        status: Status!
-        system: Boolean!
+        categories: [CategoryConnectionNode!]
     }
 
     extend type Query {

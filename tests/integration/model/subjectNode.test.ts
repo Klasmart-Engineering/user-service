@@ -26,10 +26,10 @@ import {
 import { getAdminAuthToken } from '../../utils/testConfig'
 import { NIL_UUID } from '../../utils/database'
 import { Category } from '../../../src/entities/category'
-import { CategorySummaryNode } from '../../../src/types/graphQL/category'
 import { createOrganization } from '../../factories/organization.factory'
 import { createSubject } from '../../factories/subject.factory'
 import { createCategory } from '../../factories/category.factory'
+import { CategoryConnectionNode } from '../../../src/types/graphQL/category'
 
 use(chaiAsPromised)
 
@@ -119,9 +119,9 @@ describe('subjectNode', () => {
 
             const subjectCategories = await subjectToTest.categories
 
-            const categoryIsEqualToCategorySummaryNode = (
+            const categoryIsEqualToCategoryConnectionNode = (
                 c: Category,
-                csn: CategorySummaryNode
+                csn: CategoryConnectionNode
             ) => {
                 return (
                     c.id === csn.id &&
@@ -134,7 +134,7 @@ describe('subjectNode', () => {
             categoriesResult.forEach((cr) => {
                 expect(
                     subjectCategories?.find((sc) =>
-                        categoryIsEqualToCategorySummaryNode(sc, cr)
+                        categoryIsEqualToCategoryConnectionNode(sc, cr)
                     )
                 ).to.exist
             })

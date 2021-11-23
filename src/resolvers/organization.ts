@@ -15,10 +15,11 @@ import {
     OrganizationConnectionNode,
     OrganizationsMutationResult,
 } from '../types/graphQL/organization'
+import {
+    createInputLengthAPIError,
+    MAX_MUTATION_INPUT_ARRAY_SIZE,
+} from '../utils/resolvers'
 import { generateShortCode, validateShortCode } from '../utils/shortcode'
-
-// TODO: Replace with static configuration solution
-export const MAX_MUTATION_INPUT_ARRAY_SIZE = 50
 
 export async function addUsersToOrganizations(
     args: { input: AddUsersToOrganizationInput[] },
@@ -26,21 +27,9 @@ export async function addUsersToOrganizations(
 ): Promise<OrganizationsMutationResult> {
     // Initial validations
     if (args.input.length === 0)
-        throw new APIError({
-            code: customErrors.invalid_array_min_length.code,
-            message: customErrors.invalid_array_min_length.message,
-            variables: [],
-            entity: 'User',
-            min: 1,
-        })
+        throw createInputLengthAPIError('Organization', 'min')
     if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
-        throw new APIError({
-            code: customErrors.invalid_array_max_length.code,
-            message: customErrors.invalid_array_max_length.message,
-            variables: [],
-            entity: 'User',
-            max: MAX_MUTATION_INPUT_ARRAY_SIZE,
-        })
+        throw createInputLengthAPIError('Organization', 'max')
     for (const val of args.input) {
         await context.permissions.rejectIfNotAllowed(
             { organization_id: val.organizationId },

@@ -26,7 +26,7 @@ import { gql } from 'apollo-server-express'
 import { Role } from '../../../src/entities/role'
 import { print } from 'graphql'
 import { PermissionConnectionNode } from '../../../src/types/graphQL/permission'
-import { CategorySummaryNode } from '../../../src/types/graphQL/category'
+import { CategoryConnectionNode } from '../../../src/types/graphQL/category'
 import { RoleConnectionNode } from '../../../src/types/graphQL/role'
 import { SubcategoryConnectionNode } from '../../../src/types/graphQL/subcategory'
 import { CoreOrganizationConnectionNode } from '../../../src/pagination/organizationsConnection'
@@ -996,13 +996,34 @@ const GRADE_FIELDS = gql`
         }
     }
 `
+
+const CATEGORY_FIELDS = gql`
+    fragment categoryFields on CategoryConnectionNode {
+        id
+        name
+        status
+        system
+    }
+`
+
 export const CATEGORY_NODE = gql`
+    ${CATEGORY_FIELDS}
+
     query categoryNode($id: ID!) {
         categoryNode(id: $id) {
-            id
-            name
-            status
-            system
+            ...categoryFields
+        }
+    }
+`
+
+export const CREATE_CATEGORIES = gql`
+    ${CATEGORY_FIELDS}
+
+    mutation createCategories($input: [CreateCategoryInput!]!) {
+        createCategories(input: $input) {
+            categories {
+                ...categoryFields
+            }
         }
     }
 `
@@ -2298,7 +2319,7 @@ export async function categoriesConnection(
     headers?: Headers,
     filter?: IEntityFilter,
     sort?: ISortField
-): Promise<IPaginatedResponse<CategorySummaryNode>> {
+): Promise<IPaginatedResponse<CategoryConnectionNode>> {
     const { query } = testClient
     const operation = () =>
         query({

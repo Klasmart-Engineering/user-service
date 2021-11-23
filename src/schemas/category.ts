@@ -1,6 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
+import { createCategories } from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 
 const typeDefs = gql`
@@ -8,36 +9,56 @@ const typeDefs = gql`
         category(id: ID!): Category @isAdmin(entity: "category")
         uploadCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
+        createCategories(
+            input: [CreateCategoryInput!]!
+        ): CategoriesMutationResult
     }
+
     type CategoriesConnectionResponse implements iConnectionResponse {
         totalCount: Int
         pageInfo: ConnectionPageInfo
         edges: [CategoriesConnectionEdge]
     }
+
     type CategoriesConnectionEdge implements iConnectionEdge {
         cursor: String
         node: CategoryConnectionNode
     }
+
     enum CategorySortBy {
         id
         name
     }
+
     input CategorySortInput {
         field: CategorySortBy!
         order: SortOrder!
     }
+
     input CategoryFilter {
         status: StringFilter
         system: BooleanFilter
         AND: [CategoryFilter]
         OR: [CategoryFilter]
     }
+
     type CategoryConnectionNode {
         id: ID!
         name: String
         status: Status!
         system: Boolean!
     }
+
+    input CreateCategoryInput {
+        name: String!
+        organizationId: ID!
+        subcategories: [ID!]
+    }
+
+    type CategoriesMutationResult {
+        categories: [CategoryConnectionNode!]!
+    }
+
     extend type Query {
         category(id: ID!): Category
             @isAdmin(entity: "category")
@@ -53,6 +74,7 @@ const typeDefs = gql`
             sort: CategorySortInput
         ): CategoriesConnectionResponse @isAdmin(entity: "category")
     }
+
     type Category {
         id: ID!
         name: String!
@@ -64,6 +86,7 @@ const typeDefs = gql`
         editSubcategories(subcategory_ids: [ID!]): [Subcategory]
         delete(_: Int): Boolean
     }
+
     input CategoryDetail {
         id: ID
         name: String
@@ -84,6 +107,8 @@ export default function getDefault(
                     model.getCategory(args, ctx),
                 uploadCategoriesFromCSV: (_parent, args, ctx, info) =>
                     model.uploadCategoriesFromCSV(args, ctx, info),
+                createCategories: (_parent, args, ctx, _info) =>
+                    createCategories(args, ctx),
             },
             Query: {
                 category: (_parent, args, ctx, _info) =>

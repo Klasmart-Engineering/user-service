@@ -1,6 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Category } from '../entities/category'
-import { CategorySummaryNode } from '../types/graphQL/category'
+import { CategoryConnectionNode } from '../types/graphQL/category'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { getWhereClauseFromFilter } from '../utils/pagination/filtering'
 import {
@@ -12,7 +12,7 @@ import {
 export async function categoriesConnectionResolver(
     info: GraphQLResolveInfo,
     { direction, directionArgs, scope, filter, sort }: IPaginationArgs<Category>
-): Promise<IPaginatedResponse<CategorySummaryNode>> {
+): Promise<IPaginatedResponse<CategoryConnectionNode>> {
     const includeTotalCount = findTotalCountInPaginationEndpoints(info)
 
     if (filter) {
@@ -51,7 +51,7 @@ export async function categoriesConnectionResolver(
 
 function mapCategoryEdgeToCategoryConnectionEdge(
     edge: IEdge<Category>
-): IEdge<CategorySummaryNode> {
+): IEdge<CategoryConnectionNode> {
     return {
         node: mapCategoryToCategoryConnectionNode(edge.node),
         cursor: edge.cursor,
@@ -60,7 +60,7 @@ function mapCategoryEdgeToCategoryConnectionEdge(
 
 export function mapCategoryToCategoryConnectionNode(
     category: Category
-): CategorySummaryNode {
+): CategoryConnectionNode {
     return {
         id: category.id,
         name: category.name,

@@ -23,7 +23,7 @@ import { getAdminAuthToken } from '../../utils/testConfig'
 import { userToPayload } from '../../utils/operations/userOps'
 import { createAdminUser } from '../../factories/user.factory'
 import { Category } from '../../../src/entities/category'
-import { CategorySummaryNode } from '../../../src/types/graphQL/category'
+import { CategoryConnectionNode } from '../../../src/types/graphQL/category'
 import { createCategory } from '../../factories/category.factory'
 import { NIL_UUID } from '../../utils/database'
 
@@ -90,7 +90,7 @@ describe('categoryNode', () => {
         const coreResult = (await ctx.loaders.categoryNode.node.instance.load({
             scope,
             id: categoryId,
-        })) as CategorySummaryNode
+        })) as CategoryConnectionNode
 
         return {
             coreResult,

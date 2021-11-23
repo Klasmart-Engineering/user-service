@@ -64,7 +64,7 @@ import {
 import { UserPermissions } from '../permissions/userPermissions'
 import { AgeRangeConnectionNode } from '../types/graphQL/ageRange'
 import { BrandingResult } from '../types/graphQL/branding'
-import { CategorySummaryNode } from '../types/graphQL/category'
+import { CategoryConnectionNode } from '../types/graphQL/category'
 import { ClassSummaryNode } from '../types/graphQL/classSummaryNode'
 import { GradeSummaryNode } from '../types/graphQL/grade'
 import { ProgramSummaryNode } from '../types/graphQL/program'
@@ -513,7 +513,7 @@ export function createContextLazyLoaders(
             ),
         },
         categoryNode: {
-            node: new Lazy<NodeDataLoader<Category, CategorySummaryNode>>(
+            node: new Lazy<NodeDataLoader<Category, CategoryConnectionNode>>(
                 () =>
                     new NodeDataLoader(
                         Category,
@@ -535,7 +535,7 @@ export function createContextLazyLoaders(
             ),
         },
         subjectsConnection: {
-            categories: new Lazy<DataLoader<string, CategorySummaryNode[]>>(
+            categories: new Lazy<DataLoader<string, CategoryConnectionNode[]>>(
                 () => new DataLoader(categoriesForSubjects)
             ),
         },

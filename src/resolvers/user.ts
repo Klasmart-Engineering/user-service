@@ -32,9 +32,10 @@ import {
     updateUserSchema,
 } from '../utils/mutations/validations/user'
 import clean from '../utils/clean'
-
-// TODO: Replace with static configuration solution
-export const MAX_MUTATION_INPUT_ARRAY_SIZE = 50
+import {
+    createInputLengthAPIError,
+    MAX_MUTATION_INPUT_ARRAY_SIZE,
+} from '../utils/resolvers'
 
 export function addOrganizationRolesToUsers(
     args: { input: AddOrganizationRolesToUserInput[] },
@@ -74,22 +75,9 @@ async function modifyOrganizationRoles(
     roleModificationFn: (currentRoles: Role[], roleChanges: Role[]) => Role[]
 ) {
     // Initial validations
-    if (args.input.length === 0)
-        throw new APIError({
-            code: customErrors.invalid_array_min_length.code,
-            message: customErrors.invalid_array_min_length.message,
-            variables: [],
-            entity: 'User',
-            min: 1,
-        })
+    if (args.input.length === 0) throw createInputLengthAPIError('User', 'min')
     if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
-        throw new APIError({
-            code: customErrors.invalid_array_max_length.code,
-            message: customErrors.invalid_array_max_length.message,
-            variables: [],
-            entity: 'User',
-            max: MAX_MUTATION_INPUT_ARRAY_SIZE,
-        })
+        throw createInputLengthAPIError('User', 'max')
     for (const val of args.input) {
         await permissions.rejectIfNotAllowed(
             { organization_id: val.organizationId },
