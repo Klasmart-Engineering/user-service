@@ -10,14 +10,12 @@ import { getAdminAuthToken } from '../testConfig'
 import { Headers } from 'node-mocks-http'
 import { Subject } from '../../../src/entities/subject'
 import {
-    UserConnectionNode,
-    AddOrganizationRolesToUserInput,
     UsersMutationResult,
     UserContactInfo,
     CreateUserInput,
 } from '../../../src/types/graphQL/user'
-
-import { userValidations } from '../../../src/entities/validations/user'
+import { UpdateUserInput } from '../../../src/types/graphQL/user'
+import faker from 'faker'
 
 export const CREATE_ORGANIZATION = `
     mutation myMutation($user_id: ID!, $organization_name: String, $shortCode: String) {
@@ -326,6 +324,29 @@ export const REMOVE_ORG_ROLES_FROM_USERS = `
     }
 `
 
+export const UPDATE_USERS = `
+   mutation UpdateUsers($input:[UpdateUserInput!]!){
+        updateUsers(input:$input){
+            users{
+                id
+                givenName
+                familyName
+                gender
+                contactInfo{
+                    email
+                    phone
+                }
+                alternateContactInfo{
+                    email
+                    phone
+                }
+                avatar
+                dateOfBirth
+                status
+            }
+        }
+    }
+`
 export async function createOrganizationAndValidate(
     testClient: ApolloServerTestClient,
     userId: string,
@@ -779,6 +800,24 @@ export async function createGqlUsers(
     return gqlUsersResult
 }
 
+export async function updateGqlUsers(
+    testClient: ApolloServerTestClient,
+    input: UpdateUserInput[],
+    headers?: Headers
+) {
+    const { mutate } = testClient
+
+    const operation = () =>
+        mutate({
+            mutation: UPDATE_USERS,
+            variables: { input },
+            headers: headers,
+        })
+    const res = await gqlTry(operation)
+    const gqlUsersResult = res.data?.updateUsers as UsersMutationResult
+    return gqlUsersResult
+}
+
 export function userToCreateUserInput(u: User): CreateUserInput {
     const ci: UserContactInfo = {
         email: u.email,
@@ -795,4 +834,70 @@ export function userToCreateUserInput(u: User): CreateUserInput {
         alternatePhone: u.alternate_phone,
     }
     return cui
+}
+
+export function userToUpdateUserInput(u: User): UpdateUserInput {
+    const uui: UpdateUserInput = {
+        id: u.user_id,
+        email: u.email,
+        phone: u.phone,
+        givenName: u.given_name ? u.given_name : '',
+        familyName: u.family_name ? u.family_name : '',
+        gender: u.gender ? u.gender : '',
+        dateOfBirth: u.date_of_birth,
+        username: u.username,
+        alternateEmail: u.alternate_email || undefined,
+        alternatePhone: u.alternate_phone || undefined,
+    }
+    return uui
+}
+
+export function randomChangeToUpdateUserInput(
+    u: UpdateUserInput
+): UpdateUserInput {
+    const choice = faker.datatype.number(10)
+    switch (choice) {
+        case 0:
+            u.givenName = faker.name.firstName()
+            break
+        case 1:
+            u.familyName = faker.name.lastName()
+            break
+        case 2:
+            u.gender = faker.datatype.boolean() ? 'Male' : 'Female'
+            break
+        case 3:
+            {
+                const month = faker.datatype.number({
+                    min: 1,
+                    max: 12,
+                    precision: 1,
+                })
+
+                u.dateOfBirth =
+                    (month < 10 ? '0' : '') +
+                    month +
+                    '-' +
+                    faker.datatype.number({ min: 1950, max: 2021 })
+            }
+            break
+        case 4:
+            u.username = faker.name.firstName()
+            break
+        case 5:
+            u.alternateEmail = faker.internet.email()
+            break
+        case 7:
+            u.alternatePhone = faker.phone.phoneNumber('+44#######')
+            break
+        case 8:
+            u.avatar = faker.internet.url()
+            break
+        case 9:
+            u.primaryUser = faker.datatype.boolean()
+            break
+        default:
+            break
+    }
+    return u
 }

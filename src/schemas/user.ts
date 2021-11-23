@@ -25,6 +25,7 @@ import {
 import { createUsers } from '../resolvers/user'
 import { OrganizationMembership } from '../entities/organizationMembership'
 import { SchoolMembership } from '../entities/schoolMembership'
+import { updateUsers } from '../resolvers/user'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -63,6 +64,22 @@ const typeDefs = gql`
         uploadUsersFromCSV(file: Upload!, isDryRun: Boolean): File
             @isMIMEType(mimetype: "text/csv")
         createUsers(input: [CreateUserInput!]!): UsersMutationResult
+        updateUsers(input: [UpdateUserInput!]!): UsersMutationResult
+    }
+
+    input UpdateUserInput {
+        id: ID!
+        givenName: String
+        familyName: String
+        email: String
+        phone: String
+        username: String
+        dateOfBirth: String
+        gender: String
+        avatar: String
+        alternateEmail: String
+        alternatePhone: String
+        primaryUser: Boolean
     }
 
     # Definitions related to mutations
@@ -399,6 +416,8 @@ export default function getDefault(
 
                 createUsers: (_parent, args, ctx, _info) =>
                     createUsers(args, ctx),
+                updateUsers: (_parent, args, ctx, _info) =>
+                    updateUsers(args, ctx),
             },
             Query: {
                 me: (_, _args, ctx: Context, _info) =>

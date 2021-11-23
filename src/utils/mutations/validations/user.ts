@@ -1,34 +1,9 @@
+import { sharedValidations } from '../../../entities/validations/shared'
+import { UpdateUserInput } from '../../../types/graphQL/user'
 import Joi from 'joi'
 import { userValidations } from '../../../entities/validations/user'
-import { APISchema, APISchemaMetadata } from '../../../types/api'
+import { APISchema } from '../../../types/api'
 import { CreateUserInput } from '../../../types/graphQL/user'
-
-export const createUserSchemaMetadata: APISchemaMetadata<CreateUserInput> = {
-    contactInfo: {
-        entity: 'User',
-    },
-    givenName: {
-        entity: 'User',
-    },
-    familyName: {
-        entity: 'User',
-    },
-    dateOfBirth: {
-        entity: 'User',
-    },
-    username: {
-        entity: 'User',
-    },
-    gender: {
-        entity: 'User',
-    },
-    alternateEmail: {
-        entity: 'User',
-    },
-    alternatePhone: {
-        entity: 'User',
-    },
-}
 
 export const createUserSchema: APISchema<CreateUserInput> = {
     contactInfo: Joi.object({
@@ -42,4 +17,19 @@ export const createUserSchema: APISchema<CreateUserInput> = {
     gender: userValidations.gender,
     alternateEmail: userValidations.alternate_email,
     alternatePhone: userValidations.alternate_phone,
+}
+
+export const updateUserSchema: APISchema<UpdateUserInput> = {
+    id: userValidations.user_id,
+    email: sharedValidations.email,
+    phone: sharedValidations.phone,
+    givenName: userValidations.given_name,
+    familyName: userValidations.family_name,
+    dateOfBirth: userValidations.date_of_birth,
+    username: userValidations.username,
+    gender: userValidations.gender,
+    alternateEmail: userValidations.alternate_email,
+    alternatePhone: userValidations.alternate_phone,
+    avatar: userValidations.avatar,
+    primaryUser: userValidations.primaryUser,
 }

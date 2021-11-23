@@ -62,3 +62,18 @@ export interface CreateUserInput {
     alternateEmail?: string | null
     alternatePhone?: string | null
 }
+
+export interface UpdateUserInput {
+    id: string
+    givenName?: string
+    familyName?: string
+    email?: string
+    phone?: string
+    username?: string
+    dateOfBirth?: string
+    gender?: string
+    avatar?: string
+    alternateEmail?: string
+    alternatePhone?: string
+    primaryUser?: boolean
+}
