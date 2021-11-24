@@ -45,6 +45,8 @@ import { Status } from '../../src/entities/status'
 import { createUser } from '../factories/user.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { Organization } from '../../src/entities/organization'
+import { studentRole } from '../../src/permissions/student'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
 chai.use(chaiAsPromised)
 
 describe('userPermissions', () => {
@@ -703,6 +705,67 @@ describe('userPermissions', () => {
                     })
                 }
             )
+        })
+    })
+
+    describe('permissionsInOrganization', () => {
+        let clientUser: User
+        let organization: Organization
+        let userPermissions: UserPermissions
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            organization = await createOrganization().save()
+            userPermissions = new UserPermissions(userToPayload(clientUser))
+        })
+        it('returns an empty array if the user is not part of the organization', async () => {
+            const permissions = await userPermissions.permissionsInOrganization(
+                organization.organization_id
+            )
+            expect(permissions).to.have.lengthOf(0)
+        })
+        it('returns the full list of permissions a user has in a given organization', async () => {
+            const role = await createRoleFactory('role', organization, {
+                permissions: studentRole.permissions,
+            }).save()
+            await createOrganizationMembership({
+                user: clientUser,
+                organization,
+                roles: [role],
+            }).save()
+            const permissions = await userPermissions.permissionsInOrganization(
+                organization.organization_id
+            )
+            expect(permissions).to.have.lengthOf(studentRole.permissions.length)
+        })
+    })
+    describe('permissionsInSchool', () => {
+        let clientUser: User
+        let school: School
+        let userPermissions: UserPermissions
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            school = await createSchoolFactory().save()
+            userPermissions = new UserPermissions(userToPayload(clientUser))
+        })
+        it('returns an empty array if the user is not part of the school', async () => {
+            const permissions = await userPermissions.permissionsInSchool(
+                school.school_id
+            )
+            expect(permissions).to.have.lengthOf(0)
+        })
+        it('returns the full list of permissions a user has in a given school', async () => {
+            const role = await createRoleFactory('role', undefined, {
+                permissions: studentRole.permissions,
+            }).save()
+            await createSchoolMembership({
+                user: clientUser,
+                school,
+                roles: [role],
+            }).save()
+            const permissions = await userPermissions.permissionsInSchool(
+                school.school_id
+            )
+            expect(permissions).to.have.lengthOf(studentRole.permissions.length)
         })
     })
 })

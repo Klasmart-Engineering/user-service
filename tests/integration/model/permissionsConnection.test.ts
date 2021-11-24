@@ -70,12 +70,16 @@ describe('model', () => {
         field: PermissionConnectionNodeKey,
         order: 'ASC' | 'DESC'
     ) => {
-        const result = await permissionsConnectionResolver(info, ctx, {
-            direction: 'FORWARD',
-            directionArgs: { count: pageSize },
-            scope,
-            sort: { field, order },
-        })
+        const result = await permissionsConnectionResolver(
+            info,
+            ctx.permissions,
+            {
+                direction: 'FORWARD',
+                directionArgs: { count: pageSize },
+                scope,
+                sort: { field, order },
+            }
+        )
 
         expect(result.totalCount).to.eql(permissionsCount)
         expect(result.edges.length).eq(pageSize)
@@ -166,11 +170,15 @@ describe('model', () => {
     context('pagination', () => {
         context('when user is super admin', () => {
             it('returns permissions from all the list', async () => {
-                const result = await permissionsConnectionResolver(info, ctx, {
-                    direction: 'FORWARD',
-                    directionArgs: { count: pageSize },
-                    scope,
-                })
+                const result = await permissionsConnectionResolver(
+                    info,
+                    ctx.permissions,
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: pageSize },
+                        scope,
+                    }
+                )
 
                 expect(result.totalCount).to.eql(permissionsCount)
 
@@ -189,11 +197,15 @@ describe('model', () => {
             })
 
             it('returns just the permissions related to roles', async () => {
-                const result = await permissionsConnectionResolver(info, ctx, {
-                    direction: 'FORWARD',
-                    directionArgs: { count: pageSize },
-                    scope,
-                })
+                const result = await permissionsConnectionResolver(
+                    info,
+                    ctx.permissions,
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: pageSize },
+                        scope,
+                    }
+                )
 
                 expect(result.totalCount).to.eql(roleInvolvedPermissionsCount)
 
@@ -212,11 +224,15 @@ describe('model', () => {
             })
 
             it('should not have access to any permission', async () => {
-                const result = await permissionsConnectionResolver(info, ctx, {
-                    direction: 'FORWARD',
-                    directionArgs: { count: pageSize },
-                    scope,
-                })
+                const result = await permissionsConnectionResolver(
+                    info,
+                    ctx.permissions,
+                    {
+                        direction: 'FORWARD',
+                        directionArgs: { count: pageSize },
+                        scope,
+                    }
+                )
 
                 expect(result.totalCount).to.eql(0)
 
@@ -303,12 +319,16 @@ describe('model', () => {
                 roleId: { operator: 'eq', value: studentRoleId },
             }
 
-            const result = await permissionsConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
+            const result = await permissionsConnectionResolver(
+                info,
+                ctx.permissions,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                }
+            )
 
             const studentPermissions = await Permission.createQueryBuilder(
                 'Permission'
@@ -352,12 +372,16 @@ describe('model', () => {
                 roleId: { operator: 'eq', value: customRoleId },
             }
 
-            const result = await permissionsConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
+            const result = await permissionsConnectionResolver(
+                info,
+                ctx.permissions,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                }
+            )
 
             const customRolePermissions = (await customRole.permissions) || []
 
@@ -394,12 +418,16 @@ describe('model', () => {
                 name: { operator: 'contains', value: searching },
             }
 
-            const result = await permissionsConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
+            const result = await permissionsConnectionResolver(
+                info,
+                ctx.permissions,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                }
+            )
 
             expect(result.totalCount).to.eql(5)
 
@@ -414,12 +442,16 @@ describe('model', () => {
                 allow: { operator: 'eq', value: allowValue },
             }
 
-            const result = await permissionsConnectionResolver(info, ctx, {
-                direction: 'FORWARD',
-                directionArgs: { count: pageSize },
-                scope,
-                filter,
-            })
+            const result = await permissionsConnectionResolver(
+                info,
+                ctx.permissions,
+                {
+                    direction: 'FORWARD',
+                    directionArgs: { count: pageSize },
+                    scope,
+                    filter,
+                }
+            )
 
             expect(result.totalCount).to.eql(1)
 
@@ -452,7 +484,7 @@ describe('model', () => {
         it('makes just one call to the database', async () => {
             connection.logger.reset()
 
-            await permissionsConnectionResolver(info, ctx, {
+            await permissionsConnectionResolver(info, ctx.permissions, {
                 direction: 'FORWARD',
                 directionArgs: { count: pageSize },
                 scope,

@@ -387,4 +387,15 @@ export class UserPermissions {
 
         return schoolIds
     }
+
+    public async permissionsInOrganization(organizationId: string) {
+        const orgPermissions = await this.organizationPermissions(this.user_id)
+        const permissions = orgPermissions.get(organizationId)
+        return permissions ? Array.from(permissions) : []
+    }
+    public async permissionsInSchool(schoolId: string) {
+        const schoolPermissions = await this.schoolPermissions(this.user_id)
+        const permissions = schoolPermissions.get(schoolId)
+        return permissions ? Array.from(permissions) : []
+    }
 }

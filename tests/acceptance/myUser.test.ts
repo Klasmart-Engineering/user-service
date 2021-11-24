@@ -1,24 +1,25 @@
 import { expect } from 'chai'
 import supertest from 'supertest'
+import { v4 as uuid_v4 } from 'uuid'
+import { Organization } from '../../src/entities/organization'
+import { Role } from '../../src/entities/role'
+import { School } from '../../src/entities/school'
+import { User } from '../../src/entities/user'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { studentRole } from '../../src/permissions/student'
+import { OrganizationConnectionNode } from '../../src/types/graphQL/organization'
+import { PermissionConnectionNode } from '../../src/types/graphQL/permission'
+import { ISchoolsConnectionNode } from '../../src/types/graphQL/school'
+import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
+import { createOrganization } from '../factories/organization.factory'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { createRole } from '../factories/role.factory'
+import { createSchool } from '../factories/school.factory'
+import { createSchoolMembership } from '../factories/schoolMembership.factory'
 import { createUser } from '../factories/user.factory'
 import { generateToken } from '../utils/testConfig'
 import { createTestConnection, TestConnection } from '../utils/testConnection'
-import { v4 as uuid_v4 } from 'uuid'
-import { User } from '../../src/entities/user'
-import { createOrganization } from '../factories/organization.factory'
-import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { makeRequest } from './utils'
-import { Organization } from '../../src/entities/organization'
-import { createRole } from '../factories/role.factory'
-import { PermissionName } from '../../src/permissions/permissionNames'
-import { School } from '../../src/entities/school'
-import { createSchool } from '../factories/school.factory'
-import { createSchoolMembership } from '../factories/schoolMembership.factory'
-import { Role } from '../../src/entities/role'
-import { IPaginatedResponse } from '../../src/utils/pagination/paginate'
-import { OrganizationConnectionNode } from '../../src/types/graphQL/organization'
-import { ISchoolsConnectionNode } from '../../src/types/graphQL/school'
-import { Context } from 'mocha'
 
 const url = 'http://localhost:8080/user'
 const request = supertest(url)
@@ -478,6 +479,122 @@ describe('acceptance.myUser', () => {
                     `Variable "$permissionIds" of required type "[String!]!" was not provided.`
                 )
             })
+        })
+    })
+    context('MyUser.permissionsInOrganization', () => {
+        const query = `
+            query PermissionsInOrganization($organizationId: ID!, $filter: PermissionFilter){
+                myUser {
+                    permissionsInOrganization(organizationId: $organizationId, filter: $filter) {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+        `
+
+        let clientUser: User
+        let organization: Organization
+        let token: string
+
+        async function getResult(variables: Record<string, unknown>) {
+            const response = await makeRequest(request, query, variables, token)
+            return response.body.data.myUser
+                .permissionsInOrganization as IPaginatedResponse<PermissionConnectionNode>
+        }
+
+        beforeEach(async () => {
+            clientUser = await createUser().save()
+            organization = await createOrganization().save()
+            const role = await createRole(undefined, undefined, {
+                permissions: studentRole.permissions,
+            }).save()
+
+            await createOrganizationMembership({
+                user: clientUser,
+                organization,
+                roles: [role],
+            }).save()
+
+            token = generateToken({
+                id: clientUser.user_id,
+                email: clientUser.email,
+                iss: 'calmid-debug',
+            })
+        })
+        it('returns a paginated response of a users permissions in organizations', async () => {
+            const data = await getResult({
+                organizationId: organization.organization_id,
+            })
+            expect(data.totalCount).to.eq(studentRole.permissions.length)
+            const permissionIds = data.edges.map((edge) => edge.node.id)
+            expect(permissionIds).to.have.same.members(studentRole.permissions)
+        })
+    })
+
+    context('MyUser.permissionsInSchool', () => {
+        const query = `
+            query PermissionsInSchool($schoolId: ID!, $filter: PermissionFilter){
+                myUser {
+                    permissionsInSchool(schoolId: $schoolId, filter: $filter) {
+                        totalCount
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+        `
+
+        let clientUser: User
+        let school: School
+        let token: string
+
+        async function getResult(variables: Record<string, unknown>) {
+            const response = await makeRequest(request, query, variables, token)
+            return response.body.data.myUser
+                .permissionsInSchool as IPaginatedResponse<PermissionConnectionNode>
+        }
+
+        beforeEach(async () => {
+            const org = await createOrganization().save()
+            clientUser = await createUser().save()
+            school = await createSchool(org).save()
+            const role = await createRole(undefined, org, {
+                permissions: studentRole.permissions,
+            }).save()
+
+            await createOrganizationMembership({
+                organization: org,
+                user: clientUser,
+                roles: [role],
+            }).save()
+
+            await createSchoolMembership({
+                user: clientUser,
+                school,
+                roles: [role],
+            }).save()
+
+            token = generateToken({
+                id: clientUser.user_id,
+                email: clientUser.email,
+                iss: 'calmid-debug',
+            })
+        })
+        it('returns a paginated response of a users permissions in schools', async () => {
+            const data = await getResult({
+                schoolId: school.school_id,
+            })
+            expect(data.totalCount).to.eq(studentRole.permissions.length)
+            const permissionIds = data.edges.map((edge) => edge.node.id)
+            expect(permissionIds).to.have.same.members(studentRole.permissions)
         })
     })
 })

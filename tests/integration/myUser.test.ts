@@ -23,6 +23,14 @@ import { generateToken } from '../utils/testConfig'
 import { School } from '../../src/entities/school'
 import { createSchool } from '../factories/school.factory'
 import { createSchoolMembership } from '../factories/schoolMembership.factory'
+import { paginatePermissions } from '../../src/schemas/myUser'
+import { Permission } from '../../src/entities/permission'
+import { UserPermissions } from '../../src/permissions/userPermissions'
+import { GraphQLResolveInfo } from 'graphql'
+import { organizationAdminRole } from '../../src/permissions/organizationAdmin'
+import { IEntityFilter } from '../../src/utils/pagination/filtering'
+import { createAdminUser } from '../utils/testEntities'
+import { userToPayload } from '../utils/operations/userOps'
 
 use(chaiAsPromised)
 
@@ -307,6 +315,69 @@ describe('myUser', () => {
 
                 expect(result.edges).to.be.empty
             })
+        })
+    })
+
+    describe('#paginatePermissions', () => {
+        const paginationCount = 10
+
+        let adminUser: User
+        beforeEach(async () => {
+            adminUser = await createAdminUser(testClient)
+        })
+
+        async function getResult(
+            permissions: PermissionName[],
+            filter?: IEntityFilter
+        ) {
+            return paginatePermissions(
+                permissions,
+                Permission.createQueryBuilder(),
+                {
+                    count: paginationCount,
+                    filter,
+                },
+                ({
+                    fieldNodes: [
+                        {
+                            selectionSet: {
+                                selections: [
+                                    {
+                                        kind: 'Field',
+                                        name: {
+                                            value: 'totalCount',
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                } as unknown) as GraphQLResolveInfo,
+                new UserPermissions(userToPayload(adminUser))
+            )
+        }
+
+        it('returns a paginated list of permissions provided', async () => {
+            const result = await getResult(organizationAdminRole.permissions)
+            expect(result.totalCount).to.eq(
+                organizationAdminRole.permissions.length
+            )
+            expect(result.edges).to.have.lengthOf(paginationCount)
+        })
+        it('returns an empty paginated response if no permissions are provided', async () => {
+            const result = await getResult([])
+            expect(result.totalCount).to.eq(0)
+            expect(result.edges).to.have.lengthOf(0)
+        })
+        it('supports additional filtering', async () => {
+            const result = await getResult(organizationAdminRole.permissions, {
+                name: {
+                    operator: 'eq',
+                    value: organizationAdminRole.permissions[0],
+                },
+            })
+            expect(result.totalCount).to.eq(1)
+            expect(result.edges).to.have.lengthOf(1)
         })
     })
 })

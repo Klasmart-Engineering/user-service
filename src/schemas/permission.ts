@@ -135,8 +135,8 @@ export default function getDefault(
                 rolesConnection: rolesConnectionChildResolver,
             },
             Query: {
-                permissionsConnection: (_parent, args, ctx, info) =>
-                    permissionsConnectionResolver(info, ctx, args),
+                permissionsConnection: (_parent, args, ctx: Context, info) =>
+                    permissionsConnectionResolver(info, ctx.permissions, args),
                 permissionNode: (_parent, args, ctx: Context) =>
                     ctx.loaders.permissionNode.node.instance.load(args),
             },

@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { Permission } from '../entities/permission'
 import { NodeDataLoader } from '../loaders/genericNode'
-import { Context } from '../main'
+import { UserPermissions } from '../permissions/userPermissions'
 import { PermissionConnectionNode } from '../types/graphQL/permission'
 import { findTotalCountInPaginationEndpoints } from '../utils/graphql'
 import { Lazy } from '../utils/lazyLoading'
@@ -31,7 +31,7 @@ export const permissionSummaryNodeFields: string[] = ([
 
 export async function permissionsConnectionResolver(
     info: GraphQLResolveInfo,
-    ctx: Context,
+    permissions: UserPermissions,
     {
         direction,
         directionArgs,
@@ -44,7 +44,7 @@ export async function permissionsConnectionResolver(
 
     if (filter) {
         // A non admin user has roles table joined since @isAdmin directive
-        if (filterHasProperty('roleId', filter) && ctx.permissions.isAdmin) {
+        if (filterHasProperty('roleId', filter) && permissions.isAdmin) {
             scope.innerJoin('Permission.roles', 'Role')
         }
 

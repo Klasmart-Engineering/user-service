@@ -1,18 +1,28 @@
+import { GraphQLResolveInfo } from 'graphql'
 import gql from 'graphql-tag'
+import { SelectQueryBuilder } from 'typeorm'
+import { Permission } from '../entities/permission'
 import { Context } from '../main'
 import { Model } from '../model'
 import {
     CoreOrganizationConnectionNode,
     organizationsConnectionResolver,
 } from '../pagination/organizationsConnection'
+import { permissionsConnectionResolver } from '../pagination/permissionsConnection'
 import { schoolsConnectionResolver } from '../pagination/schoolsConnection'
 import { mapUserToUserConnectionNode } from '../pagination/usersConnection'
 import { PermissionName } from '../permissions/permissionNames'
+import { UserPermissions } from '../permissions/userPermissions'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
+import { PermissionConnectionNode } from '../types/graphQL/permission'
 import { ISchoolsConnectionNode } from '../types/graphQL/school'
 import { GraphQLSchemaModule } from '../types/schemaModule'
-import { getEmptyPaginatedResponse } from '../utils/pagination/paginate'
+import {
+    getEmptyPaginatedResponse,
+    IChildPaginationArgs,
+    IPaginatedResponse,
+} from '../utils/pagination/paginate'
 
 const typeDefs = gql`
     extend type Query {
@@ -37,6 +47,30 @@ const typeDefs = gql`
             schoolId: ID!
             permissionIds: [String!]!
         ): [UserPermissionStatus!]!
+
+        """
+        Returns a paginated response of the permissions the user has in a given organization.
+        """
+        permissionsInOrganization(
+            organizationId: ID!
+            direction: ConnectionDirection
+            count: PageSize
+            cursor: String
+            sort: PermissionSortInput
+            filter: PermissionFilter
+        ): PermissionsConnectionResponse @isAdmin(entity: "permission")
+
+        """
+        Returns a paginated response of the permissions the user has in a given school.
+        """
+        permissionsInSchool(
+            schoolId: ID!
+            direction: ConnectionDirection
+            count: PageSize
+            cursor: String
+            sort: PermissionSortInput
+            filter: PermissionFilter
+        ): PermissionsConnectionResponse @isAdmin(entity: "permission")
 
         """
         'operator' default = 'AND'
@@ -137,6 +171,40 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                         })
                     )
                 },
+                permissionsInOrganization: async (
+                    _,
+                    args: PermissionsInOrganizationArgs,
+                    ctx: Context,
+                    info
+                ): Promise<IPaginatedResponse<PermissionConnectionNode>> => {
+                    const permissions = await ctx.permissions.permissionsInOrganization(
+                        args.organizationId
+                    )
+                    return paginatePermissions(
+                        permissions,
+                        args.scope,
+                        args,
+                        info,
+                        ctx.permissions
+                    )
+                },
+                permissionsInSchool: async (
+                    _,
+                    args: PermissionsInSchoolArgs,
+                    ctx: Context,
+                    info
+                ): Promise<IPaginatedResponse<PermissionConnectionNode>> => {
+                    const permissions = await ctx.permissions.permissionsInSchool(
+                        args.schoolId
+                    )
+                    return paginatePermissions(
+                        permissions,
+                        args.scope,
+                        args,
+                        info,
+                        ctx.permissions
+                    )
+                },
                 organizationsWithPermissions: async (
                     _parent,
                     args,
@@ -212,4 +280,44 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
             },
         },
     }
+}
+
+export async function paginatePermissions(
+    permissions: string[],
+    scope: SelectQueryBuilder<Permission>,
+    args: IChildPaginationArgs,
+    info: GraphQLResolveInfo,
+    userPermissions: UserPermissions
+) {
+    if (permissions.length === 0) {
+        return getEmptyPaginatedResponse<PermissionConnectionNode>(0)
+    }
+    if (!args.filter) args.filter = {}
+    if (!args.filter.AND) args.filter.AND = []
+    args.filter.AND.push({
+        name: {
+            operator: 'in',
+            value: permissions,
+        },
+    })
+    const result = await permissionsConnectionResolver(info, userPermissions, {
+        direction: args.direction || 'FORWARD',
+        directionArgs: {
+            count: args.count,
+            cursor: args.cursor,
+        },
+        scope,
+        filter: args.filter,
+    })
+    return result
+}
+
+interface PermissionsInOrganizationArgs extends IChildPaginationArgs {
+    organizationId: string
+    scope: SelectQueryBuilder<Permission>
+}
+
+interface PermissionsInSchoolArgs extends IChildPaginationArgs {
+    schoolId: string
+    scope: SelectQueryBuilder<Permission>
 }
