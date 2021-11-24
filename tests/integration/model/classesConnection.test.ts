@@ -1284,6 +1284,8 @@ describe('classesConnection', () => {
                 )
 
                 expect(result.totalCount).to.eq(classes.length)
+                expect(result.pageInfo.hasPreviousPage).to.eq(false)
+                expect(result.pageInfo.hasNextPage).to.eq(true)
                 expect(result.edges).to.have.lengthOf(10)
                 for (const classEdge of result.edges) {
                     const studentEdges = classEdge.node.studentsConnection!

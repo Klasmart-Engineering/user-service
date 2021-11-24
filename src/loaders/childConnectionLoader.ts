@@ -351,8 +351,8 @@ export const multiKeyChildConnectionLoader = async <
                     pageSize,
                     sort.primaryKey,
                     primaryColumns,
-                    parentMap.get(parentLookUpKey)?.totalCount ?? 0,
                     cursorData,
+                    parentMap.get(parentLookUpKey)?.totalCount ?? 0,
                     args.direction
                 )
 
