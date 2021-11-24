@@ -29,7 +29,7 @@ const typeDefs = gql`
         subcategory(id: ID!): Subcategory
             @isAdmin(entity: "subcategory")
             @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
             )
         subcategoryNode(id: ID!): SubcategoryConnectionNode
             @isAdmin(entity: "subcategory")
