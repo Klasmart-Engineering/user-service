@@ -1109,9 +1109,9 @@ export const SUBCATEGORIES_DELETE = gql`
 `
 
 export const CREATE_SUBCATEGORIES = gql`
-    mutation createCategories($input: [CreateCategoryInput!]!) {
-        createCategories(input: $input) {
-            categories {
+    mutation createSubcategories($input: [CreateSubcategoryInput!]!) {
+        createSubcategories(input: $input) {
+            subcategories {
                 id
                 name
                 status
