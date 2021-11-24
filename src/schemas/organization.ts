@@ -172,7 +172,7 @@ const typeDefs = gql`
             subcategories: [SubcategoryDetail]!
         ): [Subcategory]
             @deprecated(
-                reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/l/c/kY3S0K0h"
+                reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
             )
         createOrUpdateSubjects(subjects: [SubjectDetail]!): [Subject]
         createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]

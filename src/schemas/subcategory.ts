@@ -10,7 +10,11 @@ import {
 
 const typeDefs = gql`
     extend type Mutation {
-        subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
+        subcategory(id: ID!): Subcategory
+            @isAdmin(entity: "subcategory")
+            @deprecated(
+                reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
+            )
         uploadSubCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         deleteSubcategories(
@@ -25,7 +29,7 @@ const typeDefs = gql`
         subcategory(id: ID!): Subcategory
             @isAdmin(entity: "subcategory")
             @deprecated(
-                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2427683554"
+                reason: "Sunset Date: 08/02/2022 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
             )
         subcategoryNode(id: ID!): SubcategoryConnectionNode
             @isAdmin(entity: "subcategory")
