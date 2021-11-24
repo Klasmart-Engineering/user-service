@@ -242,7 +242,6 @@ describe('acceptance.subcategory', () => {
         beforeEach(async () => {
             await SubcategoriesInitializer.run()
             await loadFixtures('users', connection)
-            const categoriesDetails: ISubcategoryDetail[] = []
             const createOrgResponse = await createOrg(
                 user_id,
                 org_name,
@@ -280,14 +279,14 @@ describe('acceptance.subcategory', () => {
                     subcategoryIds.slice(0, 2)
                 )
                 const response = await makeUpdateSubcategoriesMutation(input)
-                const { categories } = response.body.data.updateCategories
+                const { subcategories } = response.body.data.updateSubcategories
 
                 expect(response.status).to.eq(200)
-                expect(categories).to.exist
-                expect(categories).to.be.an('array')
-                expect(categories.length).to.eq(input.length)
+                expect(subcategories).to.exist
+                expect(subcategories).to.be.an('array')
+                expect(subcategories.length).to.eq(input.length)
 
-                categories.forEach(
+                subcategories.forEach(
                     (c: SubcategoryConnectionNode, i: number) => {
                         expect(c.id).to.eq(input[i].id)
                         expect(c.name).to.eq(input[i].name)
@@ -300,7 +299,7 @@ describe('acceptance.subcategory', () => {
             it('should fail', async () => {
                 const input = buildUpdateSubcategoryInputArray([NIL_UUID])
                 const response = await makeUpdateSubcategoriesMutation(input)
-                const categoriesUpdated = response.body.data.updateCategories
+                const categoriesUpdated = response.body.data.updateSubcategories
                 const errors = response.body.errors
 
                 expect(response.status).to.eq(200)

@@ -48,7 +48,7 @@ export function buildUpdateSubcategoryInputArray(
     return Array.from(ids, (id, i) =>
         buildSingleUpdateSubcategoryInput(
             id,
-            avoidNames ? undefined : `Modified Category ${i + 1}`
+            avoidNames ? undefined : `Modified Subcategory ${i + 1}`
         )
     )
 }
