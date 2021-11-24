@@ -303,7 +303,7 @@ export async function updateSubcategories(
             mapSubcategoryToSubcategoryConnectionNode(subcategory)
         )
     }
-    
+
     if (errors.length) throw new APIErrorCollection(errors)
 
     try {

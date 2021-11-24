@@ -41,7 +41,6 @@ import {
 } from '../utils/operations/subcategoryOps'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategoriesConnection'
-import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import {
     createInputLengthAPIError,
     MAX_MUTATION_INPUT_ARRAY_SIZE,
