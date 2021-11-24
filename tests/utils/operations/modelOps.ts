@@ -1039,6 +1039,18 @@ export const AGE_RANGE_NODE = gql`
     }
 `
 
+export const UPDATE_SUBCATEGORIES = gql`
+    mutation UpdateSubcategories($input: [UpdateSubcategoryInput!]!) {
+        updateSubcategories(input: $input) {
+            subcategories {
+                name
+                status
+                id
+            }
+        }
+    }
+`
+
 export const GRADE_NODE = gql`
     ${GRADE_FIELDS}
 

@@ -14,3 +14,8 @@ export interface DeleteSubcategoryInput {
 export interface SubcategoriesMutationResult {
     subcategories: SubcategoryConnectionNode[]
 }
+
+export interface UpdateSubcategoryInput {
+    id: string
+    name?: string
+}

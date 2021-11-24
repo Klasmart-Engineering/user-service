@@ -3,7 +3,10 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { subcategoriesConnectionResolver } from '../pagination/subcategoriesConnection'
-import { deleteSubcategories } from '../resolvers/subcategory'
+import {
+    deleteSubcategories,
+    updateSubcategories,
+} from '../resolvers/subcategory'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -12,6 +15,9 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         deleteSubcategories(
             input: [DeleteSubcategoryInput!]!
+        ): SubcategoriesMutationResult
+        updateSubcategories(
+            input: [UpdateSubcategoryInput!]!
         ): SubcategoriesMutationResult
     }
 
@@ -94,6 +100,11 @@ const typeDefs = gql`
         id: ID!
     }
 
+    input UpdateSubcategoryInput {
+        id: ID!
+        name: String
+    }
+
     type SubcategoriesMutationResult {
         subcategories: [SubcategoryConnectionNode!]!
     }
@@ -112,6 +123,8 @@ export default function getDefault(
                     model.uploadSubCategoriesFromCSV(args, ctx, info),
                 deleteSubcategories: (_parent, args, ctx, info) =>
                     deleteSubcategories(args, ctx),
+                updateSubcategories: (_parent, args, ctx, _info) =>
+                    updateSubcategories(args, ctx),
             },
             Query: {
                 subcategory: (_parent, args, ctx, _info) =>
