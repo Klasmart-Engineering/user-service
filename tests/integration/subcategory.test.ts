@@ -38,7 +38,7 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import {
     buildSingleUpdateSubcategoryInput,
     buildUpdateSubcategoryInputArray,
-} from '../utils/operations/categoryOps'
+} from '../utils/operations/subcategoryOps'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategoriesConnection'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
@@ -46,6 +46,7 @@ import {
     createInputLengthAPIError,
     MAX_MUTATION_INPUT_ARRAY_SIZE,
 } from '../../src/utils/resolvers'
+import { NIL_UUID } from '../utils/database'
 
 type NoUpdateProp = 'name' | 'subcategories' | 'both'
 use(chaiAsPromised)
@@ -63,6 +64,7 @@ describe('subcategory', () => {
     let org1: Organization
     let org2: Organization
     let deleteSubcategoriesRoleOrg1: Role
+    let updateSubcategoriesRoleOrg1: Role
     let subcategoriesOrg1: Subcategory[]
     let subcategoriesOrg2: Subcategory[]
     let systemSubcategories: Subcategory[]
@@ -113,11 +115,18 @@ describe('subcategory', () => {
                 permissions: [PermissionName.delete_subjects_20447],
             }
         ).save()
+        updateSubcategoriesRoleOrg1 = await createRole(
+            'Update Subcategories',
+            org1,
+            {
+                permissions: [PermissionName.edit_subjects_20337],
+            }
+        ).save()
 
         await createOrganizationMembership({
             user: userWithPermission,
             organization: org1,
-            roles: [deleteSubcategoriesRoleOrg1],
+            roles: [deleteSubcategoriesRoleOrg1, updateSubcategoriesRoleOrg1],
         }).save()
 
         await createOrganizationMembership({
@@ -232,7 +241,7 @@ describe('subcategory', () => {
         context('admin', () => {
             let result: SubcategoriesMutationResult
 
-            context('deleting a category from an organization', () => {
+            context('deleting a subcategory from an organization', () => {
                 beforeEach(async () => {
                     result = await deleteCategories(admin, [
                         { id: subcategoriesOrg1[0].id },
@@ -277,11 +286,6 @@ describe('subcategory', () => {
     })
 
     context('updateSubcategories', () => {
-        let systemSubcategories: Subcategory[]
-        let org1Subcategories: Subcategory[]
-        let org2Subcategories: Subcategory[]
-        const subcategoriesCount = 5
-
         const updateSubcategoriesFromResolver = async (
             user: User,
             input: UpdateSubcategoryInput[]
@@ -466,33 +470,14 @@ describe('subcategory', () => {
             })
         }
 
-        beforeEach(async () => {
-            await SubcategoriesInitializer.run()
-            systemSubcategories = await Subcategory.find({
-                take: subcategoriesCount,
-            })
-
-            org1Subcategories = await Subcategory.save(
-                Array.from(new Array(subcategoriesCount), () =>
-                    createSubcategory(org1)
-                )
-            )
-
-            org2Subcategories = await Subcategory.save(
-                Array.from(new Array(subcategoriesCount), () =>
-                    createSubcategory(org2)
-                )
-            )
-        })
-
         context('permissions', () => {
             context('succesfull cases', () => {
                 context('when user is admin', () => {
                     it('should update any subcategory', async () => {
                         await expectSubcategoriesFromSubcategories(admin, [
                             systemSubcategories[0],
-                            org1Subcategories[0],
-                            org2Subcategories[0],
+                            subcategoriesOrg1[0],
+                            subcategoriesOrg2[0],
                         ])
                     })
                 })
@@ -502,7 +487,7 @@ describe('subcategory', () => {
                         it('should update subcategories in its organization', async () => {
                             await expectSubcategoriesFromSubcategories(
                                 userWithPermission,
-                                org1Subcategories
+                                subcategoriesOrg1
                             )
                         })
                     })
@@ -538,7 +523,7 @@ describe('subcategory', () => {
                         'and tries to update subcategories in a non belonging organization',
                         () => {
                             it('should throw an ErrorCollection', async () => {
-                                const subcatsToUpdate = org2Subcategories
+                                const subcatsToUpdate = subcategoriesOrg2
                                 const expectedErrors = Array.from(
                                     subcatsToUpdate,
                                     (_, index) =>
@@ -567,7 +552,7 @@ describe('subcategory', () => {
                             'and tries to update subcategories in its organization',
                             () => {
                                 it('should throw an ErrorCollection', async () => {
-                                    const subcatsToUpdate = org1Subcategories
+                                    const subcatsToUpdate = subcategoriesOrg1
                                     const expectedErrors = Array.from(
                                         subcatsToUpdate,
                                         (_, index) =>
@@ -595,8 +580,8 @@ describe('subcategory', () => {
                             it('should throw an ErrorCollection', async () => {
                                 const subcatsToUpdate = [
                                     systemSubcategories[0],
-                                    org1Subcategories[0],
-                                    org2Subcategories[0],
+                                    subcategoriesOrg1[0],
+                                    subcategoriesOrg2[0],
                                 ]
 
                                 const expectedErrors = Array.from(
@@ -631,7 +616,7 @@ describe('subcategory', () => {
                         it('should update the category', async () => {
                             const input = [
                                 buildSingleUpdateSubcategoryInput(
-                                    org1Subcategories[0].id,
+                                    subcategoriesOrg1[0].id,
                                     systemSubcategories[0].name
                                 ),
                             ]
@@ -647,8 +632,8 @@ describe('subcategory', () => {
                         it('should update the subcategory', async () => {
                             const input = [
                                 buildSingleUpdateSubcategoryInput(
-                                    org1Subcategories[0].id,
-                                    org2Subcategories[0].name
+                                    subcategoriesOrg1[0].id,
+                                    subcategoriesOrg2[0].name
                                 ),
                             ]
 
@@ -660,7 +645,7 @@ describe('subcategory', () => {
                     it('should just update names', async () => {
                         await expectSubcategoriesFromSubcategories(
                             admin,
-                            org1Subcategories,
+                            subcategoriesOrg1,
                             'name'
                         )
                     })
@@ -671,7 +656,7 @@ describe('subcategory', () => {
                 context('when input provided is an empty array', () => {
                     it('should throw an APIError', async () => {
                         const expectedError = createInputLengthAPIError(
-                            'Category',
+                            'Subcategory',
                             'min'
                         )
 
@@ -684,14 +669,14 @@ describe('subcategory', () => {
                     `when input length is greather than ${MAX_MUTATION_INPUT_ARRAY_SIZE}`,
                     () => {
                         it('should throw an APIError', async () => {
-                            const subcategoryToUpdate = org1Subcategories[0]
+                            const subcategoryToUpdate = subcategoriesOrg1[0]
                             const catsToUpdate = Array.from(
                                 new Array(MAX_MUTATION_INPUT_ARRAY_SIZE + 1),
                                 () => subcategoryToUpdate
                             )
 
                             const expectedError = createInputLengthAPIError(
-                                'Category',
+                                'Subcategory',
                                 'max'
                             )
 
@@ -710,7 +695,7 @@ describe('subcategory', () => {
                     "when input provided has duplicates in 'id' field",
                     () => {
                         it('should throw an ErrorCollection', async () => {
-                            const categoryToRepeat = org1Subcategories[0]
+                            const categoryToRepeat = subcategoriesOrg1[0]
                             const input = Array.from(new Array(3), (_, i) =>
                                 buildSingleUpdateSubcategoryInput(
                                     categoryToRepeat.id,
@@ -740,60 +725,27 @@ describe('subcategory', () => {
                 )
 
                 context(
-                    "when input provided has duplicates in 'name' field",
-                    () => {
-                        it('should throw an ErrorCollection', async () => {
-                            const subcatsToUpdate = org1Subcategories
-                            const input = Array.from(subcatsToUpdate, (c, i) =>
-                                buildSingleUpdateSubcategoryInput(
-                                    c.id,
-                                    'Renamed Category'
-                                )
-                            )
-
-                            const expectedErrors = Array.from(
-                                [input[1], input[2]],
-                                (_, index) => {
-                                    return createUpdateSubcategoryDuplicateInput(
-                                        index + 1,
-                                        'name'
-                                    )
-                                }
-                            )
-
-                            await expectErrorCollectionFromInput(
-                                admin,
-                                input,
-                                expectedErrors
-                            )
-
-                            await expectNoChangesMade(subcatsToUpdate)
-                        })
-                    }
-                )
-
-                context(
-                    'when a category with the received id does not exist',
+                    'when a subcategory with the received id does not exist',
                     () => {
                         it('should throw an ErrorCollection', async () => {
                             const existentCatsToUpdate = [
-                                org1Subcategories[0],
-                                org2Subcategories[0],
+                                subcategoriesOrg1[0],
+                                subcategoriesOrg2[0],
                             ]
 
-                            const nonExistentCategoryId = NIL_UUID
+                            const nonExistentSubCategoryId = NIL_UUID
                             const input = [
                                 buildSingleUpdateSubcategoryInput(
-                                    nonExistentCategoryId,
-                                    'Renamed Category'
+                                    nonExistentSubCategoryId,
+                                    'Renamed Subcategory'
                                 ),
                                 buildSingleUpdateSubcategoryInput(
                                     existentCatsToUpdate[0].id,
-                                    'Renamed Category 2'
+                                    'Renamed Subcategory 2'
                                 ),
                                 buildSingleUpdateSubcategoryInput(
                                     existentCatsToUpdate[1].id,
-                                    'Renamed Category 3'
+                                    'Renamed Subcategory 3'
                                 ),
                             ]
 
@@ -801,7 +753,7 @@ describe('subcategory', () => {
                                 createSubcategoryAPIError(
                                     'nonExistent',
                                     0,
-                                    nonExistentCategoryId
+                                    nonExistentSubCategoryId
                                 ),
                             ]
 
@@ -820,13 +772,13 @@ describe('subcategory', () => {
                     let inactiveSubcategory: Subcategory
 
                     beforeEach(async () => {
-                        inactiveSubcategory = org1Subcategories[0]
+                        inactiveSubcategory = subcategoriesOrg1[0]
                         inactiveSubcategory.status = Status.INACTIVE
                         await inactiveSubcategory.save()
                     })
 
                     it('should throw an ErrorCollection', async () => {
-                        const catsToUpdate = org1Subcategories
+                        const catsToUpdate = subcategoriesOrg1
                         const expectedErrors = Array.from(
                             catsToUpdate,
                             (_, index) => {
@@ -852,14 +804,14 @@ describe('subcategory', () => {
                     'when the received name already exist in another subcategory',
                     () => {
                         it('should throw an ErrorCollection', async () => {
-                            const subcatsToUpdate = org1Subcategories.slice(
+                            const subcatsToUpdate = subcategoriesOrg1.slice(
                                 0,
                                 3
                             )
                             const input = Array.from(subcatsToUpdate, (c, i) =>
                                 buildSingleUpdateSubcategoryInput(
                                     c.id,
-                                    org1Subcategories[i + 1].name
+                                    subcategoriesOrg1[i + 1].name
                                 )
                             )
 
@@ -869,7 +821,7 @@ describe('subcategory', () => {
                                     return createSubcategoryAPIError(
                                         'duplicate',
                                         index,
-                                        org1Subcategories[index + 1].name
+                                        subcategoriesOrg1[index + 1].name
                                     )
                                 }
                             )

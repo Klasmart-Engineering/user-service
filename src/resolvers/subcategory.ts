@@ -170,8 +170,8 @@ export async function updateSubcategories(
             ...subcategoryConnectionNodeFields,
             'Organization.organization_id',
         ])
-        .leftJoin('Category.organization', 'Organization')
-        .where('Category.id IN (:...ids)', {
+        .leftJoin('Subcategory.organization', 'Organization')
+        .where('Subcategory.id IN (:...ids)', {
             ids,
         })
         .getMany()
@@ -303,7 +303,7 @@ export async function updateSubcategories(
             mapSubcategoryToSubcategoryConnectionNode(subcategory)
         )
     }
-
+    
     if (errors.length) throw new APIErrorCollection(errors)
 
     try {
@@ -369,18 +369,3 @@ export function createUpdateSubcategoryDuplicateInput(
         index,
     })
 }
-// export function createCategoryDuplicateInputAPIError(
-//     index: number,
-//     variables: string[],
-//     entity: string,
-//     attribute: string
-// ) {
-//     return new APIError({
-//         code: customErrors.duplicate_attribute_values.code,
-//         message: customErrors.duplicate_attribute_values.message,
-//         variables,
-//         entity,
-//         attribute,
-//         index,
-//     })
-// }
