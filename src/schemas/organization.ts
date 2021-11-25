@@ -171,6 +171,9 @@ const typeDefs = gql`
         createOrUpdateSubcategories(
             subcategories: [SubcategoryDetail]!
         ): [Subcategory]
+            @deprecated(
+                reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
+            )
         createOrUpdateSubjects(subjects: [SubjectDetail]!): [Subject]
         createOrUpdatePrograms(programs: [ProgramDetail]!): [Program]
         delete(_: Int): Boolean

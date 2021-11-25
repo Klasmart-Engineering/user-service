@@ -3,15 +3,25 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { subcategoriesConnectionResolver } from '../pagination/subcategoriesConnection'
-import { deleteSubcategories } from '../resolvers/subcategory'
+import {
+    deleteSubcategories,
+    updateSubcategories,
+} from '../resolvers/subcategory'
 
 const typeDefs = gql`
     extend type Mutation {
-        subcategory(id: ID!): Subcategory @isAdmin(entity: "subcategory")
+        subcategory(id: ID!): Subcategory
+            @isAdmin(entity: "subcategory")
+            @deprecated(
+                reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/wiki/spaces/ATZ/pages/2457174175"
+            )
         uploadSubCategoriesFromCSV(file: Upload!): File
             @isMIMEType(mimetype: "text/csv")
         deleteSubcategories(
             input: [DeleteSubcategoryInput!]!
+        ): SubcategoriesMutationResult
+        updateSubcategories(
+            input: [UpdateSubcategoryInput!]!
         ): SubcategoriesMutationResult
     }
 
@@ -94,6 +104,11 @@ const typeDefs = gql`
         id: ID!
     }
 
+    input UpdateSubcategoryInput {
+        id: ID!
+        name: String
+    }
+
     type SubcategoriesMutationResult {
         subcategories: [SubcategoryConnectionNode!]!
     }
@@ -112,6 +127,8 @@ export default function getDefault(
                     model.uploadSubCategoriesFromCSV(args, ctx, info),
                 deleteSubcategories: (_parent, args, ctx, info) =>
                     deleteSubcategories(args, ctx),
+                updateSubcategories: (_parent, args, ctx, _info) =>
+                    updateSubcategories(args, ctx),
             },
             Query: {
                 subcategory: (_parent, args, ctx, _info) =>

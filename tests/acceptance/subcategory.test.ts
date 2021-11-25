@@ -5,6 +5,7 @@ import {
     SUBCATEGORIES_CONNECTION,
     SUBCATEGORIES_DELETE,
     SUBCATEGORY_NODE,
+    UPDATE_SUBCATEGORIES,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
@@ -13,6 +14,7 @@ import { expect } from 'chai'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { NIL_UUID } from '../utils/database'
 import {
+    createOrg,
     createSubcategories,
     ISubcategoryDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
@@ -24,11 +26,20 @@ import { createOrganization } from '../factories/organization.factory'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
 import { makeRequest } from './utils'
+import {
+    SubcategoryConnectionNode,
+    UpdateSubcategoryInput,
+} from '../../src/types/graphQL/subcategory'
+import { buildUpdateSubcategoryInputArray } from '../utils/operations/subcategoryOps'
+import { createSubcategory } from '../factories/subcategory.factory'
+import { Organization } from '../../src/entities/organization'
+import { loadFixtures } from '../utils/fixtures'
 
 const url = 'http://localhost:8080'
 const request = supertest(url)
 const user_id = 'c6d4feed-9133-5529-8d72-1003526d1b13'
 const org_name = 'my-org'
+const subcategoriesCount = 12
 
 async function makeConnectionQuery() {
     return await request
@@ -62,7 +73,6 @@ const makeNodeQuery = async (id: string) => {
 
 describe('acceptance.subcategory', () => {
     let connection: Connection
-
     before(async () => {
         connection = await createTestConnection()
     })
@@ -221,6 +231,79 @@ describe('acceptance.subcategory', () => {
                 )
                 const errors = response.body.errors
                 expect(response.status).to.eq(200)
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('updateSubcategories', () => {
+        let orgId: string
+        let subcategoryIds: string[]
+        beforeEach(async () => {
+            await SubcategoriesInitializer.run()
+            await loadFixtures('users', connection)
+            const createOrgResponse = await createOrg(
+                user_id,
+                org_name,
+                getAdminAuthToken()
+            )
+
+            const createOrgData =
+                createOrgResponse.body.data.user.createOrganization
+
+            orgId = createOrgData.organization_id
+            const org = await Organization.findOneOrFail(orgId)
+
+            const subcategories = await Subcategory.save(
+                Array.from(new Array(subcategoriesCount), (_, i) =>
+                    createSubcategory(org)
+                )
+            )
+
+            subcategoryIds = subcategories.map((c) => c.id)
+        })
+        const makeUpdateSubcategoriesMutation = async (
+            input: UpdateSubcategoryInput[]
+        ) => {
+            return makeRequest(
+                request,
+                print(UPDATE_SUBCATEGORIES),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when subcategory exist', () => {
+            it('should update it', async () => {
+                const input = buildUpdateSubcategoryInputArray(
+                    subcategoryIds.slice(0, 2)
+                )
+                const response = await makeUpdateSubcategoriesMutation(input)
+                const { subcategories } = response.body.data.updateSubcategories
+
+                expect(response.status).to.eq(200)
+                expect(subcategories).to.exist
+                expect(subcategories).to.be.an('array')
+                expect(subcategories.length).to.eq(input.length)
+
+                subcategories.forEach(
+                    (c: SubcategoryConnectionNode, i: number) => {
+                        expect(c.id).to.eq(input[i].id)
+                        expect(c.name).to.eq(input[i].name)
+                    }
+                )
+            })
+        })
+
+        context('when category does not exist', () => {
+            it('should fail', async () => {
+                const input = buildUpdateSubcategoryInputArray([NIL_UUID])
+                const response = await makeUpdateSubcategoriesMutation(input)
+                const categoriesUpdated = response.body.data.updateSubcategories
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(categoriesUpdated).to.be.null
                 expect(errors).to.exist
             })
         })
