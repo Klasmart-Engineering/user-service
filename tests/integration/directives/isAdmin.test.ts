@@ -603,6 +603,49 @@ describe('isAdmin', () => {
                 expect(usersConnection.totalCount).to.eq(11)
             })
 
+            it('returns empty if view_my_school_users_40111 permission given but no school memberships', async () => {
+                const user = await createNonAdminUser(testClient)
+                const token = getNonAdminAuthToken()
+                await addOrganizationToUserAndValidate(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    getAdminAuthToken()
+                )
+
+                await addRoleToOrganizationMembership(
+                    testClient,
+                    user.user_id,
+                    organizations[0].organization_id,
+                    roleList[0].role_id,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                await grantPermission(
+                    testClient,
+                    roleList[0].role_id,
+                    PermissionName.view_my_school_users_40111,
+                    { authorization: getAdminAuthToken() }
+                )
+
+                let usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 3 },
+                    { authorization: token }
+                )
+
+                usersConnection = await userConnection(
+                    testClient,
+                    direction,
+                    { count: 30 },
+                    { authorization: token }
+                )
+
+                expect(usersConnection.totalCount).to.eq(1)
+                expect(usersConnection.edges[0].node.schools).to.be.empty
+            })
+
             it("doesn't show users from other orgs", async () => {
                 const user = await createNonAdminUser(testClient)
                 const token = getNonAdminAuthToken()

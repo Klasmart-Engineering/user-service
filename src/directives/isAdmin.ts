@@ -4,7 +4,6 @@ import {
     getRepository,
     SelectQueryBuilder,
     Brackets,
-    createQueryBuilder,
 } from 'typeorm'
 import { Class } from '../entities/class'
 import { AgeRange } from '../entities/ageRange'
@@ -25,7 +24,7 @@ import { School } from '../entities/school'
 import { isSubsetOf } from '../utils/array'
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils'
 import { Permission } from '../entities/permission'
-import { v4 as uuid_v4 } from 'uuid'
+import { distinctMembers } from './isAdminUtils'
 
 //
 // changing permission rules? update the docs: permissions.md
@@ -254,31 +253,18 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
     // then do a WHERE user_id IN on each query to find all visible users
     const visibleUserQueries: SelectQueryBuilder<unknown>[] = []
 
-    const distinctMembers = (
-        membershipTable: string,
-        idColumn: string,
-        ids: string[]
-    ) => {
-        const uniqueId = uuid_v4()
-        return createQueryBuilder()
-            .select('membership_table.userUserId', 'user_id')
-            .from(membershipTable, 'membership_table')
-            .andWhere(`membership_table.${idColumn} IN (:...${uniqueId})`, {
-                [uniqueId]: ids,
-            })
-    }
-
     // 1 - can we view org users?
     const userOrgs: string[] = await permissions.orgMembershipsWithPermissions([
         PermissionName.view_users_40110,
     ])
+
     if (userOrgs.length > 0) {
         visibleUserQueries.push(
             distinctMembers(
                 'organization_membership',
                 `organizationOrganizationId`,
                 userOrgs
-            )
+            )!
         )
     }
     // 2 - can we view school users?
@@ -302,10 +288,15 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
             ({ SchoolMembership_school_id }) => SchoolMembership_school_id
         )
 
-        // you can view all users in the schools you belong to
-        visibleUserQueries.push(
-            distinctMembers('school_membership', `schoolSchoolId`, schoolIds)
+        // you can view all users in the schools you belong to\
+        const qbDistinctMembers = distinctMembers(
+            'school_membership',
+            `schoolSchoolId`,
+            schoolIds
         )
+        if (qbDistinctMembers) {
+            visibleUserQueries.push(qbDistinctMembers)
+        }
     }
 
     // 3 - can we view class users?
@@ -322,14 +313,14 @@ export const nonAdminUserScope: NonAdminScope<User> = async (
                 'user_classes_studying_class',
                 'classClassId',
                 classesTaught.map(({ class_id }) => class_id)
-            )
+            )!
         )
         visibleUserQueries.push(
             distinctMembers(
                 'user_classes_teaching_class',
                 'classClassId',
                 classesTaught.map(({ class_id }) => class_id)
-            )
+            )!
         )
     }
 
