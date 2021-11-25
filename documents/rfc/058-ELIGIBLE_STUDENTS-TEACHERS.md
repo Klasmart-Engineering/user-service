@@ -122,6 +122,7 @@ This is different behaviour from the current eligibleStudents/Teachers implement
 - School memberships are not checked
 - OrganizationMembershipConnectionNodes are returned, additional DB required to get user data
 - Moves business logic from backend to client (although we could expose dedicated endpoints that do this under the hood)
+- Current class members **will** be returned, and may need to be filtered out by clients depending on the use case
 - Less user friendly
 
 ## Appendix
