@@ -44,9 +44,7 @@ import {
 } from '../utils/operations/subcategoryOps'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategoriesConnection'
-import {
-    createInputLengthAPIError,
-} from '../../src/utils/resolvers'
+import { createInputLengthAPIError } from '../../src/utils/resolvers'
 import { NIL_UUID } from '../utils/database'
 import { config } from '../../src/config/config'
 
@@ -375,7 +373,8 @@ describe('subcategory', () => {
                 'when user tries to create more than 50 subcategories',
                 () => {
                     it('throws an error', async () => {
-                        const size = config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                        const size =
+                            config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
                         const result = createSubcategoriesFromResolver(
                             admin,
                             generateInput(size, org1)
@@ -996,7 +995,10 @@ describe('subcategory', () => {
                         it('should throw an APIError', async () => {
                             const subcategoryToUpdate = subcategoriesOrg1[0]
                             const catsToUpdate = Array.from(
-                                new Array(config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1),
+                                new Array(
+                                    config.limits
+                                        .MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                                ),
                                 () => subcategoryToUpdate
                             )
 
