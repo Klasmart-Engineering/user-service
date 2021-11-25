@@ -1,5 +1,6 @@
 export const config = {
     limits: {
+        MUTATION_MIN_INPUT_ARRAY_SIZE: 1,
         MUTATION_MAX_INPUT_ARRAY_SIZE: 50,
         AGE_RANGE_LOW_VALUE_MIN: 0,
         AGE_RANGE_LOW_VALUE_MAX: 99,

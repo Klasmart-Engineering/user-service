@@ -24,13 +24,10 @@ export async function createSubcategories(
     args: { input: CreateSubcategoryInput[] },
     context: Pick<Context, 'permissions'>
 ): Promise<SubcategoriesMutationResult> {
-    if (args.input.length === 0) {
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'min')
-    }
-
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'max')
-    }
 
     const organizationIds = args.input.map((val) => val.organizationId)
     const subcategoryNames = args.input.map((val) => val.name)
@@ -159,12 +156,10 @@ export const deleteSubcategories = async (
     args: { input: DeleteSubcategoryInput[] },
     context: Context
 ): Promise<SubcategoriesMutationResult> => {
-    if (args.input.length === 0) {
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'min')
-    }
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'max')
-    }
 
     const errors: APIError[] = []
     const ids: string[] = args.input.map((val) => val.id).flat()
@@ -286,14 +281,10 @@ export async function updateSubcategories(
     args: { input: UpdateSubcategoryInput[] },
     context: Pick<Context, 'permissions'>
 ): Promise<SubcategoriesMutationResult> {
-    // input length validations
-    if (args.input.length === 0) {
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'min')
-    }
-
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'max')
-    }
 
     const errors: APIError[] = []
     const ids = args.input.map((val) => val.id)

@@ -46,9 +46,9 @@ import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategoriesConnection'
 import {
     createInputLengthAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
 } from '../../src/utils/resolvers'
 import { NIL_UUID } from '../utils/database'
+import { config } from '../../src/config/config'
 
 type NoUpdateProp = 'name' | 'subcategories' | 'both'
 use(chaiAsPromised)
@@ -375,14 +375,14 @@ describe('subcategory', () => {
                 'when user tries to create more than 50 subcategories',
                 () => {
                     it('throws an error', async () => {
-                        const size = MAX_MUTATION_INPUT_ARRAY_SIZE + 1
+                        const size = config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
                         const result = createSubcategoriesFromResolver(
                             admin,
                             generateInput(size, org1)
                         )
 
                         await expect(result).to.be.rejectedWith(
-                            `Subcategory input array must not be greater than ${MAX_MUTATION_INPUT_ARRAY_SIZE} elements.`
+                            `Subcategory input array must not be greater than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE} elements.`
                         )
                     })
                 }
@@ -991,12 +991,12 @@ describe('subcategory', () => {
                 })
 
                 context(
-                    `when input length is greather than ${MAX_MUTATION_INPUT_ARRAY_SIZE}`,
+                    `when input length is greather than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
                     () => {
                         it('should throw an APIError', async () => {
                             const subcategoryToUpdate = subcategoriesOrg1[0]
                             const catsToUpdate = Array.from(
-                                new Array(MAX_MUTATION_INPUT_ARRAY_SIZE + 1),
+                                new Array(config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1),
                                 () => subcategoryToUpdate
                             )
 
