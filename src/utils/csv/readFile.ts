@@ -8,15 +8,12 @@ import { CSVError } from '../../types/csv/csvError'
 import { stringInject } from '../stringUtils'
 import constants from '../../types/errors/csv/csvErrorConstants'
 import { UserPermissions } from '../../permissions/userPermissions'
-import {
-    CSV_MAX_FILESIZE,
-    CSV_MIMETYPES,
-    CsvMimeType,
-} from '../../types/csvFormat'
+import { CSV_MIMETYPES, CsvMimeType } from '../../types/csvFormat'
 import * as Stream from 'stream'
 import { customErrors } from '../../types/errors/customError'
 import { CreateEntityHeadersCallback } from '../../types/csv/createEntityHeadersCallback'
 import logger from '../../logging'
+import { config } from '../../config/config'
 
 function formatCSVRow(row: Record<string, unknown>) {
     const keys = Object.keys(row)
@@ -68,7 +65,7 @@ function checkFileSize(
                         stringInject(
                             constants.MSG_ERR_FILE_EXCEEDS_MAX_FILE_SIZE,
                             {
-                                max: CSV_MAX_FILESIZE / 1024,
+                                max: config.limits.CSV_MAX_FILESIZE / 1024,
                             }
                         )
                     )
@@ -147,7 +144,12 @@ async function validateFile(
 ) {
     checkFileType(mimetype)
 
-    await checkFileSize(readStream, CSV_MAX_FILESIZE, filename, fileErrors)
+    await checkFileSize(
+        readStream,
+        config.limits.CSV_MAX_FILESIZE,
+        filename,
+        fileErrors
+    )
 
     if (headersCallback) {
         await checkHeaders(reReadable, headersCallback, filename, fileErrors)

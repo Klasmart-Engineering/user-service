@@ -9,5 +9,3 @@ export const CSV_MIMETYPES = [
 ] as const
 
 export type CsvMimeType = typeof CSV_MIMETYPES[number]
-
-export const CSV_MAX_FILESIZE = 50 * 1024

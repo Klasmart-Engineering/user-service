@@ -17,5 +17,6 @@ export const config = {
         GENDER_MAX_LENGTH: 16,
         USERNAME_MAX_LEN: 35,
         AVATAR_MAX_LEN: 8192,
+        CSV_MAX_FILESIZE: 50 * 1024,
     },
 } as const
