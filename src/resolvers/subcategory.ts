@@ -1,4 +1,4 @@
-import { getManager } from 'typeorm'
+import { getManager, In } from 'typeorm'
 import { Organization } from '../entities/organization'
 import { Status } from '../entities/status'
 import { Subcategory } from '../entities/subcategory'
@@ -15,17 +15,151 @@ import {
     SubcategoryConnectionNode,
     SubcategoriesMutationResult,
     UpdateSubcategoryInput,
+    CreateSubcategoryInput,
 } from '../types/graphQL/subcategory'
 import { createInputLengthAPIError } from '../utils/resolvers'
 import { config } from '../config/config'
+
+export async function createSubcategories(
+    args: { input: CreateSubcategoryInput[] },
+    context: Pick<Context, 'permissions'>
+): Promise<SubcategoriesMutationResult> {
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
+        throw createInputLengthAPIError('Subcategory', 'min')
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
+        throw createInputLengthAPIError('Subcategory', 'max')
+
+    const organizationIds = args.input.map((val) => val.organizationId)
+    const subcategoryNames = args.input.map((val) => val.name)
+    const organizationIdsAndNames = args.input.map((val) =>
+        [val.organizationId, val.name].toString()
+    )
+
+    for (const id of organizationIds) {
+        await context.permissions.rejectIfNotAllowed(
+            { organization_id: id },
+            PermissionName.create_subjects_20227
+        )
+    }
+
+    const preloadedOrgs = new Map(
+        (
+            await Organization.findByIds(organizationIds, {
+                where: { status: Status.ACTIVE },
+            })
+        ).map((i) => [i.organization_id, i])
+    )
+
+    const subcategoriesFound = await Subcategory.find({
+        where: {
+            name: In(subcategoryNames),
+            status: Status.ACTIVE,
+            organization: { organization_id: In(organizationIds) },
+        },
+        relations: ['organization'],
+    })
+
+    const preloadedSubcategories = new Map()
+    for (const s of subcategoriesFound) {
+        const orgId = (await s.organization)?.organization_id || ''
+        preloadedSubcategories.set([orgId, s.name].toString(), s)
+    }
+
+    const subcategories: Subcategory[] = []
+    const errors: APIError[] = []
+
+    for (const [index, subArgs] of args.input.entries()) {
+        const { name, organizationId } = subArgs
+
+        const organization = preloadedOrgs.get(organizationId) as Organization
+        if (!organization) {
+            errors.push(
+                new APIError({
+                    code: customErrors.nonexistent_or_inactive.code,
+                    message: customErrors.nonexistent_or_inactive.message,
+                    variables: ['organization_id'],
+                    entity: 'Organization',
+                    attribute: 'ID',
+                    otherAttribute: organizationId,
+                    index,
+                })
+            )
+        }
+
+        const subcategoriesInputIsDuplicated = organizationIdsAndNames.some(
+            (item) =>
+                item === [organizationId, name].toString() &&
+                organizationIdsAndNames.indexOf(item) < index
+        )
+
+        if (subcategoriesInputIsDuplicated) {
+            errors.push(
+                new APIError({
+                    code: customErrors.duplicate_attribute_values.code,
+                    message: customErrors.duplicate_attribute_values.message,
+                    variables: ['organizationId', 'name'],
+                    entity: 'CreateSubcategoryInput',
+                    attribute: 'organizationId and name combination',
+                    index,
+                })
+            )
+        }
+
+        const subcategoryExist = preloadedSubcategories.has(
+            [organization.organization_id, name].toString()
+        )
+
+        if (organization && subcategoryExist) {
+            errors.push(
+                new APIError({
+                    code: customErrors.duplicate_child_entity.code,
+                    message: customErrors.duplicate_child_entity.message,
+                    variables: ['organization_id', 'name'],
+                    entity: 'Subcategory',
+                    entityName: name,
+                    parentEntity: 'Organization',
+                    parentName: organization.organization_name,
+                    index,
+                })
+            )
+        }
+
+        if (errors.length > 0) continue
+
+        const subcategory = new Subcategory()
+        subcategory.name = name
+        subcategory.organization = Promise.resolve(organization)
+        subcategories.push(subcategory)
+    }
+
+    if (errors.length > 0) throw new APIErrorCollection(errors)
+
+    try {
+        await getManager().save(subcategories)
+    } catch (e) {
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw new APIError({
+            code: customErrors.database_save_error.code,
+            message: customErrors.database_save_error.message,
+            variables: [message],
+            entity: 'Subcategory',
+        })
+    }
+
+    const output = subcategories.map((c) =>
+        mapSubcategoryToSubcategoryConnectionNode(c)
+    )
+    return { subcategories: output }
+}
 
 export const deleteSubcategories = async (
     args: { input: DeleteSubcategoryInput[] },
     context: Context
 ): Promise<SubcategoriesMutationResult> => {
-    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
+        throw createInputLengthAPIError('Subcategory', 'min')
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'max')
-    }
 
     const errors: APIError[] = []
     const ids: string[] = args.input.map((val) => val.id).flat()
@@ -147,14 +281,10 @@ export async function updateSubcategories(
     args: { input: UpdateSubcategoryInput[] },
     context: Pick<Context, 'permissions'>
 ): Promise<SubcategoriesMutationResult> {
-    // input length validations
-    if (args.input.length === 0) {
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'min')
-    }
-
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Subcategory', 'max')
-    }
 
     const errors: APIError[] = []
     const ids = args.input.map((val) => val.id)

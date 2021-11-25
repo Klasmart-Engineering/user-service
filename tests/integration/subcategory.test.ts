@@ -18,14 +18,17 @@ import { User } from '../../src/entities/user'
 import {
     createSubcategoryAPIError,
     createUpdateSubcategoryDuplicateInput,
-    deleteSubcategories,
     updateSubcategories,
+    createSubcategories,
+    deleteSubcategories,
 } from '../../src/resolvers/subcategory'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
+    CreateSubcategoryInput,
     DeleteSubcategoryInput,
     SubcategoriesMutationResult,
     UpdateSubcategoryInput,
+    SubcategoryConnectionNode,
 } from '../../src/types/graphQL/subcategory'
 import { userToPayload } from '../utils/operations/userOps'
 import { Context } from '../../src/main'
@@ -41,11 +44,9 @@ import {
 } from '../utils/operations/subcategoryOps'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import { subcategoryConnectionNodeFields } from '../../src/pagination/subcategoriesConnection'
-import {
-    createInputLengthAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
-} from '../../src/utils/resolvers'
+import { createInputLengthAPIError } from '../../src/utils/resolvers'
 import { NIL_UUID } from '../utils/database'
+import { config } from '../../src/config/config'
 
 type NoUpdateProp = 'name' | 'subcategories' | 'both'
 use(chaiAsPromised)
@@ -132,6 +133,330 @@ describe('subcategory', () => {
             user: userWithoutPermission,
             organization: org1,
         }).save()
+    })
+
+    context('createSubcategories', () => {
+        let admin: User
+        let userWithPermission: User
+        let userWithoutPermission: User
+        let userWithoutMembership: User
+        let org1: Organization
+        let org2: Organization
+        let createSubcategoriesRole: Role
+
+        const createSubcategoriesFromResolver = async (
+            user: User,
+            input: CreateSubcategoryInput[]
+        ) => {
+            const permission = new UserPermissions(userToPayload(user))
+            const ctx = await buildContext(permission)
+            const result = await createSubcategories({ input }, ctx)
+
+            return result
+        }
+
+        const buildCreateSubcategoryInput = (
+            name: string,
+            org: Organization
+        ) => {
+            return {
+                name,
+                organizationId: org.organization_id,
+            }
+        }
+
+        const generateInput = (size: number, org: Organization) => {
+            return Array.from(Array(size), (_, i) =>
+                buildCreateSubcategoryInput(`Subcategory ${i + 1}`, org)
+            )
+        }
+
+        const findSubcategoriesByInput = async (
+            input: CreateSubcategoryInput[]
+        ): Promise<CreateSubcategoryInput[]> => {
+            const subcategories = await Subcategory.createQueryBuilder(
+                'Subcategory'
+            )
+                .select(['Subcategory.name', 'Organization.organization_id'])
+                .innerJoin('Subcategory.organization', 'Organization')
+                .where('Subcategory.name IN (:...inputNames)', {
+                    inputNames: input.map((i) => i.name),
+                })
+                .andWhere('Organization.organization_id IN (:...inputOrgIds)', {
+                    inputOrgIds: input.map((i) => i.organizationId),
+                })
+                .orderBy('Subcategory.name')
+                .addOrderBy('Organization.organization_name')
+                .getMany()
+
+            return subcategories.map((c) => {
+                return {
+                    name: c.name as string,
+                    organizationId: (c as any).__organization__
+                        .organization_id as string,
+                }
+            })
+        }
+
+        const buildPermissionError = (user: User, org: Organization) => {
+            const createSubcategoryPermission =
+                PermissionName.create_subjects_20227
+
+            return `User(${user.user_id}) does not have Permission(${createSubcategoryPermission}) in Organization(${org.organization_id})`
+        }
+
+        beforeEach(async () => {
+            // Creating Users
+            admin = await createAdminUser().save()
+            userWithPermission = await createUser().save()
+            userWithoutPermission = await createUser().save()
+            userWithoutMembership = await createUser().save()
+
+            // Creating Organizations
+            org1 = createOrganization()
+            org1.organization_name = 'Organization 1'
+            await org1.save()
+            org2 = createOrganization()
+            org2.organization_name = 'Organization 2'
+            await org2.save()
+
+            // Creating Role for create categories
+            createSubcategoriesRole = await createRole(
+                'Create Subcategories',
+                org1,
+                {
+                    permissions: [PermissionName.create_subjects_20227],
+                }
+            ).save()
+
+            // Assigning userWithPermission to org1 with the createSubcategoriesRole
+            await createOrganizationMembership({
+                user: userWithPermission,
+                organization: org1,
+                roles: [createSubcategoriesRole],
+            }).save()
+
+            // Assigning userWithoutPermission to org1
+            await createOrganizationMembership({
+                user: userWithoutPermission,
+                organization: org1,
+            }).save()
+        })
+
+        context('when user is admin', () => {
+            it('should create subcategories in any organization', async () => {
+                const input = [
+                    ...generateInput(1, org1),
+                    ...generateInput(1, org2),
+                ]
+                const { subcategories } = await createSubcategoriesFromResolver(
+                    admin,
+                    input
+                )
+                expect(subcategories.length).to.eq(input.length)
+
+                const inputNames = input.map((i) => i.name)
+                const subcategoriesCreatedNames = subcategories.map(
+                    (cc: SubcategoryConnectionNode) => cc.name
+                )
+                expect(subcategoriesCreatedNames).to.deep.equalInAnyOrder(
+                    inputNames
+                )
+
+                const subcategoriesDB = await findSubcategoriesByInput(input)
+                subcategoriesDB.forEach(async (cdb, i) => {
+                    expect(cdb.name).to.include(input[i].name)
+                    expect(cdb.organizationId).to.eq(input[i].organizationId)
+                })
+            })
+        })
+
+        context('when user is not admin but has permission', () => {
+            it('should create subcategories in the organization which belongs', async () => {
+                const input = generateInput(2, org1)
+                const result = await createSubcategoriesFromResolver(
+                    userWithPermission,
+                    input
+                )
+                const { subcategories } = result
+                expect(subcategories.length).to.eq(input.length)
+
+                const inputNames = input.map((i) => i.name)
+                const subcategoriesCreatedNames = subcategories.map(
+                    (cc: SubcategoryConnectionNode) => cc.name
+                )
+                expect(subcategoriesCreatedNames).to.deep.equalInAnyOrder(
+                    inputNames
+                )
+
+                const subcategoriesDB = await findSubcategoriesByInput(input)
+                subcategoriesDB.forEach(async (cdb, i) => {
+                    expect(cdb.name).to.include(input[i].name)
+                    expect(cdb.organizationId).to.eq(input[i].organizationId)
+                })
+            })
+        })
+
+        context('error handling', () => {
+            context(
+                'when non admin tries to create subcategories in an organization which does not belong',
+                () => {
+                    it('throws an error', async () => {
+                        const result = createSubcategoriesFromResolver(
+                            userWithPermission,
+                            generateInput(2, org2)
+                        )
+
+                        await expect(result).to.be.rejectedWith(
+                            buildPermissionError(userWithPermission, org2)
+                        )
+                    })
+                }
+            )
+
+            context(
+                'when a user without permission tries to create subcategories in the organization which belongs',
+                () => {
+                    it('throws an error', async () => {
+                        const result = createSubcategoriesFromResolver(
+                            userWithoutPermission,
+                            generateInput(2, org1)
+                        )
+
+                        await expect(result).to.be.rejectedWith(
+                            buildPermissionError(userWithoutPermission, org1)
+                        )
+                    })
+                }
+            )
+
+            context(
+                'when non member tries to create categories in any organization',
+                () => {
+                    it('throws an error', async () => {
+                        let result = createSubcategoriesFromResolver(
+                            userWithoutMembership,
+                            generateInput(2, org1)
+                        )
+
+                        await expect(result).to.be.rejectedWith(
+                            buildPermissionError(userWithoutMembership, org1)
+                        )
+
+                        result = createSubcategoriesFromResolver(
+                            userWithoutMembership,
+                            generateInput(2, org2)
+                        )
+
+                        await expect(result).to.be.rejectedWith(
+                            buildPermissionError(userWithoutMembership, org2)
+                        )
+                    })
+                }
+            )
+
+            context('when user sends an empty array as input', () => {
+                it('throws an error', async () => {
+                    const size = 0
+                    const result = createSubcategoriesFromResolver(
+                        admin,
+                        generateInput(size, org1)
+                    )
+
+                    await expect(result).to.be.rejectedWith(
+                        `Subcategory input array must not be less than 1 elements.`
+                    )
+                })
+            })
+
+            context(
+                'when user tries to create more than 50 subcategories',
+                () => {
+                    it('throws an error', async () => {
+                        const size =
+                            config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                        const result = createSubcategoriesFromResolver(
+                            admin,
+                            generateInput(size, org1)
+                        )
+
+                        await expect(result).to.be.rejectedWith(
+                            `Subcategory input array must not be greater than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE} elements.`
+                        )
+                    })
+                }
+            )
+
+            context(
+                'when user tries to create subcategories in an organization which does not exist',
+                () => {
+                    it('throws an error', async () => {
+                        const input = Array.from(Array(2), (_, i) => {
+                            return {
+                                name: `Category ${i + 1}`,
+                                organizationId: NIL_UUID,
+                            }
+                        })
+
+                        const result = createSubcategoriesFromResolver(
+                            admin,
+                            input
+                        )
+
+                        await expect(result).to.be.rejectedWith(
+                            "Cannot read property 'organization_id' of undefined"
+                        )
+                    })
+                }
+            )
+
+            context('when the subcategories to create are duplicated', () => {
+                it('throws an error', async () => {
+                    const input = [
+                        ...generateInput(1, org1),
+                        ...generateInput(1, org1),
+                    ]
+
+                    const result = createSubcategoriesFromResolver(admin, input)
+                    const response = (await expect(result).to.be
+                        .rejected) as APIErrorCollection
+
+                    const errors = response.errors
+                    expect(errors.length).to.eq(1)
+                    expect(errors[0].message).to.be.eq(
+                        'On index 1, CreateSubcategoryInput organizationId and name combination must contain unique values.'
+                    )
+                })
+            })
+
+            context('when the subcategory to create already exists', () => {
+                let input: CreateSubcategoryInput[]
+
+                beforeEach(async () => {
+                    input = generateInput(1, org1)
+                    await createSubcategoriesFromResolver(admin, input)
+                })
+
+                it('throws an error', async () => {
+                    const result = createSubcategoriesFromResolver(admin, input)
+
+                    const response = (await expect(result).to.be
+                        .rejected) as APIErrorCollection
+
+                    const subcategoryName = input[0].name
+                    const subcategoryOrganization = await Organization.findOne(
+                        input[0].organizationId
+                    )
+                    const organizationName =
+                        subcategoryOrganization?.organization_name
+                    const errors = response.errors
+                    expect(errors.length).to.eq(1)
+                    expect(errors[0].message).to.be.eq(
+                        `On index 0, Subcategory ${subcategoryName} already exists for Organization ${organizationName}.`
+                    )
+                })
+            })
+        })
     })
 
     describe('delete subcategories', () => {
@@ -665,12 +990,15 @@ describe('subcategory', () => {
                 })
 
                 context(
-                    `when input length is greather than ${MAX_MUTATION_INPUT_ARRAY_SIZE}`,
+                    `when input length is greather than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
                     () => {
                         it('should throw an APIError', async () => {
                             const subcategoryToUpdate = subcategoriesOrg1[0]
                             const catsToUpdate = Array.from(
-                                new Array(MAX_MUTATION_INPUT_ARRAY_SIZE + 1),
+                                new Array(
+                                    config.limits
+                                        .MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                                ),
                                 () => subcategoryToUpdate
                             )
 

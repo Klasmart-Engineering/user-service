@@ -2,6 +2,7 @@ import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Subcategory } from '../../src/entities/subcategory'
 import {
+    CREATE_SUBCATEGORIES,
     SUBCATEGORIES_CONNECTION,
     SUBCATEGORIES_DELETE,
     SUBCATEGORY_NODE,
@@ -28,6 +29,7 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { makeRequest } from './utils'
 import {
     SubcategoryConnectionNode,
+    CreateSubcategoryInput,
     UpdateSubcategoryInput,
 } from '../../src/types/graphQL/subcategory'
 import { buildUpdateSubcategoryInputArray } from '../utils/operations/subcategoryOps'
@@ -160,6 +162,91 @@ describe('acceptance.subcategory', () => {
                 expect(response.status).to.eq(200)
                 expect(errors).to.exist
                 expect(subcategoryNode).to.be.null
+            })
+        })
+    })
+
+    context('createSubcategories', () => {
+        let subcategory1Input: CreateSubcategoryInput
+        let subcategory2Input: CreateSubcategoryInput
+
+        const makeCreateSubcategoriesMutation = async (
+            input: CreateSubcategoryInput[]
+        ) => {
+            return await request
+                .post('/user')
+                .set({
+                    ContentType: 'application/json',
+                    Authorization: getAdminAuthToken(),
+                })
+                .send({
+                    query: print(CREATE_SUBCATEGORIES),
+                    variables: {
+                        input,
+                    },
+                })
+        }
+
+        beforeEach(async () => {
+            await SubcategoriesInitializer.run()
+            await loadFixtures('users', connection)
+            const createOrgResponse = await createOrg(
+                user_id,
+                org_name,
+                getAdminAuthToken()
+            )
+
+            const createOrgData =
+                createOrgResponse.body.data.user.createOrganization
+
+            const orgId = createOrgData.organization_id
+
+            subcategory1Input = {
+                name: 'Acceptance Subcategory 1',
+                organizationId: orgId,
+            }
+
+            subcategory2Input = {
+                name: 'Acceptance Subcategory 2',
+                organizationId: orgId,
+            }
+        })
+
+        context('when input is sent in a correct way', () => {
+            it('should respond succesfully', async () => {
+                const input = [subcategory1Input, subcategory2Input]
+                const response = await makeCreateSubcategoriesMutation(input)
+                const subcategories =
+                    response.body.data.createSubcategories.subcategories
+
+                expect(response.status).to.eq(200)
+                expect(subcategories).to.exist
+                expect(subcategories).to.be.an('array')
+                expect(subcategories.length).to.eq(input.length)
+
+                const subcategoriesCreatedNames = subcategories.map(
+                    (cc: SubcategoryConnectionNode) => cc.name
+                )
+
+                const inputNames = input.map((i) => i.name)
+
+                expect(subcategoriesCreatedNames).to.deep.equalInAnyOrder(
+                    inputNames
+                )
+            })
+        })
+
+        context('when input is sent in an incorrect way', () => {
+            it('should respond with errors', async () => {
+                const input = [subcategory1Input, subcategory1Input]
+                const response = await makeCreateSubcategoriesMutation(input)
+                const subcategoriesCreated =
+                    response.body.data.createSubcategories
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(subcategoriesCreated).to.be.null
+                expect(errors).to.exist
             })
         })
     })
