@@ -16,16 +16,14 @@ import {
     SubcategoriesMutationResult,
     UpdateSubcategoryInput,
 } from '../types/graphQL/subcategory'
-import {
-    createInputLengthAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
-} from '../utils/resolvers'
+import { createInputLengthAPIError } from '../utils/resolvers'
+import { config } from '../config/config'
 
 export const deleteSubcategories = async (
     args: { input: DeleteSubcategoryInput[] },
     context: Context
 ): Promise<SubcategoriesMutationResult> => {
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
         throw createInputLengthAPIError('Subcategory', 'max')
     }
 

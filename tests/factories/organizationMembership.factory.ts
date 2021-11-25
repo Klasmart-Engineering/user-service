@@ -1,9 +1,9 @@
+import { config } from '../../src/config/config'
 import { Organization } from '../../src/entities/organization'
 import { OrganizationMembership } from '../../src/entities/organizationMembership'
 import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
 import { User } from '../../src/entities/user'
-import validationConstants from '../../src/entities/validations/constants'
 import { generateShortCode } from '../../src/utils/shortcode'
 
 export function createOrganizationMembership({
@@ -24,7 +24,7 @@ export function createOrganizationMembership({
     membership.user = Promise.resolve(user)
     membership.shortcode = generateShortCode(
         user.user_id,
-        validationConstants.SHORTCODE_MAX_LENGTH
+        config.limits.SHORTCODE_MAX_LENGTH
     )
     if (roles) {
         membership.roles = Promise.resolve(roles)

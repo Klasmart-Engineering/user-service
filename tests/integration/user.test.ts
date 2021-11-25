@@ -99,6 +99,7 @@ import clean from '../../src/utils/clean'
 import faker from 'faker'
 import { v4 as uuid_v4 } from 'uuid'
 import { userValidations } from '../../src/entities/validations/user'
+import { config } from '../../src/config/config'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -1454,10 +1455,9 @@ describe('user', () => {
                 )
             ).organization_id
 
-            createUserInputs = []
-            for (let i = 0; i < 50; i++) {
-                createUserInputs.push(userToCreateUserInput(createUser()))
-            }
+            createUserInputs = [
+                ...Array(config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE),
+            ].map((_) => userToCreateUserInput(createUser()))
         })
 
         context('when not authorized', () => {
@@ -1544,7 +1544,7 @@ describe('user', () => {
                 )
             })
         })
-        context('when there are two many input array members', () => {
+        context('when there are too many input array members', () => {
             beforeEach(async () => {
                 createUserInputs.push(userToCreateUserInput(createUser()))
             })
@@ -2129,7 +2129,11 @@ describe('user', () => {
             ).organization_id
 
             updateUserInputs = []
-            for (let i = 0; i < 50; i++) {
+            for (
+                let i = 0;
+                i < config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE;
+                i++
+            ) {
                 const u = await createUser().save()
                 updateUserInputs.push(
                     randomChangeToUpdateUserInput(userToUpdateUserInput(u))

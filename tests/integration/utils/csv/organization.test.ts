@@ -20,9 +20,9 @@ import { CSVError } from '../../../../src/types/csv/csvError'
 import { UserPermissions } from '../../../../src/permissions/userPermissions'
 import { createAdminUser } from '../../../utils/testEntities'
 import { Status } from '../../../../src/entities/status'
-import validationConstants from '../../../../src/entities/validations/constants'
 import csvErrorConstants from '../../../../src/types/errors/csv/csvErrorConstants'
 import { createOrganizationOwnership } from '../../../factories/organizationOwnership.factory'
+import { config } from '../../../../src/config/config'
 
 use(chaiAsPromised)
 
@@ -151,8 +151,8 @@ describe('processOrganizationFromCSVRow', () => {
                         csvErrorConstants.ERR_CSV_INVALID_UPPERCASE_ALPHA_NUM_WITH_MAX,
                     column: 'owner_shortcode',
                     entity: 'user',
-                    max: validationConstants.SHORTCODE_MAX_LENGTH,
-                    message: `On row number 1, user short_code must only contain uppercase letters, numbers and must not greater than ${validationConstants.SHORTCODE_MAX_LENGTH} characters.`,
+                    max: config.limits.SHORTCODE_MAX_LENGTH,
+                    message: `On row number 1, user short_code must only contain uppercase letters, numbers and must not greater than ${config.limits.SHORTCODE_MAX_LENGTH} characters.`,
                     row: 1,
                 },
             ])

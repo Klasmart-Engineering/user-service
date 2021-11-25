@@ -11,10 +11,10 @@ import { Status } from '../../entities/status'
 import { addCsvError } from '../csv/csvUtils'
 import { CSVError } from '../../types/csv/csvError'
 import csvErrorConstants from '../../types/errors/csv/csvErrorConstants'
-import validationConstants from '../../entities/validations/constants'
 import { CreateEntityRowCallback } from '../../types/csv/createEntityRowCallback'
 import { UserPermissions } from '../../permissions/userPermissions'
 import { normalizedLowercaseTrimmed } from '../../utils/clean'
+import { config } from '../../config/config'
 
 async function getUserByEmailOrPhone(
     manager: EntityManager,
@@ -167,10 +167,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
 
     if (
         owner_shortcode &&
-        !validateShortCode(
-            owner_shortcode,
-            validationConstants.SHORTCODE_MAX_LENGTH
-        )
+        !validateShortCode(owner_shortcode, config.limits.SHORTCODE_MAX_LENGTH)
     ) {
         addCsvError(
             rowErrors,
@@ -181,7 +178,7 @@ export const processOrganizationFromCSVRow: CreateEntityRowCallback<Organization
             {
                 entity: 'user',
                 attribute: 'short_code',
-                max: validationConstants.SHORTCODE_MAX_LENGTH,
+                max: config.limits.SHORTCODE_MAX_LENGTH,
             }
         )
     }

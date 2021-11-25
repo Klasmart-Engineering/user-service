@@ -1,7 +1,7 @@
 import Joi from 'joi'
-import validationConstants from './constants'
+import { config } from '../../config/config'
 
 export const schoolValidations = {
     school_id: Joi.string().uuid().required(),
-    school_name: Joi.string().max(validationConstants.SCHOOL_NAME_MAX_LENGTH),
+    school_name: Joi.string().max(config.limits.SCHOOL_NAME_MAX_LENGTH),
 }

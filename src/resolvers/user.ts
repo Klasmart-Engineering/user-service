@@ -34,8 +34,9 @@ import {
 import clean from '../utils/clean'
 import {
     createInputLengthAPIError,
-    MAX_MUTATION_INPUT_ARRAY_SIZE,
+    createUnauthorizedAPIError,
 } from '../utils/resolvers'
+import { config } from '../config/config'
 
 export function addOrganizationRolesToUsers(
     args: { input: AddOrganizationRolesToUserInput[] },
@@ -76,7 +77,7 @@ async function modifyOrganizationRoles(
 ) {
     // Initial validations
     if (args.input.length === 0) throw createInputLengthAPIError('User', 'min')
-    if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE)
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('User', 'max')
     for (const val of args.input) {
         await permissions.rejectIfNotAllowed(
@@ -484,43 +485,24 @@ export async function createUsers(
     }
     if (!createUserPerm) {
         errs.push(
-            new APIError({
-                code: customErrors.unauthorized.code,
-                message: customErrors.unauthorized.message,
-                variables: [],
-                entity: 'User',
-                attribute: 'ID',
-            })
+            createUnauthorizedAPIError(
+                'User',
+                'userId',
+                context.permissions.getUserId()
+            )
         )
-
         throw errs
     }
-    if (inputs.length === 0) {
-        errs.push(
-            new APIError({
-                code: customErrors.invalid_array_min_length.code,
-                message: customErrors.invalid_array_min_length.message,
-                variables: [],
-                entity: 'User',
-            })
-        )
-    }
 
-    if (inputs.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
-        errs.push(
-            new APIError({
-                code: customErrors.invalid_array_max_length.code,
-                message: customErrors.invalid_array_max_length.message,
-                variables: [],
-                entity: 'User',
-            })
-        )
-    }
+    if (inputs.length === 0) errs.push(createInputLengthAPIError('User', 'min'))
+
+    if (inputs.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
+        errs.push(createInputLengthAPIError('User', 'max'))
+
+    if (errs.length > 0) throw errs
 
     const checkErrs = checkCreateUserInput(inputs)
-    if (checkErrs.length > 0) {
-        errs.push(...checkErrs)
-    }
+    if (checkErrs.length > 0) errs.push(...checkErrs)
 
     const normalizedInputs = inputs.map((val) => cleanCreateUserInput(val))
     const existingUserErrors = await checkForExistingUsers(
@@ -855,39 +837,21 @@ export async function updateUsers(
     }
     if (!updateUserPerm) {
         errs.push(
-            new APIError({
-                code: customErrors.unauthorized.code,
-                message: customErrors.unauthorized.message,
-                variables: [],
-                entity: 'User',
-                attribute: 'ID',
-            })
+            createUnauthorizedAPIError(
+                'User',
+                'userId',
+                context.permissions.getUserId()
+            )
         )
         throw errs
     }
-    if (inputs.length === 0) {
-        errs.push(
-            new APIError({
-                code: customErrors.invalid_array_min_length.code,
-                message: customErrors.invalid_array_min_length.message,
-                variables: [],
-                entity: 'User',
-            })
-        )
-        throw errs
-    }
+    if (inputs.length === 0) errs.push(createInputLengthAPIError('User', 'min'))
 
-    if (inputs.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
-        errs.push(
-            new APIError({
-                code: customErrors.invalid_array_max_length.code,
-                message: customErrors.invalid_array_max_length.message,
-                variables: [],
-                entity: 'User',
-            })
-        )
-        throw errs
-    }
+    if (inputs.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
+        errs.push(createInputLengthAPIError('User', 'max'))
+
+    if (errs.length > 0) throw errs
+
     const checkErrs = checkUpdateUserInputs(inputs)
     if (checkErrs.length > 0) {
         errs.push(...checkErrs)

@@ -4,7 +4,7 @@ import {
     SHORTCODE_DEFAULT_MAXLEN,
     validateShortCode,
 } from '../../../src/utils/shortcode'
-import validationConstants from '../../../src/entities/validations/constants'
+import { config } from '../../../src/config/config'
 
 describe('shortcode', () => {
     const shortcode_re = /^[A-Z|0-9]+$/
@@ -95,7 +95,7 @@ describe('valid long ShortCode', () => {
         ].every(function (code) {
             const res = validateShortCode(
                 code,
-                validationConstants.SHORTCODE_MAX_LENGTH
+                config.limits.SHORTCODE_MAX_LENGTH
             )
             expect(res).is.equal(true)
             return res
@@ -111,7 +111,7 @@ describe('valid long ShortCode', () => {
         ].every(function (code) {
             const res = !validateShortCode(
                 code,
-                validationConstants.SHORTCODE_MAX_LENGTH
+                config.limits.SHORTCODE_MAX_LENGTH
             )
             expect(res).is.equal(true)
             return res

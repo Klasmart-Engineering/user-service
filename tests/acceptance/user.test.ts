@@ -46,6 +46,7 @@ import { Role } from '../../src/entities/role'
 import { CreateUserInput } from '../../src/types/graphQL/user'
 import { mapUserToUserConnectionNode } from '../../src/pagination/usersConnection'
 import faker from 'faker'
+import { config } from '../../src/config/config'
 
 use(chaiAsPromised)
 
@@ -685,12 +686,11 @@ describe('acceptance.user', () => {
                 email: myUser.email,
                 iss: 'calmid-debug',
             })
-            createUserInputs = []
-            for (let i = 0; i < 50; i++) {
-                createUserInputs.push(userToCreateUserInput(createUser()))
-            }
+            createUserInputs = [
+                ...Array(config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE),
+            ].map((_) => userToCreateUserInput(createUser()))
         })
-        it('Creates 50 users', async () => {
+        it(`Creates ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE} users`, async () => {
             const response = await request
                 .post('/user')
                 .set({
@@ -734,14 +734,18 @@ describe('acceptance.user', () => {
                 iss: 'calmid-debug',
             })
             updateUserInputs = []
-            for (let i = 0; i < 50; i++) {
+            for (
+                let i = 0;
+                i < config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE;
+                i++
+            ) {
                 const u = await createUser().save()
                 updateUserInputs.push(
                     randomChangeToUpdateUserInput(userToUpdateUserInput(u))
                 )
             }
         })
-        it('Updates 50 users', async () => {
+        it(`Updates ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE} users`, async () => {
             const response = await request
                 .post('/user')
                 .set({

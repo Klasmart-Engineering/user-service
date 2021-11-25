@@ -1,7 +1,6 @@
 import { APIError } from '../types/errors/apiError'
 import { customErrors } from '../types/errors/customError'
-
-export const MAX_MUTATION_INPUT_ARRAY_SIZE = 50
+import { config } from '../config/config'
 
 export function createInputLengthAPIError(
     entity: string,
@@ -16,7 +15,7 @@ export function createInputLengthAPIError(
         max: {
             code: customErrors.invalid_array_max_length.code,
             message: customErrors.invalid_array_max_length.message,
-            value: MAX_MUTATION_INPUT_ARRAY_SIZE,
+            value: config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE,
         },
     }
 
@@ -60,5 +59,20 @@ export function createUnauthorizedOrganizationAPIError(
         entity: 'Organization',
         entityName: organizationId,
         index,
+    })
+}
+
+export function createUnauthorizedAPIError(
+    entity: string,
+    attribute: string,
+    entityName?: string
+) {
+    return new APIError({
+        code: customErrors.unauthorized.code,
+        message: customErrors.unauthorized.message,
+        variables: [attribute],
+        entity: entity,
+        entityName: entityName,
+        index: 0,
     })
 }
