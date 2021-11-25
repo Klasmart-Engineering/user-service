@@ -13,12 +13,15 @@ import { Model } from '../../src/model'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
+    addSubcategoriesToCategories,
     createCategories,
     createCategoryDuplicateAPIError,
     createCategoryDuplicateInputAPIError,
 } from '../../src/resolvers/category'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
+    AddSubcategoriesToCategoryInput,
+    CategoriesMutationResult,
     CategoryConnectionNode,
     CreateCategoryInput,
 } from '../../src/types/graphQL/category'
@@ -36,6 +39,13 @@ import { NIL_UUID } from '../utils/database'
 import { userToPayload } from '../utils/operations/userOps'
 import { createTestConnection } from '../utils/testConnection'
 import { config } from '../../src/config/config'
+import { Status } from '../../src/entities/status'
+import { customErrors } from '../../src/types/errors/customError'
+import { createCategory } from '../factories/category.factory'
+import { createSubcategory } from '../factories/subcategory.factory'
+import { Context } from '../../src/main'
+import faker from 'faker'
+
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
 
@@ -43,6 +53,40 @@ const buildContext = async (permissions: UserPermissions) => {
     return {
         permissions,
     }
+}
+
+const expectAPIErrorCollection = async (
+    resolverCall: Promise<any>,
+    expectedErrors: APIErrorCollection
+) => {
+    const { errors } = (await expect(resolverCall).to.be
+        .rejected) as APIErrorCollection
+    expect(errors).to.exist
+    for (let x = 0; x < errors.length; x++)
+        compareErrors(errors[x], expectedErrors.errors[x])
+}
+
+const expectAPIError = async (
+    resolverCall: Promise<any>,
+    expectedError: APIError
+) => {
+    const error = (await expect(resolverCall).to.be.rejected) as APIError
+
+    expect(error).to.exist
+    compareErrors(error, expectedError)
+}
+
+const compareErrors = (error: APIError, expectedError: APIError) => {
+    expect(error.code).to.eq(expectedError.code)
+    expect(error.message).to.eq(expectedError.message)
+    expect(error.variables).to.deep.equalInAnyOrder(expectedError.variables)
+    expect(error.entity).to.eq(expectedError.entity)
+    expect(error.entityName).to.eq(expectedError.entityName)
+    expect(error.attribute).to.eq(expectedError.attribute)
+    expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
+    expect(error.index).to.eq(expectedError.index)
+    expect(error.min).to.eq(expectedError.min)
+    expect(error.max).to.eq(expectedError.max)
 }
 
 describe('category', () => {
@@ -504,6 +548,706 @@ describe('category', () => {
 
                     // The already existent category is the only expected
                     await expectCategories(1)
+                })
+            })
+        })
+    })
+
+    describe('addSubcategoriesToCategories', () => {
+        let admin: User
+        let userWithPermission: User
+        let userWithoutPermission: User
+        let userWithoutMembership: User
+        let org1: Organization
+        let org2: Organization
+        let editSubjectsRole: Role
+        let categoriesOrg1: Category[]
+        let categoriesOrg2: Category[]
+        let systemCategories: Category[]
+        let subcategoriesOrg1: Subcategory[]
+        let subcategoriesOrg2: Subcategory[]
+        let systemSubcategories: Subcategory[]
+        const orgsPerType = 5
+        let apiErrors: APIError[]
+        let expectedError: APIErrorCollection
+        let inputs: AddSubcategoriesToCategoryInput[]
+
+        beforeEach(async () => {
+            inputs = []
+            categoriesOrg1 = []
+            categoriesOrg2 = []
+            systemCategories = []
+            subcategoriesOrg1 = []
+            subcategoriesOrg2 = []
+            systemSubcategories = []
+            admin = await createAdminUser().save()
+            userWithPermission = await createUser().save()
+            userWithoutPermission = await createUser().save()
+            userWithoutMembership = await createUser().save()
+
+            org1 = await createOrganization().save()
+            org2 = await createOrganization().save()
+            for (let x = 0; x < orgsPerType; x++) {
+                categoriesOrg1.push(createCategory(org1))
+                categoriesOrg2.push(createCategory(org2))
+                const systemCategory = createCategory()
+                systemCategory.system = true
+                systemCategories.push(systemCategory)
+                subcategoriesOrg1.push(createSubcategory(org1))
+                subcategoriesOrg2.push(createSubcategory(org2))
+                const systemSubcategory = createSubcategory()
+                systemSubcategory.system = true
+                systemSubcategories.push(systemSubcategory)
+            }
+            await connection.manager.save([
+                ...subcategoriesOrg1,
+                ...subcategoriesOrg2,
+                ...systemSubcategories,
+            ])
+            for (let x = 0; x < orgsPerType; x++) {
+                categoriesOrg1[x].subcategories = Promise.resolve([
+                    subcategoriesOrg1[x],
+                ])
+                categoriesOrg2[x].subcategories = Promise.resolve([
+                    subcategoriesOrg2[x],
+                ])
+                systemCategories[x].subcategories = Promise.resolve([
+                    systemSubcategories[x],
+                ])
+            }
+            await connection.manager.save([
+                ...categoriesOrg1,
+                ...categoriesOrg2,
+                ...systemCategories,
+            ])
+
+            editSubjectsRole = await createRole('Edit Subjects', org1, {
+                permissions: [PermissionName.edit_subjects_20337],
+            }).save()
+
+            await createOrganizationMembership({
+                user: userWithPermission,
+                organization: org1,
+                roles: [editSubjectsRole],
+            }).save()
+
+            await createOrganizationMembership({
+                user: userWithoutPermission,
+                organization: org1,
+            }).save()
+        })
+
+        const addSubcategoriesToCategoriesResolver = async (
+            user: User,
+            input: AddSubcategoriesToCategoryInput[]
+        ) => {
+            const permission = new UserPermissions(userToPayload(user))
+            const ctx = await buildContext(permission)
+            const result = await addSubcategoriesToCategories(
+                { input },
+                ctx as Context
+            )
+
+            return result
+        }
+
+        context('invalid input', () => {
+            it('is rejected when input length is more than 50', async () => {
+                for (let index = 0; index < 51; index++) {
+                    inputs.push({
+                        categoryId: 'id-' + index,
+                        subcategoryIds: ['x'],
+                    })
+                }
+                const expectedError = createInputLengthAPIError(
+                    'Category',
+                    'max'
+                )
+                await expectAPIError(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+        })
+
+        context('inexistent entity/ies', () => {
+            let fakeId: string
+            let fakeId2: string
+            beforeEach(() => {
+                fakeId = faker.datatype.uuid()
+                fakeId2 = faker.datatype.uuid()
+            })
+            it('is rejected when input categoryids does not exist', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['id'],
+                        entity: '',
+                        entityName: fakeId,
+                        attribute: 'ID',
+                        otherAttribute: fakeId,
+                        index: 0,
+                    }),
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['id'],
+                        entity: '',
+                        entityName: fakeId2,
+                        attribute: 'ID',
+                        otherAttribute: fakeId2,
+                        index: 1,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: fakeId,
+                        subcategoryIds: [subcategoriesOrg1[0].id],
+                    },
+                    {
+                        categoryId: fakeId2,
+                        subcategoryIds: [subcategoriesOrg1[0].id],
+                    },
+                ]
+
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+            it('is rejected when one input categoryids does not exist', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['id'],
+                        entity: '',
+                        entityName: fakeId,
+                        attribute: 'ID',
+                        otherAttribute: fakeId,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: fakeId,
+                        subcategoryIds: [subcategoriesOrg1[0].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+            it('is rejected when input subcategoryids does not exist', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['id'],
+                        entity: '',
+                        entityName: fakeId,
+                        attribute: 'ID',
+                        otherAttribute: fakeId,
+                        index: 0,
+                    }),
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['id'],
+                        entity: '',
+                        entityName: fakeId2,
+                        attribute: 'ID',
+                        otherAttribute: fakeId2,
+                        index: 1,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [fakeId],
+                    },
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [fakeId2],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+            it('is rejected when one input subcategoryids does not exist', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.nonexistent_entity.code,
+                        message: customErrors.nonexistent_entity.message,
+                        variables: ['id'],
+                        entity: '',
+                        entityName: fakeId,
+                        attribute: 'ID',
+                        otherAttribute: fakeId,
+                        index: 1,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+                inputs = [
+                    {
+                        categoryId: categoriesOrg2[0].id,
+                        subcategoryIds: [subcategoriesOrg2[1].id],
+                    },
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [fakeId],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+        })
+
+        context('inactive entity', () => {
+            it('is rejected when some subcategory is inactive', async () => {
+                subcategoriesOrg1[0].status = Status.INACTIVE
+                await subcategoriesOrg1[0].save()
+
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.inactive_status.code,
+                        message: customErrors.inactive_status.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: subcategoriesOrg1[0].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg1[0].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[1].id,
+                        subcategoryIds: [subcategoriesOrg1[0].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+            it('is rejected when some category is inactive', async () => {
+                categoriesOrg1[0].status = Status.INACTIVE
+                await categoriesOrg1[0].save()
+
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.inactive_status.code,
+                        message: customErrors.inactive_status.message,
+                        variables: ['id'],
+                        entity: 'Category',
+                        entityName: categoriesOrg1[0].name,
+                        attribute: 'ID',
+                        otherAttribute: categoriesOrg1[0].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [subcategoriesOrg1[2].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+        })
+
+        context('duplicated subcategory', () => {
+            it('is rejected when some subcategory already existed on the category', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.duplicate_child_entity.code,
+                        message: customErrors.duplicate_child_entity.message,
+                        variables: ['categoryId', 'subcategoryId'],
+                        entity: 'Category',
+                        entityName: categoriesOrg1[0].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg1[0].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [subcategoriesOrg1[0].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+        })
+
+        context('different organizations', () => {
+            it('is rejected when some subcategory and category belongs to different orgs', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: subcategoriesOrg2[0].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg2[0].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [subcategoriesOrg2[0].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(admin, inputs),
+                    expectedError
+                )
+            })
+        })
+
+        context('not admin', () => {
+            it('is rejected when the category belongs to the system', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Category',
+                        entityName: systemCategories[0].name,
+                        attribute: 'ID',
+                        otherAttribute: systemCategories[0].id,
+                        index: 0,
+                    }),
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: subcategoriesOrg2[0].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg2[0].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: systemCategories[0].id,
+                        subcategoryIds: [subcategoriesOrg2[0].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(
+                        userWithPermission,
+                        inputs
+                    ),
+                    expectedError
+                )
+            })
+            it('is rejected when the subcategory belongs to the system', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: systemSubcategories[2].name,
+                        attribute: 'ID',
+                        otherAttribute: systemSubcategories[2].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [systemSubcategories[2].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(
+                        userWithPermission,
+                        inputs
+                    ),
+                    expectedError
+                )
+            })
+            it('is rejected when the user has no membership to the org', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Category',
+                        entityName: categoriesOrg1[0].name,
+                        attribute: 'ID',
+                        otherAttribute: categoriesOrg1[0].id,
+                        index: 0,
+                    }),
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: subcategoriesOrg1[2].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg1[2].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [subcategoriesOrg1[2].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(
+                        userWithoutMembership,
+                        inputs
+                    ),
+                    expectedError
+                )
+            })
+            it('is rejected when the user has no permissions', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Category',
+                        entityName: categoriesOrg1[0].name,
+                        attribute: 'ID',
+                        otherAttribute: categoriesOrg1[0].id,
+                        index: 0,
+                    }),
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: subcategoriesOrg1[2].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg1[2].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg1[0].id,
+                        subcategoryIds: [subcategoriesOrg1[2].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(
+                        userWithoutPermission,
+                        inputs
+                    ),
+                    expectedError
+                )
+            })
+            it('is rejected when the user does not belong to the org', async () => {
+                apiErrors = [
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Category',
+                        entityName: categoriesOrg2[0].name,
+                        attribute: 'ID',
+                        otherAttribute: categoriesOrg2[0].id,
+                        index: 0,
+                    }),
+                    new APIError({
+                        code: customErrors.unauthorized.code,
+                        message: customErrors.unauthorized.message,
+                        variables: ['id'],
+                        entity: 'Subcategory',
+                        entityName: subcategoriesOrg2[2].name,
+                        attribute: 'ID',
+                        otherAttribute: subcategoriesOrg2[2].id,
+                        index: 0,
+                    }),
+                ]
+                expectedError = new APIErrorCollection(apiErrors)
+
+                inputs = [
+                    {
+                        categoryId: categoriesOrg2[0].id,
+                        subcategoryIds: [subcategoriesOrg2[2].id],
+                    },
+                ]
+                await expectAPIErrorCollection(
+                    addSubcategoriesToCategoriesResolver(
+                        userWithPermission,
+                        inputs
+                    ),
+                    expectedError
+                )
+            })
+            context('user has permissions', () => {
+                let result: CategoriesMutationResult
+                beforeEach(async () => {
+                    result = await addSubcategoriesToCategoriesResolver(
+                        userWithPermission,
+                        [
+                            {
+                                categoryId: categoriesOrg1[0].id,
+                                subcategoryIds: [subcategoriesOrg1[2].id],
+                            },
+                            {
+                                categoryId: categoriesOrg1[1].id,
+                                subcategoryIds: [subcategoriesOrg1[3].id],
+                            },
+                        ]
+                    )
+                })
+                it('retrieves the expected updated categoryNodes', async () => {
+                    expect(result.categories[0].id).to.equal(
+                        categoriesOrg1[0].id
+                    )
+                    expect(result.categories[0].id).to.eq(categoriesOrg1[0].id)
+                    expect(result.categories[0].name).to.eq(
+                        categoriesOrg1[0].name
+                    )
+                    expect(result.categories[0].status).to.eq(
+                        categoriesOrg1[0].status
+                    )
+                    expect(result.categories[0].system).to.eq(
+                        categoriesOrg1[0].system
+                    )
+                })
+                it('added the subcategory to the category', async () => {
+                    const updatedResult = await Category.findByIds([
+                        categoriesOrg1[0].id,
+                    ])
+                    const subcategories = await updatedResult[0].subcategories
+                    expect(subcategories).to.have.lengthOf(2)
+                    expect((subcategories as Subcategory[])[1].id).to.equal(
+                        subcategoriesOrg1[2].id
+                    )
+                })
+            })
+        })
+
+        context('admin', () => {
+            let result: CategoriesMutationResult
+
+            context(
+                'adding a subcategory to a category from an organization',
+                () => {
+                    beforeEach(async () => {
+                        result = await addSubcategoriesToCategoriesResolver(
+                            admin,
+                            [
+                                {
+                                    categoryId: categoriesOrg1[0].id,
+                                    subcategoryIds: [subcategoriesOrg1[2].id],
+                                },
+                            ]
+                        )
+                    })
+                    it('retrieves the expected updated categoryNodes', async () => {
+                        expect(result.categories[0].id).to.equal(
+                            categoriesOrg1[0].id
+                        )
+                        expect(result.categories[0].id).to.eq(
+                            categoriesOrg1[0].id
+                        )
+                        expect(result.categories[0].name).to.eq(
+                            categoriesOrg1[0].name
+                        )
+                        expect(result.categories[0].status).to.eq(
+                            categoriesOrg1[0].status
+                        )
+                        expect(result.categories[0].system).to.eq(
+                            categoriesOrg1[0].system
+                        )
+                    })
+                    it('added the subcategory to the category', async () => {
+                        const updatedResult = await Category.findByIds([
+                            categoriesOrg1[0].id,
+                        ])
+                        const subcategories = await updatedResult[0]
+                            .subcategories
+                        expect(subcategories).to.have.lengthOf(2)
+                        expect((subcategories as Subcategory[])[1].id).to.equal(
+                            subcategoriesOrg1[2].id
+                        )
+                    })
+                }
+            )
+
+            context('adding a subcategory to a category of the system', () => {
+                beforeEach(async () => {
+                    result = await addSubcategoriesToCategoriesResolver(admin, [
+                        {
+                            categoryId: systemCategories[0].id,
+                            subcategoryIds: [systemSubcategories[2].id],
+                        },
+                    ])
+                })
+                it('retrieves the expected updated categoryNodes', async () => {
+                    expect(result.categories[0].id).to.equal(
+                        systemCategories[0].id
+                    )
+                    expect(result.categories[0].id).to.eq(
+                        systemCategories[0].id
+                    )
+                    expect(result.categories[0].name).to.eq(
+                        systemCategories[0].name
+                    )
+                    expect(result.categories[0].status).to.eq(
+                        systemCategories[0].status
+                    )
+                    expect(result.categories[0].system).to.eq(
+                        systemCategories[0].system
+                    )
+                })
+                it('added the subcategory to the category', async () => {
+                    const updatedResult = await Category.findByIds([
+                        systemCategories[0].id,
+                    ])
+                    const subcategories = await updatedResult[0].subcategories
+                    expect(subcategories).to.have.lengthOf(2)
+                    expect((subcategories as Subcategory[])[1].id).to.equal(
+                        systemSubcategories[2].id
+                    )
                 })
             })
         })

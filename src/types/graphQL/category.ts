@@ -13,6 +13,16 @@ export interface CreateCategoryInput {
     subcategories?: string[]
 }
 
+export interface AddSubcategoriesToCategoryInput {
+    categoryId: string
+    subcategoryIds: string[]
+}
+
 export interface CategoriesMutationResult {
     categories: CategoryConnectionNode[]
+}
+
+export interface CategorySubcategory extends CategoryConnectionNode {
+    categoryId: string
+    subcategoryId: string
 }

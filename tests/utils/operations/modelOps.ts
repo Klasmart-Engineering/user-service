@@ -1121,6 +1121,20 @@ export const CREATE_SUBCATEGORIES = gql`
     }
 `
 
+export const ADD_SUBCATEGORIES_TO_CATEGORIES = gql`
+    mutation addSubcategoriesToCategories(
+        $input: [AddSubcategoriesToCategoryInput!]!
+    ) {
+        addSubcategoriesToCategories(input: $input) {
+            categories {
+                name
+                status
+                id
+            }
+        }
+    }
+`
+
 export const SUBJECTS_CONNECTION = gql`
     ${SUBJECT_FIELDS}
 

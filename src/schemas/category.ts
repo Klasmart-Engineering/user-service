@@ -3,6 +3,7 @@ import { Model } from '../model'
 import { Context } from '../main'
 import { createCategories } from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
+import { addSubcategoriesToCategories } from '../resolvers/category'
 
 const typeDefs = gql`
     extend type Mutation {
@@ -11,6 +12,9 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createCategories(
             input: [CreateCategoryInput!]!
+        ): CategoriesMutationResult
+        addSubcategoriesToCategories(
+            input: [AddSubcategoriesToCategoryInput!]!
         ): CategoriesMutationResult
     }
 
@@ -57,6 +61,11 @@ const typeDefs = gql`
 
     type CategoriesMutationResult {
         categories: [CategoryConnectionNode!]!
+    }
+
+    input AddSubcategoriesToCategoryInput {
+        categoryId: ID!
+        subcategoryIds: [ID!]!
     }
 
     extend type Query {
@@ -109,6 +118,8 @@ export default function getDefault(
                     model.uploadCategoriesFromCSV(args, ctx, info),
                 createCategories: (_parent, args, ctx, _info) =>
                     createCategories(args, ctx),
+                addSubcategoriesToCategories: (_parent, args, ctx, info) =>
+                    addSubcategoriesToCategories(args, ctx),
             },
             Query: {
                 category: (_parent, args, ctx, _info) =>

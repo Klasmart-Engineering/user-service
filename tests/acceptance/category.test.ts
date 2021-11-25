@@ -11,18 +11,29 @@ import { loadFixtures } from '../utils/fixtures'
 import {
     createCategories,
     createOrg,
+    createSubcategories,
     ICategoryDetail,
+    ISubcategoryDetail,
 } from '../utils/operations/acceptance/acceptanceOps.test'
 import {
+    ADD_SUBCATEGORIES_TO_CATEGORIES,
     CATEGORIES_CONNECTION,
     CATEGORY_NODE,
     CREATE_CATEGORIES,
 } from '../utils/operations/modelOps'
-import { getAdminAuthToken } from '../utils/testConfig'
+import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { makeRequest } from './utils'
+import { User } from '../../src/entities/user'
+import { createOrganization } from '../factories/organization.factory'
+import { createUser } from '../factories/user.factory'
+import { createRole } from '../factories/role.factory'
+import { PermissionName } from '../../src/permissions/permissionNames'
+import { createOrganizationMembership } from '../factories/organizationMembership.factory'
+import { userToPayload } from '../utils/operations/userOps'
+import { NIL_UUID } from '../utils/database'
 
 use(deepEqualInAnyOrder)
 
@@ -146,7 +157,7 @@ describe('acceptance.category', () => {
                 categoryResponse.body.data.categoriesConnection.edges
         })
         context('when requested category exists', () => {
-            it('should respond succesfully', async () => {
+            it('should respond successfully', async () => {
                 const categoryId = categoriesEdges[0].node.id
                 const response = await makeNodeQuery(categoryId)
                 const categoryNode = response.body.data.categoryNode
@@ -230,6 +241,105 @@ describe('acceptance.category', () => {
 
                 expect(response.status).to.eq(200)
                 expect(categoriesCreated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('addSubcategoriesToCategories', () => {
+        context('when id exists', () => {
+            let categoryId: string
+            let subcategoryId: string
+            let user: User
+            let token: string
+            beforeEach(async () => {
+                const org1 = await createOrganization().save()
+                user = await createUser().save()
+                const edutSubjectsRole = await createRole(
+                    'Edit Subjects',
+                    org1,
+                    {
+                        permissions: [PermissionName.edit_subjects_20337],
+                    }
+                ).save()
+                const createSubjectsRole = await createRole(
+                    'Create Subjects',
+                    org1,
+                    {
+                        permissions: [PermissionName.create_subjects_20227],
+                    }
+                ).save()
+                await createOrganizationMembership({
+                    user,
+                    organization: org1,
+                    roles: [createSubjectsRole, edutSubjectsRole],
+                }).save()
+                token = generateToken(userToPayload(user))
+                const categoriesDetails: ICategoryDetail[] = [
+                    {
+                        name: `category 0`,
+                        system: false,
+                    },
+                ]
+                const subcategoriesDetails: ISubcategoryDetail[] = [
+                    {
+                        name: `subcategory 0`,
+                        system: false,
+                    },
+                ]
+                const res = await createSubcategories(
+                    org1.organization_id,
+                    subcategoriesDetails,
+                    token
+                )
+                const resCat = await createCategories(
+                    org1.organization_id,
+                    categoriesDetails,
+                    token
+                )
+
+                categoryId =
+                    resCat.body.data.organization.createOrUpdateCategories[0].id
+                subcategoryId =
+                    res.body.data.organization.createOrUpdateSubcategories[0].id
+            })
+            it('should respond successfully', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(ADD_SUBCATEGORIES_TO_CATEGORIES),
+                    {
+                        input: [
+                            { categoryId, subcategoryIds: [subcategoryId] },
+                        ],
+                    },
+                    token
+                )
+                const categoryNode =
+                    response.body.data.addSubcategoriesToCategories
+                        .categories[0]
+
+                expect(response.status).to.eq(200)
+                expect(categoryNode.id).to.equal(categoryId)
+            })
+        })
+
+        context('when sent ids do not exist', () => {
+            it('should respond with errors', async () => {
+                const response = await makeRequest(
+                    request,
+                    print(ADD_SUBCATEGORIES_TO_CATEGORIES),
+                    {
+                        input: [
+                            {
+                                categoryId: NIL_UUID,
+                                subcategoryIds: [NIL_UUID],
+                            },
+                        ],
+                    },
+                    getAdminAuthToken()
+                )
+                const errors = response.body.errors
+                expect(response.status).to.eq(200)
                 expect(errors).to.exist
             })
         })
