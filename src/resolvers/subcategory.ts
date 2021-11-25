@@ -25,25 +25,11 @@ export async function createSubcategories(
     context: Pick<Context, 'permissions'>
 ): Promise<SubcategoriesMutationResult> {
     if (args.input.length === 0) {
-        throw new APIError({
-            code: customErrors.invalid_array_min_length.code,
-            message: customErrors.invalid_array_min_length.message,
-            variables: [],
-            entity: 'Subcategory',
-            attribute: 'input array',
-            min: 1,
-        })
+        throw createInputLengthAPIError('Subcategory', 'min')
     }
 
     if (args.input.length > MAX_MUTATION_INPUT_ARRAY_SIZE) {
-        throw new APIError({
-            code: customErrors.invalid_array_max_length.code,
-            message: customErrors.invalid_array_max_length.message,
-            variables: [],
-            entity: 'Subcategory',
-            attribute: 'input array',
-            max: MAX_MUTATION_INPUT_ARRAY_SIZE,
-        })
+        throw createInputLengthAPIError('Subcategory', 'max')
     }
 
     const organizationIds = args.input.map((val) => val.organizationId)
@@ -173,6 +159,9 @@ export const deleteSubcategories = async (
     args: { input: DeleteSubcategoryInput[] },
     context: Context
 ): Promise<SubcategoriesMutationResult> => {
+    if (args.input.length === 0) {
+        throw createInputLengthAPIError('Subcategory', 'min')
+    }
     if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
         throw createInputLengthAPIError('Subcategory', 'max')
     }
