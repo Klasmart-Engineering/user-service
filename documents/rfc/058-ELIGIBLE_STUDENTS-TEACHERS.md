@@ -87,6 +87,7 @@ This RFC explores a simpler alternative, with some drawbacks.
 ## Proposal
 
 Two key proposals:
+
 - Add a `permissionId` filter to `organizationMembershipsConnection`
 - Don't check school membership roles (since they are not currently used)
 
@@ -109,6 +110,7 @@ By doing the above, we can create this query to find eligible students and teach
 ```
 
 This is different behaviour from the current eligibleStudents/Teachers implementation in that it doesn’t check school memberships. We may be able to get away with this, because:
+
 - School memberships are a subset of org memberships
 - School memberships are not actually assigned roles by the frontend
 
