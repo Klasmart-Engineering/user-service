@@ -94,7 +94,6 @@ input UpdateCategoryInput {
     id: ID!
     name: String
     subcategories: [ID!]
-    status: Status
 }
 
 input DeleteCategoryInput {

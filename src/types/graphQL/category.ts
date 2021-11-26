@@ -13,6 +13,12 @@ export interface CreateCategoryInput {
     subcategories?: string[]
 }
 
+export interface UpdateCategoryInput {
+    id: string
+    name?: string
+    subcategories?: string[]
+}
+
 export interface AddSubcategoriesToCategoryInput {
     categoryId: string
     subcategoryIds: string[]

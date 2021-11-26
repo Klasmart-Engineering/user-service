@@ -997,37 +997,6 @@ const GRADE_FIELDS = gql`
     }
 `
 
-const CATEGORY_FIELDS = gql`
-    fragment categoryFields on CategoryConnectionNode {
-        id
-        name
-        status
-        system
-    }
-`
-
-export const CATEGORY_NODE = gql`
-    ${CATEGORY_FIELDS}
-
-    query categoryNode($id: ID!) {
-        categoryNode(id: $id) {
-            ...categoryFields
-        }
-    }
-`
-
-export const CREATE_CATEGORIES = gql`
-    ${CATEGORY_FIELDS}
-
-    mutation createCategories($input: [CreateCategoryInput!]!) {
-        createCategories(input: $input) {
-            categories {
-                ...categoryFields
-            }
-        }
-    }
-`
-
 export const AGE_RANGE_NODE = gql`
     query ageRangeNode($id: ID!) {
         ageRangeNode(id: $id) {

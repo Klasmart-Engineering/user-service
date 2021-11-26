@@ -168,6 +168,9 @@ const typeDefs = gql`
         createOrUpdateAgeRanges(age_ranges: [AgeRangeDetail]!): [AgeRange]
         createOrUpdateGrades(grades: [GradeDetail]!): [Grade]
         createOrUpdateCategories(categories: [CategoryDetail]!): [Category]
+            @deprecated(
+                reason: "Sunset Date: 22/02/22 Details: https://calmisland.atlassian.net/l/c/kY3S0K0h"
+            )
         createOrUpdateSubcategories(
             subcategories: [SubcategoryDetail]!
         ): [Subcategory]

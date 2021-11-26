@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import { Model } from '../model'
 import { Context } from '../main'
-import { createCategories } from '../resolvers/category'
+import { createCategories, updateCategories } from '../resolvers/category'
 import { GraphQLSchemaModule } from '../types/schemaModule'
 import { addSubcategoriesToCategories } from '../resolvers/category'
 
@@ -12,6 +12,9 @@ const typeDefs = gql`
             @isMIMEType(mimetype: "text/csv")
         createCategories(
             input: [CreateCategoryInput!]!
+        ): CategoriesMutationResult
+        updateCategories(
+            input: [UpdateCategoryInput!]!
         ): CategoriesMutationResult
         addSubcategoriesToCategories(
             input: [AddSubcategoriesToCategoryInput!]!
@@ -59,6 +62,12 @@ const typeDefs = gql`
         subcategories: [ID!]
     }
 
+    input UpdateCategoryInput {
+        id: ID!
+        name: String
+        subcategories: [ID!]
+    }
+
     type CategoriesMutationResult {
         categories: [CategoryConnectionNode!]!
     }
@@ -93,6 +102,9 @@ const typeDefs = gql`
 
         # Mutations
         editSubcategories(subcategory_ids: [ID!]): [Subcategory]
+            @deprecated(
+                reason: "Sunset Date: 22/02/2022 Details: https://calmisland.atlassian.net/l/c/U107XwHS"
+            )
         delete(_: Int): Boolean
     }
 
@@ -118,6 +130,8 @@ export default function getDefault(
                     model.uploadCategoriesFromCSV(args, ctx, info),
                 createCategories: (_parent, args, ctx, _info) =>
                     createCategories(args, ctx),
+                updateCategories: (_parent, args, ctx, _info) =>
+                    updateCategories(args, ctx),
                 addSubcategoriesToCategories: (_parent, args, ctx, info) =>
                     addSubcategoriesToCategories(args, ctx),
             },

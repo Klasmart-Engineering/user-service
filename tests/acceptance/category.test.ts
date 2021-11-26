@@ -2,9 +2,11 @@ import { expect, use } from 'chai'
 import supertest from 'supertest'
 import { Connection } from 'typeorm'
 import { Category } from '../../src/entities/category'
+import { Organization } from '../../src/entities/organization'
 import CategoriesInitializer from '../../src/initializers/categories'
 import {
     CategoryConnectionNode,
+    UpdateCategoryInput,
     CreateCategoryInput,
 } from '../../src/types/graphQL/category'
 import { loadFixtures } from '../utils/fixtures'
@@ -18,12 +20,17 @@ import {
 import {
     ADD_SUBCATEGORIES_TO_CATEGORIES,
     CATEGORIES_CONNECTION,
-    CATEGORY_NODE,
-    CREATE_CATEGORIES,
 } from '../utils/operations/modelOps'
 import { generateToken, getAdminAuthToken } from '../utils/testConfig'
 import { createTestConnection } from '../utils/testConnection'
 import { print } from 'graphql'
+import {
+    buildUpdateCategoryInputArray,
+    CATEGORY_NODE,
+    CREATE_CATEGORIES,
+    UPDATE_CATEGORIES,
+} from '../utils/operations/categoryOps'
+import { createCategory } from '../factories/category.factory'
 import deepEqualInAnyOrder from 'deep-equal-in-any-order'
 import { makeRequest } from './utils'
 import { User } from '../../src/entities/user'
@@ -40,6 +47,7 @@ use(deepEqualInAnyOrder)
 interface ICategoryEdge {
     node: CategoryConnectionNode
 }
+
 let systemcategoriesCount = 0
 const url = 'http://localhost:8080/user'
 const request = supertest(url)
@@ -70,6 +78,7 @@ const makeNodeQuery = async (id: string) => {
 
 describe('acceptance.category', () => {
     let connection: Connection
+    let categoryIds: string[]
     let orgId: string
 
     before(async () => {
@@ -110,7 +119,15 @@ describe('acceptance.category', () => {
             })
         }
 
-        await createCategories(orgId, categoriesDetails, getAdminAuthToken())
+        const org = await Organization.findOneOrFail(orgId)
+
+        const categories = await Category.save(
+            Array.from(new Array(categoriesCount), (_, i) =>
+                createCategory(org)
+            )
+        )
+
+        categoryIds = categories.map((c) => c.id)
 
         systemcategoriesCount = await connection.manager.count(Category, {
             where: { system: true },
@@ -127,7 +144,7 @@ describe('acceptance.category', () => {
 
             expect(response.status).to.eq(200)
             expect(categoriesConnection.totalCount).to.equal(
-                systemcategoriesCount
+                systemcategoriesCount + categoriesCount
             )
             expect(categoriesConnection.edges.length).to.equal(pageSize)
         })
@@ -241,6 +258,52 @@ describe('acceptance.category', () => {
 
                 expect(response.status).to.eq(200)
                 expect(categoriesCreated).to.be.null
+                expect(errors).to.exist
+            })
+        })
+    })
+
+    context('updateCategories', () => {
+        const makeUpdateCategoriesMutation = async (
+            input: UpdateCategoryInput[]
+        ) => {
+            return makeRequest(
+                request,
+                print(UPDATE_CATEGORIES),
+                { input },
+                getAdminAuthToken()
+            )
+        }
+
+        context('when category exist', () => {
+            it('should update it', async () => {
+                const input = buildUpdateCategoryInputArray(
+                    categoryIds.slice(0, 2)
+                )
+                const response = await makeUpdateCategoriesMutation(input)
+                const { categories } = response.body.data.updateCategories
+
+                expect(response.status).to.eq(200)
+                expect(categories).to.exist
+                expect(categories).to.be.an('array')
+                expect(categories.length).to.eq(input.length)
+
+                categories.forEach((c: CategoryConnectionNode, i: number) => {
+                    expect(c.id).to.eq(input[i].id)
+                    expect(c.name).to.eq(input[i].name)
+                })
+            })
+        })
+
+        context('when category does not exist', () => {
+            it('should fail', async () => {
+                const input = buildUpdateCategoryInputArray([NIL_UUID])
+                const response = await makeUpdateCategoriesMutation(input)
+                const categoriesUpdated = response.body.data.updateCategories
+                const errors = response.body.errors
+
+                expect(response.status).to.eq(200)
+                expect(categoriesUpdated).to.be.null
                 expect(errors).to.exist
             })
         })

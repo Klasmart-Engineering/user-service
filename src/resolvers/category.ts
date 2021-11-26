@@ -7,22 +7,245 @@ import { Context } from '../main'
 import { mapCategoryToCategoryConnectionNode } from '../pagination/categoriesConnection'
 import { PermissionName } from '../permissions/permissionNames'
 import { APIError, APIErrorCollection } from '../types/errors/apiError'
-import { customErrors } from '../types/errors/customError'
 import {
     CategoriesMutationResult,
     CreateCategoryInput,
+    UpdateCategoryInput,
     CategorySubcategory,
     CategoryConnectionNode,
     AddSubcategoriesToCategoryInput,
 } from '../types/graphQL/category'
 import {
+    createDatabaseSaveAPIError,
+    createDuplicateInputAPIError,
+    createEntityAPIError,
     createInputLengthAPIError,
+    createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-    createUnauthorizedOrganizationAPIError,
 } from '../utils/resolvers'
 import { config } from '../config/config'
 import { categoryConnectionNodeFields } from '../pagination/categoriesConnection'
 import { subcategoryConnectionNodeFields } from '../pagination/subcategoriesConnection'
+import { customErrors } from '../types/errors/customError'
+
+interface InputAndOrgRelation {
+    id: string
+    name?: string
+    orgId?: string
+}
+
+export async function updateCategories(
+    args: { input: UpdateCategoryInput[] },
+    context: Pick<Context, 'permissions'>
+): Promise<CategoriesMutationResult> {
+    // input length validations
+    if (args.input.length < config.limits.MUTATION_MIN_INPUT_ARRAY_SIZE) {
+        throw createInputLengthAPIError('Category', 'min')
+    }
+
+    if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE) {
+        throw createInputLengthAPIError('Category', 'max')
+    }
+
+    const errors: APIError[] = []
+    const ids = args.input.map((val) => val.id)
+    const subcategoryIds = args.input.map((val) => val.subcategories).flat()
+    const categoryNames = args.input.map((val) => val.name)
+    const categoryNodes: CategoryConnectionNode[] = []
+
+    // Finding categories by input ids
+    const categories = await Category.createQueryBuilder('Category')
+        .select([
+            ...categoryConnectionNodeFields,
+            'Organization.organization_id',
+        ])
+        .leftJoin('Category.organization', 'Organization')
+        .where('Category.id IN (:...ids)', {
+            ids,
+        })
+        .getMany()
+
+    // Finding the categories by input names
+    const namedCategories = await Category.createQueryBuilder('Category')
+        .select([
+            'Category.id',
+            'Category.name',
+            'Organization.organization_id',
+        ])
+        .leftJoin('Category.organization', 'Organization')
+        .where('Category.name IN (:...categoryNames)', {
+            categoryNames,
+        })
+        .getMany()
+
+    const organizationIds = []
+    for (const c of categories) {
+        const orgId = (await c.organization)?.organization_id || ''
+        organizationIds.push(orgId)
+    }
+
+    for (const id of organizationIds) {
+        await context.permissions.rejectIfNotAllowed(
+            { organization_id: id },
+            PermissionName.edit_subjects_20337
+        )
+    }
+
+    // Preloading
+    const preloadedCategoriesByName = new Map()
+    for (const nc of namedCategories) {
+        const orgId = (await nc.organization)?.organization_id
+        preloadedCategoriesByName.set([orgId, nc.name].toString(), nc)
+    }
+
+    const preloadedCategoriesById = new Map(categories.map((c) => [c.id, c]))
+
+    const inputsAndOrgRelation: InputAndOrgRelation[] = []
+    for (const i of args.input) {
+        const orgId = (
+            await categories.find((o) => o.id === i.id)?.organization
+        )?.organization_id
+
+        inputsAndOrgRelation.push({
+            id: i.id,
+            name: i.name,
+            orgId,
+        })
+    }
+
+    const preloadedSubcategories = new Map(
+        (
+            await Subcategory.findByIds(subcategoryIds, {
+                where: { status: Status.ACTIVE },
+            })
+        ).map((i) => [i.id, i])
+    )
+
+    // Process inputs
+    for (const [index, subArgs] of args.input.entries()) {
+        const { id, name, subcategories } = subArgs
+        const duplicateInputId = inputsAndOrgRelation.find(
+            (i, findIndex) => i.id === id && findIndex < index
+        )
+
+        if (duplicateInputId) {
+            errors.push(
+                createDuplicateInputAPIError(
+                    index,
+                    ['id'],
+                    'UpdateCategoryInput'
+                )
+            )
+        }
+
+        // Category validations
+        const category = preloadedCategoriesById.get(id)
+
+        if (!category) {
+            errors.push(
+                createEntityAPIError('nonExistent', index, 'Category', id)
+            )
+            continue
+        }
+
+        if (category.status === Status.INACTIVE) {
+            errors.push(createEntityAPIError('inactive', index, 'Category', id))
+        }
+
+        const categoryOrganizationId =
+            (await category.organization)?.organization_id || ''
+
+        // name arg validations
+        if (name) {
+            const categoryFound = preloadedCategoriesByName.get(
+                [categoryOrganizationId, name].toString()
+            )
+            const categoryExist = categoryFound && categoryFound.id !== id
+
+            if (categoryExist) {
+                errors.push(
+                    createEntityAPIError('duplicate', index, 'Category', name)
+                )
+            }
+
+            const duplicatedInputName = inputsAndOrgRelation.find(
+                (i, findIndex) =>
+                    i.id !== id &&
+                    i.name === name &&
+                    i.orgId === categoryOrganizationId &&
+                    findIndex < index
+            )
+
+            if (duplicatedInputName) {
+                errors.push(
+                    createDuplicateInputAPIError(
+                        index,
+                        ['name'],
+                        'UpdateCategoryInput'
+                    )
+                )
+            }
+
+            if (!categoryExist && !duplicatedInputName) {
+                category.name = name
+            }
+        }
+
+        // subcategories arg validations
+        if (subcategories) {
+            const subcategoriesFound: Subcategory[] = []
+            const missingSubcategoryIds: string[] = []
+
+            subcategories.forEach((val) => {
+                const subcategory = preloadedSubcategories.get(val)
+
+                if (subcategory) {
+                    subcategoriesFound.push(subcategory)
+                } else {
+                    missingSubcategoryIds.push(val)
+                }
+            })
+
+            if (missingSubcategoryIds.length) {
+                errors.push(
+                    createNonExistentOrInactiveEntityAPIError(
+                        index,
+                        ['id'],
+                        'IDs',
+                        'Subcategory',
+                        missingSubcategoryIds.toString()
+                    )
+                )
+            } else {
+                category.subcategories = Promise.resolve(subcategoriesFound)
+            }
+        }
+
+        if (!name && !subcategories) {
+            errors.push(
+                createInputRequiresAtLeastOne(index, 'Category', [
+                    'name',
+                    'subcategories',
+                ])
+            )
+        } else {
+            category.updated_at = new Date()
+        }
+
+        categoryNodes.push(mapCategoryToCategoryConnectionNode(category))
+    }
+
+    if (errors.length) throw new APIErrorCollection(errors)
+
+    try {
+        await getManager().save(categories)
+    } catch (e) {
+        const message = e instanceof Error ? e.message : 'Unknown Error'
+        throw createDatabaseSaveAPIError('Category', message)
+    }
+
+    return { categories: categoryNodes }
+}
 
 export async function createCategories(
     args: { input: CreateCategoryInput[] },
@@ -34,7 +257,6 @@ export async function createCategories(
     if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('Category', 'max')
 
-    const isAdmin = context.permissions.isAdmin
     const organizationIds = args.input.map((val) => val.organizationId)
     const subcategoryIds = args.input.map((val) => val.subcategories).flat()
     const categoryNames = args.input.map((val) => val.name)
@@ -42,11 +264,12 @@ export async function createCategories(
         [val.organizationId, val.name].toString()
     )
 
-    // Checking in which of the organizations the user has permission to create categories
-    const organizationsWhereIsAllowed = await context.permissions.organizationsWhereItIsAllowed(
-        organizationIds,
-        PermissionName.create_subjects_20227
-    )
+    for (const id of organizationIds) {
+        await context.permissions.rejectIfNotAllowed(
+            { organization_id: id },
+            PermissionName.create_subjects_20227
+        )
+    }
 
     // Preloading
     const preloadedOrgs = new Map(
@@ -102,16 +325,6 @@ export async function createCategories(
             )
         }
 
-        const isAllowedIntheOrg = organizationsWhereIsAllowed.includes(
-            organizationId
-        )
-
-        if (!isAdmin && !isAllowedIntheOrg) {
-            errors.push(
-                createUnauthorizedOrganizationAPIError(index, organizationId)
-            )
-        }
-
         // Subcategory validation
         const subcategoriesFound: Subcategory[] = []
         const missingSubcategoryIds: string[] = []
@@ -147,11 +360,10 @@ export async function createCategories(
 
         if (categoriesInputIsDuplicated) {
             errors.push(
-                createCategoryDuplicateInputAPIError(
+                createDuplicateInputAPIError(
                     index,
                     ['organizationId', 'name'],
-                    'CreateCategoryInput',
-                    'organizationId and name combination'
+                    'CreateCategoryInput'
                 )
             )
         }
@@ -162,7 +374,13 @@ export async function createCategories(
 
         if (organization && categoryExist) {
             errors.push(
-                createCategoryDuplicateAPIError(index, name, organizationId)
+                createEntityAPIError(
+                    'duplicateChild',
+                    index,
+                    'Category',
+                    name,
+                    organizationId
+                )
             )
         }
 
@@ -181,50 +399,12 @@ export async function createCategories(
         await getManager().save(categories)
     } catch (e) {
         const message = e instanceof Error ? e.message : 'Unknown Error'
-        throw new APIError({
-            code: customErrors.database_save_error.code,
-            message: customErrors.database_save_error.message,
-            variables: [message],
-            entity: 'Category',
-        })
+        throw createDatabaseSaveAPIError('Category', message)
     }
 
     // Build output
     const output = categories.map((c) => mapCategoryToCategoryConnectionNode(c))
     return { categories: output }
-}
-
-export function createCategoryDuplicateAPIError(
-    index: number,
-    name?: string,
-    orgId?: string
-) {
-    return new APIError({
-        code: customErrors.duplicate_child_entity.code,
-        message: customErrors.duplicate_child_entity.message,
-        variables: ['organization_id', 'name'],
-        entity: 'Category',
-        entityName: name,
-        parentEntity: 'Organization',
-        parentName: orgId,
-        index,
-    })
-}
-
-export function createCategoryDuplicateInputAPIError(
-    index: number,
-    variables: string[],
-    entity: string,
-    attribute: string
-) {
-    return new APIError({
-        code: customErrors.duplicate_attribute_values.code,
-        message: customErrors.duplicate_attribute_values.message,
-        variables,
-        entity,
-        attribute,
-        index,
-    })
 }
 
 export async function addSubcategoriesToCategories(

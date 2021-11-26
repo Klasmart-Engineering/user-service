@@ -4,6 +4,8 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 
 import { Subcategory } from '../../../src/entities/subcategory'
+import { UpdateCategoryInput } from '../../../src/types/graphQL/category'
+import { gql } from 'graphql-tag'
 
 const DELETE_SUBCATEGORY = `
     mutation deleteCategory($id: ID!) {
@@ -21,6 +23,49 @@ const EDIT_SUBCATEGORIES = `
             name
           }
        }
+    }
+`
+
+const CATEGORY_FIELDS = gql`
+    fragment categoryFields on CategoryConnectionNode {
+        id
+        name
+        status
+        system
+    }
+`
+
+export const CATEGORY_NODE = gql`
+    ${CATEGORY_FIELDS}
+
+    query categoryNode($id: ID!) {
+        categoryNode(id: $id) {
+            ...categoryFields
+        }
+    }
+`
+
+export const CREATE_CATEGORIES = gql`
+    ${CATEGORY_FIELDS}
+
+    mutation createCategories($input: [CreateCategoryInput!]!) {
+        createCategories(input: $input) {
+            categories {
+                ...categoryFields
+            }
+        }
+    }
+`
+
+export const UPDATE_CATEGORIES = gql`
+    ${CATEGORY_FIELDS}
+
+    mutation UpdateCategories($input: [UpdateCategoryInput!]!) {
+        updateCategories(input: $input) {
+            categories {
+                ...categoryFields
+            }
+        }
     }
 `
 
@@ -62,4 +107,30 @@ export async function deleteCategory(
     const res = await gqlTry(operation)
     const gqlBool = res.data?.category?.delete as boolean
     return gqlBool
+}
+
+export function buildSingleUpdateCategoryInput(
+    id: string,
+    name?: string,
+    subcategories?: string[]
+): UpdateCategoryInput {
+    return {
+        id,
+        name,
+        subcategories,
+    }
+}
+
+export function buildUpdateCategoryInputArray(
+    ids: string[],
+    subcategories?: string[],
+    avoidNames?: boolean
+): UpdateCategoryInput[] {
+    return Array.from(ids, (id, i) =>
+        buildSingleUpdateCategoryInput(
+            id,
+            avoidNames ? undefined : `Modified Category ${i + 1}`,
+            subcategories
+        )
+    )
 }

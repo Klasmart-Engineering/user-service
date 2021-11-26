@@ -24,6 +24,7 @@ export class APIError extends Error implements IAPIError {
     max?: number
     format?: string
     index?: number
+    fields?: string
 
     constructor(error: IAPIError) {
         const { code, message, variables, ...params } = error

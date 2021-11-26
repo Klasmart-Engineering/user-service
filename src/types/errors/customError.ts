@@ -168,6 +168,11 @@ export const customErrors = {
         message:
             'No active {entity} was found with {attribute} {otherAttribute}.',
     },
+    requires_at_least_one: {
+        code: 'ERR_REQUIRES_AT_LEAST_ONE',
+        message:
+            '{entity} {attribute} requires at least one of the following fields: ({fields}).',
+    },
 
     // auth
     unauthorized: {

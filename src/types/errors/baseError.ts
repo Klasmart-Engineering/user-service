@@ -28,4 +28,5 @@ export interface ErrorParams {
     max?: number
     format?: string
     index?: number
+    fields?: string
 }

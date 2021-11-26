@@ -6,17 +6,19 @@ import { Connection } from 'typeorm'
 import { Category } from '../../src/entities/category'
 import { Organization } from '../../src/entities/organization'
 import { Role } from '../../src/entities/role'
+import { Status } from '../../src/entities/status'
 import { Subcategory } from '../../src/entities/subcategory'
 import { User } from '../../src/entities/user'
+import CategoriesInitializer from '../../src/initializers/categories'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { Model } from '../../src/model'
+import { categoryConnectionNodeFields } from '../../src/pagination/categoriesConnection'
 import { PermissionName } from '../../src/permissions/permissionNames'
 import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     addSubcategoriesToCategories,
     createCategories,
-    createCategoryDuplicateAPIError,
-    createCategoryDuplicateInputAPIError,
+    updateCategories,
 } from '../../src/resolvers/category'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
 import {
@@ -24,10 +26,15 @@ import {
     CategoriesMutationResult,
     CategoryConnectionNode,
     CreateCategoryInput,
+    UpdateCategoryInput,
 } from '../../src/types/graphQL/category'
 import { createServer } from '../../src/utils/createServer'
+import { createCategory } from '../factories/category.factory'
 import {
+    createDuplicateInputAPIError,
+    createEntityAPIError,
     createInputLengthAPIError,
+    createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
     createUnauthorizedOrganizationAPIError,
 } from '../../src/utils/resolvers'
@@ -36,15 +43,25 @@ import { createOrganizationMembership } from '../factories/organizationMembershi
 import { createRole } from '../factories/role.factory'
 import { createAdminUser, createUser } from '../factories/user.factory'
 import { NIL_UUID } from '../utils/database'
-import { userToPayload } from '../utils/operations/userOps'
+import {
+    buildSingleUpdateCategoryInput,
+    buildUpdateCategoryInputArray,
+} from '../utils/operations/categoryOps'
 import { createTestConnection } from '../utils/testConnection'
+import { userToPayload } from '../utils/operations/userOps'
 import { config } from '../../src/config/config'
-import { Status } from '../../src/entities/status'
 import { customErrors } from '../../src/types/errors/customError'
-import { createCategory } from '../factories/category.factory'
 import { createSubcategory } from '../factories/subcategory.factory'
 import { Context } from '../../src/main'
 import faker from 'faker'
+
+interface CategoryAndSubcategories {
+    id: string
+    name?: string
+    __subcategories__?: { id: string }[]
+}
+
+type NoUpdateProp = 'name' | 'subcategories' | 'both'
 
 use(chaiAsPromised)
 use(deepEqualInAnyOrder)
@@ -97,6 +114,7 @@ describe('category', () => {
     let userWithoutMembership: User
     let org1: Organization
     let org2: Organization
+    let updateCategoriesRole: Role
     let createCategoriesRole: Role
     let subcategoriesToAdd: Subcategory[]
 
@@ -105,9 +123,16 @@ describe('category', () => {
         await createServer(new Model(connection))
     })
 
+    after(async () => {
+        await connection.close()
+    })
+
     beforeEach(async () => {
         await SubcategoriesInitializer.run()
-        subcategoriesToAdd = await Subcategory.find({ take: 3 })
+        subcategoriesToAdd = await Subcategory.find({
+            take: 3,
+            order: { id: 'ASC' },
+        })
 
         // Creating Users
         admin = await createAdminUser().save()
@@ -128,11 +153,16 @@ describe('category', () => {
             permissions: [PermissionName.create_subjects_20227],
         }).save()
 
+        // Creating Role for update categories
+        updateCategoriesRole = await createRole('Update Categories', org1, {
+            permissions: [PermissionName.edit_subjects_20337],
+        }).save()
+
         // Assigning userWithPermission to org1 with the createCategoriesRole
         await createOrganizationMembership({
             user: userWithPermission,
             organization: org1,
-            roles: [createCategoriesRole],
+            roles: [createCategoriesRole, updateCategoriesRole],
         }).save()
 
         // Assigning userWithoutPermission to org1
@@ -140,10 +170,6 @@ describe('category', () => {
             user: userWithoutPermission,
             organization: org1,
         }).save()
-    })
-
-    after(async () => {
-        await connection.close()
     })
 
     context('createCategories', () => {
@@ -319,22 +345,23 @@ describe('category', () => {
         })
 
         context('error handling', () => {
+            const createCategoriesPermissionName =
+                PermissionName.create_subjects_20227
+
             context(
                 'when non admin tries to create categories in an organization which does not belong',
                 () => {
-                    it('throws an ErrorCollection', async () => {
-                        const input = generateInput(2, org2, true)
-                        const expectedErrors = Array.from(input, (i, index) =>
-                            createUnauthorizedOrganizationAPIError(
-                                index,
-                                i.organizationId
-                            )
+                    it('throws an error', async () => {
+                        const user = userWithPermission
+                        const org = org2
+                        const input = generateInput(2, org, true)
+                        const operation = createCategoriesFromResolver(
+                            user,
+                            input
                         )
 
-                        await expectErrorCollection(
-                            userWithPermission,
-                            input,
-                            expectedErrors
+                        await expect(operation).to.be.rejectedWith(
+                            `User(${user.user_id}) does not have Permission(${createCategoriesPermissionName}) in Organization(${org.organization_id})`
                         )
 
                         await expectCategories(0)
@@ -346,18 +373,16 @@ describe('category', () => {
                 'when a user without permission tries to create categories in the organization which belongs',
                 () => {
                     it('throws an ErrorCollection', async () => {
+                        const user = userWithoutMembership
+                        const org = org1
                         const input = generateInput(2, org1, true)
-                        const expectedErrors = Array.from(input, (i, index) =>
-                            createUnauthorizedOrganizationAPIError(
-                                index,
-                                i.organizationId
-                            )
+                        const operation = createCategoriesFromResolver(
+                            user,
+                            input
                         )
 
-                        await expectErrorCollection(
-                            userWithoutPermission,
-                            input,
-                            expectedErrors
+                        await expect(operation).to.be.rejectedWith(
+                            `User(${user.user_id}) does not have Permission(${createCategoriesPermissionName}) in Organization(${org.organization_id})`
                         )
 
                         await expectCategories(0)
@@ -369,22 +394,20 @@ describe('category', () => {
                 'when non member tries to create categories in any organization',
                 () => {
                     it('throws an ErrorCollection', async () => {
+                        const user = userWithoutMembership
+                        const org = org1
                         const input = [
                             ...generateInput(1, org1, true),
                             ...generateInput(1, org2, true),
                         ]
 
-                        const expectedErrors = Array.from(input, (i, index) =>
-                            createUnauthorizedOrganizationAPIError(
-                                index,
-                                i.organizationId
-                            )
+                        const operation = createCategoriesFromResolver(
+                            user,
+                            input
                         )
 
-                        await expectErrorCollection(
-                            userWithoutMembership,
-                            input,
-                            expectedErrors
+                        await expect(operation).to.be.rejectedWith(
+                            `User(${user.user_id}) does not have Permission(${createCategoriesPermissionName}) in Organization(${org.organization_id})`
                         )
 
                         await expectCategories(0)
@@ -511,11 +534,10 @@ describe('category', () => {
                     ]
 
                     const expectedErrors = Array.from(input, (_, index) =>
-                        createCategoryDuplicateInputAPIError(
+                        createDuplicateInputAPIError(
                             index,
                             ['organizationId', 'name'],
-                            'CreateCategoryInput',
-                            'organizationId and name combination'
+                            'CreateCategoryInput'
                         )
                     )
 
@@ -537,8 +559,10 @@ describe('category', () => {
 
                 it('throws an ErrorCollection', async () => {
                     const expectedErrors = Array.from(input, (i, index) =>
-                        createCategoryDuplicateAPIError(
+                        createEntityAPIError(
+                            'duplicateChild',
                             index,
+                            'Category',
                             i.name,
                             i.organizationId
                         )
@@ -549,6 +573,745 @@ describe('category', () => {
                     // The already existent category is the only expected
                     await expectCategories(1)
                 })
+            })
+        })
+    })
+
+    context('updateCategories', () => {
+        let systemCategories: Category[]
+        let org1Categories: Category[]
+        let org2Categories: Category[]
+        let subcategoriesForUpdate: Subcategory[]
+        const categoriesCount = 5
+
+        const updateCategoriesFromResolver = async (
+            user: User,
+            input: UpdateCategoryInput[]
+        ) => {
+            const permission = new UserPermissions(userToPayload(user))
+            const ctx = await buildContext(permission)
+            const result = await updateCategories({ input }, ctx)
+            return result
+        }
+
+        const findCategoriesAndSubcategoriesByIds = async (
+            ids: string[]
+        ): Promise<UpdateCategoryInput[]> => {
+            const categories = await Category.createQueryBuilder('Category')
+                .select(['Category.id', 'Category.name', 'Subcategory.id'])
+                .leftJoin('Category.subcategories', 'Subcategory')
+                .where('Category.id IN (:...ids)', { ids })
+                .getMany()
+
+            return categories.map((c) => {
+                return {
+                    id: c.id,
+                    name: c.name,
+                    subcategories: (c as CategoryAndSubcategories).__subcategories__?.map(
+                        (s) => s.id
+                    ),
+                }
+            })
+        }
+
+        const expectCategoriesFromInput = async (
+            user: User,
+            input: UpdateCategoryInput[]
+        ) => {
+            const { categories } = await updateCategoriesFromResolver(
+                user,
+                input
+            )
+
+            expect(categories.length).to.eq(input.length)
+            categories.forEach((c, i) => {
+                expect(c.id).to.eq(input[i].id)
+                expect(c.name).to.eq(input[i].name)
+            })
+
+            const categoriesDB = await findCategoriesAndSubcategoriesByIds(
+                input.map((i) => i.id)
+            )
+
+            expect(categoriesDB.length).to.eq(input.length)
+            categoriesDB.forEach((cdb) => {
+                const inputRelated = input.find((i) => i.id === cdb.id)
+                expect(inputRelated).to.exist
+                expect(cdb.name).to.eq(inputRelated?.name)
+                expect(cdb.subcategories).to.deep.equalInAnyOrder(
+                    inputRelated?.subcategories
+                )
+            })
+        }
+
+        const expectCategoriesFromCategories = async (
+            user: User,
+            categoriesToUpdate: Category[],
+            noUpdate?: NoUpdateProp
+        ) => {
+            const avoidNames = noUpdate === 'name' || noUpdate === 'both'
+            const avoidSubcategories =
+                noUpdate === 'subcategories' || noUpdate === 'both'
+
+            const input = buildUpdateCategoryInputArray(
+                categoriesToUpdate.map((c) => c.id),
+                avoidSubcategories
+                    ? undefined
+                    : subcategoriesForUpdate.map((s) => s.id),
+                avoidNames
+            )
+
+            const { categories } = await updateCategoriesFromResolver(
+                user,
+                input
+            )
+
+            expect(categories.length).to.eq(input.length)
+            categories.forEach((c, i) => {
+                expect(c.id).to.eq(input[i].id)
+                expect(c.name).to.eq(
+                    avoidNames ? categoriesToUpdate[i].name : input[i].name
+                )
+            })
+
+            const categoriesDB = await findCategoriesAndSubcategoriesByIds(
+                input.map((i) => i.id)
+            )
+
+            expect(categoriesDB.length).to.eq(input.length)
+
+            categoriesDB.forEach(async (cdb) => {
+                const inputRelated = input.find((i) => i.id === cdb.id)
+                const categoryRelated = categoriesToUpdate.find(
+                    (c) => c.id === cdb.id
+                )
+
+                expect(inputRelated).to.exist
+                expect(categoryRelated).to.exist
+                expect(cdb.name).to.eq(
+                    avoidNames ? categoryRelated?.name : inputRelated?.name
+                )
+                expect(cdb.subcategories).to.eq(
+                    avoidSubcategories
+                        ? await categoryRelated?.subcategories
+                        : inputRelated?.subcategories
+                )
+            })
+        }
+
+        const compareErrors = (error: APIError, expectedError: APIError) => {
+            expect(error.code).to.eq(expectedError.code)
+            expect(error.message).to.eq(expectedError.message)
+            expect(error.variables).to.deep.equalInAnyOrder(
+                expectedError.variables
+            )
+            expect(error.entity).to.eq(expectedError.entity)
+            expect(error.entityName).to.eq(expectedError.entityName)
+            expect(error.attribute).to.eq(expectedError.attribute)
+            expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
+            expect(error.fields).to.eq(expectedError.fields)
+            expect(error.index).to.eq(expectedError.index)
+            expect(error.min).to.eq(expectedError.min)
+            expect(error.max).to.eq(expectedError.max)
+        }
+
+        const expectErrorCollectionFromInput = async (
+            user: User,
+            input: UpdateCategoryInput[],
+            expectedErrors: APIError[]
+        ) => {
+            const operation = updateCategoriesFromResolver(user, input)
+            const response = (await expect(operation).to.be
+                .rejected) as APIErrorCollection
+
+            const { errors } = response
+            expect(errors).to.exist
+            expect(errors).to.be.an('array')
+
+            errors.forEach((e, i) => {
+                compareErrors(e, expectedErrors[i])
+            })
+        }
+
+        const expectErrorCollectionFromCategories = async (
+            user: User,
+            categoriesToUpdate: Category[],
+            expectedErrors: APIError[]
+        ) => {
+            const input = buildUpdateCategoryInputArray(
+                categoriesToUpdate.map((c) => c.id),
+                subcategoriesForUpdate.map((s) => s.id)
+            )
+
+            await expectErrorCollectionFromInput(user, input, expectedErrors)
+        }
+
+        const expectAPIError = async (
+            user: User,
+            categoriesToUpdate: Category[],
+            expectedError: APIError
+        ) => {
+            const input = buildUpdateCategoryInputArray(
+                categoriesToUpdate.map((c) => c.id),
+                subcategoriesForUpdate.map((s) => s.id)
+            )
+
+            const operation = updateCategoriesFromResolver(user, input)
+            const error = (await expect(operation).to.be.rejected) as APIError
+
+            expect(error).to.exist
+            compareErrors(error, expectedError)
+        }
+
+        const expectNoChangesMade = async (categoriesToFind: Category[]) => {
+            const ids = categoriesToFind.map((c) => c.id)
+            const categoriesDB = await Category.createQueryBuilder('Category')
+                .select([
+                    ...categoryConnectionNodeFields,
+                    ...(['id'] as (keyof Subcategory)[]).map(
+                        (field) => `Subcategory.${field}`
+                    ),
+                ])
+                .leftJoin('Category.subcategories', 'Subcategory')
+                .where('Category.id IN (:...ids)', {
+                    ids,
+                })
+                .getMany()
+
+            const categoriesToFindSubcategories = categoriesToFind.map(
+                async (c) => (await c.subcategories)?.map((s) => s.id)
+            )
+
+            expect(categoriesDB).to.exist
+            expect(categoriesDB.length).to.eq(categoriesToFind.length)
+            categoriesToFind.forEach(async (c, i) => {
+                const categoryRelated = categoriesDB.find(
+                    (cdb) => c.id === cdb.id
+                )
+
+                expect(categoryRelated?.name).to.eq(c.name)
+                expect(categoryRelated?.status).to.eq(c.status)
+                expect(
+                    categoriesToFindSubcategories[i]
+                ).to.deep.equalInAnyOrder(
+                    (categoryRelated as any).__subcategories__.id
+                )
+            })
+        }
+
+        beforeEach(async () => {
+            await CategoriesInitializer.run()
+            systemCategories = await Category.find({ take: categoriesCount })
+
+            org1Categories = await Category.save(
+                Array.from(new Array(categoriesCount), () =>
+                    createCategory(org1, subcategoriesToAdd)
+                )
+            )
+
+            org2Categories = await Category.save(
+                Array.from(new Array(categoriesCount), () =>
+                    createCategory(org2, subcategoriesToAdd)
+                )
+            )
+
+            subcategoriesForUpdate = await Subcategory.find({
+                take: 3,
+                order: { id: 'DESC' },
+            })
+        })
+
+        context('permissions', () => {
+            context('succesfull cases', () => {
+                context('when user is admin', () => {
+                    it('should update any category', async () => {
+                        await expectCategoriesFromCategories(admin, [
+                            systemCategories[0],
+                            org1Categories[0],
+                            org2Categories[0],
+                        ])
+                    })
+                })
+
+                context('when user is not admin', () => {
+                    context('but has permission', () => {
+                        it('should update categories in its organization', async () => {
+                            await expectCategoriesFromCategories(
+                                userWithPermission,
+                                org1Categories
+                            )
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                const updateCategoriesPermissionName =
+                    PermissionName.edit_subjects_20337
+                context('when user has permission', () => {
+                    context('and tries to update system categories', () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const user = userWithPermission
+                            const catsToUpdate = systemCategories
+                            const input = buildUpdateCategoryInputArray(
+                                catsToUpdate.map((c) => c.id),
+                                subcategoriesForUpdate.map((s) => s.id)
+                            )
+
+                            const operation = updateCategoriesFromResolver(
+                                user,
+                                input
+                            )
+
+                            await expect(operation).to.be.rejectedWith(
+                                `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName})`
+                            )
+
+                            await expectNoChangesMade(catsToUpdate)
+                        })
+                    })
+
+                    context(
+                        'and tries to update categories in a non belonging organization',
+                        () => {
+                            it('should throw an ErrorCollection', async () => {
+                                const user = userWithPermission
+                                const org = org2
+                                const catsToUpdate = org2Categories
+                                const input = buildUpdateCategoryInputArray(
+                                    catsToUpdate.map((c) => c.id),
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                )
+
+                                const operation = updateCategoriesFromResolver(
+                                    user,
+                                    input
+                                )
+
+                                await expect(operation).to.be.rejectedWith(
+                                    `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                )
+
+                                await expectNoChangesMade(catsToUpdate)
+                            })
+                        }
+                    )
+                })
+
+                context('when user has not permission', () => {
+                    context('but has membership', () => {
+                        context(
+                            'and tries to update categories in its organization',
+                            () => {
+                                it('should throw an ErrorCollection', async () => {
+                                    const user = userWithoutPermission
+                                    const org = org1
+                                    const catsToUpdate = org1Categories
+                                    const input = buildUpdateCategoryInputArray(
+                                        catsToUpdate.map((c) => c.id),
+                                        subcategoriesForUpdate.map((s) => s.id)
+                                    )
+
+                                    const operation = updateCategoriesFromResolver(
+                                        user,
+                                        input
+                                    )
+
+                                    await expect(operation).to.be.rejectedWith(
+                                        `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                    )
+
+                                    await expectNoChangesMade(catsToUpdate)
+                                })
+                            }
+                        )
+                    })
+
+                    context('neither has membership', () => {
+                        context('and tries to update any categories', () => {
+                            it('should throw an ErrorCollection', async () => {
+                                const user = userWithoutMembership
+                                const catsToUpdate = [
+                                    systemCategories[0],
+                                    org1Categories[0],
+                                    org2Categories[0],
+                                ]
+
+                                const input = buildUpdateCategoryInputArray(
+                                    catsToUpdate.map((c) => c.id),
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                )
+
+                                const operation = updateCategoriesFromResolver(
+                                    user,
+                                    input
+                                )
+
+                                await expect(operation).to.be.rejectedWith(
+                                    `User(${user.user_id}) does not have Permission(${updateCategoriesPermissionName})`
+                                )
+
+                                await expectNoChangesMade(catsToUpdate)
+                            })
+                        })
+                    })
+                })
+            })
+        })
+
+        context('inputs', () => {
+            context('succesfull cases', () => {
+                context(
+                    'when the received name already exists in system categories',
+                    () => {
+                        it('should update the category', async () => {
+                            const input = [
+                                buildSingleUpdateCategoryInput(
+                                    org1Categories[0].id,
+                                    systemCategories[0].name,
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                ),
+                            ]
+
+                            await expectCategoriesFromInput(admin, input)
+                        })
+                    }
+                )
+
+                context(
+                    'when the received name already exists in another organization',
+                    () => {
+                        it('should update the category', async () => {
+                            const input = [
+                                buildSingleUpdateCategoryInput(
+                                    org1Categories[0].id,
+                                    org2Categories[0].name,
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                ),
+                            ]
+
+                            await expectCategoriesFromInput(admin, input)
+                        })
+                    }
+                )
+                context('when just name is provided', () => {
+                    it('should just update names', async () => {
+                        await expectCategoriesFromCategories(
+                            admin,
+                            org1Categories,
+                            'name'
+                        )
+                    })
+                })
+
+                context('when just subcategories are provided', () => {
+                    it('should just update names', async () => {
+                        await expectCategoriesFromCategories(
+                            admin,
+                            org1Categories,
+                            'subcategories'
+                        )
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                context('when input provided is an empty array', () => {
+                    it('should throw an APIError', async () => {
+                        const expectedError = createInputLengthAPIError(
+                            'Category',
+                            'min'
+                        )
+
+                        await expectAPIError(admin, [], expectedError)
+                        // no expecting for no changes because nothing was sent
+                    })
+                })
+
+                context(
+                    `when input length is greather than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
+                    () => {
+                        it('should throw an APIError', async () => {
+                            const categoryToUpdate = org1Categories[0]
+                            const catsToUpdate = Array.from(
+                                new Array(
+                                    config.limits
+                                        .MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                                ),
+                                () => categoryToUpdate
+                            )
+
+                            const expectedError = createInputLengthAPIError(
+                                'Category',
+                                'max'
+                            )
+
+                            await expectAPIError(
+                                admin,
+                                catsToUpdate,
+                                expectedError
+                            )
+
+                            await expectNoChangesMade([categoryToUpdate])
+                        })
+                    }
+                )
+
+                context(
+                    "when input provided has duplicates in 'id' field",
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const categoryToRepeat = org1Categories[0]
+                            const input = Array.from(new Array(3), (_, i) =>
+                                buildSingleUpdateCategoryInput(
+                                    categoryToRepeat.id,
+                                    `Renamed Category ${i + 1}`,
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                )
+                            )
+
+                            const expectedErrors = Array.from(
+                                [input[1], input[2]],
+                                (_, index) => {
+                                    return createDuplicateInputAPIError(
+                                        index + 1,
+                                        ['id'],
+                                        'UpdateCategoryInput'
+                                    )
+                                }
+                            )
+
+                            await expectErrorCollectionFromInput(
+                                admin,
+                                input,
+                                expectedErrors
+                            )
+
+                            await expectNoChangesMade([categoryToRepeat])
+                        })
+                    }
+                )
+
+                context(
+                    "when input provided has duplicates in 'name' field",
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catsToUpdate = org1Categories
+                            const input = Array.from(catsToUpdate, (c, i) =>
+                                buildSingleUpdateCategoryInput(
+                                    c.id,
+                                    'Renamed Category',
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                )
+                            )
+
+                            const expectedErrors = Array.from(
+                                catsToUpdate.slice(1, catsToUpdate.length),
+                                (_, index) => {
+                                    return createDuplicateInputAPIError(
+                                        index + 1,
+                                        ['name'],
+                                        'UpdateCategoryInput'
+                                    )
+                                }
+                            )
+
+                            await expectErrorCollectionFromInput(
+                                admin,
+                                input,
+                                expectedErrors
+                            )
+
+                            await expectNoChangesMade(catsToUpdate)
+                        })
+                    }
+                )
+
+                context(
+                    'when a category with the received id does not exist',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const existentCatsToUpdate = [
+                                org1Categories[0],
+                                org2Categories[0],
+                            ]
+
+                            const nonExistentCategoryId = NIL_UUID
+                            const input = [
+                                buildSingleUpdateCategoryInput(
+                                    nonExistentCategoryId,
+                                    'Renamed Category',
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                ),
+                                buildSingleUpdateCategoryInput(
+                                    existentCatsToUpdate[0].id,
+                                    'Renamed Category 2',
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                ),
+                                buildSingleUpdateCategoryInput(
+                                    existentCatsToUpdate[1].id,
+                                    'Renamed Category 3',
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                ),
+                            ]
+
+                            const expectedErrors = [
+                                createEntityAPIError(
+                                    'nonExistent',
+                                    0,
+                                    'Category',
+                                    nonExistentCategoryId
+                                ),
+                            ]
+
+                            await expectErrorCollectionFromInput(
+                                admin,
+                                input,
+                                expectedErrors
+                            )
+
+                            await expectNoChangesMade(existentCatsToUpdate)
+                        })
+                    }
+                )
+
+                context('when the received category is inactive', () => {
+                    let inactiveCategory: Category
+
+                    beforeEach(async () => {
+                        inactiveCategory = org1Categories[0]
+                        inactiveCategory.status = Status.INACTIVE
+                        await inactiveCategory.save()
+                    })
+
+                    it('should throw an ErrorCollection', async () => {
+                        const catsToUpdate = org1Categories
+                        const expectedErrors = Array.from(
+                            catsToUpdate,
+                            (_, index) => {
+                                return createEntityAPIError(
+                                    'inactive',
+                                    index,
+                                    'Category',
+                                    inactiveCategory.id
+                                )
+                            }
+                        )
+
+                        await expectErrorCollectionFromCategories(
+                            admin,
+                            catsToUpdate,
+                            expectedErrors
+                        )
+
+                        await expectNoChangesMade(catsToUpdate)
+                    })
+                })
+
+                context(
+                    'when the received name already exist in another category',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catsToUpdate = org1Categories.slice(0, 3)
+                            const input = Array.from(catsToUpdate, (c, i) =>
+                                buildSingleUpdateCategoryInput(
+                                    c.id,
+                                    org1Categories[i + 1].name,
+                                    subcategoriesForUpdate.map((s) => s.id)
+                                )
+                            )
+
+                            const expectedErrors = Array.from(
+                                catsToUpdate,
+                                (_, index) => {
+                                    return createEntityAPIError(
+                                        'duplicate',
+                                        index,
+                                        'Category',
+                                        org1Categories[index + 1].name
+                                    )
+                                }
+                            )
+
+                            await expectErrorCollectionFromInput(
+                                admin,
+                                input,
+                                expectedErrors
+                            )
+
+                            await expectNoChangesMade(catsToUpdate)
+                        })
+                    }
+                )
+
+                context(
+                    'when the received subcategories does not exist',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catsToUpdate = org1Categories
+                            const missingSubcategoryIds = [NIL_UUID]
+                            const input = Array.from(catsToUpdate, (c, i) =>
+                                buildSingleUpdateCategoryInput(
+                                    c.id,
+                                    `Renamed Category ${i + 1}`,
+                                    missingSubcategoryIds
+                                )
+                            )
+
+                            const expectedErrors = Array.from(
+                                input,
+                                (_, index) => {
+                                    return createNonExistentOrInactiveEntityAPIError(
+                                        index,
+                                        ['id'],
+                                        'IDs',
+                                        'Subcategory',
+                                        missingSubcategoryIds.toString()
+                                    )
+                                }
+                            )
+
+                            await expectErrorCollectionFromInput(
+                                admin,
+                                input,
+                                expectedErrors
+                            )
+
+                            await expectNoChangesMade(catsToUpdate)
+                        })
+                    }
+                )
+
+                context(
+                    'when neither name nor subcategories are retrieved',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catsToUpdate = org1Categories
+                            const input = Array.from(catsToUpdate, (c, i) =>
+                                buildSingleUpdateCategoryInput(c.id)
+                            )
+
+                            const expectedErrors = Array.from(
+                                input,
+                                (_, index) => {
+                                    return createInputRequiresAtLeastOne(
+                                        index,
+                                        'Category',
+                                        ['name', 'subcategories']
+                                    )
+                                }
+                            )
+
+                            await expectErrorCollectionFromInput(
+                                admin,
+                                input,
+                                expectedErrors
+                            )
+
+                            await expectNoChangesMade(catsToUpdate)
+                        })
+                    }
+                )
             })
         })
     })
@@ -1158,7 +1921,7 @@ describe('category', () => {
                     ])
                     const subcategories = await updatedResult[0].subcategories
                     expect(subcategories).to.have.lengthOf(2)
-                    expect((subcategories as Subcategory[])[1].id).to.equal(
+                    expect(subcategories?.map((s) => s.id)).to.include(
                         subcategoriesOrg1[2].id
                     )
                 })
@@ -1206,7 +1969,7 @@ describe('category', () => {
                         const subcategories = await updatedResult[0]
                             .subcategories
                         expect(subcategories).to.have.lengthOf(2)
-                        expect((subcategories as Subcategory[])[1].id).to.equal(
+                        expect(subcategories?.map((s) => s.id)).to.include(
                             subcategoriesOrg1[2].id
                         )
                     })
@@ -1245,7 +2008,7 @@ describe('category', () => {
                     ])
                     const subcategories = await updatedResult[0].subcategories
                     expect(subcategories).to.have.lengthOf(2)
-                    expect((subcategories as Subcategory[])[1].id).to.equal(
+                    expect(subcategories?.map((s) => s.id)).to.include(
                         systemSubcategories[2].id
                     )
                 })
