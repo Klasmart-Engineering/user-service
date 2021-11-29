@@ -4,8 +4,12 @@ import { ApolloServerTestClient } from '../createTestClient'
 import { gqlTry } from '../gqlTry'
 
 import { Subcategory } from '../../../src/entities/subcategory'
-import { UpdateCategoryInput } from '../../../src/types/graphQL/category'
 import { gql } from 'graphql-tag'
+import { Category } from '../../../src/entities/category'
+import {
+    DeleteCategoryInput,
+    UpdateCategoryInput,
+} from '../../../src/types/graphQL/category'
 
 const DELETE_SUBCATEGORY = `
     mutation deleteCategory($id: ID!) {
@@ -50,6 +54,18 @@ export const CREATE_CATEGORIES = gql`
 
     mutation createCategories($input: [CreateCategoryInput!]!) {
         createCategories(input: $input) {
+            categories {
+                ...categoryFields
+            }
+        }
+    }
+`
+
+export const DELETE_CATEGORIES = gql`
+    ${CATEGORY_FIELDS}
+
+    mutation deleteCategories($input: [DeleteCategoryInput!]!) {
+        deleteCategories(input: $input) {
             categories {
                 ...categoryFields
             }
@@ -107,6 +123,14 @@ export async function deleteCategory(
     const res = await gqlTry(operation)
     const gqlBool = res.data?.category?.delete as boolean
     return gqlBool
+}
+
+export function buildDeleteCategoryInputArray(
+    categories: Category[]
+): DeleteCategoryInput[] {
+    return Array.from(categories, (c) => {
+        return { id: c.id }
+    })
 }
 
 export function buildSingleUpdateCategoryInput(

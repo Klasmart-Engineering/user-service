@@ -9,7 +9,6 @@ import { Role } from '../../src/entities/role'
 import { Status } from '../../src/entities/status'
 import { Subcategory } from '../../src/entities/subcategory'
 import { User } from '../../src/entities/user'
-import CategoriesInitializer from '../../src/initializers/categories'
 import SubcategoriesInitializer from '../../src/initializers/subcategories'
 import { Model } from '../../src/model'
 import { categoryConnectionNodeFields } from '../../src/pagination/categoriesConnection'
@@ -18,6 +17,7 @@ import { UserPermissions } from '../../src/permissions/userPermissions'
 import {
     addSubcategoriesToCategories,
     createCategories,
+    deleteCategories,
     updateCategories,
 } from '../../src/resolvers/category'
 import { APIError, APIErrorCollection } from '../../src/types/errors/apiError'
@@ -26,6 +26,7 @@ import {
     CategoriesMutationResult,
     CategoryConnectionNode,
     CreateCategoryInput,
+    DeleteCategoryInput,
     UpdateCategoryInput,
 } from '../../src/types/graphQL/category'
 import { createServer } from '../../src/utils/createServer'
@@ -36,7 +37,6 @@ import {
     createInputLengthAPIError,
     createInputRequiresAtLeastOne,
     createNonExistentOrInactiveEntityAPIError,
-    createUnauthorizedOrganizationAPIError,
 } from '../../src/utils/resolvers'
 import { createOrganization } from '../factories/organization.factory'
 import { createOrganizationMembership } from '../factories/organizationMembership.factory'
@@ -54,6 +54,8 @@ import { customErrors } from '../../src/types/errors/customError'
 import { createSubcategory } from '../factories/subcategory.factory'
 import { Context } from '../../src/main'
 import faker from 'faker'
+import CategoriesInitializer from '../../src/initializers/categories'
+import { buildDeleteCategoryInputArray } from '../utils/operations/categoryOps'
 
 interface CategoryAndSubcategories {
     id: string
@@ -114,9 +116,42 @@ describe('category', () => {
     let userWithoutMembership: User
     let org1: Organization
     let org2: Organization
+    let systemCategories: Category[]
+    let org1Categories: Category[]
+    let org2Categories: Category[]
     let updateCategoriesRole: Role
     let createCategoriesRole: Role
+    let deleteCategoriesRole: Role
     let subcategoriesToAdd: Subcategory[]
+    let categoriesTotalCount = 0
+    const categoriesCount = 5
+
+    const expectCategories = async (quantity: number) => {
+        const categoryCount = await Category.count({
+            where: { status: Status.ACTIVE },
+        })
+
+        expect(categoryCount).to.eq(quantity)
+    }
+
+    const createInitialCategories = async () => {
+        await CategoriesInitializer.run()
+        systemCategories = await Category.find({ take: categoriesCount })
+
+        org1Categories = await Category.save(
+            Array.from(new Array(categoriesCount), () =>
+                createCategory(org1, subcategoriesToAdd)
+            )
+        )
+
+        org2Categories = await Category.save(
+            Array.from(new Array(categoriesCount), () =>
+                createCategory(org2, subcategoriesToAdd)
+            )
+        )
+
+        categoriesTotalCount = await Category.count()
+    }
 
     before(async () => {
         connection = await createTestConnection()
@@ -153,6 +188,11 @@ describe('category', () => {
             permissions: [PermissionName.create_subjects_20227],
         }).save()
 
+        // Creating Role for delete categories
+        deleteCategoriesRole = await createRole('Delete Categories', org1, {
+            permissions: [PermissionName.delete_subjects_20447],
+        }).save()
+
         // Creating Role for update categories
         updateCategoriesRole = await createRole('Update Categories', org1, {
             permissions: [PermissionName.edit_subjects_20337],
@@ -162,7 +202,11 @@ describe('category', () => {
         await createOrganizationMembership({
             user: userWithPermission,
             organization: org1,
-            roles: [createCategoriesRole, updateCategoriesRole],
+            roles: [
+                createCategoriesRole,
+                updateCategoriesRole,
+                deleteCategoriesRole,
+            ],
         }).save()
 
         // Assigning userWithoutPermission to org1
@@ -270,55 +314,6 @@ describe('category', () => {
             })
         }
 
-        const expectErrorCollection = async (
-            user: User,
-            input: CreateCategoryInput[],
-            expectedErrors: APIError[]
-        ) => {
-            const operation = createCategoriesFromResolver(user, input)
-
-            const { errors } = (await expect(operation).to.be
-                .rejected) as APIErrorCollection
-
-            expect(errors).to.exist
-            expect(errors).to.be.an('array')
-            errors.forEach((e, i) => {
-                compareErrors(e, expectedErrors[i])
-            })
-        }
-
-        const expectAPIError = async (
-            user: User,
-            input: CreateCategoryInput[],
-            expectedError: APIError
-        ) => {
-            const operation = createCategoriesFromResolver(user, input)
-            const error = (await expect(operation).to.be.rejected) as APIError
-
-            expect(error).to.exist
-            compareErrors(error, expectedError)
-        }
-
-        const expectCategories = async (quantity: number) => {
-            const categoryCount = await Category.count()
-            expect(categoryCount).to.eq(quantity)
-        }
-
-        const compareErrors = (error: APIError, expectedError: APIError) => {
-            expect(error.code).to.eq(expectedError.code)
-            expect(error.message).to.eq(expectedError.message)
-            expect(error.variables).to.deep.equalInAnyOrder(
-                expectedError.variables
-            )
-            expect(error.entity).to.eq(expectedError.entity)
-            expect(error.entityName).to.eq(expectedError.entityName)
-            expect(error.attribute).to.eq(expectedError.attribute)
-            expect(error.otherAttribute).to.eq(expectedError.otherAttribute)
-            expect(error.index).to.eq(expectedError.index)
-            expect(error.min).to.eq(expectedError.min)
-            expect(error.max).to.eq(expectedError.max)
-        }
-
         context('when user is admin', () => {
             it('should create categories in any organization', async () => {
                 const input = [
@@ -375,7 +370,7 @@ describe('category', () => {
                     it('throws an ErrorCollection', async () => {
                         const user = userWithoutMembership
                         const org = org1
-                        const input = generateInput(2, org1, true)
+                        const input = generateInput(2, org, true)
                         const operation = createCategoriesFromResolver(
                             user,
                             input
@@ -422,12 +417,9 @@ describe('category', () => {
                         'min'
                     )
 
-                    await expectAPIError(
-                        admin,
-                        generateInput(0, org1, true),
-                        expectedError
-                    )
-
+                    const input = generateInput(0, org1, true)
+                    const operation = createCategoriesFromResolver(admin, input)
+                    await expectAPIError(operation, expectedError)
                     await expectCategories(0)
                 })
             })
@@ -441,16 +433,18 @@ describe('category', () => {
                             'max'
                         )
 
-                        await expectAPIError(
-                            admin,
-                            generateInput(
-                                config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1,
-                                org1,
-                                true
-                            ),
-                            expectedError
+                        const input = generateInput(
+                            config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE + 1,
+                            org1,
+                            true
                         )
 
+                        const operation = createCategoriesFromResolver(
+                            admin,
+                            input
+                        )
+
+                        await expectAPIError(operation, expectedError)
                         await expectCategories(0)
                     })
                 }
@@ -472,6 +466,11 @@ describe('category', () => {
                             }
                         })
 
+                        const operation = createCategoriesFromResolver(
+                            admin,
+                            input
+                        )
+
                         const expectedErrors = Array.from(input, (i, index) =>
                             createNonExistentOrInactiveEntityAPIError(
                                 index,
@@ -482,10 +481,9 @@ describe('category', () => {
                             )
                         )
 
-                        await expectErrorCollection(
-                            admin,
-                            input,
-                            expectedErrors
+                        await expectAPIErrorCollection(
+                            operation,
+                            new APIErrorCollection(expectedErrors)
                         )
 
                         await expectCategories(0)
@@ -505,6 +503,11 @@ describe('category', () => {
                             }
                         })
 
+                        const operation = createCategoriesFromResolver(
+                            admin,
+                            input
+                        )
+
                         const expectedErrors = Array.from(input, (i, index) =>
                             createNonExistentOrInactiveEntityAPIError(
                                 index,
@@ -515,10 +518,9 @@ describe('category', () => {
                             )
                         )
 
-                        await expectErrorCollection(
-                            admin,
-                            input,
-                            expectedErrors
+                        await expectAPIErrorCollection(
+                            operation,
+                            new APIErrorCollection(expectedErrors)
                         )
 
                         await expectCategories(0)
@@ -531,20 +533,25 @@ describe('category', () => {
                     const input = [
                         ...generateInput(1, org1, true),
                         ...generateInput(1, org1, true),
+                        ...generateInput(1, org1, true),
                     ]
 
-                    const expectedErrors = Array.from(input, (_, index) =>
-                        createDuplicateInputAPIError(
-                            index,
-                            ['organizationId', 'name'],
-                            'CreateCategoryInput'
-                        )
+                    const expectedErrors = Array.from(
+                        [input[1], input[2]],
+                        (_, index) =>
+                            createDuplicateInputAPIError(
+                                index + 1,
+                                ['organizationId', 'name'],
+                                'CreateCategoryInput'
+                            )
                     )
 
-                    // The first input is not really duplicated
-                    expectedErrors.shift()
+                    const operation = createCategoriesFromResolver(admin, input)
+                    await expectAPIErrorCollection(
+                        operation,
+                        new APIErrorCollection(expectedErrors)
+                    )
 
-                    await expectErrorCollection(admin, input, expectedErrors)
                     await expectCategories(0)
                 })
             })
@@ -568,7 +575,11 @@ describe('category', () => {
                         )
                     )
 
-                    await expectErrorCollection(admin, input, expectedErrors)
+                    const operation = createCategoriesFromResolver(admin, input)
+                    await expectAPIErrorCollection(
+                        operation,
+                        new APIErrorCollection(expectedErrors)
+                    )
 
                     // The already existent category is the only expected
                     await expectCategories(1)
@@ -1312,6 +1323,364 @@ describe('category', () => {
                         })
                     }
                 )
+            })
+        })
+    })
+
+    context('deleteCategories', () => {
+        const deleteCategoriesFromResolver = async (
+            user: User,
+            input: DeleteCategoryInput[]
+        ): Promise<CategoriesMutationResult> => {
+            const permission = new UserPermissions(userToPayload(user))
+            const ctx = await buildContext(permission)
+            const result = await deleteCategories({ input }, ctx)
+            return result
+        }
+
+        const expectCategoriesDeleted = async (
+            user: User,
+            catsToDelete: Category[]
+        ) => {
+            const input = buildDeleteCategoryInputArray(catsToDelete)
+            const { categories } = await deleteCategoriesFromResolver(
+                user,
+                input
+            )
+
+            expect(categories).to.have.lengthOf(input.length)
+            categories.forEach((c, i) => {
+                expect(c.id).to.eq(input[i].id)
+                expect(c.status).to.eq(Status.INACTIVE)
+            })
+
+            const categoriesDB = await Category.findByIds(
+                input.map((i) => i.id)
+            )
+
+            expect(categoriesDB).to.have.lengthOf(input.length)
+            categoriesDB.forEach((cdb) => {
+                const inputRelated = input.find((i) => i.id === cdb.id)
+                expect(inputRelated).to.exist
+                expect(cdb.id).to.eq(inputRelated?.id)
+                expect(cdb.status).to.eq(Status.INACTIVE)
+            })
+        }
+
+        beforeEach(async () => {
+            await createInitialCategories()
+        })
+
+        context('permissions', () => {
+            context('successfull cases', () => {
+                context('when user is admin', () => {
+                    it('should delete any category', async () => {
+                        const catsToDelete = [
+                            systemCategories[0],
+                            org1Categories[0],
+                            org2Categories[0],
+                        ]
+
+                        await expectCategoriesDeleted(admin, catsToDelete)
+                        await expectCategories(
+                            categoriesTotalCount - catsToDelete.length
+                        )
+                    })
+                })
+
+                context('when user is not admin', () => {
+                    context('but has permission', () => {
+                        it('should delete categories in its organization', async () => {
+                            const catsToDelete = org1Categories
+                            await expectCategoriesDeleted(
+                                userWithPermission,
+                                catsToDelete
+                            )
+
+                            await expectCategories(
+                                categoriesTotalCount - catsToDelete.length
+                            )
+                        })
+                    })
+                })
+            })
+
+            context('error handling', () => {
+                let user: User
+                const deleteCategoriesPermissionName =
+                    PermissionName.delete_subjects_20447
+
+                context('when user is not admin', () => {
+                    context('but has permission', () => {
+                        beforeEach(() => {
+                            user = userWithPermission
+                        })
+
+                        context('and tries to update system categories', () => {
+                            it('should throw an error', async () => {
+                                const catsToDelete = systemCategories
+                                const input = buildDeleteCategoryInputArray(
+                                    catsToDelete
+                                )
+
+                                const operation = deleteCategoriesFromResolver(
+                                    user,
+                                    input
+                                )
+
+                                await expect(operation).to.be.rejectedWith(
+                                    `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName})`
+                                )
+
+                                await expectCategories(categoriesTotalCount)
+                            })
+                        })
+
+                        context('and tries to update system categories', () => {
+                            it('should throw an error', async () => {
+                                const org = org2
+                                const catsToDelete = org2Categories
+                                const input = buildDeleteCategoryInputArray(
+                                    catsToDelete
+                                )
+
+                                const operation = deleteCategoriesFromResolver(
+                                    user,
+                                    input
+                                )
+
+                                await expect(operation).to.be.rejectedWith(
+                                    `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                )
+
+                                await expectCategories(categoriesTotalCount)
+                            })
+                        })
+                    })
+
+                    context('and has not permission', () => {
+                        context('but has membership', () => {
+                            beforeEach(() => {
+                                user = userWithoutPermission
+                            })
+
+                            context(
+                                'and tries to delete categories in its organization',
+                                () => {
+                                    it('should throw an error', async () => {
+                                        const org = org1
+                                        const catsToDelete = org1Categories
+                                        const input = buildDeleteCategoryInputArray(
+                                            catsToDelete
+                                        )
+
+                                        const operation = deleteCategoriesFromResolver(
+                                            user,
+                                            input
+                                        )
+
+                                        await expect(
+                                            operation
+                                        ).to.be.rejectedWith(
+                                            `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName}) in Organization(${org.organization_id})`
+                                        )
+
+                                        await expectCategories(
+                                            categoriesTotalCount
+                                        )
+                                    })
+                                }
+                            )
+                        })
+
+                        context('neither has membership', () => {
+                            beforeEach(() => {
+                                user = userWithoutMembership
+                            })
+
+                            context(
+                                'and tries to delete any categories',
+                                () => {
+                                    it('should throw an error', async () => {
+                                        const catsToDelete = [
+                                            systemCategories[0],
+                                            org1Categories[0],
+                                            org2Categories[0],
+                                        ]
+
+                                        const input = buildDeleteCategoryInputArray(
+                                            catsToDelete
+                                        )
+
+                                        const operation = deleteCategoriesFromResolver(
+                                            user,
+                                            input
+                                        )
+
+                                        await expect(
+                                            operation
+                                        ).to.be.rejectedWith(
+                                            `User(${user.user_id}) does not have Permission(${deleteCategoriesPermissionName})`
+                                        )
+
+                                        await expectCategories(
+                                            categoriesTotalCount
+                                        )
+                                    })
+                                }
+                            )
+                        })
+                    })
+                })
+            })
+        })
+
+        context('inputs', () => {
+            context('error handling', () => {
+                context('when input provided is an empty array', () => {
+                    it('should throw an APIError', async () => {
+                        const expectedError = createInputLengthAPIError(
+                            'Category',
+                            'min'
+                        )
+
+                        const input = buildDeleteCategoryInputArray([])
+                        const operation = deleteCategoriesFromResolver(
+                            admin,
+                            input
+                        )
+
+                        await expectAPIError(operation, expectedError)
+                        await expectCategories(categoriesTotalCount)
+                    })
+                })
+
+                context(
+                    `when input length is greather than ${config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE}`,
+                    () => {
+                        it('should throw an APIError', async () => {
+                            const expectedError = createInputLengthAPIError(
+                                'Category',
+                                'max'
+                            )
+
+                            const catsToDelete = Array.from(
+                                new Array(
+                                    config.limits
+                                        .MUTATION_MAX_INPUT_ARRAY_SIZE + 1
+                                ),
+                                () => org1Categories[0]
+                            )
+
+                            const input = buildDeleteCategoryInputArray(
+                                catsToDelete
+                            )
+
+                            const operation = deleteCategoriesFromResolver(
+                                admin,
+                                input
+                            )
+
+                            await expectAPIError(operation, expectedError)
+                            await expectCategories(categoriesTotalCount)
+                        })
+                    }
+                )
+
+                context(
+                    "when input provided has duplicates in 'id' field",
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const catsToDelete = Array.from(
+                                new Array(3),
+                                () => org1Categories[0]
+                            )
+
+                            const input = buildDeleteCategoryInputArray(
+                                catsToDelete
+                            )
+
+                            const expectedErrors = Array.from(
+                                [input[1], input[2]],
+                                (_, index) => {
+                                    return createDuplicateInputAPIError(
+                                        index + 1,
+                                        ['id'],
+                                        'DeleteCategoryInput'
+                                    )
+                                }
+                            )
+
+                            await expectAPIErrorCollection(
+                                deleteCategoriesFromResolver(admin, input),
+                                new APIErrorCollection(expectedErrors)
+                            )
+
+                            await expectCategories(categoriesTotalCount)
+                        })
+                    }
+                )
+
+                context(
+                    'when a category with the received id does not exists',
+                    () => {
+                        it('should throw an ErrorCollection', async () => {
+                            const nonExistentCategoryId = NIL_UUID
+                            const input = buildDeleteCategoryInputArray(
+                                org1Categories
+                            )
+
+                            input.push({ id: nonExistentCategoryId })
+                            const expectedErrors = [
+                                createEntityAPIError(
+                                    'nonExistent',
+                                    input.length - 1,
+                                    'Category',
+                                    nonExistentCategoryId
+                                ),
+                            ]
+
+                            await expectAPIErrorCollection(
+                                deleteCategoriesFromResolver(admin, input),
+                                new APIErrorCollection(expectedErrors)
+                            )
+
+                            await expectCategories(categoriesTotalCount)
+                        })
+                    }
+                )
+
+                context('when the received category is inactive', () => {
+                    let inactiveCategory: Category
+
+                    beforeEach(async () => {
+                        inactiveCategory = org1Categories[0]
+                        inactiveCategory.status = Status.INACTIVE
+                        await inactiveCategory.save()
+                    })
+
+                    it('should throw an ErrorCollection', async () => {
+                        const input = buildDeleteCategoryInputArray(
+                            org1Categories
+                        )
+
+                        const expectedErrors = [
+                            createEntityAPIError(
+                                'inactive',
+                                0,
+                                'Category',
+                                inactiveCategory.id
+                            ),
+                        ]
+
+                        await expectAPIErrorCollection(
+                            deleteCategoriesFromResolver(admin, input),
+                            new APIErrorCollection(expectedErrors)
+                        )
+
+                        await expectCategories(categoriesTotalCount - 1)
+                    })
+                })
             })
         })
     })
