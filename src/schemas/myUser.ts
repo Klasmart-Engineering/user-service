@@ -138,10 +138,7 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                             return {
                                 permissionId: permissionName,
                                 allowed: ctx.permissions.allowed(
-                                    {
-                                        organization_id: organizationId,
-                                        user_id: ctx.permissions.getUserId(),
-                                    },
+                                    { organization_ids: [organizationId] },
                                     permissionName
                                 ),
                             }
@@ -161,10 +158,7 @@ export default function getDefault(model: Model): GraphQLSchemaModule {
                             return {
                                 permissionId: permissionName,
                                 allowed: ctx.permissions.allowed(
-                                    {
-                                        school_ids: [schoolId],
-                                        user_id: ctx.permissions.getUserId(),
-                                    },
+                                    { school_ids: [schoolId] },
                                     permissionName
                                 ),
                             }

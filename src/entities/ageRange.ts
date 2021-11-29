@@ -69,9 +69,11 @@ export class AgeRange extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_age_range_20442
         )
 

@@ -47,9 +47,11 @@ export class Subject extends CustomBaseEntity {
         info: Record<string, unknown>
     ): Promise<Subcategory[]> {
         const organization_id = (await this.organization)?.organization_id
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.view_subjects_20115
         )
 
@@ -81,9 +83,11 @@ export class Subject extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_subjects_20447
         )
 

@@ -35,12 +35,10 @@ export async function createSubcategories(
         [val.organizationId, val.name].toString()
     )
 
-    for (const id of organizationIds) {
-        await context.permissions.rejectIfNotAllowed(
-            { organization_id: id },
-            PermissionName.create_subjects_20227
-        )
-    }
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: organizationIds },
+        PermissionName.create_subjects_20227
+    )
 
     const preloadedOrgs = new Map(
         (
@@ -164,7 +162,6 @@ export const deleteSubcategories = async (
     const errors: APIError[] = []
     const ids: string[] = args.input.map((val) => val.id).flat()
     const subcategoryNodes: SubcategoryConnectionNode[] = []
-    const isAdmin = context.permissions.isAdmin
 
     const subcategories = await Subcategory.createQueryBuilder()
         .select([
@@ -179,12 +176,12 @@ export const deleteSubcategories = async (
         })
         .getMany()
 
-    const organizationsIds = subcategories.map(
+    const organizationIds = subcategories.map(
         // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         (subcategory) => (subcategory as any).__organization__?.organization_id
     )
-    const organizationsWhereIsPermitted = await context.permissions.organizationsWhereItIsAllowed(
-        organizationsIds,
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: organizationIds },
         PermissionName.delete_subjects_20447
     )
 
@@ -211,34 +208,6 @@ export const deleteSubcategories = async (
                     entityName: subcategory.name,
                 })
             )
-        }
-        if (subcategory.system && !isAdmin) {
-            errors.push(
-                new APIError({
-                    code: customErrors.unauthorized.code,
-                    message: customErrors.unauthorized.message,
-                    variables: ['id'],
-                    entity: 'Subcategory',
-                    entityName: subcategory.name,
-                })
-            )
-        }
-        if (!subcategory.system && !isAdmin) {
-            const isAllowedIntheOrg = organizationsWhereIsPermitted.includes(
-                // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-                (subcategory as any).__organization__.organization_id
-            )
-            if (!isAllowedIntheOrg) {
-                errors.push(
-                    new APIError({
-                        code: customErrors.unauthorized.code,
-                        message: customErrors.unauthorized.message,
-                        variables: ['id'],
-                        entity: 'Subcategory',
-                        entityName: subcategory.name,
-                    })
-                )
-            }
         }
 
         subcategory.status = Status.INACTIVE
@@ -290,7 +259,6 @@ export async function updateSubcategories(
     const ids = args.input.map((val) => val.id)
     const subcategoryNames = args.input.map((val) => val.name)
     const subcategoryNodes: SubcategoryConnectionNode[] = []
-    const isAdmin = context.permissions.isAdmin
 
     // Finding subcategories by input ids
     const subcategories = await Subcategory.createQueryBuilder('Subcategory')
@@ -323,9 +291,9 @@ export async function updateSubcategories(
         organizationIds.push(orgId)
     }
 
-    // Checking in which of the organizations the user has permission to edit subcategories
-    const organizationsWhereIsAllowed = await context.permissions.organizationsWhereItIsAllowed(
-        organizationIds,
+    // Checking that the user has permission to edit subcategories
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: organizationIds },
         PermissionName.edit_subjects_20337
     )
 
@@ -376,24 +344,8 @@ export async function updateSubcategories(
             errors.push(createSubcategoryAPIError('inactive', index, id))
         }
 
-        if (subcategory.system && !isAdmin) {
-            errors.push(createSubcategoryAPIError('unauthorized', index, id))
-        }
-
         const categoryOrganizationId =
             (await subcategory.organization)?.organization_id || ''
-
-        if (!subcategory.system && !isAdmin) {
-            const isAllowedIntheOrg = organizationsWhereIsAllowed.includes(
-                categoryOrganizationId
-            )
-
-            if (!isAllowedIntheOrg) {
-                errors.push(
-                    createSubcategoryAPIError('unauthorized', index, id)
-                )
-            }
-        }
 
         // name arg validations
         if (name) {

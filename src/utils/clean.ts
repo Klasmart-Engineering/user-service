@@ -1,5 +1,10 @@
 import { isEmail, isPhone } from './validations'
 
+export const uniqueAndTruthy = <T>(array: Array<T> | undefined): T[] => {
+    if (!array) return []
+    return [...new Set(array.filter((a) => a))]
+}
+
 export const normalizedLowercaseTrimmed = (x?: string) =>
     x?.normalize('NFKC').toLowerCase().trim()
 

@@ -85,12 +85,10 @@ export async function updateCategories(
         organizationIds.push(orgId)
     }
 
-    for (const id of organizationIds) {
-        await context.permissions.rejectIfNotAllowed(
-            { organization_id: id },
-            PermissionName.edit_subjects_20337
-        )
-    }
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: organizationIds },
+        PermissionName.edit_subjects_20337
+    )
 
     // Preloading
     const preloadedCategoriesByName = new Map()
@@ -265,12 +263,10 @@ export async function createCategories(
         [val.organizationId, val.name].toString()
     )
 
-    for (const id of organizationIds) {
-        await context.permissions.rejectIfNotAllowed(
-            { organization_id: id },
-            PermissionName.create_subjects_20227
-        )
-    }
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: organizationIds },
+        PermissionName.create_subjects_20227
+    )
 
     // Preloading
     const preloadedOrgs = new Map(
@@ -437,18 +433,16 @@ export async function deleteCategories(
         .getMany()
 
     const categoriesMap = new Map(categories.map((cf) => [cf.id, cf]))
-    const organizationIds = []
+    const organizationIds: string[] = []
     for (const c of categoriesMap.values()) {
         const organizationId = (await c.organization)?.organization_id
-        organizationIds.push(organizationId)
+        if (organizationId) organizationIds.push(organizationId)
     }
 
-    for (const id of organizationIds) {
-        await context.permissions.rejectIfNotAllowed(
-            { organization_id: id },
-            PermissionName.delete_subjects_20447
-        )
-    }
+    await context.permissions.rejectIfNotAllowed(
+        { organization_ids: organizationIds },
+        PermissionName.delete_subjects_20447
+    )
 
     for (const [index, id] of ids.entries()) {
         const category = categoriesMap.get(id)

@@ -2104,7 +2104,7 @@ describe('organization', () => {
 
                 return expect(editMembershipWithDefaults())
                     .to.be.rejectedWith(
-                        `User(${existingUser.user_id}) does not have Permission(edit_users_40330) in Organization(${organization.organization_id})`
+                        `User(${existingUser.user_id}) does not have Permission(edit_users_40330) in Organizations(${organization.organization_id})`
                     )
                     .then(async () => {
                         await expectNoChange()
@@ -7271,8 +7271,12 @@ describe('organization', () => {
                 })
 
                 it('returns a permission error', async () => {
+                    const orgIds = [
+                        organization2.organization_id,
+                        organization3.organization_id,
+                    ]
                     await expect(addUsers(nonAdminUser)).to.be.rejectedWith(
-                        `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.send_invitation_40882}) in Organization(${organization2.organization_id})`
+                        `User(${nonAdminUser.user_id}) does not have Permission(${PermissionName.send_invitation_40882}) in Organizations(${orgIds})`
                     )
                 })
 

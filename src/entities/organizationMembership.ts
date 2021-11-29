@@ -151,13 +151,13 @@ export class OrganizationMembership extends CustomBaseEntity {
         context: Context,
         info: GraphQLResolveInfo
     ) {
-        const permisionContext = {
-            organization_id: this.organization_id,
+        const permissionContext = {
+            organization_ids: [this.organization_id],
             user_id: this.user_id,
         }
 
         return await context.permissions.allowed(
-            permisionContext,
+            permissionContext,
             permission_name
         )
     }

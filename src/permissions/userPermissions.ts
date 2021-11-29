@@ -5,11 +5,21 @@ import { SchoolMembership } from '../entities/schoolMembership'
 import { Status } from '../entities/status'
 import { PermissionName } from './permissionNames'
 import { superAdminRole } from './superAdmin'
+import { uniqueAndTruthy } from '../utils/clean'
+import { Organization } from '../entities/organization'
 
-interface PermissionContext {
+export interface PermissionContext {
     school_ids?: string[]
-    organization_id?: string
+    organization_ids?: string[]
     user_id?: string
+}
+
+type PermissionCheckOutput = {
+    passed: boolean
+    userId?: string
+    unauthorisedOrgIds?: string[]
+    unauthorisedSchoolIds?: string[]
+    isInactive?: boolean
 }
 
 export class UserPermissions {
@@ -29,6 +39,7 @@ export class UserPermissions {
     private readonly user_id?: string
     private readonly email?: string
     private readonly phone?: string
+    private user?: User
     public readonly isAdmin?: boolean
 
     public constructor(token?: { id: string; email?: string; phone?: string }) {
@@ -44,29 +55,37 @@ export class UserPermissions {
         }
     }
 
-    private isAdminEmail(email: string) {
+    private isAdminEmail(email: string): boolean {
         return UserPermissions.ADMIN_EMAILS.includes(email)
     }
 
-    public getUserId() {
+    public getUserId(): string | undefined {
         return this.user_id
     }
 
-    public getEmail() {
+    private getUserIdOrError(uid = this.user_id): string {
+        if (!uid) throw new Error(`User is required for authorization`)
+        return uid
+    }
+
+    private async getUser(uid = this.user_id): Promise<User> {
+        if (this.user && this.user?.user_id === uid) return this.user
+        this.user = await getRepository(User).findOne(
+            this.getUserIdOrError(uid)
+        )
+        if (!this.user) throw new Error(`User(${uid}) not found`)
+        return this.user
+    }
+
+    public getEmail(): string | undefined {
         return this.email
     }
 
-    public getPhone() {
+    public getPhone(): string | undefined {
         return this.phone
     }
 
-    private async isUserAdmin(user_id?: string) {
-        const user = await User.findOne({ user_id })
-
-        return this.isAdminEmail(user?.email || '')
-    }
-
-    public rejectIfNotAdmin() {
+    public rejectIfNotAdmin(): void {
         if (!this.isAdmin) {
             throw new Error(
                 `User(${this.user_id}) does not have Admin permissions`
@@ -74,7 +93,7 @@ export class UserPermissions {
         }
     }
 
-    public rejectIfNotAuthenticated() {
+    public rejectIfNotAuthenticated(): void {
         if (!this.user_id) {
             throw new Error(
                 `User not authenticated. Please authenticate to proceed`
@@ -82,111 +101,141 @@ export class UserPermissions {
         }
     }
 
-    private async getUserIsActive(
-        userId: string | undefined
-    ): Promise<boolean> {
-        if (!userId) {
-            return false
-        }
-        const user = await getRepository(User).findOne(userId)
+    private hasAdminAccess(
+        user: User | undefined,
+        permission_name: PermissionName
+    ): boolean {
+        return (
+            this.isAdminEmail(user?.email || '') &&
+            superAdminRole.permissions.includes(permission_name)
+        )
+    }
 
+    private isUserActive(user: User | undefined) {
         return user?.status === Status.ACTIVE
     }
 
     public async rejectIfNotAllowed(
-        { school_ids, organization_id }: PermissionContext,
+        permission_context: PermissionContext,
         permission_name: PermissionName
-    ) {
-        const isActive = await this.getUserIsActive(this.user_id)
-        if (!isActive) {
-            throw new Error(
-                `User(${this.user_id}) has been deleted, so does not have Permission(${permission_name}) in Organization(${organization_id})`
-            )
-        }
-
-        const isAllowed = await this.allowed(
-            { school_ids, organization_id, user_id: this.user_id },
+    ): Promise<void> {
+        const permOutput: PermissionCheckOutput = await this.hasPermissions(
+            permission_context,
             permission_name
         )
-
-        if (!isAllowed && organization_id) {
+        if (permOutput.passed) return
+        if (permOutput.isInactive) {
             throw new Error(
-                `User(${this.user_id}) does not have Permission(${permission_name}) in Organization(${organization_id})`
+                `User(${permOutput.userId}) has been deleted, so does not have Permission(${permission_name})`
             )
         }
 
-        if (!isAllowed && school_ids) {
-            throw new Error(
-                `User(${
-                    this.user_id
-                }) does not have Permission(${permission_name}) in Schools(${school_ids?.toString()})`
-            )
-        }
-
-        if (!isAllowed) {
-            throw new Error(
-                `User(${this.user_id}) does not have Permission(${permission_name})`
-            )
-        }
+        let message = `User(${permOutput.userId}) does not have Permission(${permission_name})`
+        if (permOutput.unauthorisedOrgIds?.length)
+            message += ` in Organizations(${permOutput.unauthorisedOrgIds})`
+        if (permOutput.unauthorisedSchoolIds?.length)
+            message += ` in Schools(${permOutput.unauthorisedSchoolIds})`
+        throw new Error(message)
     }
 
     public async allowed(
-        { school_ids, organization_id, user_id }: PermissionContext,
+        permission_context: PermissionContext,
         permission_name: PermissionName
-    ) {
-        const isActive = await this.getUserIsActive(user_id)
-
-        if (!isActive) {
-            return false
-        }
-
-        const isAdmin = await this.isUserAdmin(user_id)
-        let output =
-            isAdmin && superAdminRole.permissions.includes(permission_name)
-
-        if (!output && organization_id) {
-            const allOrganizationPermissions = await this.organizationPermissions(
-                user_id
-            )
-            const organizationPermissions = allOrganizationPermissions.get(
-                organization_id
-            )
-            if (
-                organizationPermissions &&
-                organizationPermissions.has(permission_name)
-            ) {
-                output = true
-            }
-        }
-
-        if (!output && school_ids) {
-            const allSchoolPermissions = await this.schoolPermissions(user_id)
-            for (const id of school_ids) {
-                const schoolPermissions = allSchoolPermissions.get(id)
-                if (
-                    schoolPermissions &&
-                    schoolPermissions.has(permission_name)
-                ) {
-                    output = true
-                    break
-                }
-            }
-        }
-
-        return output
+    ): Promise<boolean> {
+        return (await this.hasPermissions(permission_context, permission_name))
+            .passed
     }
 
-    public async organizationsWhereItIsAllowed(
-        organizationIds: string[],
-        permissionName: string
-    ): Promise<string[]> {
-        const isActive = await this.getUserIsActive(this.user_id)
-        if (!isActive) {
-            return []
+    private async hasPermissions(
+        permission_context: PermissionContext,
+        permission_name: PermissionName
+    ): Promise<PermissionCheckOutput> {
+        // Clean & fetch data
+        const cpc = cleanPermissionContext(permission_context)
+        const userId = cpc.user_id
+        const orgIds = cpc.organization_ids
+        let schoolIds = cpc.school_ids
+        const user = await this.getUser(userId)
+
+        // Perform initial checks
+        if (!this.isUserActive(user))
+            return { passed: false, userId: user.user_id, isInactive: true }
+        if (this.hasAdminAccess(user, permission_name)) return { passed: true }
+        if (!orgIds?.length && !schoolIds?.length)
+            return { passed: false, userId: user.user_id }
+
+        let unauthorisedOrgIds: string[] = []
+        let unauthorisedSchoolIds: string[] = []
+        let schoolOrgMap = new Map<string, string>()
+        let orgSchoolsMap = new Map<string, string[]>()
+
+        if (orgIds?.length && schoolIds?.length) {
+            ;[orgSchoolsMap, schoolOrgMap] = await getSchoolOrgRelations(
+                orgIds,
+                schoolIds
+            )
         }
+
+        if (orgIds?.length) {
+            // Get organizationIds which have the permission
+            const authorisedOrgIds = await this.organizationsWithPermission(
+                user.user_id,
+                permission_name,
+                orgIds
+            )
+            unauthorisedOrgIds = orgIds.filter(
+                (mp) => !authorisedOrgIds.includes(mp)
+            )
+            // Remove schools if their organization already has the permission
+            if (authorisedOrgIds?.length) {
+                schoolIds = schoolIds?.filter((sid) => {
+                    const orgId = schoolOrgMap.get(sid)
+                    if (!orgId) return true
+                    return !authorisedOrgIds.includes(orgId)
+                })
+            }
+        }
+
+        if (schoolIds?.length) {
+            // Get schoolIds which have the permission
+            const authorisedSchoolIds = await this.schoolsWithPermission(
+                user.user_id,
+                permission_name,
+                schoolIds
+            )
+            unauthorisedSchoolIds = schoolIds.filter(
+                (ms) => !authorisedSchoolIds.includes(ms)
+            )
+            // Remove organizations if their school has the permission
+            if (authorisedSchoolIds?.length && unauthorisedOrgIds?.length) {
+                unauthorisedOrgIds = unauthorisedOrgIds.filter((uoid) => {
+                    const schoolIdsToCheck = orgSchoolsMap.get(uoid)
+                    return !schoolIdsToCheck?.every((sidtc) =>
+                        authorisedSchoolIds.includes(sidtc)
+                    )
+                })
+            }
+        }
+
+        // Pass if all schools and orgs  are authorized, fail otherwise
+        if (!unauthorisedSchoolIds.length && !unauthorisedOrgIds.length)
+            return { passed: true }
+        return {
+            passed: false,
+            userId: user.user_id,
+            unauthorisedOrgIds,
+            unauthorisedSchoolIds,
+        }
+    }
+
+    private async organizationsWithPermission(
+        userId: string,
+        permissionName: string,
+        organizationIds: string[]
+    ): Promise<string[]> {
         const orgsWithPermission: string[] = []
         const allOrganizationPermisions = await this.organizationPermissions(
-            this.user_id
+            userId
         )
         for (const orgId of organizationIds) {
             const organizationPermissions = allOrganizationPermisions.get(orgId)
@@ -200,12 +249,28 @@ export class UserPermissions {
         return orgsWithPermission
     }
 
+    private async schoolsWithPermission(
+        userId: string,
+        permissionName: string,
+        schoolIds: string[]
+    ): Promise<string[]> {
+        const schoolsWithPermission: string[] = []
+        const allSchoolPermissions = await this.schoolPermissions(userId)
+        for (const schoolId of schoolIds) {
+            const schoolPermissions = allSchoolPermissions.get(schoolId)
+            if (schoolPermissions && schoolPermissions.has(permissionName)) {
+                schoolsWithPermission.push(schoolId)
+            }
+        }
+        return schoolsWithPermission
+    }
+
     private async organizationPermissions(
-        user_id?: string
+        userId: string
     ): Promise<Map<string, Set<string>>> {
         if (!this._organizationPermissions) {
             const organizationPermissions = new Map<string, Set<string>>()
-            if (!user_id) {
+            if (!userId) {
                 this._organizationPermissions = Promise.resolve(
                     organizationPermissions
                 )
@@ -239,7 +304,7 @@ export class UserPermissions {
                     }
                 )
                 .where('OrganizationMembership.user_id = :user_id', {
-                    user_id,
+                    user_id: userId,
                 })
                 .getRawMany()
                 .then((organizationPermissionResults) => {
@@ -268,11 +333,11 @@ export class UserPermissions {
     }
 
     private async schoolPermissions(
-        user_id?: string
+        userId: string
     ): Promise<Map<string, Set<string>>> {
         if (!this._schoolPermissions) {
             const schoolPermissions = new Map<string, Set<string>>()
-            if (!user_id) {
+            if (!userId) {
                 return Promise.resolve(schoolPermissions)
             }
             //TODO: Adjust for returning explicity denial
@@ -299,7 +364,7 @@ export class UserPermissions {
                     }
                 )
                 .where('SchoolMembership.user_id = :user_id', {
-                    user_id,
+                    user_id: userId,
                 })
                 .getRawMany()
                 .then((schoolPermissionResults) => {
@@ -332,7 +397,8 @@ export class UserPermissions {
         operator: 'AND' | 'OR' = 'AND'
     ): Promise<string[]> {
         const orgIds: string[] = []
-        const orgPermissions = await this.organizationPermissions(this.user_id)
+        const userId = this.getUserIdOrError()
+        const orgPermissions = await this.organizationPermissions(userId)
 
         if (requiredPermissions.length === 0) {
             return Array.from(orgPermissions.keys())
@@ -364,7 +430,8 @@ export class UserPermissions {
         operator: 'AND' | 'OR' = 'AND'
     ): Promise<string[]> {
         const schoolIds: string[] = []
-        const schoolPermissions = await this.schoolPermissions(this.user_id)
+        const userId = this.getUserIdOrError()
+        const schoolPermissions = await this.schoolPermissions(userId)
 
         if (requiredPermissions.length === 0) {
             const schoolIdsFromPerms = Array.from(schoolPermissions.keys())
@@ -389,13 +456,75 @@ export class UserPermissions {
     }
 
     public async permissionsInOrganization(organizationId: string) {
-        const orgPermissions = await this.organizationPermissions(this.user_id)
+        const orgPermissions = await this.organizationPermissions(
+            this.getUserIdOrError()
+        )
         const permissions = orgPermissions.get(organizationId)
         return permissions ? Array.from(permissions) : []
     }
     public async permissionsInSchool(schoolId: string) {
-        const schoolPermissions = await this.schoolPermissions(this.user_id)
+        const schoolPermissions = await this.schoolPermissions(
+            this.getUserIdOrError()
+        )
         const permissions = schoolPermissions.get(schoolId)
         return permissions ? Array.from(permissions) : []
     }
+
+    // this needs to be removed
+    public async organizationsWhereItIsAllowed(
+        organizationIds: string[],
+        permissionName: string
+    ): Promise<string[]> {
+        const user = await this.getUser()
+        const isActive = user.status === Status.ACTIVE
+        if (!isActive) return []
+
+        const orgsWithPermission: string[] = []
+        const allOrganizationPermisions = await this.organizationPermissions(
+            user.user_id
+        )
+        for (const orgId of organizationIds) {
+            const organizationPermissions = allOrganizationPermisions.get(orgId)
+            if (
+                organizationPermissions &&
+                organizationPermissions.has(permissionName)
+            ) {
+                orgsWithPermission.push(orgId)
+            }
+        }
+        return orgsWithPermission
+    }
+}
+
+function cleanPermissionContext(pc: PermissionContext): PermissionContext {
+    return {
+        school_ids: uniqueAndTruthy(pc.school_ids),
+        organization_ids: uniqueAndTruthy(pc.organization_ids),
+        user_id: pc.user_id ? pc.user_id : undefined,
+    }
+}
+
+async function getSchoolOrgRelations(
+    organizationIds: string[],
+    schoolIds: string[]
+): Promise<[Map<string, string[]>, Map<string, string>]> {
+    const results = await getRepository(Organization)
+        .createQueryBuilder('Organization')
+        .select([`Organization.organization_id, School.school_id`])
+        .leftJoin('Organization.schools', 'School')
+        .where(
+            'Organization.organization_id IN (:...organizationIds) AND School.school_id IN (:...schoolIds)',
+            { organizationIds, schoolIds }
+        )
+        .getRawMany()
+    const orgSchoolsMap = new Map<string, string[]>()
+    for (const relation of results) {
+        const mapEntry = orgSchoolsMap.get(relation.organization_id)
+        if (mapEntry) mapEntry.push(relation.school_id)
+        else orgSchoolsMap.set(relation.organization_id, [relation.school_id])
+    }
+    const schoolOrgMap = new Map<string, string>(
+        results.map((r) => [r.school_id, r.organization_id])
+    )
+    return [orgSchoolsMap, schoolOrgMap]
 }

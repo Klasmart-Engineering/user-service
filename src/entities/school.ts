@@ -81,12 +81,13 @@ export class School extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = {
-            organization_id: (await this.organization)?.organization_id,
+        const organizationId = (await this.organization)?.organization_id
+        const permissionContext = {
+            organization_ids: organizationId ? [organizationId] : undefined,
             school_ids: [this.school_id],
         }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_school_20330
         )
 
@@ -122,12 +123,12 @@ export class School extends CustomBaseEntity {
         }
 
         const organizationId = (await this.organization)?.organization_id
-        const permisionContext = {
-            organization_id: organizationId,
+        const permissionContext = {
+            organization_ids: organizationId ? [organizationId] : undefined,
             school_ids: [this.school_id],
         }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_school_20330
         )
 
@@ -165,9 +166,9 @@ export class School extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_school_20330
         )
 
@@ -201,12 +202,13 @@ export class School extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = {
-            organization_id: (await this.organization)?.organization_id,
+        const organizationId = (await this.organization)?.organization_id
+        const permissionContext = {
+            organization_ids: organizationId ? [organizationId] : undefined,
             school_ids: [this.school_id],
         }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_school_20440
         )
 

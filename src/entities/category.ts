@@ -51,9 +51,9 @@ export class Category extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_subjects_20337
         )
 
@@ -94,9 +94,11 @@ export class Category extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_subjects_20447
         )
 

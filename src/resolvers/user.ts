@@ -79,12 +79,10 @@ async function modifyOrganizationRoles(
     if (args.input.length === 0) throw createInputLengthAPIError('User', 'min')
     if (args.input.length > config.limits.MUTATION_MAX_INPUT_ARRAY_SIZE)
         throw createInputLengthAPIError('User', 'max')
-    for (const val of args.input) {
-        await permissions.rejectIfNotAllowed(
-            { organization_id: val.organizationId },
-            PermissionName.edit_users_40330
-        )
-    }
+    await permissions.rejectIfNotAllowed(
+        { organization_ids: args.input.map((i) => i.organizationId) },
+        PermissionName.edit_users_40330
+    )
 
     // Preloading
     const preloadedUserArray = User.findByIds(
@@ -139,7 +137,7 @@ async function modifyOrganizationRoles(
             if (role) roles.push(role)
             else missingRoleIds.push(roleId)
         }
-        if (missingRoleIds.length)
+        if (missingRoleIds.length) {
             errors.push(
                 new APIError({
                     code: customErrors.nonexistent_or_inactive.code,
@@ -151,10 +149,11 @@ async function modifyOrganizationRoles(
                     index,
                 })
             )
+        }
 
         // User validation
         const user = preloadedUsers.get(userId)
-        if (!user)
+        if (!user) {
             errors.push(
                 new APIError({
                     code: customErrors.nonexistent_or_inactive.code,
@@ -166,10 +165,11 @@ async function modifyOrganizationRoles(
                     index,
                 })
             )
+        }
 
         // Organization validation
         const org = preloadedOrganizations.get(organizationId)
-        if (!org)
+        if (!org) {
             errors.push(
                 new APIError({
                     code: customErrors.nonexistent_or_inactive.code,
@@ -181,13 +181,14 @@ async function modifyOrganizationRoles(
                     index,
                 })
             )
+        }
 
         // Organization Membership validation
         if (!org || !user) continue
         const dbMembership = preloadedMemberships.get(
             [organizationId, userId].toString()
         )
-        if (!dbMembership)
+        if (!dbMembership) {
             errors.push(
                 new APIError({
                     code: customErrors.nonexistent_child.code,
@@ -200,6 +201,7 @@ async function modifyOrganizationRoles(
                     index,
                 })
             )
+        }
 
         // Add/remove roles in organization membership
         if (errors.length > 0 || !dbMembership) continue
@@ -881,9 +883,7 @@ export async function updateUsers(
         errs.push(...conflictErrs)
     }
 
-    if (errs.length > 0) {
-        throw errs
-    }
+    if (errs.length > 0) throw errs
 
     const updatedUsers = buildListOfUpdatedUsers(
         normalizedInputs,

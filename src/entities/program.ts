@@ -71,9 +71,9 @@ export class Program extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_program_20331
         )
 
@@ -101,9 +101,9 @@ export class Program extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_program_20331
         )
 
@@ -129,9 +129,9 @@ export class Program extends CustomBaseEntity {
             return null
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = { organization_ids: [organization_id] }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.edit_program_20331
         )
 
@@ -190,9 +190,11 @@ export class Program extends CustomBaseEntity {
             context.permissions.rejectIfNotAdmin()
         }
 
-        const permisionContext = { organization_id: organization_id }
+        const permissionContext = {
+            organization_ids: organization_id ? [organization_id] : undefined,
+        }
         await context.permissions.rejectIfNotAllowed(
-            permisionContext,
+            permissionContext,
             PermissionName.delete_program_20441
         )
 

@@ -41,16 +41,15 @@ export class SchoolMembership extends CustomBaseEntity {
         info: GraphQLResolveInfo
     ) {
         const school = await this.school
-        const schoolOrg = await school?.organization
-
-        const permisionContext = {
-            organization_id: schoolOrg?.organization_id,
+        const organizationId = (await school?.organization)?.organization_id
+        const permissionContext = {
+            organization_ids: organizationId ? [organizationId] : undefined,
             school_ids: [this.school_id],
             user_id: this.user_id,
         }
 
         return await context.permissions.allowed(
-            permisionContext,
+            permissionContext,
             permission_name
         )
     }
